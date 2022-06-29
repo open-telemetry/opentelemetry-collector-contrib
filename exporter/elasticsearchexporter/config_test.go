@@ -26,6 +26,56 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
+func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-use-deprecated-index_option.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "log")].(*Config)
+	assert.Equal(t, r1, &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "log")),
+		Endpoints:        []string{"http://localhost:9200"},
+		CloudID:          "TRNMxjXlNJEt",
+		Index:            "my_log_index",
+		LogsIndex:        "my_log_index",
+		TracesIndex:      "traces-generic-default",
+		Pipeline:         "mypipeline",
+		HTTPClientSettings: HTTPClientSettings{
+			Authentication: AuthenticationSettings{
+				User:     "elastic",
+				Password: "search",
+				APIKey:   "AvFsEiPs==",
+			},
+			Timeout: 2 * time.Minute,
+			Headers: map[string]string{
+				"myheader": "test",
+			},
+		},
+		Discovery: DiscoverySettings{
+			OnStart: true,
+		},
+		Flush: FlushSettings{
+			Bytes: 10485760,
+		},
+		Retry: RetrySettings{
+			Enabled:         true,
+			MaxRequests:     5,
+			InitialInterval: 100 * time.Millisecond,
+			MaxInterval:     1 * time.Minute,
+		},
+		Mapping: MappingsSettings{
+			Mode:  "ecs",
+			Dedup: true,
+			Dedot: true,
+		},
+	})
+}
+
 func TestLoadConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	require.NoError(t, err)

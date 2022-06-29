@@ -45,7 +45,8 @@ func createDefaultConfig() config.Exporter {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		LogsIndex:   "logs-generic-default",
+		Index:       "my_log_index",
+		LogsIndex:   "my_log_index",
 		TracesIndex: "traces-generic-default",
 		Retry: RetrySettings{
 			Enabled:         true,

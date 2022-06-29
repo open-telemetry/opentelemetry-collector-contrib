@@ -17,10 +17,14 @@ This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
   of `endpoints`.
 - `num_workers` (optional): Number of workers publishing bulk requests concurrently.
+- `index`: The
+  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
+  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
+  name to publish events to. The default value is `logs-generic-default`. Note: To better differentiate between log indexes and traces indexes, `index` option are deprecated and replaced with below `logs_index`
 - `logs_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`.
+  name to publish events to.
 - `traces_index`: The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
