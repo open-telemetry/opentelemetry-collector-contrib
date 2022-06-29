@@ -177,7 +177,6 @@ const (
 var (
 	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
 	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
-	errConfigNoIndex       = errors.New("logs or traces index must be specified")
 )
 
 func (m MappingMode) String() string {
