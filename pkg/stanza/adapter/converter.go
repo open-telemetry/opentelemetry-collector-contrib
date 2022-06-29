@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
@@ -578,7 +577,7 @@ func HashResource(resource map[string]interface{}) uint64 {
 		case []byte:
 			fnvHash.Write(t)
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			binary.Write(fnvHash, binary.BigEndian, t)
+			binary.Write(fnvHash, binary.BigEndian, t) // nolint - nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
 			fnvHash.Write(b)

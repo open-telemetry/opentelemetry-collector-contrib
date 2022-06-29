@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
+package sqlqueryreceiver
 
-import (
-	"database/sql"
+import "context"
 
-	"go.opentelemetry.io/collector/component"
-)
+type fakeDBClient struct {
+	requestCounter int
+	responses      [][]metricRow
+	err            error
+}
 
-const typeStr = "sqlquery"
-
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
-		typeStr,
-		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiverFunc(sql.Open, newDbClient)),
-	)
+func (c *fakeDBClient) metricRows(context.Context) ([]metricRow, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
+	idx := c.requestCounter
+	c.requestCounter++
+	return c.responses[idx], nil
 }
