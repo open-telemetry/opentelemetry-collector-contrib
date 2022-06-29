@@ -129,7 +129,7 @@ func getSourceAndResourceTagsAndSourceKey(attributes pcommon.Map) (
 		}
 	}
 
-	//returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
+	// returning an empty source is fine as wavefront.go.sdk will set it up to a default value(os.hostname())
 	return source, attributesWithoutSource, sourceKey
 }
 

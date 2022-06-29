@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
 	"context"
 	"errors"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -29,8 +33,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -53,6 +56,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "active_directory_ds",
 			skipLifecyle: true, // Requires a running windows service
+		},
+		{
+			receiver: "aerospike",
 		},
 		{
 			receiver: "apache",
@@ -107,22 +113,32 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "elasticsearch",
 		},
 		{
+			receiver: "expvar",
+		},
+		{
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"include": []string{
-						path.Join(testutil.NewTemporaryDirectory(t), "*"),
+						filepath.Join(t.TempDir(), "*"),
 					},
 				}
 				return cfg
 			},
 		},
 		{
+			receiver: "flinkmetrics",
+		},
+		{
 			receiver: "fluentforward",
 		},
 		{
 			receiver: "googlecloudspanner",
+		},
+		{
+			receiver:     "googlecloudpubsub",
+			skipLifecyle: true, // Requires a pubsub subscription
 		},
 		{
 			receiver: "hostmetrics",
@@ -254,6 +270,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
+			receiver:     "windowseventlog",
+			skipLifecyle: true, // Requires a running windows process
+		},
+		{
 			receiver:     "windowsperfcounters",
 			skipLifecyle: true, // Requires a running windows process
 		},
@@ -267,7 +287,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"tcp": map[string]interface{}{
 						"listen_address": "0.0.0.0:0",
 					},
@@ -280,7 +300,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "tcplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"listen_address": "0.0.0.0:0",
 				}
 				return cfg
@@ -290,11 +310,14 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "udplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
-				cfg.Input = stanza.InputConfig{
+				cfg.Input = adapter.InputConfig{
 					"listen_address": "0.0.0.0:0",
 				}
 				return cfg
 			},
+		},
+		{
+			receiver: "vcenter",
 		},
 	}
 

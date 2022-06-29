@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package stores // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 
 import (
@@ -120,7 +121,7 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 
 	// Try to detect kubelet permission issue here
 	if _, err := podClient.ListPods(); err != nil {
-		return nil, fmt.Errorf("cannot get pod from kubelet, err: %v", err)
+		return nil, fmt.Errorf("cannot get pod from kubelet, err: %w", err)
 	}
 
 	k8sClient := k8sclient.Get(logger)

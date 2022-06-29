@@ -29,14 +29,14 @@ import (
 
 func toStore(b pmetric.Buckets) store.Store {
 	offset := b.Offset()
-	bucketCounts := b.MBucketCounts()
+	bucketCounts := b.BucketCounts()
 
 	store := store.NewDenseStore()
-	for j, count := range bucketCounts {
+	for j := 0; j < bucketCounts.Len(); j++ {
 		// Find the real index of the bucket by adding the offset
 		index := j + int(offset)
 
-		store.AddWithCount(index, float64(count))
+		store.AddWithCount(index, float64(bucketCounts.At(j)))
 	}
 	return store
 }

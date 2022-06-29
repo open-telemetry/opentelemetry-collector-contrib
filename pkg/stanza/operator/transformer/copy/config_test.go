@@ -25,7 +25,7 @@ func TestGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "body_to_body",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewBodyField("key2")
@@ -34,7 +34,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "body_to_attribute",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewBodyField("key")
 				cfg.To = entry.NewAttributeField("key2")
@@ -43,7 +43,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "attribute_to_resource",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewResourceField("key2")
@@ -52,7 +52,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "attribute_to_body",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewBodyField("key2")
@@ -61,7 +61,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "attribute_to_nested_attribute",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewAttributeField("key")
 				cfg.To = entry.NewAttributeField("one", "two", "three")
@@ -70,7 +70,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "resource_to_nested_resource",
-			Expect: func() *CopyOperatorConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.From = entry.NewResourceField("key")
 				cfg.To = entry.NewResourceField("one", "two", "three")
@@ -85,6 +85,6 @@ func TestGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *CopyOperatorConfig {
-	return NewCopyOperatorConfig("copy")
+func defaultCfg() *Config {
+	return NewConfig("copy")
 }

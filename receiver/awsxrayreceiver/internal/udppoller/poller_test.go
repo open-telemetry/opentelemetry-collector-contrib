@@ -309,12 +309,12 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, Transport, 0, 1))
 }
 
-func TestSocketReadTemporaryNetError(t *testing.T) {
+func TestSocketReadTimeOutNetError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
 	defer tt.Shutdown(context.Background())
 
-	receiverID := config.NewComponentID("TestSocketReadTemporaryNetError")
+	receiverID := config.NewComponentID("TestSocketReadTimeOutNetError")
 
 	_, p, recordedLogs := createAndOptionallyStartPoller(t, receiverID, false, tt.ToReceiverCreateSettings())
 	// close the actual socket because we are going to mock it out below
@@ -326,7 +326,7 @@ func TestSocketReadTemporaryNetError(t *testing.T) {
 		expectedOutput: []byte("dontCare"),
 		expectedError: &mockNetError{
 			mockErrStr: randErrStr.String(),
-			temporary:  true,
+			timeout:    true,
 		},
 	}
 
@@ -381,7 +381,7 @@ func TestSocketGenericReadError(t *testing.T) {
 
 type mockNetError struct {
 	mockErrStr string
-	temporary  bool
+	timeout    bool
 }
 
 func (m *mockNetError) Error() string {
@@ -389,11 +389,11 @@ func (m *mockNetError) Error() string {
 }
 
 func (m *mockNetError) Timeout() bool {
-	return false
+	return m.timeout
 }
 
 func (m *mockNetError) Temporary() bool {
-	return m.temporary
+	return false
 }
 
 type mockGenericErr struct {
@@ -478,7 +478,7 @@ func writePacket(t *testing.T, addr, toWrite string) error {
 	if err != nil {
 		return err
 	}
-	assert.Equal(t, len(toWrite), n, "exunpected number of bytes written")
+	assert.Equal(t, len(toWrite), n, "unexpected number of bytes written")
 	return nil
 }
 

@@ -17,7 +17,7 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/multierr"
 )
 
@@ -114,7 +114,7 @@ func (e renameError) Error() string {
 }
 
 // RemovedErr returns an error describing that the old name was removed in favor of the new name.
-func (e renameError) RemovedErr(configMap *config.Map) error {
+func (e renameError) RemovedErr(configMap *confmap.Conf) error {
 	if configMap.IsSet(e.oldName) {
 		return fmt.Errorf(
 			"%q was removed in favor of %q. See github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
@@ -128,7 +128,7 @@ func (e renameError) RemovedErr(configMap *config.Map) error {
 
 // Check if the deprecated option is being used.
 // Error out if both the old and new options are being used.
-func (e renameError) Check(configMap *config.Map) (bool, error) {
+func (e renameError) Check(configMap *confmap.Conf) (bool, error) {
 	if configMap.IsSet(e.oldName) && configMap.IsSet(e.newName) {
 		return false, fmt.Errorf("%q and %q can't be both set at the same time: use %q only instead", e.oldName, e.newName, e.newName)
 	}
@@ -142,7 +142,7 @@ func (e renameError) UpdateCfg(cfg *Config) {
 
 // handleRenamedSettings for a given configuration map.
 // Error out if any pair of old-new options are set at the same time.
-func handleRenamedSettings(configMap *config.Map, cfg *Config) (warnings []error, err error) {
+func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []error, err error) {
 	for _, renaming := range renamedSettings {
 		isOldNameUsed, errCheck := renaming.Check(configMap)
 		err = multierr.Append(err, errCheck)
@@ -156,7 +156,7 @@ func handleRenamedSettings(configMap *config.Map, cfg *Config) (warnings []error
 	return
 }
 
-func handleRemovedSettings(configMap *config.Map) (err error) {
+func handleRemovedSettings(configMap *confmap.Conf) (err error) {
 	for _, removed := range removedSettings {
 		err = multierr.Append(err, removed.RemovedErr(configMap))
 	}

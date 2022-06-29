@@ -52,7 +52,7 @@ The following configuration options can also be configured:
   excludes.
 - `include_metrics`: List of filters to override exclusion of any metrics.
   This option can be used to included metrics that are otherwise dropped by
-  default. See [here](./translation/default_metrics.go) for a list of metrics
+  default. See [here](./internal/translation/default_metrics.go) for a list of metrics
   that are dropped by default. For example, the following configuration can be
   used to send through some of that are dropped by default.
   ```yaml
@@ -166,7 +166,7 @@ The rule language is expressed in yaml mappings and is [documented here](./inter
 * `rename_metrics` - Replaces a given metric name with specified one
 * `split_metric` - Splits a given metric into multiple new ones for a specified dimension
 
-The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/hostmetricsreceiver/README.md):
+The translation rules defined in [`translation/constants.go`](./internal/translation/constants.go) are used by default for this value.  The default rules will create the following aggregated metrics from the [`hostmetrics` receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md):
 
 * cpu.idle
 * cpu.interrupt

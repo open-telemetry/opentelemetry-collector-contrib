@@ -1,6 +1,10 @@
 # Attributes Processor
 
-Supported pipeline types: traces, logs, metrics.
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The attributes processor modifies attributes of a span, log, or metric. Please refer to
 [config.go](./config.go) for the config spec.
@@ -256,3 +260,7 @@ regexp:
   # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
   cachemaxnumentries: <int>
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

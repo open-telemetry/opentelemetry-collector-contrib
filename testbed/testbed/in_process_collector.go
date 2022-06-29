@@ -24,8 +24,8 @@ import (
 
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/service"
 )
 
@@ -69,11 +69,11 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	}
 	ipp.configFile = confFile.Name()
 
-	fmp := filemapprovider.New()
+	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
 			Locations:    []string{ipp.configFile},
-			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
+			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
 		})
 	if err != nil {
 		return err

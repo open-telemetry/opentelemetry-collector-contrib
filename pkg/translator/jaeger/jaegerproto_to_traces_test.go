@@ -576,7 +576,7 @@ func generateProtoSpan() *model.Span {
 				Timestamp: testSpanEventTime,
 				Fields: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagMessage,
+						Key:   eventNameAttr,
 						VType: model.ValueType_STRING,
 						VStr:  "event-with-attr",
 					},
@@ -654,7 +654,7 @@ func generateProtoSpanWithTraceState() *model.Span {
 				Timestamp: testSpanEventTime,
 				Fields: []model.KeyValue{
 					{
-						Key:   tracetranslator.TagMessage,
+						Key:   eventNameAttr,
 						VType: model.ValueType_STRING,
 						VStr:  "event-with-attr",
 					},

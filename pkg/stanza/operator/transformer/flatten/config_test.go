@@ -29,7 +29,7 @@ import (
 
 type configTestCase struct {
 	name      string
-	expect    *FlattenOperatorConfig
+	expect    *Config
 	expectErr bool
 }
 
@@ -38,7 +38,7 @@ func TestGoldenConfig(t *testing.T) {
 	cases := []configTestCase{
 		{
 			"flatten_one_level",
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested"},
@@ -49,7 +49,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			"flatten_second_level",
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested", "secondlevel"},
@@ -60,7 +60,7 @@ func TestGoldenConfig(t *testing.T) {
 		},
 		{
 			"flatten_attributes",
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"attributes", "errField"},
@@ -88,30 +88,30 @@ func TestGoldenConfig(t *testing.T) {
 	}
 }
 
-func configFromFileViaYaml(file string) (*FlattenOperatorConfig, error) {
+func configFromFileViaYaml(file string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	config := defaultCfg()
 	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
+		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
 	}
 
 	return config, nil
 }
 
-func configFromFileViaMapstructure(file string) (*FlattenOperatorConfig, error) {
+func configFromFileViaMapstructure(file string) (*Config, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	raw := map[string]interface{}{}
 
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return nil, fmt.Errorf("failed to read data from yaml: %s", err)
+	if err = yaml.Unmarshal(bytes, raw); err != nil {
+		return nil, fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
 	cfg := defaultCfg()
@@ -127,6 +127,6 @@ func configFromFileViaMapstructure(file string) (*FlattenOperatorConfig, error) 
 	return cfg, nil
 }
 
-func defaultCfg() *FlattenOperatorConfig {
-	return NewFlattenOperatorConfig("flatten")
+func defaultCfg() *Config {
+	return NewConfig("flatten")
 }

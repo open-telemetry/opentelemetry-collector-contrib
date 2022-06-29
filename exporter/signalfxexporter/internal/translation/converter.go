@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
@@ -24,6 +25,7 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -39,9 +41,19 @@ var (
 	sfxMetricTypeGauge             = sfxpb.MetricType_GAUGE
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
-
-	translator = &signalfx.FromTranslator{}
 )
+
+const prometheusCompatible = "exporter.signalfxexporter.PrometheusCompatible"
+
+var prometheusCompatibleGate = featuregate.Gate{
+	ID:          prometheusCompatible,
+	Enabled:     true,
+	Description: "Controls if conversion should follow prometheus compatibility for histograms and summaries.",
+}
+
+func init() {
+	featuregate.GetRegistry().MustRegister(prometheusCompatibleGate)
+}
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
@@ -50,6 +62,7 @@ type MetricsConverter struct {
 	metricTranslator   *MetricTranslator
 	filterSet          *dpfilters.FilterSet
 	datapointValidator *datapointValidator
+	translator         *signalfx.FromTranslator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -70,6 +83,7 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:         &signalfx.FromTranslator{PrometheusCompatible: featuregate.GetRegistry().IsEnabled(prometheusCompatible)},
 	}, nil
 }
 
@@ -87,7 +101,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
