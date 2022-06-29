@@ -116,6 +116,7 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	for k, v := range src.fields {
 		if _, ok := c.fields[k]; ok {
 			c.logger.Debug(fmt.Sprintf("metric being merged has conflict in fields, src: %v, dest: %v \n", *src, *c))
+			c.logger.Debug(fmt.Sprintf("metric being merged has conflict in fields, src: %q, dest: %q \n", src.cgroupPath, c.cgroupPath))
 			if c.tags[ci.Timestamp] < src.tags[ci.Timestamp] {
 				continue
 			}
