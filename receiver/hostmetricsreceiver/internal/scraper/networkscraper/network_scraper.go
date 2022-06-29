@@ -124,29 +124,29 @@ func (s *scraper) recordNetworkCounterMetrics() error {
 
 func (s *scraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		s.mb.RecordSystemNetworkPacketsTransmitDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name)
+		s.mb.RecordSystemNetworkPacketsReceiveDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name)
 	}
 }
 
 func (s *scraper) recordNetworkDroppedPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		s.mb.RecordSystemNetworkDroppedTransmitDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name)
+		s.mb.RecordSystemNetworkDroppedReceiveDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name)
 	}
 }
 
 func (s *scraper) recordNetworkErrorPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		s.mb.RecordSystemNetworkErrorsTransmitDataPoint(now, int64(ioCounters.Errout), ioCounters.Name)
+		s.mb.RecordSystemNetworkErrorsReceiveDataPoint(now, int64(ioCounters.Errin), ioCounters.Name)
 	}
 }
 
 func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		s.mb.RecordSystemNetworkIoTransmitDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name)
+		s.mb.RecordSystemNetworkIoReceiveDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name)
 	}
 }
 

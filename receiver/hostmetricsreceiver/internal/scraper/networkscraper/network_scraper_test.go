@@ -152,7 +152,7 @@ func TestScrape(t *testing.T) {
 
 			expectedMetricCount := 1
 			if test.expectNetworkMetrics {
-				expectedMetricCount += 4
+				expectedMetricCount += 8
 			}
 			assert.Equal(t, expectedMetricCount, md.MetricCount())
 
@@ -160,10 +160,14 @@ func TestScrape(t *testing.T) {
 			idx := 0
 			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
-				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime)
-				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped.receive", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.dropped.transmit", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.errors.receive", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.errors.transmit", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+5), "system.network.io.receive", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+6), "system.network.io.transmit", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+7), "system.network.packets.receive", test.expectedStartTime)
+				assertNetworkIOMetricValid(t, metrics.At(idx+8), "system.network.packets.transmit", test.expectedStartTime)
 				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
 				idx += 4
 			}
@@ -178,12 +182,8 @@ func assertNetworkIOMetricValid(t *testing.T, metric pmetric.Metric, expectedNam
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, metric, startTime)
 	}
-	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 2)
+	assert.GreaterOrEqual(t, metric.Sum().DataPoints().Len(), 1)
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "device")
-	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionTransmit.String()))
-	internal.AssertSumMetricHasAttributeValue(t, metric, 1, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionReceive.String()))
 }
 
 func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
