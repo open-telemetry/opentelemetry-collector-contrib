@@ -15,13 +15,14 @@
 package file
 
 import (
+	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
@@ -492,7 +493,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
 		},
@@ -501,7 +502,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
 		},
@@ -534,13 +535,79 @@ func TestBuild(t *testing.T) {
 		validate         func(*testing.T, *Input)
 	}{
 		{
-			"Basic",
+			"Default",
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				require.Equal(t, f.FilePathField, entry.NewNilField())
-				require.Equal(t, f.FileNameField, entry.NewAttributeField("log.file.name"))
+				expectOptions := []preEmitOption{setFileName}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFilePath",
+			func(f *Config) {
+				f.IncludeFilePath = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePath}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFileNameResolved",
+			func(f *Config) {
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFileNameResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFilePathResolved",
+			func(f *Config) {
+				f.IncludeFilePathResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeResolvedAttrs",
+			func(f *Config) {
+				f.IncludeFileName = false
+				f.IncludeFilePath = false
+				f.IncludeFilePathResolved = true
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileNameResolved, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeAllFileAttrs",
+			func(f *Config) {
+				f.IncludeFileName = true
+				f.IncludeFilePath = true
+				f.IncludeFilePathResolved = true
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePath, setFileNameResolved, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
 			},
 		},
 		{
@@ -596,7 +663,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Encoding = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
 			require.Error,
 			nil,
@@ -668,6 +735,17 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+func requireSamePreEmitOptions(t *testing.T, expect, actual []preEmitOption) {
+	// Comparing functions is not directly possible
+	require.Equal(t, len(expect), len(actual))
+	for i := range expect {
+		// Credit https://github.com/stretchr/testify/issues/182#issuecomment-495359313
+		expectFuncName := runtime.FuncForPC(reflect.ValueOf(expect[i]).Pointer()).Name()
+		actualFuncName := runtime.FuncForPC(reflect.ValueOf(actual[i]).Pointer()).Name()
+		require.Equal(t, expectFuncName, actualFuncName)
+	}
+}
+
 func defaultCfg() *Config {
 	return NewConfig("file_input")
 }
@@ -682,7 +760,7 @@ func NewTestConfig() *Config {
 		LineEndPattern:   "end",
 	}
 	cfg.FingerprintSize = 1024
-	cfg.Encoding = helper.EncodingConfig{Encoding: "utf16"}
+	cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf16"}
 	return cfg
 }
 

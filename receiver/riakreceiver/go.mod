@@ -8,7 +8,7 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require github.com/stretchr/testify v1.7.4
+require github.com/stretchr/testify v1.7.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.54.0

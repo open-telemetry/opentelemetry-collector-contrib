@@ -35,6 +35,8 @@ trace resource attribute, if any, as SFx access token.  In either case this attr
 during final translation.  Intended to be used in tandem with identical configuration option for
 [SAPM receiver](../../receiver/sapmreceiver/README.md) to preserve trace origin.
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+- `log_detailed_response` (default = `false`): Option to log detailed response from Splunk APM.
+In addition to setting this option to `true`, debug logging at the Collector level needs to be enabled.
 
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
@@ -50,6 +52,7 @@ exporters:
     endpoint: https://ingest.YOUR_SIGNALFX_REALM.signalfx.com/v2/trace
     max_connections: 100
     num_workers: 8
+    log_detailed_response: true
 ```
 
 The full list of settings exposed for this exporter are documented [here](config.go)

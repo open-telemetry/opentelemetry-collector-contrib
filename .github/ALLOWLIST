@@ -34,7 +34,5 @@ pkg/winperfcounters
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/podmanreceiver
-receiver/simpleprometheusreceiver
-receiver/simpleprometheusreceiver/examples/federation/prom-counter
 testbed
 testbed/mockdatareceivers/mockawsxrayreceiver

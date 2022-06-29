@@ -214,6 +214,7 @@ func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) 
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), mh), "should not fail to start log on second Start call")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
 	<-time.After(500 * time.Millisecond)

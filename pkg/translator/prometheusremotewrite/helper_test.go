@@ -25,20 +25,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
-
-// setSanitizeLabelFeatureGateForTest changes the dropSanitizationGate feature gate during a test.
-// usage: defer setSanitizeLabelFeatureGateForTest(true)()
-func setSanitizeLabelFeatureGateForTest(enabled bool) func() {
-	originalValue := featuregate.GetRegistry().IsEnabled(dropSanitization)
-	featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: enabled})
-	return func() {
-		featuregate.GetRegistry().Apply(map[string]bool{dropSanitization: originalValue})
-	}
-}
 
 // Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
 // otherwise.
@@ -302,91 +291,13 @@ func Test_createLabelSet(t *testing.T) {
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, keyStr+label51, value51, label41, value41, label31, value31, label32, value32),
+			getPromLabels(label11, value11, label12, value12, "key"+label51, value51, label41, value41, label31, value31, label32, value32),
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
-		})
-	}
-}
-
-func Test_createLabelSetDropSanitization(t *testing.T) {
-	defer setSanitizeLabelFeatureGateForTest(true)()
-	tests := []struct {
-		name           string
-		resource       pcommon.Resource
-		orig           pcommon.Map
-		externalLabels map[string]string
-		extras         []string
-		want           []prompb.Label
-	}{
-		{
-			"donot_sanitize_labels_starts_with_underscore",
-			getResource(map[string]pcommon.Value{}),
-			lbs3,
-			exlbs1,
-			[]string{label31, value31, label32, value32},
-			getPromLabels(label11, value11, label12, value12, label51, value51, label41, value41, label31, value31, label32, value32),
-		},
-	}
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
-		})
-	}
-}
-
-// Tes_getPromMetricName checks if OTLP metric names are converted to Cortex metric names correctly.
-// Test cases are empty namespace, monotonic metrics that require a total suffix, and metric names that contains
-// invalid characters.
-func Test_getPromMetricName(t *testing.T) {
-	tests := []struct {
-		name   string
-		metric pmetric.Metric
-		ns     string
-		want   string
-	}{
-		{
-			"empty_case",
-			invalidMetrics[empty],
-			ns1,
-			"test_ns_",
-		},
-		{
-			"normal_case",
-			validMetrics1[validDoubleGauge],
-			ns1,
-			"test_ns_" + validDoubleGauge,
-		},
-		{
-			"empty_namespace",
-			validMetrics1[validDoubleGauge],
-			"",
-			validDoubleGauge,
-		},
-		{
-			// Ensure removed functionality stays removed.
-			// See https://github.com/open-telemetry/opentelemetry-collector/pull/2993 for context
-			"no_counter_suffix",
-			validMetrics1[validIntSum],
-			ns1,
-			"test_ns_" + validIntSum,
-		},
-		{
-			"dirty_string",
-			validMetrics2[validIntGaugeDirty],
-			"7" + ns1,
-			"key_7test_ns__" + validIntGauge + "_",
-		},
-	}
-	// run tests
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.want, getPromMetricName(tt.metric, tt.ns))
 		})
 	}
 }

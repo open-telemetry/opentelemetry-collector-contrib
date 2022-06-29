@@ -9,9 +9,10 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.54.0
 	github.com/prometheus/prometheus v0.36.2
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.7.5
 	github.com/tidwall/wal v1.1.7
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
@@ -61,5 +62,7 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite

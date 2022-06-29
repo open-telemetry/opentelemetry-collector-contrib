@@ -24,9 +24,11 @@ resource_attributes:
 
 attributes:
   operator_name:
+    value: name
     description: The operator name.
     type: string
   garbage_collector_name:
+    value: name
     description: The names for the parallel scavenge and garbage first garbage collectors.
     type: string
     enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]

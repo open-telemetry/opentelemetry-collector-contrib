@@ -24,26 +24,26 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps    bool
-	namespace         string
-	constLabels       prometheus.Labels
-	skipSanitizeLabel bool
+	sendTimestamps bool
+	namespace      string
+	constLabels    prometheus.Labels
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:       newAccumulator(logger, config.MetricExpiration),
-		logger:            logger,
-		namespace:         sanitize(config.Namespace, config.skipSanitizeLabel),
-		sendTimestamps:    config.SendTimestamps,
-		constLabels:       config.ConstLabels,
-		skipSanitizeLabel: config.skipSanitizeLabel,
+		accumulator:    newAccumulator(logger, config.MetricExpiration),
+		logger:         logger,
+		namespace:      prometheustranslator.CleanUpString(config.Namespace),
+		sendTimestamps: config.SendTimestamps,
+		constLabels:    config.ConstLabels,
 	}
 }
 
@@ -75,19 +75,12 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) metricName(namespace string, metric pmetric.Metric) string {
-	if namespace != "" {
-		return namespace + "_" + sanitize(metric.Name(), c.skipSanitizeLabel)
-	}
-	return sanitize(metric.Name(), c.skipSanitizeLabel)
-}
-
 func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string) {
 	keys := make([]string, 0, attributes.Len()+2) // +2 for job and instance labels.
 	values := make([]string, 0, attributes.Len()+2)
 
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		keys = append(keys, sanitize(k, c.skipSanitizeLabel))
+		keys = append(keys, prometheustranslator.NormalizeLabel(k))
 		values = append(values, v.AsString())
 		return true
 	})
@@ -108,7 +101,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		c.metricName(c.namespace, metric),
+		prometheustranslator.BuildPromCompliantName(metric, c.namespace),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -216,9 +209,34 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
+	arrLen := ip.Exemplars().Len()
+	exemplars := make([]prometheus.Exemplar, arrLen)
+	for i := 0; i < arrLen; i++ {
+		e := ip.Exemplars().At(i)
+
+		labels := make(prometheus.Labels, e.FilteredAttributes().Len())
+		e.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			labels[k] = v.AsString()
+			return true
+		})
+
+		exemplars[i] = prometheus.Exemplar{
+			Value:     e.DoubleVal(),
+			Labels:    labels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+	}
+
 	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
+	}
+
+	if arrLen > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.sendTimestamps {
