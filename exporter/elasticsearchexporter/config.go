@@ -223,14 +223,6 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if cfg.Index == "" && cfg.LogsIndex == "" || cfg.TracesIndex == "" {
-		return errConfigNoIndex
-	}
-
-	if cfg.Index != "" && cfg.LogsIndex == "" {
-		cfg.LogsIndex = cfg.Index
-	}
-
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
 		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
 	}
