@@ -37,8 +37,8 @@ func TestStorage(t *testing.T) {
 
 	ctx := context.Background()
 
-	logsDir := newTempDir(t)
-	storageDir := newTempDir(t)
+	logsDir := t.TempDir()
+	storageDir := t.TempDir()
 
 	f := NewFactory()
 
@@ -144,9 +144,11 @@ func TestStorage(t *testing.T) {
 	for _, e := range host.GetExtensions() {
 		require.NoError(t, e.Shutdown(ctx))
 	}
+	require.NoError(t, logger.close())
 }
 
 type recallLogger struct {
+	logFile *os.File
 	*log.Logger
 	written []string
 }
@@ -157,6 +159,7 @@ func newRecallLogger(t *testing.T, tempDir string) *recallLogger {
 	require.NoError(t, err)
 
 	return &recallLogger{
+		logFile: logFile,
 		Logger:  log.New(logFile, "", 0),
 		written: []string{},
 	}
@@ -170,6 +173,10 @@ func (l *recallLogger) log(s string) {
 func (l *recallLogger) recall() []string {
 	defer func() { l.written = []string{} }()
 	return l.written
+}
+
+func (l *recallLogger) close() error {
+	return l.logFile.Close()
 }
 
 // TODO use stateless Convert() from #3125 to generate exact plog.Logs

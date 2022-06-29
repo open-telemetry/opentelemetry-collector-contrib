@@ -95,7 +95,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	// validate the input address
 	if _, err = net.ResolveTCPAddr("tcp", c.ListenAddress); err != nil {
-		return nil, fmt.Errorf("failed to resolve listen_address: %s", err)
+		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
 	encoding, err := c.Encoding.Build()
@@ -253,7 +253,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 				continue
 			}
 
-			entry, err := t.NewEntry(decoded)
+			entry, err := t.NewEntry(string(decoded))
 			if err != nil {
 				t.Errorw("Failed to create entry", zap.Error(err))
 				continue

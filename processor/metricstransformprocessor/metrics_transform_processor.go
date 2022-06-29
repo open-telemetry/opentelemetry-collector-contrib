@@ -25,7 +25,9 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -33,9 +35,28 @@ import (
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
+var otlpDataModelGateID = "processor.metricstransformprocessor.UseOTLPDataModel"
+
+// otlpDataModelGate is a feature gate that controls which data model the processor uses for metric transformation:
+// - new OLTP data model if enabled,
+// - old OpenCensus data mode if disabled.
+var otlpDataModelGate = featuregate.Gate{
+	ID:      otlpDataModelGateID,
+	Enabled: true,
+	Description: "Controls which data model the processor uses for metric transformation internally: the new OLTP " +
+		"data model if the feature gate is enabled, or the old OpenCensus data model if gate is disabled. " +
+		"If you see any bugs in the processor introduced after 0.54.0 version, " +
+		"please submit an issue and disable this feature gate to bring back the old behavior",
+}
+
+func init() {
+	featuregate.GetRegistry().MustRegister(otlpDataModelGate)
+}
+
 type metricsTransformProcessor struct {
-	transforms []internalTransform
-	logger     *zap.Logger
+	transforms               []internalTransform
+	logger                   *zap.Logger
+	otlpDataModelGateEnabled bool
 }
 
 type internalTransform struct {
@@ -58,6 +79,11 @@ type internalOperation struct {
 type internalFilter interface {
 	getMatches(toMatch metricNameMapping) []*match
 	getSubexpNames() []string
+	matchMetric(pmetric.Metric) bool
+	extractMatchedMetric(pmetric.Metric) pmetric.Metric
+	expand(string, string) string
+	submatches(pmetric.Metric) []int
+	matchAttrs(pcommon.Map) bool
 }
 
 type match struct {
@@ -77,8 +103,8 @@ func (s strictMatcher) MatchString(cmp string) bool {
 }
 
 type internalFilterStrict struct {
-	include     string
-	matchLabels map[string]StringMatcher
+	include      string
+	attrMatchers map[string]StringMatcher
 }
 
 func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
@@ -86,7 +112,7 @@ func (f internalFilterStrict) getMatches(toMatch metricNameMapping) []*match {
 	if metrics, ok := toMatch[f.include]; ok {
 		matches := make([]*match, 0)
 		for _, metric := range metrics {
-			matchedMetric := labelMatched(f.matchLabels, metric)
+			matchedMetric := labelMatched(f.attrMatchers, metric)
 			if matchedMetric != nil {
 				matches = append(matches, &match{metric: matchedMetric})
 			}
@@ -102,8 +128,8 @@ func (f internalFilterStrict) getSubexpNames() []string {
 }
 
 type internalFilterRegexp struct {
-	include     *regexp.Regexp
-	matchLabels map[string]StringMatcher
+	include      *regexp.Regexp
+	attrMatchers map[string]StringMatcher
 }
 
 func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
@@ -111,7 +137,7 @@ func (f internalFilterRegexp) getMatches(toMatch metricNameMapping) []*match {
 	for name, metrics := range toMatch {
 		if submatches := f.include.FindStringSubmatchIndex(name); submatches != nil {
 			for _, metric := range metrics {
-				matchedMetric := labelMatched(f.matchLabels, metric)
+				matchedMetric := labelMatched(f.attrMatchers, metric)
 				if matchedMetric != nil {
 					matches = append(matches, &match{metric: matchedMetric, pattern: f.include, submatches: submatches})
 				}
@@ -125,8 +151,8 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
-func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric) *metricspb.Metric {
-	if len(matchLabels) == 0 {
+func labelMatched(attrMatchers map[string]StringMatcher, metric *metricspb.Metric) *metricspb.Metric {
+	if len(attrMatchers) == 0 {
 		return metric
 	}
 
@@ -137,7 +163,7 @@ func labelMatched(matchLabels map[string]StringMatcher, metric *metricspb.Metric
 	var timeSeriesWithMatchedLabel []*metricspb.TimeSeries
 	labelIndexValueMap := make(map[int]StringMatcher)
 
-	for key, value := range matchLabels {
+	for key, value := range attrMatchers {
 		keyFound := false
 
 		for idx, label := range metric.MetricDescriptor.LabelKeys {
@@ -204,13 +230,23 @@ func (mnm metricNameMapping) remove(name string, metrics ...*metricspb.Metric) {
 
 func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
-		transforms: internalTransforms,
-		logger:     logger,
+		transforms:               internalTransforms,
+		logger:                   logger,
+		otlpDataModelGateEnabled: featuregate.GetRegistry().IsEnabled(otlpDataModelGateID),
 	}
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
 func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	if mtp.otlpDataModelGateEnabled {
+		return mtp.processOTLPMetrics(md)
+	}
+	return mtp.processOCMetrics(md)
+}
+
+// processOCMetrics process metrics using OpenCensus data model internally.
+// Used only if "processor.metricstransformprocessor.UseOTLPDataModel" feature gate set to false. Will be removed soon.
+func (mtp *metricsTransformProcessor) processOCMetrics(md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedMds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0)
 
@@ -365,7 +401,7 @@ func (mtp *metricsTransformProcessor) combine(matchedMetrics []*match, transform
 			for i := 1; i < len(match.submatches)/2; i++ {
 				submatch := match.metric.MetricDescriptor.Name[match.submatches[2*i]:match.submatches[2*i+1]]
 				submatch = replaceCaseOfSubmatch(transform.SubmatchCase, submatch)
-				ts.LabelValues = append(ts.LabelValues, &metricspb.LabelValue{Value: submatch, HasValue: (submatch != "")})
+				ts.LabelValues = append(ts.LabelValues, &metricspb.LabelValue{Value: submatch, HasValue: submatch != ""})
 			}
 
 			allTimeseries = append(allTimeseries, match.metric.Timeseries...)

@@ -154,6 +154,8 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 		value: &cWMetricStats{
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
+			Max:   metric.Max(),
+			Min:   metric.Min(),
 		},
 		labels:      labels,
 		timestampMs: timestamp,

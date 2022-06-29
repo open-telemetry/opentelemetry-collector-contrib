@@ -62,12 +62,12 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 ) {
 	corrURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %v", cfg.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.Endpoint, err)
 	}
 
 	httpClient, err := cfg.ToClient(host.GetExtensions(), params.TelemetrySettings)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create correlation API client: %v", err)
+		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -80,7 +80,7 @@ func newCorrelationClient(cfg *Config, accessToken string, params component.Expo
 
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("failed to create correlation client: %v", err)
+		return nil, fmt.Errorf("failed to create correlation client: %w", err)
 	}
 
 	return &correlationContext{

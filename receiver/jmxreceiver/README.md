@@ -1,11 +1,15 @@
 # JMX Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 ### Overview
 
 The JMX Receiver will work in conjunction with the [OpenTelemetry JMX Metric Gatherer](https://github.com/open-telemetry/opentelemetry-java-contrib/blob/main/jmx-metrics/README.md)
 to report metrics from a target MBean server using a built-in `otel` helper-utilizing Groovy script.
-
-Status: alpha
 
 ### Details
 
@@ -177,3 +181,6 @@ Corresponds to the `otel.resource.attributes` property.
 SLF4J log level for the JMX metrics gatherer. Must be one of: `"trace"`, `"debug"`, `"info"`, `"warn"`, `"error"`, `"off"`. If not provided, will attempt to match to the current log level of the collector.
 
 Corresponds to the `org.slf4j.simpleLogger.defaultLogLevel` property.
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
