@@ -3,6 +3,7 @@
 ## Unreleased
 
 ## 🛑 Breaking changes 🛑
+
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
   - If users were disabling this feature gate, they may have to update
     monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
