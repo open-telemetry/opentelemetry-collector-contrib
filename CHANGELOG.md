@@ -8,6 +8,19 @@
   - If users were disabling this feature gate, they may have to update
     monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+- `hostmetricsreceiver`: remove direction attribute (#11820)
+  - `system.network.dropped` becomes:
+    - `system.network.dropped.receive`
+    - `system.network.dropped.transmit`
+  - `system.network.errors` becomes:
+    - `system.network.errors.receive`
+    - `system.network.errors.transmit`
+  - `system.network.io` becomes:
+    - `system.network.io.receive`
+    - `system.network.io.transmit`
+  - `system.network.packets` becomes:
+    - `system.network.packets.receive`
+    - `system.network.packets.transmit`
 
 ### 🚩 Deprecations 🚩
 
