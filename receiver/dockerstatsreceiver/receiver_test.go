@@ -21,15 +21,31 @@ package dockerstatsreceiver
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
+
+func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
+	file, err := os.Open(responseBodyFile)
+	assert.NoError(tb, err)
+	fileContents, err := ioutil.ReadAll(file)
+	require.NoError(tb, err)
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+		_, err := rw.Write(fileContents)
+		require.NoError(tb, err)
+		return
+	}))
+}
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
@@ -39,10 +55,8 @@ func TestNewReceiver(t *testing.T) {
 		Endpoint:         "unix:///run/some.sock",
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	nextConsumer := consumertest.NewNop()
-	mr, err := NewReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, nextConsumer)
+	mr := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
 	assert.NotNil(t, mr)
-	assert.Nil(t, err)
 }
 
 func TestErrorsInStart(t *testing.T) {
@@ -54,19 +68,16 @@ func TestErrorsInStart(t *testing.T) {
 		Endpoint:         unreachable,
 		DockerAPIVersion: defaultDockerAPIVersion,
 	}
-	recv, err := NewReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
+	recv := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
 	assert.NotNil(t, recv)
-	assert.Nil(t, err)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err := recv.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to parse docker host")
 
 	cfg.Endpoint = unreachable
-	err = recv.Start(context.Background(), componenttest.NewNopHost())
+	err = recv.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context deadline exceeded")
-
-	require.NoError(t, recv.Shutdown(context.Background()))
 }

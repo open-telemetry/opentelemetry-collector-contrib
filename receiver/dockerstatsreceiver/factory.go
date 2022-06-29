@@ -50,17 +50,18 @@ func createDefaultConfig() config.Receiver {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateSettings,
 	config config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
+	dsr := newReceiver(params, dockerConfig)
 
-	dsr, err := NewReceiver(ctx, params, dockerConfig, consumer)
+	scrp, err := scraperhelper.NewScraper(typeStr, dsr.scrape, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return dsr, nil
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scrp))
 }
