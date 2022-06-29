@@ -36,7 +36,7 @@ The following settings can be optionally configured:
         - `zts_url`:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
-- `insecure`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+- `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
 - `retry_on_failure`
     - `enabled` (default = true)
@@ -62,6 +62,6 @@ exporters:
       tls:
         cert_file: cert.pem
         key_file: key.pem
-    insecure: false
+    tls_allow_insecure_connection: false
     tls_trust_certs_file_path: ca.pem
 ```
