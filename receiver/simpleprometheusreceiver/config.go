@@ -26,9 +26,8 @@ import (
 type Config struct {
 	config.ReceiverSettings       `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-
-	// httpConfig        `mapstructure:",squash"`
-	// confignet.TCPAddr `mapstructure:",squash"`
+	// Deprecated: [v0.55.0] Use confighttp.HTTPClientSettings instead.
+	httpConfig `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.

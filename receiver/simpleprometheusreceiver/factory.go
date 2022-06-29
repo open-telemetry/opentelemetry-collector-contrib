@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 )
 
@@ -44,7 +45,10 @@ func NewFactory() component.ReceiverFactory {
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: defaultEndpoint,
+		},
 		MetricsPath:        defaultMetricsPath,
 		CollectionInterval: defaultCollectionInterval,
 	}

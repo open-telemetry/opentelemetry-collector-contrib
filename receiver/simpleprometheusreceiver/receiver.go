@@ -24,6 +24,7 @@ import (
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"k8s.io/client-go/rest"
 
@@ -46,7 +47,7 @@ func new(params component.ReceiverCreateSettings, cfg *Config, consumer consumer
 func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.Host) error {
 	pFactory := prometheusreceiver.NewFactory()
 
-	pConfig, err := getPrometheusConfig(prw.config)
+	pConfig, err := getPrometheusConfigWrapper(prw.config, prw.params)
 	if err != nil {
 		return fmt.Errorf("failed to create prometheus receiver config: %w", err)
 	}
@@ -60,8 +61,30 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 	return prw.prometheusRecever.Start(ctx, host)
 }
 
+// Deprecated: [v0.55.0] Use getPrometheusConfig instead.
+func getPrometheusConfigWrapper(cfg *Config, params component.ReceiverCreateSettings) (*prometheusreceiver.Config, error) {
+	if cfg.TLSEnabled {
+		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
+		cfg.HTTPClientSettings.TLSSetting = configtls.TLSClientSetting{
+			TLSSetting: configtls.TLSSetting{
+				CAFile:   cfg.TLSConfig.CAFile,
+				CertFile: cfg.TLSConfig.CertFile,
+				KeyFile:  cfg.TLSConfig.KeyFile,
+			},
+			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
+		}
+	}
+	return getPrometheusConfig(cfg)
+}
+
 func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
-	var bearerToken string
+	var (
+		bearerToken string
+		scheme      = "http"
+		out         = &prometheusreceiver.Config{}
+		httpConfig  = configutil.HTTPClientConfig{}
+	)
+
 	if cfg.UseServiceAccount {
 		restConfig, err := rest.InClusterConfig()
 		if err != nil {
@@ -72,11 +95,6 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 			return nil, errors.New("bearer token was empty")
 		}
 	}
-
-	out := &prometheusreceiver.Config{}
-	httpConfig := configutil.HTTPClientConfig{}
-
-	scheme := "http"
 
 	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig()
 	if err != nil {
