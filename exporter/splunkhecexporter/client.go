@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
@@ -359,14 +358,17 @@ func (c *client) pushLogRecords(ctx context.Context, lds plog.ResourceLogsSlice,
 		// Truncating buffer at tracked length below capacity and sending.
 		state.buf.Truncate(state.bufLen)
 		if state.buf.Len() > 0 {
-			if err := send(ctx, state.buf, headers); err != nil {
+			if err = send(ctx, state.buf, headers); err != nil {
 				return permanentErrors, err
 			}
 		}
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		if _, err = state.tmpBuf.WriteTo(state.buf); err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
+		}
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -433,7 +435,10 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		if _, err := state.tmpBuf.WriteTo(state.buf); err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
+		}
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -491,14 +496,17 @@ func (c *client) pushTracesData(ctx context.Context, tds ptrace.ResourceSpansSli
 		// Truncating buffer at tracked length below capacity and sending.
 		state.buf.Truncate(state.bufLen)
 		if state.buf.Len() > 0 {
-			if err := send(ctx, state.buf); err != nil {
+			if err = send(ctx, state.buf); err != nil {
 				return permanentErrors, err
 			}
 		}
 		state.buf.Reset()
 
 		// Writing truncated bytes back to buffer.
-		state.tmpBuf.WriteTo(state.buf)
+		if _, err = state.tmpBuf.WriteTo(state.buf); err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(
+				fmt.Errorf("write truncated bytes back to buffer failed, error: %w", err)))
+		}
 
 		if state.buf.Len() > 0 {
 			// This means that the current record had overflown the buffer and was not sent
@@ -611,10 +619,12 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 	defer resp.Body.Close()
 
 	err = splunk.HandleHTTPCode(resp)
+	if err != nil {
+		return err
+	}
 
-	io.Copy(ioutil.Discard, resp.Body)
-
-	return err
+	_, errCopy := io.Copy(ioutil.Discard, resp.Body)
+	return multierr.Combine(err, errCopy)
 }
 
 // subLogs returns a subset of `ld` starting from `profilingBufFront` for profiling data

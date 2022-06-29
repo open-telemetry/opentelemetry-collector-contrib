@@ -22,7 +22,6 @@ import (
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -75,22 +74,10 @@ func getMetricsForNode(node *corev1.Node, nodeConditionTypesToReport, allocatabl
 			continue
 		}
 		val := utils.GetInt64TimeSeries(quantity.Value())
-
-		if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
+		if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
 			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
-			if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
-				val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
-				valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-			}
-		} else {
-			// metrics will be skipped if metric not present in node or value is not convertable to int64
-			valInt64, ok := quantity.AsInt64()
-			if !ok {
-				logger.Debug(fmt.Errorf("metric %s has value %v which is not convertable to int64",
-					v1NodeAllocatableTypeValue, node.GetName()).Error())
-				continue
-			}
-			val = utils.GetInt64TimeSeries(valInt64)
+			val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
+			valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 		}
 		metrics = append(metrics, &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{
