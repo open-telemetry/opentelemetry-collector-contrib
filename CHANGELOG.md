@@ -39,7 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add metric instrumentation for WSGI
   ([#1128](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1128))
 - `opentelemetry-instrumentation-requests` Restoring metrics in requests
-  ([#1110](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1110)
+  ([#1110](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1110))
+- Integrated sqlcommenter plugin into opentelemetry-instrumentation-django
+  ([#896](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/896))
 
 
 ## [1.12.0rc1-0.31b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.12.0rc1-0.31b0) - 2022-05-17

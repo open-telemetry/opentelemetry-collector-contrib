@@ -17,6 +17,68 @@ Instrument `django`_ to trace Django applications.
 
 .. _django: https://pypi.org/project/django/
 
+SQLCOMMENTER
+*****************************************
+You can optionally configure Django instrumentation to enable sqlcommenter which enriches
+the query with contextual information.
+
+Usage
+-----
+
+.. code:: python
+
+    from opentelemetry.instrumentation.django import DjangoInstrumentor
+
+    DjangoInstrumentor().instrument(is_sql_commentor_enabled=True)
+
+
+For example,
+::
+
+   Invoking Users().objects.all() will lead to sql query "select * from auth_users" but when SQLCommenter is enabled
+   the query will get appended with some configurable tags like "select * from auth_users /*metrics=value*/;"
+
+
+SQLCommenter Configurations
+***************************
+We can configure the tags to be appended to the sqlquery log by adding below variables to the settings.py
+
+SQLCOMMENTER_WITH_FRAMEWORK = True(Default) or False
+
+For example,
+::
+Enabling this flag will add django framework and it's version which is /*framework='django%3A2.2.3*/
+
+SQLCOMMENTER_WITH_CONTROLLER = True(Default) or False
+
+For example,
+::
+Enabling this flag will add controller name that handles the request /*controller='index'*/
+
+SQLCOMMENTER_WITH_ROUTE = True(Default) or False
+
+For example,
+::
+Enabling this flag will add url path that handles the request /*route='polls/'*/
+
+SQLCOMMENTER_WITH_APP_NAME = True(Default) or False
+
+For example,
+::
+Enabling this flag will add app name that handles the request /*app_name='polls'*/
+
+SQLCOMMENTER_WITH_OPENTELEMETRY = True(Default) or False
+
+For example,
+::
+Enabling this flag will add opentelemetry traceparent /*traceparent='00-fd720cffceba94bbf75940ff3caaf3cc-4fd1a2bdacf56388-01'*/
+
+SQLCOMMENTER_WITH_DB_DRIVER = True(Default) or False
+
+For example,
+::
+Enabling this flag will add name of the db driver /*db_driver='django.db.backends.postgresql'*/
+
 Usage
 -----
 
@@ -124,6 +186,7 @@ Example of the added span attribute,
 
 API
 ---
+
 """
 
 from logging import getLogger
@@ -136,7 +199,9 @@ from django.conf import settings
 from opentelemetry.instrumentation.django.environment_variables import (
     OTEL_PYTHON_DJANGO_INSTRUMENT,
 )
-from opentelemetry.instrumentation.django.middleware import _DjangoMiddleware
+from opentelemetry.instrumentation.django.middleware.otel_middleware import (
+    _DjangoMiddleware,
+)
 from opentelemetry.instrumentation.django.package import _instruments
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
@@ -165,6 +230,8 @@ class DjangoInstrumentor(BaseInstrumentor):
     _opentelemetry_middleware = ".".join(
         [_DjangoMiddleware.__module__, _DjangoMiddleware.__qualname__]
     )
+
+    _sql_commenter_middleware = "opentelemetry.instrumentation.django.middleware.sqlcommenter_middleware.SqlCommenter"
 
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
@@ -204,7 +271,13 @@ class DjangoInstrumentor(BaseInstrumentor):
         if isinstance(settings_middleware, tuple):
             settings_middleware = list(settings_middleware)
 
+        is_sql_commentor_enabled = kwargs.pop("is_sql_commentor_enabled", None)
+
+        if is_sql_commentor_enabled:
+            settings_middleware.insert(0, self._sql_commenter_middleware)
+
         settings_middleware.insert(0, self._opentelemetry_middleware)
+
         setattr(settings, _middleware_setting, settings_middleware)
 
     def _uninstrument(self, **kwargs):

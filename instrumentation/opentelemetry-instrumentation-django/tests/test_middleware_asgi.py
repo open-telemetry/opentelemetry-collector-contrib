@@ -104,11 +104,11 @@ class TestMiddlewareAsgi(SimpleTestCase, TestBase):
         )
         self.env_patch.start()
         self.exclude_patch = patch(
-            "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._excluded_urls",
+            "opentelemetry.instrumentation.django.middleware.otel_middleware._DjangoMiddleware._excluded_urls",
             get_excluded_urls("DJANGO"),
         )
         self.traced_patch = patch(
-            "opentelemetry.instrumentation.django.middleware._DjangoMiddleware._traced_request_attrs",
+            "opentelemetry.instrumentation.django.middleware.otel_middleware._DjangoMiddleware._traced_request_attrs",
             get_traced_request_attrs("DJANGO"),
         )
         self.exclude_patch.start()
