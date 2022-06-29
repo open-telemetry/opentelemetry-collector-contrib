@@ -49,6 +49,7 @@ func futureDefaultConfig() *Config {
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags:   false,
 			},
 			HistConfig: HistogramConfig{
 				Mode:         "distributions",

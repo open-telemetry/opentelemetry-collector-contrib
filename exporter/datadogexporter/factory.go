@@ -29,10 +29,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
@@ -44,27 +45,33 @@ const (
 type factory struct {
 	onceMetadata sync.Once
 
-	onceProvider sync.Once
-	hostProvider provider.HostnameProvider
-	providerErr  error
+	onceProvider   sync.Once
+	sourceProvider source.Provider
+	providerErr    error
+
+	registry *featuregate.Registry
 }
 
-func (f *factory) HostnameProvider(set component.TelemetrySettings, configHostname string) (provider.HostnameProvider, error) {
+func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.hostProvider, f.providerErr = metadata.GetHostnameProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = metadata.GetSourceProvider(set, configHostname)
 	})
-	return f.hostProvider, f.providerErr
+	return f.sourceProvider, f.providerErr
 }
 
-// NewFactory creates a Datadog exporter factory
-func NewFactory() component.ExporterFactory {
-	f := &factory{}
+func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFactory {
+	f := &factory{registry: registry}
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
 		component.WithMetricsExporter(f.createMetricsExporter),
 		component.WithTracesExporter(f.createTracesExporter),
 	)
+}
+
+// NewFactory creates a Datadog exporter factory
+func NewFactory() component.ExporterFactory {
+	return newFactoryWithRegistry(featuregate.GetRegistry())
 }
 
 func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
@@ -75,7 +82,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 
 // createDefaultConfig creates the default exporter configuration
 // TODO (#8396): Remove `os.Getenv` everywhere.
-func (*factory) createDefaultConfig() config.Exporter {
+func (f *factory) createDefaultConfig() config.Exporter {
 	env := os.Getenv("DD_ENV")
 	if env == "" {
 		env = "none"
@@ -94,6 +101,11 @@ func (*factory) createDefaultConfig() config.Exporter {
 	tracesEndpoint := os.Getenv("DD_APM_URL")
 	if tracesEndpoint == "" {
 		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
+	}
+
+	hostnameSource := ddconfig.HostnameSourceFirstResource
+	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
+		hostnameSource = ddconfig.HostnameSourceConfigOrSystem
 	}
 
 	return &ddconfig.Config{
@@ -125,6 +137,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 			ExporterConfig: ddconfig.MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags:   false,
 			},
 			HistConfig: ddconfig.HistogramConfig{
 				Mode:         "distributions",
@@ -147,7 +160,7 @@ func (*factory) createDefaultConfig() config.Exporter {
 
 		HostMetadata: ddconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: ddconfig.HostnameSourceFirstResource,
+			HostnameSource: hostnameSource,
 		},
 
 		SendMetadata:        true,
@@ -168,7 +181,7 @@ func (f *factory) createMetricsExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -232,7 +245,7 @@ func (f *factory) createTracesExporter(
 		return nil, err
 	}
 
-	hostProvider, err := f.HostnameProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}

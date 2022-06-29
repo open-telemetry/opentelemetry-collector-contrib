@@ -17,11 +17,18 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/service/featuregate"
 )
 
 func TestDeprecationSendMonotonic(t *testing.T) {
+	// Override 'exporter.datadog.hostname.preview' feature flag value to remove warning
+	featuregate.GetRegistry().Apply(map[string]bool{metadata.HostnamePreviewFeatureGate: true})
+	defer featuregate.GetRegistry().Apply(map[string]bool{metadata.HostnamePreviewFeatureGate: false})
+
 	tests := []struct {
 		name         string
 		cfgMap       *confmap.Conf

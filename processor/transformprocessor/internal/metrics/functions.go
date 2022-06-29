@@ -20,8 +20,10 @@ import (
 
 // registry is a map of names to functions for metrics pipelines
 var registry = map[string]interface{}{
-	"convert_sum_to_gauge": convertSumToGauge,
-	"convert_gauge_to_sum": convertGaugeToSum,
+	"convert_sum_to_gauge":             convertSumToGauge,
+	"convert_gauge_to_sum":             convertGaugeToSum,
+	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
+	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
 }
 
 func init() {

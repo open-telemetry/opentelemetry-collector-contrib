@@ -28,6 +28,8 @@ exporters:
 
     host_metadata:
       tags: [example:tag]
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -44,6 +46,9 @@ exporters:
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    host_metadata:
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
   datadog/hostmetadata:
     api:

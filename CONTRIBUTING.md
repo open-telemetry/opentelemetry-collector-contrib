@@ -66,7 +66,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
@@ -76,8 +75,21 @@ The following GitHub users are the currently available sponsors, either by being
 * [@bogdandrutu](https://github.com/bogdandrutu)
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
+* [@djaglowski](https://github.com/djaglowski)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
+
+## Adding metrics to existing receivers
+Following these steps for contributing additional metrics to existing receivers.
+ - Read instructions [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md#fork) on how to 
+   fork, build and create PRs. The only difference is to change repository name from `opentelemetry-collector` to `opentelemetry-collector-contrib`
+ - Edit `metadata.yaml` of your metrics receiver to add new metrics, e.g.: `redisreceiver/metadata.yaml`
+ - To generate new metrics on top of this updated YAML file.
+   - Run `cd receiver/redisreceiver`
+   - Run `go generate ./...`
+- Review the changed files and merge the changes into your forked repo.
+- Create PR from Github web console following the instructions above.
+
 ## General Recommendations
 Below are some recommendations that apply to typical components. These are not rigid rules and there are exceptions but
 in general try to follow them.
