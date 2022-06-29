@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package zookeeperreceiver
 
 import (
@@ -301,7 +300,9 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename str
 		out, err := ioutil.ReadFile(filepath.Join("testdata", filename))
 		require.NoError(t, err)
 
-		conn.Write(out)
+		_, err = conn.Write(out)
+		require.NoError(t, err)
+
 		conn.Close()
 		return
 	}

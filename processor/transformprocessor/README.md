@@ -27,6 +27,8 @@ Supported functions:
 
 - `TraceID(bytes)` - `bytes` is a byte slice of exactly 16 bytes. The function returns a TraceID from `bytes`. e.g., `TraceID(0x00000000000000000000000000000000)`
 
+- `IsMatch(target, pattern)` - `target` is either a path expression to a telemetry field to retrieve or a literal string.  `pattern` is a regexp pattern. The function matches the target against the pattern, returning true if the match is successful and false otherwise.  If target is nil or not a string false is always returned. 
+
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
