@@ -29,7 +29,6 @@ exporters:
       insecure: false
     endpoints: [http://localhost:9200]
     index: my_log_index
-    #logs_index: my_log_index
     timeout: 2m
     cloudid: TRNMxjXlNJEt
     headers:
