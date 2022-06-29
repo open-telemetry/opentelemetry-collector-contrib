@@ -17,11 +17,11 @@ exporters:
     # database for the logs
     db_name: "oteldb"
     # raw metric table name
-    metrics_table_name: "RawMetrics"
+    metrics_table_name: "OTELMetrics"
     # raw log table name
-    logs_table_name: "RawLogs"
+    logs_table_name: "OTELLogs"
      # raw traces table
-    traces_table_name: "RawTraces"
+    traces_table_name: "OTELTraces"
     # type of ingestion managed or queued
     ingestion_type : "managed"
   azuredataexplorer/2:
@@ -36,11 +36,11 @@ exporters:
     # database for the logs
     db_name: "oteldb"
     # raw metric table name
-    metrics_table_name: "RawMetrics"
+    metrics_table_name: "OTELMetrics"
     # raw log table name
-    logs_table_name: "RawLogs"
+    logs_table_name: "OTELLogs"
      # raw traces table
-    traces_table_name: "RawTraces"
+    traces_table_name: "OTELTraces"
     # type of ingestion managed or queued
     ingestion_type : ""
 service:

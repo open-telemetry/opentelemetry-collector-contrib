@@ -44,7 +44,7 @@ type AdxMetric struct {
 }
 
 /*
-	Convert the pMetric to the type ADXMetric , this matches the scheme in the RawMetric table in the database
+	Convert the pMetric to the type ADXMetric , this matches the scheme in the OTELMetric table in the database
 */
 
 func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[string]interface{}, logger *zap.Logger) []*AdxMetric {

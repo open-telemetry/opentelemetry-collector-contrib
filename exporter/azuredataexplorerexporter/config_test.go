@@ -46,15 +46,15 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ClusterName:    "https://CLUSTER.kusto.windows.net",
-			ClientId:       "f80da32c-108c-415c-a19e-643f461a677a",
-			ClientSecret:   "17cc3f47-e95e-4045-af6c-ec2eea163cc6",
-			TenantId:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
-			Database:       "oteldb",
-			RawMetricTable: "RawMetrics",
-			RawLogTable:    "RawLogs",
-			RawTraceTable:  "RawTraces",
-			IngestionType:  managedingesttype,
+			ClusterName:     "https://CLUSTER.kusto.windows.net",
+			ClientId:        "f80da32c-108c-415c-a19e-643f461a677a",
+			ClientSecret:    "17cc3f47-e95e-4045-af6c-ec2eea163cc6",
+			TenantId:        "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
+			Database:        "oteldb",
+			OTELMetricTable: "OTELMetrics",
+			OTELLogTable:    "OTELLogs",
+			OTELTraceTable:  "OTELTraces",
+			IngestionType:   managedingesttype,
 		},
 		exporter)
 

@@ -29,9 +29,9 @@ const (
 	managedingesttype  = "managed"
 	queuedingesttest   = "queued"
 	unknown            = "unknown"
-	defaultmetrictable = "Rawmetrics"
-	defaultlogtable    = "RawLogs"
-	defaulttracetable  = "RawTraces"
+	defaultmetrictable = "OTELMetrics"
+	defaultlogtable    = "OTELLogs"
+	defaulttracetable  = "OTELTraces"
 	metricstype        = 1
 	logstype           = 2
 	tracestype         = 3
@@ -51,15 +51,15 @@ func NewFactory() component.ExporterFactory {
 /*Create default configurations*/
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ClusterName:    "https://CLUSTER.kusto.windows.net",
-		ClientId:       unknown,
-		ClientSecret:   unknown,
-		TenantId:       unknown,
-		Database:       unknown,
-		RawMetricTable: defaultmetrictable,
-		RawLogTable:    defaultlogtable,
-		RawTraceTable:  defaulttracetable,
-		IngestionType:  queuedingesttest,
+		ClusterName:     "https://CLUSTER.kusto.windows.net",
+		ClientId:        unknown,
+		ClientSecret:    unknown,
+		TenantId:        unknown,
+		Database:        unknown,
+		OTELMetricTable: defaultmetrictable,
+		OTELLogTable:    defaultlogtable,
+		OTELTraceTable:  defaulttracetable,
+		IngestionType:   queuedingesttest,
 	}
 }
 
@@ -80,7 +80,7 @@ func createMetricsExporter(
 	}
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	amp, err := newExporter(adxCfg, set.Logger, metricstype)
+	adp, err := newExporter(adxCfg, set.Logger, metricstype)
 
 	if err != nil {
 		return nil, err
@@ -89,9 +89,9 @@ func createMetricsExporter(
 	exporter, err := exporterhelper.NewMetricsExporter(
 		adxCfg,
 		set,
-		amp.metricsDataPusher,
+		adp.metricsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithShutdown(amp.Close))
+		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
 		return nil, err
@@ -113,7 +113,7 @@ func createTracesExporter(
 	}
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	amp, err := newExporter(adxCfg, set.Logger, tracestype)
+	adp, err := newExporter(adxCfg, set.Logger, tracestype)
 
 	if err != nil {
 		return nil, err
@@ -122,9 +122,9 @@ func createTracesExporter(
 	exporter, err := exporterhelper.NewTracesExporter(
 		adxCfg,
 		set,
-		amp.tracesDataPusher,
+		adp.tracesDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithShutdown(amp.Close))
+		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func createLogsExporter(
 	}
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	amp, err := newExporter(adxCfg, set.Logger, logstype)
+	adp, err := newExporter(adxCfg, set.Logger, logstype)
 
 	if err != nil {
 		return nil, err
@@ -155,9 +155,9 @@ func createLogsExporter(
 	exporter, err := exporterhelper.NewLogsExporter(
 		adxCfg,
 		set,
-		amp.logsDataPusher,
+		adp.logsDataPusher,
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithShutdown(amp.Close))
+		exporterhelper.WithShutdown(adp.Close))
 
 	if err != nil {
 		return nil, err
