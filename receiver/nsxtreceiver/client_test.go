@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 import (
 	"context"
@@ -275,13 +274,14 @@ func mockServer(t *testing.T) *httptest.Server {
 
 	nsxMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		authUser, authPass, ok := req.BasicAuth()
-		if !ok {
+		switch {
+		case !ok:
 			rw.WriteHeader(401)
 			return
-		} else if authUser == user500 {
+		case authUser == user500:
 			rw.WriteHeader(500)
 			return
-		} else if authUser != goodUser || authPass != goodPassword {
+		case authUser != goodUser || authPass != goodPassword:
 			rw.WriteHeader(403)
 			return
 		}

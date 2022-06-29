@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 
 import (
@@ -39,7 +38,9 @@ func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
 		return err
 	}
 	var jsonVal map[string]interface{}
-	json.Unmarshal(fileBytes, &jsonVal)
+	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+		return err
+	}
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
 	if err != nil {
 		return err
