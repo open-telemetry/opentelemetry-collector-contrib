@@ -18,6 +18,8 @@ exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     endpoint: "tracing-ingress.coralogix.com:9443"
+    metrics:
+      endpoint: "otel-metrics.coralogix.com"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
