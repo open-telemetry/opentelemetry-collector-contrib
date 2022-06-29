@@ -1,5 +1,11 @@
 # Basic Authenticator
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Supported pipeline types | trace, metrics, logs |
+| Distributions            | [contrib]            |
+
 This extension implements both `configauth.ServerAuthenticator` and `configauth.ClientAuthenticator` to authenticate clients and servers using Basic Authentication. The authenticator type has to be set to `basicauth`.
 
 When used as ServerAuthenticator, if the authentication is successful `client.Info.Auth` will expose the following attributes:
@@ -58,3 +64,6 @@ service:
       processors: []
       exporters: [otlp]
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

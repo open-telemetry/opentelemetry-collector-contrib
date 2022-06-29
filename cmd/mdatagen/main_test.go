@@ -16,7 +16,6 @@ package main
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -82,16 +81,12 @@ func Test_runContents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpdir, err := ioutil.TempDir("", "metadata-test-*")
-			require.NoError(t, err)
-			t.Cleanup(func() {
-				require.NoError(t, os.RemoveAll(tmpdir))
-			})
+			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
 			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
-			err = run(metadataFile, tt.args.useExpGen)
+			err := run(metadataFile, tt.args.useExpGen)
 
 			if tt.wantErr != "" {
 				require.Regexp(t, tt.wantErr, err)

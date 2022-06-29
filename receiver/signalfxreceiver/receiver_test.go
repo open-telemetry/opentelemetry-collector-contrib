@@ -99,14 +99,14 @@ func Test_signalfxeceiver_New(t *testing.T) {
 }
 
 func Test_signalfxeceiver_EndToEnd(t *testing.T) {
-	port := testutil.GetAvailablePort(t)
-	addr := fmt.Sprintf("localhost:%d", port)
+	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
 	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
 
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
 	defer r.Shutdown(context.Background())
@@ -171,7 +171,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Eventually(t, func() bool {
-		conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", port))
+		conn, err := net.Dial("tcp", addr)
 		if err == nil && conn != nil {
 			conn.Close()
 			return true

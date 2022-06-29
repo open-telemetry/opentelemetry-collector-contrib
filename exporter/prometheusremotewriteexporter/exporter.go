@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 )
 
@@ -148,23 +149,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
 		}
-
-		// Sanitize label keys to meet Prometheus Requirements
-		// if sanitizeLabel is enabled, invoke sanitizeLabels else sanitize
-		if len(key) > 2 && key[:2] == "__" {
-			if cfg.sanitizeLabel {
-				key = "__" + sanitizeLabels(key[2:])
-			} else {
-				key = "__" + sanitize(key[2:])
-			}
-		} else {
-			if cfg.sanitizeLabel {
-				key = sanitizeLabels(key)
-			} else {
-				key = sanitize(key)
-			}
-		}
-		sanitizedLabels[key] = value
+		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}
 
 	return sanitizedLabels, nil
@@ -268,7 +253,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return nil
 	}
 	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
-	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %v: %s", resp.Status, err, body)
+	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr
 	}

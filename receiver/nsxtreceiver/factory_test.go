@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 )
 
 func TestType(t *testing.T) {
@@ -60,7 +58,7 @@ func TestCreateMetricsReceiverNotNSX(t *testing.T) {
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
 		componenttest.NewNopReceiverCreateSettings(),
-		&syslogreceiver.SysLogConfig{},
+		componenttest.NewNopReceiverFactory().CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.Error(t, err)

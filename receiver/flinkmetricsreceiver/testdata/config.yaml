@@ -1,0 +1,17 @@
+receivers:
+  flinkmetrics:
+    endpoint: http://localhost:8081
+    collection_interval: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [flinkmetrics]
+      processors: [nop]
+      exporters: [nop]

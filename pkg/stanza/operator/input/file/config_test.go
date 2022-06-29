@@ -15,13 +15,14 @@
 package file
 
 import (
+	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
@@ -44,12 +45,12 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "id_custom",
 			ExpectErr: false,
-			Expect:    NewInputConfig("test_id"),
+			Expect:    NewConfig("test_id"),
 		},
 		{
 			Name:      "include_one",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				return cfg
@@ -58,7 +59,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_multi",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log", "two.log", "three.log")
 				return cfg
@@ -67,7 +68,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_glob",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				return cfg
@@ -76,7 +77,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_glob_double_asterisk",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "**.log")
 				return cfg
@@ -85,7 +86,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_glob_double_asterisk_nested",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "directory/**/*.log")
 				return cfg
@@ -94,7 +95,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_glob_double_asterisk_prefix",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "**/directory/**/*.log")
 				return cfg
@@ -103,7 +104,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_inline",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "a.log", "b.log")
 				return cfg
@@ -117,7 +118,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_one",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "one.log")
@@ -127,7 +128,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_multi",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "one.log", "two.log", "three.log")
@@ -137,7 +138,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_glob",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "not*.log")
@@ -147,7 +148,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_glob_double_asterisk",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "not**.log")
@@ -157,7 +158,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_glob_double_asterisk_nested",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "directory/**/not*.log")
@@ -167,7 +168,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_glob_double_asterisk_prefix",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "**/directory/**/not*.log")
@@ -177,7 +178,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "exclude_inline",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "*.log")
 				cfg.Exclude = append(cfg.Exclude, "a.log", "b.log")
@@ -192,7 +193,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "poll_interval_no_units",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
@@ -201,7 +202,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "poll_interval_1s",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
@@ -210,7 +211,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "poll_interval_1ms",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.PollInterval = helper.NewDuration(time.Millisecond)
 				return cfg
@@ -219,7 +220,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "poll_interval_1000ms",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.PollInterval = helper.NewDuration(time.Second)
 				return cfg
@@ -228,7 +229,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_no_units",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
@@ -237,7 +238,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_1kb_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
@@ -246,7 +247,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_1KB",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1000)
 				return cfg
@@ -255,7 +256,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_1kib_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1024)
 				return cfg
@@ -264,7 +265,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_1KiB",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1024)
 				return cfg
@@ -273,7 +274,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "fingerprint_size_float",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.FingerprintSize = helper.ByteSize(1100)
 				return cfg
@@ -282,7 +283,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_name_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
@@ -292,7 +293,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_name_upper",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
@@ -302,7 +303,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_name_on",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
@@ -312,7 +313,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_name_yes",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFileName = true
@@ -322,7 +323,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
@@ -332,7 +333,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_upper",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
@@ -342,7 +343,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_on",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
@@ -352,7 +353,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_yes",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = true
@@ -362,7 +363,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_off",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = false
@@ -372,7 +373,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "include_file_path_no",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Include = append(cfg.Include, "one.log")
 				cfg.IncludeFilePath = false
@@ -387,7 +388,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "multiline_line_start_string",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineStartPattern = "Start"
@@ -398,7 +399,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "multiline_line_start_special",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineStartPattern = "%"
@@ -409,7 +410,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "multiline_line_end_string",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineEndPattern = "Start"
@@ -420,7 +421,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "multiline_line_end_special",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				newSplit := helper.NewSplitterConfig()
 				newSplit.Multiline.LineEndPattern = "%"
@@ -436,7 +437,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "start_at_string",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.StartAt = "beginning"
 				return cfg
@@ -445,7 +446,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "max_concurrent_large",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.MaxConcurrentFiles = 9223372036854775807
 				return cfg
@@ -454,7 +455,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "max_log_size_mib_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
@@ -463,7 +464,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "max_log_size_mib_upper",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
@@ -472,7 +473,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "max_log_size_mb_upper",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
@@ -481,7 +482,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "max_log_size_mb_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.MaxLogSize = helper.ByteSize(1048576)
 				return cfg
@@ -490,18 +491,18 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "encoding_lower",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
 		},
 		{
 			Name:      "encoding_upper",
 			ExpectErr: false,
-			Expect: func() *InputConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
 		},
@@ -518,8 +519,8 @@ func TestBuild(t *testing.T) {
 	t.Parallel()
 	fakeOutput := testutil.NewMockOperator("fake")
 
-	basicConfig := func() *InputConfig {
-		cfg := NewInputConfig("testfile")
+	basicConfig := func() *Config {
+		cfg := NewConfig("testfile")
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Include = []string{"/var/log/testpath.*"}
 		cfg.Exclude = []string{"/var/log/testpath.ex*"}
@@ -529,25 +530,89 @@ func TestBuild(t *testing.T) {
 
 	cases := []struct {
 		name             string
-		modifyBaseConfig func(*InputConfig)
+		modifyBaseConfig func(*Config)
 		errorRequirement require.ErrorAssertionFunc
-		validate         func(*testing.T, *InputOperator)
+		validate         func(*testing.T, *Input)
 	}{
 		{
-			"Basic",
-			func(f *InputConfig) {},
+			"Default",
+			func(f *Config) {},
 			require.NoError,
-			func(t *testing.T, f *InputOperator) {
+			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
-				require.Equal(t, f.FilePathField, entry.NewNilField())
-				require.Equal(t, f.FileNameField, entry.NewAttributeField("log.file.name"))
-				require.Equal(t, f.PollInterval, 10*time.Millisecond)
+				expectOptions := []preEmitOption{setFileName}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFilePath",
+			func(f *Config) {
+				f.IncludeFilePath = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePath}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFileNameResolved",
+			func(f *Config) {
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFileNameResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeFilePathResolved",
+			func(f *Config) {
+				f.IncludeFilePathResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeResolvedAttrs",
+			func(f *Config) {
+				f.IncludeFileName = false
+				f.IncludeFilePath = false
+				f.IncludeFilePathResolved = true
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileNameResolved, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
+			},
+		},
+		{
+			"IncludeAllFileAttrs",
+			func(f *Config) {
+				f.IncludeFileName = true
+				f.IncludeFilePath = true
+				f.IncludeFilePathResolved = true
+				f.IncludeFileNameResolved = true
+			},
+			require.NoError,
+			func(t *testing.T, f *Input) {
+				require.Equal(t, f.OutputOperators[0], fakeOutput)
+				expectOptions := []preEmitOption{setFileName, setFilePath, setFileNameResolved, setFilePathResolved}
+				requireSamePreEmitOptions(t, expectOptions, f.preEmitOptions)
 			},
 		},
 		{
 			"BadIncludeGlob",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Include = []string{"["}
 			},
 			require.Error,
@@ -555,7 +620,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"BadExcludeGlob",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Include = []string{"["}
 			},
 			require.Error,
@@ -563,7 +628,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"MultilineConfiguredStartAndEndPatterns",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern:   "Exists",
@@ -575,37 +640,37 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"MultilineConfiguredStartPattern",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: "START.*",
 				}
 			},
 			require.NoError,
-			func(t *testing.T, f *InputOperator) {},
+			func(t *testing.T, f *Input) {},
 		},
 		{
 			"MultilineConfiguredEndPattern",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern: "END.*",
 				}
 			},
 			require.NoError,
-			func(t *testing.T, f *InputOperator) {},
+			func(t *testing.T, f *Input) {},
 		},
 		{
 			"InvalidEncoding",
-			func(f *InputConfig) {
-				f.Encoding = helper.EncodingConfig{Encoding: "UTF-3233"}
+			func(f *Config) {
+				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"LineStartAndEnd",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: ".*",
@@ -617,16 +682,16 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"NoLineStartOrEnd",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{}
 			},
 			require.NoError,
-			func(t *testing.T, f *InputOperator) {},
+			func(t *testing.T, f *Input) {},
 		},
 		{
 			"InvalidLineStartRegex",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineStartPattern: "(",
@@ -637,7 +702,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"InvalidLineEndRegex",
-			func(f *InputConfig) {
+			func(f *Config) {
 				f.Splitter = helper.NewSplitterConfig()
 				f.Splitter.Multiline = helper.MultilineConfig{
 					LineEndPattern: "(",
@@ -664,18 +729,29 @@ func TestBuild(t *testing.T) {
 			err = op.SetOutputs([]operator.Operator{fakeOutput})
 			require.NoError(t, err)
 
-			fileInput := op.(*InputOperator)
+			fileInput := op.(*Input)
 			tc.validate(t, fileInput)
 		})
 	}
 }
 
-func defaultCfg() *InputConfig {
-	return NewInputConfig("file_input")
+func requireSamePreEmitOptions(t *testing.T, expect, actual []preEmitOption) {
+	// Comparing functions is not directly possible
+	require.Equal(t, len(expect), len(actual))
+	for i := range expect {
+		// Credit https://github.com/stretchr/testify/issues/182#issuecomment-495359313
+		expectFuncName := runtime.FuncForPC(reflect.ValueOf(expect[i]).Pointer()).Name()
+		actualFuncName := runtime.FuncForPC(reflect.ValueOf(actual[i]).Pointer()).Name()
+		require.Equal(t, expectFuncName, actualFuncName)
+	}
 }
 
-func NewTestInputConfig() *InputConfig {
-	cfg := NewInputConfig("config_test")
+func defaultCfg() *Config {
+	return NewConfig("file_input")
+}
+
+func NewTestConfig() *Config {
+	cfg := NewConfig("config_test")
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
 	cfg.Splitter = helper.NewSplitterConfig()
@@ -684,14 +760,14 @@ func NewTestInputConfig() *InputConfig {
 		LineEndPattern:   "end",
 	}
 	cfg.FingerprintSize = 1024
-	cfg.Encoding = helper.EncodingConfig{Encoding: "utf16"}
+	cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf16"}
 	return cfg
 }
 
 func TestMapStructureDecodeConfigWithHook(t *testing.T) {
-	expect := NewTestInputConfig()
+	expect := NewTestConfig()
 	input := map[string]interface{}{
-		// InputConfig
+		// Config
 		"id":            "config_test",
 		"type":          "file_input",
 		"attributes":    map[string]interface{}{},
@@ -713,7 +789,7 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 		"encoding":             "utf16",
 	}
 
-	var actual InputConfig
+	var actual Config
 	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: helper.JSONUnmarshalerHook()}
 	ms, err := mapstructure.NewDecoder(dc)
 	require.NoError(t, err)
@@ -723,9 +799,9 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 }
 
 func TestMapStructureDecodeConfig(t *testing.T) {
-	expect := NewTestInputConfig()
+	expect := NewTestConfig()
 	input := map[string]interface{}{
-		// InputConfig
+		// Config
 		"id":         "config_test",
 		"type":       "file_input",
 		"attributes": map[string]interface{}{},
@@ -751,7 +827,7 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 		},
 	}
 
-	var actual InputConfig
+	var actual Config
 	err := mapstructure.Decode(input, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)

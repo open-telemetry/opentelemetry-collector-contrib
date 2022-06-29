@@ -16,6 +16,7 @@ package skywalkingexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"sync"
@@ -93,7 +94,7 @@ func TestSwExporter(t *testing.T) {
 	assert.Equal(t, 200, len(logs))
 	assert.Equal(t, 10, len(oce.logsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w2 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
@@ -164,7 +165,7 @@ func TestSwExporter(t *testing.T) {
 	assert.Equal(t, 200, len(metrics))
 	assert.Equal(t, 10, len(oce.metricsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w3 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
@@ -224,7 +225,7 @@ type mockLogHandler struct {
 func (h *mockLogHandler) Collect(stream logpb.LogReportService_CollectServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {
@@ -241,7 +242,7 @@ type mockMetricHandler struct {
 func (h *mockMetricHandler) CollectBatch(stream metricpb.MeterReportService_CollectBatchServer) error {
 	for {
 		r, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return stream.SendAndClose(&v3.Commands{})
 		}
 		if err == nil {

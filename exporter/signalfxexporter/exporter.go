@@ -86,14 +86,14 @@ func newSignalFxExporter(
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
+			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
 
 	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric converter: %v", err)
+		return nil, fmt.Errorf("failed to create metric converter: %w", err)
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -161,7 +161,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
+			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)

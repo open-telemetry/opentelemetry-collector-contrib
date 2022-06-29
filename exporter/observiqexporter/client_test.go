@@ -139,7 +139,7 @@ func TestClientSendLogs(t *testing.T) {
 		responseStatus int
 		respBody       string
 		timeoutTimer   bool // Timeout the last set timer created through timeAfterFunc()
-		//Outputs
+		// Outputs
 		verifyRequest    requestVerificationFunc // Function is used to verify the request submitted to the client is valid.
 		shouldError      bool
 		errorIsPermanant bool

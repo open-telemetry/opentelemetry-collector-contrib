@@ -19,7 +19,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"runtime"
 	"strconv"
 	"testing"
 	"time"
@@ -94,9 +93,6 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 }
 
 func Test_statsdreceiver_EndToEnd(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10151")
-	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	host, portStr, err := net.SplitHostPort(addr)
 	require.NoError(t, err)

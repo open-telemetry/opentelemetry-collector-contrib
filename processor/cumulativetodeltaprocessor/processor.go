@@ -118,8 +118,8 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-	switch dps := in.(type) {
-	case pmetric.NumberDataPointSlice:
+
+	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()

@@ -35,7 +35,7 @@ As a result, the following parameters are also required under `tls:`:
 The following settings can be optionally configured:
 
 - `external_labels`: map of labels names and values to be attached to each metric data point
-- `headers`: additional headers attached to each HTTP request. 
+- `headers`: additional headers attached to each HTTP request.
   - *Note the following headers cannot be changed: `Content-Encoding`, `Content-Type`, `X-Prometheus-Remote-Write-Version`, and `User-Agent`.*
 - `namespace`: prefix attached to each exported metric name.
 - `remote_write_queue`: fine tuning for queueing and sending of the outgoing remote writes.
@@ -63,7 +63,7 @@ exporters:
     endpoint: "https://my-cortex:7900/api/v1/push"
     external_labels:
       label_name1: label_value1
-      label_name2: label_value2      
+      label_name2: label_value2
 ```
 
 ## Advanced Configuration
@@ -73,3 +73,7 @@ Several helper files are leveraged to provide additional capabilities automatica
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
+
+## Metric names and labels normalization
+
+OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
