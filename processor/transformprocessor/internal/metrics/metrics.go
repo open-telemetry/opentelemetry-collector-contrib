@@ -27,6 +27,7 @@ import (
 type metricTransformContext struct {
 	dataPoint interface{}
 	metric    pmetric.Metric
+	metrics   pmetric.MetricSlice
 	il        pcommon.InstrumentationScope
 	resource  pcommon.Resource
 }
@@ -45,6 +46,10 @@ func (ctx metricTransformContext) GetResource() pcommon.Resource {
 
 func (ctx metricTransformContext) GetMetric() pmetric.Metric {
 	return ctx.metric
+}
+
+func (ctx metricTransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.metrics
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
@@ -911,7 +916,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertMBytes(mapKey, v)
+		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -939,7 +944,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetMBytesVal(b)
+			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 		attrs.Upsert(mapKey, arr)
 	default:

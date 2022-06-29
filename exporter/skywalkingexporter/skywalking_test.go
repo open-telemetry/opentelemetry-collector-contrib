@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package skywalkingexporter
 
 import (
@@ -95,7 +94,7 @@ func TestSwExporter(t *testing.T) {
 	assert.Equal(t, 200, len(logs))
 	assert.Equal(t, 10, len(oce.logsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w2 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
@@ -166,7 +165,7 @@ func TestSwExporter(t *testing.T) {
 	assert.Equal(t, 200, len(metrics))
 	assert.Equal(t, 10, len(oce.metricsClients))
 
-	//when grpc server stops
+	// when grpc server stops
 	server.Stop()
 	w3 := &sync.WaitGroup{}
 	for i = 0; i < 200; i++ {
