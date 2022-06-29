@@ -24,6 +24,7 @@
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
 - `filterprocessor`: Add ability to filter `Spans` (#6341)
 - `tracegen`: support add additional resource attributes. (#11145)
+- `internal/scrapertest` Add sortation functions for scrapertest (#10837)
 
 ### 🧰 Bug fixes 🧰
 
