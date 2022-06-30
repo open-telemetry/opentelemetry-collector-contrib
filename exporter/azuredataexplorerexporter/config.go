@@ -33,9 +33,9 @@ type Config struct {
 	OTELMetricTable         string `mapstructure:"metrics_table_name"`
 	OTELLogTable            string `mapstructure:"logs_table_name"`
 	OTELTraceTable          string `mapstructure:"traces_table_name"`
-	OTELMetricTableMapping  string `mapstructure:"metrics_table_name_mapping"`
-	OTELLogTableMapping     string `mapstructure:"logs_table_name_mapping"`
-	OTELTraceTableMapping   string `mapstructure:"traces_table_name_mapping"`
+	OTELMetricTableMapping  string `mapstructure:"metrics_table_json_mapping"`
+	OTELLogTableMapping     string `mapstructure:"logs_table_json_mapping"`
+	OTELTraceTableMapping   string `mapstructure:"traces_table_json_mapping"`
 	IngestionType           string `mapstructure:"ingestion_type"`
 }
 

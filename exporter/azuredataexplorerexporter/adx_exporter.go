@@ -16,11 +16,11 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
-	"io"
+	"errors"
 	"strings"
 
 	"github.com/Azure/azure-kusto-go/kusto"
-	"github.com/Azure/azure-kusto-go/kusto/data/errors"
+	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	jsoniter "github.com/json-iterator/go"
@@ -34,14 +34,9 @@ import (
 // adxDataProducer uses the ADX client to perform ingestion
 type adxDataProducer struct {
 	client        *kusto.Client       // client for logs , traces and metrics
-	ingestor      localIngestor       // ingestion for  logs, traces and metrics
+	ingestor      ingest.Ingestor     // ingestion for  logs, traces and metrics
 	ingestoptions []ingest.FileOption // Options for the ingestion
 	logger        *zap.Logger         // Loggers for tracing the flow
-}
-
-type localIngestor interface {
-	FromReader(ctx context.Context, reader io.Reader, options ...ingest.FileOption) (*ingest.Result, error)
-	Close() error
 }
 
 const nextline = "\n"
@@ -158,7 +153,7 @@ func (adp *adxDataProducer) Close(context.Context) error {
 	if err == nil {
 		err = err2
 	} else {
-		err = errors.GetCombinedError(err, err2)
+		err = kustoerrors.GetCombinedError(err, err2)
 	}
 	if err != nil {
 		adp.logger.Warn("Error closing connections", zap.Error(err))
@@ -172,14 +167,17 @@ func (adp *adxDataProducer) Close(context.Context) error {
 Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
 */
 func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*adxDataProducer, error) {
-	tablename := getTableName(config, telemetrydatatype)
+	tablename, err := getTableName(config, telemetrydatatype)
+	if err != nil {
+		return nil, err
+	}
 	metricclient, err := buildAdxClient(config)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var ingestor localIngestor
+	var ingestor ingest.Ingestor
 
 	var ingestoptions []ingest.FileOption
 	ingestoptions = append(ingestoptions, ingest.FileFormat(ingest.JSON))
@@ -268,14 +266,14 @@ func getScopeMap(sc pcommon.InstrumentationScope) map[string]interface{} {
 	return scopeMap
 }
 
-func getTableName(config *Config, telemetrydatatype int) string {
+func getTableName(config *Config, telemetrydatatype int) (string, error) {
 	switch telemetrydatatype {
 	case metricstype:
-		return config.OTELMetricTable
+		return config.OTELMetricTable, nil
 	case logstype:
-		return config.OTELLogTable
+		return config.OTELLogTable, nil
 	case tracestype:
-		return config.OTELTraceTable
+		return config.OTELTraceTable, nil
 	}
-	return "unknown"
+	return "", errors.New("invalid telemetry datatype")
 }
