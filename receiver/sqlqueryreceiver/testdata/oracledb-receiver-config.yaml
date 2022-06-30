@@ -10,7 +10,7 @@ receivers:
     datasource: "oracle://otel:password@localhost:51521/XE"
     driver: oracle
     queries:
-      # Note: The table name may need to be preceeded by the name of the user who created the table.
+      # Note: The table name may need to be preceded by the name of the user who created the table.
       # If the table is created by an initialization script within a docker container, it would be referred
       # to as "sys.movie", as the sys user runs initialization scripts. Permission would need to be granted
       # to the "otel" user to access or modify the table in that case.
