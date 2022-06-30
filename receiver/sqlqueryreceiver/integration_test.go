@@ -171,7 +171,10 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 
 	for _, metric := range metricsByName["genre.count"] {
 		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get("genre")
+		genre, exists := pt.Attributes().Get("genre")
+		if !exists {
+			genre, _ = pt.Attributes().Get("GENRE")
+		}
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
@@ -185,7 +188,10 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 
 	for _, metric := range metricsByName["genre.imdb"] {
 		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get("genre")
+		genre, exists := pt.Attributes().Get("genre")
+		if !exists {
+			genre, _ = pt.Attributes().Get("GENRE")
+		}
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
@@ -230,4 +236,82 @@ func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) boo
 
 func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
 	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
+}
+
+// This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
+// test the receiver itself.
+func TestOracleDBIntegration(t *testing.T) {
+	externalPort := "51521"
+	internalPort := "1521"
+
+	// The Oracle DB container takes close to 10 minutes on a local machine to do the default setup, so the best way to
+	// account for startup time is to wait for the container to be healthy before continuing test.
+	waitStrategy := wait.NewHealthStrategy().WithStartupTimeout(15 * time.Minute)
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.oracledb",
+		},
+		ExposedPorts: []string{externalPort + ":" + internalPort},
+		WaitingFor:   waitStrategy,
+	}
+	ctx := context.Background()
+
+	container, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		},
+	)
+	require.NotNil(t, container)
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.Driver = "oracle"
+	config.DataSource = "oracle://otel:password@localhost:51521/XE"
+	config.Queries = []Query{
+		{
+			SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
+			Metrics: []MetricCfg{
+				{
+					MetricName:       "genre.count",
+					ValueColumn:      "COUNT",
+					AttributeColumns: []string{"GENRE"},
+					ValueType:        MetricValueTypeInt,
+					DataType:         MetricDataTypeGauge,
+				},
+				{
+					MetricName:       "genre.imdb",
+					ValueColumn:      "AVG",
+					AttributeColumns: []string{"GENRE"},
+					ValueType:        MetricValueTypeDouble,
+					DataType:         MetricDataTypeGauge,
+				},
+			},
+		},
+	}
+	consumer := &consumertest.MetricsSink{}
+	receiver, err := factory.CreateMetricsReceiver(
+		ctx,
+		componenttest.NewNopReceiverCreateSettings(),
+		config,
+		consumer,
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.DataPointCount() > 0
+		},
+		15*time.Minute,
+		1*time.Second,
+		"failed to receive more than 0 metrics",
+	)
+	metrics := consumer.AllMetrics()[0]
+	rms := metrics.ResourceMetrics()
+	testMovieMetrics(t, rms.At(0))
 }
