@@ -23,8 +23,8 @@ A _query_ consists of a sql statement and one or more _metrics_, where each metr
 Each _metric_ in the configuration will produce one OTel metric per row returned from its sql query.
 
 * `metric_name`(required): the name assigned to the OTel metric.
-* `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint. The column's values must be of an integer type. This may be case-sensitive, depending on the driver (i.e. Oracle DB).
-* `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint. These attributes may be case-sensitive, depending on the driver (i.e. Oracle DB).
+* `value_column`(required): the column name in the returned dataset used to set the value of the metric's datapoint. This may be case-sensitive, depending on the driver (e.g. Oracle DB).
+* `attribute_columns`(optional): a list of column names in the returned dataset used to set attibutes on the datapoint. These attributes may be case-sensitive, depending on the driver (e.g. Oracle DB).
 * `data_type` (optional): can be `gauge` or `sum`; defaults to `gauge`.
 * `value_type` (optional): can be `int` or `double`; defaults to `int`.
 * `monotonic` (optional): boolean; whether a cumulative sum's value is monotonically increasing (i.e. never rolls over or resets); defaults to false.
