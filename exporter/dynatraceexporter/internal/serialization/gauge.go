@@ -54,8 +54,7 @@ func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensio
 }
 
 func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
-	gauge := metric.Gauge()
-	points := gauge.DataPoints()
+	points := metric.Gauge().DataPoints()
 
 	for i := 0; i < points.Len(); i++ {
 		dp := points.At(i)

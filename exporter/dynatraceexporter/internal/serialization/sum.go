@@ -43,9 +43,8 @@ func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionL
 
 func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
 	sum := metric.Sum()
-	monotonic := sum.IsMonotonic()
 
-	if !monotonic && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+	if !sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
 		logger.Warn(
 			"dropping delta non-monotonic sum",
 			zap.String("name", metric.Name()),
@@ -54,11 +53,10 @@ func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defa
 	}
 
 	points := metric.Sum().DataPoints()
-	numPoints := points.Len()
 
-	for i := 0; i < numPoints; i++ {
+	for i := 0; i < points.Len(); i++ {
 		dp := points.At(i)
-		if monotonic {
+		if sum.IsMonotonic() {
 			// serialize monotonic sum points as count (cumulatives are converted to delta in serializeSumPoint)
 			line, err := serializeSumPoint(
 				metric.Name(),
