@@ -1,12 +1,16 @@
 # Prometheus Remote Write Exporter
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Prometheus Remote Write Exporter sends OpenTelemetry metrics
 to Prometheus [remote write compatible
 backends](https://prometheus.io/docs/operating/integrations/)
 such as Cortex and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
-
-Supported pipeline types: metrics
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
 dropped by this exporter.
@@ -77,3 +81,7 @@ Several helper files are leveraged to provide additional capabilities automatica
 ## Metric names and labels normalization
 
 OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
