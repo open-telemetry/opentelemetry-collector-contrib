@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package groupbytraceprocessor
 
 import (
@@ -65,7 +64,9 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	p := newGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	// test
 	wgReceived.Add(1) // one should be received
@@ -109,7 +110,9 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	// test
 	traceIDs := [][16]byte{
@@ -183,7 +186,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	assert.NotNil(t, p)
 
 	// test
-	p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0])
+	assert.NoError(t, p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0]))
 }
 
 func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
@@ -208,7 +211,9 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	err := p.ConsumeTraces(context.Background(), batch)
 	require.NoError(t, err)
@@ -244,7 +249,9 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	err := p.ConsumeTraces(context.Background(), batch)
 	require.NoError(t, err)
@@ -320,7 +327,9 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -333,8 +342,8 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 	wg.Add(1)
 
-	p.ConsumeTraces(context.Background(), first)
-	p.ConsumeTraces(context.Background(), second)
+	assert.NoError(t, p.ConsumeTraces(context.Background(), first))
+	assert.NoError(t, p.ConsumeTraces(context.Background(), second))
 
 	wg.Wait()
 
@@ -462,7 +471,9 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -484,8 +495,8 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-	p.eventMachine.consume(firstTrace)
-	p.eventMachine.consume(secondTrace)
+	assert.NoError(t, p.eventMachine.consume(firstTrace))
+	assert.NoError(t, p.eventMachine.consume(secondTrace))
 
 	wg.Wait()
 
@@ -524,7 +535,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	}
 
 	// test
-	p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0])
+	assert.Error(t, p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0]))
 
 	// verify
 	assert.True(t, returnedError)
@@ -565,12 +576,14 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 
 	ctx := context.Background()
 	require.NoError(b, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+	defer func() {
+		assert.NoError(b, p.Shutdown(ctx))
+	}()
 
 	for n := 0; n < b.N; n++ {
 		traceID := pcommon.NewTraceID([16]byte{byte(1 + n), 2, 3, 4})
 		trace := simpleTracesWithID(traceID)
-		p.ConsumeTraces(context.Background(), trace)
+		assert.NoError(b, p.ConsumeTraces(context.Background(), trace))
 	}
 }
 
