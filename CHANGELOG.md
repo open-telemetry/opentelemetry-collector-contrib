@@ -33,6 +33,8 @@
 
 ### 🚀 New components 🚀
 
+- `sqlqueryreceiver`: Enable the component (#11848)
+
 ### 💡 Enhancements 💡
 
 - `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
