@@ -16,11 +16,13 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"net"
 	"strings"
 	"sync"
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
+	dclient "github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -53,6 +55,16 @@ func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver
 
 func (r *receiver) start(ctx context.Context, _ component.Host) error {
 	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
+	if err != nil {
+		return err
+	}
+
+	// Restore the default dialer due to bug in v0.4.1 of go-connections/sockets.go
+	// which overrides the proto, and doesn't reset it when a new scheme is applied
+	dialer := &net.Dialer{
+		Timeout: r.config.Timeout,
+	}
+	r.client, err = docker.NewDockerClient(dConfig, r.settings.Logger, dclient.WithDialContext(dialer.DialContext))
 	if err != nil {
 		return err
 	}
