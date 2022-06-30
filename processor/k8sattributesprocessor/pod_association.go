@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
@@ -102,7 +101,7 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifier {
 		return kube.PodIdentifier(addr.IP.String())
 	}
 
-	//If this is not a known address type, check for known "untyped" formats.
+	// If this is not a known address type, check for known "untyped" formats.
 	// 1.1.1.1:<port>
 
 	lastColonIndex := strings.LastIndex(c.Addr.String(), ":")
