@@ -21,10 +21,13 @@ package dockerstatsreceiver
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,17 +35,34 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
-	file, err := os.Open(responseBodyFile)
+	statsFile, err := os.Open(responseBodyFile)
 	assert.NoError(tb, err)
-	fileContents, err := ioutil.ReadAll(file)
+	stats, err := ioutil.ReadAll(statsFile)
+	//defer statsFile.Close()
+
+	containerFile, err := os.Open(filepath.Join("testdata", "container.json"))
+	assert.NoError(tb, err)
+	container, err := ioutil.ReadAll(containerFile)
+	//defer containerFile.Close()
+
 	require.NoError(tb, err)
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.WriteHeader(http.StatusOK)
-		_, err := rw.Write(fileContents)
-		require.NoError(tb, err)
+		if strings.Contains(req.URL.Path, "/containers/json") {
+			rw.WriteHeader(http.StatusOK)
+			_, err := rw.Write(container)
+			require.NoError(tb, err)
+			fmt.Println(container)
+		} else {
+			rw.WriteHeader(http.StatusOK)
+			_, err := rw.Write(stats)
+			require.NoError(tb, err)
+		}
 		return
 	}))
 }
@@ -80,4 +100,32 @@ func TestErrorsInStart(t *testing.T) {
 	err = recv.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "context deadline exceeded")
+}
+
+func TestScrape(t *testing.T) {
+	// use golden testing thing?
+	ms := newMockServer(t, filepath.Join("testdata", "stats.json"))
+	defer ms.Close()
+	time.Sleep(time.Second)
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = ms.URL
+	cfg.Timeout = time.Hour
+
+	receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+	err := receiver.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	actualMetrics, err := receiver.scrape(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, actualMetrics.ResourceMetrics())
+	assert.Equal(t, actualMetrics.ResourceMetrics().Len(), 1)
+
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "expected_default_metrics.json"))
+	assert.NoError(t, err)
+	assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScrapeV2(t *testing.T) {
+
 }
