@@ -1,231 +1,311 @@
-// // Copyright The OpenTelemetry Authors
-// //
-// // Licensed under the Apache License, Version 2.0 (the "License");
-// // you may not use this file except in compliance with the License.
-// // You may obtain a copy of the License at
-// //
-// //     http://www.apache.org/licenses/LICENSE-2.0
-// //
-// // Unless required by applicable law or agreed to in writing, software
-// // distributed under the License is distributed on an "AS IS" BASIS,
-// // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// // See the License for the specific language governing permissions and
-// // limitations under the License.
+// Copyright The OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
-// import (
-// 	"fmt"
-// 	"strings"
-// 	"time"
+import (
+	"fmt"
+	"strings"
+	"sync"
+	"time"
 
-// 	as "github.com/aerospike/aerospike-client-go/v5"
-// 	"github.com/aerospike/aerospike-client-go/v5/types"
-// 	"go.uber.org/zap"
-// )
+	as "github.com/aerospike/aerospike-client-go/v5"
+	"go.uber.org/zap"
 
-// type clientData struct {
-// 	policy *as.ClientPolicy // Timeout and authentication information
-// 	logger *zap.Logger      // logs malformed metrics in responses
-// }
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
+)
 
-// type defaultASClient struct {
-// 	conn *as.Connection // open connection to Aerospike
-// 	clientData
-// }
+var defaultNodeInfoCommands = []string{
+	"node",
+	"statistics",
+}
 
-// var defaultNodeInfoCommands = []string{
-// 	"namespaces",
-// 	"node",
-// 	"statistics",
-// 	"services",
-// }
+// TODO should we have a type that supports connections to multiple clusters?
+type clusterInfo = map[string]map[string]string
+type metricsMap = map[string]string
 
-// // the info map has layers map[string]map[string]string
-// // map[string]map[string]string{
-// //		nodeName: map[string]string {
-// //			infoCommandName: statsString
-// // 		}
-// // }
-// type clusterInfo map[string]map[string]string // TODO what if this is connected to multiple clusters?
-// type metricsMap map[string]string
+// Aerospike is the interface that provides information about a given node
+type Aerospike interface {
+	// NamespaceInfo gets information about a specific namespace
+	NamespaceInfo() namespaceInfo
+	// Info gets high-level information about the node/system.
+	Info() clusterInfo
+	// Close closes the connection to the Aerospike node
+	Close()
+}
 
-// // aerospike is the interface that provides information about a given node
-// type aerospike interface {
-// 	// NamespaceInfo gets information about a specific namespace
-// 	AllNamespaceInfo(namespace string) (clusterInfo, error)
-// 	// Info gets high-level information about the node/system.
-// 	Info() (clusterInfo, error)
-// 	// Close closes the connection to the Aerospike node
-// 	Close()
-// }
+type clientConfig struct {
+	host                  string
+	port                  int
+	username              string
+	password              string
+	timeout               time.Duration
+	logger                *zap.Logger
+	collectClusterMetrics bool
+}
 
-// // newASClient creates a new defaultASClient connected to the given host and port.
-// // If username and password aren't blank, they're used to authenticate
-// func newASClient(host string, port int, username, password string, timeout time.Duration, logger *zap.Logger) (*defaultASClient, error) {
-// 	authEnabled := username != "" && password != ""
+type nodeGetter interface {
+	GetNodes() []cluster.Node
+	Close()
+}
 
-// 	policy := as.NewClientPolicy()
-// 	policy.Timeout = timeout
-// 	if authEnabled {
-// 		policy.User = username
-// 		policy.Password = password
-// 	}
+type defaultASClient struct {
+	cluster nodeGetter
+	policy  *as.ClientPolicy // Timeout and authentication information
+	logger  *zap.Logger      // logs malformed metrics in responses
+}
 
-// 	conn, err := as.NewConnection(policy, as.NewHost(host, port))
-// 	if err != nil {
-// 		return nil, err
-// 	}
+type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error)
 
-// 	if authEnabled {
-// 		if err := conn.Login(policy); err != nil {
-// 			return nil, err
-// 		}
-// 	}
+func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error) {
+	authEnabled := cfg.username != "" && cfg.password != ""
 
-// 	return &defaultASClient{
-// 		conn: conn,
-// 		clientData: clientData{
-// 			logger: logger,
-// 			policy: policy,
-// 		},
-// 	}, nil
-// }
+	hosts := []*as.Host{as.NewHost(cfg.host, cfg.port)}
 
-// func (c *defaultASClient) NamespaceInfo(namespace string) (map[string]string, error) {
-// 	// is this using the deadline correctly?
-// 	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
-// 		return nil, fmt.Errorf("failed to set timeout: %w", err)
-// 	}
-// 	namespaceKey := "namespace/" + namespace
-// 	response, err := c.conn.RequestInfo(namespaceKey)
+	if cfg.collectClusterMetrics {
+		cluster, err := cluster.NewCluster(policy, hosts)
+		return cluster, err
+	}
 
-// 	// Try to login and get a new session
-// 	if err != nil && err.Matches(types.EXPIRED_SESSION) {
-// 		if loginErr := c.conn.Login(c.policy); loginErr != nil {
-// 			return nil, loginErr
-// 		}
-// 	}
+	cluster, err := cluster.NewSubsetCluster(
+		policy,
+		hosts,
+		authEnabled,
+	)
+	return cluster, err
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
+}
 
-// 	info := make(map[string]string)
-// 	for k, v := range response {
-// 		if k == namespaceKey {
-// 			for _, pair := range splitFields(v) {
-// 				parts := splitPair(pair)
-// 				if len(parts) != 2 {
-// 					c.logger.Warn(fmt.Sprintf("metric pair '%s' not in key=value format", pair))
-// 					continue
-// 				}
-// 				info[parts[0]] = parts[1]
+// newASClient creates a new defaultASClient connected to the given host and port
+// If collectClusterMetrics is true, the client will connect to and tend all nodes in the cluster
+// If username and password aren't blank, they're used to authenticate
+func newASClient(cfg *clientConfig, ngf nodeGetterFactoryFunc) (*defaultASClient, error) {
+	authEnabled := cfg.username != "" && cfg.password != ""
 
-// 			}
+	policy := as.NewClientPolicy()
+	policy.Timeout = cfg.timeout
+	if authEnabled {
+		policy.User = cfg.username
+		policy.Password = cfg.password
+	}
 
-// 		}
-// 	}
-// 	info["name"] = namespace
-// 	return info, nil
-// }
+	cluster, err := ngf(cfg, policy)
+	if err != nil {
+		return nil, err
+	}
 
-// func (c *defaultASClient) Info() (clusterInfo, error) {
-// 	var res clusterInfo
-// 	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
-// 		return nil, fmt.Errorf("failed to set timeout: %w", err)
-// 	}
+	return &defaultASClient{
+		cluster: cluster,
+		logger:  cfg.logger,
+		policy:  policy,
+	}, nil
+}
 
-// 	response, err := c.conn.RequestInfo(defaultNodeInfoCommands...)
+// useNodeFunc maps a nodeFunc to all the client's nodes
+func (c *defaultASClient) useNodeFunc(nf nodeFunc) clusterInfo {
+	var nodes []cluster.Node
+	var res clusterInfo
 
-// 	// Try to login and get a new session
-// 	if err != nil && err.Matches(types.EXPIRED_SESSION) {
-// 		if loginErr := c.conn.Login(c.policy); loginErr != nil {
-// 			return nil, loginErr
-// 		}
-// 	}
+	nodes = c.cluster.GetNodes()
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
+	policy := as.NewInfoPolicy()
+	policy.Timeout = c.policy.Timeout
 
-// 	res[response["node"]] = parseInfoMap(response, c.logger)
-// 	return res, nil
-// }
+	res = mapNodeInfoFunc(
+		nodes,
+		nf,
+		policy,
+		c.logger,
+	)
 
-// func (c *defaultASClient) AllNamespaceInfo() (map[string]string, error) {
-// 	// is this using the deadline correctly?
-// 	if err := c.conn.SetTimeout(time.Now().Add(c.policy.Timeout), c.policy.Timeout); err != nil {
-// 		return nil, fmt.Errorf("failed to set timeout: %w", err)
-// 	}
+	return res
+}
 
-// 	namespaces, err := namespaceNames(c.conn)
+// Info returns a clusterInfo map of node names to metricMaps
+// it uses the info commands defined in defaultNodeInfoCommands
+func (c *defaultASClient) Info() clusterInfo {
+	res := clusterInfo{}
 
-// 	namespaceKey := "namespace/" + namespace
-// 	response, err := c.conn.RequestInfo(namespaceKey)
+	// NOTE this discards the command names
+	metricsToParse := c.useNodeFunc(allNodeInfo)
+	for node, commands := range metricsToParse {
+		res[node] = metricsMap{}
+		for command, stats := range commands {
+			ps := parseStats(command, stats, ";")
+			mergeMetricsMap(res[node], ps, c.logger)
+		}
+	}
 
-// 	// Try to login and get a new session
-// 	if err != nil && err.Matches(types.EXPIRED_SESSION) {
-// 		if loginErr := c.conn.Login(c.policy); loginErr != nil {
-// 			return nil, loginErr
-// 		}
-// 	}
+	return res
+}
 
-// 	if err != nil {
-// 		return nil, err
-// 	}
+// nodeName: namespaceName: metricName: stats
+type namespaceInfo = map[string]map[string]map[string]string
 
-// 	info := make(map[string]string)
-// 	for k, v := range response {
-// 		if k == namespaceKey {
-// 			for _, pair := range splitFields(v) {
-// 				parts := splitPair(pair)
-// 				if len(parts) != 2 {
-// 					c.logger.Warn(fmt.Sprintf("metric pair '%s' not in key=value format", pair))
-// 					continue
-// 				}
-// 				info[parts[0]] = parts[1]
+// NamespaceInfo returns a namespaceInfo map
+// the map contains the results of the "namespace/<name>" info command
+// for all nodes' namespaces
+func (c *defaultASClient) NamespaceInfo() namespaceInfo {
+	res := namespaceInfo{}
 
-// 			}
+	metricsToParse := c.useNodeFunc(allNamespaceInfo)
+	for node, namespaces := range metricsToParse {
+		res[node] = map[string]map[string]string{}
+		for ns, stats := range namespaces {
+			// ns == "namespace/<namespaceName>"
+			nsName := strings.SplitN(ns, "/", 2)[1]
+			res[node][nsName] = parseStats(ns, stats, ";")
+		}
+	}
 
-// 		}
-// 	}
-// 	info["name"] = namespace
-// 	return info, nil
-// }
+	return res
+}
 
-// func parseInfoMap(m metricsMap, l *zap.Logger) metricsMap {
-// 	var info metricsMap
-// 	for k, v := range m {
-// 		switch k {
-// 		case "statistics":
-// 			for _, pair := range splitFields(v) {
-// 				parts := splitPair(pair)
-// 				if len(parts) != 2 {
-// 					l.Warn(fmt.Sprintf("metric pair '%s' not in key=value format", pair))
-// 					continue
-// 				}
-// 				info[parts[0]] = parts[1]
+// Close closes the client's connections to all nodes
+func (c *defaultASClient) Close() {
+	c.cluster.Close()
+}
 
-// 			}
-// 		default:
-// 			info[k] = v
-// 		}
-// 	}
+// mapNodeInfoFunc maps a nodeFunc to all nodes in the list in parallel
+// if an error occurs during any of the nodeFuncs' execution, it is logged but not returned
+// the return value is a clusterInfo map from node name to command to unparsed metric string
+func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy, logger *zap.Logger) clusterInfo {
+	numNodes := len(nodes)
+	res := make(clusterInfo, numNodes)
 
-// 	return info
-// }
+	type nodeStats struct {
+		name    string
+		metrics metricsMap
+		error   error
+	}
 
-// func (c *defaultASClient) Close() {
-// 	c.conn.Close()
-// }
+	var wg sync.WaitGroup
+	resChan := make(chan nodeStats, numNodes)
 
-// // splitPair splits a metric pair in the format of 'key=value'
-// func splitPair(pair string) []string {
-// 	return strings.Split(pair, "=")
-// }
+	for _, nd := range nodes {
+		wg.Add(1)
+		go func(nd cluster.Node) {
+			defer wg.Done()
 
-// // splitFields splits a string of metric pairs delimited with the ';' character
-// func splitFields(info string) []string {
-// 	return strings.Split(info, ";")
-// }
+			name := nd.GetName()
+			metrics, err := nodeF(nd, policy)
+			if err != nil {
+				logger.Sugar().Errorf("mapNodeInfoFunc err: %s", err)
+			}
+
+			ns := nodeStats{
+				name:    name,
+				metrics: metrics,
+				error:   err,
+			}
+
+			resChan <- ns
+		}(nd)
+	}
+
+	wg.Wait()
+	close(resChan)
+
+	for ns := range resChan {
+		res[ns.name] = ns.metrics
+	}
+
+	return res
+}
+
+// node wise info functions
+
+// nodeFunc is a function that requests info commands from a node
+// and returns a metricsMap from command to metric string
+type nodeFunc func(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
+
+// namespaceNames is used by nodeFuncs to get the names of all namespaces ona node
+func namespaceNames(n cluster.Node, policy *as.InfoPolicy) ([]string, error) {
+	var namespaces []string
+
+	info, err := n.RequestInfo(policy, "namespaces")
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces = strings.Split(info["namespaces"], ";")
+	return namespaces, err
+}
+
+// allNodeInfo returns the results of defaultNodeInfoCommands for a node
+func allNodeInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error) {
+	var res metricsMap
+	commands := defaultNodeInfoCommands
+
+	res, err := n.RequestInfo(policy, commands...)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// allNamespaceInfo returns the results of namespace/%s for each namespace on the node
+// TODO parse ns stats and put in map
+func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error) {
+	var res metricsMap
+
+	names, err := namespaceNames(n, policy)
+	if err != nil {
+		return nil, err
+	}
+
+	commands := make([]string, len(names))
+	for i, name := range names {
+		commands[i] = fmt.Sprintf("namespace/%s", name)
+	}
+
+	res, err = n.RequestInfo(policy, commands...)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO get name res["name"] = name
+	return res, nil
+}
+
+func parseStats(defaultKey, s, sep string) map[string]string {
+	stats := make(map[string]string, strings.Count(s, sep)+1)
+	s2 := strings.Split(s, sep)
+	for _, s := range s2 {
+		list := strings.SplitN(s, "=", 2)
+		switch len(list) {
+		case 0:
+		case 1:
+			stats[defaultKey] = list[0]
+		case 2:
+			stats[list[0]] = list[1]
+		default:
+			stats[list[0]] = strings.Join(list[1:], "=")
+		}
+	}
+
+	return stats
+}
+
+// mergeMetricsMap merges values from rm into lm
+// logs a warning if a duplicate key is found
+func mergeMetricsMap(lm, rm metricsMap, logger *zap.Logger) {
+	for k, v := range rm {
+		if _, ok := lm[k]; ok {
+			logger.Sugar().Warnf("duplicate key: %s", k)
+		}
+		lm[k] = v
+	}
+}

@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -44,7 +43,7 @@ type aerospikeReceiver struct {
 }
 
 // clientFactoryFunc creates an Aerospike connection to the given host and port
-type clientFactoryFunc func(host string, port int) (aerospike, error)
+type clientFactoryFunc func(host string, port int) (Aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
@@ -64,8 +63,19 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		logger:   params.Logger,
 		config:   cfg,
 		consumer: consumer,
-		clientFactory: func(host string, port int) (aerospike, error) {
-			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout, params.Logger)
+		clientFactory: func(host string, port int) (Aerospike, error) {
+			return newASClient(
+				&clientConfig{
+					host:                  host,
+					port:                  port,
+					username:              cfg.Username,
+					password:              cfg.Password,
+					timeout:               cfg.Timeout,
+					logger:                params.Logger,
+					collectClusterMetrics: cfg.CollectClusterMetrics,
+				},
+				nodeGetterFactory,
+			)
 		},
 		host: host,
 		port: int(port),
@@ -84,63 +94,13 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 	}
 	defer client.Close()
 
-	info, err := client.Info()
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
-		return r.mb.Emit(), err
+	info := client.Info()
+	for _, nodeInfo := range info {
+		r.emitNode(nodeInfo, now, errs)
 	}
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-
-	if r.config.CollectClusterMetrics {
-		r.logger.Debug("Collecting peer nodes")
-
-		// for _, n := range strings.Split(info["services"], ";") {
-		// 	r.scrapeDiscoveredNode(n, now, errs)
-		// }
-	}
+	r.scrapeNamespaces(client, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
-}
-
-// scrapeNode collects metrics from a single Aerospike node
-func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	info, err := client.Info()
-	if err != nil {
-		errs.AddPartial(0, err)
-		return
-	}
-
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-}
-
-// scrapeDiscoveredNode connects to a discovered Aerospike node and scrapes it using that connection
-//
-// If unable to parse the endpoint or connect, that error is logged and we return early
-func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	host, portStr, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
-		errs.Add(err)
-		return
-	}
-	port, err := strconv.ParseInt(portStr, 10, 32)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
-		errs.Add(err)
-		return
-	}
-
-	nClient, err := r.clientFactory(host, int(port))
-	if err != nil {
-		r.logger.Warn(err.Error())
-		errs.Add(err)
-		return
-	}
-	defer nClient.Close()
-
-	r.scrapeNode(nClient, now, errs)
 }
 
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
@@ -175,20 +135,14 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) scrapeNamespaces(info map[string]string, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	namespaces := strings.Split(info["namespaces"], ";")
-	for _, n := range namespaces {
-		if n == "" {
-			continue
+func (r *aerospikeReceiver) scrapeNamespaces(client Aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	nInfo := client.NamespaceInfo()
+	for node, nsMap := range nInfo {
+		for nsName, nsStats := range nsMap {
+			nsStats["node"] = node
+			nsStats["name"] = nsName
+			r.emitNamespace(nsStats, now, errs)
 		}
-		nInfo, err := client.NamespaceInfo(n)
-		if err != nil {
-			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
-			errs.AddPartial(0, err)
-			continue
-		}
-		nInfo["node"] = info["node"]
-		r.emitNamespace(nInfo, now, errs)
 	}
 }
 
