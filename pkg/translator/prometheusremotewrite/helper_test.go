@@ -136,6 +136,82 @@ func Test_addSample(t *testing.T) {
 	}
 }
 
+func Test_addSingleNumberDataPoint(t *testing.T) {
+	type testCase struct {
+	}
+	tests := []struct {
+		name     string
+		pt       pmetric.NumberDataPoint
+		resource pcommon.Resource
+		metric   pmetric.Metric
+		settings Settings
+		want     *prompb.TimeSeries
+	}{
+		{
+			name:     "sum metric converison",
+			pt:       validMetrics1[validSum].Sum().DataPoints().At(0),
+			resource: getResource(map[string]pcommon.Value{}),
+			metric:   validMetrics1[validSum],
+			settings: Settings{},
+			want: &prompb.TimeSeries{
+				Labels: []prompb.Label{
+					{
+						Name:  "__name__",
+						Value: "valid_Sum_total",
+					},
+					{
+						Name:  "test_label11",
+						Value: "test_value11",
+					},
+					{
+						Name:  "test_label12",
+						Value: "test_value12",
+					},
+				},
+				Exemplars: nil,
+			},
+		},
+		{
+			name:     "gauge metric converison",
+			pt:       validMetrics1[validIntGauge].Gauge().DataPoints().At(0),
+			resource: getResource(map[string]pcommon.Value{}),
+			metric:   validMetrics1[validIntGauge],
+			settings: Settings{},
+			want: &prompb.TimeSeries{
+				Labels: []prompb.Label{
+					{
+						Name:  "__name__",
+						Value: "valid_IntGauge",
+					},
+					{
+						Name:  "test_label11",
+						Value: "test_value11",
+					},
+					{
+						Name:  "test_label12",
+						Value: "test_value12",
+					},
+				},
+				Exemplars: nil,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			addSingleNumberDataPoint(tt.pt, tt.resource, tt.metric, tt.settings, tsMap)
+			var got *prompb.TimeSeries
+			// the map contains a single metric
+			for _, v := range tsMap {
+				got = v
+			}
+			assert.ElementsMatch(t, tt.want.Labels, got.Labels)
+			assert.ElementsMatch(t, tt.want.Exemplars, got.Exemplars)
+		})
+	}
+
+}
+
 // Test_timeSeries checks timeSeriesSignature returns consistent and unique signatures for a distinct label set and
 // metric type combination.
 func Test_timeSeriesSignature(t *testing.T) {

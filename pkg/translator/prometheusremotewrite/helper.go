@@ -263,6 +263,10 @@ func validateMetrics(metric pmetric.Metric) bool {
 func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	// create parameters for addSample
 	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	// Sum metric points MUST have _total added as a suffix to the metric name.
+	if metric.DataType() == pmetric.MetricDataTypeSum && !strings.HasSuffix(name, "_total") {
+		name = name + "_total"
+	}
 	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		// convert ns to ms
