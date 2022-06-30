@@ -86,6 +86,7 @@ Value: 1
 ```
 
 #### Oracle DB Driver Example
+
 Refer to the config file [provided](./testdata/oracledb-receiver-config.yaml) for an example of using the
 Oracle DB driver to connect and query the same table schema and contents as the example above.
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
