@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/fixture"
 )
 
-func TestRaceModifyAttribute(t *testing.T) {
+func TestRaceModify(t *testing.T) {
 	t.Parallel()
 
 	mod := modify{

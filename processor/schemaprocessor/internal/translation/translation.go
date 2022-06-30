@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 	"sort"
-	"sync"
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -62,11 +61,10 @@ type (
 	translator struct {
 		schemaURL string
 		target    *Version
-		log       *zap.Logger
-
-		rw        sync.RWMutex
 		indexes   map[Version]int
 		revisions []Revision
+
+		log *zap.Logger
 	}
 
 	iterator func() (r Revision, more bool)
@@ -77,7 +75,7 @@ var (
 	_ Translation    = (*translator)(nil)
 )
 
-func newTranslater(log *zap.Logger, schemaURL string) (*translator, error) {
+func newTranslater(log *zap.Logger, schemaURL string, content io.Reader) (*translator, error) {
 	_, target, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
 		return nil, err
@@ -87,6 +85,9 @@ func newTranslater(log *zap.Logger, schemaURL string) (*translator, error) {
 		target:    target,
 		log:       log,
 		indexes:   map[Version]int{},
+	}
+	if err := t.parseContent(content); err != nil {
+		return nil, err
 	}
 	return t, nil
 }
@@ -106,9 +107,6 @@ func (t *translator) Swap(i, j int) {
 }
 
 func (t *translator) SupportedVersion(v *Version) bool {
-	t.rw.RLock()
-	defer t.rw.RUnlock()
-
 	_, ok := t.indexes[*v]
 	return ok
 }
@@ -280,14 +278,11 @@ func (t *translator) ApplyScopeMetricChanges(ctx context.Context, in pmetric.Sco
 	in.SetSchemaUrl(t.schemaURL)
 }
 
-func (t *translator) merge(r io.Reader) (errs error) {
+func (t *translator) parseContent(r io.Reader) (errs error) {
 	content, err := encoder.Parse(r)
 	if err != nil {
 		return err
 	}
-
-	count := len(t.revisions)
-
 	t.log.Debug("Updating translation")
 	for v, def := range content.Versions {
 		version, err := NewVersion(string(v))
@@ -305,14 +300,8 @@ func (t *translator) merge(r io.Reader) (errs error) {
 		t.indexes[*version], t.revisions = len(t.revisions), append(t.revisions,
 			newRevision(version, def),
 		)
-
 	}
-	// Since Sort is a expensive call even if there is no changes,
-	// this shortcuts needed to call sort when nothing change
-	// since maps don't enforce order.
-	if count != len(t.revisions) {
-		sort.Sort(t)
-	}
+	sort.Sort(t)
 
 	t.log.Debug("Finished update")
 	return errs
@@ -332,7 +321,6 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 	if status == NoChange || !t.SupportedVersion(from) {
 		return func() (r Revision, more bool) { return nil, false }, NoChange
 	}
-	t.rw.RLock()
 	it, stop := t.indexes[*from], t.indexes[*t.target]
 	if status == Update {
 		// In the event of an update, the iterator needs to also run that version
@@ -342,7 +330,6 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 	return func() (Revision, bool) {
 		select {
 		case <-ctx.Done():
-			t.rw.RUnlock()
 			return nil, false
 		default:
 			// No action required heree
@@ -350,7 +337,6 @@ func (t *translator) iterator(ctx context.Context, from *Version) (iterator, int
 
 		// Performs a bounds check and if it has reached stop
 		if it < 0 || it == len(t.revisions) || it == stop {
-			t.rw.RUnlock()
 			return nil, false
 		}
 

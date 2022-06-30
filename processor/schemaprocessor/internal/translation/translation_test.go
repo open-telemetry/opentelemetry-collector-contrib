@@ -16,7 +16,6 @@ package translation
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,9 +30,12 @@ import (
 func TestTranslationSupportedVersion(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0")
+	tn, err := newTranslater(
+		zaptest.NewLogger(t),
+		"https://opentelemetry.io/schemas/1.9.0",
+		LoadTranslationVersion(t, TranslationVersion190),
+	)
 	require.NoError(t, err, "Must not error when creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not have issue converting ast to translation")
 
 	tests := []struct {
 		scenario  string
@@ -104,9 +106,8 @@ func TestTranslationIterator(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(zaptest.NewLogger(t), tc.target)
+			tn, err := newTranslater(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
 			require.NoError(t, err, "Must have no error when creating translator")
-			require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not error when loading translation definition")
 
 			_, version, err := GetFamilyAndVersion(tc.income)
 			require.NoError(t, err, "Must not error when parsing version from schemaURL")
@@ -128,9 +129,8 @@ func TestTranslationIterator(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0")
+	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0", LoadTranslationVersion(t, TranslationVersion190))
 	require.NoError(t, err, "Must have no error when creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not error when loading translation definition")
 
 	ver := &Version{1, 0, 0}
 	it, status := tn.iterator(ctx, ver)
@@ -197,9 +197,12 @@ func TestTranslationSpanChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
+			tn, err := newTranslater(
+				zaptest.NewLogger(t),
+				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
+				LoadTranslationVersion(t, "complex_changeset.yml"),
+			)
 			require.NoError(t, err, "Must not error creating translator")
-			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			spans := NewExampleSpans(t, tc.income)
 			for i := 0; i < spans.ResourceSpans().Len(); i++ {
@@ -266,9 +269,12 @@ func TestTranslationLogChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
+			tn, err := newTranslater(
+				zaptest.NewLogger(t),
+				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
+				LoadTranslationVersion(t, "complex_changeset.yml"),
+			)
 			require.NoError(t, err, "Must not error creating translator")
-			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			logs := NewExampleLogs(t, tc.income)
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
@@ -335,9 +341,12 @@ func TestTranslationMetricChanges(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 
-			tn, err := newTranslater(zaptest.NewLogger(t), fmt.Sprint("https://example.com/", tc.target.String()))
+			tn, err := newTranslater(
+				zaptest.NewLogger(t),
+				joinSchemaFamilyAndVersion("https://example.com/", &tc.target),
+				LoadTranslationVersion(t, "complex_changeset.yml"),
+			)
 			require.NoError(t, err, "Must not error creating translator")
-			require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 			metrics := NewExampleMetrics(t, tc.income)
 			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -362,9 +371,12 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 
 	a, b := NewExampleLogs(t, Version{1, 0, 0}), NewExampleLogs(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	tn, err := newTranslater(
+		zaptest.NewLogger(t),
+		"https://example.com/1.4.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
 	require.NoError(t, err, "Must not error creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	for _, logs := range []plog.Logs{a, b} {
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
@@ -389,9 +401,12 @@ func TestTranslationEquvialance_Metrics(t *testing.T) {
 
 	a, b := NewExampleMetrics(t, Version{1, 0, 0}), NewExampleMetrics(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	tn, err := newTranslater(
+		zaptest.NewLogger(t),
+		"https://example.com/1.4.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
 	require.NoError(t, err, "Must not error creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	for _, metrics := range []pmetric.Metrics{a, b} {
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
@@ -416,9 +431,12 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 
 	a, b := NewExampleSpans(t, Version{1, 0, 0}), NewExampleSpans(t, Version{1, 7, 0})
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://example.com/1.4.0")
+	tn, err := newTranslater(
+		zaptest.NewLogger(t),
+		"https://example.com/1.4.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
 	require.NoError(t, err, "Must not error creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	for _, traces := range []ptrace.Traces{a, b} {
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
@@ -435,45 +453,32 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
 }
 
-func BenchmarkTranslationColdStartTranslation(b *testing.B) {
+func BenchmarkCreatingTranslation(b *testing.B) {
 	log := zap.NewNop()
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		tn, err := newTranslater(log, "https://opentelemetry.io/schemas/1.9.0")
+		tn, err := newTranslater(
+			log,
+			"https://opentelemetry.io/schemas/1.9.0",
+			LoadTranslationVersion(b, TranslationVersion190),
+		)
 		assert.NoError(b, err, "Must not error when creating translator")
-
-		b.StartTimer()
-		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion190)), "Must not error when merging data")
-	}
-}
-
-func BenchmarkTranslationPartialUpdateTranslation(b *testing.B) {
-	log := zap.NewNop()
-
-	b.ReportAllocs()
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
-		tn, err := newTranslater(log, "https://opentelemetry.io/schemas/1.6.1")
-		assert.NoError(b, err, "Must not error when creating translator")
-		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion161)), "Must not error when merging base")
-
-		b.StartTimer()
-		assert.NoError(b, tn.merge(LoadTranslationVersion(b, TranslationVersion190)), "Must not error when merging update")
+		assert.NotNil(b, tn)
 	}
 }
 
 func BenchmarkUpgradingMetrics(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(b, "complex_changeset.yml"),
+	)
 	require.NoError(b, err, "Must not error creating translator")
-	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	metrics := NewExampleMetrics(b, Version{1, 0, 0})
 
@@ -481,7 +486,9 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		b.StopTimer()
 		metrics := metrics.Clone()
+		b.StartTimer()
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 			rMetrics := metrics.ResourceMetrics().At(i)
 			tn.ApplyAllResourceChanges(ctx, rMetrics)
@@ -496,9 +503,12 @@ func BenchmarkUpgradingMetrics(b *testing.B) {
 func BenchmarkUpgradingTraces(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(b, "complex_changeset.yml"),
+	)
 	require.NoError(b, err, "Must not error creating translator")
-	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	traces := NewExampleSpans(b, Version{1, 0, 0})
 
@@ -506,7 +516,9 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		b.StopTimer()
 		traces := traces.Clone()
+		b.StartTimer()
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
 			rSpans := traces.ResourceSpans().At(i)
 			tn.ApplyAllResourceChanges(ctx, rSpans)
@@ -521,9 +533,12 @@ func BenchmarkUpgradingTraces(b *testing.B) {
 func BenchmarkUpgradingLogs(b *testing.B) {
 	ctx := context.Background()
 
-	tn, err := newTranslater(zap.NewNop(), "https://example.com/1.7.0")
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(b, "complex_changeset.yml"),
+	)
 	require.NoError(b, err, "Must not error creating translator")
-	require.NoError(b, tn.merge(LoadTranslationVersion(b, "complex_changeset.yml")), "Must not error when trying to load translation definition")
 
 	logs := NewExampleLogs(b, Version{1, 0, 0})
 
@@ -531,7 +546,9 @@ func BenchmarkUpgradingLogs(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
+		b.StopTimer()
 		logs := logs.Clone()
+		b.StartTimer()
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
 			rLogs := logs.ResourceLogs().At(i)
 			tn.ApplyAllResourceChanges(ctx, rLogs)

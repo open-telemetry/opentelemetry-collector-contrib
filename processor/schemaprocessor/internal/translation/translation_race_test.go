@@ -16,47 +16,96 @@ package translation
 
 import (
 	"context"
-	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/fixture"
 )
 
-func TestRaceTranslationMultiRead(t *testing.T) {
+func TestRaceTranslationSpanChanges(t *testing.T) {
 	t.Parallel()
 
-	tn, err := newTranslater(zaptest.NewLogger(t), "https://opentelemetry.io/schemas/1.9.0")
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
 	require.NoError(t, err, "Must not error when creating translator")
-	require.NoError(t, tn.merge(LoadTranslationVersion(t, TranslationVersion190)), "Must not have issues trying to convert into translator")
 
 	ctx, done := context.WithCancel(context.Background())
 	t.Cleanup(done)
 
 	fixture.ParallelRaceCompute(t, 10, func() error {
 		for i := 0; i < 10; i++ {
-			count := 0
 			v := &Version{1, 0, 0}
-			it, _ := tn.iterator(ctx, v)
-			for rev, more := it(); more; rev, more = it() {
-				switch count {
-				case 0:
-					if !assert.True(t, v.Equal(rev.Version())) {
-						done()
-						return errors.New("incorrect progression through chanages")
-					}
-				default:
-					if !assert.True(t, v.LessThan(rev.Version()), "Must be increasing with each revision", v, rev.Version()) {
-						done()
-						return errors.New("incorrect progression through chanages")
-					}
+			spans := NewExampleSpans(t, *v)
+			for i := 0; i < spans.ResourceSpans().Len(); i++ {
+				rSpan := spans.ResourceSpans().At(i)
+				tn.ApplyAllResourceChanges(ctx, rSpan)
+				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
+					span := rSpan.ScopeSpans().At(j)
+					tn.ApplyScopeSpanChanges(ctx, span)
 				}
+			}
+		}
+		return nil
+	})
+}
 
-				count++
-				v = rev.Version()
+func TestRaceTranslationMetricChanges(t *testing.T) {
+	t.Parallel()
+
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
+	require.NoError(t, err, "Must not error when creating translator")
+
+	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
+
+	fixture.ParallelRaceCompute(t, 10, func() error {
+		for i := 0; i < 10; i++ {
+			spans := NewExampleSpans(t, Version{1, 0, 0})
+			for i := 0; i < spans.ResourceSpans().Len(); i++ {
+				rSpan := spans.ResourceSpans().At(i)
+				tn.ApplyAllResourceChanges(ctx, rSpan)
+				for j := 0; j < rSpan.ScopeSpans().Len(); j++ {
+					span := rSpan.ScopeSpans().At(j)
+					tn.ApplyScopeSpanChanges(ctx, span)
+				}
+			}
+		}
+		return nil
+	})
+}
+
+func TestRaceTranslationLogChanges(t *testing.T) {
+	t.Parallel()
+
+	tn, err := newTranslater(
+		zap.NewNop(),
+		"https://example.com/1.7.0",
+		LoadTranslationVersion(t, "complex_changeset.yml"),
+	)
+	require.NoError(t, err, "Must not error when creating translator")
+
+	ctx, done := context.WithCancel(context.Background())
+	t.Cleanup(done)
+
+	fixture.ParallelRaceCompute(t, 10, func() error {
+		for i := 0; i < 10; i++ {
+			metrics := NewExampleMetrics(t, Version{1, 0, 0})
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rMetrics := metrics.ResourceMetrics().At(i)
+				tn.ApplyAllResourceChanges(ctx, rMetrics)
+				for j := 0; j < rMetrics.ScopeMetrics().Len(); j++ {
+					metric := rMetrics.ScopeMetrics().At(j)
+					tn.ApplyScopeMetricChanges(ctx, metric)
+				}
 			}
 		}
 		return nil

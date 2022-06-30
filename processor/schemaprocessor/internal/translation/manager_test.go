@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -54,23 +53,13 @@ func TestRequestTranslation(t *testing.T) {
 		zaptest.NewLogger(t),
 	)
 	require.NoError(t, err, "Must not error when created manager")
-	require.NotNil(t, m, "Must have a valid client")
-
-	var wg sync.WaitGroup
-	ctx, done := context.WithCancel(context.Background())
-
-	wg.Add(1)
-	go func(ctx context.Context) {
-		defer wg.Done()
-
-		assert.NoError(t, m.Run(ctx, NewHTTPProvider(s.Client())), "Must not error when shutdown correctly")
-	}(ctx)
+	require.NoError(t, m.SetProviders(NewHTTPProvider(s.Client())), "Must have no issues trying to set providers")
 
 	nop, ok := m.RequestTranslation(context.Background(), "/not/a/valid/schema/URL").(nopTranslation)
 	require.True(t, ok, "Must return a NoopTranslation if no valid schema URL is provided")
 	require.NotNil(t, nop, "Must have a valid translation")
 
-	tn, ok := m.RequestTranslation(ctx, schemaURL).(*translator)
+	tn, ok := m.RequestTranslation(context.Background(), schemaURL).(*translator)
 	require.True(t, ok, "Can cast to the concrete type")
 	require.NotNil(t, tn, "Must have a valid translation")
 
@@ -78,7 +67,7 @@ func TestRequestTranslation(t *testing.T) {
 
 	count := 0
 	ver := &Version{1, 0, 0}
-	it, status := tn.iterator(ctx, ver)
+	it, status := tn.iterator(context.Background(), ver)
 	assert.Equal(t, Update, status, "Must return a status of update")
 	for rev, more := it(); more; rev, more = it() {
 		switch count {
@@ -91,10 +80,8 @@ func TestRequestTranslation(t *testing.T) {
 		count++
 	}
 
-	tn, ok = m.RequestTranslation(ctx, schemaURL).(*translator)
+	tn, ok = m.RequestTranslation(context.Background(), schemaURL).(*translator)
 	require.True(t, ok, "Can cast to the concrete type")
 	require.NotNil(t, tn, "Must have a valid translation")
 
-	done()
-	wg.Wait()
 }

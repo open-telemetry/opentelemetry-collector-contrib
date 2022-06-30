@@ -38,19 +38,15 @@ type (
 		// Otherwise, the translation will allow concurrent reads.
 		RequestTranslation(ctx context.Context, schemaURL string) Translation
 
-		// Start is intended to be run within its own go routine
-		// so that it can provide updates asynchronisely.
-		// The providers will be checked in order provided.
-		Run(ctx context.Context, providers ...Provider) error
+		SetProviders(providers ...Provider) error
 	}
 
 	manager struct {
 		log *zap.Logger
 
-		reqs chan *updateRequest
-
 		rw           sync.RWMutex
-		match        map[string]struct{}
+		providers    []Provider
+		match        map[string]*Version
 		translations map[string]*translator
 	}
 
@@ -76,19 +72,18 @@ func NewManager(targets []string, log *zap.Logger) (Manager, error) {
 		return nil, fmt.Errorf("logger: %w", errNilValueProvided)
 	}
 
-	match := make(map[string]struct{}, len(targets))
+	match := make(map[string]*Version, len(targets))
 	for _, target := range targets {
-		family, _, err := GetFamilyAndVersion(target)
+		family, version, err := GetFamilyAndVersion(target)
 		if err != nil {
 			return nil, err
 		}
-		match[family] = struct{}{}
+		match[family] = version
 	}
 
 	return &manager{
 		log:          log,
 		match:        match,
-		reqs:         make(chan *updateRequest, 10),
 		translations: make(map[string]*translator),
 	}, nil
 }
@@ -102,7 +97,8 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 		return nopTranslation{}
 	}
 
-	if _, targeting := m.match[family]; !targeting {
+	target, match := m.match[family]
+	if !match {
 		m.log.Debug("Not a known target, providing Nop Translation",
 			zap.String("schema-url", schemaURL),
 		)
@@ -113,77 +109,45 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) Tran
 	t, exists := m.translations[family]
 	m.rw.RUnlock()
 
-	if !exists {
-		m.rw.Lock()
-		t, err = newTranslater(
-			m.log.Named("translation").With(
-				zap.String("family", family),
-				zap.Stringer("target", version),
-			),
-			schemaURL,
-		)
-		if err != nil {
-			m.log.Error("Issue trying to create translator", zap.Error(err))
-			m.rw.Unlock()
-			return nopTranslation{}
-		}
-		m.translations[family] = t
-		m.rw.Unlock()
-	}
-
-	// In the event that this schema has already been fetched
-	// and requests a version that is already supported
-	// the cached instance of it is then returned
 	if exists && t.SupportedVersion(version) {
-		m.log.Debug("Using cached version of schema",
-			zap.String("family", family),
-			zap.Stringer("version", version),
-		)
 		return t
 	}
 
-	// Locking the translator now so that any
-	// reads are blocked until the update
-	// happens or once the context is cancelled.
-	// This ensures that applying updates are consistent
-	// and simplifies locking processes
-	t.rw.Lock()
-	m.reqs <- &updateRequest{
-		ctx:        ctx,
-		translator: t,
-		schemaURL:  schemaURL,
+	for _, p := range m.providers {
+		content, err := p.Lookup(ctx, schemaURL)
+		if err != nil {
+			m.log.Error("Failed to lookup schemaURL",
+				zap.Error(err),
+				zap.String("schemaURL", schemaURL),
+			)
+		}
+		t, err := newTranslater(
+			m.log.Named("translator").With(
+				zap.String("family", family),
+				zap.Stringer("target", target),
+			),
+			joinSchemaFamilyAndVersion(family, target),
+			content,
+		)
+		if err != nil {
+			m.log.Error("Failed to create translator", zap.Error(err))
+			continue
+		}
+		m.rw.Lock()
+		m.translations[family] = t
+		m.rw.Unlock()
+		return t
 	}
 
-	return t
+	return nopTranslation{}
 }
 
-func (m *manager) Run(ctx context.Context, providers ...Provider) error {
+func (m *manager) SetProviders(providers ...Provider) error {
 	if len(providers) == 0 {
 		return fmt.Errorf("zero providers set: %w", errNilValueProvided)
 	}
-	for {
-		select {
-		case <-ctx.Done():
-			m.log.Debug("Manager is shutting down", zap.Error(ctx.Err()))
-			return nil
-		case req := <-m.reqs:
-			for _, p := range providers {
-				content, err := p.Lookup(req.ctx, req.schemaURL)
-				if err != nil {
-					m.log.Error("Issue with looking up schemaURL", zap.Error(err))
-					continue
-				}
-				if content == nil {
-					m.log.Debug("SchemaURL not present in lookup")
-					continue
-				}
-				if err := req.translator.merge(content); err != nil {
-					m.log.Error("Issue trying to update translator", zap.Error(err))
-					continue
-				}
-				break
-			}
-			req.translator.rw.Unlock()
-		}
-	}
+	m.rw.Lock()
+	m.providers = append(m.providers[:0], providers...)
+	m.rw.Unlock()
+	return nil
 }
