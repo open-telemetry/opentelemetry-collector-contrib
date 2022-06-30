@@ -22,6 +22,8 @@ receivers:
   prometheus_simple/partial_tls_settings:
     collection_interval: 30s
     endpoint: "localhost:1234"
+    tls:
+      insecure: false
 
 
 processors:

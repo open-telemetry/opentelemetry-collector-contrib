@@ -401,7 +401,6 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 							HTTPClientConfig: configutil.HTTPClientConfig{
 								TLSConfig: configutil.TLSConfig{
 									CAFile:             "./testdata/test_cert.pem",
-									InsecureSkipVerify: true,
 								},
 							},
 						},
