@@ -44,6 +44,10 @@ var removeDirectionAttributeFeatureGate = featuregate.Gate{
 		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/hostmetricsreceiver/README.md#feature-gate-configurations",
 }
 
+func init() {
+	featuregate.GetRegistry().MustRegister(removeDirectionAttributeFeatureGate)
+}
+
 // Factory is the Factory for scraper.
 type Factory struct {
 }
