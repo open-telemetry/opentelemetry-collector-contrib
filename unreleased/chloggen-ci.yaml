@@ -1,4 +1,4 @@
-change_type: enhancement
+change_type: enhancementzzz
 component: chm/chloggen
-note: Update CI process to validate new changelog strategy. See [obviously bad link](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/118479999999999999)
+note: Update CI process to validate new changelog strategy
 issues: [11841]
