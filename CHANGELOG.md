@@ -22,6 +22,7 @@
 
 ### 💡 Enhancements 💡
 
+- `cmd/chloggen`: Add changelog entry directly to CHANGELOG, to demonstrate it doesn't pass CI
 - `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
 - `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
