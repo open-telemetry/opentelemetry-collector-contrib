@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -32,11 +33,12 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name              string
-		config            Config
-		bootTimeFunc      func() (uint64, error)
-		expectedStartTime pcommon.Timestamp
-		initializationErr string
+		name                                       string
+		config                                     Config
+		bootTimeFunc                               func() (uint64, error)
+		expectedStartTime                          pcommon.Timestamp
+		initializationErr                          string
+		removeDirectionAttributeFeatureGateEnabled bool
 	}
 
 	config := metadata.DefaultMetricsSettings()
@@ -46,6 +48,11 @@ func TestScrape(t *testing.T) {
 		{
 			name:   "Standard",
 			config: Config{Metrics: config},
+		},
+		{
+			name:   "Standard with direction removed",
+			config: Config{Metrics: config},
+			removeDirectionAttributeFeatureGateEnabled: true,
 		},
 		{
 			name:              "Validate Start Time",
@@ -63,6 +70,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			featuregate.GetRegistry().Apply(map[string]bool{removeDirectionAttributeFeatureGateID: test.removeDirectionAttributeFeatureGateEnabled})
 			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.bootTimeFunc != nil {
 				scraper.bootTime = test.bootTimeFunc
