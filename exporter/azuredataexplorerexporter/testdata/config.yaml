@@ -7,11 +7,11 @@ processors:
 exporters:
   azuredataexplorer:
     # Kusto cluster uri
-    cluster_name: "https://CLUSTER.kusto.windows.net"
+    cluster_uri: "https://CLUSTER.kusto.windows.net"
     # Client Id
-    client_id: "f80da32c-108c-415c-a19e-643f461a677a"
+    application_id: "f80da32c-108c-415c-a19e-643f461a677a"
     # The client secret for the client
-    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    application_key: "xx-xx-xx-xx"
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
     # database for the logs
@@ -26,11 +26,11 @@ exporters:
     ingestion_type : "managed"
   azuredataexplorer/2:
     # Kusto cluster uri
-    cluster_name: ""
+    cluster_uri: ""
     # Client Id
-    client_id: ""
+    application_id: ""
     # The client secret for the client
-    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    application_key: "xx-xx-xx-xx"
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
     # database for the logs

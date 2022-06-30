@@ -36,9 +36,9 @@ import (
 
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	c := Config{ClusterName: "https://CLUSTER.kusto.windows.net",
-		ClientId:               "unknown",
-		ClientSecret:           "unknown",
+	c := Config{ClusterUri: "https://CLUSTER.kusto.windows.net",
+		ApplicationId:          "unknown",
+		ApplicationKey:         "unknown",
 		TenantId:               "unknown",
 		Database:               "not-configured",
 		OTELMetricTable:        "OTELMetrics",

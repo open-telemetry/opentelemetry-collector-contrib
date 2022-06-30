@@ -51,9 +51,9 @@ func NewFactory() component.ExporterFactory {
 /*Create default configurations*/
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ClusterName:     "https://CLUSTER.kusto.windows.net",
-		ClientId:        unknown,
-		ClientSecret:    unknown,
+		ClusterUri:      "https://CLUSTER.kusto.windows.net",
+		ApplicationId:   unknown,
+		ApplicationKey:  unknown,
 		TenantId:        unknown,
 		Database:        unknown,
 		OTELMetricTable: defaultmetrictable,

@@ -25,9 +25,9 @@ import (
 // Config defines configuration for Azure Monitor
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
-	ClusterName             string `mapstructure:"cluster_name"`
-	ClientId                string `mapstructure:"client_id"`
-	ClientSecret            string `mapstructure:"client_secret"`
+	ClusterUri              string `mapstructure:"cluster_uri"`
+	ApplicationId           string `mapstructure:"application_id"`
+	ApplicationKey          string `mapstructure:"application_key"`
 	TenantId                string `mapstructure:"tenant_id"`
 	Database                string `mapstructure:"db_name"`
 	OTELMetricTable         string `mapstructure:"metrics_table_name"`
@@ -45,8 +45,8 @@ func (adxCfg *Config) Validate() error {
 		return errors.New("ADX config is nil / not provided")
 	}
 
-	if isEmpty(adxCfg.ClusterName) || isEmpty(adxCfg.ClientId) || isEmpty(adxCfg.ClientSecret) || isEmpty(adxCfg.TenantId) {
-		return errors.New(`mandatory configurations "cluster_name" ,"client_id" , "client_secret" and "tenant_id" are missing or empty `)
+	if isEmpty(adxCfg.ClusterUri) || isEmpty(adxCfg.ApplicationId) || isEmpty(adxCfg.ApplicationKey) || isEmpty(adxCfg.TenantId) {
+		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
 	}
 
 	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest || isEmpty(adxCfg.IngestionType)) {

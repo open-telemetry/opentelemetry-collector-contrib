@@ -6,13 +6,13 @@ This exporter sends metrics , logs and trace data to [Azure Data Explorer](https
 
 The following settings are required:
 
-- `cluster_name` (no default): The cluster name of the provisioned ADX cluster to ingest the data.
-- `client_id` (no default): The client id to connect to the cluster and ingest data.
-- `client_secret` (no default): The cluster secret corresponding to the client id.
-- `tenant_id` (no default): The tenant id where the client_id is referenced from.
+- `cluster_uri` (no default): The cluster name of the provisioned ADX cluster to ingest the data.
+- `application_id` (no default): The client id to connect to the cluster and ingest data.
+- `application_key` (no default): The cluster secret corresponding to the client id.
+- `tenant_id` (no default): The tenant id where the application_id is referenced from.
 
 The following settings can be optionally configured and have default values:
-#### Note that the database , tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
+> Note that the database , tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
 - `db_name` (default = "oteldb"): The ADX database where the tables are present to ingest the data.
 - `metrics_table_name` (default = OTELMetrics): The target table in the database `db_name` that stores exported metric data.
 - `logs_table_name` (default = OTELLogs): The target table in the database `db_name` that stores exported logs data.
@@ -31,11 +31,11 @@ An example configuration is provided as follows:
 exporters:
   azuredataexplorer:
     # Kusto cluster uri
-    cluster_name: "https://CLUSTER.kusto.windows.net"
+    cluster_uri: "https://CLUSTER.kusto.windows.net"
     # Client Id
-    client_id: "f80da32c-108c-415c-a19e-643f461a677a"
+    application_id: "f80da32c-108c-415c-a19e-643f461a677a"
     # The client secret for the client
-    client_secret: "17cc3f47-e95e-4045-af6c-ec2eea163cc6"
+    application_key: "xx-xx-xx-xx"
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
     # Database for the logs
