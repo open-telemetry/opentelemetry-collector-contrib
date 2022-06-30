@@ -25,6 +25,8 @@ import (
 type (
 	// Provider allows for collector extensions to be used to look up schemaURLs
 	Provider interface {
+		// Lookup whill check the underlying provider to see if content exists
+		// for the provided schemaURL, in the even that it doesn't an error is returned.
 		Lookup(ctx context.Context, schemaURL string) (content io.Reader, err error)
 	}
 
@@ -50,10 +52,6 @@ func (hp *httpProvider) Lookup(ctx context.Context, schemaURL string) (io.Reader
 	if err != nil {
 		return nil, err
 	}
-	if resp.Body == nil {
-		return nil, fmt.Errorf("response body: %w", errNilValueProvided)
-	}
-
 	content := bytes.NewBuffer(nil)
 	if _, err := content.ReadFrom(resp.Body); err != nil {
 		return nil, err
