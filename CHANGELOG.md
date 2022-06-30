@@ -8,6 +8,7 @@
   - If users were disabling this feature gate, they may have to update
     monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+- `datadogexporter`: (Under `exporter.datadog.hostname.preview` feature gate) Remove `docker` hostname detector (#11834)
 
 ### 🚩 Deprecations 🚩
 
