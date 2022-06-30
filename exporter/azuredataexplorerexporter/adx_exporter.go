@@ -50,20 +50,19 @@ const (
 
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-	var metricsBuffer []string
 	transformedadxmetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
+	metricsBuffer := make([]string, len(transformedadxmetrics))
 	if err != nil {
 		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
 		return err
 	}
 	// Since the transform succeeded ,  using the option for ingestion ingest the data into ADX
-	for _, tm := range transformedadxmetrics {
+	for idx, tm := range transformedadxmetrics {
 		adxmetricjsonstring, err := jsoniter.MarshalToString(tm)
 		if err != nil {
 			e.logger.Error("Error performing serialization of data.", zap.Error(err))
 		}
-		metricsBuffer = append(metricsBuffer, adxmetricjsonstring)
-
+		metricsBuffer[idx] = adxmetricjsonstring
 	}
 	if len(metricsBuffer) != 0 {
 		if err := e.ingestData(metricsBuffer); err != nil {
@@ -98,11 +97,11 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 			for k := 0; k < logs.Len(); k++ {
 				logdata := logs.At(k)
 				transformedadxlog := mapToAdxLog(resource.Resource(), scope.Scope(), logdata, e.logger)
-				adxlogjsonbytes, err := jsoniter.Marshal(transformedadxlog)
+				adxlogjsonbytes, err := jsoniter.MarshalToString(transformedadxlog)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				logsBuffer = append(logsBuffer, string(adxlogjsonbytes))
+				logsBuffer = append(logsBuffer, adxlogjsonbytes)
 			}
 		}
 	}
@@ -127,11 +126,11 @@ func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace
 			for k := 0; k < spans.Len(); k++ {
 				spandata := spans.At(k)
 				transformedadxtrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spandata, e.logger)
-				adxtracejsonbytes, err := jsoniter.Marshal(transformedadxtrace)
+				adxtracejsonbytes, err := jsoniter.MarshalToString(transformedadxtrace)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				spanBuffer = append(spanBuffer, string(adxtracejsonbytes))
+				spanBuffer = append(spanBuffer, adxtracejsonbytes)
 			}
 		}
 	}

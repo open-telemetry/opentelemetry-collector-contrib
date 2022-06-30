@@ -111,7 +111,7 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 
 The following tables need to be created in the database specified in the configuration.
 
-```kusto
+```kql
 .create-merge table <Logs-Table-Name> (Timestamp:datetime, ObservedTimestamp:datetime, TraceId:string, SpanId:string, SeverityText:string, SeverityNumber:int, Body:string, ResourceAttributes:dynamic, LogsAttributes:dynamic) 
 
 .create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic) 
@@ -122,7 +122,7 @@ The following tables need to be created in the database specified in the configu
 
 - Using update policies , the collected data can further be processed as per application need. The following is an example where histogram metrics are exported to a histo specific table (buckets and aggregates)
 
-```kusto
+```kql
 .create table HistoBucketData (Timestamp: datetime, MetricName: string , MetricType: string , Value: double, LE: double, Host: string , ResourceAttributes: dynamic, MetricAttributes: dynamic )
 
 .create function 
