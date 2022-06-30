@@ -1,4 +1,4 @@
-# This action requires that any PR targeting the main branch should add at
+# This action requires that any PR targeting the main branch should add a
 # yaml file to the ./unreleased/ directory. If a CHANGELOG entry is not required,
 # or if performing maintance on the Changelog, add the "Skip Changelog" label to
 # disable this action.
