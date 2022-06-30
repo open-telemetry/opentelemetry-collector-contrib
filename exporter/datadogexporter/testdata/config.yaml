@@ -23,6 +23,12 @@ exporters:
       site: datadoghq.eu
       fail_on_invalid_key: true
 
+    traces:
+      span_name_remappings:
+        "old_name1": "new_name1"
+        "old_name2": "new_name2"
+      span_name_as_resource_name: true
+
   datadog/api2:
     hostname: customhostname
 
@@ -41,6 +47,9 @@ exporters:
       report_quantiles: false
 
     traces:
+      span_name_remappings:
+        "old_name3": "new_name3"
+        "old_name4": "new_name4"
       endpoint: https://trace.agent.datadoghq.test
 
   datadog/default:

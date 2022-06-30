@@ -20,14 +20,17 @@ import (
 )
 
 var registry = map[string]interface{}{
-	"TraceID":             traceID,
-	"SpanID":              spanID,
-	"keep_keys":           keepKeys,
-	"set":                 set,
-	"truncate_all":        truncateAll,
-	"limit":               limit,
-	"replace_match":       replaceMatch,
-	"replace_all_matches": replaceAllMatches,
+	"TraceID":              traceID,
+	"SpanID":               spanID,
+	"IsMatch":              isMatch,
+	"keep_keys":            keepKeys,
+	"set":                  set,
+	"truncate_all":         truncateAll,
+	"limit":                limit,
+	"replace_match":        replaceMatch,
+	"replace_all_matches":  replaceAllMatches,
+	"replace_pattern":      replacePattern,
+	"replace_all_patterns": replaceAllPatterns,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)
