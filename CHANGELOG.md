@@ -17,6 +17,19 @@
 ### 🚩 Deprecations 🚩
 
 - `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+- `hostmetricsreceiver`: remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
+  - `system.network.dropped` will become:
+    - `system.network.dropped.receive`
+    - `system.network.dropped.transmit`
+  - `system.network.errors` will become:
+    - `system.network.errors.receive`
+    - `system.network.errors.transmit`
+  - `system.network.io` will become:
+    - `system.network.io.receive`
+    - `system.network.io.transmit`
+  - `system.network.packets` will become:
+    - `system.network.packets.receive`
+    - `system.network.packets.transmit`
 
 ### 🚀 New components 🚀
 
