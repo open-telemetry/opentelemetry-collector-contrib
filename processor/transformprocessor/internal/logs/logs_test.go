@@ -15,7 +15,7 @@
 package logs
 
 import (
-    	"encoding/hex"
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -167,36 +167,36 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-		    name: "trace_id string",
-		    path: []common.Field{
-			{
-			    Name: "trace_id",
+			name: "trace_id string",
+			path: []common.Field{
+				{
+					Name: "trace_id",
+				},
+				{
+					Name: "string",
+				},
 			},
-			{
-			    Name: "string",
+			orig: hex.EncodeToString(traceID[:]),
+			new:  hex.EncodeToString(traceID2[:]),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
-		    },
-		    orig: hex.EncodeToString(traceID[:]),
-		    new:  hex.EncodeToString(traceID2[:]),
-		    modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-			log.SetTraceID(pcommon.NewTraceID(traceID2))
-		    },
 		},
 		{
-		    name: "span_id string",
-		    path: []common.Field{
-			{
-			    Name: "span_id",
+			name: "span_id string",
+			path: []common.Field{
+				{
+					Name: "span_id",
+				},
+				{
+					Name: "string",
+				},
 			},
-			{
-			    Name: "string",
+			orig: hex.EncodeToString(spanID[:]),
+			new:  hex.EncodeToString(spanID2[:]),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
-		    },
-		    orig: hex.EncodeToString(spanID[:]),
-		    new:  hex.EncodeToString(spanID2[:]),
-		    modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-			log.SetSpanID(pcommon.NewSpanID(spanID2))
-		    },
 		},
 		{
 			name: "attributes",

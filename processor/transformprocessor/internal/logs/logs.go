@@ -110,20 +110,20 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		return accessFlags(), nil
 	case "trace_id":
 		if len(path) == 1 {
-		    return accessTraceID(), nil
+			return accessTraceID(), nil
 		}
 		switch path[1].Name {
 		case "string":
-		    return accessStringTraceID(), nil
+			return accessStringTraceID(), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
-		    return accessSpanID(), nil
+			return accessSpanID(), nil
 		}
 		switch path[1].Name {
 		case "string":
 			return accessStringSpanID(), nil
-        	}
+		}
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
@@ -342,7 +342,7 @@ func accessStringTraceID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if traceID, err := common.ParseTraceID(str); err == nil {
-				    ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
 				}
 			}
 		},
@@ -370,7 +370,7 @@ func accessStringSpanID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if spanID, err := common.ParseSpanID(str); err == nil {
-				    ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
 				}
 			}
 		},

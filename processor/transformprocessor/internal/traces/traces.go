@@ -91,19 +91,19 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		}
 	case "trace_id":
 		if len(path) == 1 {
-		    return accessTraceID(), nil
+			return accessTraceID(), nil
 		}
 		switch path[1].Name {
 		case "string":
-		    return accessStringTraceID(), nil
+			return accessStringTraceID(), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
-		    return accessSpanID(), nil
+			return accessSpanID(), nil
 		}
 		switch path[1].Name {
 		case "string":
-		    return accessStringSpanID(), nil
+			return accessStringSpanID(), nil
 		}
 	case "trace_state":
 		mapKey := path[0].MapKey
@@ -253,7 +253,7 @@ func accessStringTraceID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if traceID, err := common.ParseTraceID(str); err == nil {
-				    ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
+					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
 				}
 			}
 		},
@@ -281,7 +281,7 @@ func accessStringSpanID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if spanID, err := common.ParseSpanID(str); err == nil {
-				    ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
+					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
 				}
 			}
 		},
