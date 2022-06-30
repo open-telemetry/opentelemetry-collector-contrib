@@ -11,6 +11,7 @@
 
 ### 🚩 Deprecations 🚩
 
+- `simpleprometheusreceiver`: Announcing `tls_enable`, `tls_config` will be deprecated and use `confighttp.HTTPClientSettings` instead. (#11553)
 - `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 
 ### 🚀 New components 🚀
