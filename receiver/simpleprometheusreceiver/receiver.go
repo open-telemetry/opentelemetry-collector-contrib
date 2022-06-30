@@ -71,6 +71,7 @@ func getPrometheusConfigWrapper(cfg *Config, params component.ReceiverCreateSett
 				CertFile: cfg.TLSConfig.CertFile,
 				KeyFile:  cfg.TLSConfig.KeyFile,
 			},
+			Insecure:           false,
 			InsecureSkipVerify: cfg.TLSConfig.InsecureSkipVerify,
 		}
 	}
