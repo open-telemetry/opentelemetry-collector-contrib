@@ -56,7 +56,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.2 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/ReneKroon/ttlcache/v2 v2.11.0 // indirect
-	github.com/SAP/go-hdb v0.105.5 // indirect
+	github.com/SAP/go-hdb v0.106.1 // indirect
 	github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 // indirect
 	github.com/Shopify/sarama v1.34.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
@@ -69,14 +69,16 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/aws/aws-sdk-go v1.44.43 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.9.2 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.8.3 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.4.3 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.6.0 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.2.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.3.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.4.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.7.2 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.11.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.10.1 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.6.1 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.8.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.5.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.6.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.10.0 // indirect
 	github.com/aws/smithy-go v1.11.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
@@ -394,6 +396,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver v0.54.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver v0.54.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.54.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver v0.54.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver v0.54.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver v0.54.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.54.0 // indirect
