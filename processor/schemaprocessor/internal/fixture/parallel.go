@@ -24,12 +24,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
 )
 
-// ParallelCompute will run the function concurrently by syncing the start of each operation
-// and waiting for each to finish. The returned result from the function
-// is checked to see if it is not null.
-func ParallelCompute(tb testing.TB, concurrency int, fn func() error) {
+// ParallelRaceCompute checks to see if the race detector is running before
+// testing the function concurrently
+func ParallelRaceCompute(tb testing.TB, concurrency int, fn func() error) {
 	tb.Helper()
-
+	if !race.Enabled {
+		tb.Skip(
+			"This test requires the Race Detector to be enabled.",
+			"Please run again with -race to run this test.",
+		)
+		return
+	}
 	require.NotNil(tb, fn, "Must have a valid function")
 
 	var (
@@ -48,18 +53,4 @@ func ParallelCompute(tb testing.TB, concurrency int, fn func() error) {
 	close(start)
 
 	wg.Wait()
-}
-
-// ParallelRaceCompute checks to see if the race detector is running before
-// testing the function concurrently
-func ParallelRaceCompute(tb testing.TB, concurrency int, fn func() error) {
-	tb.Helper()
-	if !race.Enabled {
-		tb.Skip(
-			"This test requires the Race Detector to be enabled.",
-			"Please run again with -race to run this test.",
-		)
-		return
-	}
-	ParallelCompute(tb, concurrency, fn)
 }

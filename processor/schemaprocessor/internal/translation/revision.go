@@ -16,49 +16,47 @@ package translation
 
 import "go.opentelemetry.io/otel/schema/v1.0/ast"
 
-type (
-	// Revision represents all changes that are to be
-	// applied to a signal at a given version.
-	Revision interface {
-		// Version is stored to help make
-		// sorting revisions easier
-		Version() *Version
+// Revision represents all changes that are to be
+// applied to a signal at a given version.
+type Revision interface {
+	// Version is stored to help make
+	// sorting revisions easier
+	Version() *Version
 
-		// All is intended to apply to all incoming attributes
-		// that are known as part of this revision.
-		All() Modifier
+	// All is intended to apply to all incoming attributes
+	// that are known as part of this revision.
+	All() Modifier
 
-		// Resources applies to all resources
-		// of the incoming data
-		Resources() Modifier
+	// Resources applies to all resources
+	// of the incoming data
+	Resources() Modifier
 
-		// Logs applies to all incoming log signals that
-		// are part of this revision
-		Logs() Modifier
+	// Logs applies to all incoming log signals that
+	// are part of this revision
+	Logs() Modifier
 
-		// Spans update all incoming span signals
-		// that are part of this revision
-		Spans() Modifier
+	// Spans update all incoming span signals
+	// that are part of this revision
+	Spans() Modifier
 
-		// SpanEvents update all incoming span event signals
-		// that are part of this revision
-		SpanEvents() Modifier
+	// SpanEvents update all incoming span event signals
+	// that are part of this revision
+	SpanEvents() Modifier
 
-		// Metrics update all incoming metric signals
-		// that are part of this reivision
-		Metrics() Modifier
-	}
+	// Metrics update all incoming metric signals
+	// that are part of this reivision
+	Metrics() Modifier
+}
 
-	revision struct {
-		ver      *Version
-		all      Modifier
-		resource Modifier
-		logs     Modifier
-		spans    Modifier
-		events   Modifier
-		metrics  Modifier
-	}
-)
+type revision struct {
+	ver      *Version
+	all      Modifier
+	resource Modifier
+	logs     Modifier
+	spans    Modifier
+	events   Modifier
+	metrics  Modifier
+}
 
 var (
 	_ Revision = (*revision)(nil)

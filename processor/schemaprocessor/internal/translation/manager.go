@@ -27,37 +27,29 @@ var (
 	errNilValueProvided = errors.New("nil value provided")
 )
 
-type (
-	// Manager is responsible for ensuring that schemas are kept up to date
-	// with the most recent version that are requested.
-	Manager interface {
-		// RequestTranslation will provide either the defined Translation
-		// if it is a known target, or, return a noop variation.
-		// In the event that a matched Translation, on a missed version
-		// there is a potential to block during this process.
-		// Otherwise, the translation will allow concurrent reads.
-		RequestTranslation(ctx context.Context, schemaURL string) Translation
+// Manager is responsible for ensuring that schemas are kept up to date
+// with the most recent version that are requested.
+type Manager interface {
+	// RequestTranslation will provide either the defined Translation
+	// if it is a known target, or, return a noop variation.
+	// In the event that a matched Translation, on a missed version
+	// there is a potential to block during this process.
+	// Otherwise, the translation will allow concurrent reads.
+	RequestTranslation(ctx context.Context, schemaURL string) Translation
 
-		SetProviders(providers ...Provider) error
-	}
+	// SetProviders will update the list of providers used by the manager
+	// to look up schemaURLs
+	SetProviders(providers ...Provider) error
+}
 
-	manager struct {
-		log *zap.Logger
+type manager struct {
+	log *zap.Logger
 
-		rw           sync.RWMutex
-		providers    []Provider
-		match        map[string]*Version
-		translations map[string]*translator
-	}
-
-	updateRequest struct {
-		// ctx is stored here so that it can
-		// cancel a background routine early.
-		ctx        context.Context
-		schemaURL  string
-		translator *translator
-	}
-)
+	rw           sync.RWMutex
+	providers    []Provider
+	match        map[string]*Version
+	translations map[string]*translator
+}
 
 var (
 	_ Manager = (*manager)(nil)

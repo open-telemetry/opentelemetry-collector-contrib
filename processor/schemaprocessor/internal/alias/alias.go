@@ -23,25 +23,23 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type (
-	// Resource defines a minimal interface so that
-	// the change set can continue using the same pattern
-	Resource interface {
-		SchemaUrl() string
+// Resource defines a minimal interface so that
+// the change set can continue using the same pattern
+type Resource interface {
+	SchemaUrl() string
 
-		SetSchemaUrl(url string)
+	SetSchemaUrl(url string)
 
-		Resource() pcommon.Resource
-	}
+	Resource() pcommon.Resource
+}
 
-	// Signal represents a subset of incoming pdata
-	// that can be updated using the schema processor
-	Signal interface {
-		Name() string
+// Signal represents a subset of incoming pdata
+// that can be updated using the schema processor
+type Signal interface {
+	Name() string
 
-		SetName(name string)
-	}
-)
+	SetName(name string)
+}
 
 var (
 	_ Resource = (*plog.ResourceLogs)(nil)

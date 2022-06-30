@@ -22,18 +22,16 @@ import (
 	"net/http"
 )
 
-type (
-	// Provider allows for collector extensions to be used to look up schemaURLs
-	Provider interface {
-		// Lookup whill check the underlying provider to see if content exists
-		// for the provided schemaURL, in the even that it doesn't an error is returned.
-		Lookup(ctx context.Context, schemaURL string) (content io.Reader, err error)
-	}
+// Provider allows for collector extensions to be used to look up schemaURLs
+type Provider interface {
+	// Lookup whill check the underlying provider to see if content exists
+	// for the provided schemaURL, in the even that it doesn't an error is returned.
+	Lookup(ctx context.Context, schemaURL string) (content io.Reader, err error)
+}
 
-	httpProvider struct {
-		client *http.Client
-	}
-)
+type httpProvider struct {
+	client *http.Client
+}
 
 var (
 	_ Provider = (*httpProvider)(nil)

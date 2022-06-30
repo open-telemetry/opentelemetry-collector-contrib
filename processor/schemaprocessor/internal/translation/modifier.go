@@ -20,45 +20,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
-type (
-	// Modifier abstracts a verion change that allows
-	// for the changes to be updated or revert.
-	Modifier interface {
-		// UpdateAttrs modifies all matching attributes
-		// names with the configured changes.
-		UpdateAttrs(attrs pcommon.Map)
-		// RevertAttrs modifies all matching attributes
-		// names with the configured changes.
-		RevertAttrs(attrs pcommon.Map)
-		// UpdateAttrsIf only applies the changes configured
-		// if the changes explicitly require the match value
-		// or if there is no configured values to match against.
-		UpdateAttrsIf(match string, attrs pcommon.Map)
-		// RevertAttrsIf only applies the changes configured
-		// if the changes explicitly require the match value
-		// or if there is no configured values to match against.
-		RevertAttrsIf(match string, attrs pcommon.Map)
-		// UpdateSignal will update the name of the signal
-		// if there is a known transition
-		UpdateSignal(signal alias.Signal)
-		// RevertSignal will update the name of the signal
-		// if there is a known transition
-		RevertSignal(signal alias.Signal)
-	}
+// Modifier abstracts a verion change that allows
+// for the changes to be updated or revert.
+type Modifier interface {
+	// UpdateAttrs modifies all matching attributes
+	// names with the configured changes.
+	UpdateAttrs(attrs pcommon.Map)
+	// RevertAttrs modifies all matching attributes
+	// names with the configured changes.
+	RevertAttrs(attrs pcommon.Map)
+	// UpdateAttrsIf only applies the changes configured
+	// if the changes explicitly require the match value
+	// or if there is no configured values to match against.
+	UpdateAttrsIf(match string, attrs pcommon.Map)
+	// RevertAttrsIf only applies the changes configured
+	// if the changes explicitly require the match value
+	// or if there is no configured values to match against.
+	RevertAttrsIf(match string, attrs pcommon.Map)
+	// UpdateSignal will update the name of the signal
+	// if there is a known transition
+	UpdateSignal(signal alias.Signal)
+	// RevertSignal will update the name of the signal
+	// if there is a known transition
+	RevertSignal(signal alias.Signal)
+}
 
-	// modify is one change that can be made to a signal
-	modify struct {
-		names map[string]string
+// modify is one change that can be made to a signal
+type modify struct {
+	names map[string]string
 
-		appliesTo map[string]struct{}
-		attrs     map[string]string
-	}
+	appliesTo map[string]struct{}
+	attrs     map[string]string
+}
 
-	// modifications is used when there is sets of changes
-	// that can not be merged together due to dependant changes
-	// on signal name
-	modifications []*modify
-)
+// modifications is used when there is sets of changes
+// that can not be merged together due to dependant changes
+// on signal name
+type modifications []*modify
 
 var (
 	_ Modifier = (*modify)(nil)

@@ -29,46 +29,44 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 )
 
-type (
-	// Translation defines the complete abstraction of schema translation file
-	// that is defined as part of the https://opentelemetry.io/docs/reference/specification/schemas/file_format_v1.0.0/
-	// Each instance of Translation is "Target Aware", meaning that given a schemaURL as an input
-	// it will convert from the given input, to the configured target.
-	//
-	// Note: as an optimisation, once a Translation is returned from the manager,
-	//       there is no checking the incoming signals if the schema family is a match.
-	Translation interface {
-		// SupportedVersions checks to see if the provided version is defined as part
-		// of this translation since it is useful to know it the translation is missing
-		// updates.
-		SupportedVersion(v *Version) bool
+// Translation defines the complete abstraction of schema translation file
+// that is defined as part of the https://opentelemetry.io/docs/reference/specification/schemas/file_format_v1.0.0/
+// Each instance of Translation is "Target Aware", meaning that given a schemaURL as an input
+// it will convert from the given input, to the configured target.
+//
+// Note: as an optimisation, once a Translation is returned from the manager,
+//       there is no checking the incoming signals if the schema family is a match.
+type Translation interface {
+	// SupportedVersions checks to see if the provided version is defined as part
+	// of this translation since it is useful to know it the translation is missing
+	// updates.
+	SupportedVersion(v *Version) bool
 
-		// ApplyAllResourceChanges will modify the resource part of the incoming signals
-		// This applies to all telemetry types and should be applied there
-		ApplyAllResourceChanges(ctx context.Context, in alias.Resource)
+	// ApplyAllResourceChanges will modify the resource part of the incoming signals
+	// This applies to all telemetry types and should be applied there
+	ApplyAllResourceChanges(ctx context.Context, in alias.Resource)
 
-		// ApplyScopeSpanChanges will modify all spans and span events within the incoming signals
-		ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans)
+	// ApplyScopeSpanChanges will modify all spans and span events within the incoming signals
+	ApplyScopeSpanChanges(ctx context.Context, in ptrace.ScopeSpans)
 
-		// ApplyScopeLogChanges will modify all logs within the incoming signal
-		ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs)
+	// ApplyScopeLogChanges will modify all logs within the incoming signal
+	ApplyScopeLogChanges(ctx context.Context, in plog.ScopeLogs)
 
-		// ApplyScopeMetricChanges will update all metrics including
-		// histograms, exponetial histograms, summarys, sum and gauges
-		ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics)
-	}
+	// ApplyScopeMetricChanges will update all metrics including
+	// histograms, exponetial histograms, summarys, sum and gauges
+	ApplyScopeMetricChanges(ctx context.Context, in pmetric.ScopeMetrics)
+}
 
-	translator struct {
-		schemaURL string
-		target    *Version
-		indexes   map[Version]int
-		revisions []Revision
+type translator struct {
+	schemaURL string
+	target    *Version
+	indexes   map[Version]int
+	revisions []Revision
 
-		log *zap.Logger
-	}
+	log *zap.Logger
+}
 
-	iterator func() (r Revision, more bool)
-)
+type iterator func() (r Revision, more bool)
 
 var (
 	_ sort.Interface = (*translator)(nil)
