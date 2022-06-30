@@ -271,7 +271,7 @@ func TestTraceExporter(t *testing.T) {
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, simpleTraces())
 	assert.NoError(t, err)
-	time.Sleep(10 * time.Millisecond) // we need a bit of time for channels to receive things
+	time.Sleep(time.Second) // we need a bit of time for channels to receive things
 	require.NoError(t, exporter.Shutdown(context.Background()))
 	require.Equal(t, "application/x-protobuf", got)
 }
