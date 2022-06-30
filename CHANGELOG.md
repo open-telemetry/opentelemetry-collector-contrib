@@ -1,30 +1,47 @@
 # Changelog
 
 ## Unreleased
-- `filterprocessor`: Ability to filter `Spans` (#6341)
+
 - `k8sclusterreceiver`: move from github.com/pkg/errors to 'errors' and 'fmt' (#11114)
 - `mongodbatlasreceiver`: move from github.com/pkg/errors to 'errors' and 'fmt' (#11114)
 
 ## 🛑 Breaking changes 🛑
 
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
+  - If users were disabling this feature gate, they may have to update
+    monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
+
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 
 ### 🚀 New components 🚀
 
 ### 💡 Enhancements 💡
 
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
+- `flinkmetricsreceiver`: add attribute values to metadata #11520
 - `prometheusreceiver`: Add `target_info` labels to resource attributes. (#11034)
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+- `sqlqueryreceiver`: Add core functionality to SQL query receiver (#10867)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
+- `splunkhecexporter`: Update limits for max_content_length settings (#11550)
+- `filterprocessor`: Add ability to filter `Spans` (#6341)
+- `prometheusexporter` : Added a feature to prometheusexporter to export exemplars along with histogram metrics (#9945)
+- `tracegen`: support add additional resource attributes. (#11145)
+- `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions (#10903)
+- `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11125)
+- `coralogixexporter`: Add support for metrics (#11065)
 
 ### 🧰 Bug fixes 🧰
 
-### Unmaintained components
-
-- `simpleprometheusreceiver`(#11133)
+- `datadogexporter`: The `traces.span_name_remappings` setting now correctly refers to the OpenTelemetry key to be renamed without any sort of normalization. (#9693)
+- `datadogexporter`: Unify traces exporter behavior with Datadog Agent OTLP traces ingest. (#9693)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `filestorageextension`: Copy values returned by Get (#11776)
+- `redactionprocessor`: respect allow_all_keys configuration (#11542)
+- `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
 
@@ -260,7 +277,7 @@
 - `iisreceiver`: Add implementation of IIS Metric Receiver (#8832)
 - `sqlserverreceiver`: Add implementation of SQL Server Metric Receiver (#8398)
 - `activedirectorydsreceiver`: Add implementation of Active Directory Domain Services metric receiver (#9359)
-- `sqlreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
+- `sqlqueryreceiver`: Add readme, factory, and config to initial implementation of SQL receiver (#9408)
 
 ### 💡 Enhancements 💡
 
@@ -307,7 +324,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 - `attributesprocessor`: Remove log names from filters (#9131)
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate is now enabled by default (#9367)
   - Users may have to update monitoring for a few Kubernetes cpu metrics, for
-    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/k8sclusterreceiver#feature-gate-configurations).
+    more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
 
 ### 🚩 Deprecations 🚩
 

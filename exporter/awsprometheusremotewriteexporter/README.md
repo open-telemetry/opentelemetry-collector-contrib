@@ -1,5 +1,12 @@
 ## DEPRECATION NOTICE
 
+| Status                   |              |
+| ------------------------ | ------------ |
+| Stability                | [deprecated] |
+| Supported pipeline types | metrics      |
+| Distributions            | [contrib]    |
+
+
 The AWS Prometheus Remote Write Exporter will be removed at some point after `v0.49.0`. Users who want to send metrics to Amazon Managed Service 
 for Prometheus will need to instead use the [Prometheus Remote Write Exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/exporter/prometheusremotewriteexporter/README.md) along with the [Sigv4 Authenticator Extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/sigv4authextension/README.md) 
 to achieve the same result. 
@@ -79,3 +86,6 @@ exporters:
 
 The full list of settings exposed for this exporter are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

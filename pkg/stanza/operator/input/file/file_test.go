@@ -262,7 +262,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
-				cfg.Encoding.Encoding = "nop"
+				cfg.Splitter.EncodingConfig.Encoding = "nop"
 			}, nil)
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -342,7 +342,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = tc.maxLogSize
-				cfg.Encoding.Encoding = "nop"
+				cfg.Splitter.EncodingConfig.Encoding = "nop"
 			}, nil)
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -816,7 +816,7 @@ func TestEncodings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *Config) {
-				cfg.Encoding = helper.EncodingConfig{Encoding: tc.encoding}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: tc.encoding}
 			}, nil)
 
 			// Popualte the file

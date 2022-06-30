@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package bigipreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver"
 
 import (
@@ -153,20 +152,23 @@ func (s *bigipScraper) collectVirtualServers(virtualServerStats *models.VirtualS
 	s.mb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsIn.Value, metadata.AttributeDirectionReceived)
 	s.mb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsOut.Value, metadata.AttributeDirectionSent)
 	s.mb.RecordBigipVirtualServerRequestCountDataPoint(now, virtualServerStats.NestedStats.Entries.TotalRequests.Value)
+
 	availability := virtualServerStats.NestedStats.Entries.AvailabilityState.Description
-	if strings.HasPrefix(availability, "available") {
+	switch {
+	case strings.HasPrefix(availability, "available"):
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	} else if strings.HasPrefix(availability, "offline") {
+	case strings.HasPrefix(availability, "offline"):
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	} else {
+	default:
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
+
 	enabled := virtualServerStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
 		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
@@ -194,20 +196,23 @@ func (s *bigipScraper) collectPools(poolStats *models.PoolStats, now pcommon.Tim
 	s.mb.RecordBigipPoolMemberCountDataPoint(now, poolStats.NestedStats.Entries.ActiveMemberCount.Value, metadata.AttributeActiveStatusActive)
 	inactiveCount := poolStats.NestedStats.Entries.TotalMemberCount.Value - poolStats.NestedStats.Entries.ActiveMemberCount.Value
 	s.mb.RecordBigipPoolMemberCountDataPoint(now, inactiveCount, metadata.AttributeActiveStatusInactive)
+
 	availability := poolStats.NestedStats.Entries.AvailabilityState.Description
-	if strings.HasPrefix(availability, "available") {
+	switch {
+	case strings.HasPrefix(availability, "available"):
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	} else if strings.HasPrefix(availability, "offline") {
+	case strings.HasPrefix(availability, "offline"):
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	} else {
+	default:
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
+
 	enabled := poolStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
 		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
@@ -231,20 +236,23 @@ func (s *bigipScraper) collectPoolMembers(poolMemberStats *models.PoolMemberStat
 	s.mb.RecordBigipPoolMemberPacketCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersidePktsOut.Value, metadata.AttributeDirectionSent)
 	s.mb.RecordBigipPoolMemberRequestCountDataPoint(now, poolMemberStats.NestedStats.Entries.TotalRequests.Value)
 	s.mb.RecordBigipPoolMemberSessionCountDataPoint(now, poolMemberStats.NestedStats.Entries.CurSessions.Value)
+
 	availability := poolMemberStats.NestedStats.Entries.AvailabilityState.Description
-	if strings.HasPrefix(availability, "available") {
+	switch {
+	case strings.HasPrefix(availability, "available"):
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	} else if strings.HasPrefix(availability, "offline") {
+	case strings.HasPrefix(availability, "offline"):
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	} else {
+	default:
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
+
 	enabled := poolMemberStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
 		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
@@ -270,20 +278,23 @@ func (s *bigipScraper) collectNodes(nodeStats *models.NodeStats, now pcommon.Tim
 	s.mb.RecordBigipNodePacketCountDataPoint(now, nodeStats.NestedStats.Entries.ServersidePktsOut.Value, metadata.AttributeDirectionSent)
 	s.mb.RecordBigipNodeRequestCountDataPoint(now, nodeStats.NestedStats.Entries.TotalRequests.Value)
 	s.mb.RecordBigipNodeSessionCountDataPoint(now, nodeStats.NestedStats.Entries.CurSessions.Value)
+
 	availability := nodeStats.NestedStats.Entries.AvailabilityState.Description
-	if strings.HasPrefix(availability, "available") {
+	switch {
+	case strings.HasPrefix(availability, "available"):
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	} else if strings.HasPrefix(availability, "offline") {
+	case strings.HasPrefix(availability, "offline"):
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	} else {
+	default:
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
 		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
+
 	enabled := nodeStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
 		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
