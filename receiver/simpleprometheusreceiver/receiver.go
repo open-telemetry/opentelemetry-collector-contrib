@@ -78,13 +78,7 @@ func getPrometheusConfigWrapper(cfg *Config, params component.ReceiverCreateSett
 }
 
 func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
-	var (
-		bearerToken string
-		scheme      = "http"
-		out         = &prometheusreceiver.Config{}
-		httpConfig  = configutil.HTTPClientConfig{}
-	)
-
+	var bearerToken string
 	if cfg.UseServiceAccount {
 		restConfig, err := rest.InClusterConfig()
 		if err != nil {
@@ -95,6 +89,11 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 			return nil, errors.New("bearer token was empty")
 		}
 	}
+
+	out := &prometheusreceiver.Config{}
+	httpConfig := configutil.HTTPClientConfig{}
+
+	scheme := "http"
 
 	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig()
 	if err != nil {
