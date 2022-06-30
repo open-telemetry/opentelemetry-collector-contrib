@@ -97,7 +97,7 @@ func getPrometheusConfig(cfg *Config) (*prometheusreceiver.Config, error) {
 
 	tlsConfig, err := cfg.TLSSetting.LoadTLSConfig()
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("tls config is not valid: %v", err))
+		return nil, fmt.Errorf("tls config is not valid: %w", err)
 	}
 	if tlsConfig != nil {
 		scheme = "https"
