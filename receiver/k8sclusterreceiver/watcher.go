@@ -23,7 +23,6 @@ import (
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	quotainformersv1 "github.com/openshift/client-go/quota/informers/externalversions"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/atomic"
@@ -63,7 +62,8 @@ type metadataConsumer func(metadata []*metadata.MetadataUpdate) error
 func newResourceWatcher(
 	logger *zap.Logger, client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
 	nodeConditionTypesToReport, allocatableTypesToReport []string,
-	initialSyncTimeout time.Duration) (*resourceWatcher, error) {
+	initialSyncTimeout time.Duration,
+) (*resourceWatcher, error) {
 	rw := &resourceWatcher{
 		client:              client,
 		osQuotaClient:       osQuotaClient,
@@ -141,7 +141,7 @@ func (rw *resourceWatcher) isKindSupported(gvk schema.GroupVersionKind) (bool, e
 			rw.logger.Debug("Group version is not supported", zap.String("group", gvk.GroupVersion().String()))
 			return false, nil
 		}
-		return false, errors.Wrap(err, "Failed to fetch group version details")
+		return false, fmt.Errorf("failed to fetch group version details: %w", err)
 	}
 
 	for _, r := range resources.APIResources {
@@ -269,7 +269,6 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	exporters map[config.ComponentID]component.Exporter,
 	metadataExportersFromConfig []string,
 ) error {
-
 	var out []metadataConsumer
 
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
@@ -296,8 +295,8 @@ func (rw *resourceWatcher) setupMetadataExporters(
 }
 
 func validateMetadataExporters(metadataExporters map[string]bool,
-	exporters map[config.ComponentID]component.Exporter) error {
-
+	exporters map[config.ComponentID]component.Exporter,
+) error {
 	configuredExporters := map[string]bool{}
 	for cfg := range exporters {
 		configuredExporters[cfg.String()] = true
@@ -313,8 +312,8 @@ func validateMetadataExporters(metadataExporters map[string]bool,
 }
 
 func (rw *resourceWatcher) syncMetadataUpdate(oldMetadata,
-	newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata) {
-
+	newMetadata map[metadata.ResourceID]*collection.KubernetesMetadata,
+) {
 	metadataUpdate := collection.GetMetadataUpdate(oldMetadata, newMetadata)
 	if len(metadataUpdate) == 0 {
 		return
