@@ -2,9 +2,6 @@
 
 ## Unreleased
 
-- `k8sclusterreceiver`: move from github.com/pkg/errors to 'errors' and 'fmt' (#11114)
-- `mongodbatlasreceiver`: move from github.com/pkg/errors to 'errors' and 'fmt' (#11114)
-
 ## 🛑 Breaking changes 🛑
 
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
