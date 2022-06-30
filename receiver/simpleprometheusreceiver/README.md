@@ -43,7 +43,7 @@ connections.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip
 certificate verification.
 
-- `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings) for the full set of available options.
 
 Example:
 
