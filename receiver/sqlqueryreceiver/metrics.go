@@ -17,9 +17,7 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strconv"
-	"time"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -29,8 +27,6 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
-	dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
