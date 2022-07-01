@@ -16,7 +16,6 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -168,15 +167,24 @@ func (f *factory) createDefaultConfig() config.Exporter {
 	}
 }
 
+// checkAndCastConfig checks the configuration type and its warnings, and casts it to
+// the Datadog Config struct.
+func checkAndCastConfig(set component.ExporterCreateSettings, c config.Exporter) *Config {
+	cfg, ok := c.(*Config)
+	if !ok {
+		panic("programming error: config structure is not of type *datadogexporter.Config")
+	}
+	cfg.logWarnings(set.Logger)
+	return cfg
+}
+
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
-
-	cfg := c.(*Config)
-	cfg.logWarnings(set.Logger)
+	cfg := checkAndCastConfig(set, c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -235,12 +243,7 @@ func (f *factory) createTracesExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
-
-	cfg, ok := c.(*Config)
-	if !ok {
-		return nil, errors.New("programming error: config structure is not of type *ddconfig.Config")
-	}
-	cfg.logWarnings(set.Logger)
+	cfg := checkAndCastConfig(set, c)
 
 	var (
 		pusher consumer.ConsumeTracesFunc
