@@ -127,6 +127,7 @@
 - `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
+- `exporter/kafkaexporter`: Fixed config.Topic mutation causing **Logs|Metrics|Traces** to default to 1 topic (#14244)
 
 ## v0.53.0
 
