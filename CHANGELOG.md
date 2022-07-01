@@ -57,6 +57,7 @@
 - `datadogexporter`: The `traces.span_name_remappings` setting now correctly refers to the OpenTelemetry key to be renamed without any sort of normalization. (#9693)
 - `datadogexporter`: Unify traces exporter behavior with Datadog Agent OTLP traces ingest. (#9693)
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `exporter/kafkaexporter`: Fixed config.Topic mutation causing **Logs|Metrics|Traces** to default to 1 topic (#11420)
 - `filestorageextension`: Copy values returned by Get (#11776)
 - `redactionprocessor`: respect allow_all_keys configuration (#11542)
 - `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
@@ -127,7 +128,6 @@
 - `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
-- `exporter/kafkaexporter`: Fixed config.Topic mutation causing **Logs|Metrics|Traces** to default to 1 topic (#14244)
 
 ## v0.53.0
 
