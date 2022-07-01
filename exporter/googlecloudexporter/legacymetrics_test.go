@@ -85,6 +85,7 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	lis, err := net.Listen("tcp", "localhost:8080")
 	require.NoError(t, err)
 	defer lis.Close()
+	defer srv.Stop()
 
 	go func() {
 		require.NoError(t, srv.Serve(lis))
