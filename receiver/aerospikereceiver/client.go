@@ -31,9 +31,8 @@ var defaultNodeInfoCommands = []string{
 	"statistics",
 }
 
-// TODO should we have a type that supports connections to multiple clusters?
+// nodeName: metricName: stats
 type clusterInfo = map[string]map[string]string
-type metricsMap = map[string]string
 
 // Aerospike is the interface that provides information about a given node
 type Aerospike interface {
@@ -112,10 +111,9 @@ func newASClient(cfg *clientConfig, ngf nodeGetterFactoryFunc) (*defaultASClient
 
 // useNodeFunc maps a nodeFunc to all the client's nodes
 func (c *defaultASClient) useNodeFunc(nf nodeFunc) clusterInfo {
-	var nodes []cluster.Node
 	var res clusterInfo
 
-	nodes = c.cluster.GetNodes()
+	nodes := c.cluster.GetNodes()
 
 	policy := as.NewInfoPolicy()
 	policy.Timeout = c.policy.Timeout
@@ -129,6 +127,10 @@ func (c *defaultASClient) useNodeFunc(nf nodeFunc) clusterInfo {
 
 	return res
 }
+
+// metricName: stat
+// may be used as, commandName: stat
+type metricsMap = map[string]string
 
 // Info returns a clusterInfo map of node names to metricMaps
 // it uses the info commands defined in defaultNodeInfoCommands
@@ -278,8 +280,8 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 	return res, nil
 }
 
-func parseStats(defaultKey, s, sep string) map[string]string {
-	stats := make(map[string]string, strings.Count(s, sep)+1)
+func parseStats(defaultKey, s, sep string) metricsMap {
+	stats := make(metricsMap, strings.Count(s, sep)+1)
 	s2 := strings.Split(s, sep)
 	for _, s := range s2 {
 		list := strings.SplitN(s, "=", 2)

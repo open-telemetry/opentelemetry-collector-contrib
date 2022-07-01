@@ -17,9 +17,7 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
-	"os"
 	"strconv"
 	"time"
 
@@ -30,7 +28,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
-	asl "github.com/aerospike/aerospike-client-go/v5/logger"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 )
 
@@ -91,10 +88,6 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 	r.logger.Debug("executing start")
 
-	logger := log.New(os.Stdout, "logger: ", log.Lshortfile)
-	asl.Logger.SetLogger(logger)
-	asl.Logger.SetLevel(asl.DEBUG)
-
 	client, err := r.clientFactory(r.host, r.port)
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
@@ -129,7 +122,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 }
 
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
-func (r *aerospikeReceiver) emitNode(info metricsMap, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	r.logger.Sugar().Debugf("emitNode len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
