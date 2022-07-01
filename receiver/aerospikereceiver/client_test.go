@@ -58,7 +58,7 @@ func TestAerospike_Info(t *testing.T) {
 		logger: logger,
 	}
 
-	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error) {
+	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
 		return testCluster, nil
 	}
 
@@ -121,7 +121,7 @@ func TestAerospike_NamespaceInfo(t *testing.T) {
 		logger: logger,
 	}
 
-	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error) {
+	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
 		return testCluster, nil
 	}
 

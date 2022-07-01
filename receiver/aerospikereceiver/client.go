@@ -66,11 +66,9 @@ type defaultASClient struct {
 	logger  *zap.Logger      // logs malformed metrics in responses
 }
 
-type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error)
+type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error)
 
-func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy) (nodeGetter, error) {
-	authEnabled := cfg.username != "" && cfg.password != ""
-
+func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
 	hosts := []*as.Host{as.NewHost(cfg.host, cfg.port)}
 
 	if cfg.collectClusterMetrics {
@@ -100,7 +98,7 @@ func newASClient(cfg *clientConfig, ngf nodeGetterFactoryFunc) (*defaultASClient
 		policy.Password = cfg.password
 	}
 
-	cluster, err := ngf(cfg, policy)
+	cluster, err := ngf(cfg, policy, authEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +126,8 @@ func (c *defaultASClient) useNodeFunc(nf nodeFunc) clusterInfo {
 		policy,
 		c.logger,
 	)
+
+	// fmt.Printf("res: %+v", res)
 
 	return res
 }

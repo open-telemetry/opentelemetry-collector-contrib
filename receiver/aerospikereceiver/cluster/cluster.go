@@ -14,33 +14,34 @@
 package cluster // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 
 import (
+	"fmt"
+
 	as "github.com/aerospike/aerospike-client-go/v5"
 )
 
 // wrap aerospike Cluster so we can return node interfaces
 type Cluster struct {
-	as.Cluster
+	*as.Client
 }
 
 func NewCluster(policy *as.ClientPolicy, hosts []*as.Host) (*Cluster, error) {
-	c, err := as.NewCluster(policy, hosts)
+	c, err := as.NewClientWithPolicyAndHost(policy, hosts...)
+	//c, err := as.NewCluster(policy, hosts)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Cluster{*c}, err
-}
-
-func (c *Cluster) Close() {
-	c.Cluster.Close()
+	return &Cluster{c}, err
 }
 
 func (c *Cluster) GetNodes() []Node {
-	asNodes := c.Cluster.GetNodes()
+	asNodes := c.Client.GetNodes()
 	nodes := make([]Node, len(asNodes))
 	for i, n := range asNodes {
 		nodes[i] = n
 	}
 
+	fmt.Printf("return GetNodes: %+v\n", nodes)
+	fmt.Printf("return GetNodes len: %+v\n", len(nodes))
 	return nodes
 }

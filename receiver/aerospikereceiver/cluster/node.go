@@ -14,7 +14,11 @@
 package cluster // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 
 import (
+	"fmt"
+	"time"
+
 	as "github.com/aerospike/aerospike-client-go/v5"
+	"github.com/aerospike/aerospike-client-go/v5/types"
 )
 
 type Node interface {
@@ -25,14 +29,21 @@ type Node interface {
 
 // ConnNode is for single node scraping
 type ConnNode struct {
-	conn *as.Connection
-	name string
+	conn   *as.Connection
+	policy *as.ClientPolicy
+	name   string
 }
 
 func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*ConnNode, error) {
 	conn, err := as.NewConnection(policy, host)
 	if err != nil {
 		return nil, err
+	}
+
+	var deadline time.Time
+	// set deadline to 0 (inf) so we can always reuse this connection
+	if err := conn.SetTimeout(deadline, policy.Timeout); err != nil {
+		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
 
 	if authEnabled {
@@ -48,8 +59,9 @@ func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*Con
 	name := m["node"]
 
 	res := ConnNode{
-		conn: conn,
-		name: name,
+		conn:   conn,
+		policy: policy,
+		name:   name,
 	}
 
 	return &res, nil
@@ -57,6 +69,13 @@ func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*Con
 
 func (n *ConnNode) RequestInfo(_ *as.InfoPolicy, commands ...string) (map[string]string, as.Error) {
 	res, err := n.conn.RequestInfo(commands...)
+	// Try to login and get a new session
+	if err != nil && err.Matches(types.EXPIRED_SESSION) {
+		if loginErr := n.conn.Login(n.policy); loginErr != nil {
+			return nil, loginErr
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}

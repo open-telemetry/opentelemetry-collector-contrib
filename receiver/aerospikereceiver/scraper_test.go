@@ -23,6 +23,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -128,7 +129,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		},
 	}, nil)
 
-	initialClient.On("Close").Return()
+	initialClient.On("Close").Return(nil)
 
 	clientFactory := func(host string, port int) (Aerospike, error) {
 		switch fmt.Sprintf("%s:%d", host, port) {
@@ -151,11 +152,15 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		},
 	}
 
+	require.NoError(t, receiver.start(context.Background(), componenttest.NewNopHost()))
+
 	actualMetrics, err := receiver.scrape(context.Background())
 	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+
+	require.NoError(t, receiver.shutdown(context.Background()))
 
 	initialClient.AssertExpectations(t)
 
@@ -170,6 +175,8 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		},
 	}
 
-	_, err = receiverConnErr.scrape(context.Background())
-	require.EqualError(t, err, "failed to connect: connection timeout")
+	initialClient.AssertNumberOfCalls(t, "Close", 1)
+
+	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
+	require.EqualError(t, err, "failed to start: connection timeout")
 }
