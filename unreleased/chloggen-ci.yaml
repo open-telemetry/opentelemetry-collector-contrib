@@ -1,0 +1,4 @@
+change_type: enhancement
+component: cmd/chloggen
+note: Update CI process to validate new changelog strategy
+issues: [11841]
