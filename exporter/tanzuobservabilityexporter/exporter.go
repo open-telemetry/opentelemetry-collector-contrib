@@ -70,7 +70,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	if !cfg.hasTracesEndpoint() {
 		return nil, fmt.Errorf("traces.endpoint required")
 	}
-	_, _, err := cfg.parseTracesEndpoint()
+	tracingHost, tracingPort, err := cfg.parseTracesEndpoint()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse traces.endpoint: %w", err)
 	}
@@ -84,11 +84,13 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 
 	// we specify a MetricsPort so the SDK can report its internal metrics
 	// but don't currently export any metrics from the pipeline
-	s, err := senders.NewSender(cfg.Traces.Endpoint,
-		senders.MetricsPort(metricsPort),
-		senders.FlushIntervalSeconds(1),
-		senders.SDKMetricsTags(map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version}),
-	)
+	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
+		Host:                 tracingHost,
+		MetricsPort:          metricsPort,
+		TracingPort:          tracingPort,
+		FlushIntervalSeconds: 1,
+		SDKMetricsTags:       map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version},
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}

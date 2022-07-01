@@ -1,9 +1,13 @@
 # Coralogix Exporter
 
+| Status                   |                 |
+| ------------------------ |-----------------|
+| Stability                | [beta]          |
+| Supported pipeline types | traces, metrics |
+| Distributions            | [contrib]       |
+
 The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
 Coralogix logs.
-
-Supported pipeline types: traces, metrics
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
@@ -18,6 +22,8 @@ exporters:
   coralogix:
     # The Coralogix traces ingress endpoint
     endpoint: "tracing-ingress.coralogix.com:9443"
+    metrics:
+      endpoint: "otel-metrics.coralogix.com"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
@@ -72,3 +78,6 @@ exporters:
 ### Need help?
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
 and we will walk you through setting up this exporter, step by step.
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

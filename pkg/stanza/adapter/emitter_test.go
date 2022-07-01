@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
@@ -31,9 +30,11 @@ func TestLogEmitter(t *testing.T) {
 		LogEmitterWithLogger(zaptest.NewLogger(t).Sugar()),
 	)
 
-	emitter.Start(nil)
+	require.NoError(t, emitter.Start(nil))
 
-	defer emitter.Stop()
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	in := entry.New()
 
@@ -61,15 +62,17 @@ func TestLogEmitterRespectsMaxBatchSize(t *testing.T) {
 		LogEmitterWithFlushInterval(100*time.Millisecond),
 	)
 
-	emitter.Start(nil)
-	defer emitter.Stop()
+	require.NoError(t, emitter.Start(nil))
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	entries := complexEntries(numEntries)
 
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			emitter.Process(ctx, e)
+			require.NoError(t, emitter.Process(ctx, e))
 		}
 	}()
 
@@ -102,15 +105,17 @@ func TestLogEmitterEmitsOnMaxBatchSize(t *testing.T) {
 		LogEmitterWithFlushInterval(time.Hour),
 	)
 
-	emitter.Start(nil)
-	defer emitter.Stop()
+	require.NoError(t, emitter.Start(nil))
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	entries := complexEntries(maxBatchSize)
 
 	go func() {
 		ctx := context.Background()
 		for _, e := range entries {
-			emitter.Process(ctx, e)
+			require.NoError(t, emitter.Process(ctx, e))
 		}
 	}()
 
@@ -135,14 +140,16 @@ func TestLogEmitterEmitsOnFlushInterval(t *testing.T) {
 		LogEmitterWithFlushInterval(flushInterval),
 	)
 
-	emitter.Start(nil)
-	defer emitter.Stop()
+	require.NoError(t, emitter.Start(nil))
+	defer func() {
+		require.NoError(t, emitter.Stop())
+	}()
 
 	entry := complexEntry()
 
 	go func() {
 		ctx := context.Background()
-		emitter.Process(ctx, entry)
+		require.NoError(t, emitter.Process(ctx, entry))
 	}()
 
 	timeoutChan := time.After(timeout)

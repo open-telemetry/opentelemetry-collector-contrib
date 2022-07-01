@@ -125,7 +125,10 @@ func newTransport(config *Config) (transport.Transport, error) {
 // returning the number of spans that were dropped along with any errors.
 func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.ResourceSpans) (int, error) {
 	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rs.Resource(), &w)
+	if err := elastic.EncodeResourceMetadata(rs.Resource(), &w); err != nil {
+		return rs.ScopeSpans().Len(), err
+	}
+
 	var errs []error
 	var count int
 	scopeSpansSlice := rs.ScopeSpans()
@@ -153,7 +156,9 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.Res
 // returning the number of metrics that were dropped along with any errors.
 func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pmetric.ResourceMetrics) (int, error) {
 	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rm.Resource(), &w)
+	if err := elastic.EncodeResourceMetadata(rm.Resource(), &w); err != nil {
+		return rm.ScopeMetrics().Len(), err
+	}
 	var errs error
 	var totalDropped int
 	scopeMetricsSlice := rm.ScopeMetrics()

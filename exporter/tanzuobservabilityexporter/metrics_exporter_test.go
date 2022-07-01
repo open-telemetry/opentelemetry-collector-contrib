@@ -63,7 +63,7 @@ func createMockMetricsExporter(
 	ourConfig := cfg.(*Config)
 	ourConfig.Metrics.Endpoint = "http://localhost:2878"
 	creator := func(
-		endpoint string, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+		hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
 		return newMetricsConsumer(
 			[]typedMetricConsumer{
 				newGaugeConsumer(sender, settings),

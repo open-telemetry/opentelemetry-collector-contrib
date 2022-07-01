@@ -108,6 +108,26 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
+			query: `replace_pattern(attributes["http.method"], "get", "post")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpdateString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpdateString("http.method", "post")
+			},
+		},
+		{
+			query: `replace_all_patterns(attributes, "get", "post")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpdateString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpdateString("http.method", "post")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where IsMatch(name, "operation[AC]") == true`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
 			query: `set(attributes["test"], "pass") where attributes["doesnt exist"] == nil`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")

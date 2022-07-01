@@ -40,7 +40,7 @@ type Input struct {
 	captureFileNameResolved bool
 	captureFilePathResolved bool
 	PollInterval            time.Duration
-	Splitter                helper.SplitterConfig
+	SplitterConfig          helper.SplitterConfig
 	MaxLogSize              int
 	MaxConcurrentFiles      int
 	SeenPaths               map[string]struct{}
@@ -55,8 +55,6 @@ type Input struct {
 	startAtBeginning bool
 
 	fingerprintSize int
-
-	Encoding helper.Encoding // TODO can this be skipped and handled by caller?
 
 	firstCheck bool
 	wg         sync.WaitGroup
@@ -363,5 +361,5 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 
 // getMultiline returns helper.Splitter structure and error eventually
 func (f *Input) getMultiline() (*helper.Splitter, error) {
-	return f.Splitter.Build(f.Encoding.Encoding, false, f.MaxLogSize)
+	return f.SplitterConfig.Build(false, f.MaxLogSize)
 }
