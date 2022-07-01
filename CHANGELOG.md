@@ -63,6 +63,7 @@
 - `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
 - `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
 - `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
+- `coralogixexporter`: Fix metrics bearer token (#11831)
 
 ## v0.54.0
 
