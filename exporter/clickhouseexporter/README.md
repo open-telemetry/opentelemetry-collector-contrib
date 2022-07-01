@@ -1,6 +1,5 @@
 # ClickHouse Exporter
 
-
 | Status                   |           |
 | ------------------------ |-----------|
 | Stability                | [alpha]    |
