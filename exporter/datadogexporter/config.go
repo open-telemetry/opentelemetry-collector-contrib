@@ -450,6 +450,9 @@ func (c *Config) logWarnings(logger *zap.Logger) {
 	}
 }
 
+var _ config.Exporter = (*Config)(nil)
+
+// Validate the configuration for errors. This is required by config.Exporter.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
@@ -491,6 +494,9 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+var _ config.Unmarshallable = (*Config)(nil)
+
+// Unmarshal a configuration map into the configuration struct.
 func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if err := handleRemovedSettings(configMap); err != nil {
 		return err
