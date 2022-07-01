@@ -16,14 +16,12 @@ package testutil // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"net"
-	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +39,9 @@ func GetAvailableLocalAddress(t *testing.T) string {
 	require.NoError(t, err, "Failed to get a free local port")
 	// There is a possible race if something else takes this same port before
 	// the test uses it, however, that is unlikely in practice.
-	defer ln.Close()
+	defer func() {
+		require.NoError(t, ln.Close())
+	}()
 	return ln.Addr().String()
 }
 
@@ -85,11 +85,16 @@ func GetAvailablePort(t *testing.T) uint16 {
 
 // Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp
 func getExclusionsList(t *testing.T) []portpair {
-	cmd := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
-	output, err := cmd.CombinedOutput()
-	require.NoError(t, err)
+	cmdTCP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=tcp")
+	outputTCP, errTCP := cmdTCP.CombinedOutput()
+	require.NoError(t, errTCP)
+	exclusions := createExclusionsList(string(outputTCP), t)
 
-	exclusions := createExclusionsList(string(output), t)
+	cmdUDP := exec.Command("netsh", "interface", "ipv4", "show", "excludedportrange", "protocol=udp")
+	outputUDP, errUDP := cmdUDP.CombinedOutput()
+	require.NoError(t, errUDP)
+	exclusions = append(exclusions, createExclusionsList(string(outputUDP), t)...)
+
 	return exclusions
 }
 
@@ -110,27 +115,4 @@ func createExclusionsList(exclusionsText string, t *testing.T) []portpair {
 		}
 	}
 	return exclusions
-}
-
-// NewTemporaryFile creates a file that can be used within the scope of the test
-// and will be closed then removed from the file system during the test cleanup
-func NewTemporaryFile(tb testing.TB) *os.File {
-	file, err := os.CreateTemp("", "otelcol_defaults_file_exporter_test*.tmp")
-	require.NoError(tb, err, "Must not error when creating a temporary file")
-	tb.Cleanup(func() {
-		assert.NoError(tb, file.Close(), "Must not error when closing the file")
-		assert.NoError(tb, os.Remove(file.Name()), "Must not fail removing temporary file used for testing")
-	})
-	return file
-}
-
-// NewTemporaryDirectory creates a new temporary directory that can be used within the scope of
-// test or benchmark and the directory will be cleaned up with all files contained within directory.
-func NewTemporaryDirectory(tb testing.TB) (absolutePath string) {
-	name, err := os.MkdirTemp("", "open-telemetry-test-dir-*")
-	require.NoError(tb, err, "Must not error when creating a test dir")
-	tb.Cleanup(func() {
-		assert.NoError(tb, os.RemoveAll(name), "Must not error when removing temporary directory")
-	})
-	return name
 }

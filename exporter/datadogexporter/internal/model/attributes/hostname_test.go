@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes/azure"
@@ -25,100 +26,160 @@ import (
 )
 
 const (
-	testHostID      = "example-host-id"
-	testHostName    = "example-host-name"
-	testContainerID = "example-container-id"
-	testClusterName = "clusterName"
-	testNodeName    = "nodeName"
-	testCustomName  = "example-custom-host-name"
+	testHostID                 = "example-host-id"
+	testHostName               = "example-host-name"
+	testContainerID            = "example-container-id"
+	testClusterName            = "clusterName"
+	testNodeName               = "nodeName"
+	testCustomName             = "example-custom-host-name"
+	testCloudAccount           = "projectID"
+	testGCPHostname            = testHostName + ".c." + testCloudAccount + ".internal"
+	testGCPIntegrationHostname = testHostName + "." + testCloudAccount
 )
 
 func TestHostnameFromAttributes(t *testing.T) {
-	// Custom hostname
-	attrs := testutils.NewAttributeMap(map[string]string{
-		AttributeDatadogHostname:            testCustomName,
-		AttributeK8sNodeName:                testNodeName,
-		conventions.AttributeK8SClusterName: testClusterName,
-		conventions.AttributeContainerID:    testContainerID,
-		conventions.AttributeHostID:         testHostID,
-		conventions.AttributeHostName:       testHostName,
-	})
-	hostname, ok := HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testCustomName)
+	tests := []struct {
+		name       string
+		attrs      pcommon.Map
+		usePreview bool
 
-	// Container ID
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeContainerID: testContainerID,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testContainerID)
+		ok       bool
+		hostname string
+	}{
+		{
+			name: "custom hostname",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				AttributeDatadogHostname:            testCustomName,
+				AttributeK8sNodeName:                testNodeName,
+				conventions.AttributeK8SClusterName: testClusterName,
+				conventions.AttributeContainerID:    testContainerID,
+				conventions.AttributeHostID:         testHostID,
+				conventions.AttributeHostName:       testHostName,
+			}),
+			ok:       true,
+			hostname: testCustomName,
+		},
+		{
+			name: "container ID",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeContainerID: testContainerID,
+			}),
+			ok:       true,
+			hostname: testContainerID,
+		},
+		{
+			name: "container ID, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeContainerID: testContainerID,
+			}),
+			usePreview: true,
+		},
+		{
+			name: "AWS EC2",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testHostName,
+			}),
+			ok:       true,
+			hostname: testHostName,
+		},
+		{
+			name: "AWS EC2, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testHostName,
+			}),
+			ok:         true,
+			hostname:   testHostID,
+			usePreview: true,
+		},
+		{
+			name: "ECS Fargate",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
+				conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
+				conventions.AttributeAWSECSTaskARN:      "example-task-ARN",
+				conventions.AttributeAWSECSTaskFamily:   "example-task-family",
+				conventions.AttributeAWSECSTaskRevision: "example-task-revision",
+				conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
+			}),
+			ok:       true,
+			hostname: "",
+		},
+		{
+			name: "GCP",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testGCPHostname,
+			}),
+			ok:       true,
+			hostname: testGCPHostname,
+		},
+		{
+			name: "GCP, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeHostID:         testHostID,
+				conventions.AttributeHostName:       testGCPHostname,
+				conventions.AttributeCloudAccountID: testCloudAccount,
+			}),
+			usePreview: true,
+			ok:         true,
+			hostname:   testGCPIntegrationHostname,
+		},
+		{
+			name: "azure",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testHostName,
+			}),
+			ok:       true,
+			hostname: testHostName,
+		},
+		{
+			name: "azure, preview",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
+				conventions.AttributeHostID:        testHostID,
+				conventions.AttributeHostName:      testHostName,
+			}),
+			usePreview: true,
+			ok:         true,
+			hostname:   testHostID,
+		},
+		{
+			name: "host id v. hostname",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				conventions.AttributeHostID:   testHostID,
+				conventions.AttributeHostName: testHostName,
+			}),
+			ok:       true,
+			hostname: testHostID,
+		},
+		{
+			name:  "no hostname",
+			attrs: testutils.NewAttributeMap(map[string]string{}),
+		},
+		{
+			name: "localhost",
+			attrs: testutils.NewAttributeMap(map[string]string{
+				AttributeDatadogHostname: "127.0.0.1",
+			}),
+		},
+	}
 
-	// AWS cloud provider means relying on the EC2 function
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAWS,
-		conventions.AttributeHostID:        testHostID,
-		conventions.AttributeHostName:      testHostName,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostName)
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+			hostname, ok := HostnameFromAttributes(testInstance.attrs, testInstance.usePreview)
+			assert.Equal(t, testInstance.ok, ok)
+			assert.Equal(t, testInstance.hostname, hostname)
+		})
 
-	// AWS cloud provider means relying on the EC2 function
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider:      conventions.AttributeCloudProviderAWS,
-		conventions.AttributeCloudPlatform:      conventions.AttributeCloudPlatformAWSECS,
-		conventions.AttributeAWSECSTaskARN:      "example-task-ARN",
-		conventions.AttributeAWSECSTaskFamily:   "example-task-family",
-		conventions.AttributeAWSECSTaskRevision: "example-task-revision",
-		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Empty(t, hostname)
-
-	// GCP cloud provider means relying on the GCP function
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
-		conventions.AttributeHostID:        testHostID,
-		conventions.AttributeHostName:      testHostName,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostName)
-
-	// Azure cloud provider means relying on the Azure function
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeCloudProvider: conventions.AttributeCloudProviderAzure,
-		conventions.AttributeHostID:        testHostID,
-		conventions.AttributeHostName:      testHostName,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostName)
-
-	// Host Id takes preference
-	attrs = testutils.NewAttributeMap(map[string]string{
-		conventions.AttributeHostID:   testHostID,
-		conventions.AttributeHostName: testHostName,
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.True(t, ok)
-	assert.Equal(t, hostname, testHostID)
-
-	// No labels means no hostname
-	attrs = testutils.NewAttributeMap(map[string]string{})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.False(t, ok)
-	assert.Empty(t, hostname)
-
-	attrs = testutils.NewAttributeMap(map[string]string{
-		AttributeDatadogHostname: "127.0.0.1",
-	})
-	hostname, ok = HostnameFromAttributes(attrs)
-	assert.False(t, ok)
-	assert.Empty(t, hostname)
+	}
 }
 
 func TestGetClusterName(t *testing.T) {
@@ -163,7 +224,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:         testHostID,
 		conventions.AttributeHostName:       testHostName,
 	})
-	hostname, ok := HostnameFromAttributes(attrs)
+	hostname, ok := HostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName-clusterName")
 
@@ -174,7 +235,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:      testHostID,
 		conventions.AttributeHostName:    testHostName,
 	})
-	hostname, ok = HostnameFromAttributes(attrs)
+	hostname, ok = HostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	assert.Equal(t, hostname, "nodeName")
 
@@ -185,7 +246,7 @@ func TestHostnameKubernetes(t *testing.T) {
 		conventions.AttributeHostID:         testHostID,
 		conventions.AttributeHostName:       testHostName,
 	})
-	hostname, ok = HostnameFromAttributes(attrs)
+	hostname, ok = HostnameFromAttributes(attrs, false)
 	assert.True(t, ok)
 	// cluster name gets ignored, fallback to next option
 	assert.Equal(t, hostname, testHostID)

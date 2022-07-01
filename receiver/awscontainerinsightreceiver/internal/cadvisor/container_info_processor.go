@@ -15,6 +15,7 @@
 //go:build linux
 // +build linux
 
+// nolint:gocritic
 package cadvisor // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor"
 
 import (

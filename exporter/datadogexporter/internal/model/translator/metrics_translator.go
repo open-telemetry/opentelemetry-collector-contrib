@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 
 import (
@@ -396,7 +397,7 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 		// Fetch tags from attributes.
 		attributeTags := attributes.TagsFromAttributes(rm.Resource().Attributes())
 
-		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
+		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes(), t.cfg.previewHostnameFromAttributes)
 		if !ok {
 			var err error
 			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())

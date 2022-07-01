@@ -32,7 +32,7 @@ func TestInit(t *testing.T) {
 	require.Equal(t, "trace_parser", builder().Type())
 }
 func TestDefaultParser(t *testing.T) {
-	traceParserConfig := NewTraceParserConfig("")
+	traceParserConfig := NewConfig("")
 	_, err := traceParserConfig.Build(testutil.Logger(t))
 	require.NoError(t, err)
 }
@@ -40,29 +40,29 @@ func TestDefaultParser(t *testing.T) {
 func TestBuild(t *testing.T) {
 	testCases := []struct {
 		name      string
-		input     func() (*TraceParserConfig, error)
+		input     func() (*Config, error)
 		expectErr bool
 	}{
 		{
 			"empty",
-			func() (*TraceParserConfig, error) {
-				return &TraceParserConfig{}, nil
+			func() (*Config, error) {
+				return &Config{}, nil
 			},
 			true,
 		},
 		{
 			"default",
-			func() (*TraceParserConfig, error) {
-				cfg := NewTraceParserConfig("test_id")
+			func() (*Config, error) {
+				cfg := NewConfig("test_id")
 				return cfg, nil
 			},
 			false,
 		},
 		{
 			"spanid",
-			func() (*TraceParserConfig, error) {
+			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("app_span_id")
-				cfg := NewTraceParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				cfg.SpanID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
@@ -70,9 +70,9 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"traceid",
-			func() (*TraceParserConfig, error) {
+			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("app_trace_id")
-				cfg := NewTraceParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				cfg.TraceID.ParseFrom = &parseFrom
 				return cfg, nil
 			},
@@ -80,9 +80,9 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"trace-flags",
-			func() (*TraceParserConfig, error) {
+			func() (*Config, error) {
 				parseFrom := entry.NewBodyField("trace-flags-field")
-				cfg := NewTraceParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				cfg.TraceFlags.ParseFrom = &parseFrom
 				return cfg, nil
 			},
@@ -119,7 +119,7 @@ func TestProcess(t *testing.T) {
 		{
 			"no-op",
 			func() (operator.Operator, error) {
-				cfg := NewTraceParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				return cfg.Build(testutil.Logger(t))
 			},
 			&entry.Entry{
@@ -132,7 +132,7 @@ func TestProcess(t *testing.T) {
 		{
 			"all",
 			func() (operator.Operator, error) {
-				cfg := NewTraceParserConfig("test_id")
+				cfg := NewConfig("test_id")
 				spanFrom := entry.NewBodyField("app_span_id")
 				traceFrom := entry.NewBodyField("app_trace_id")
 				flagsFrom := entry.NewBodyField("trace_flags_field")
@@ -179,8 +179,8 @@ func TestTraceParserParse(t *testing.T) {
 		inputRecord    map[string]interface{}
 		expectedRecord map[string]interface{}
 		expectErr      bool
-		traceId        string
-		spanId         string
+		traceID        string
+		spanID         string
 		traceFlags     string
 	}{
 		{
@@ -268,7 +268,7 @@ func TestTraceParserParse(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			traceParserConfig := NewTraceParserConfig("")
+			traceParserConfig := NewConfig("")
 			_, _ = traceParserConfig.Build(testutil.Logger(t))
 			e := entry.New()
 			e.Body = tc.inputRecord
@@ -279,17 +279,17 @@ func TestTraceParserParse(t *testing.T) {
 				require.NoError(t, err)
 			}
 			require.Equal(t, tc.expectedRecord, e.Body)
-			traceId, _ := hex.DecodeString(tc.traceId)
-			if len(tc.traceId) == 0 {
+			traceID, _ := hex.DecodeString(tc.traceID)
+			if len(tc.traceID) == 0 {
 				require.Nil(t, e.TraceID)
 			} else {
-				require.Equal(t, traceId, e.TraceID)
+				require.Equal(t, traceID, e.TraceID)
 			}
-			spanId, _ := hex.DecodeString(tc.spanId)
-			if len(tc.spanId) == 0 {
+			spanID, _ := hex.DecodeString(tc.spanID)
+			if len(tc.spanID) == 0 {
 				require.Nil(t, e.SpanID)
 			} else {
-				require.Equal(t, spanId, e.SpanID)
+				require.Equal(t, spanID, e.SpanID)
 			}
 			traceFlags, _ := hex.DecodeString(tc.traceFlags)
 			if len(tc.traceFlags) == 0 {

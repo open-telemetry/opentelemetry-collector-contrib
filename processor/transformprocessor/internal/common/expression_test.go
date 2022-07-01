@@ -18,8 +18,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func hello() (ExprFunc, error) {
@@ -29,8 +29,6 @@ func hello() (ExprFunc, error) {
 }
 
 func Test_newGetter(t *testing.T) {
-	span := ptrace.NewSpan()
-	span.SetName("bear")
 	tests := []struct {
 		name string
 		val  Value
@@ -39,23 +37,30 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "string literal",
 			val: Value{
-				String: strp("str"),
+				String: testhelper.Strp("str"),
 			},
 			want: "str",
 		},
 		{
 			name: "float literal",
 			val: Value{
-				Float: floatp(1.2),
+				Float: testhelper.Floatp(1.2),
 			},
 			want: 1.2,
 		},
 		{
 			name: "int literal",
 			val: Value{
-				Int: intp(12),
+				Int: testhelper.Intp(12),
 			},
 			want: int64(12),
+		},
+		{
+			name: "bytes literal",
+			val: Value{
+				Bytes: (*Bytes)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8}),
+			},
+			want: []byte{1, 2, 3, 4, 5, 6, 7, 8},
 		},
 		{
 			name: "path expression",
@@ -87,10 +92,8 @@ func Test_newGetter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			reader, err := NewGetter(tt.val, functions, testParsePath)
 			assert.NoError(t, err)
-			val := reader.Get(testTransformContext{
-				span:     span,
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
+			val := reader.Get(testhelper.TestTransformContext{
+				Item: tt.want,
 			})
 			assert.Equal(t, tt.want, val)
 		})
@@ -100,4 +103,18 @@ func Test_newGetter(t *testing.T) {
 		_, err := NewGetter(Value{}, functions, testParsePath)
 		assert.Error(t, err)
 	})
+}
+
+// pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
+type testGetSetter struct {
+	getter ExprFunc
+	setter func(ctx TransformContext, val interface{})
+}
+
+func (path testGetSetter) Get(ctx TransformContext) interface{} {
+	return path.getter(ctx)
+}
+
+func (path testGetSetter) Set(ctx TransformContext, val interface{}) {
+	path.setter(ctx, val)
 }

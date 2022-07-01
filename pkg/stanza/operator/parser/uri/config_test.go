@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestRegexParserGoldenConfig(t *testing.T) {
+func TestParserGoldenConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_from_simple",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
@@ -37,7 +37,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_to_simple",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
@@ -45,7 +45,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -53,7 +53,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -67,10 +67,10 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 		},
 		{
 			Name: "severity",
-			Expect: func() *URIParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityField := helper.NewSeverityParserConfig()
+				severityField := helper.NewConfig()
 				severityField.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
@@ -79,7 +79,7 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 					"debug":    "2xx",
 				}
 				severityField.Mapping = mapping
-				cfg.SeverityParserConfig = &severityField
+				cfg.Config = &severityField
 				return cfg
 			}(),
 		},
@@ -92,6 +92,6 @@ func TestRegexParserGoldenConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *URIParserConfig {
-	return NewURIParserConfig("uri_parser")
+func defaultCfg() *Config {
+	return NewConfig("uri_parser")
 }

@@ -48,7 +48,7 @@ func newTestFileOperator(t *testing.T, cfgMod func(*Config), outMod func(*testut
 		outMod(fakeOutput)
 	}
 
-	tempDir := testutil.NewTempDir(t)
+	tempDir := t.TempDir()
 
 	cfg := newDefaultConfig(tempDir)
 	if cfgMod != nil {

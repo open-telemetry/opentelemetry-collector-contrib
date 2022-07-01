@@ -343,10 +343,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/stanza"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
@@ -364,6 +360,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/resourcetotelemetry"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/stanza"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -488,10 +488,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/couchbasereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
