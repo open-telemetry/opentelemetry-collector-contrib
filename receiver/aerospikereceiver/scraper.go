@@ -77,7 +77,6 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 				logger:                params.Logger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
 			}
-			fmt.Printf("conf: %+v\n", *conf)
 			return newASClient(
 				conf,
 				nodeGetterFactory,

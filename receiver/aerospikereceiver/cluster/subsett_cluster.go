@@ -21,12 +21,18 @@ type SubsetCluster struct {
 	nodes []Node
 }
 
+type nodeFactoryFunc func(*as.ClientPolicy, *as.Host, bool) (Node, error)
+
 func NewSubsetCluster(policy *as.ClientPolicy, hosts []*as.Host, authEnabled bool) (*SubsetCluster, error) {
+	return newSubsetCluster(policy, hosts, authEnabled, newConnNode)
+}
+
+func newSubsetCluster(policy *as.ClientPolicy, hosts []*as.Host, authEnabled bool, nodeFact nodeFactoryFunc) (*SubsetCluster, error) {
 	nodes := make([]Node, len(hosts))
 
 	// this is only used with 1 node for now (when collect-cluster-metrics is false)
-	for i := range nodes {
-		n, err := NewConnNode(policy, hosts[i], authEnabled)
+	for i := range hosts {
+		n, err := nodeFact(policy, hosts[i], authEnabled)
 		if err != nil {
 			return nil, err
 		}

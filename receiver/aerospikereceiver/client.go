@@ -127,8 +127,6 @@ func (c *defaultASClient) useNodeFunc(nf nodeFunc) clusterInfo {
 		c.logger,
 	)
 
-	// fmt.Printf("res: %+v", res)
-
 	return res
 }
 

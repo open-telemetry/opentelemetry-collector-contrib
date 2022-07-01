@@ -21,27 +21,45 @@ import (
 	"github.com/aerospike/aerospike-client-go/v5/types"
 )
 
+// asconn is used to mock aerospike connections
+type asconn interface {
+	RequestInfo(...string) (map[string]string, as.Error)
+	Login(*as.ClientPolicy) as.Error
+	Close()
+	SetTimeout(time.Time, time.Duration) as.Error
+}
+
 type Node interface {
 	RequestInfo(*as.InfoPolicy, ...string) (map[string]string, as.Error)
 	GetName() string
 	Close()
 }
 
-// ConnNode is for single node scraping
-type ConnNode struct {
-	conn   *as.Connection
+// connNode is for single node scraping
+type connNode struct {
+	conn   asconn
 	policy *as.ClientPolicy
 	name   string
 }
 
-func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*ConnNode, error) {
-	conn, err := as.NewConnection(policy, host)
+type connFactoryFunc func(*as.ClientPolicy, *as.Host) (asconn, as.Error)
+
+func newASConn(policy *as.ClientPolicy, host *as.Host) (asconn, as.Error) {
+	return as.NewConnection(policy, host)
+}
+
+func newConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (Node, error) {
+	return _newConnNode(policy, host, authEnabled, newASConn)
+}
+
+func _newConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool, connF connFactoryFunc) (Node, error) {
+	conn, err := connF(policy, host)
 	if err != nil {
 		return nil, err
 	}
 
 	var deadline time.Time
-	// set deadline to 0 (inf) so we can always reuse this connection
+	// Set deadline to 0 (inf) so we can always reuse this connection
 	if err := conn.SetTimeout(deadline, policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
@@ -58,7 +76,7 @@ func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*Con
 	}
 	name := m["node"]
 
-	res := ConnNode{
+	res := connNode{
 		conn:   conn,
 		policy: policy,
 		name:   name,
@@ -67,7 +85,7 @@ func NewConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool) (*Con
 	return &res, nil
 }
 
-func (n *ConnNode) RequestInfo(_ *as.InfoPolicy, commands ...string) (map[string]string, as.Error) {
+func (n *connNode) RequestInfo(_ *as.InfoPolicy, commands ...string) (map[string]string, as.Error) {
 	res, err := n.conn.RequestInfo(commands...)
 	// Try to login and get a new session
 	if err != nil && err.Matches(types.EXPIRED_SESSION) {
@@ -83,10 +101,10 @@ func (n *ConnNode) RequestInfo(_ *as.InfoPolicy, commands ...string) (map[string
 	return res, nil
 }
 
-func (n *ConnNode) GetName() string {
+func (n *connNode) GetName() string {
 	return n.name
 }
 
-func (n *ConnNode) Close() {
+func (n *connNode) Close() {
 	n.conn.Close()
 }
