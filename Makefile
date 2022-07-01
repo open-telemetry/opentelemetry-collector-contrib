@@ -91,7 +91,7 @@ gomoddownload:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="moddownload"
 
 .PHONY: gotest
-gotest:
+gotest: install-tools
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
 
 .PHONY: gofmt
@@ -231,6 +231,7 @@ install-tools:
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/multimod
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install github.com/jcchavezs/porto/cmd/porto
 	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/crosslink
+	cd $(TOOLS_MOD_DIR) && $(GOCMD) install gotest.tools/gotestsum
 
 .PHONY: run
 run:

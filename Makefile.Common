@@ -8,7 +8,7 @@ GOTEST_INTEGRATION_OPT?= -race -timeout 120s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
-GOTEST=$(GOCMD) test
+GOTEST=gotestsum --
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 ADDLICENCESE= addlicense
