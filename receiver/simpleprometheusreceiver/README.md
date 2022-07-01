@@ -30,9 +30,9 @@ be emitted by this receiver.
 Kubernetes Pod service account for authentication.
 - `tls_enabled` (default = `false`): Whether or not to use TLS. Only if
 `tls_enabled` is set to `true`, the values under `tls_config` are accounted
-for.
+for. This setting will be deprecated. Please use `tls` instead.
 
-The `tls_config` section supports the following options:
+The `tls_config` section supports the following options. This setting will be deprecated. Please use `tls` instead:
 
 - `ca_file` (no default): Path to the CA cert that has signed the TLS
 certificate.
@@ -43,6 +43,8 @@ connections.
 - `insecure_skip_verify` (default = `false`): Whether or not to skip
 certificate verification.
 
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings) for the full set of available options.
+
 Example:
 
 ```yaml
@@ -51,12 +53,11 @@ Example:
         collection_interval: 10s
         use_service_account: true
         endpoint: "172.17.0.5:9153"
-        tls_enabled: true
-        tls_config:
-            ca_file: "/path/to/ca"
-            cert_file: "/path/to/cert"
-            key_file: "/path/to/key"
-            insecure_skip_verify: true
+        tls:
+          ca_file: "/path/to/ca"
+          cert_file: "/path/to/cert"
+          key_file: "/path/to/key"
+          insecure_skip_verify: true
     exporters:
       signalfx:
         access_token: <SIGNALFX_ACCESS_TOKEN>
