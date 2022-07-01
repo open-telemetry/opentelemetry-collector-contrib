@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
@@ -181,7 +180,7 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	// Prepare log file
 	logFile, err := os.Create(params.LogFilePath)
 	if err != nil {
-		return fmt.Errorf("cannot create %s: %s", params.LogFilePath, err.Error())
+		return fmt.Errorf("cannot create %s: %w", params.LogFilePath, err)
 	}
 	log.Printf("Writing %s log to %s", cp.name, params.LogFilePath)
 
@@ -208,7 +207,7 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 
 	// Start the process.
 	if err = cp.cmd.Start(); err != nil {
-		return fmt.Errorf("cannot start executable at %s: %s", exePath, err.Error())
+		return fmt.Errorf("cannot start executable at %s: %w", exePath, err)
 	}
 
 	cp.startTime = time.Now()
@@ -291,8 +290,7 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	var err error
 	cp.processMon, err = process.NewProcess(int32(cp.cmd.Process.Pid))
 	if err != nil {
-		return fmt.Errorf("cannot monitor process %d: %s",
-			cp.cmd.Process.Pid, err.Error())
+		return fmt.Errorf("cannot monitor process %d: %w", cp.cmd.Process.Pid, err)
 	}
 
 	cp.fetchRAMUsage()
@@ -301,15 +299,14 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	cp.lastElapsedTime = time.Now()
 	cp.lastProcessTimes, err = cp.processMon.Times()
 	if err != nil {
-		return fmt.Errorf("cannot get process times for %d: %s",
-			cp.cmd.Process.Pid, err.Error())
+		return fmt.Errorf("cannot get process times for %d: %w", cp.cmd.Process.Pid, err)
 	}
 
 	// Measure every ResourceCheckPeriod.
 	ticker := time.NewTicker(cp.resourceSpec.ResourceCheckPeriod)
 	defer ticker.Stop()
 
-	//on first start must be under the cpu and ram max usage add a max minute delay
+	// on first start must be under the cpu and ram max usage add a max minute delay
 	for start := time.Now(); time.Since(start) < time.Minute; {
 		cp.fetchRAMUsage()
 		cp.fetchCPUUsage()
@@ -321,6 +318,7 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 		}
 	}
 
+	remainingFailures := cp.resourceSpec.MaxConsecutiveFailures
 	for {
 		select {
 		case <-ticker.C:
@@ -328,6 +326,11 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 			cp.fetchCPUUsage()
 
 			if err := cp.checkAllowedResourceUsage(); err != nil {
+				if remainingFailures > 0 {
+					remainingFailures--
+					log.Printf("Resource utilization too high. Remaining attempts: %d", remainingFailures)
+					continue
+				}
 				if _, errStop := cp.Stop(); errStop != nil {
 					log.Printf("Failed to stop child process: %v", err)
 				}
@@ -349,8 +352,7 @@ func (cp *childProcessCollector) fetchRAMUsage() {
 	// Get process memory and CPU times
 	mi, err := cp.processMon.MemoryInfo()
 	if err != nil {
-		log.Printf("cannot get process memory for %d: %s",
-			cp.cmd.Process.Pid, err.Error())
+		log.Printf("cannot get process memory for %d: %v", cp.cmd.Process.Pid, err)
 		return
 	}
 
@@ -371,8 +373,7 @@ func (cp *childProcessCollector) fetchRAMUsage() {
 func (cp *childProcessCollector) fetchCPUUsage() {
 	times, err := cp.processMon.Times()
 	if err != nil {
-		log.Printf("cannot get process times for %d: %s",
-			cp.cmd.Process.Pid, err.Error())
+		log.Printf("cannot get process times for %d: %v", cp.cmd.Process.Pid, err)
 		return
 	}
 

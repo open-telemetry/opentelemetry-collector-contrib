@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern
+component: cmd/chloggen
+
+# A single sentence describing the change
+note: Add new tool for conflict-free CHANGELOG.md management
+
+# One or more tracking issues related to the change
+issues: [ 11539 ]

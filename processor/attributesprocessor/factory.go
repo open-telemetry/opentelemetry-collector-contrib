@@ -65,7 +65,7 @@ func createTracesProcessor(
 	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 	include, err := filterspan.NewMatcher(oCfg.Include)
 	if err != nil {
@@ -95,7 +95,7 @@ func createLogProcessor(
 	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
 	include, err := filterlog.NewMatcher(oCfg.Include)
@@ -128,7 +128,7 @@ func createMetricsProcessor(
 
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
 	include, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include))

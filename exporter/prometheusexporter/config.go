@@ -19,7 +19,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -46,17 +45,11 @@ type Config struct {
 	// ResourceToTelemetrySettings defines configuration for converting resource attributes to metric labels.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
-	// skipSanitizeLabel if enabled, labels that start with _ are not sanitized
-	skipSanitizeLabel bool
+	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
+	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
 }
 
 var _ config.Exporter = (*Config)(nil)
-
-var dropSanitizationGate = featuregate.Gate{
-	ID:          "exporter.prometheus.PermissiveLabelSanitization",
-	Enabled:     false,
-	Description: "Controls whether to change labels starting with '_' to 'key_'",
-}
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {

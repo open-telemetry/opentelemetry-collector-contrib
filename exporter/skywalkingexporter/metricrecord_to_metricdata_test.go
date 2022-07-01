@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package skywalkingexporter
 
 import (
@@ -96,8 +95,8 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.SetCount(5)
 	doubleHistogramDataPoint.SetSum(10.1)
 	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
-	doubleHistogramDataPoint.SetMBucketCounts([]uint64{1, 2, 2})
-	doubleHistogramDataPoint.SetMExplicitBounds([]float64{1, 2})
+	doubleHistogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 2}))
+	doubleHistogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2}))
 
 	doubleSummaryMetric := metrics.AppendEmpty()
 	doubleSummaryMetric.SetDataType(pmetric.MetricDataTypeSummary)
@@ -128,24 +127,25 @@ func TestMetricDataToLogService(t *testing.T) {
 		assert.Equal(t, "innerValue", searchMetricTag("innerLabel", meterData))
 		assert.Equal(t, defaultServiceName, meterData.GetService())
 		assert.Equal(t, defaultServiceInstance, meterData.GetServiceInstance())
-		if i == 0 {
+		switch i {
+		case 0:
 			assert.Equal(t, "int_gauge", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(10), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "test", searchMetricTag("testa", meterData))
-		} else if i == 1 {
+		case 1:
 			assert.Equal(t, "double_gauge", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 2 {
+		case 2:
 			assert.Equal(t, "int_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(11), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 3 {
+		case 3:
 			assert.Equal(t, "double_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 4 {
+		case 4:
 			assert.Equal(t, "double_$histogram", meterData.GetHistogram().GetName())
 			assert.Equal(t, 3, len(meterData.GetHistogram().GetValues()))
 			assert.Equal(t, int64(1), meterData.GetHistogram().GetValues()[0].Count)
@@ -158,35 +158,34 @@ func TestMetricDataToLogService(t *testing.T) {
 			assert.Equal(t, float64(2), meterData.GetHistogram().GetValues()[2].GetBucket())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-
-		} else if i == 5 {
+		case 5:
 			assert.Equal(t, "double_$histogram_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-		} else if i == 6 {
+		case 6:
 			assert.Equal(t, "double_$histogram_count", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(5), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-		} else if i == 7 {
+		case 7:
 			assert.Equal(t, "double-summary", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.2, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
 			assert.Equal(t, "0.9", searchMetricTag("quantile", meterData))
-		} else if i == 8 {
+		case 8:
 			assert.Equal(t, "double-summary", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.5, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
 			assert.Equal(t, "0.95", searchMetricTag("quantile", meterData))
-		} else if i == 9 {
+		case 9:
 			assert.Equal(t, "double-summary_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
-		} else if i == 10 {
+		case 10:
 			assert.Equal(t, "double-summary_count", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(2), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())

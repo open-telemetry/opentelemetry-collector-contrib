@@ -813,7 +813,7 @@
                                             {
                                                 "key": "effective",
                                                 "value": {
-                                                    "stringValue": "false"
+                                                    "boolValue": false
                                                 }
                                             }
                                         ],
@@ -826,7 +826,7 @@
                                             {
                                                 "key": "effective",
                                                 "value": {
-                                                    "stringValue": "true"
+                                                    "boolValue": true
                                                 }
                                             }
                                         ],

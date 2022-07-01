@@ -40,7 +40,7 @@ func newEnvelopeStreamFactory(
 
 	httpClient, err := httpConfig.ToClient(host.GetExtensions(), settings)
 	if err != nil {
-		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %v", err)
+		return nil, fmt.Errorf("creating HTTP client for Cloud Foundry RLP Gateway: %w", err)
 	}
 
 	gatewayClient := loggregator.NewRLPGatewayClient(httpConfig.Endpoint,

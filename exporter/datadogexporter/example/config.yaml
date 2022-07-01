@@ -55,7 +55,7 @@ exporters:
     ## @params use_resource_metadata - boolean - optional - default: true
     ## Deprecated: [v0.49.0] Use `host_metadata::hostname_source` instead.
     ## This option will be removed in v0.52.0.
-    # 
+    #
     # use_resource_metadata: true
 
     ## @param only_metadata - boolean - optional - default: false
@@ -132,27 +132,35 @@ exporters:
       #
       # resource_attributes_as_tags: false
 
+      ## Deprecated: [0.54.0] use instrumentation_scope_metadata_as_tags instead in favor of
+      ## https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+      ## Both must not be enabled at the same time.
       ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
       ## Set to true to add metadata about the instrumentation library that created a metric.
       #
       # instrumentation_library_metadata_as_tags: false
 
+      ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
+      ## Set to true to add metadata about the instrumentation scope that created a metric.
+      #
+      # instrumentation_scope_metadata_as_tags: false
+
       ## @param histograms - custom object - optional
       ## Histograms specific configuration.
         ## @param mode - string - optional - default: distributions
         ## How to report histograms. Valid values are:
-        ## 
+        ##
         ## - `distributions` to report metrics as Datadog distributions (recommended).
         ## - `nobuckets` to not report bucket metrics,
         ## - `counters` to report one metric per histogram bucket.
         #
         # mode: distributions
-      
+
         ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum and count as separate histogram metrics.
         #
         # send_count_sum_metrics: false
-      
+
       ## @param sums - custom object - optional
       ## Sums specific configuration.
         ## @param cumulative_monotonic_mode - string - optional - default: to_delta
@@ -167,7 +175,7 @@ exporters:
       ## Summaries specific configuration.
         ## @param mode - string - optional - default: gauges
         ## How to report summaries. Valid values are:
-        ## 
+        ##
         ## - `noquantiles` to not report quantile metrics
         ## - `gauges` to report one gauge metric per quantile.
         #
@@ -177,6 +185,11 @@ exporters:
     ## Trace exporter specific configuration.
     #
     # traces:
+      ## @param max_events_per_second - integer - optional - default: 200
+      ## Maximum number of APM Analytics events per second to sample.
+      #
+      # max_events_per_second: 200
+
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send traces to.
       ## If unset it will be determined from the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
@@ -188,7 +201,7 @@ exporters:
       ## A blacklist of regular expressions can be provided to disable certain traces based on their resource name
       ## all entries must be surrounded by double quotes and separated by commas.
       #
-      # ignore_resources: ["(GET|POST) /healthcheck"] 
+      # ignore_resources: ["(GET|POST) /healthcheck"]
 
       ## @param span_name_remappings - map of key/value pairs - optional
       ## A map of Datadog span operation name keys and preferred name valuues to update those names to. This can be used to
@@ -196,7 +209,7 @@ exporters:
       ## shorten or modify span names to something more user friendly in the case of instrumentation libraries with
       ## particularly verbose names.
       #
-      # span_name_remappings: 
+      # span_name_remappings:
       #   io.opentelemetry.javaagent.spring.client: spring.client
       #   instrumentation:express.server: express
       #   go.opentelemetry.io_contrib_instrumentation_net_http_otelhttp.client: http.client
@@ -207,7 +220,7 @@ exporters:
       ## https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1909
       #
       # span_name_as_resource_name: true
-    
+
     ## @param host_metadata - custom object - optional
     ## Host metadata specific configuration.
     ## Host metadata is the information used for populating the infrastructure list, the host map and providing host tags functionality within the Datadog app.
@@ -237,7 +250,7 @@ exporters:
       ## @param tags - list of strings - optional - default: empty list
       ## List of host tags to be sent as part of the host metadata.
       ## These tags will be attached to telemetry signals that have the host metadata hostname.
-      ## 
+      ##
       ## To attach tags to telemetry signals regardless of the host, use a processor instead.
       #
       # tags: []

@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package filelogreceiver
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -106,7 +104,7 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		e.Severity = severity
 		e.AddAttribute("file_name", "simple.log")
 		require.NoError(t, c.Batch([]*entry.Entry{e}))
@@ -169,7 +167,7 @@ type rotationTest struct {
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
@@ -203,7 +201,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// Build the expected set by converting entries to pdata Logs...
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
@@ -248,19 +246,6 @@ func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, c
 	t.Cleanup(func() { _ = rotator.Close() })
 
 	return log.New(rotator, "", 0)
-}
-
-func newTempDir(t *testing.T) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
-	t.Logf("Temp Dir: %s", tempDir)
-
-	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
-	})
-
-	return tempDir
 }
 
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {

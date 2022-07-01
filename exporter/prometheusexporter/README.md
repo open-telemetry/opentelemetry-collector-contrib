@@ -23,6 +23,8 @@ The following settings can be optionally configured:
 - `metric_expiration` (default = `5m`): defines how long metrics are exposed without updates
 - `resource_to_telemetry_conversion`
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
+- `enable_open_metrics`
+  - `enabled` (default = false): If `enabled` is `true`, metrics will be exported using the OpenMetrics format. Exemplars are only exported in the OpenMetrics format.
 
 Example:
 
@@ -36,9 +38,14 @@ exporters:
       "another label": spaced value
     send_timestamps: true
     metric_expiration: 180m
+    enable_open_metrics: true
     resource_to_telemetry_conversion:
       enabled: true
 ```
+
+## Metric names and labels normalization
+
+OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

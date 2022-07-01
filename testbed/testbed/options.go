@@ -38,6 +38,10 @@ type ResourceSpec struct {
 	// Period during which CPU and RAM of the process are measured.
 	// Bigger numbers will result in more averaging of short spikes.
 	ResourceCheckPeriod time.Duration
+
+	// The number of consecutive violations necessary to trigger a failure.
+	// This is useful for tests which can tolerate transitory violations.
+	MaxConsecutiveFailures uint32
 }
 
 // isSpecified returns true if any part of ResourceSpec is specified,

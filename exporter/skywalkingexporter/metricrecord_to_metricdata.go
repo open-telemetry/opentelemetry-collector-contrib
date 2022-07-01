@@ -106,14 +106,16 @@ func doubleHistogramMetricsToData(name string, data pmetric.HistogramDataPointSl
 		hg := &metricpb.MeterData_Histogram{Histogram: &metricpb.MeterHistogram{}}
 		hg.Histogram.Labels = labels
 		hg.Histogram.Name = name
-		bounds := dataPoint.MExplicitBounds()
-		bucketCount := len(dataPoint.MBucketCounts())
+		bounds := dataPoint.ExplicitBounds()
+		bucketCount := dataPoint.BucketCounts().Len()
 
 		if bucketCount > 0 {
-			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Count: int64(dataPoint.MBucketCounts()[0]), IsNegativeInfinity: true})
+			hg.Histogram.Values = append(hg.Histogram.Values,
+				&metricpb.MeterBucketValue{Count: int64(dataPoint.BucketCounts().At(0)), IsNegativeInfinity: true})
 		}
-		for i := 1; i < bucketCount && i-1 < len(bounds); i++ {
-			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Bucket: bounds[i-1], Count: int64(dataPoint.MBucketCounts()[i])})
+		for i := 1; i < bucketCount && i-1 < bounds.Len(); i++ {
+			hg.Histogram.Values = append(hg.Histogram.Values, &metricpb.MeterBucketValue{Bucket: bounds.At(i - 1),
+				Count: int64(dataPoint.BucketCounts().At(i))})
 		}
 
 		meterData.Metric = hg

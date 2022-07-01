@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package prometheusexporter
 
 import (
@@ -142,14 +141,14 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -218,14 +217,14 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+128, 1543160298100+128000),
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+128, 1543160298100),
-			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
+			`# HELP test_metric_1_this_one_there_where Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+128, 1543160298100),
+			`# HELP test_metric_2_this_one_there_where Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
@@ -274,7 +273,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err, "Failed to perform a scrape")
 	})
 
 	assert.NotNil(t, exp)

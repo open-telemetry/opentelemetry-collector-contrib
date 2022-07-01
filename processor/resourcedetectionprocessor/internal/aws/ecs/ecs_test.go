@@ -16,7 +16,6 @@ package ecs
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,8 +59,7 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
 	assert.NoError(t, err)
@@ -69,7 +67,6 @@ func Test_ecsNewDetector(t *testing.T) {
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	os.Clearenv()
 	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	res, _, err := d.Detect(context.TODO())
 
@@ -102,8 +99,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 }
 
 func Test_ecsDetectV4(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
@@ -138,8 +134,7 @@ func Test_ecsDetectV4(t *testing.T) {
 }
 
 func Test_ecsDetectV3(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
