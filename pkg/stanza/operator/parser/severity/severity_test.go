@@ -264,7 +264,7 @@ func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr
 func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[interface{}]interface{}) *Config {
 	cfg := NewConfig("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
-	cfg.Config = helper.Config{
+	cfg.SeverityConfig = helper.SeverityConfig{
 		ParseFrom: &parseFrom,
 		Preset:    preset,
 		Mapping:   mapping,

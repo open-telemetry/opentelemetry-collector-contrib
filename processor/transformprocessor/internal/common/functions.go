@@ -22,6 +22,7 @@ import (
 var registry = map[string]interface{}{
 	"TraceID":              traceID,
 	"SpanID":               spanID,
+	"IsMatch":              isMatch,
 	"keep_keys":            keepKeys,
 	"set":                  set,
 	"truncate_all":         truncateAll,
