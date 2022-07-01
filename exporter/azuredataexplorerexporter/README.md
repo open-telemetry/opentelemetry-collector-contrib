@@ -117,6 +117,10 @@ The following tables need to be created in the database specified in the configu
 .create-merge table <Metrics-Table-Name> (Timestamp:datetime, MetricName:string, MetricType:string, MetricUnit:string, MetricDescription:string, MetricValue:real, Host:string, ResourceAttributes:dynamic,MetricAttributes:dynamic) 
 
 .create-merge table <Traces-Table-Name> (TraceId:string, SpanId:string, ParentId:string, SpanName:string, SpanStatus:string, SpanKind:string, StartTime:datetime, EndTime:datetime, ResourceAttributes:dynamic, TraceAttributes:dynamic, Events:dynamic, Links:dynamic) 
+
+//Enable streaming ingestion( for managed streaming) for the created tables using
+.alter table <Table-Name> policy streamingingestion enable
+
 ```
 ### Optional configurations/Enhancements suggestions
 
@@ -139,7 +143,7 @@ with ( docstring = "Histo bucket processing function", folder = "UpdatePolicyFun
 .alter table HistoBucketData policy update 
 @'[{ "IsEnabled": true, "Source": "OTELMetrics","Query": "ExtractHistoColumns()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
 
- ## Below code create a table which only contains count and sum values of Histogram metric type and attaches an update policy to it
+//Below code creates a table which only contains count and sum values of Histogram metric type and attaches an update policy to it
 
  .create table HistoData (Timestamp: datetime, MetricName: string , MetricType: string , Count: double, Sum: double, Host: string , ResourceAttributes: dynamic, MetricAttributes: dynamic)
 
