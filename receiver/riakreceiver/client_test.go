@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 
 import (
@@ -112,7 +111,8 @@ func TestGetStatsDetails(t *testing.T) {
 
 		// Setup test server
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write(data)
+			_, err := w.Write(data)
+			require.NoError(t, err)
 		}))
 		defer ts.Close()
 

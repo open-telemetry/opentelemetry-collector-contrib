@@ -196,6 +196,81 @@ var (
 			},
 		},
 		{
+			name: "metric_label_update_label_and_label_value",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:   UpdateLabel,
+								Label:    "label1",
+								NewLabel: "new/label1",
+							},
+							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"label1-value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"new/label1"}).
+					addTimeseries(1, []string{"new/label1-value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
+		{
+			name: "metric_label_update_with_regexp_filter",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("^matched.*$")},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: UpdateLabel,
+								Label:  "label1",
+							},
+							valueActionsMapping: map[string]string{"label1-value1": "new/label1-value1"},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("matched-metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addInt64Point(0, 3, 2).build(),
+				metricBuilder().setName("unmatched-metric2").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("matched-metric1").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"new/label1-value1", "label2-value1"}).
+					addInt64Point(0, 3, 2).build(),
+				metricBuilder().setName("unmatched-metric2").
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1", "label2"}).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addInt64Point(0, 3, 2).build(),
+			},
+		},
+		{
 			name: "metric_label_aggregation_sum_int_update",
 			transforms: []internalTransform{
 				{
@@ -487,6 +562,57 @@ var (
 			},
 		},
 		{
+			name: "metric_label_aggregation_insert_sum_with_several_attrs_match",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label0": strictMatcher("label0-value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+								LabelSet:        []string{"label1", "label2"},
+							},
+							labelSetMap: map[string]bool{"label1": true, "label2": true},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label0", "label1", "label2", "label3"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, []string{"label0-value1", "label1-value1", "label2-value1", "label3-value1"}).
+					addInt64Point(0, 3, 2).
+					addTimeseries(2, []string{"label0-value1", "label1-value1", "label2-value1", "label3-value2"}).
+					addInt64Point(1, 1, 2).
+					addTimeseries(2, []string{"label0-value2", "label1-value1", "label2-value1", "label3-value1"}).
+					addInt64Point(2, 1, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label0", "label1", "label2", "label3"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, []string{"label0-value1", "label1-value1", "label2-value1", "label3-value1"}).
+					addInt64Point(0, 3, 2).
+					addTimeseries(2, []string{"label0-value1", "label1-value1", "label2-value1", "label3-value2"}).
+					addInt64Point(1, 1, 2).
+					addTimeseries(2, []string{"label0-value2", "label1-value1", "label2-value1", "label3-value1"}).
+					addInt64Point(2, 1, 2).
+					build(),
+				metricBuilder().setName("new/metric1").
+					setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(2, []string{"label1-value1", "label2-value1"}).
+					addInt64Point(0, 4, 2).
+					build(),
+			},
+		},
+		{
 			name: "metric_label_values_aggregation_sum_int_update",
 			transforms: []internalTransform{
 				{
@@ -567,6 +693,44 @@ var (
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1"}).
 					addDistributionPoints(0, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
+					build(),
+			},
+		},
+		{
+			name: "metric_label_aggregation_ignored_for_partial_metric_match",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("label1-value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:          AggregateLabels,
+								AggregationType: Sum,
+								LabelSet:        []string{"label1"},
+							},
+							labelSetMap: map[string]bool{"label1": true},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addTimeseries(1, []string{"label1-value2", "label2-value2"}).
+					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").
+					setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
+					addTimeseries(1, []string{"label1-value2", "label2-value2"}).
+					addInt64Point(0, 3, 2).addInt64Point(1, 1, 2).
 					build(),
 			},
 		},
@@ -653,9 +817,10 @@ var (
 			name: "metric_name_insert_with_match_label_strict",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": strictMatcher("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -682,9 +847,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile(`(.|\s)*\S(.|\s)*`)}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile(`(.|\s)*\S(.|\s)*`)}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -711,9 +877,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_two_datapoints_positive",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -744,9 +911,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_two_datapoints_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value3")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -772,9 +940,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_with_full_value",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -801,9 +970,10 @@ var (
 			name: "metric_name_insert_with_match_label_strict_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"label1": strictMatcher("wrong_value")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("wrong_value")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -825,9 +995,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_negative",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile(".*wrong_ending")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile(".*wrong_ending")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -849,9 +1020,10 @@ var (
 			name: "metric_name_insert_with_match_label_strict_missing_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterStrict{include: "metric1", matchLabels: map[string]StringMatcher{"missing_key": strictMatcher("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"missing_key": strictMatcher("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -873,9 +1045,10 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_missing_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"missing_key": regexp.MustCompile("value1")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"missing_key": regexp.MustCompile("value1")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -897,9 +1070,11 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_missing_and_present_key",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1"), "missing_key": regexp.MustCompile("value2")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1"),
+							"missing_key": regexp.MustCompile("value2")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -921,9 +1096,11 @@ var (
 			name: "metric_name_insert_with_match_label_regexp_missing_key_with_empty_expression",
 			transforms: []internalTransform{
 				{
-					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"), matchLabels: map[string]StringMatcher{"label1": regexp.MustCompile("value1"), "missing_key": regexp.MustCompile("^$")}},
-					Action:              Insert,
-					NewName:             "new/metric1",
+					MetricIncludeFilter: internalFilterRegexp{include: regexp.MustCompile("metric1"),
+						attrMatchers: map[string]StringMatcher{"label1": regexp.MustCompile("value1"),
+							"missing_key": regexp.MustCompile("^$")}},
+					Action:  Insert,
+					NewName: "new/metric1",
 				},
 			},
 			in: []*metricspb.Metric{
@@ -1367,7 +1544,7 @@ var (
 					addTimeseries(1, nil).addInt64Point(0, 1, 1).
 					build(),
 				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
 					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
 					build(),
 				metricBuilder().setName("metric3").
@@ -1381,7 +1558,7 @@ var (
 					addTimeseries(1, nil).addInt64Point(0, 1, 1).
 					build(),
 				metricBuilder().setName("metric2").
-					setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
+					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DOUBLE).
 					addTimeseries(1, nil).addDoublePoint(0, 2, 1).
 					build(),
 				metricBuilder().setName("metric3").
@@ -1702,6 +1879,38 @@ var (
 					build(),
 				metricBuilder().setName("metric2").setDataType(metricspb.MetricDescriptor_GAUGE_DOUBLE).
 					addTimeseries(1, nil).addDoublePoint(0, 30, 1).
+					build(),
+			},
+		},
+		{
+			name: "metric_experimental_scale_with_attr_filtering",
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric1",
+						attrMatchers: map[string]StringMatcher{"label1": strictMatcher("value1")}},
+					Action: Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action: ScaleValue,
+								Scale:  100,
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).addInt64Point(0, 1, 1).
+					addTimeseries(1, []string{"value2"}).addInt64Point(1, 3, 1).
+					build(),
+			},
+			out: []*metricspb.Metric{
+				metricBuilder().setName("metric1").setDataType(metricspb.MetricDescriptor_CUMULATIVE_INT64).
+					setLabels([]string{"label1"}).
+					addTimeseries(1, []string{"value1"}).addInt64Point(0, 100, 1).
+					addTimeseries(1, []string{"value2"}).addInt64Point(1, 3, 1).
 					build(),
 			},
 		},

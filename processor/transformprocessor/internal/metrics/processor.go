@@ -49,6 +49,7 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			ctx.il = smetrics.Scope()
 			metrics := smetrics.Metrics()
+			ctx.metrics = metrics
 			for k := 0; k < metrics.Len(); k++ {
 				ctx.metric = metrics.At(k)
 				switch ctx.metric.DataType() {

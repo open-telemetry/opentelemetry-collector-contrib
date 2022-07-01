@@ -31,8 +31,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-// TestLoadConfig checks whether yaml configuration can be loaded correctly
-func Test_loadConfig(t *testing.T) {
+// From the default configurations -- checks if a correct exporter is instantiated
+func TestLoadDefaultConfig(t *testing.T) {
+
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -43,9 +44,21 @@ func Test_loadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
-	// From the default configurations -- checks if a correct exporter is instantiated
-	e0 := cfg.Exporters[(config.NewComponentID(typeStr))]
+	e0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, e0, factory.CreateDefaultConfig())
+}
+
+// TestLoadConfig checks whether yaml configuration can be loaded correctly
+func Test_loadConfigDefaultAutomaticRename(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
 
 	// checks if the correct Config struct can be instantiated from testdata/config.yaml
 	e1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")]
@@ -65,7 +78,6 @@ func Test_loadConfig(t *testing.T) {
 				NumConsumers: 10,
 			},
 			Namespace:      "test-space",
-			sanitizeLabel:  false,
 			ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:8888",

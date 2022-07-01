@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
@@ -30,6 +29,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+)
+
+const (
+	targetMetricName = "target_info"
 )
 
 type transaction struct {
@@ -89,6 +92,12 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 		}
 	}
 
+	// For the `target_info` metric we need to convert it to resource attributes.
+	metricName := labels.Get(model.MetricNameLabel)
+	if metricName == targetMetricName {
+		return 0, t.AddTargetInfo(labels)
+	}
+
 	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
 }
 
@@ -145,7 +154,9 @@ func (t *transaction) Commit() error {
 
 	if metricsL.Len() > 0 {
 		metrics := t.metricSliceToMetrics(metricsL)
-		t.sink.ConsumeMetrics(ctx, *metrics)
+		if err = t.sink.ConsumeMetrics(ctx, *metrics); err != nil {
+			return err
+		}
 	}
 
 	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, nil)
@@ -154,6 +165,20 @@ func (t *transaction) Commit() error {
 
 func (t *transaction) Rollback() error {
 	t.startTimeMs = -1
+	return nil
+}
+
+func (t *transaction) AddTargetInfo(labels labels.Labels) error {
+	attrs := t.nodeResource.Attributes()
+
+	for _, lbl := range labels {
+		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
+			continue
+		}
+
+		attrs.UpsertString(lbl.Name, lbl.Value)
+	}
+
 	return nil
 }
 

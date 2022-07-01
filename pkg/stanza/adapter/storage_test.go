@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
 	"context"
-	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,17 +28,13 @@ import (
 
 func TestStorage(t *testing.T) {
 	ctx := context.Background()
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, tempDir, "test")
-	err = r.Start(ctx, host)
-	require.NoError(t, err)
+	host := storagetest.NewStorageHost(t, t.TempDir(), "test")
+	require.NoError(t, r.Start(ctx, host))
 
 	myBytes := []byte("my_value")
 
-	r.storageClient.Set(ctx, "key", myBytes)
+	require.NoError(t, r.storageClient.Set(ctx, "key", myBytes))
 	val, err := r.storageClient.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Equal(t, myBytes, val)
@@ -76,13 +70,9 @@ func TestStorage(t *testing.T) {
 }
 
 func TestFailOnMultipleStorageExtensions(t *testing.T) {
-	ctx := context.Background()
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, tempDir, "one", "two")
-	err = r.Start(ctx, host)
+	host := storagetest.NewStorageHost(t, t.TempDir(), "one", "two")
+	err := r.Start(context.Background(), host)
 	require.Error(t, err)
 	require.Equal(t, "storage client: multiple storage extensions found", err.Error())
 }
