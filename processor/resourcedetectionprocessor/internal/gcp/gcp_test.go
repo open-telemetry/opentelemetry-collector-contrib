@@ -17,7 +17,6 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
@@ -31,8 +30,7 @@ import (
 
 func TestDetect(t *testing.T) {
 	// Set this before all tests to ensure metadata.onGCE() returns true
-	err := os.Setenv("GCE_METADATA_HOST", "169.254.169.254")
-	assert.NoError(t, err)
+	t.Setenv("GCE_METADATA_HOST", "169.254.169.254")
 
 	for _, tc := range []struct {
 		desc             string

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
@@ -119,8 +118,8 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 }
 
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
-	switch dps := in.(type) {
-	case pmetric.NumberDataPointSlice:
+
+	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
 			id.StartTimestamp = dp.StartTimestamp()

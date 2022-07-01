@@ -95,7 +95,7 @@ func (ocr *Receiver) Export(mes agentmetricspb.MetricsService_ExportServer) erro
 
 		recv, err = mes.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				// Do not return EOF as an error so that grpc-gateway calls get an empty
 				// response with HTTP status code 200 rather than a 500 error with EOF.
 				return nil

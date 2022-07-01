@@ -101,6 +101,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver"
@@ -152,6 +153,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/simpleprometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
@@ -195,6 +197,7 @@ func Components() (component.Factories, error) {
 
 	receivers := []component.ReceiverFactory{
 		activedirectorydsreceiver.NewFactory(),
+		aerospikereceiver.NewFactory(),
 		apachereceiver.NewFactory(),
 		awscontainerinsightreceiver.NewFactory(),
 		awsecscontainermetricsreceiver.NewFactory(),
@@ -247,6 +250,7 @@ func Components() (component.Factories, error) {
 		simpleprometheusreceiver.NewFactory(),
 		skywalkingreceiver.NewFactory(),
 		splunkhecreceiver.NewFactory(),
+		sqlqueryreceiver.NewFactory(),
 		sqlserverreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),

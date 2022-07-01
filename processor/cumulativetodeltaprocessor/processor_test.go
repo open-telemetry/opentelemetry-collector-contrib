@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package cumulativetodeltaprocessor
 
 import (
@@ -313,11 +312,11 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 
 	// Load initial value
 	reset()
-	p.ConsumeMetrics(context.Background(), metrics)
+	assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		reset()
-		p.ConsumeMetrics(context.Background(), metrics)
+		assert.NoError(b, p.ConsumeMetrics(context.Background(), metrics))
 	}
 }

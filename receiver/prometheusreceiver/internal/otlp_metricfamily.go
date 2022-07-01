@@ -162,8 +162,8 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 		point.SetSum(mg.sum)
 	}
 
-	point.SetMExplicitBounds(bounds)
-	point.SetMBucketCounts(bucketCounts)
+	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
+	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(bucketCounts))
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
@@ -287,6 +287,10 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey string, ls labels.Label
 func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v float64) error {
 	groupKey := mf.getGroupKey(ls)
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
+	if mg.ts != t {
+		mf.droppedTimeseries++
+		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
+	}
 	switch mf.mtype {
 	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
 		switch {

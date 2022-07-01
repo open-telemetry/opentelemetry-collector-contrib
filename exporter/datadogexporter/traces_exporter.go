@@ -16,172 +16,137 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/config/configdefs"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/obfuscate"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
+	"github.com/DataDog/datadog-agent/pkg/trace/agent"
+	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
+
+	modelsource "github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 )
 
 type traceExporter struct {
 	params         component.ExporterCreateSettings
 	cfg            *config.Config
-	ctx            context.Context
-	edgeConnection traceEdgeConnection
-	obfuscator     *obfuscate.Obfuscator
-	client         *datadog.Client
-	denylister     *denylister
-	scrubber       scrub.Scrubber
-	onceMetadata   *sync.Once
-	hostProvider   provider.HostnameProvider
+	ctx            context.Context // ctx triggers shutdown upon cancellation
+	client         *datadog.Client // client sends runnimg metrics to backend & performs API validation
+	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
+	onceMetadata   *sync.Once      // onceMetadata ensures that metadata is sent only once across all exporters
+	wg             sync.WaitGroup  // wg waits for graceful shutdown
+	agent          *agent.Agent    // agent processes incoming traces
+	sourceProvider source.Provider // is able to source the origin of a trace (hostname, container, etc)
 }
 
-var (
-	obfuscatorConfig = &configdefs.ObfuscationConfig{
-		ES: configdefs.JSONObfuscationConfig{
-			Enabled: true,
-		},
-		Mongo: configdefs.JSONObfuscationConfig{
-			Enabled: true,
-		},
-		HTTP: configdefs.HTTPObfuscationConfig{
-			RemoveQueryString: true,
-			RemovePathDigits:  true,
-		},
-		RemoveStackTraces: true,
-		Redis:             configdefs.Enablable{Enabled: true},
-		Memcached:         configdefs.Enablable{Enabled: true},
-	}
-)
-
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, hostProvider provider.HostnameProvider) (*traceExporter, error) {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
-
-	// removes potentially sensitive info and PII, approach taken from serverless approach
-	// https://github.com/DataDog/datadog-serverless-functions/blob/11f170eac105d66be30f18eda09eca791bc0d31b/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L43
-	obfuscator := obfuscate.NewObfuscator(obfuscatorConfig)
-
-	// a denylist for dropping ignored resources
-	denylister := newDenylister(cfg.Traces.IgnoreResources)
-
-	exporter := &traceExporter{
+	acfg := traceconfig.New()
+	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
+	src, err := sourceProvider.Source(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if src.Kind == source.HostnameKind {
+		acfg.Hostname = src.Identifier
+	}
+	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
+	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
+	acfg.OTLPReceiver.UsePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate)
+	acfg.Endpoints[0].APIKey = cfg.API.Key
+	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
+	acfg.ReceiverPort = 0 // disable HTTP receiver
+	if addr := cfg.Traces.Endpoint; addr != "" {
+		acfg.Endpoints[0].Host = addr
+	}
+	tracelog.SetLogger(&zaplogger{params.Logger})
+	agnt := agent.NewAgent(ctx, acfg)
+	exp := &traceExporter{
 		params:         params,
 		cfg:            cfg,
 		ctx:            ctx,
-		edgeConnection: createTraceEdgeConnection(cfg.Traces.TCPAddr.Endpoint, cfg.API.Key, params.BuildInfo, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings),
-		obfuscator:     obfuscator,
 		client:         client,
-		denylister:     denylister,
-		scrubber:       scrub.NewScrubber(),
+		agent:          agnt,
 		onceMetadata:   onceMetadata,
-		hostProvider:   hostProvider,
+		scrubber:       scrub.NewScrubber(),
+		sourceProvider: sourceProvider,
 	}
-
-	return exporter, nil
+	exp.wg.Add(1)
+	go func() {
+		defer exp.wg.Done()
+		agnt.Run()
+	}()
+	return exp, nil
 }
 
-// TODO: when component.Host exposes a way to retrieve processors, check for batch processors
-// and log a warning if not set
+var _ consumer.ConsumeTracesFunc = (*traceExporter)(nil).consumeTraces
 
-// Start tells the exporter to start. The exporter may prepare for exporting
-// by connecting to the endpoint. Host parameter can be used for communicating
-// with the host after Start() has already returned. If error is returned by
-// Start() then the collector startup will be aborted.
-// func (exp *traceExporter) Start(_ context.Context, _ component.Host) error {
-// 	return nil
-// }
-
-func (exp *traceExporter) pushTraceDataScrubbed(ctx context.Context, td ptrace.Traces) error {
-	return exp.scrubber.Scrub(exp.pushTraceData(ctx, td))
-}
-
-// force pushTraceData to be a ConsumeTracesFunc, even if no error is returned.
-var _ consumer.ConsumeTracesFunc = (*traceExporter)(nil).pushTraceData
-
-func (exp *traceExporter) pushTraceData(
+func (exp *traceExporter) consumeTraces(
 	ctx context.Context,
 	td ptrace.Traces,
-) error {
-
-	// Start host metadata with resource attributes from
-	// the first payload.
+) (err error) {
+	defer func() { err = exp.scrubber.Scrub(err) }()
 	if exp.cfg.HostMetadata.Enabled {
+		// start host metadata with resource attributes from
+		// the first payload.
 		exp.onceMetadata.Do(func() {
 			attrs := pcommon.NewMap()
 			if td.ResourceSpans().Len() > 0 {
 				attrs = td.ResourceSpans().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.hostProvider, attrs)
+			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
-
-	// convert traces to datadog traces and group trace payloads by env
-	// we largely apply the same logic as the serverless implementation, simplified a bit
-	// https://github.com/DataDog/datadog-serverless-functions/blob/f5c3aedfec5ba223b11b76a4239fcbf35ec7d045/aws/logs_monitoring/trace_forwarder/cmd/trace/main.go#L61-L83
-	fallbackHost, err := exp.hostProvider.Hostname(ctx)
-	if err != nil {
-		return err
-	}
-
-	ddTraces, ms := convertToDatadogTd(td, fallbackHost, exp.cfg, exp.denylister, exp.params.BuildInfo)
-
-	// group the traces by env to reduce the number of flushes
-	aggregatedTraces := aggregateTracePayloadsByEnv(ddTraces)
-
-	// security/obfuscation for db, query strings, stack traces, pii, etc
-	// TODO: is there any config we want here? OTEL has their own pipeline for regex obfuscation
-	obfuscatePayload(exp.obfuscator, aggregatedTraces)
-
-	pushTime := time.Now().UTC().UnixNano()
-	for _, ddTracePayload := range aggregatedTraces {
-		// currently we don't want to do retries since api endpoints may not dedupe in certain situations
-		// adding a helper function here to make custom retry logic easier in the future
-		err := exp.pushWithRetry(ctx, ddTracePayload, 1, pushTime, func() error {
-			return nil
-		})
-
-		if err != nil {
-			exp.params.Logger.Info("failed to push with retry", zap.Error(err))
+	rspans := td.ResourceSpans()
+	hosts := make(map[string]struct{})
+	tags := make(map[string]struct{})
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i := 0; i < rspans.Len(); i++ {
+		rspan := rspans.At(i)
+		src := exp.agent.OTLPReceiver.ReceiveResourceSpans(rspan, http.Header{}, "otlp-exporter")
+		switch src.Kind {
+		case modelsource.HostnameKind:
+			hosts[src.Identifier] = struct{}{}
+		case modelsource.AWSECSFargateKind:
+			tags[src.Tag()] = struct{}{}
 		}
 	}
-
-	_ = exp.client.PostMetrics(ms)
-
+	series := make([]datadog.Metric, 0, len(hosts)+len(tags))
+	for host := range hosts {
+		series = append(series, metrics.DefaultMetrics("traces", host, uint64(now), exp.params.BuildInfo)...)
+	}
+	for tag := range tags {
+		ms := metrics.DefaultMetrics("traces", "", uint64(now), exp.params.BuildInfo)
+		for i := range ms {
+			ms[i].Tags = append(ms[i].Tags, tag)
+		}
+		series = append(series, ms...)
+	}
+	if err := exp.client.PostMetrics(series); err != nil {
+		exp.params.Logger.Error("Error posting hostname/tags series", zap.Error(err))
+	}
 	return nil
 }
 
-// gives us flexibility to add custom retry logic later
-func (exp *traceExporter) pushWithRetry(ctx context.Context, ddTracePayload *pb.TracePayload, maxRetries int, pushTime int64, fn func() error) error {
-	err := exp.edgeConnection.SendTraces(ctx, ddTracePayload, maxRetries)
-
-	if err != nil {
-		exp.params.Logger.Info("failed to send traces", zap.Error(err))
-	}
-
-	// this is for generating metrics like hits, errors, and latency, it uses a separate endpoint than Traces
-	stats := computeAPMStats(ddTracePayload, pushTime)
-	errStats := exp.edgeConnection.SendStats(context.Background(), stats, maxRetries)
-
-	if errStats != nil {
-		exp.params.Logger.Info("failed to send trace stats", zap.Error(errStats))
-	}
-
-	return fn()
+func (exp *traceExporter) waitShutdown() {
+	exp.wg.Wait()
 }

@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioe
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
-	go.opentelemetry.io/collector/semconv v0.53.0
+	github.com/stretchr/testify v1.7.5
+	go.opentelemetry.io/collector v0.54.0
+	go.opentelemetry.io/collector/pdata v0.54.0
+	go.opentelemetry.io/collector/semconv v0.54.0
 
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.6 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_golang v1.12.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.34.0 // indirect
+	github.com/prometheus/common v0.35.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect

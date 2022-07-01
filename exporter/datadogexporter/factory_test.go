@@ -17,7 +17,6 @@ package datadogexporter
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -37,26 +36,16 @@ import (
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
-	assert.NoError(t, os.Setenv("DD_API_KEY", "API_KEY"))
-	assert.NoError(t, os.Setenv("DD_SITE", "SITE"))
-	assert.NoError(t, os.Setenv("DD_URL", "URL"))
-	assert.NoError(t, os.Setenv("DD_APM_URL", "APM_URL"))
-	assert.NoError(t, os.Setenv("DD_HOST", "HOST"))
-	assert.NoError(t, os.Setenv("DD_ENV", "ENV"))
-	assert.NoError(t, os.Setenv("DD_SERVICE", "SERVICE"))
-	assert.NoError(t, os.Setenv("DD_VERSION", "VERSION"))
-	assert.NoError(t, os.Setenv("DD_TAGS", "TAGS"))
-	defer func() {
-		assert.NoError(t, os.Unsetenv("DD_API_KEY"))
-		assert.NoError(t, os.Unsetenv("DD_SITE"))
-		assert.NoError(t, os.Unsetenv("DD_URL"))
-		assert.NoError(t, os.Unsetenv("DD_APM_URL"))
-		assert.NoError(t, os.Unsetenv("DD_HOST"))
-		assert.NoError(t, os.Unsetenv("DD_ENV"))
-		assert.NoError(t, os.Unsetenv("DD_SERVICE"))
-		assert.NoError(t, os.Unsetenv("DD_VERSION"))
-		assert.NoError(t, os.Unsetenv("DD_TAGS"))
-	}()
+	t.Setenv("DD_API_KEY", "API_KEY")
+	t.Setenv("DD_SITE", "SITE")
+	t.Setenv("DD_URL", "URL")
+	t.Setenv("DD_APM_URL", "APM_URL")
+	t.Setenv("DD_HOST", "HOST")
+	t.Setenv("DD_ENV", "ENV")
+	t.Setenv("DD_SERVICE", "SERVICE")
+	t.Setenv("DD_VERSION", "VERSION")
+	t.Setenv("DD_TAGS", "TAGS")
+
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
@@ -173,7 +162,12 @@ func TestLoadConfig(t *testing.T) {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
-		IgnoreResources: []string{},
+		SpanNameRemappings: map[string]string{
+			"old_name1": "new_name1",
+			"old_name2": "new_name2",
+		},
+		SpanNameAsResourceName: true,
+		IgnoreResources:        []string{},
 	}, apiConfig.Traces)
 	assert.True(t, apiConfig.SendMetadata)
 	assert.False(t, apiConfig.OnlyMetadata)
@@ -248,21 +242,13 @@ func TestLoadConfig(t *testing.T) {
 // TestLoadConfigEnvVariables tests that the loading configuration takes into account
 // environment variables for default values
 func TestLoadConfigEnvVariables(t *testing.T) {
-	assert.NoError(t, os.Setenv("DD_API_KEY", "replacedapikey"))
-	assert.NoError(t, os.Setenv("DD_HOST", "testhost"))
-	assert.NoError(t, os.Setenv("DD_SITE", "datadoghq.test"))
-	assert.NoError(t, os.Setenv("DD_TAGS", "envexample:tag envexample2:tag"))
-	assert.NoError(t, os.Setenv("DD_URL", "https://api.datadoghq.com"))
-	assert.NoError(t, os.Setenv("DD_APM_URL", "https://trace.agent.datadoghq.com"))
-
-	defer func() {
-		assert.NoError(t, os.Unsetenv("DD_API_KEY"))
-		assert.NoError(t, os.Unsetenv("DD_HOST"))
-		assert.NoError(t, os.Unsetenv("DD_SITE"))
-		assert.NoError(t, os.Unsetenv("DD_TAGS"))
-		assert.NoError(t, os.Unsetenv("DD_URL"))
-		assert.NoError(t, os.Unsetenv("DD_APM_URL"))
-	}()
+	t.Setenv("DD_API_KEY", "replacedapikey")
+	t.Setenv("DD_HOST", "testhost")
+	t.Setenv("DD_SITE", "datadoghq.test")
+	t.Setenv("DD_TAGS", "envexample:tag envexample2:tag")
+	t.Setenv("DD_URL", "https://api.datadoghq.com")
+	t.Setenv("DD_APM_URL", "https://trace.agent.datadoghq.com")
+	t.Setenv("DD_APM_MAX_TPS", "15")
 
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
@@ -315,6 +301,10 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		ddconfig.TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
+			},
+			SpanNameRemappings: map[string]string{
+				"old_name3": "new_name3",
+				"old_name4": "new_name4",
 			},
 			IgnoreResources: []string{},
 		}, apiConfig.Traces)
