@@ -123,10 +123,10 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 	err = cfg.Validate()
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking authorization credentials file "/nonexistentauthcredentialsfile" - stat /nonexistentauthcredentialsfile: no such file or directory`
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking authorization credentials file "/nonexistentauthcredentialsfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigNonExistentCertFile(t *testing.T) {
@@ -141,10 +141,10 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 	err = cfg.Validate()
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client cert file "/nonexistentcertfile" - stat /nonexistentcertfile: no such file or directory`
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client cert file "/nonexistentcertfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigNonExistentKeyFile(t *testing.T) {
@@ -159,10 +159,10 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 	err = cfg.Validate()
 	require.NotNil(t, err, "Expected a non-nil error")
 
-	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client key file "/nonexistentkeyfile" - stat /nonexistentkeyfile: no such file or directory`
+	wantErrMsg := `receiver "prometheus" has invalid configuration: error checking client key file "/nonexistentkeyfile"`
 
 	gotErrMsg := err.Error()
-	require.Equal(t, wantErrMsg, gotErrMsg)
+	require.True(t, strings.HasPrefix(gotErrMsg, wantErrMsg))
 }
 
 func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {

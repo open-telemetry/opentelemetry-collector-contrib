@@ -1,11 +1,12 @@
 # UDP Receiver
 
-Receives logs from udp using
-the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
+Receives logs over UDP.
 
 ## Configuration Fields
 
@@ -17,7 +18,7 @@ Supported pipeline types: logs
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
 | `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
 | `encoding`        | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
-| `operators`       | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
+| `operators`       | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### Operators
 
@@ -64,3 +65,5 @@ receivers:
   udplog:
     listen_address: "0.0.0.0:54525"
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

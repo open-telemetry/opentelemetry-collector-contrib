@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 )
 
@@ -72,9 +72,9 @@ var dropSanitizationGate = featuregate.Gate{
 
 // GetAggregationTemporality converts the string value given in the config into a MetricAggregationTemporality.
 // Returns cumulative, unless delta is correctly specified.
-func (c Config) GetAggregationTemporality() pdata.MetricAggregationTemporality {
+func (c Config) GetAggregationTemporality() pmetric.MetricAggregationTemporality {
 	if c.AggregationTemporality == delta {
-		return pdata.MetricAggregationTemporalityDelta
+		return pmetric.MetricAggregationTemporalityDelta
 	}
-	return pdata.MetricAggregationTemporalityCumulative
+	return pmetric.MetricAggregationTemporalityCumulative
 }

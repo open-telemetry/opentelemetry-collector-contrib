@@ -17,7 +17,7 @@ package filtermatcher // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -46,14 +46,14 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 	for _, library := range mp.Libraries {
 		name, err := filterset.CreateFilterSet([]string{library.Name}, &mp.Config)
 		if err != nil {
-			return PropertiesMatcher{}, fmt.Errorf("error creating library name filters: %v", err)
+			return PropertiesMatcher{}, fmt.Errorf("error creating library name filters: %w", err)
 		}
 
 		var version filterset.FilterSet
 		if library.Version != nil {
 			filter, err := filterset.CreateFilterSet([]string{*library.Version}, &mp.Config)
 			if err != nil {
-				return PropertiesMatcher{}, fmt.Errorf("error creating library version filters: %v", err)
+				return PropertiesMatcher{}, fmt.Errorf("error creating library version filters: %w", err)
 			}
 			version = filter
 		}
@@ -66,7 +66,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 	if len(mp.Attributes) > 0 {
 		am, err = NewAttributesMatcher(mp.Config, mp.Attributes)
 		if err != nil {
-			return PropertiesMatcher{}, fmt.Errorf("error creating attribute filters: %v", err)
+			return PropertiesMatcher{}, fmt.Errorf("error creating attribute filters: %w", err)
 		}
 	}
 
@@ -74,7 +74,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 	if len(mp.Resources) > 0 {
 		rm, err = NewAttributesMatcher(mp.Config, mp.Resources)
 		if err != nil {
-			return PropertiesMatcher{}, fmt.Errorf("error creating resource filters: %v", err)
+			return PropertiesMatcher{}, fmt.Errorf("error creating resource filters: %w", err)
 		}
 	}
 
@@ -86,7 +86,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 }
 
 // Match matches a span or log to a set of properties.
-func (mp *PropertiesMatcher) Match(attributes pdata.Map, resource pdata.Resource, library pdata.InstrumentationScope) bool {
+func (mp *PropertiesMatcher) Match(attributes pcommon.Map, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	for _, matcher := range mp.libraries {
 		if !matcher.Name.Matches(library.Name()) {
 			return false

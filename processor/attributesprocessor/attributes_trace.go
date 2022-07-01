@@ -17,7 +17,7 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -43,7 +43,7 @@ func newSpanAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrPro
 	}
 }
 
-func (a *spanAttributesProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (a *spanAttributesProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)

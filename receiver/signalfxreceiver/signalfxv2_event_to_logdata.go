@@ -12,19 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
 // signalFxV2ToMetricsData converts SignalFx event proto data points to
-// pdata.LogRecordSlice. Returning the converted data and the number of dropped log
+// plog.LogRecordSlice. Returning the converted data and the number of dropped log
 // records.
-func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogRecordSlice) {
+func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice) {
 	lrs.EnsureCapacity(len(events))
 
 	for _, event := range events {
@@ -35,13 +37,15 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogRecordSlic
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
 		// The EventType field is stored as an attribute.
-		if event.EventType != "" {
-			attrs.InsertString(splunk.SFxEventType, event.EventType)
+		eventType := event.EventType
+		if eventType == "" {
+			eventType = "unknown"
 		}
+		attrs.InsertString(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
-		lr.SetTimestamp(pdata.Timestamp(event.Timestamp * 1e6))
+		lr.SetTimestamp(pcommon.Timestamp(event.Timestamp * 1e6))
 
 		if event.Category != nil {
 			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
@@ -57,7 +61,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs pdata.LogRecordSlic
 		}
 
 		if len(event.Properties) > 0 {
-			propMapVal := pdata.NewValueMap()
+			propMapVal := pcommon.NewValueMap()
 			propMap := propMapVal.MapVal()
 			propMap.EnsureCapacity(len(event.Properties))
 

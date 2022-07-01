@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -23,7 +24,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
@@ -31,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
@@ -38,40 +42,30 @@ import (
 )
 
 type metricsExporter struct {
-	params       component.ExporterCreateSettings
-	cfg          *config.Config
-	ctx          context.Context
-	client       *datadog.Client
-	tr           *translator.Translator
-	scrubber     scrub.Scrubber
-	retrier      *utils.Retrier
-	onceMetadata *sync.Once
-}
-
-// assert `hostProvider` implements HostnameProvider interface
-var _ translator.HostnameProvider = (*hostProvider)(nil)
-
-type hostProvider struct {
-	logger *zap.Logger
-	cfg    *config.Config
-}
-
-func (p *hostProvider) Hostname(context.Context) (string, error) {
-	return metadata.GetHost(p.logger, p.cfg.Hostname), nil
+	params         component.ExporterCreateSettings
+	cfg            *config.Config
+	ctx            context.Context
+	client         *datadog.Client
+	tr             *translator.Translator
+	scrubber       scrub.Scrubber
+	retrier        *utils.Retrier
+	onceMetadata   *sync.Once
+	sourceProvider source.Provider
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter config.
-func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.Translator, error) {
+func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider source.Provider) (*translator.Translator, error) {
 	options := []translator.Option{
 		translator.WithDeltaTTL(cfg.Metrics.DeltaTTL),
-		translator.WithFallbackHostnameProvider(&hostProvider{logger, cfg}),
+		translator.WithFallbackSourceProvider(sourceProvider),
 	}
 
 	if cfg.Metrics.HistConfig.SendCountSum {
 		options = append(options, translator.WithCountSumMetrics())
 	}
 
-	if cfg.Metrics.Quantiles {
+	switch cfg.Metrics.SummaryConfig.Mode {
+	case config.SummaryModeGauges:
 		options = append(options, translator.WithQuantiles())
 	}
 
@@ -79,7 +73,15 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
-	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags {
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags && cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
+		return nil, fmt.Errorf("cannot use both instrumentation_library_metadata_as_tags(deprecated) and instrumentation_scope_metadata_as_tags")
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
+		options = append(options, translator.WithInstrumentationScopeMetadataAsTags())
+	}
+
+	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
 		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
 	}
 
@@ -95,31 +97,38 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config) (*translator.T
 
 	options = append(options, translator.WithNumberMode(numberMode))
 
+	if featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
+		options = append(options, translator.WithPreviewHostnameFromAttributes())
+	}
+
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	utils.ValidateAPIKey(params.Logger, client)
+	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
+		return nil, err
+	}
 
-	tr, err := translatorFromConfig(params.Logger, cfg)
+	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
 	if err != nil {
 		return nil, err
 	}
 
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
-		params:       params,
-		cfg:          cfg,
-		ctx:          ctx,
-		client:       client,
-		tr:           tr,
-		scrubber:     scrubber,
-		retrier:      utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
-		onceMetadata: onceMetadata,
+		params:         params,
+		cfg:            cfg,
+		ctx:            ctx,
+		client:         client,
+		tr:             tr,
+		scrubber:       scrubber,
+		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
+		onceMetadata:   onceMetadata,
+		sourceProvider: sourceProvider,
 	}, nil
 }
 
@@ -153,21 +162,21 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	return nil
 }
 
-func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pdata.Metrics) error {
+func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmetric.Metrics) error {
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
-func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 
 	// Start host metadata with resource attributes from
 	// the first payload.
-	if exp.cfg.SendMetadata {
+	if exp.cfg.HostMetadata.Enabled {
 		exp.onceMetadata.Do(func() {
-			attrs := pdata.NewMap()
+			attrs := pcommon.NewMap()
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), attrs)
+			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
 

@@ -21,7 +21,7 @@ import (
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/gogo/protobuf/proto"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -45,7 +45,7 @@ const (
 )
 
 // traceDataToLogService translates trace data into the LogService format.
-func traceDataToLogServiceData(td pdata.Traces) []*sls.Log {
+func traceDataToLogServiceData(td ptrace.Traces) []*sls.Log {
 	var slsLogs []*sls.Log
 	resourceSpansSlice := td.ResourceSpans()
 	for i := 0; i < resourceSpansSlice.Len(); i++ {
@@ -55,7 +55,7 @@ func traceDataToLogServiceData(td pdata.Traces) []*sls.Log {
 	return slsLogs
 }
 
-func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log {
+func resourceSpansToLogServiceData(resourceSpans ptrace.ResourceSpans) []*sls.Log {
 	resourceContents := resourceToLogContents(resourceSpans.Resource())
 	scopeSpansSlice := resourceSpans.ScopeSpans()
 	var slsLogs []*sls.Log
@@ -72,7 +72,7 @@ func resourceSpansToLogServiceData(resourceSpans pdata.ResourceSpans) []*sls.Log
 	return slsLogs
 }
 
-func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) *sls.Log {
+func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) *sls.Log {
 	timeNano := int64(span.EndTimestamp())
 	if timeNano == 0 {
 		timeNano = time.Now().UnixNano()
@@ -158,35 +158,35 @@ func spanToLogServiceData(span pdata.Span, resourceContents, instrumentationLibr
 	return &slsLog
 }
 
-func spanKindToShortString(kind pdata.SpanKind) string {
+func spanKindToShortString(kind ptrace.SpanKind) string {
 	switch kind {
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return string(tracetranslator.OpenTracingSpanKindInternal)
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return string(tracetranslator.OpenTracingSpanKindClient)
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return string(tracetranslator.OpenTracingSpanKindServer)
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return string(tracetranslator.OpenTracingSpanKindProducer)
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return string(tracetranslator.OpenTracingSpanKindConsumer)
 	default:
 		return string(tracetranslator.OpenTracingSpanKindUnspecified)
 	}
 }
 
-func statusCodeToShortString(code pdata.StatusCode) string {
+func statusCodeToShortString(code ptrace.StatusCode) string {
 	switch code {
-	case pdata.StatusCodeError:
+	case ptrace.StatusCodeError:
 		return "ERROR"
-	case pdata.StatusCodeOk:
+	case ptrace.StatusCodeOk:
 		return "OK"
 	default:
 		return "UNSET"
 	}
 }
 
-func eventsToString(events pdata.SpanEventSlice) string {
+func eventsToString(events ptrace.SpanEventSlice) string {
 	eventArray := make([]map[string]interface{}, 0, events.Len())
 	for i := 0; i < events.Len(); i++ {
 		spanEvent := events.At(i)
@@ -201,7 +201,7 @@ func eventsToString(events pdata.SpanEventSlice) string {
 
 }
 
-func spanLinksToString(spanLinkSlice pdata.SpanLinkSlice) string {
+func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)

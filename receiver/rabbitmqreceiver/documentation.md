@@ -34,6 +34,6 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| message.state | The state of messages in a queue. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| message.state (state) | The state of messages in a queue. | ready, unacknowledged |

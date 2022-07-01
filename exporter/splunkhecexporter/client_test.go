@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package splunkhecexporter
 
 import (
@@ -24,6 +25,8 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -32,13 +35,18 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
+
+var requestTimeRegex = regexp.MustCompile(`time":(\d+)`)
 
 type testRoundTripper func(req *http.Request) *http.Response
 
@@ -71,10 +79,10 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 	}, &headers
 }
 
-func createMetricsData(numberOfDataPoints int) pdata.Metrics {
+func createMetricsData(numberOfDataPoints int) pmetric.Metrics {
 
 	doubleVal := 1234.5678
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rm := metrics.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("k0", "v0")
 	rm.Resource().Attributes().InsertString("k1", "v1")
@@ -85,9 +93,9 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 		ilm := rm.ScopeMetrics().AppendEmpty()
 		metric := ilm.Metrics().AppendEmpty()
 		metric.SetName("gauge_double_with_dims")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		doublePt := metric.Gauge().DataPoints().AppendEmpty()
-		doublePt.SetTimestamp(pdata.NewTimestampFromTime(tsUnix))
+		doublePt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 		doublePt.SetDoubleVal(doubleVal)
 		doublePt.Attributes().InsertString("k/n0", "vn0")
 		doublePt.Attributes().InsertString("k/n1", "vn1")
@@ -98,8 +106,8 @@ func createMetricsData(numberOfDataPoints int) pdata.Metrics {
 	return metrics
 }
 
-func createTraceData(numberOfTraces int) pdata.Traces {
-	traces := pdata.NewTraces()
+func createTraceData(numberOfTraces int) ptrace.Traces {
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("resource", "R1")
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -107,14 +115,14 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	for i := 0; i < numberOfTraces; i++ {
 		span := ils.Spans().AppendEmpty()
 		span.SetName("root")
-		span.SetStartTimestamp(pdata.Timestamp((i + 1) * 1e9))
-		span.SetEndTimestamp(pdata.Timestamp((i + 2) * 1e9))
-		span.SetTraceID(pdata.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
-		span.SetSpanID(pdata.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
+		span.SetStartTimestamp(pcommon.Timestamp((i + 1) * 1e9))
+		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
+		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+		span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
 		span.SetTraceState("foo")
 		if i%2 == 0 {
-			span.SetParentSpanID(pdata.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-			span.Status().SetCode(pdata.StatusCodeOk)
+			span.SetParentSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.Status().SetCode(ptrace.StatusCodeOk)
 			span.Status().SetMessage("ok")
 		}
 	}
@@ -122,7 +130,7 @@ func createTraceData(numberOfTraces int) pdata.Traces {
 	return traces
 }
 
-func createLogData(numResources int, numLibraries int, numRecords int) pdata.Logs {
+func createLogData(numResources int, numLibraries int, numRecords int) plog.Logs {
 	return createLogDataWithCustomLibraries(numResources, make([]string, numLibraries), repeat(numRecords, numLibraries))
 }
 
@@ -134,8 +142,8 @@ func repeat(what int, times int) []int {
 	return result
 }
 
-func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) pdata.Logs {
-	logs := pdata.NewLogs()
+func createLogDataWithCustomLibraries(numResources int, libraries []string, numRecords []int) plog.Logs {
+	logs := plog.NewLogs()
 	logs.ResourceLogs().EnsureCapacity(numResources)
 	for i := 0; i < numResources; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
@@ -145,7 +153,7 @@ func createLogDataWithCustomLibraries(numResources int, libraries []string, numR
 			sl.Scope().SetName(libraries[j])
 			sl.LogRecords().EnsureCapacity(numRecords[j])
 			for k := 0; k < numRecords[j]; k++ {
-				ts := pdata.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
+				ts := pcommon.Timestamp(int64(k) * time.Millisecond.Nanoseconds())
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("mylog")
 				logRecord.Attributes().InsertString(splunk.DefaultNameLabel, fmt.Sprintf("%d_%d_%d", i, j, k))
@@ -192,7 +200,7 @@ func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(c.statusCode)
 }
 
-func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([]receivedRequest, error) {
+func runMetricsExport(cfg *Config, metrics pmetric.Metrics, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -215,7 +223,9 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([]recei
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeMetrics(context.Background(), metrics)
 	assert.NoError(t, err)
@@ -233,7 +243,7 @@ func runMetricsExport(cfg *Config, metrics pdata.Metrics, t *testing.T) ([]recei
 	}
 }
 
-func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([]receivedRequest, error) {
+func runTraceExport(testConfig *Config, traces ptrace.Traces, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -259,7 +269,9 @@ func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([]re
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeTraces(context.Background(), traces)
 	assert.NoError(t, err)
@@ -272,12 +284,24 @@ func runTraceExport(testConfig *Config, traces pdata.Traces, t *testing.T) ([]re
 			if len(requests) == 0 {
 				err = errors.New("timeout")
 			}
+
+			// sort the requests according to the traces we received, reordering them so we can assert on their size.
+			sort.Slice(requests, func(i, j int) bool {
+				imatch := requestTimeRegex.FindSubmatch(requests[i].body)
+				jmatch := requestTimeRegex.FindSubmatch(requests[j].body)
+				// no matches mean it's compressed, just leave as is
+				if len(imatch) == 0 {
+					return i < j
+				}
+				return string(imatch[1]) <= string(jmatch[1])
+			})
+
 			return requests, err
 		}
 	}
 }
 
-func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([]receivedRequest, error) {
+func runLogExport(cfg *Config, ld plog.Logs, t *testing.T) ([]receivedRequest, error) {
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -299,7 +323,9 @@ func runLogExport(cfg *Config, ld pdata.Logs, t *testing.T) ([]receivedRequest, 
 	exporter, err := NewFactory().CreateLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	err = exporter.ConsumeLogs(context.Background(), ld)
 	assert.NoError(t, err)
@@ -332,7 +358,7 @@ func TestReceiveTracesBatches(t *testing.T) {
 	tests := []struct {
 		name   string
 		conf   *Config
-		traces pdata.Traces
+		traces ptrace.Traces
 		want   wantType
 	}{
 		{
@@ -455,7 +481,7 @@ func TestReceiveLogs(t *testing.T) {
 	tests := []struct {
 		name string
 		conf *Config
-		logs pdata.Logs
+		logs plog.Logs
 		want wantType
 	}{
 		{
@@ -591,7 +617,7 @@ func TestReceiveBatchedMetrics(t *testing.T) {
 	tests := []struct {
 		name    string
 		conf    *Config
-		metrics pdata.Metrics
+		metrics pmetric.Metrics
 		want    wantType
 	}{
 		{
@@ -733,7 +759,9 @@ func TestErrorReceived(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	td := createTraceData(3)
 
@@ -755,7 +783,7 @@ func TestInvalidLogs(t *testing.T) {
 
 func TestInvalidMetrics(t *testing.T) {
 	cfg := NewFactory().CreateDefaultConfig().(*Config)
-	_, err := runMetricsExport(cfg, pdata.NewMetrics(), t)
+	_, err := runMetricsExport(cfg, pmetric.NewMetrics(), t)
 	assert.Error(t, err)
 }
 
@@ -773,8 +801,9 @@ func TestInvalidURL(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 	assert.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
-	defer exporter.Shutdown(context.Background())
-
+	defer func() {
+		assert.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 	td := createTraceData(2)
 
 	err = exporter.ConsumeTraces(context.Background(), td)
@@ -844,15 +873,15 @@ func TestInvalidURLClient(t *testing.T) {
 func Test_pushLogData_nil_Logs(t *testing.T) {
 	tests := []struct {
 		name     func(bool) string
-		logs     pdata.Logs
-		requires func(*testing.T, pdata.Logs)
+		logs     plog.Logs
+		requires func(*testing.T, plog.Logs)
 	}{
 		{
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil ResourceLogs"
 			},
-			logs: pdata.NewLogs(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			logs: plog.NewLogs(),
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Zero(t, logs.ResourceLogs().Len())
 			},
 		},
@@ -860,12 +889,12 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil InstrumentationLogs"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
 				logs.ResourceLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().Len())
 			},
@@ -874,12 +903,12 @@ func Test_pushLogData_nil_Logs(t *testing.T) {
 			name: func(disable bool) string {
 				return "COMPRESSION " + map[bool]string{true: "DISABLED ", false: "ENABLED "}[disable] + "nil LogRecords"
 			},
-			logs: func() pdata.Logs {
-				logs := pdata.NewLogs()
+			logs: func() plog.Logs {
+				logs := plog.NewLogs()
 				logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return logs
 			}(),
-			requires: func(t *testing.T, logs pdata.Logs) {
+			requires: func(t *testing.T, logs plog.Logs) {
 				require.Equal(t, logs.ResourceLogs().Len(), 1)
 				require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
 				require.Zero(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len())
@@ -916,7 +945,7 @@ func Test_pushLogData_InvalidLog(t *testing.T) {
 		logger: zaptest.NewLogger(t),
 	}
 
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	// Invalid log value
 	log.Body().SetDoubleVal(math.Inf(1))
@@ -943,29 +972,30 @@ func Test_pushLogData_PostError(t *testing.T) {
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, true
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	var logsErr consumererror.Logs
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 0 -> unlimited size batch, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 0, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, true -> compression disabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, true
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 
 	// 200000 < 371888 -> multiple batches, false -> compression enabled.
 	c.config.MaxContentLengthLogs, c.config.DisableCompression = 200000, false
 	err = c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
-	assert.IsType(t, consumererror.Logs{}, err)
-	assert.Equal(t, (err.(consumererror.Logs)).GetLogs(), logs)
+	assert.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, logs, logsErr.GetLogs())
 }
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
@@ -986,7 +1016,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
+	// require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
 	require.Contains(t, err.Error(), "HTTP/0.0 400")
 	// The returned error should contain the response body responseBody.
 	assert.Contains(t, err.Error(), responseBody)
@@ -996,7 +1026,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	// TODO: Uncomment after consumererror.Logs implements method Unwrap.
-	//require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
+	// require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
 	require.Contains(t, err.Error(), "HTTP 500")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
@@ -1027,8 +1057,10 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 	assert.IsType(t, consumererror.Logs{}, err)
 
 	// Only the record that was not successfully sent should be returned
-	assert.Equal(t, 1, (err.(consumererror.Logs)).GetLogs().ResourceLogs().Len())
-	assert.Equal(t, logs.ResourceLogs().At(1), (err.(consumererror.Logs)).GetLogs().ResourceLogs().At(0))
+	var logsErr consumererror.Logs
+	require.ErrorAs(t, err, &logsErr)
+	assert.Equal(t, 1, logsErr.GetLogs().ResourceLogs().Len())
+	assert.Equal(t, logs.ResourceLogs().At(1), logsErr.GetLogs().ResourceLogs().At(0))
 }
 
 func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {

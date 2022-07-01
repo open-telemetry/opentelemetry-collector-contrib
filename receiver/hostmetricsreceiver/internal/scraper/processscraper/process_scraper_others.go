@@ -19,10 +19,10 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"github.com/shirou/gopsutil/v3/cpu"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func (s *scraper) recordCPUTimeMetric(now pdata.Timestamp, cpuTime *cpu.TimesStat) {}
+func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {}
 
 func getProcessExecutable(processHandle) (*executableMetadata, error) {
 	return nil, nil

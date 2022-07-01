@@ -41,7 +41,6 @@ type pReceiver struct {
 
 	settings      component.ReceiverCreateSettings
 	scrapeManager *scrape.Manager
-	ocaStore      *internal.OcaStore
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -77,10 +76,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		}
 	}()
 
-	// Per component.Component Start instructions, for async operations we should not use the
-	// incoming context, it may get cancelled.
-	r.ocaStore = internal.NewOcaStore(
-		context.Background(),
+	store := internal.NewAppendable(
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
@@ -89,7 +85,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		r.cfg.ID(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 	)
-	r.scrapeManager = scrape.NewManager(&scrape.Options{}, logger, r.ocaStore)
+	r.scrapeManager = scrape.NewManager(&scrape.Options{PassMetadataInContext: true}, logger, store)
 	if err := r.scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
 		return err
 	}
@@ -121,11 +117,6 @@ func gcInterval(cfg *config.Config) time.Duration {
 // Shutdown stops and cancels the underlying Prometheus scrapers.
 func (r *pReceiver) Shutdown(context.Context) error {
 	r.cancelFunc()
-	// ocaStore (and internally metadataService) needs to stop first to prevent deadlocks.
-	// When stopping scrapeManager it waits for all scrapes to terminate. However during
-	// scraping metadataService calls scrapeManager.AllTargets() which acquires
-	// the same lock that's acquired when scrapeManager is stopped.
-	r.ocaStore.Close()
 	r.scrapeManager.Stop()
 	return nil
 }

@@ -18,20 +18,21 @@ import (
 	"fmt"
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {
+func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap) ([]string, error) {
 	var metricLines []string
 
 	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
 	var points int
 
 	switch metric.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		points = metric.Gauge().DataPoints().Len()
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
 			dp := metric.Gauge().DataPoints().At(i)
@@ -44,14 +45,18 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing gauge data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
 				metricLines = append(metricLines, line)
 			}
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		points = metric.Sum().DataPoints().Len()
 		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
 			dp := metric.Sum().DataPoints().At(i)
@@ -66,14 +71,18 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing sum data point",
+					"name", metric.Name(),
+					"value-type", dp.ValueType().String(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
 				metricLines = append(metricLines, line)
 			}
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		points = metric.Histogram().DataPoints().Len()
 		for i := 0; i < metric.Histogram().DataPoints().Len(); i++ {
 			dp := metric.Histogram().DataPoints().At(i)
@@ -87,7 +96,10 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 			)
 
 			if err != nil {
-				return nil, err
+				logger.Sugar().Warnw("Error serializing histogram data point",
+					"name", metric.Name(),
+					"error", err,
+				)
 			}
 
 			if line != "" {
@@ -105,10 +117,10 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pdata.Metric, def
 	return metricLines, nil
 }
 
-func makeCombinedDimensions(labels pdata.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
+func makeCombinedDimensions(labels pcommon.Map, defaultDimensions, staticDimensions dimensions.NormalizedDimensionList) dimensions.NormalizedDimensionList {
 	dimsFromLabels := []dimensions.Dimension{}
 
-	labels.Range(func(k string, v pdata.Value) bool {
+	labels.Range(func(k string, v pcommon.Value) bool {
 		dimsFromLabels = append(dimsFromLabels, dimensions.NewDimension(k, v.AsString()))
 		return true
 	})

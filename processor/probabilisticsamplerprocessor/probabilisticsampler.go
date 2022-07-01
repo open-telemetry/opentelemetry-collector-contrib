@@ -20,7 +20,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
@@ -69,10 +70,10 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
-	td.ResourceSpans().RemoveIf(func(rs pdata.ResourceSpans) bool {
-		rs.ScopeSpans().RemoveIf(func(ils pdata.ScopeSpans) bool {
-			ils.Spans().RemoveIf(func(s pdata.Span) bool {
+func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
+			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
 				sp := parseSpanSamplingPriority(s)
 				if sp == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
@@ -105,7 +106,7 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td pdata.Trac
 // decide if the span should be sampled or not. The usage of the tag follows the
 // OpenTracing semantic tags:
 // https://github.com/opentracing/specification/blob/main/semantic_conventions.md#span-tags-table
-func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
+func parseSpanSamplingPriority(span ptrace.Span) samplingPriority {
 	attribMap := span.Attributes()
 	if attribMap.Len() <= 0 {
 		return deferDecision
@@ -124,21 +125,21 @@ func parseSpanSamplingPriority(span pdata.Span) samplingPriority {
 	// client libraries it is also possible that the type was lost in translation
 	// between different formats.
 	switch samplingPriorityAttrib.Type() {
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		value := samplingPriorityAttrib.IntVal()
 		if value == 0 {
 			decision = doNotSampleSpan
 		} else if value > 0 {
 			decision = mustSampleSpan
 		}
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		value := samplingPriorityAttrib.DoubleVal()
 		if value == 0.0 {
 			decision = doNotSampleSpan
 		} else if value > 0.0 {
 			decision = mustSampleSpan
 		}
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		attribVal := samplingPriorityAttrib.StringVal()
 		if value, err := strconv.ParseFloat(attribVal, 64); err == nil {
 			if value == 0.0 {

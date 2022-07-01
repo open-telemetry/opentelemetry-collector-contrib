@@ -17,7 +17,8 @@ package filterprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
 
@@ -115,11 +116,11 @@ func getFilterConfigForMatchLevel(lp *LogMatchProperties, m MatchLevelType) []fi
 	}
 }
 
-func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs pdata.Logs) (pdata.Logs, error) {
+func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs plog.Logs) (plog.Logs, error) {
 	rLogs := logs.ResourceLogs()
 
 	// Filter logs by resource level attributes
-	rLogs.RemoveIf(func(rm pdata.ResourceLogs) bool {
+	rLogs.RemoveIf(func(rm plog.ResourceLogs) bool {
 		return flp.shouldSkipLogsForResource(rm.Resource())
 	})
 
@@ -133,24 +134,24 @@ func (flp *filterLogProcessor) ProcessLogs(ctx context.Context, logs pdata.Logs)
 	return logs, nil
 }
 
-func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogsSlice) {
+func (flp *filterLogProcessor) filterByRecordAttributes(rLogs plog.ResourceLogsSlice) {
 	for i := 0; i < rLogs.Len(); i++ {
 		ills := rLogs.At(i).ScopeLogs()
 
 		for j := 0; j < ills.Len(); j++ {
 			ls := ills.At(j).LogRecords()
 
-			ls.RemoveIf(func(lr pdata.LogRecord) bool {
+			ls.RemoveIf(func(lr plog.LogRecord) bool {
 				return flp.shouldSkipLogsForRecord(lr)
 			})
 		}
 
-		ills.RemoveIf(func(sl pdata.ScopeLogs) bool {
+		ills.RemoveIf(func(sl plog.ScopeLogs) bool {
 			return sl.LogRecords().Len() == 0
 		})
 	}
 
-	rLogs.RemoveIf(func(rl pdata.ResourceLogs) bool {
+	rLogs.RemoveIf(func(rl plog.ResourceLogs) bool {
 		return rl.ScopeLogs().Len() == 0
 	})
 }
@@ -160,7 +161,7 @@ func (flp *filterLogProcessor) filterByRecordAttributes(rLogs pdata.ResourceLogs
 // False is returned when a log record should not be skipped.
 // The logic determining if a log record should be skipped is set in the
 // record attribute configuration.
-func (flp *filterLogProcessor) shouldSkipLogsForRecord(lr pdata.LogRecord) bool {
+func (flp *filterLogProcessor) shouldSkipLogsForRecord(lr plog.LogRecord) bool {
 	if flp.includeRecords != nil {
 		matches := flp.includeRecords.Match(lr.Attributes())
 		if !matches {
@@ -182,7 +183,7 @@ func (flp *filterLogProcessor) shouldSkipLogsForRecord(lr pdata.LogRecord) bool 
 // True is returned when a log should be skipped.
 // False is returned when a log should not be skipped.
 // The logic determining if a log should be skipped is set in the resource attribute configuration.
-func (flp *filterLogProcessor) shouldSkipLogsForResource(resource pdata.Resource) bool {
+func (flp *filterLogProcessor) shouldSkipLogsForResource(resource pcommon.Resource) bool {
 	resourceAttributes := resource.Attributes()
 
 	if flp.includeResources != nil {

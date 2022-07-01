@@ -26,14 +26,7 @@ type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 
 	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
-	PerfCounters   []PerfCounterConfig     `mapstructure:"perfcounters"`
-}
-
-// PerfCounterConfig defines configuration for a perf counter object.
-type PerfCounterConfig struct {
-	Object    string          `mapstructure:"object"`
-	Instances []string        `mapstructure:"instances"`
-	Counters  []CounterConfig `mapstructure:"counters"`
+	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`
 }
 
 // MetricsConfig defines the configuration for a metric to be created.
@@ -52,9 +45,21 @@ type SumMetric struct {
 	Monotonic   bool   `mapstructure:"monotonic"`
 }
 
+// ObjectConfig defines configuration for a perf counter object.
+type ObjectConfig struct {
+	Object    string          `mapstructure:"object"`
+	Instances []string        `mapstructure:"instances"`
+	Counters  []CounterConfig `mapstructure:"counters"`
+}
+
+// CounterConfig defines the individual counter in an object.
 type CounterConfig struct {
-	Metric     string            `mapstructure:"metric"`
-	Name       string            `mapstructure:"name"`
+	Name      string `mapstructure:"name"`
+	MetricRep `mapstructure:",squash"`
+}
+
+type MetricRep struct {
+	Name       string            `mapstructure:"metric"`
 	Attributes map[string]string `mapstructure:"attributes"`
 }
 
@@ -97,13 +102,13 @@ func (c *Config) Validate() error {
 		}
 
 		for _, counter := range pc.Counters {
-			if counter.Metric == "" {
+			if counter.MetricRep.Name == "" {
 				continue
 			}
 
 			foundMatchingMetric := false
 			for name := range c.MetricMetaData {
-				if counter.Metric == name {
+				if counter.MetricRep.Name == name {
 					foundMatchingMetric = true
 				}
 			}

@@ -23,7 +23,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -51,18 +50,18 @@ func run(ymlPath string, useExpGen bool) error {
 		return errors.New("argument must be metadata.yaml file")
 	}
 
-	ymlDir := path.Dir(ymlPath)
+	ymlDir := filepath.Dir(ymlPath)
 
 	md, err := loadMetadata(filepath.Clean(ymlPath))
 	if err != nil {
-		return fmt.Errorf("failed loading %v: %v", ymlPath, err)
+		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
 	}
 
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return errors.New("unable to determine filename")
 	}
-	thisDir := path.Dir(filename)
+	thisDir := filepath.Dir(filename)
 
 	if err = generateMetrics(ymlDir, thisDir, md, useExpGen); err != nil {
 		return err
@@ -86,11 +85,28 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
-			}).ParseFiles(path.Join(thisDir, tmplFile)))
+				"attributeInfo": func(an attributeName) attribute {
+					return md.Attributes[an]
+				},
+				"attributeKey": func(an attributeName) string {
+					if md.Attributes[an].Value != "" {
+						return md.Attributes[an].Value
+					}
+					return string(an)
+				},
+				"parseImportsRequired": func(metrics map[metricName]metric) bool {
+					for _, m := range metrics {
+						if m.Data().HasMetricInputType() {
+							return true
+						}
+					}
+					return false
+				},
+			}).ParseFiles(filepath.Join(thisDir, tmplFile)))
 	buf := bytes.Buffer{}
 
 	if err := tmpl.Execute(&buf, templateContext{metadata: md, Package: "metadata"}); err != nil {
-		return fmt.Errorf("failed executing template: %v", err)
+		return fmt.Errorf("failed executing template: %w", err)
 	}
 
 	formatted, err := format.Source(buf.Bytes())
@@ -104,18 +120,18 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 		return errors.New(errstr.String())
 	}
 
-	outputDir := path.Join(ymlDir, "internal", "metadata")
+	outputDir := filepath.Join(ymlDir, "internal", "metadata")
 	if err := os.MkdirAll(outputDir, 0700); err != nil {
-		return fmt.Errorf("unable to create output directory %q: %v", outputDir, err)
+		return fmt.Errorf("unable to create output directory %q: %w", outputDir, err)
 	}
-	for _, f := range []string{path.Join(outputDir, outputFileV1), path.Join(outputDir, outputFileV2)} {
+	for _, f := range []string{filepath.Join(outputDir, outputFileV1), filepath.Join(outputDir, outputFileV2)} {
 		if err := os.Remove(f); err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("unable to remove genererated file %q: %v", f, err)
+			return fmt.Errorf("unable to remove genererated file %q: %w", f, err)
 		}
 	}
-	outputFilepath := path.Join(outputDir, outputFile)
+	outputFilepath := filepath.Join(outputDir, outputFile)
 	if err := ioutil.WriteFile(outputFilepath, formatted, 0600); err != nil {
-		return fmt.Errorf("failed writing %q: %v", outputFilepath, err)
+		return fmt.Errorf("failed writing %q: %w", outputFilepath, err)
 	}
 
 	return nil
@@ -130,18 +146,19 @@ func generateDocumentation(ymlDir string, thisDir string, md metadata, useExpGen
 				"publicVar": func(s string) (string, error) {
 					return formatIdentifier(s, true)
 				},
-			}).ParseFiles(path.Join(thisDir, "documentation.tmpl")))
+				"stringsJoin": strings.Join,
+			}).ParseFiles(filepath.Join(thisDir, "documentation.tmpl")))
 
 	buf := bytes.Buffer{}
 
 	tmplCtx := templateContext{metadata: md, ExpGen: useExpGen, Package: "metadata"}
 	if err := tmpl.Execute(&buf, tmplCtx); err != nil {
-		return fmt.Errorf("failed executing template: %v", err)
+		return fmt.Errorf("failed executing template: %w", err)
 	}
 
-	outputFile := path.Join(ymlDir, "documentation.md")
+	outputFile := filepath.Join(ymlDir, "documentation.md")
 	if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
-		return fmt.Errorf("failed writing %q: %v", outputFile, err)
+		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 
 	return nil

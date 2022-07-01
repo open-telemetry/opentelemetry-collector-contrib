@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	agentV3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
@@ -27,8 +27,8 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SpanObject
-		dest   pdata.SpanStatus
-		code   pdata.StatusCode
+		dest   ptrace.SpanStatus
+		code   ptrace.StatusCode
 	}{
 		{
 			name: "StatusCodeError",
@@ -36,7 +36,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 				IsError: true,
 			},
 			dest: generateTracesOneEmptyResourceSpans().Status(),
-			code: pdata.StatusCodeError,
+			code: ptrace.StatusCodeError,
 		},
 		{
 			name: "StatusCodeOk",
@@ -44,7 +44,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 				IsError: false,
 			},
 			dest: generateTracesOneEmptyResourceSpans().Status(),
-			code: pdata.StatusCodeOk,
+			code: ptrace.StatusCodeOk,
 		},
 	}
 
@@ -60,7 +60,7 @@ func TestSwKvPairsToInternalAttributes(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SegmentObject
-		dest   pdata.Span
+		dest   ptrace.Span
 	}{
 		{
 			name:   "mock-sw-swgment-1",
@@ -89,8 +89,8 @@ func TestSwProtoToTraces(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SegmentObject
-		dest   pdata.Traces
-		code   pdata.StatusCode
+		dest   ptrace.Traces
+		code   ptrace.StatusCode
 	}{
 		{
 			name:   "mock-sw-swgment-1",
@@ -110,7 +110,7 @@ func TestSwReferencesToSpanLinks(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SegmentObject
-		dest   pdata.Span
+		dest   ptrace.Span
 	}{
 		{
 			name:   "mock-sw-swgment-1",
@@ -136,7 +136,7 @@ func TestSwLogsToSpanEvents(t *testing.T) {
 	tests := []struct {
 		name   string
 		swSpan *agentV3.SegmentObject
-		dest   pdata.Span
+		dest   ptrace.Span
 	}{
 		{
 			name:   "mock-sw-swgment-0",
@@ -160,8 +160,8 @@ func TestSwLogsToSpanEvents(t *testing.T) {
 		})
 	}
 }
-func generateTracesOneEmptyResourceSpans() pdata.Span {
-	td := pdata.NewTraces()
+func generateTracesOneEmptyResourceSpans() ptrace.Span {
+	td := ptrace.NewTraces()
 	resourceSpan := td.ResourceSpans().AppendEmpty()
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	il.Spans().AppendEmpty()

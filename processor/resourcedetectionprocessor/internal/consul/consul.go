@@ -20,10 +20,11 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -36,7 +37,7 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider consulMetadataCollector
+	provider consul.Provider
 	logger   *zap.Logger
 }
 
@@ -66,13 +67,13 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		return nil, fmt.Errorf("failed creating consul client: %w", err)
 	}
 
-	provider := newConsulMetadata(client, userCfg.MetaLabels)
+	provider := consul.NewProvider(client, userCfg.MetaLabels)
 	return &Detector{provider: provider, logger: p.Logger}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 	attrs := res.Attributes()
 
 	metadata, err := d.provider.Metadata(ctx)
@@ -80,11 +81,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pdata.Resource, schemaU
 		return res, "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, metadata.hostName)
-	attrs.InsertString(conventions.AttributeCloudRegion, metadata.datacenter)
-	attrs.InsertString(conventions.AttributeHostID, metadata.nodeID)
+	attrs.InsertString(conventions.AttributeHostName, metadata.Hostname)
+	attrs.InsertString(conventions.AttributeCloudRegion, metadata.Datacenter)
+	attrs.InsertString(conventions.AttributeHostID, metadata.NodeID)
 
-	for key, element := range metadata.hostMetadata {
+	for key, element := range metadata.HostMetadata {
 		attrs.InsertString(key, element)
 	}
 

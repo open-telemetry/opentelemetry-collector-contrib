@@ -22,7 +22,8 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go" // For register database driver.
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +63,7 @@ func (e *clickhouseExporter) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
+func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
 		statement, err := tx.PrepareContext(ctx, e.insertLogsSQL)
@@ -108,10 +109,10 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld pdata.Logs) er
 	return err
 }
 
-func attributesToSlice(attributes pdata.Map) ([]string, []string) {
+func attributesToSlice(attributes pcommon.Map) ([]string, []string) {
 	keys := make([]string, 0, attributes.Len())
 	values := make([]string, 0, attributes.Len())
-	attributes.Range(func(k string, v pdata.Value) bool {
+	attributes.Range(func(k string, v pcommon.Value) bool {
 		keys = append(keys, formatKey(k))
 		values = append(values, v.AsString())
 		return true

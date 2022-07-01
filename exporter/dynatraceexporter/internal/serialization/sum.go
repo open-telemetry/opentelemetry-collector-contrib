@@ -19,34 +19,35 @@ import (
 
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pdata.MetricAggregationTemporality, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	switch t {
-	case pdata.MetricAggregationTemporalityCumulative:
+	case pmetric.MetricAggregationTemporalityCumulative:
 		return serializeCumulativeCounter(name, prefix, dims, dp, prev)
 	// for now unspecified is treated as delta
-	case pdata.MetricAggregationTemporalityUnspecified:
+	case pmetric.MetricAggregationTemporalityUnspecified:
 		fallthrough
-	case pdata.MetricAggregationTemporalityDelta:
+	case pmetric.MetricAggregationTemporalityDelta:
 		return serializeDeltaCounter(name, prefix, dims, dp)
 	}
 
 	return "", nil
 }
 
-func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint) (string, error) {
+func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
 	var valueOpt dtMetric.MetricOption
 
 	switch dp.ValueType() {
-	case pdata.MetricValueTypeNone:
+	case pmetric.NumberDataPointValueTypeNone:
 		return "", fmt.Errorf("unsupported value type none")
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal())
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal())
 	default:
 		return "", fmt.Errorf("unknown data type")
@@ -67,7 +68,7 @@ func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimens
 	return dm.Serialize()
 }
 
-func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	dm, err := convertTotalCounterToDelta(name, prefix, dims, dp, prev)
 
 	if err != nil {
@@ -81,10 +82,10 @@ func serializeCumulativeCounter(name, prefix string, dims dimensions.NormalizedD
 	return dm.Serialize()
 }
 
-func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pdata.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
+func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint, prevCounters *ttlmap.TTLMap) (*dtMetric.Metric, error) {
 	id := name
 
-	dp.Attributes().Sort().Range(func(k string, v pdata.Value) bool {
+	dp.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
 		id += fmt.Sprintf(",%s=%s", k, v.AsString())
 		return true
 	})
@@ -96,7 +97,7 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return nil, nil
 	}
 
-	oldCount := prevCounter.(pdata.NumberDataPoint)
+	oldCount := prevCounter.(pmetric.NumberDataPoint)
 
 	if oldCount.Timestamp().AsTime().After(dp.Timestamp().AsTime()) {
 		// current point is older than the previous point
@@ -110,11 +111,12 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 		return nil, fmt.Errorf("expected %s to be type %s but got %s - count reset", name, metricValueTypeToString(oldCount.ValueType()), metricValueTypeToString(dp.ValueType()))
 	}
 
-	if dp.ValueType() == pdata.MetricValueTypeInt {
+	switch {
+	case dp.ValueType() == pmetric.NumberDataPointValueTypeInt:
 		valueOpt = dtMetric.WithIntCounterValueDelta(dp.IntVal() - oldCount.IntVal())
-	} else if dp.ValueType() == pdata.MetricValueTypeDouble {
+	case dp.ValueType() == pmetric.NumberDataPointValueTypeDouble:
 		valueOpt = dtMetric.WithFloatCounterValueDelta(dp.DoubleVal() - oldCount.DoubleVal())
-	} else {
+	default:
 		return nil, fmt.Errorf("%s value type %s not supported", name, metricValueTypeToString(dp.ValueType()))
 	}
 
@@ -135,13 +137,13 @@ func convertTotalCounterToDelta(name, prefix string, dims dimensions.NormalizedD
 	return dm, err
 }
 
-func metricValueTypeToString(t pdata.MetricValueType) string {
+func metricValueTypeToString(t pmetric.NumberDataPointValueType) string {
 	switch t {
-	case pdata.MetricValueTypeDouble:
+	case pmetric.NumberDataPointValueTypeDouble:
 		return "MetricValueTypeDouble"
-	case pdata.MetricValueTypeInt:
+	case pmetric.NumberDataPointValueTypeInt:
 		return "MericValueTypeInt"
-	case pdata.MetricValueTypeNone:
+	case pmetric.NumberDataPointValueTypeNone:
 		return "MericValueTypeNone"
 	default:
 		return "MetricValueTypeUnknown"

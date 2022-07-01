@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -39,18 +38,10 @@ func NewFactory() component.ExporterFactory {
 }
 
 func createDefaultConfig() config.Exporter {
-	tracesCfg := TracesConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
-	}
-	metricsCfg := MetricsConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2878"},
-	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		Traces:           tracesCfg,
-		Metrics:          metricsCfg,
 	}
 }
 

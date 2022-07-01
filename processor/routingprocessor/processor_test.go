@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package routingprocessor
 
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,9 +26,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
-	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -195,7 +197,7 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	tr := pdata.NewTraces()
+	tr := ptrace.NewTraces()
 
 	rl := tr.ResourceSpans().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
@@ -218,18 +220,18 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 traces are grouped together under one pdata.Logs.
-	assert.Equal(t, 1, defaultExp.getTraceCount(),
-		"one log should be routed to default exporter",
+	// Hence the first 2 traces are grouped together under one ptrace.Traces.
+	assert.Len(t, defaultExp.AllTraces(), 1,
+		"one trace should be routed to default exporter",
 	)
-	assert.Equal(t, 1, tExp.getTraceCount(),
-		"one log should be routed to non default exporter",
+	assert.Len(t, tExp.AllTraces(), 1,
+		"one trace should be routed to non default exporter",
 	)
 }
 
 func TestTraces_RoutingWorks_Context(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
-	lExp := &mockTracesExporter{}
+	tExp := &mockTracesExporter{}
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -237,7 +239,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
 					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp/2"): tExp,
 				},
 			}
 		},
@@ -256,7 +258,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	tr := pdata.NewTraces()
+	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -267,10 +269,10 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			})),
 			tr,
 		))
-		assert.Equal(t, 0, defaultExp.getTraceCount(),
+		assert.Len(t, defaultExp.AllTraces(), 0,
 			"trace should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getTraceCount(),
+		assert.Len(t, tExp.AllTraces(), 1,
 			"trace should be routed to non default exporter",
 		)
 	})
@@ -282,10 +284,10 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			})),
 			tr,
 		))
-		assert.Equal(t, 1, defaultExp.getTraceCount(),
+		assert.Len(t, defaultExp.AllTraces(), 1,
 			"trace should be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getTraceCount(),
+		assert.Len(t, tExp.AllTraces(), 1,
 			"trace should not be routed to non default exporter",
 		)
 	})
@@ -293,7 +295,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
-	mExp := &mockTracesExporter{}
+	tExp := &mockTracesExporter{}
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -301,7 +303,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
 					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): mExp,
+					config.NewComponentID("otlp/2"): tExp,
 				},
 			}
 		},
@@ -321,32 +323,81 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		tr := pdata.NewTraces()
+		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().InsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
-		assert.Equal(t, 0, defaultExp.getTraceCount(),
+		assert.Len(t, defaultExp.AllTraces(), 0,
 			"trace should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getTraceCount(),
+		assert.Len(t, tExp.AllTraces(), 1,
 			"trace should be routed to non default exporter",
 		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		tr := pdata.NewTraces()
+		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
 		rs.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
-		assert.Equal(t, 1, defaultExp.getTraceCount(),
+		assert.Len(t, defaultExp.AllTraces(), 1,
 			"trace should be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getTraceCount(),
+		assert.Len(t, tExp.AllTraces(), 1,
 			"trace should not be routed to non default exporter",
 		)
 	})
+}
+
+func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T) {
+	defaultExp := &mockTracesExporter{}
+	tExp := &mockTracesExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.TracesDataType: {
+					config.NewComponentID("otlp"):   defaultExp,
+					config.NewComponentID("otlp/2"): tExp,
+				},
+			}
+		},
+	}
+
+	exp := newProcessor(zap.NewNop(), &Config{
+		AttributeSource:              resourceAttributeSource,
+		FromAttribute:                "X-Tenant",
+		DropRoutingResourceAttribute: true,
+		DefaultExporters:             []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "acme",
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	tr := ptrace.NewTraces()
+	rm := tr.ResourceSpans().AppendEmpty()
+	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().InsertString("attr", "acme")
+
+	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+	traces := tExp.AllTraces()
+	require.Len(t, traces, 1,
+		"trace should be routed to non default exporter",
+	)
+	require.Equal(t, 1, traces[0].ResourceSpans().Len())
+	attrs := traces[0].ResourceSpans().At(0).Resource().Attributes()
+	_, ok := attrs.Get("X-Tenant")
+	assert.False(t, ok, "routing attribute should have been dropped")
+	v, ok := attrs.Get("attr")
+	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
+	assert.Equal(t, "acme", v.StringVal())
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -395,24 +446,24 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	m := pdata.NewMetrics()
+	m := pmetric.NewMetrics()
 
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_system")
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "something-else")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pdata.MetricDataTypeGauge)
+	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_idle")
 
 	ctx := context.Background()
@@ -421,11 +472,11 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one pdata.Metrics.
-	assert.Equal(t, 1, defaultExp.getMetricCount(),
+	// Hence the first 2 metrics are grouped together under one pmetric.Metrics.
+	assert.Len(t, defaultExp.AllMetrics(), 1,
 		"one metric should be routed to default exporter",
 	)
-	assert.Equal(t, 1, mExp.getMetricCount(),
+	assert.Len(t, mExp.AllMetrics(), 1,
 		"one metric should be routed to non default exporter",
 	)
 }
@@ -459,7 +510,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	m := pdata.NewMetrics()
+	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -470,10 +521,10 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			})),
 			m,
 		))
-		assert.Equal(t, 0, defaultExp.getMetricCount(),
+		assert.Len(t, defaultExp.AllMetrics(), 0,
 			"metric should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getMetricCount(),
+		assert.Len(t, mExp.AllMetrics(), 1,
 			"metric should be routed to non default exporter",
 		)
 	})
@@ -485,10 +536,10 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			})),
 			m,
 		))
-		assert.Equal(t, 1, defaultExp.getMetricCount(),
+		assert.Len(t, defaultExp.AllMetrics(), 1,
 			"metric should be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getMetricCount(),
+		assert.Len(t, mExp.AllMetrics(), 1,
 			"metric should not be routed to non default exporter",
 		)
 	})
@@ -524,32 +575,79 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		m := pdata.NewMetrics()
+		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().InsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
-		assert.Equal(t, 0, defaultExp.getMetricCount(),
+		assert.Len(t, defaultExp.AllMetrics(), 0,
 			"metric should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getMetricCount(),
+		assert.Len(t, mExp.AllMetrics(), 1,
 			"metric should be routed to non default exporter",
 		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		m := pdata.NewMetrics()
+		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
 		rm.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
-		assert.Equal(t, 1, defaultExp.getMetricCount(),
+		assert.Len(t, defaultExp.AllMetrics(), 1,
 			"metric should be routed to default exporter",
 		)
-		assert.Equal(t, 1, mExp.getMetricCount(),
+		assert.Len(t, mExp.AllMetrics(), 1,
 			"metric should not be routed to non default exporter",
 		)
 	})
+}
+
+func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T) {
+	defaultExp := &mockMetricsExporter{}
+	mExp := &mockMetricsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.MetricsDataType: {
+					config.NewComponentID("otlp"):   defaultExp,
+					config.NewComponentID("otlp/2"): mExp,
+				},
+			}
+		},
+	}
+
+	exp := newProcessor(zap.NewNop(), &Config{
+		AttributeSource:              resourceAttributeSource,
+		FromAttribute:                "X-Tenant",
+		DropRoutingResourceAttribute: true,
+		DefaultExporters:             []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "acme",
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	m := pmetric.NewMetrics()
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().InsertString("attr", "acme")
+
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+	metrics := mExp.AllMetrics()
+	require.Len(t, metrics, 1, "metric should be routed to non default exporter")
+	require.Equal(t, 1, metrics[0].ResourceMetrics().Len())
+	attrs := metrics[0].ResourceMetrics().At(0).Resource().Attributes()
+	_, ok := attrs.Get("X-Tenant")
+	assert.False(t, ok, "routing attribute should have been dropped")
+	v, ok := attrs.Get("attr")
+	assert.True(t, ok, "non routing attributes shouldn't be dropped")
+	assert.Equal(t, "acme", v.StringVal())
 }
 
 func TestLogs_RoutingWorks_Context(t *testing.T) {
@@ -581,7 +679,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 	})
 	require.NoError(t, exp.Start(context.Background(), host))
 
-	l := pdata.NewLogs()
+	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
 
@@ -592,10 +690,10 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			})),
 			l,
 		))
-		assert.Equal(t, 0, defaultExp.getLogCount(),
+		assert.Len(t, defaultExp.AllLogs(), 0,
 			"log should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getLogCount(),
+		assert.Len(t, lExp.AllLogs(), 1,
 			"log should be routed to non default exporter",
 		)
 	})
@@ -607,10 +705,10 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			})),
 			l,
 		))
-		assert.Equal(t, 1, defaultExp.getLogCount(),
+		assert.Len(t, defaultExp.AllLogs(), 1,
 			"log should be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getLogCount(),
+		assert.Len(t, lExp.AllLogs(), 1,
 			"log should not be routed to non default exporter",
 		)
 	})
@@ -646,32 +744,79 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
-		l := pdata.NewLogs()
+		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().InsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
-		assert.Equal(t, 0, defaultExp.getLogCount(),
+		assert.Len(t, defaultExp.AllLogs(), 0,
 			"log should not be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getLogCount(),
+		assert.Len(t, lExp.AllLogs(), 1,
 			"log should be routed to non default exporter",
 		)
 	})
 
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
-		l := pdata.NewLogs()
+		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
-		assert.Equal(t, 1, defaultExp.getLogCount(),
+		assert.Len(t, defaultExp.AllLogs(), 1,
 			"log should be routed to default exporter",
 		)
-		assert.Equal(t, 1, lExp.getLogCount(),
+		assert.Len(t, lExp.AllLogs(), 1,
 			"log should not be routed to non default exporter",
 		)
 	})
+}
+
+func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	lExp := &mockLogsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.LogsDataType: {
+					config.NewComponentID("otlp"):   defaultExp,
+					config.NewComponentID("otlp/2"): lExp,
+				},
+			}
+		},
+	}
+
+	exp := newProcessor(zap.NewNop(), &Config{
+		AttributeSource:              resourceAttributeSource,
+		FromAttribute:                "X-Tenant",
+		DropRoutingResourceAttribute: true,
+		DefaultExporters:             []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Value:     "acme",
+				Exporters: []string{"otlp/2"},
+			},
+		},
+	})
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	l := plog.NewLogs()
+	rm := l.ResourceLogs().AppendEmpty()
+	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().InsertString("attr", "acme")
+
+	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
+	logs := lExp.AllLogs()
+	require.Len(t, logs, 1, "log should be routed to non-default exporter")
+	require.Equal(t, 1, logs[0].ResourceLogs().Len())
+	attrs := logs[0].ResourceLogs().At(0).Resource().Attributes()
+	_, ok := attrs.Get("X-Tenant")
+	assert.False(t, ok, "routing attribute should have been dropped")
+	v, ok := attrs.Get("attr")
+	assert.True(t, ok, "non routing attributes shouldn't be dropped")
+	assert.Equal(t, "acme", v.StringVal())
 }
 
 func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
@@ -702,22 +847,19 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	l := pdata.NewLogs()
+	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog1")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
-	log = rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	log.SetName("mylog2")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
 	require.NoError(t, exp.Start(ctx, host))
@@ -725,11 +867,11 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one pdata.Logs.
-	assert.Equal(t, 1, defaultExp.getLogCount(),
+	// Hence the first 2 metrics are grouped together under one plog.Logs.
+	assert.Len(t, defaultExp.AllLogs(), 1,
 		"one log should be routed to default exporter",
 	)
-	assert.Equal(t, 1, lExp.getLogCount(),
+	assert.Len(t, lExp.AllLogs(), 1,
 		"one log should be routed to non default exporter",
 	)
 }
@@ -767,7 +909,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		exp.Start(context.Background(), host)
 
 		for i := 0; i < b.N; i++ {
-			m := pdata.NewMetrics()
+			m := pmetric.NewMetrics()
 			rm := m.ResourceMetrics().AppendEmpty()
 
 			attrs := rm.Resource().Attributes()
@@ -794,66 +936,22 @@ func (m *mockHost) GetExporters() map[config.DataType]map[config.ComponentID]com
 	return m.Host.GetExporters()
 }
 
-type mockComponent struct{}
-
-func (m *mockComponent) Start(context.Context, component.Host) error {
-	return nil
-}
-
-func (m *mockComponent) Shutdown(context.Context) error {
-	return nil
+type mockComponent struct {
+	component.StartFunc
+	component.ShutdownFunc
 }
 
 type mockMetricsExporter struct {
 	mockComponent
-	metricCount int32
-}
-
-func (m *mockMetricsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (m *mockMetricsExporter) ConsumeMetrics(context.Context, pdata.Metrics) error {
-	atomic.AddInt32(&m.metricCount, 1)
-	return nil
-}
-
-func (m *mockMetricsExporter) getMetricCount() int {
-	return int(atomic.LoadInt32(&m.metricCount))
+	consumertest.MetricsSink
 }
 
 type mockLogsExporter struct {
 	mockComponent
-	logCount int32
-}
-
-func (m *mockLogsExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (m *mockLogsExporter) ConsumeLogs(context.Context, pdata.Logs) error {
-	atomic.AddInt32(&m.logCount, 1)
-	return nil
-}
-
-func (m *mockLogsExporter) getLogCount() int {
-	return int(atomic.LoadInt32(&m.logCount))
+	consumertest.LogsSink
 }
 
 type mockTracesExporter struct {
 	mockComponent
-	traceCount int32
-}
-
-func (m *mockTracesExporter) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: false}
-}
-
-func (m *mockTracesExporter) ConsumeTraces(context.Context, pdata.Traces) error {
-	atomic.AddInt32(&m.traceCount, 1)
-	return nil
-}
-
-func (m *mockTracesExporter) getTraceCount() int {
-	return int(atomic.LoadInt32(&m.traceCount))
+	consumertest.TracesSink
 }

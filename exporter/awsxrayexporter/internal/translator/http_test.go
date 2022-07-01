@@ -20,8 +20,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestClientSpanWithURLAttribute(t *testing.T) {
@@ -271,21 +272,21 @@ func TestSpanWithNotEnoughHTTPRequestURLAttributes(t *testing.T) {
 	assert.NotNil(t, filtered)
 }
 
-func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
+func constructHTTPClientSpan(attributes map[string]interface{}) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindClient)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindClient)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())
@@ -294,21 +295,21 @@ func constructHTTPClientSpan(attributes map[string]interface{}) pdata.Span {
 	return span
 }
 
-func constructHTTPServerSpan(attributes map[string]interface{}) pdata.Span {
+func constructHTTPServerSpan(attributes map[string]interface{}) ptrace.Span {
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
 
-	span := pdata.NewSpan()
+	span := ptrace.NewSpan()
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
 	span.SetParentSpanID(newSegmentID())
 	span.SetName("/users/junit")
-	span.SetKind(pdata.SpanKindServer)
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(startTime))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(endTime))
+	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	status.SetCode(0)
 	status.SetMessage("OK")
 	status.CopyTo(span.Status())

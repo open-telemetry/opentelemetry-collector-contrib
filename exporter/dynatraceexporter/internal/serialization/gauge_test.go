@@ -20,14 +20,15 @@ import (
 
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func Test_serializeGauge(t *testing.T) {
 	t.Run("float with prefix and dimension", func(t *testing.T) {
-		dp := pdata.NewNumberDataPoint()
+		dp := pmetric.NewNumberDataPoint()
 		dp.SetDoubleVal(5.5)
-		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		got, err := serializeGauge("dbl_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
@@ -35,9 +36,9 @@ func Test_serializeGauge(t *testing.T) {
 	})
 
 	t.Run("int with prefix and dimension", func(t *testing.T) {
-		dp := pdata.NewNumberDataPoint()
+		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntVal(5)
-		dp.SetTimestamp(pdata.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+		dp.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
 
 		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), dp)
 		assert.NoError(t, err)
@@ -45,7 +46,7 @@ func Test_serializeGauge(t *testing.T) {
 	})
 
 	t.Run("without timestamp", func(t *testing.T) {
-		dp := pdata.NewNumberDataPoint()
+		dp := pmetric.NewNumberDataPoint()
 		dp.SetIntVal(5)
 
 		got, err := serializeGauge("int_gauge", "prefix", dimensions.NewNormalizedDimensionList(), dp)

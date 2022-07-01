@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 )
@@ -84,13 +85,13 @@ func TestNewMetricsFromDataPointBuilder(t *testing.T) {
 
 func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	testCases := map[string]struct {
-		metricsDataType pdata.MetricDataType
+		metricsDataType pmetric.MetricDataType
 		expectedError   error
 	}{
-		"Gauge":                      {pdata.MetricDataTypeGauge, nil},
-		"Sum":                        {pdata.MetricDataTypeSum, nil},
-		"Gauge with filtering error": {pdata.MetricDataTypeGauge, errors.New("filtering error")},
-		"Sum with filtering error":   {pdata.MetricDataTypeSum, errors.New("filtering error")},
+		"Gauge":                      {pmetric.MetricDataTypeGauge, nil},
+		"Sum":                        {pmetric.MetricDataTypeSum, nil},
+		"Gauge with filtering error": {pmetric.MetricDataTypeGauge, errors.New("filtering error")},
+		"Sum with filtering error":   {pmetric.MetricDataTypeSum, errors.New("filtering error")},
 	}
 
 	for name, testCase := range testCases {
@@ -100,7 +101,7 @@ func TestMetricsFromDataPointBuilder_Build(t *testing.T) {
 	}
 }
 
-func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.MetricDataType, expectedError error) {
+func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pmetric.MetricDataType, expectedError error) {
 	filterResolver := &mockItemFilterResolver{}
 	dataForTesting := generateTestData(metricDataType)
 	builder := &metricsFromDataPointBuilder{filterResolver: filterResolver}
@@ -143,15 +144,15 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 			assert.Equal(t, expectedDataPoint.metricValue.Metadata().Unit(), ilMetric.Unit())
 			assert.Equal(t, expectedDataPoint.metricValue.Metadata().DataType().MetricDataType(), ilMetric.DataType())
 
-			var dataPoint pdata.NumberDataPoint
+			var dataPoint pmetric.NumberDataPoint
 
-			if metricDataType == pdata.MetricDataTypeGauge {
+			if metricDataType == pmetric.MetricDataTypeGauge {
 				assert.NotNil(t, ilMetric.Gauge())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Gauge().DataPoints().Len())
 				dataPoint = ilMetric.Gauge().DataPoints().At(dataPointIndex)
 			} else {
 				assert.NotNil(t, ilMetric.Sum())
-				assert.Equal(t, pdata.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
+				assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, ilMetric.Sum().AggregationTemporality())
 				assert.True(t, ilMetric.Sum().IsMonotonic())
 				assert.Equal(t, len(expectedDataPoints), ilMetric.Sum().DataPoints().Len())
 				dataPoint = ilMetric.Sum().DataPoints().At(dataPointIndex)
@@ -159,7 +160,7 @@ func testMetricsFromDataPointBuilderBuild(t *testing.T, metricDataType pdata.Met
 
 			assertMetricValue(t, expectedDataPoint.metricValue, dataPoint)
 
-			assert.Equal(t, pdata.NewTimestampFromTime(expectedDataPoint.timestamp), dataPoint.Timestamp())
+			assert.Equal(t, pcommon.NewTimestampFromTime(expectedDataPoint.timestamp), dataPoint.Timestamp())
 			// Adding +3 here because we'll always have 3 labels added for each metric: project_id, instance_id, database
 			assert.Equal(t, 3+len(expectedDataPoint.labelValues), dataPoint.Attributes().Len())
 
@@ -292,7 +293,7 @@ func TestMetricsFromDataPointBuilder_Shutdown(t *testing.T) {
 	}
 }
 
-func generateTestData(metricDataType pdata.MetricDataType) testData {
+func generateTestData(metricDataType pmetric.MetricDataType) testData {
 	timestamp1 := time.Now().UTC()
 	timestamp2 := timestamp1.Add(time.Minute)
 	labelValues := allPossibleLabelValues()

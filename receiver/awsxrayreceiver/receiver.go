@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 
 import (
@@ -19,10 +20,10 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
@@ -53,7 +54,7 @@ func newReceiver(config *Config,
 	set component.ReceiverCreateSettings) (component.TracesReceiver, error) {
 
 	if consumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
@@ -102,16 +103,11 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 func (x *xrayReceiver) Shutdown(ctx context.Context) error {
 	var err error
 	if pollerErr := x.poller.Close(); pollerErr != nil {
-		err = pollerErr
+		err = fmt.Errorf("failed to close poller: %w", pollerErr)
 	}
 
 	if proxyErr := x.server.Shutdown(ctx); proxyErr != nil {
-		if err == nil {
-			err = proxyErr
-		} else {
-			err = fmt.Errorf("failed to close proxy: %s: failed to close poller: %s",
-				proxyErr.Error(), err.Error())
-		}
+		err = multierr.Append(err, fmt.Errorf("failed to close proxy: %w", proxyErr))
 	}
 	return err
 }

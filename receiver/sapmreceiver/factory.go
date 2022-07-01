@@ -59,11 +59,11 @@ func createDefaultConfig() config.Receiver {
 func extractPortFromEndpoint(endpoint string) (int, error) {
 	_, portStr, err := net.SplitHostPort(endpoint)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint is not formatted correctly: %s", err.Error())
+		return 0, fmt.Errorf("endpoint is not formatted correctly: %w", err)
 	}
 	port, err := strconv.ParseInt(portStr, 10, 0)
 	if err != nil {
-		return 0, fmt.Errorf("endpoint port is not a number: %s", err.Error())
+		return 0, fmt.Errorf("endpoint port is not a number: %w", err)
 	}
 	if port < 1 || port > 65535 {
 		return 0, fmt.Errorf("port number must be between 1 and 65535")

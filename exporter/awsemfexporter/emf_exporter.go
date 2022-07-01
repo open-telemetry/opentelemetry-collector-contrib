@@ -29,7 +29,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -44,7 +45,7 @@ const (
 )
 
 type emfExporter struct {
-	//Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
+	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 	svcStructuredLog       *cwlogs.Client
 	config                 config.Exporter
@@ -79,8 +80,6 @@ func newEmfPusher(
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, session)
 	collectorIdentifier, _ := uuid.NewRandom()
-
-	expConfig.Validate()
 
 	emfExporter := &emfExporter{
 		svcStructuredLog: svcStructuredLog,
@@ -117,14 +116,14 @@ func newEmfExporter(
 	return resourcetotelemetry.WrapMetricsExporter(config.(*Config).ResourceToTelemetrySettings, exporter), nil
 }
 
-func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) error {
+func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	rms := md.ResourceMetrics()
 	labels := map[string]string{}
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
 		am := rm.Resource().Attributes()
 		if am.Len() > 0 {
-			am.Range(func(k string, v pdata.Value) bool {
+			am.Range(func(k string, v pcommon.Value) bool {
 				labels[k] = v.StringVal()
 				return true
 			})
@@ -162,7 +161,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
-					return wrapErrorIfBadRequest(&returnError)
+					return wrapErrorIfBadRequest(returnError)
 				}
 			}
 		}
@@ -172,8 +171,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pdata.Metrics) err
 		for _, emfPusher := range emf.listPushers() {
 			returnError := emfPusher.ForceFlush()
 			if returnError != nil {
-				//TODO now we only have one logPusher, so it's ok to return after first error occurred
-				err := wrapErrorIfBadRequest(&returnError)
+				// TODO now we only have one logPusher, so it's ok to return after first error occurred
+				err := wrapErrorIfBadRequest(returnError)
 				if err != nil {
 					emf.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(err))
 				}
@@ -219,7 +218,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	return pushers
 }
 
-func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return emf.pushMetricsData(ctx, md)
 }
 
@@ -228,7 +227,7 @@ func (emf *emfExporter) Shutdown(ctx context.Context) error {
 	for _, emfPusher := range emf.listPushers() {
 		returnError := emfPusher.ForceFlush()
 		if returnError != nil {
-			err := wrapErrorIfBadRequest(&returnError)
+			err := wrapErrorIfBadRequest(returnError)
 			if err != nil {
 				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
 			}
@@ -247,10 +246,10 @@ func (emf *emfExporter) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

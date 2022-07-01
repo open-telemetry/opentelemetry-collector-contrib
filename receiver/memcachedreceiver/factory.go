@@ -14,8 +14,6 @@
 
 package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
-//go:generate mdatagen metadata.yaml
-
 import (
 	"context"
 	"time"
@@ -25,10 +23,15 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 const (
-	typeStr = "memcached"
+	typeStr                   = "memcached"
+	defaultEndpoint           = "localhost:11211"
+	defaultTimeout            = 10 * time.Second
+	defaultCollectionInterval = 10 * time.Second
 )
 
 // NewFactory creates a factory for memcached receiver.
@@ -43,12 +46,13 @@ func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			CollectionInterval: 10 * time.Second,
+			CollectionInterval: defaultCollectionInterval,
 		},
-		Timeout: 10 * time.Second,
+		Timeout: defaultTimeout,
 		NetAddr: confignet.NetAddr{
-			Endpoint: "localhost:11211",
+			Endpoint: defaultEndpoint,
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -60,7 +64,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ms := newMemcachedScraper(params.Logger, cfg)
+	ms := newMemcachedScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
 	if err != nil {
 		return nil, err

@@ -19,10 +19,10 @@ package diskscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"github.com/shirou/gopsutil/v3/disk"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const systemSpecificMetricsLen = 0
 
-func (s *scraper) recordSystemSpecificDataPoints(now pdata.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+func (s *scraper) recordSystemSpecificDataPoints(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 }

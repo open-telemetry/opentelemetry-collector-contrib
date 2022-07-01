@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -40,18 +40,17 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 	}, nil
 }
 
-func (p *Processor) ProcessTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	ctx := spanTransformContext{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		ctx.resource = rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
-			il := rspans.ScopeSpans().At(j).Scope()
-			ctx.il = il
-			spans := rspans.ScopeSpans().At(j).Spans()
+			sspan := rspans.ScopeSpans().At(j)
+			ctx.il = sspan.Scope()
+			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				span := spans.At(k)
-				ctx.span = span
+				ctx.span = spans.At(k)
 
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {

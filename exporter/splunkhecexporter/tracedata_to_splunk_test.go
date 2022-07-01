@@ -20,7 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -28,18 +29,18 @@ import (
 
 func Test_traceDataToSplunk(t *testing.T) {
 	logger := zap.NewNop()
-	ts := pdata.Timestamp(123)
+	ts := pcommon.Timestamp(123)
 
 	tests := []struct {
 		name            string
-		traceDataFn     func() pdata.Traces
+		traceDataFn     func() ptrace.Traces
 		wantSplunkEvent *splunk.Event
 		configFn        func() *Config
 	}{
 		{
 			name: "valid",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			traceDataFn: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
 				rs.Resource().Attributes().InsertString("com.splunk.source", "myservice")
 				rs.Resource().Attributes().InsertString("host.name", "myhost")
@@ -56,8 +57,8 @@ func Test_traceDataToSplunk(t *testing.T) {
 		},
 		{
 			name: "custom_config",
-			traceDataFn: func() pdata.Traces {
-				traces := pdata.NewTraces()
+			traceDataFn: func() ptrace.Traces {
+				traces := ptrace.NewTraces()
 				rs := traces.ResourceSpans().AppendEmpty()
 				rs.Resource().Attributes().InsertString("mysource", "myservice")
 				rs.Resource().Attributes().InsertString("myhost", "myhost")
@@ -98,7 +99,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
+func initSpan(name string, ts *pcommon.Timestamp, span ptrace.Span) {
 	span.Attributes().InsertString("foo", "bar")
 	span.SetName(name)
 	if ts != nil {
@@ -109,14 +110,14 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)
-	spanLink.SetTraceID(pdata.NewTraceID(traceID))
+	spanLink.SetTraceID(pcommon.NewTraceID(traceID))
 	bytes, _ = hex.DecodeString("1234")
 	var spanID [8]byte
 	copy(spanID[:], bytes)
-	spanLink.SetSpanID(pdata.NewSpanID(spanID))
+	spanLink.SetSpanID(pcommon.NewSpanID(spanID))
 	spanLink.Attributes().InsertInt("foo", 1)
 	spanLink.Attributes().InsertBool("bar", false)
-	foobarContents := pdata.NewValueSlice()
+	foobarContents := pcommon.NewValueSlice()
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("a")
 	foobarContents.SliceVal().AppendEmpty().SetStringVal("b")
 	spanLink.Attributes().Insert("foobar", foobarContents)
@@ -131,7 +132,7 @@ func initSpan(name string, ts *pdata.Timestamp, span pdata.Span) {
 
 func commonSplunkEvent(
 	name string,
-	ts pdata.Timestamp,
+	ts pcommon.Timestamp,
 ) *splunk.Event {
 	return &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(ts),

@@ -23,13 +23,18 @@ import (
 )
 
 func TestHostTags(t *testing.T) {
-	tc := config.TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service: "customservice",
-		Version: "customversion",
-		Tags:    []string{"key1:val1", "key2:val2"},
+	c := config.Config{
+		TagsConfig: config.TagsConfig{
+			Hostname: "customhost",
+			Env:      "customenv",
+			// Service and version should be only used for traces
+			Service: "customservice",
+			Version: "customversion",
+		},
+
+		HostMetadata: config.HostMetadataConfig{
+			Tags: []string{"key1:val1", "key2:val2"},
+		},
 	}
 
 	assert.ElementsMatch(t,
@@ -38,17 +43,22 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		getHostTags(&tc),
+		getHostTags(&c),
 	)
 
-	tc = config.TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		Tags:       []string{"key1:val1", "key2:val2"},
-		EnvVarTags: "key3:val3 key4:val4",
+	c = config.Config{
+		TagsConfig: config.TagsConfig{
+			Hostname: "customhost",
+			Env:      "customenv",
+			// Service and version should be only used for traces
+			Service:    "customservice",
+			Version:    "customversion",
+			EnvVarTags: "key3:val3 key4:val4",
+		},
+
+		HostMetadata: config.HostMetadataConfig{
+			Tags: []string{"key1:val1", "key2:val2"},
+		},
 	}
 
 	assert.ElementsMatch(t,
@@ -57,16 +67,18 @@ func TestHostTags(t *testing.T) {
 			"key1:val1",
 			"key2:val2",
 		},
-		getHostTags(&tc),
+		getHostTags(&c),
 	)
 
-	tc = config.TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		EnvVarTags: "key3:val3 key4:val4",
+	c = config.Config{
+		TagsConfig: config.TagsConfig{
+			Hostname: "customhost",
+			Env:      "customenv",
+			// Service and version should be only used for traces
+			Service:    "customservice",
+			Version:    "customversion",
+			EnvVarTags: "key3:val3 key4:val4",
+		},
 	}
 
 	assert.ElementsMatch(t,
@@ -75,6 +87,6 @@ func TestHostTags(t *testing.T) {
 			"key3:val3",
 			"key4:val4",
 		},
-		getHostTags(&tc),
+		getHostTags(&c),
 	)
 }

@@ -23,7 +23,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/api/option"
 	pb "google.golang.org/genproto/googleapis/pubsub/v1"
 )
@@ -81,9 +83,9 @@ func TestExporterDefaultSettings(t *testing.T) {
 	}
 	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
-	assert.NoError(t, exporter.consumeTraces(ctx, pdata.NewTraces()))
-	assert.NoError(t, exporter.consumeMetrics(ctx, pdata.NewMetrics()))
-	assert.NoError(t, exporter.consumeLogs(ctx, pdata.NewLogs()))
+	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
+	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
+	assert.NoError(t, exporter.consumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, exporter.shutdown(ctx))
 }
 
@@ -111,8 +113,8 @@ func TestExporterCompression(t *testing.T) {
 	exporterConfig.Compression = "gzip"
 	exporter := ensureExporter(componenttest.NewNopExporterCreateSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
-	assert.NoError(t, exporter.consumeTraces(ctx, pdata.NewTraces()))
-	assert.NoError(t, exporter.consumeMetrics(ctx, pdata.NewMetrics()))
-	assert.NoError(t, exporter.consumeLogs(ctx, pdata.NewLogs()))
+	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
+	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
+	assert.NoError(t, exporter.consumeLogs(ctx, plog.NewLogs()))
 	assert.NoError(t, exporter.shutdown(ctx))
 }

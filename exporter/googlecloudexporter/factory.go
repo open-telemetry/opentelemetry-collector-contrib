@@ -33,10 +33,10 @@ const (
 )
 
 func init() {
-	featuregate.Register(featuregate.Gate{
+	featuregate.GetRegistry().MustRegister(featuregate.Gate{
 		ID:          pdataExporterFeatureGate,
 		Description: "When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus.",
-		Enabled:     false,
+		Enabled:     true,
 	})
 }
 
@@ -47,12 +47,13 @@ func NewFactory() component.ExporterFactory {
 		createDefaultConfig,
 		component.WithTracesExporter(createTracesExporter),
 		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporter(createLogsExporter),
 	)
 }
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() config.Exporter {
-	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		return &LegacyConfig{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 			TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
@@ -70,13 +71,39 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
+func createLogsExporter(
+	ctx context.Context,
+	params component.ExporterCreateSettings,
+	cfg config.Exporter) (component.LogsExporter, error) {
+	var eCfg *Config
+	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
+		eCfg = toNewConfig(cfg.(*LegacyConfig))
+	} else {
+		eCfg = cfg.(*Config)
+	}
+	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
+	if err != nil {
+		return nil, err
+	}
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		params,
+		logsExporter.PushLogs,
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithQueue(eCfg.QueueSettings),
+		exporterhelper.WithRetry(eCfg.RetrySettings))
+}
+
 // createTracesExporter creates a trace exporter based on this config.
 func createTracesExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 	var eCfg *Config
-	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg = toNewConfig(cfg.(*LegacyConfig))
 	} else {
 		eCfg = cfg.(*Config)
@@ -102,7 +129,7 @@ func createMetricsExporter(
 	ctx context.Context,
 	params component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
-	if !featuregate.IsEnabled(pdataExporterFeatureGate) {
+	if !featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate) {
 		eCfg := cfg.(*LegacyConfig)
 		return newLegacyGoogleCloudMetricsExporter(eCfg, params)
 	}

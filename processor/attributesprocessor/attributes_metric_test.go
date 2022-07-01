@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -49,42 +50,42 @@ func runIndividualMetricTestCase(t *testing.T, mt metricTestCase, mp component.M
 	})
 }
 
-func generateMetricData(resourceName string, attrs map[string]interface{}) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateMetricData(resourceName string, attrs map[string]interface{}) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	res := md.ResourceMetrics().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
 	sl := res.ScopeMetrics().AppendEmpty()
 	m := sl.Metrics().AppendEmpty()
 
 	switch m.DataType() {
-	case pdata.MetricDataTypeGauge:
+	case pmetric.MetricDataTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pdata.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
-	case pdata.MetricDataTypeSum:
+	case pmetric.MetricDataTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pdata.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
-	case pdata.MetricDataTypeHistogram:
+	case pmetric.MetricDataTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pdata.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
-	case pdata.MetricDataTypeExponentialHistogram:
+	case pmetric.MetricDataTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pdata.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
-	case pdata.MetricDataTypeSummary:
+	case pmetric.MetricDataTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pdata.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
 			dps.At(i).Attributes().Sort()
 		}
 	}
@@ -92,7 +93,7 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pdata
 	return md
 }
 
-func sortMetricAttributes(md pdata.Metrics) {
+func sortMetricAttributes(md pmetric.Metrics) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rs := rms.At(i)
@@ -104,27 +105,27 @@ func sortMetricAttributes(md pdata.Metrics) {
 				m := metrics.At(k)
 
 				switch m.DataType() {
-				case pdata.MetricDataTypeGauge:
+				case pmetric.MetricDataTypeGauge:
 					dps := m.Gauge().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pdata.MetricDataTypeSum:
+				case pmetric.MetricDataTypeSum:
 					dps := m.Sum().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pdata.MetricDataTypeHistogram:
+				case pmetric.MetricDataTypeHistogram:
 					dps := m.Histogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pdata.MetricDataTypeExponentialHistogram:
+				case pmetric.MetricDataTypeExponentialHistogram:
 					dps := m.ExponentialHistogram().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
 					}
-				case pdata.MetricDataTypeSummary:
+				case pmetric.MetricDataTypeSummary:
 					dps := m.Summary().DataPoints()
 					for l := 0; l < dps.Len(); l++ {
 						dps.At(l).Attributes().Sort()
@@ -139,15 +140,15 @@ func sortMetricAttributes(md pdata.Metrics) {
 func TestMetricProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyMetricTestCase struct {
 		name   string
-		input  pdata.Metrics
-		output pdata.Metrics
+		input  pmetric.Metrics
+		output pmetric.Metrics
 	}
 	// TODO: Add test for "nil" Metric/Attributes. This needs support from data slices to allow to construct that.
 	metricTestCases := []nilEmptyMetricTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewMetrics(),
-			output: pdata.NewMetrics(),
+			input:  pmetric.NewMetrics(),
+			output: pmetric.NewMetrics(),
 		},
 		{
 			name:   "one-empty-resource-metrics",

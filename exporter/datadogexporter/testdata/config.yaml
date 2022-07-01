@@ -14,20 +14,28 @@ exporters:
     # Deprecated; kept here to avoid regressions.
     version: myversion
 
+    # Deprecated; kept here to avoid regressions.
     tags:
       - example:tag
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
+      fail_on_invalid_key: true
 
     traces:
-      sample_rate: 1
+      span_name_remappings:
+        "old_name1": "new_name1"
+        "old_name2": "new_name2"
+      span_name_as_resource_name: true
 
   datadog/api2:
     hostname: customhostname
-    tags:
-      - example:tag
+
+    host_metadata:
+      tags: [example:tag]
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
@@ -35,33 +43,40 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
+      # Deprecated; kept here to avoid regressions
       report_quantiles: false
 
     traces:
-      sample_rate: 1
+      span_name_remappings:
+        "old_name3": "new_name3"
+        "old_name4": "new_name4"
       endpoint: https://trace.agent.datadoghq.test
 
   datadog/default:
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    host_metadata:
+      # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
+      hostname_source: first_resource
 
-  datadog/default2:
-
-  datadog/invalid:
-    metrics:
-      endpoint: "invalid:"
-    
-    traces:
-      endpoint: "invalid:"
+  datadog/hostmetadata:
+    api:
+      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    # Deprecated; kept here to test rename system
+    tags: [example:one]
+    # Deprecated; kept here to test rename system
+    send_metadata: true
+    # Deprecated; kept here to test rename system
+    use_resource_metadata: false
 
 service:
   pipelines:
     metrics:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]
 
     traces:
       receivers: [nop]
       processors: [nop]
-      exporters: [datadog/api, datadog/invalid]
+      exporters: [datadog/api]

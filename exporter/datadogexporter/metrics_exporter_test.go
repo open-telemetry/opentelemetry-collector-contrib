@@ -26,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -44,7 +43,7 @@ func TestNewExporter(t *testing.T) {
 			},
 			DeltaTTL: 3600,
 			HistConfig: config.HistogramConfig{
-				Mode:         string(translator.HistogramModeDistributions),
+				Mode:         config.HistogramModeDistributions,
 				SendCountSum: false,
 			},
 			SumConfig: config.SumConfig{
@@ -63,8 +62,8 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
-	cfg.SendMetadata = true
-	cfg.UseResourceMetadata = true
+	cfg.HostMetadata.Enabled = true
+	cfg.HostMetadata.HostnameSource = config.HostnameSourceFirstResource
 	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
 	require.NoError(t, err)
 	body := <-server.MetadataChan

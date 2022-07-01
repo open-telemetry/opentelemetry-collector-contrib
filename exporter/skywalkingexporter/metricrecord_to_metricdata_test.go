@@ -18,12 +18,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
 
 func TestMetricDataToLogService(t *testing.T) {
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
 	rm := md.ResourceMetrics().AppendEmpty()
 
@@ -43,7 +44,7 @@ func TestMetricDataToLogService(t *testing.T) {
 	noneMetric.SetName("none")
 
 	intGaugeMetric := metrics.AppendEmpty()
-	intGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	intGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	intGaugeMetric.SetName("int_gauge")
 	intGauge := intGaugeMetric.Gauge()
 	intGaugeDataPoints := intGauge.DataPoints()
@@ -51,40 +52,40 @@ func TestMetricDataToLogService(t *testing.T) {
 	intGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	intGaugeDataPoint.Attributes().InsertString("testa", "test")
 	intGaugeDataPoint.SetIntVal(10)
-	intGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleGaugeMetric := metrics.AppendEmpty()
-	doubleGaugeMetric.SetDataType(pdata.MetricDataTypeGauge)
+	doubleGaugeMetric.SetDataType(pmetric.MetricDataTypeGauge)
 	doubleGaugeMetric.SetName("double_gauge")
 	doubleGauge := doubleGaugeMetric.Gauge()
 	doubleGaugeDataPoints := doubleGauge.DataPoints()
 	doubleGaugeDataPoint := doubleGaugeDataPoints.AppendEmpty()
 	doubleGaugeDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleGaugeDataPoint.SetDoubleVal(10.1)
-	doubleGaugeDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleGaugeDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	intSumMetric := metrics.AppendEmpty()
-	intSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	intSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	intSumMetric.SetName("int_sum")
 	intSum := intSumMetric.Sum()
 	intSumDataPoints := intSum.DataPoints()
 	intSumDataPoint := intSumDataPoints.AppendEmpty()
 	intSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	intSumDataPoint.SetIntVal(11)
-	intSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	intSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleSumMetric := metrics.AppendEmpty()
-	doubleSumMetric.SetDataType(pdata.MetricDataTypeSum)
+	doubleSumMetric.SetDataType(pmetric.MetricDataTypeSum)
 	doubleSumMetric.SetName("double_sum")
 	doubleSum := doubleSumMetric.Sum()
 	doubleSumDataPoints := doubleSum.DataPoints()
 	doubleSumDataPoint := doubleSumDataPoints.AppendEmpty()
 	doubleSumDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleSumDataPoint.SetDoubleVal(10.1)
-	doubleSumDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleSumDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 
 	doubleHistogramMetric := metrics.AppendEmpty()
-	doubleHistogramMetric.SetDataType(pdata.MetricDataTypeHistogram)
+	doubleHistogramMetric.SetDataType(pmetric.MetricDataTypeHistogram)
 	doubleHistogramMetric.SetName("double_$histogram")
 	doubleHistogram := doubleHistogramMetric.Histogram()
 	doubleHistogramDataPoints := doubleHistogram.DataPoints()
@@ -93,19 +94,19 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.Attributes().InsertString("innerLabelH", "innerValueH")
 	doubleHistogramDataPoint.SetCount(5)
 	doubleHistogramDataPoint.SetSum(10.1)
-	doubleHistogramDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
-	doubleHistogramDataPoint.SetBucketCounts([]uint64{1, 2, 2})
-	doubleHistogramDataPoint.SetExplicitBounds([]float64{1, 2})
+	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
+	doubleHistogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 2}))
+	doubleHistogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2}))
 
 	doubleSummaryMetric := metrics.AppendEmpty()
-	doubleSummaryMetric.SetDataType(pdata.MetricDataTypeSummary)
+	doubleSummaryMetric.SetDataType(pmetric.MetricDataTypeSummary)
 	doubleSummaryMetric.SetName("double-summary")
 	doubleSummary := doubleSummaryMetric.Summary()
 	doubleSummaryDataPoints := doubleSummary.DataPoints()
 	doubleSummaryDataPoint := doubleSummaryDataPoints.AppendEmpty()
 	doubleSummaryDataPoint.SetCount(2)
 	doubleSummaryDataPoint.SetSum(10.1)
-	doubleSummaryDataPoint.SetTimestamp(pdata.Timestamp(100_000_000))
+	doubleSummaryDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
 	doubleSummaryDataPoint.Attributes().InsertString("innerLabel", "innerValue")
 	doubleSummaryDataPoint.Attributes().InsertString("innerLabelS", "innerValueS")
 	quantileVal := doubleSummaryDataPoint.QuantileValues().AppendEmpty()
@@ -126,24 +127,25 @@ func TestMetricDataToLogService(t *testing.T) {
 		assert.Equal(t, "innerValue", searchMetricTag("innerLabel", meterData))
 		assert.Equal(t, defaultServiceName, meterData.GetService())
 		assert.Equal(t, defaultServiceInstance, meterData.GetServiceInstance())
-		if i == 0 {
+		switch i {
+		case 0:
 			assert.Equal(t, "int_gauge", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(10), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "test", searchMetricTag("testa", meterData))
-		} else if i == 1 {
+		case 1:
 			assert.Equal(t, "double_gauge", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 2 {
+		case 2:
 			assert.Equal(t, "int_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(11), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 3 {
+		case 3:
 			assert.Equal(t, "double_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
-		} else if i == 4 {
+		case 4:
 			assert.Equal(t, "double_$histogram", meterData.GetHistogram().GetName())
 			assert.Equal(t, 3, len(meterData.GetHistogram().GetValues()))
 			assert.Equal(t, int64(1), meterData.GetHistogram().GetValues()[0].Count)
@@ -156,35 +158,34 @@ func TestMetricDataToLogService(t *testing.T) {
 			assert.Equal(t, float64(2), meterData.GetHistogram().GetValues()[2].GetBucket())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-
-		} else if i == 5 {
+		case 5:
 			assert.Equal(t, "double_$histogram_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-		} else if i == 6 {
+		case 6:
 			assert.Equal(t, "double_$histogram_count", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(5), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueH", searchMetricTag("innerLabelH", meterData))
-		} else if i == 7 {
+		case 7:
 			assert.Equal(t, "double-summary", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.2, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
 			assert.Equal(t, "0.9", searchMetricTag("quantile", meterData))
-		} else if i == 8 {
+		case 8:
 			assert.Equal(t, "double-summary", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.5, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
 			assert.Equal(t, "0.95", searchMetricTag("quantile", meterData))
-		} else if i == 9 {
+		case 9:
 			assert.Equal(t, "double-summary_sum", meterData.GetSingleValue().GetName())
 			assert.Equal(t, 10.1, meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())
 			assert.Equal(t, "innerValueS", searchMetricTag("innerLabelS", meterData))
-		} else if i == 10 {
+		case 10:
 			assert.Equal(t, "double-summary_count", meterData.GetSingleValue().GetName())
 			assert.Equal(t, float64(2), meterData.GetSingleValue().GetValue())
 			assert.Equal(t, int64(100), meterData.GetTimestamp())

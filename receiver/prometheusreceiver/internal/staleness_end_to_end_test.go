@@ -23,7 +23,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -34,8 +33,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -55,10 +57,10 @@ func TestStalenessMarkersEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// 1. Setup the server that sends series that intermittently appear and disappear.
-	var n uint64
+	n := atomic.NewUint64(0)
 	scrapeServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Increment the scrape count atomically per scrape.
-		i := atomic.AddUint64(&n, 1)
+		i := n.Add(1)
 
 		select {
 		case <-ctx.Done():
@@ -113,7 +115,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	defer prweServer.Close()
 
 	// 3. Set the OpenTelemetry Prometheus receiver.
-	config := fmt.Sprintf(`
+	cfg := fmt.Sprintf(`
 receivers:
   prometheus:
     config:
@@ -141,7 +143,7 @@ service:
 	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
-	_, err = confFile.Write([]byte(config))
+	_, err = confFile.Write([]byte(cfg))
 	require.Nil(t, err)
 	// 4. Run the OpenTelemetry Collector.
 	receivers, err := component.MakeReceiverFactoryMap(prometheusreceiver.NewFactory())
@@ -157,9 +159,17 @@ service:
 		Processors: processors,
 	}
 
+	fmp := fileprovider.New()
+	configProvider, err := service.NewConfigProvider(
+		service.ConfigProviderSettings{
+			Locations:    []string{confFile.Name()},
+			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
+		})
+	require.NoError(t, err)
+
 	appSettings := service.CollectorSettings{
 		Factories:      factories,
-		ConfigProvider: service.MustNewDefaultConfigProvider([]string{confFile.Name()}, nil),
+		ConfigProvider: configProvider,
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

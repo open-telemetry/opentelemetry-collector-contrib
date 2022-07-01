@@ -27,7 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -140,14 +141,14 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+128),
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+128),
-			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
+			`# HELP test_metric_1_this_one_there_where Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+128),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+128),
+			`# HELP test_metric_2_this_one_there_where Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="windows"} %v`, 99+delta),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code1="one1",foo1="bar1",os="linux"} %v`, 100+delta),
 		}
 
 		for _, w := range want {
@@ -216,14 +217,14 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		blob, _ := ioutil.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
-			`# HELP test_metric_1_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_1_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+128, 1543160298100+128000),
-			fmt.Sprintf(`test_metric_1_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+128, 1543160298100),
-			`# HELP test_metric_2_this_one_there_where_ Extra ones`,
-			`# TYPE test_metric_2_this_one_there_where_ counter`,
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
-			fmt.Sprintf(`test_metric_2_this_one_there_where_{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
+			`# HELP test_metric_1_this_one_there_where Extra ones`,
+			`# TYPE test_metric_1_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+128, 1543160298100+128000),
+			fmt.Sprintf(`test_metric_1_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+128, 1543160298100),
+			`# HELP test_metric_2_this_one_there_where Extra ones`,
+			`# TYPE test_metric_2_this_one_there_where counter`,
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="windows"} %v %v`, 99+delta, 1543160298100+delta*1000),
+			fmt.Sprintf(`test_metric_2_this_one_there_where{arch="x86",code2="one2",foo2="bar2",os="linux"} %v %v`, 100+delta, 1543160298100),
 		}
 
 		for _, w := range want {
@@ -272,7 +273,8 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		http.Get("http://localhost:7777/metrics")
+		_, err = http.Get("http://localhost:7777/metrics")
+		require.NoError(t, err, "Failed to perform a scrape")
 	})
 
 	assert.NotNil(t, exp)
@@ -307,21 +309,21 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 }
 
-func metricBuilder(delta int64, prefix string) pdata.Metrics {
-	md := pdata.NewMetrics()
+func metricBuilder(delta int64, prefix string) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 
 	m1 := ms.AppendEmpty()
 	m1.SetName(prefix + "this/one/there(where)")
 	m1.SetDescription("Extra ones")
 	m1.SetUnit("1")
-	m1.SetDataType(pdata.MetricDataTypeSum)
+	m1.SetDataType(pmetric.MetricDataTypeSum)
 	d1 := m1.Sum()
 	d1.SetIsMonotonic(true)
-	d1.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	d1.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	dp1 := d1.DataPoints().AppendEmpty()
-	dp1.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298+delta, 100000090)))
-	dp1.SetTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298+delta, 100000997)))
+	dp1.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298+delta, 100000090)))
+	dp1.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298+delta, 100000997)))
 	dp1.Attributes().UpsertString("os", "windows")
 	dp1.Attributes().UpsertString("arch", "x86")
 	dp1.SetIntVal(99 + delta)
@@ -330,13 +332,13 @@ func metricBuilder(delta int64, prefix string) pdata.Metrics {
 	m2.SetName(prefix + "this/one/there(where)")
 	m2.SetDescription("Extra ones")
 	m2.SetUnit("1")
-	m2.SetDataType(pdata.MetricDataTypeSum)
+	m2.SetDataType(pmetric.MetricDataTypeSum)
 	d2 := m2.Sum()
 	d2.SetIsMonotonic(true)
-	d2.SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	d2.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	dp2 := d2.DataPoints().AppendEmpty()
-	dp2.SetStartTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298, 100000090)))
-	dp2.SetTimestamp(pdata.NewTimestampFromTime(time.Unix(1543160298, 100000997)))
+	dp2.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298, 100000090)))
+	dp2.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1543160298, 100000997)))
 	dp2.Attributes().UpsertString("os", "linux")
 	dp2.Attributes().UpsertString("arch", "x86")
 	dp2.SetIntVal(100 + delta)

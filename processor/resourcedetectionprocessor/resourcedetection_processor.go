@@ -19,14 +19,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 type resourceDetectionProcessor struct {
 	provider           *internal.ResourceProvider
-	resource           pdata.Resource
+	resource           pcommon.Resource
 	schemaURL          string
 	override           bool
 	httpClientSettings confighttp.HTTPClientSettings
@@ -43,7 +46,7 @@ func (rdp *resourceDetectionProcessor) Start(ctx context.Context, host component
 }
 
 // processTraces implements the ProcessTracesFunc type.
-func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rs := td.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {
 		rss := rs.At(i)
@@ -55,7 +58,7 @@ func (rdp *resourceDetectionProcessor) processTraces(_ context.Context, td pdata
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rm := md.ResourceMetrics()
 	for i := 0; i < rm.Len(); i++ {
 		rss := rm.At(i)
@@ -67,7 +70,7 @@ func (rdp *resourceDetectionProcessor) processMetrics(_ context.Context, md pdat
 }
 
 // processLogs implements the ProcessLogsFunc type.
-func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (rdp *resourceDetectionProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
 	rl := ld.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		rss := rl.At(i)

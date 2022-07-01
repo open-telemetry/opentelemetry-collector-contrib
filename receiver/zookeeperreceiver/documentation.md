@@ -42,7 +42,7 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | State of a packet based on io direction. |
-| state | State of followers |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | State of a packet based on io direction. | received, sent |
+| state | State of followers | synced, unsynced |

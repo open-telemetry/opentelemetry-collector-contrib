@@ -32,7 +32,7 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| operation | The operation type for index operations. |
-| request | The request operation type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The operation type for index operations. | read, write, delete |
+| request | The request operation type. | put, get |

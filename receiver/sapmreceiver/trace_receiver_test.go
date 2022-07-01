@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package sapmreceiver
 
 import (
@@ -34,20 +35,21 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
-	traceID := pdata.NewTraceID(
+func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
+	traceID := pcommon.NewTraceID(
 		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
-	parentSpanID := pdata.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
-	childSpanID := pdata.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	parentSpanID := pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
+	childSpanID := pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
 	rs.Resource().Attributes().InsertBool("bool", true)
@@ -60,18 +62,18 @@ func expectedTraceData(t1, t2, t3 time.Time) pdata.Traces {
 	span0.SetParentSpanID(parentSpanID)
 	span0.SetTraceID(traceID)
 	span0.SetName("DBSearch")
-	span0.SetStartTimestamp(pdata.NewTimestampFromTime(t1))
-	span0.SetEndTimestamp(pdata.NewTimestampFromTime(t2))
-	span0.Status().SetCode(pdata.StatusCodeError)
+	span0.SetStartTimestamp(pcommon.NewTimestampFromTime(t1))
+	span0.SetEndTimestamp(pcommon.NewTimestampFromTime(t2))
+	span0.Status().SetCode(ptrace.StatusCodeError)
 	span0.Status().SetMessage("Stale indices")
 
 	span1 := spans.AppendEmpty()
 	span1.SetSpanID(parentSpanID)
 	span1.SetTraceID(traceID)
 	span1.SetName("ProxyFetch")
-	span1.SetStartTimestamp(pdata.NewTimestampFromTime(t2))
-	span1.SetEndTimestamp(pdata.NewTimestampFromTime(t3))
-	span1.Status().SetCode(pdata.StatusCodeError)
+	span1.SetStartTimestamp(pcommon.NewTimestampFromTime(t2))
+	span1.SetEndTimestamp(pcommon.NewTimestampFromTime(t3))
+	span1.Status().SetCode(ptrace.StatusCodeError)
 	span1.Status().SetMessage("Frontend crash")
 
 	return traces
@@ -133,7 +135,7 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 	// marshal the sapm
 	reqBytes, err := sapm.Marshal()
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal sapm %v", err.Error())
+		return nil, fmt.Errorf("failed to marshal sapm %w", err)
 	}
 
 	if zipped {
@@ -144,13 +146,13 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 		// run the request bytes through the gzip writer
 		_, err = writer.Write(reqBytes)
 		if err != nil {
-			return nil, fmt.Errorf("failed to write gzip sapm %v", err.Error())
+			return nil, fmt.Errorf("failed to write gzip sapm %w", err)
 		}
 
 		// close the writer
 		err = writer.Close()
 		if err != nil {
-			return nil, fmt.Errorf("failed to close the gzip writer %v", err.Error())
+			return nil, fmt.Errorf("failed to close the gzip writer %w", err)
 		}
 
 		// save the gzipped bytes as the request bytes
@@ -198,7 +200,7 @@ func sendSapm(endpoint string, sapm *splunksapm.PostSpansRequest, zipped bool, t
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return resp, fmt.Errorf("failed to send request to receiver %v", err)
+		return resp, fmt.Errorf("failed to send request to receiver %w", err)
 	}
 
 	return resp, nil
@@ -212,6 +214,7 @@ func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) 
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), mh), "should not fail to start log on second Start call")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
 	<-time.After(500 * time.Millisecond)
@@ -234,7 +237,7 @@ func TestReception(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want pdata.Traces
+		want ptrace.Traces
 	}{
 		{
 			name: "receive uncompressed sapm",

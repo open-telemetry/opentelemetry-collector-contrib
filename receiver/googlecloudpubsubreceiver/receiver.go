@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
@@ -27,9 +28,11 @@ import (
 	pubsub "cloud.google.com/go/pubsub/apiv1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	pubsubpb "google.golang.org/genproto/googleapis/pubsub/v1"
@@ -49,9 +52,9 @@ type pubsubReceiver struct {
 	userAgent          string
 	config             *Config
 	client             *pubsub.SubscriberClient
-	tracesUnmarshaler  pdata.TracesUnmarshaler
-	metricsUnmarshaler pdata.MetricsUnmarshaler
-	logsUnmarshaler    pdata.LogsUnmarshaler
+	tracesUnmarshaler  ptrace.Unmarshaler
+	metricsUnmarshaler pmetric.Unmarshaler
+	logsUnmarshaler    plog.Unmarshaler
 	handler            *internal.StreamHandler
 	startOnce          sync.Once
 }
@@ -77,16 +80,16 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 	if receiver.userAgent != "" {
 		copts = append(copts, option.WithUserAgent(receiver.userAgent))
 	}
-	if receiver.config.endpoint != "" {
-		if receiver.config.insecure {
+	if receiver.config.Endpoint != "" {
+		if receiver.config.Insecure {
 			var dialOpts []grpc.DialOption
 			if receiver.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
 			}
-			conn, _ := grpc.Dial(receiver.config.endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
-			copts = append(copts, option.WithEndpoint(receiver.config.endpoint))
+			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
 		}
 	}
 	return copts
@@ -113,9 +116,9 @@ func (receiver *pubsubReceiver) Start(ctx context.Context, _ component.Host) err
 			return
 		}
 	})
-	receiver.tracesUnmarshaler = otlp.NewProtobufTracesUnmarshaler()
-	receiver.metricsUnmarshaler = otlp.NewProtobufMetricsUnmarshaler()
-	receiver.logsUnmarshaler = otlp.NewProtobufLogsUnmarshaler()
+	receiver.tracesUnmarshaler = ptrace.NewProtoUnmarshaler()
+	receiver.metricsUnmarshaler = pmetric.NewProtoUnmarshaler()
+	receiver.logsUnmarshaler = plog.NewProtoUnmarshaler()
 	return startErr
 }
 
@@ -133,7 +136,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	data := string(message.Message.Data)
 	timestamp := message.GetMessage().PublishTime
 
-	out := pdata.NewLogs()
+	out := plog.NewLogs()
 	logs := out.ResourceLogs()
 	rls := logs.AppendEmpty()
 
@@ -141,7 +144,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 	lr := ills.LogRecords().AppendEmpty()
 
 	lr.Body().SetStringVal(data)
-	lr.SetTimestamp(pdata.NewTimestampFromTime(timestamp.AsTime()))
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(timestamp.AsTime()))
 	return receiver.logsConsumer.ConsumeLogs(ctx, out)
 }
 

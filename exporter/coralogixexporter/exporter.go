@@ -16,9 +16,10 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -30,14 +31,18 @@ type coralogixExporter struct {
 }
 
 // NewCoralogixExporter by Coralogix
-func newCoralogixExporter(cfg *Config, params component.ExporterCreateSettings) *coralogixExporter {
+func newCoralogixExporter(cfg *Config, params component.ExporterCreateSettings) (*coralogixExporter, error) {
+	if cfg.Endpoint == "" || cfg.Endpoint == "https://" || cfg.Endpoint == "http://" {
+		return nil, errors.New("coralogix exporter config requires an Endpoint")
+	}
+
 	return &coralogixExporter{
 		cfg:    *cfg,
 		logger: params.Logger,
 		client: *newCoralogixClient(cfg, params),
-	}
+	}, nil
 }
 
-func (cx *coralogixExporter) tracesPusher(ctx context.Context, td pdata.Traces) error {
+func (cx *coralogixExporter) tracesPusher(ctx context.Context, td ptrace.Traces) error {
 	return cx.client.newPost(ctx, td)
 }

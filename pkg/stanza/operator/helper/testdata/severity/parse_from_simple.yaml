@@ -1,0 +1,2 @@
+type: severity_parser
+parse_from: body.from

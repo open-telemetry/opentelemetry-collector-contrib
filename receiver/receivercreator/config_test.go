@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -53,7 +54,7 @@ func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Ex
 	return mh.extensions
 }
 
-func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *service.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 

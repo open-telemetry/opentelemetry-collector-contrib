@@ -26,7 +26,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/dimensions"
@@ -57,9 +58,9 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 }
 
 type signalfxExporter struct {
-	pushMetricsData    func(ctx context.Context, md pdata.Metrics) (droppedTimeSeries int, err error)
+	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
 	pushMetadata       func(metadata []*metadata.MetadataUpdate) error
-	pushLogsData       func(ctx context.Context, ld pdata.Logs) (droppedLogRecords int, err error)
+	pushLogsData       func(ctx context.Context, ld plog.Logs) (droppedLogRecords int, err error)
 	hostMetadataSyncer *hostmetadata.Syncer
 }
 
@@ -85,14 +86,14 @@ func newSignalFxExporter(
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
+			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
 
 	converter, err := translation.NewMetricsConverter(logger, options.metricTranslator, config.ExcludeMetrics, config.IncludeMetrics, config.NonAlphanumericDimensionChars)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create metric converter: %v", err)
+		return nil, fmt.Errorf("failed to create metric converter: %w", err)
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -160,7 +161,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	options, err := config.getOptionsFromConfig()
 	if err != nil {
 		return nil,
-			fmt.Errorf("failed to process %q config: %v", config.ID().String(), err)
+			fmt.Errorf("failed to process %q config: %w", config.ID().String(), err)
 	}
 
 	headers := buildHeaders(config)
@@ -189,7 +190,7 @@ func newEventExporter(config *Config, logger *zap.Logger) (*signalfxExporter, er
 	}, nil
 }
 
-func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) error {
+func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
 	_, err := se.pushMetricsData(ctx, md)
 	if err == nil && se.hostMetadataSyncer != nil {
 		se.hostMetadataSyncer.Sync(md)
@@ -197,7 +198,7 @@ func (se *signalfxExporter) pushMetrics(ctx context.Context, md pdata.Metrics) e
 	return err
 }
 
-func (se *signalfxExporter) pushLogs(ctx context.Context, ld pdata.Logs) error {
+func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	_, err := se.pushLogsData(ctx, ld)
 	return err
 }

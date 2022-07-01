@@ -45,10 +45,12 @@ func TestLoadConfig(t *testing.T) {
 	defaultConfigSingleObject := factory.CreateDefaultConfig()
 
 	counterConfig := CounterConfig{
-		Name:   "counter1",
-		Metric: "metric",
+		Name: "counter1",
+		MetricRep: MetricRep{
+			Name: "metric",
+		},
 	}
-	defaultConfigSingleObject.(*Config).PerfCounters = []PerfCounterConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
+	defaultConfigSingleObject.(*Config).PerfCounters = []ObjectConfig{{Object: "object", Counters: []CounterConfig{counterConfig}}}
 	defaultConfigSingleObject.(*Config).MetricMetaData = map[string]MetricConfig{
 		"metric": {
 			Description: "desc",
@@ -60,8 +62,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, defaultConfigSingleObject, r0)
 
 	counterConfig2 := CounterConfig{
-		Name:   "counter2",
-		Metric: "metric2",
+		Name: "counter2",
+		MetricRep: MetricRep{
+			Name: "metric2",
+		},
 	}
 
 	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
@@ -70,7 +74,7 @@ func TestLoadConfig(t *testing.T) {
 			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "customname")),
 			CollectionInterval: 30 * time.Second,
 		},
-		PerfCounters: []PerfCounterConfig{
+		PerfCounters: []ObjectConfig{
 			{
 				Object:   "object1",
 				Counters: []CounterConfig{counterConfig},
@@ -107,7 +111,7 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricsDefined",
 			TestPath: filepath.Join("testdata", "config-nometrics.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
 						Counters: []CounterConfig{{Name: "counter1"}},
@@ -119,7 +123,7 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "NoMetricSpecified",
 			TestPath: filepath.Join("testdata", "config-nometricspecified.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
 						Counters: []CounterConfig{{Name: "counter1"}},
@@ -138,10 +142,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "SumMetric",
 			TestPath: filepath.Join("testdata", "config-summetric.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{
@@ -160,10 +164,10 @@ func TestLoadConfigMetrics(t *testing.T) {
 			TestName: "MetricUnspecifiedType",
 			TestPath: filepath.Join("testdata", "config-unspecifiedmetrictype.yaml"),
 			Expected: Config{
-				PerfCounters: []PerfCounterConfig{
+				PerfCounters: []ObjectConfig{
 					{
 						Object:   "object",
-						Counters: []CounterConfig{{Name: "counter1", Metric: "metric"}},
+						Counters: []CounterConfig{{Name: "counter1", MetricRep: MetricRep{Name: "metric"}}},
 					},
 				},
 				MetricMetaData: map[string]MetricConfig{

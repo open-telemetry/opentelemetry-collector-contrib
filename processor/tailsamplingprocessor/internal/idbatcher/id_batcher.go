@@ -20,7 +20,7 @@ import (
 	"errors"
 	"sync"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 )
 
 // Batch is the type of batches held by the Batcher.
-type Batch []pdata.TraceID
+type Batch []pcommon.TraceID
 
 // Batcher behaves like a pipeline of batches that has a fixed number of batches in the pipe
 // and a new batch being built outside of the pipe. Items can be concurrently added to the batch
@@ -44,7 +44,7 @@ type Batcher interface {
 	// of limiting the growth of the current batch if appropriate for its scenario. It can
 	// either call CloseCurrentAndTakeFirstBatch earlier or stop adding new items depending on what is
 	// required by the scenario.
-	AddToCurrentBatch(id pdata.TraceID)
+	AddToCurrentBatch(id pcommon.TraceID)
 	// CloseCurrentAndTakeFirstBatch takes the batch at the front of the pipe, and moves the current
 	// batch to the end of the pipe, creating a new batch to receive new items. This operation should
 	// be atomic.
@@ -59,8 +59,8 @@ type Batcher interface {
 var _ Batcher = (*batcher)(nil)
 
 type batcher struct {
-	pendingIds chan pdata.TraceID // Channel for the ids to be added to the next batch.
-	batches    chan Batch         // Channel with already captured batches.
+	pendingIds chan pcommon.TraceID // Channel for the ids to be added to the next batch.
+	batches    chan Batch           // Channel with already captured batches.
 
 	// cbMutex protects the currentBatch storing ids.
 	cbMutex      sync.Mutex
@@ -93,7 +93,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	}
 
 	batcher := &batcher{
-		pendingIds:                make(chan pdata.TraceID, batchChannelSize),
+		pendingIds:                make(chan pcommon.TraceID, batchChannelSize),
 		batches:                   batches,
 		currentBatch:              make(Batch, 0, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
@@ -114,7 +114,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	return batcher, nil
 }
 
-func (b *batcher) AddToCurrentBatch(id pdata.TraceID) {
+func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
 	b.pendingIds <- id
 }
 

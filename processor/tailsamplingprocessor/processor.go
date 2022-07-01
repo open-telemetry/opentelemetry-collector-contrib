@@ -19,17 +19,18 @@ import (
 	"fmt"
 	"runtime"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
@@ -54,11 +55,11 @@ type tailSamplingSpanProcessor struct {
 	policies        []*policy
 	logger          *zap.Logger
 	idToTrace       sync.Map
-	policyTicker    tTicker
+	policyTicker    timeutils.TTicker
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
-	deleteChan      chan pdata.TraceID
-	numTracesOnMap  uint64
+	deleteChan      chan pcommon.TraceID
+	numTracesOnMap  *atomic.Uint64
 }
 
 const (
@@ -69,7 +70,7 @@ const (
 // configuration.
 func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
@@ -106,10 +107,11 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 		decisionBatcher: inBatcher,
 		policies:        policies,
 		tickerFrequency: time.Second,
+		numTracesOnMap:  atomic.NewUint64(0),
 	}
 
-	tsp.policyTicker = &policyTicker{onTickFunc: tsp.samplingPolicyOnTick}
-	tsp.deleteChan = make(chan pdata.TraceID, cfg.NumTraces)
+	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
+	tsp.deleteChan = make(chan pcommon.TraceID, cfg.NumTraces)
 
 	return tsp, nil
 }
@@ -142,6 +144,12 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case And:
 		andCfg := cfg.AndCfg
 		return getNewAndPolicy(logger, andCfg)
+	case SpanCount:
+		spCfg := cfg.SpanCountCfg
+		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+	case TraceState:
+		tsfCfg := cfg.TraceStateCfg
+		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -179,7 +187,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 			// Combine all individual batches into a single batch so
 			// consumers may operate on the entire trace
-			allSpans := pdata.NewTraces()
+			allSpans := ptrace.NewTraces()
 			for j := 0; j < len(traceBatches); j++ {
 				batch := traceBatches[j]
 				batch.ResourceSpans().MoveAndAppendTo(allSpans.ResourceSpans())
@@ -193,7 +201,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		statOverallDecisionLatencyUs.M(int64(time.Since(startTime)/time.Microsecond)),
 		statDroppedTooEarlyCount.M(metrics.idNotFoundOnMapCount),
 		statPolicyEvaluationErrorCount.M(metrics.evaluateErrorCount),
-		statTracesOnMemoryGauge.M(int64(atomic.LoadUint64(&tsp.numTracesOnMap))))
+		statTracesOnMemoryGauge.M(int64(tsp.numTracesOnMap.Load())))
 
 	tsp.logger.Debug("Sampling policy evaluation completed",
 		zap.Int("batch.len", batchLen),
@@ -204,7 +212,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 	)
 }
 
-func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
+func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sampling.TraceData, metrics *policyMetrics) (sampling.Decision, *policy) {
 	finalDecision := sampling.NotSampled
 	var matchingPolicy *policy
 	samplingDecision := map[sampling.Decision]bool{
@@ -250,11 +258,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 	}
 
 	// InvertNotSampled takes precedence over any other decision
-	if samplingDecision[sampling.InvertNotSampled] {
+	switch {
+	case samplingDecision[sampling.InvertNotSampled]:
 		finalDecision = sampling.NotSampled
-	} else if samplingDecision[sampling.Sampled] {
+	case samplingDecision[sampling.Sampled]:
 		finalDecision = sampling.Sampled
-	} else if samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled] {
+	case samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled]:
 		finalDecision = sampling.Sampled
 	}
 
@@ -288,7 +297,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pdata.TraceID, trace *samp
 }
 
 // ConsumeTraceData is required by the SpanProcessor interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		tsp.processTraces(resourceSpans.At(i))
@@ -296,8 +305,8 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td pdat
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.ResourceSpans) map[pdata.TraceID][]*pdata.Span {
-	idToSpans := make(map[pdata.TraceID][]*pdata.Span)
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]*ptrace.Span {
+	idToSpans := make(map[pcommon.TraceID][]*ptrace.Span)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
 		spans := ilss.At(j).Spans()
@@ -311,7 +320,7 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans pdata.R
 	return idToSpans
 }
 
-func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.ResourceSpans) {
+func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
 	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
@@ -325,17 +334,17 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 		initialTraceData := &sampling.TraceData{
 			Decisions:   initialDecisions,
 			ArrivalTime: time.Now(),
-			SpanCount:   lenSpans,
+			SpanCount:   atomic.NewInt64(lenSpans),
 		}
 		d, loaded := tsp.idToTrace.LoadOrStore(id, initialTraceData)
 
 		actualData := d.(*sampling.TraceData)
 		if loaded {
-			atomic.AddInt64(&actualData.SpanCount, lenSpans)
+			actualData.SpanCount.Add(lenSpans)
 		} else {
 			newTraceIDs++
 			tsp.decisionBatcher.AddToCurrentBatch(id)
-			atomic.AddUint64(&tsp.numTracesOnMap, 1)
+			tsp.numTracesOnMap.Add(1)
 			postDeletion := false
 			currTime := time.Now()
 			for !postDeletion {
@@ -350,7 +359,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans pdata.Resource
 		}
 
 		for i, p := range tsp.policies {
-			var traceTd pdata.Traces
+			var traceTd ptrace.Traces
 			actualData.Lock()
 			actualDecision := actualData.Decisions[i]
 			// If decision is pending, we want to add the new spans still under the lock, so the decision doesn't happen
@@ -400,24 +409,24 @@ func (tsp *tailSamplingSpanProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (tsp *tailSamplingSpanProcessor) Start(context.Context, component.Host) error {
-	tsp.policyTicker.start(tsp.tickerFrequency)
+	tsp.policyTicker.Start(tsp.tickerFrequency)
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (tsp *tailSamplingSpanProcessor) Shutdown(context.Context) error {
 	tsp.decisionBatcher.Stop()
-	tsp.policyTicker.stop()
+	tsp.policyTicker.Stop()
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pdata.TraceID, deletionTime time.Time) {
+func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletionTime time.Time) {
 	var trace *sampling.TraceData
 	if d, ok := tsp.idToTrace.Load(traceID); ok {
 		trace = d.(*sampling.TraceData)
 		tsp.idToTrace.Delete(traceID)
 		// Subtract one from numTracesOnMap per https://godoc.org/sync/atomic#AddUint64
-		atomic.AddUint64(&tsp.numTracesOnMap, ^uint64(0))
+		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
 		tsp.logger.Error("Attempt to delete traceID not on table")
@@ -427,8 +436,8 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pdata.TraceID, deletionT
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Traces {
-	traceTd := pdata.NewTraces()
+func prepareTraceBatch(rss ptrace.ResourceSpans, spans []*ptrace.Span) ptrace.Traces {
+	traceTd := ptrace.NewTraces()
 	rs := traceTd.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
 	ils := rs.ScopeSpans().AppendEmpty()
@@ -438,43 +447,3 @@ func prepareTraceBatch(rss pdata.ResourceSpans, spans []*pdata.Span) pdata.Trace
 	}
 	return traceTd
 }
-
-// tTicker interface allows easier testing of ticker related functionality used by tailSamplingProcessor
-type tTicker interface {
-	// start sets the frequency of the ticker and starts the periodic calls to OnTick.
-	start(d time.Duration)
-	// onTick is called when the ticker fires.
-	onTick()
-	// stop firing the ticker.
-	stop()
-}
-
-type policyTicker struct {
-	ticker     *time.Ticker
-	onTickFunc func()
-	stopCh     chan struct{}
-}
-
-func (pt *policyTicker) start(d time.Duration) {
-	pt.ticker = time.NewTicker(d)
-	pt.stopCh = make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-pt.ticker.C:
-				pt.onTick()
-			case <-pt.stopCh:
-				return
-			}
-		}
-	}()
-}
-func (pt *policyTicker) onTick() {
-	pt.onTickFunc()
-}
-func (pt *policyTicker) stop() {
-	close(pt.stopCh)
-	pt.ticker.Stop()
-}
-
-var _ tTicker = (*policyTicker)(nil)

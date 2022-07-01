@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net"
 	"strings"
@@ -46,7 +47,9 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -77,7 +80,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -211,7 +216,9 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -268,8 +275,8 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 		}
 		if err = traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: n1}); err == nil {
 			t.Errorf("Iteration #%d: Unexpectedly succeeded in sending a message upstream. Connection must be in terminal state", i)
-		} else if g, w := err, io.EOF; g != w {
-			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, g, w)
+		} else if !errors.Is(err, io.EOF) {
+			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, err, io.EOF)
 		}
 	}
 
@@ -283,7 +290,9 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 

@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
@@ -38,7 +38,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
 	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, nil)
-	require.Error(t, componenterror.ErrNilNextConsumer, err)
+	require.Error(t, component.ErrNilNextConsumer, err)
 	require.Nil(t, tp)
 
 	tp, err = factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
@@ -78,15 +78,15 @@ func runIndividualTestCase(t *testing.T, tt testCase, tp component.TracesProcess
 	})
 }
 
-func generateTraceData(serviceName, inputName string, attrs map[string]interface{}) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceData(serviceName, inputName string, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	if serviceName != "" {
 		rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, serviceName)
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(inputName)
-	pdata.NewMapFromRaw(attrs).CopyTo(span.Attributes())
+	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
 	span.Attributes().Sort()
 	return td
 }
@@ -95,15 +95,15 @@ func generateTraceData(serviceName, inputName string, attrs map[string]interface
 func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.Traces
-		output pdata.Traces
+		input  ptrace.Traces
+		output ptrace.Traces
 	}
 	// TODO: Add test for "nil" Span. This needs support from data slices to allow to construct that.
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewTraces(),
-			output: pdata.NewTraces(),
+			input:  ptrace.NewTraces(),
+			output: ptrace.NewTraces(),
 		},
 		{
 			name:   "one-empty-resource-spans",
@@ -595,13 +595,13 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	}
 }
 
-func generateTraceDataSetStatus(code pdata.StatusCode, description string, attrs map[string]interface{}) pdata.Traces {
-	td := pdata.NewTraces()
+func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
 	rs := td.ResourceSpans().AppendEmpty()
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.Status().SetCode(code)
 	span.Status().SetMessage(description)
-	pdata.NewMapFromRaw(attrs).Sort().CopyTo(span.Attributes())
+	pcommon.NewMapFromRaw(attrs).Sort().CopyTo(span.Attributes())
 	return td
 }
 
@@ -617,11 +617,11 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 	require.Nil(t, err)
 	require.NotNil(t, tp)
 
-	td := generateTraceDataSetStatus(pdata.StatusCodeUnset, "foobar", nil)
+	td := generateTraceDataSetStatus(ptrace.StatusCodeUnset, "foobar", nil)
 
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-	assert.EqualValues(t, generateTraceDataSetStatus(pdata.StatusCodeError, "Set custom error message", nil), td)
+	assert.EqualValues(t, generateTraceDataSetStatus(ptrace.StatusCodeError, "Set custom error message", nil), td)
 }
 
 func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
@@ -647,21 +647,21 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 
 	testCases := []struct {
 		inputAttributes         map[string]interface{}
-		inputStatusCode         pdata.StatusCode
-		outputStatusCode        pdata.StatusCode
+		inputStatusCode         ptrace.StatusCode
+		outputStatusCode        ptrace.StatusCode
 		outputStatusDescription string
 	}{
 		{
 			// without attribiutes - should not apply rule and leave status code as it is
-			inputStatusCode:  pdata.StatusCodeOk,
-			outputStatusCode: pdata.StatusCodeOk,
+			inputStatusCode:  ptrace.StatusCodeOk,
+			outputStatusCode: ptrace.StatusCodeOk,
 		},
 		{
 			inputAttributes: map[string]interface{}{
 				"http.status_code": 400,
 			},
-			inputStatusCode:         pdata.StatusCodeOk,
-			outputStatusCode:        pdata.StatusCodeError,
+			inputStatusCode:         ptrace.StatusCodeOk,
+			outputStatusCode:        ptrace.StatusCodeError,
 			outputStatusDescription: "custom error message",
 		},
 	}

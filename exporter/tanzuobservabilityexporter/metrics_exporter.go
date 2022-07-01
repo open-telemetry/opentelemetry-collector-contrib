@@ -17,13 +17,11 @@ package tanzuobservabilityexporter // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type metricsExporter struct {
@@ -34,11 +32,12 @@ func createMetricsConsumer(hostName string, port int, settings component.Telemet
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
 		Host:                 hostName,
 		MetricsPort:          port,
+		DistributionPort:     port,
 		FlushIntervalSeconds: 1,
 		SDKMetricsTags:       map[string]string{"otel.metrics.collector_version": otelVersion},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
+		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}
 	cumulative := newCumulativeHistogramDataPointConsumer(s)
 	delta := newDeltaHistogramDataPointConsumer(s)
@@ -62,16 +61,14 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
-	endpoint, err := url.Parse(cfg.Metrics.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse metrics.endpoint: %v", err)
+	if !cfg.hasMetricsEndpoint() {
+		return nil, fmt.Errorf("metrics.endpoint required")
 	}
-	metricsPort, err := strconv.Atoi(endpoint.Port())
+	hostName, port, err := cfg.parseMetricsEndpoint()
 	if err != nil {
-		// The port is empty, otherwise url.Parse would have failed above
-		return nil, fmt.Errorf("metrics.endpoint requires a port")
+		return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 	}
-	consumer, err := creator(endpoint.Hostname(), metricsPort, settings.TelemetrySettings, settings.BuildInfo.Version)
+	consumer, err := creator(hostName, port, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +77,7 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	}, nil
 }
 
-func (e *metricsExporter) pushMetricsData(ctx context.Context, md pdata.Metrics) error {
+func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	return e.consumer.Consume(ctx, md)
 }
 

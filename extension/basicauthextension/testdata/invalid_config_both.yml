@@ -1,0 +1,23 @@
+extensions:
+  basicauth/both:
+    client_auth:
+      username: user
+      password: pass
+    htpasswd:
+      file: /etc/nginx/htpasswd
+
+# Data pipeline is required to load the config.
+receivers:
+  nop:
+processors:
+  nop:
+exporters:
+  nop:
+
+service:
+  extensions: [basicauth/both]
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [nop]

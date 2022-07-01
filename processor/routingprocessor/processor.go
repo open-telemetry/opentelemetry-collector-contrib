@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -66,7 +68,7 @@ func (e *processorImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (e *processorImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	routedTraces := e.router.RouteTraces(ctx, td)
 	for _, rt := range routedTraces {
 		for _, exp := range rt.exporters {
@@ -80,7 +82,7 @@ func (e *processorImp) ConsumeTraces(ctx context.Context, td pdata.Traces) error
 	return nil
 }
 
-func (e *processorImp) ConsumeMetrics(ctx context.Context, tm pdata.Metrics) error {
+func (e *processorImp) ConsumeMetrics(ctx context.Context, tm pmetric.Metrics) error {
 	routedMetrics := e.router.RouteMetrics(ctx, tm)
 	for _, rm := range routedMetrics {
 		for _, exp := range rm.exporters {
@@ -94,7 +96,7 @@ func (e *processorImp) ConsumeMetrics(ctx context.Context, tm pdata.Metrics) err
 	return nil
 }
 
-func (e *processorImp) ConsumeLogs(ctx context.Context, tl pdata.Logs) error {
+func (e *processorImp) ConsumeLogs(ctx context.Context, tl plog.Logs) error {
 	routedLogs := e.router.RouteLogs(ctx, tl)
 	for _, rl := range routedLogs {
 		for _, exp := range rl.exporters {

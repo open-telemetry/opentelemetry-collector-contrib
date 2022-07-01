@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -50,13 +50,13 @@ func newGoogleCloudSpannerReceiver(logger *zap.Logger, config *Config) *googleCl
 	}
 }
 
-func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pdata.Metrics, error) {
+func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var allMetricsDataPoints []*metadata.MetricsDataPoint
 
 	for _, projectReader := range r.projectReaders {
 		dataPoints, err := projectReader.Read(ctx)
 		if err != nil {
-			return pdata.Metrics{}, err
+			return pmetric.Metrics{}, err
 		}
 
 		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)

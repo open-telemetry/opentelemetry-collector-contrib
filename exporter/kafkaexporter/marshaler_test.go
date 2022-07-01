@@ -21,8 +21,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	semconv "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
@@ -80,24 +81,24 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 
 	now := time.Unix(1, 0)
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty()
 
 	rs := traces.ResourceSpans().At(0)
-	rs.SetSchemaUrl(semconv.SchemaURL)
+	rs.SetSchemaUrl(conventions.SchemaURL)
 	rs.ScopeSpans().AppendEmpty()
 
 	ils := rs.ScopeSpans().At(0)
-	ils.SetSchemaUrl(semconv.SchemaURL)
+	ils.SetSchemaUrl(conventions.SchemaURL)
 	ils.Spans().AppendEmpty()
 
 	span := ils.Spans().At(0)
-	span.SetKind(pdata.SpanKindInternal)
+	span.SetKind(ptrace.SpanKindInternal)
 	span.SetName(t.Name())
-	span.SetStartTimestamp(pdata.NewTimestampFromTime(now))
-	span.SetEndTimestamp(pdata.NewTimestampFromTime(now.Add(time.Second)))
-	span.SetSpanID(pdata.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
-	span.SetParentSpanID(pdata.NewSpanID([8]byte{8, 9, 10, 11, 12, 13, 14}))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(time.Second)))
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
+	span.SetParentSpanID(pcommon.NewSpanID([8]byte{8, 9, 10, 11, 12, 13, 14}))
 
 	marshaler, ok := tracesMarshalers()["otlp_json"]
 	require.True(t, ok, "Must have otlp json marshaller")
@@ -125,16 +126,16 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 								"spanId":            "0001020304050607",
 								"parentSpanId":      "08090a0b0c0d0e00",
 								"name":              t.Name(),
-								"kind":              pdata.SpanKindInternal.String(),
+								"kind":              ptrace.SpanKindInternal.String(),
 								"startTimeUnixNano": fmt.Sprint(now.UnixNano()),
 								"endTimeUnixNano":   fmt.Sprint(now.Add(time.Second).UnixNano()),
 								"status":            map[string]interface{}{},
 							},
 						},
-						"schemaUrl": semconv.SchemaURL,
+						"schemaUrl": conventions.SchemaURL,
 					},
 				},
-				"schemaUrl": semconv.SchemaURL,
+				"schemaUrl": conventions.SchemaURL,
 			},
 		},
 	}

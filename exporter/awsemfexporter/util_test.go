@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package awsemfexporter
 
 import (
@@ -21,8 +22,9 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
@@ -33,7 +35,7 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 
 	input := "{TaskId}"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
@@ -48,7 +50,7 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
@@ -63,7 +65,7 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.ecs.task.id", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
@@ -77,7 +79,7 @@ func TestReplacePatternValidPodName(t *testing.T) {
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("PodName", "test-pod-001")
 
@@ -92,7 +94,7 @@ func TestReplacePatternValidPod(t *testing.T) {
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("pod", "test-pod-001")
 
@@ -107,7 +109,7 @@ func TestReplacePatternMissingPodName(t *testing.T) {
 
 	input := "/aws/eks/containerinsights/{PodName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.eks.cluster.name", "test-cluster-name")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
@@ -121,7 +123,7 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("ClusterName", "test-cluster-name")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
@@ -135,7 +137,7 @@ func TestReplacePatternWrongKey(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{WrongKey}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("ClusterName", "test-task-id")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
@@ -149,7 +151,7 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.InsertNull("ClusterName")
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
@@ -163,7 +165,7 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 
 	input := "{TaskDefinitionFamily}"
 
-	attrMap := pdata.NewMap()
+	attrMap := pcommon.NewMap()
 	attrMap.UpsertString("aws.ecs.cluster.name", "test-cluster-name")
 	attrMap.UpsertString("aws.ecs.task.family", "test-task-definition-family")
 
@@ -263,7 +265,7 @@ func TestGetLogInfo(t *testing.T) {
 		},
 	}
 
-	var rms []pdata.ResourceMetrics
+	var rms []pmetric.ResourceMetrics
 	for _, md := range metrics {
 		rms = append(rms, internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0))
 	}

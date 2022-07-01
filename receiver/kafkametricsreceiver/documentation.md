@@ -24,8 +24,8 @@ These are the metrics available for this scraper.
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| group | The ID (string) of a consumer group |
-| partition | The number (integer) of the partition |
-| topic | The ID (integer) of a topic |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| group | The ID (string) of a consumer group |  |
+| partition | The number (integer) of the partition |  |
+| topic | The ID (integer) of a topic |  |

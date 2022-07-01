@@ -18,7 +18,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
@@ -38,7 +40,7 @@ type jaegerEncoder struct {
 
 var _ Encoder = (*jaegerEncoder)(nil)
 
-func (je jaegerEncoder) Traces(td pdata.Traces) (*Batch, error) {
+func (je jaegerEncoder) Traces(td ptrace.Traces) (*Batch, error) {
 	traces, err := jaeger.ProtoFromTraces(td)
 	if err != nil {
 		return nil, consumererror.NewTraces(err, td)
@@ -64,5 +66,5 @@ func (je jaegerEncoder) Traces(td pdata.Traces) (*Batch, error) {
 	return bt, errs
 }
 
-func (jaegerEncoder) Logs(pdata.Logs) (*Batch, error)       { return nil, ErrUnsupportedEncoding }
-func (jaegerEncoder) Metrics(pdata.Metrics) (*Batch, error) { return nil, ErrUnsupportedEncoding }
+func (jaegerEncoder) Logs(plog.Logs) (*Batch, error)          { return nil, ErrUnsupportedEncoding }
+func (jaegerEncoder) Metrics(pmetric.Metrics) (*Batch, error) { return nil, ErrUnsupportedEncoding }

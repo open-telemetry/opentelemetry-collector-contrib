@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -114,7 +114,8 @@ func TestGetConcatenatedLabels(t *testing.T) {
 			Separator:  tc.separator,
 			Regex:      ".+",
 		}
-		lm.init()
+		err := lm.init()
+		assert.Nil(t, err)
 		t.Run(tc.testName, func(t *testing.T) {
 			concatenatedLabels := lm.getConcatenatedLabels(labels)
 			assert.Equal(t, tc.expected, concatenatedLabels)
@@ -219,7 +220,8 @@ func TestLabelMatcherMatches(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc.labelMatcher.init()
+		err := tc.labelMatcher.init()
+		assert.Nil(t, err)
 		t.Run(tc.testName, func(t *testing.T) {
 			matches := tc.labelMatcher.Matches(tc.labels)
 			assert.Equal(t, tc.expected, matches)
@@ -496,7 +498,7 @@ func TestMetricDeclarationMatchesLabels(t *testing.T) {
 		},
 	}
 	logger := zap.NewNop()
-	metric := pdata.NewMetric()
+	metric := pmetric.NewMetric()
 	metric.SetName("a")
 
 	for _, tc := range testCases {

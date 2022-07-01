@@ -14,6 +14,7 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
+// nolint:errcheck
 package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
@@ -29,8 +30,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -148,7 +149,7 @@ func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.Export
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
-func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
+func (me *metricsExporter) pushMetrics(ctx context.Context, m pmetric.Metrics) error {
 	rms := m.ResourceMetrics()
 	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
 	for i := 0; i < rms.Len(); i++ {

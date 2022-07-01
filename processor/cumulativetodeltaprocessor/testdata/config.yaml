@@ -3,9 +3,16 @@ receivers:
 
 processors:
   cumulativetodelta:
-    metrics:
-      - metric1
-      - metric2
+    include:
+      match_type: strict
+      metrics:
+        - metric1
+        - metric2
+    exclude:
+      match_type: strict
+      metrics:
+        - metric3
+        - metric4
     max_staleness: 10s
 
 exporters:

@@ -21,7 +21,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -33,13 +33,13 @@ func TestDataPointRecorders(t *testing.T) {
 	settings.Logger = logger
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(newFakeClient()),
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(Config{}.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(Config{}.Metrics, settings.BuildInfo),
 	}
 	metricByRecorder := map[string]string{}
 	for metric, recorder := range rs.dataPointRecorders() {
 		switch recorder.(type) {
-		case func(pdata.Timestamp, int64), func(pdata.Timestamp, float64):
+		case func(pcommon.Timestamp, int64), func(pcommon.Timestamp, float64):
 			recorderName := runtime.FuncForPC(reflect.ValueOf(recorder).Pointer()).Name()
 			if m, ok := metricByRecorder[recorderName]; ok {
 				assert.Failf(t, "shared-recorder", "Metrics %q and %q share the same recorder", metric, m)

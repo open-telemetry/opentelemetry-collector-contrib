@@ -19,7 +19,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/utils"
 )
@@ -58,9 +58,9 @@ func (d *Dimensions) OriginID() string {
 }
 
 // getTags maps an attributeMap into a slice of Datadog tags
-func getTags(labels pdata.Map) []string {
+func getTags(labels pcommon.Map) []string {
 	tags := make([]string, 0, labels.Len())
-	labels.Range(func(key string, value pdata.Value) bool {
+	labels.Range(func(key string, value pcommon.Value) bool {
 		v := value.AsString()
 		tags = append(tags, utils.FormatKeyValueTag(key, v))
 		return true
@@ -83,7 +83,7 @@ func (d *Dimensions) AddTags(tags ...string) *Dimensions {
 }
 
 // WithAttributeMap creates a new metricDimensions struct with additional tags from attributes.
-func (d *Dimensions) WithAttributeMap(labels pdata.Map) *Dimensions {
+func (d *Dimensions) WithAttributeMap(labels pcommon.Map) *Dimensions {
 	return d.AddTags(getTags(labels)...)
 }
 

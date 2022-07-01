@@ -19,26 +19,27 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestSpanAttributesToMap(t *testing.T) {
 
-	spanAttrs := []pdata.Map{
-		pdata.NewMapFromRaw(map[string]interface{}{
+	spanAttrs := []pcommon.Map{
+		pcommon.NewMapFromRaw(map[string]interface{}{
 			"foo": "bar",
 		}),
-		pdata.NewMapFromRaw(map[string]interface{}{
+		pcommon.NewMapFromRaw(map[string]interface{}{
 			"foo": 1234,
 		}),
-		pdata.NewMapFromRaw(map[string]interface{}{
+		pcommon.NewMapFromRaw(map[string]interface{}{
 			"foo": true,
 		}),
-		pdata.NewMapFromRaw(map[string]interface{}{
+		pcommon.NewMapFromRaw(map[string]interface{}{
 			"foo": 0.3145,
 		}),
-		pdata.NewMap(),
+		pcommon.NewMap(),
 	}
 
 	wantResults := []map[string]interface{}{
@@ -63,14 +64,14 @@ func TestSpanAttributesToMap(t *testing.T) {
 
 func TestTimestampToTime(t *testing.T) {
 	var t1 time.Time
-	emptyTime := timestampToTime(pdata.Timestamp(0))
+	emptyTime := timestampToTime(pcommon.Timestamp(0))
 	if t1 != emptyTime {
 		t.Errorf("Expected %+v, Got: %+v\n", t1, emptyTime)
 	}
 
 	t2 := time.Now()
 	seconds := t2.UnixNano() / 1000000000
-	nowTime := timestampToTime(pdata.NewTimestampFromTime(
+	nowTime := timestampToTime(pcommon.NewTimestampFromTime(
 		(&timestamppb.Timestamp{
 			Seconds: seconds,
 			Nanos:   int32(t2.UnixNano() - (seconds * 1000000000)),
@@ -82,18 +83,18 @@ func TestTimestampToTime(t *testing.T) {
 }
 
 func TestStatusCode(t *testing.T) {
-	status := pdata.NewSpanStatus()
-	assert.Equal(t, int32(pdata.StatusCodeUnset), getStatusCode(status), "empty")
+	status := ptrace.NewSpanStatus()
+	assert.Equal(t, int32(ptrace.StatusCodeUnset), getStatusCode(status), "empty")
 
-	status.SetCode(pdata.StatusCodeError)
-	assert.Equal(t, int32(pdata.StatusCodeError), getStatusCode(status), "error")
+	status.SetCode(ptrace.StatusCodeError)
+	assert.Equal(t, int32(ptrace.StatusCodeError), getStatusCode(status), "error")
 
-	status.SetCode(pdata.StatusCodeOk)
-	assert.Equal(t, int32(pdata.StatusCodeOk), getStatusCode(status), "ok")
+	status.SetCode(ptrace.StatusCodeOk)
+	assert.Equal(t, int32(ptrace.StatusCodeOk), getStatusCode(status), "ok")
 }
 
 func TestStatusMessage(t *testing.T) {
-	status := pdata.NewSpanStatus()
+	status := ptrace.NewSpanStatus()
 	assert.Equal(t, "STATUS_CODE_UNSET", getStatusMessage(status), "empty")
 
 	status.SetMessage("custom message")

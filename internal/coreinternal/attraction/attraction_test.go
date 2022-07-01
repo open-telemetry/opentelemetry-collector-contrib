@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Common structure for all the Tests
@@ -40,10 +40,10 @@ type testCase struct {
 // runIndividualTestCase is the common logic of passing trace data through a configured attributes processor.
 func runIndividualTestCase(t *testing.T, tt testCase, ap *AttrProc) {
 	t.Run(tt.name, func(t *testing.T) {
-		attrMap := pdata.NewMapFromRaw(tt.inputAttributes)
+		attrMap := pcommon.NewMapFromRaw(tt.inputAttributes)
 		ap.Process(context.TODO(), nil, attrMap)
 		attrMap.Sort()
-		require.Equal(t, pdata.NewMapFromRaw(tt.expectedAttributes).Sort(), attrMap)
+		require.Equal(t, pcommon.NewMapFromRaw(tt.expectedAttributes).Sort(), attrMap)
 	})
 }
 
@@ -860,7 +860,7 @@ func TestValidConfiguration(t *testing.T) {
 	ap, err := NewAttrProc(cfg)
 	require.NoError(t, err)
 
-	av := pdata.NewValueInt(123)
+	av := pcommon.NewValueInt(123)
 	compiledRegex := regexp.MustCompile(`^\/api\/v1\/document\/(?P<documentId>.*)\/update$`)
 	assert.Equal(t, []attributeAction{
 		{Key: "one", Action: DELETE},
@@ -881,6 +881,20 @@ func sha1Hash(b []byte) string {
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
+type mockInfoAuth map[string]interface{}
+
+func (a mockInfoAuth) GetAttribute(name string) interface{} {
+	return a[name]
+}
+
+func (a mockInfoAuth) GetAttributeNames() []string {
+	names := make([]string, 0, len(a))
+	for name := range a {
+		names = append(names, name)
+	}
+	return names
+}
+
 func TestFromContext(t *testing.T) {
 
 	mdCtx := client.NewContext(context.TODO(), client.Info{
@@ -888,6 +902,9 @@ func TestFromContext(t *testing.T) {
 			"source_single_val":   {"single_val"},
 			"source_multiple_val": {"first_val", "second_val"},
 		}),
+		Auth: mockInfoAuth{
+			"source_auth_val": "auth_val",
+		},
 	})
 
 	testCases := []struct {
@@ -920,6 +937,24 @@ func TestFromContext(t *testing.T) {
 			expectedAttributes: map[string]interface{}{"dest": "first_val;second_val"},
 			action:             &ActionKeyValue{Key: "dest", FromContext: "source_multiple_val", Action: INSERT},
 		},
+		{
+			name:               "with_metadata_prefix_single_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{"dest": "single_val"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "metadata.source_single_val", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_single_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{"dest": "auth_val"},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.source_auth_val", Action: INSERT},
+		},
+		{
+			name:               "with_auth_prefix_no_value",
+			ctx:                mdCtx,
+			expectedAttributes: map[string]interface{}{},
+			action:             &ActionKeyValue{Key: "dest", FromContext: "auth.unknown_val", Action: INSERT},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -929,10 +964,10 @@ func TestFromContext(t *testing.T) {
 			})
 			require.Nil(t, err)
 			require.NotNil(t, ap)
-			attrMap := pdata.NewMap()
+			attrMap := pcommon.NewMap()
 			ap.Process(tc.ctx, nil, attrMap)
 			attrMap.Sort()
-			require.Equal(t, pdata.NewMapFromRaw(tc.expectedAttributes).Sort(), attrMap)
+			require.Equal(t, pcommon.NewMapFromRaw(tc.expectedAttributes).Sort(), attrMap)
 		})
 	}
 }
