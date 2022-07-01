@@ -80,6 +80,7 @@ type MetricCfg struct {
 	Aggregation      MetricAggregation `mapstructure:"aggregation"`
 	Unit             string            `mapstructure:"unit"`
 	Description      string            `mapstructure:"description"`
+	Tags             map[string]string `mapstructure:"tags"`
 }
 
 func (c MetricCfg) Validate() error {

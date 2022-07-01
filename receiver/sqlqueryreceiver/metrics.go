@@ -29,7 +29,6 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
-	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	value, found := row[cfg.ValueColumn]
@@ -47,6 +46,9 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 		} else {
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
+	}
+	for k, v := range cfg.Tags {
+		attrs.InsertString(k, v)
 	}
 	return nil
 }

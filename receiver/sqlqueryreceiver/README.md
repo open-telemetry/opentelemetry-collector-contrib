@@ -30,6 +30,7 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 * `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults to `cumulative`.
 * `description` (optional): the description applied to the metric.
 * `unit` (optional): the units applied to the metric.
+* `tags` (optional): tags applied to the metrics
 
 ### Example
 
@@ -44,6 +45,8 @@ receivers:
           - metric_name: movie.genres
             value_column: "count"
             attribute_columns: [ "genre" ]
+            tags: 
+               dbinstance: mydbinstance
 ```
 
 Given a `movie` table with three rows:
@@ -72,6 +75,7 @@ Descriptor:
 NumberDataPoints #0
 Data point attributes:
      -> genre: STRING(sci-fi)
+     -> dbinstance: STRING(mydbinstance)     
 Value: 2
 
 Metric #1
@@ -81,5 +85,6 @@ Descriptor:
 NumberDataPoints #0
 Data point attributes:
      -> genre: STRING(action)
+     -> dbinstance: STRING(mydbinstance)
 Value: 1
 ```
