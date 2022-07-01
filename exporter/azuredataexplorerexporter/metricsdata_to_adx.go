@@ -17,7 +17,7 @@ import (
 A converter package that converts and marshals data to be written to ADX metrics tables
 */
 const (
-	hostkey = "host.key"
+	hostkey = "host.name"
 	// Indicates the sum that is used in both summary and in histogram
 	sumsuffix = "sum"
 	// Count used in summary , histogram and also in exponential histogram
