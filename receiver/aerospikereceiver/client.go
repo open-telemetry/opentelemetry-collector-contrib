@@ -257,7 +257,6 @@ func allNodeInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error) {
 }
 
 // allNamespaceInfo returns the results of namespace/%s for each namespace on the node
-// TODO parse ns stats and put in map
 func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error) {
 	var res metricsMap
 
@@ -276,7 +275,6 @@ func allNamespaceInfo(n cluster.Node, policy *as.InfoPolicy) (metricsMap, error)
 		return nil, err
 	}
 
-	// TODO get name res["name"] = name
 	return res, nil
 }
 
