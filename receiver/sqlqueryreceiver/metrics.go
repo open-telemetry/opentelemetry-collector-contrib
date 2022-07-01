@@ -43,7 +43,7 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
 	}
-	for k, v := range cfg.Tags {
+	for k, v := range cfg.StaticAttributes {
 		attrs.InsertString(k, v)
 	}
 	return nil

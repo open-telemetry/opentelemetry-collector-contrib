@@ -13,7 +13,7 @@ receivers:
             value_type: int
             monotonic: false
             aggregation: cumulative
-            tags: 
+            static_attributes: 
               foo: bar
 exporters:
   nop:
