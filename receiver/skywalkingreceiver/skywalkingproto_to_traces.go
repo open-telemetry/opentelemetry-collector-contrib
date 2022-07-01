@@ -15,10 +15,12 @@
 package skywalkingreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver"
 
 import (
-	"encoding/binary"
+	"bytes"
 	"encoding/hex"
-	"strings"
+	"reflect"
+	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -102,7 +104,7 @@ func swSpansToSpanSlice(traceID string, segmentID string, spans []*agentV3.SpanO
 }
 
 func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, dest ptrace.Span) {
-	dest.SetTraceID(stringToTraceID(traceID))
+	dest.SetTraceID(swTraceIDToTraceID(traceID))
 	// skywalking defines segmentId + spanId as unique identifier
 	// so use segmentId to convert to an unique otel-span
 	dest.SetSpanID(segmentIDToSpanID(segmentID, uint32(span.GetSpanId())))
@@ -157,7 +159,7 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 
 	for _, ref := range refs {
 		link := dest.AppendEmpty()
-		link.SetTraceID(stringToTraceID(ref.TraceId))
+		link.SetTraceID(swTraceIDToTraceID(ref.TraceId))
 		link.SetSpanID(segmentIDToSpanID(ref.ParentTraceSegmentId, uint32(ref.ParentSpanId)))
 		link.SetTraceState("")
 		kvParis := []*common.KeyStringValuePair{
@@ -238,36 +240,102 @@ func microsecondsToTimestamp(ms int64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.UnixMilli(ms))
 }
 
-func stringToTraceID(traceID string) pcommon.TraceID {
-	if i := strings.IndexByte(traceID, '.'); i >= 0 {
-		traceID = traceID[:i]
+func swTraceIDToTraceID(traceID string) pcommon.TraceID {
+	// skywalking traceid format:
+	// de5980b8-fce3-4a37-aab9-b4ac3af7eedd: from browser/js-sdk/envoy/nginx-lua sdk/py-agent
+	// 56a5e1c519ae4c76a2b8b11d92cead7f.12.16563474296430001: from java-agent
+
+	if len(traceID) <= 36 { // 36: uuid length (rfc4122)
+		uid, err := uuid.Parse(traceID)
+		if err != nil {
+			return pcommon.InvalidTraceID()
+		}
+		return pcommon.NewTraceID(uid)
 	}
-	uid, err := uuid.Parse(traceID)
-	if err != nil {
-		return pcommon.InvalidTraceID()
-	}
-	return pcommon.NewTraceID(uid)
+	return pcommon.NewTraceID(swStringToUUID(traceID, 0))
 }
 
 func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
-	if i := strings.LastIndexByte(segmentID, '.'); i >= 0 && i+1 < len(segmentID) {
-		segmentID = segmentID[i+1:]
-	}
-	segments, err := stringTo8Bytes(&segmentID)
-	if err != nil {
+	// skywalking segmentid format:
+	// 56a5e1c519ae4c76a2b8b11d92cead7f.12.16563474296430001: from TraceSegmentId
+	// 56a5e1c519ae4c76a2b8b11d92cead7f: from ParentTraceSegmentId
+
+	if len(segmentID) < 32 {
 		return pcommon.InvalidSpanID()
 	}
-	binary.PutUvarint(segments[:], uint64(spanID))
-	return pcommon.NewSpanID(segments)
+	return pcommon.NewSpanID(uuidTo8Bytes(swStringToUUID(segmentID, spanID)))
 }
 
-func stringTo8Bytes(s *string) ([8]byte, error) {
-	var dst [8]byte
-	var mid [16]byte
-	copy(mid[:], ([]byte(*s)))
-	_, err := hex.Decode(dst[:], mid[:])
-	if err != nil {
-		return dst, err
+func swStringToUUID(s string, extra uint32) (dst [16]byte) {
+	// there are 2 possible formats for 's':
+	// s format = 56a5e1c519ae4c76a2b8b11d92cead7f.0000000000.000000000000000000
+	//            ^ start(length=32)               ^ mid(u32) ^ last(u64)
+	// uid = UUID(start) XOR ([4]byte(extra) . [4]byte(uint32(mid)) . [8]byte(uint64(last)))
+
+	// s format = 56a5e1c519ae4c76a2b8b11d92cead7f
+	//            ^ start(length=32)
+	// uid = UUID(start) XOR [4]byte(extra)
+
+	if len(s) < 32 {
+		return
 	}
-	return dst, nil
+
+	t := unsafeGetBytes(s)
+	var uid [16]byte
+	_, err := hex.Decode(uid[:], t[:32])
+	if err != nil {
+		return uid
+	}
+
+	for i := 0; i < 4; i++ {
+		uid[i] ^= byte(extra)
+		extra >>= 8
+	}
+
+	if len(s) == 32 {
+		return uid
+	}
+
+	index1 := bytes.IndexByte(t, '.')
+	index2 := bytes.LastIndexByte(t, '.')
+	if index1 != 32 || index2 < 0 {
+		return
+	}
+
+	mid, err := strconv.Atoi(s[index1+1 : index2])
+	if err != nil {
+		return
+	}
+
+	last, err := strconv.Atoi(s[index2+1:])
+	if err != nil {
+		return
+	}
+
+	for i := 4; i < 8; i++ {
+		uid[i] ^= byte(mid)
+		mid >>= 8
+	}
+
+	for i := 8; i < 16; i++ {
+		uid[i] ^= byte(last)
+		last >>= 8
+	}
+
+	return uid
+}
+
+func uuidTo8Bytes(uuid [16]byte) [8]byte {
+	// high bit XOR low bit
+	var dst [8]byte
+	for i := 0; i < 8; i++ {
+		dst[i] = uuid[i] ^ uuid[i+8]
+	}
+	return dst
+}
+
+func unsafeGetBytes(s string) []byte {
+	return (*[0x7fff0000]byte)(unsafe.Pointer(
+		(*reflect.StringHeader)(unsafe.Pointer(&s)).Data),
+	)[:len(s):len(s)]
 }
