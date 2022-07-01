@@ -61,30 +61,30 @@
 //     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
 //     - container.id
 //
-//The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
-//The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
-//This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
-//Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
-//key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-//The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
+// The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
+// The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
+// This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
+// Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
+// key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
+// The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
 //
-//A few examples to use this config are as follows:
-//annotations:
-//  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-//	  key: annotation-one
-//	  from: pod
-//  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-//	  key: annotation-two
-//	  regex: field=(?P<value>.+)
-//	  from: namespace
-//labels:
-//  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-//	  key: label1
-//	  from: namespace
-//  - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
-//	  key: label2
-//	  regex: field=(?P<value>.+)
-//	  from: pod
+// A few examples to use this config are as follows:
+// annotations:
+//   - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+//	   key: annotation-one
+//	   from: pod
+//   - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+//	   key: annotation-two
+//	   regex: field=(?P<value>.+)
+//	   from: namespace
+// labels:
+//   - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+//     key: label1
+//	   from: namespace
+//   - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
+//	   key: label2
+//	   regex: field=(?P<value>.+)
+//	   from: pod
 //
 // RBAC
 //
@@ -230,5 +230,4 @@
 // as a sidecar. While this can be done, we think it is simpler to just use the kubernetes
 // downward API to inject environment variables into the pods and directly use their values
 // as tags.
-// nolint:gocritic
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
