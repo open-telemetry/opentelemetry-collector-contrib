@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: transformprocessor
+
+# A brief description of the change
+note: replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics
+
+# One or more tracking issues related to the change
+issues: [11125]
