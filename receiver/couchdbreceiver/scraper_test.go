@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
@@ -206,10 +205,8 @@ func (_m *MockClient) Get(path string) ([]byte, error) {
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(string) []byte); ok {
 		r0 = rf(path)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]byte)
 	}
 
 	var r1 error
@@ -229,10 +226,8 @@ func (_m *MockClient) GetStats(nodeName string) (map[string]interface{}, error) 
 	var r0 map[string]interface{}
 	if rf, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
 		r0 = rf(nodeName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]interface{})
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(map[string]interface{})
 	}
 
 	var r1 error

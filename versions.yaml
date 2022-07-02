@@ -17,6 +17,7 @@ module-sets:
     version: v0.54.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/chloggen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen

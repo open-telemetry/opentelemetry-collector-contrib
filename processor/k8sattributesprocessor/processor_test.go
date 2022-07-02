@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sattributesprocessor
 
 import (
@@ -42,7 +41,8 @@ import (
 )
 
 func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
-	opts := append(options, withKubeClientProvider(newFakeClient))
+	opts := options
+	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
@@ -53,7 +53,8 @@ func newTracesProcessor(cfg config.Processor, next consumer.Traces, options ...o
 }
 
 func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
-	opts := append(options, withKubeClientProvider(newFakeClient))
+	opts := options
+	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
@@ -64,7 +65,8 @@ func newMetricsProcessor(cfg config.Processor, nextMetricsConsumer consumer.Metr
 }
 
 func newLogsProcessor(cfg config.Processor, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
-	opts := append(options, withKubeClientProvider(newFakeClient))
+	opts := options
+	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
 		componenttest.NewNopProcessorCreateSettings(),
