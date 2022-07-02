@@ -361,6 +361,54 @@ func Test_parse(t *testing.T) {
 				Condition: nil,
 			},
 		},
+		{
+			query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							IsNil: (*IsNil)(testhelper.Boolp(true)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
+		{
+			query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							IsNil: (*IsNil)(testhelper.Boolp(true)),
+						},
+					},
+				},
+				Condition: nil,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -385,6 +433,15 @@ func Test_parse_failure(t *testing.T) {
 		`set(trace_id, TraceIDWrapper{not a hex string})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
+		`set("foo") where name = "fido"`,
+		`set("foo") where name or "fido"`,
+		`set("foo") where name and "fido"`,
+		`set("foo") where name and`,
+		`set("foo") where name or`,
+		`set("foo") where (`,
+		`set("foo") where )`,
+		`set("foo") where (name == "fido"))`,
+		`set("foo") where ((name == "fido")`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {

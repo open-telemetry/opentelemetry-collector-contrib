@@ -29,7 +29,12 @@ type ParsedQuery struct {
 	Condition  *Condition `( "where" @@ )?`
 }
 
-// Condition represents an optional boolean condition on the RHS of a query.
+// type Expression struct {
+// 	Comparison    *Comparison `( @@`
+// 	Subexpression *Expression `| "(" @@ ")"`
+// }
+
+// Comparison represents an optional boolean condition on the RHS of a query.
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
@@ -150,25 +155,29 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 	return parsed, nil
 }
 
+func buildLexer() *lexer.StatefulDefinition {
+	return lexer.MustSimple([]lexer.SimpleRule{
+		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
+		{Name: `Int`, Pattern: `[-+]?\d+`},
+		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
+		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `Operators`, Pattern: `\b[aA][nN][dD]\b|\b[oOrR]\b|==|!=|[,.()\[\]]`},
+		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: "whitespace", Pattern: `\s+`},
+	})
+}
+
 // newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
 // is not formatted for the DSL.
 func newParser() *participle.Parser {
-	lex := lexer.MustSimple([]lexer.SimpleRule{
-		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
-		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
-		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
-		{Name: `Int`, Pattern: `[-+]?\d+`},
-		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
-		{Name: "whitespace", Pattern: `\s+`},
-	})
+	lex := buildLexer()
 	parser, err := participle.Build(&ParsedQuery{},
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
 	)
 	if err != nil {
-		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
+		panic("Unable to initialize parser; this is a programming error in the transformprocessor")
 	}
 	return parser
 }
