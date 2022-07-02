@@ -40,7 +40,19 @@ func Test_lexer(t *testing.T) {
 			{"Operators", "and"}, // should parse "and" as an operator
 			{"Ident", "roid"},
 		}},
-		{"f", "{}", true, []result{
+		{"f", "oreo corn", false, []result{
+			{"Ident", "oreo"},
+			{"Ident", "corn"}, // should not parse "or" as an operator
+		}},
+		{"g", "if, and, or but", false, []result{
+			{"Ident", "if"},
+			{"Operators", ","},
+			{"Operators", "and"}, // should parse "or" as an operator
+			{"Operators", ","},
+			{"Operators", "or"}, // should parse "or" as an operator
+			{"Ident", "but"},
+		}},
+		{"h", "{}", true, []result{
 			{"", ""},
 		}},
 	}
@@ -60,7 +72,7 @@ func Test_lexer(t *testing.T) {
 				}
 				assert.NoError(t, err)
 				assert.Equal(t, tt.output[i].val, tok.String())
-				assert.Equal(t, symbols[tt.output[i].typ], tok.Type, "expected %s, symbols was %v", tt.output[i].typ, symbols)
+				assert.Equal(t, symbols[tt.output[i].typ], tok.Type, "expected '%s' to be %s, symbols was %v", tok.String(), tt.output[i].typ, symbols)
 				i++
 			}
 		})

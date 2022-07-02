@@ -161,7 +161,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `Operators`, Pattern: `\b[aA][nN][dD]\b|\b[oOrR]\b|==|!=|[,.()\[\]]`},
+		{Name: `Operators`, Pattern: `\b[aA][nN][dD]\b|\b[oO][rR]\b|==|!=|[,.()\[\]]`},
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
