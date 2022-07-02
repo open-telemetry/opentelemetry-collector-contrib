@@ -39,7 +39,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -53,7 +53,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -67,7 +67,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -100,7 +100,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -130,7 +130,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -160,7 +160,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
+				WhereClause: &Condition{
 					Left: Value{
 						Path: &Path{
 							Fields: []Field{
@@ -204,7 +204,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
+				WhereClause: &Condition{
 					Left: Value{
 						Path: &Path{
 							Fields: []Field{
@@ -248,7 +248,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
+				WhereClause: &Condition{
 					Left: Value{
 						Path: &Path{
 							Fields: []Field{
@@ -276,7 +276,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -293,7 +293,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -310,7 +310,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -334,7 +334,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -358,57 +358,57 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
-		{
-			query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
-			expected: &ParsedQuery{
-				Invocation: Invocation{
-					Function: "set",
-					Arguments: []Value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: testhelper.Strp("test"),
-									},
-								},
-							},
-						},
-						{
-							IsNil: (*IsNil)(testhelper.Boolp(true)),
-						},
-					},
-				},
-				Condition: nil,
-			},
-		},
-		{
-			query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
-			expected: &ParsedQuery{
-				Invocation: Invocation{
-					Function: "set",
-					Arguments: []Value{
-						{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name:   "attributes",
-										MapKey: testhelper.Strp("test"),
-									},
-								},
-							},
-						},
-						{
-							IsNil: (*IsNil)(testhelper.Boolp(true)),
-						},
-					},
-				},
-				Condition: nil,
-			},
-		},
+		// {
+		// 	query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
+		// 	expected: &ParsedQuery{
+		// 		Invocation: Invocation{
+		// 			Function: "set",
+		// 			Arguments: []Value{
+		// 				{
+		// 					Path: &Path{
+		// 						Fields: []Field{
+		// 							{
+		// 								Name:   "attributes",
+		// 								MapKey: testhelper.Strp("test"),
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 				{
+		// 					IsNil: (*IsNil)(testhelper.Boolp(true)),
+		// 				},
+		// 			},
+		// 		},
+		// 		WhereClause: nil,
+		// 	},
+		// },
+		// {
+		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
+		// 	expected: &ParsedQuery{
+		// 		Invocation: Invocation{
+		// 			Function: "set",
+		// 			Arguments: []Value{
+		// 				{
+		// 					Path: &Path{
+		// 						Fields: []Field{
+		// 							{
+		// 								Name:   "attributes",
+		// 								MapKey: testhelper.Strp("test"),
+		// 							},
+		// 						},
+		// 					},
+		// 				},
+		// 				{
+		// 					IsNil: (*IsNil)(testhelper.Boolp(true)),
+		// 				},
+		// 			},
+		// 		},
+		// 		WhereClause: nil,
+		// 	},
+		// },
 	}
 
 	for _, tt := range tests {

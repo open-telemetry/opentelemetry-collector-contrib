@@ -25,16 +25,16 @@ import (
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
 type ParsedQuery struct {
-	Invocation Invocation `@@`
-	Condition  *Condition `( "where" @@ )?`
+	Invocation  Invocation `@@`
+	WhereClause *Condition `( "where" @@ )?`
 }
 
-// type Expression struct {
-// 	Comparison    *Comparison `( @@`
-// 	Subexpression *Expression `| "(" @@ ")"`
-// }
+type BooleanExpression struct {
+	Comparison    *Condition         `( @@`
+	Subexpression *BooleanExpression `| "(" @@ ")"`
+}
 
-// Comparison represents an optional boolean condition on the RHS of a query.
+// Condition represents an optional boolean condition on the RHS of a query.
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
@@ -127,7 +127,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
+		condition, err := newConditionEvaluator(parsed.WhereClause, functions, pathParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -155,11 +155,17 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 	return parsed, nil
 }
 
+// buildLexer constructs a SimpleLexer definition.
+// Note that the ordering of these rules matters:
+// - Bytes has to precede numbers
+// - Numbers have to precede Operators
+// - Operators has to precede Indent
+// It's in a separate function so it can be easily tested alone (see lexer_test.go).
 func buildLexer() *lexer.StatefulDefinition {
 	return lexer.MustSimple([]lexer.SimpleRule{
+		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
-		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
 		{Name: `Operators`, Pattern: `\b[aA][nN][dD]\b|\b[oO][rR]\b|==|!=|[,.()\[\]]`},
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
