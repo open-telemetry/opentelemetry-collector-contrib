@@ -35,7 +35,7 @@ type Factor struct {
 }
 
 type OpFactor struct {
-	Operator string  `@("*" | "/")`
+	Operator string  `@OpAnd`
 	Factor   *Factor `@@`
 }
 
@@ -45,7 +45,7 @@ type Term struct {
 }
 
 type OpTerm struct {
-	Operator string `@("or")`
+	Operator string `@OpOr`
 	Term     *Term  `@@`
 }
 
@@ -59,7 +59,7 @@ type BooleanExpression struct {
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
-	Op    string `@("==" | "!=")`
+	Op    string `@OpEq`
 	Right Value  `@@`
 }
 
@@ -185,8 +185,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `OpOr`, Pattern: `\b[oO][rR]\b`},
-		{Name: `OpAnd`, Pattern: `\b[aA][nN][dD]\b`},
+		{Name: `OpOr`, Pattern: `\b(?i:or)\b`},
+		{Name: `OpAnd`, Pattern: `\b(?i:and)\b`},
 		{Name: `OpEq`, Pattern: `==|!=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},

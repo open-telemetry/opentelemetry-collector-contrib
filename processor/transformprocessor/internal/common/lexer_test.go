@@ -68,12 +68,12 @@ func Test_lexer(t *testing.T) {
 			{"Ident", "oreo"},
 			{"Ident", "corn"}, // should not parse "or" as an operator
 		}},
-		{"g", "if, and, or but", false, []result{
+		{"g", "if, AND, Or but", false, []result{
 			{"Ident", "if"},
 			{"Punct", ","},
-			{"OpAnd", "and"}, // should parse "or" as an operator
+			{"OpAnd", "AND"},
 			{"Punct", ","},
-			{"OpOr", "or"}, // should parse "or" as an operator
+			{"OpOr", "Or"},
 			{"Ident", "but"},
 		}},
 		{"h", "{}", true, []result{
@@ -102,6 +102,7 @@ func Test_lexer(t *testing.T) {
 			for tok, err := x.Next(); tok.EOF() != true; tok, err = x.Next() {
 				fmt.Println(tok)
 				if tt.expectErr {
+					// if we expected an error, just make sure there was one and don't check anything else
 					assert.Error(t, err)
 					break
 				}
