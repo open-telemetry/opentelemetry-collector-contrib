@@ -16,6 +16,10 @@
 # RUN `python scripts/generate_instrumentation_bootstrap.py` TO REGENERATE.
 
 libraries = {
+    "aio_pika": {
+        "library": "aio_pika ~= 7.2.0",
+        "instrumentation": "opentelemetry-instrumentation-aio-pika==0.31b0",
+    },
     "aiohttp": {
         "library": "aiohttp ~= 3.0",
         "instrumentation": "opentelemetry-instrumentation-aiohttp-client==0.31b0",
