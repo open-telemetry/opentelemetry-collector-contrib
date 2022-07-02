@@ -5,7 +5,7 @@ change_type: enhancement
 component: flinkmetricsreceiver
 
 # A brief description of the change
-note: Ddd attribute values to metadata
+note: Add attribute values to metadata
 
 # One or more tracking issues related to the change
 issues: [11520]
