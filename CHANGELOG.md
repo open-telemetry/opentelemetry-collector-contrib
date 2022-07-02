@@ -118,7 +118,6 @@
 - `transformprocessor`: Fix issue where some trace fields were not working correctly in conditions. (#10471)
 - `transformprocessor`: Fix issue where some log fields were not working correctly in conditions. (#10903)
 - `pkg/stanza`: Skip building fingerprint in case of configuration change (#10485)
-- `googlecloudexporter`: add error checks to googlecloudexporter package. (#10366)
 - `windowseventlogreceiver`: Fixed example config in readme (#10971)
 - `pkg/stanza`: Fix access to atomic variable without using atomic package (#11023)
 - `exporter/awsemfexporter:`: Fix dead links in README.md. (#11027)
