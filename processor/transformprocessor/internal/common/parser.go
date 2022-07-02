@@ -26,8 +26,8 @@ import (
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
 type ParsedQuery struct {
-	Invocation  Invocation `@@`
-	WhereClause *Condition `( "where" @@ )?`
+	Invocation  Invocation    `@@`
+	WhereClause *BooleanValue `( "where" @@ )?`
 }
 
 // BooleanValue represents something that evaluates to a boolean --
@@ -37,31 +37,32 @@ type ParsedQuery struct {
 type BooleanValue struct {
 	Condition *Condition    `( @@`
 	Expr      *BooleanValue `| @@`
-	SubExpr   *BooleanValue `| @Lparen @@ @RParen )`
+	SubExpr   *BooleanValue `| "(" @@ ")" )`
 }
 
-// OpBooleanValue represents
+// OpBooleanValue represents the right side of an AND boolean expression.
 // nolint:govet
 type OpBooleanValue struct {
 	Operator string        `@OpAnd`
 	Value    *BooleanValue `@@`
 }
 
-// Term represents
+// Term represents an arbitrary number of boolean values separated by AND.
 // nolint:govet
 type Term struct {
 	Left  *BooleanValue     `@@`
 	Right []*OpBooleanValue `@@*`
 }
 
-// OpTerm represents
+// OpTerm represents the right side of an OR boolean expression.
 // nolint:govet
 type OpTerm struct {
 	Operator string `@OpOr`
 	Term     *Term  `@@`
 }
 
-// BooleanExpression represents a true/false decision.
+// BooleanExpression represents a true/false decision expressed
+// as an arbitrary number of terms separated by OR
 // nolint:govet
 type BooleanExpression struct {
 	Left  *Term     `@@`
@@ -161,7 +162,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newConditionEvaluator(parsed.WhereClause, functions, pathParser)
+		condition, err := newBooleanValueEvaluator(parsed.WhereClause, functions, pathParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue

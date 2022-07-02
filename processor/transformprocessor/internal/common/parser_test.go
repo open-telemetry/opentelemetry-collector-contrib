@@ -160,19 +160,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanValue{
+					Condition: &Condition{
+						Left: Value{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
+									},
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: testhelper.Strp("fido"),
+						Op: "==",
+						Right: Value{
+							String: testhelper.Strp("fido"),
+						},
 					},
 				},
 			},
@@ -204,19 +206,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanValue{
+					Condition: &Condition{
+						Left: Value{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
+									},
 								},
 							},
 						},
-					},
-					Op: "!=",
-					Right: Value{
-						String: testhelper.Strp("fido"),
+						Op: "!=",
+						Right: Value{
+							String: testhelper.Strp("fido"),
+						},
 					},
 				},
 			},
@@ -248,19 +252,21 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanValue{
+					Condition: &Condition{
+						Left: Value{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name: "name",
+									},
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: testhelper.Strp("fido"),
+						Op: "==",
+						Right: Value{
+							String: testhelper.Strp("fido"),
+						},
 					},
 				},
 			},
