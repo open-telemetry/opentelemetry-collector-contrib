@@ -29,9 +29,30 @@ type ParsedQuery struct {
 	WhereClause *Condition `( "where" @@ )?`
 }
 
+type Factor struct {
+	Base     *Value `@@`
+	Exponent *Value `( "^" @@ )?`
+}
+
+type OpFactor struct {
+	Operator string  `@("*" | "/")`
+	Factor   *Factor `@@`
+}
+
+type Term struct {
+	Left  *Factor     `@@`
+	Right []*OpFactor `@@*`
+}
+
+type OpTerm struct {
+	Operator string `@("or")`
+	Term     *Term  `@@`
+}
+
+// BooleanExpression represents a true/false decision.
 type BooleanExpression struct {
-	Comparison    *Condition         `( @@`
-	Subexpression *BooleanExpression `| "(" @@ ")"`
+	Left  *Term     `@@`
+	Right []*OpTerm `@@*`
 }
 
 // Condition represents an optional boolean condition on the RHS of a query.
@@ -156,10 +177,7 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 }
 
 // buildLexer constructs a SimpleLexer definition.
-// Note that the ordering of these rules matters:
-// - Bytes has to precede numbers
-// - Numbers have to precede Operators
-// - Operators has to precede Indent
+// Note that the ordering of these rules matters.
 // It's in a separate function so it can be easily tested alone (see lexer_test.go).
 func buildLexer() *lexer.StatefulDefinition {
 	return lexer.MustSimple([]lexer.SimpleRule{
@@ -167,7 +185,12 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `Operators`, Pattern: `\b[aA][nN][dD]\b|\b[oO][rR]\b|==|!=|[,.()\[\]]`},
+		{Name: `OpOr`, Pattern: `\b[oO][rR]\b`},
+		{Name: `OpAnd`, Pattern: `\b[aA][nN][dD]\b`},
+		{Name: `OpEq`, Pattern: `==|!=`},
+		{Name: `LParen`, Pattern: `\(`},
+		{Name: `RParen`, Pattern: `\)`},
+		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})

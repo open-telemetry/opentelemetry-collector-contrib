@@ -18,8 +18,18 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/alecthomas/participle/v2/lexer"
 	"github.com/stretchr/testify/assert"
 )
+
+func nameOf(def *lexer.StatefulDefinition, val lexer.TokenType) string {
+	for name, value := range def.Symbols() {
+		if val == value {
+			return name
+		}
+	}
+	return "unknown"
+}
 
 func Test_lexer(t *testing.T) {
 	type result struct {
@@ -37,7 +47,7 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"b", "3==4.9", false, []result{
 			{"Int", "3"},
-			{"Operators", "=="},
+			{"OpEq", "=="},
 			{"Float", "4.9"},
 		}},
 		{"c", "foo bar bazz", false, []result{
@@ -51,7 +61,7 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"e", "iphone and roid", false, []result{
 			{"Ident", "iphone"},
-			{"Operators", "and"}, // should parse "and" as an operator
+			{"OpAnd", "and"}, // should parse "and" as an operator
 			{"Ident", "roid"},
 		}},
 		{"f", "oreo corn", false, []result{
@@ -60,10 +70,10 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"g", "if, and, or but", false, []result{
 			{"Ident", "if"},
-			{"Operators", ","},
-			{"Operators", "and"}, // should parse "or" as an operator
-			{"Operators", ","},
-			{"Operators", "or"}, // should parse "or" as an operator
+			{"Punct", ","},
+			{"OpAnd", "and"}, // should parse "or" as an operator
+			{"Punct", ","},
+			{"OpOr", "or"}, // should parse "or" as an operator
 			{"Ident", "but"},
 		}},
 		{"h", "{}", true, []result{
@@ -71,14 +81,14 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"i", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
 			{"Ident", "set"},
-			{"Operators", "("},
+			{"LParen", "("},
 			{"Ident", "attributes"},
-			{"Operators", "["},
+			{"Punct", "["},
 			{"String", `"bytes"`},
-			{"Operators", "]"},
-			{"Operators", ","},
+			{"Punct", "]"},
+			{"Punct", ","},
 			{"Bytes", "0x0102030405060708"},
-			{"Operators", ")"},
+			{"RParen", ")"},
 		}},
 	}
 
@@ -97,7 +107,8 @@ func Test_lexer(t *testing.T) {
 				}
 				assert.NoError(t, err)
 				assert.Equal(t, tt.output[i].val, tok.String())
-				assert.Equal(t, symbols[tt.output[i].typ], tok.Type, "expected '%s' to be %s, symbols was %v", tok.String(), tt.output[i].typ, symbols)
+				assert.Equal(t, symbols[tt.output[i].typ], tok.Type,
+					"expected '%s' to be %s, got %v", tok.String(), tt.output[i].typ, nameOf(lexDef, tok.Type))
 				i++
 			}
 		})
