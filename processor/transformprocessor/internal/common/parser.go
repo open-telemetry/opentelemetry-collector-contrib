@@ -16,6 +16,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/hex"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -29,33 +30,45 @@ type ParsedQuery struct {
 	WhereClause *Condition `( "where" @@ )?`
 }
 
-type Factor struct {
-	Base     *Value `@@`
-	Exponent *Value `( "^" @@ )?`
+// BooleanValue represents something that evaluates to a boolean --
+// either an equality or inequality, explicit true or false, or
+// a parenthesized subexpression.
+// nolint:govet
+type BooleanValue struct {
+	Condition *Condition    `( @@`
+	Expr      *BooleanValue `| @@`
+	SubExpr   *BooleanValue `| @Lparen @@ @RParen )`
 }
 
-type OpFactor struct {
-	Operator string  `@OpAnd`
-	Factor   *Factor `@@`
+// OpBooleanValue represents
+// nolint:govet
+type OpBooleanValue struct {
+	Operator string        `@OpAnd`
+	Value    *BooleanValue `@@`
 }
 
+// Term represents
+// nolint:govet
 type Term struct {
-	Left  *Factor     `@@`
-	Right []*OpFactor `@@*`
+	Left  *BooleanValue     `@@`
+	Right []*OpBooleanValue `@@*`
 }
 
+// OpTerm represents
+// nolint:govet
 type OpTerm struct {
 	Operator string `@OpOr`
 	Term     *Term  `@@`
 }
 
 // BooleanExpression represents a true/false decision.
+// nolint:govet
 type BooleanExpression struct {
 	Left  *Term     `@@`
 	Right []*OpTerm `@@*`
 }
 
-// Condition represents an optional boolean condition on the RHS of a query.
+// Condition represents an optional boolean condition.
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
@@ -79,7 +92,7 @@ type Value struct {
 	String     *string     `| @String`
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
-	Bool       *Boolean    `| @("true" | "false")`
+	Bool       *Boolean    `| @Boolean`
 	IsNil      *IsNil      `| @"nil"`
 	Path       *Path       `| @@ )`
 }
@@ -122,7 +135,7 @@ func (b *Bytes) Capture(values []string) error {
 type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
-	*b = values[0] == "true"
+	*b = Boolean(strings.EqualFold(values[0], "true"))
 	return nil
 }
 
@@ -188,6 +201,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `OpOr`, Pattern: `\b(?i:or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(?i:and)\b`},
 		{Name: `OpEq`, Pattern: `==|!=`},
+		{Name: `Boolean`, Pattern: `\b(?i:true|false)\b`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
@@ -206,7 +220,7 @@ func newParser() *participle.Parser {
 		participle.Elide("whitespace"),
 	)
 	if err != nil {
-		panic("Unable to initialize parser; this is a programming error in the transformprocessor")
+		panic("Unable to initialize parser; this is a programming error in the transformprocessor:" + err.Error())
 	}
 	return parser
 }
