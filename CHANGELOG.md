@@ -93,6 +93,7 @@
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
 
+
 ## v0.53.0
 
 ### 🛑 Breaking changes 🛑
