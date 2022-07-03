@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
@@ -105,7 +104,9 @@ func (r *receiver) emitterLoop(ctx context.Context) {
 				continue
 			}
 
-			r.converter.Batch(e)
+			if err := r.converter.Batch(e); err != nil {
+				r.logger.Error("Could not add entry to batch", zap.Error(err))
+			}
 		}
 	}
 }

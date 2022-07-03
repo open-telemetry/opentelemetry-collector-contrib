@@ -14,12 +14,13 @@
 # NOTE: Lines should be entered in the following format:
 # <component_path_relative_from_project_root>/<min_1_space><owner_1><space><owner_2><space>..<owner_n>
 # extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
-# Path separator and minimum of 1 space between component path and owners is 
+# Path separator and minimum of 1 space between component path and owners is
 # important for validation steps
 #
 
 * @open-telemetry/collector-contrib-approvers
 
+cmd/chloggen/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
@@ -99,6 +100,7 @@ pkg/resourcetotelemetry/                             @open-telemetry/collector-c
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
@@ -108,7 +110,7 @@ processor/groupbyattrsprocessor/                     @open-telemetry/collector-c
 processor/groupbytraceprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/k8sattributesprocessor/                    @open-telemetry/collector-contrib-approvers @owais @dmitryax @pmm-sumo
 processor/logstransformprocessor/                    @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
-processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @punya
+processor/metricstransformprocessor/                 @open-telemetry/collector-contrib-approvers @dmitryax
 processor/probabilisticsamplerprocessor/             @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/redactionprocessor/                        @open-telemetry/collector-contrib-approvers @leonsp-ai @dmitryax @mx-psi
 processor/resourcedetectionprocessor/                @open-telemetry/collector-contrib-approvers @jrcamp @pmm-sumo @Aneurysm9 @dashpole
@@ -170,6 +172,7 @@ receiver/riakreceiver/                               @open-telemetry/collector-c
 receiver/saphanareceiver/                            @open-telemetry/collector-contrib-approvers @pmm-sumo @dehaansa
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
+receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @fatsheep9146            
 receiver/skywalkingreceiver/                         @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/sqlqueryreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins

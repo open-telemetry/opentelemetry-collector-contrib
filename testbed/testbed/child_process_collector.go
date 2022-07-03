@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
@@ -307,7 +306,7 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	ticker := time.NewTicker(cp.resourceSpec.ResourceCheckPeriod)
 	defer ticker.Stop()
 
-	//on first start must be under the cpu and ram max usage add a max minute delay
+	// on first start must be under the cpu and ram max usage add a max minute delay
 	for start := time.Now(); time.Since(start) < time.Minute; {
 		cp.fetchRAMUsage()
 		cp.fetchCPUUsage()

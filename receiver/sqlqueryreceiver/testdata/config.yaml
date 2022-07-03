@@ -9,6 +9,10 @@ receivers:
           - metric_name: val.count
             value_column: "count"
             attribute_columns: [ "type" ]
+            data_type: sum
+            value_type: int
+            monotonic: false
+            aggregation: cumulative
 exporters:
   nop:
 service:

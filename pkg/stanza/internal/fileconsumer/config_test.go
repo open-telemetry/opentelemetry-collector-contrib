@@ -30,17 +30,6 @@ import (
 func TestUnmarshal(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
-			Name:      "default",
-			ExpectErr: false,
-			Expect:    NewConfig(),
-		},
-		{
-
-			Name:      "extra_field",
-			ExpectErr: false,
-			Expect:    NewConfig(),
-		},
-		{
 			Name:      "include_one",
 			ExpectErr: false,
 			Expect: func() *Config {
@@ -274,111 +263,6 @@ func TestUnmarshal(t *testing.T) {
 			}(),
 		},
 		{
-			Name:      "include_file_name_lower",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_upper",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_on",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_name_yes",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFileName = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_lower",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_upper",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_on",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_yes",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = true
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_off",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = false
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_no",
-			ExpectErr: false,
-			Expect: func() *Config {
-				cfg := NewConfig()
-				cfg.Include = append(cfg.Include, "one.log")
-				cfg.IncludeFilePath = false
-				return cfg
-			}(),
-		},
-		{
-			Name:      "include_file_path_nonbool",
-			ExpectErr: true,
-			Expect:    nil,
-		},
-		{
 			Name:      "multiline_line_start_string",
 			ExpectErr: false,
 			Expect: func() *Config {
@@ -486,7 +370,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "utf-16le"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
 				return cfg
 			}(),
 		},
@@ -495,7 +379,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.Encoding = helper.EncodingConfig{Encoding: "UTF-16lE"}
+				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
 				return cfg
 			}(),
 		},
@@ -587,7 +471,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Encoding = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
 			},
 			require.Error,
 			nil,
@@ -667,7 +551,7 @@ func NewTestConfig() *Config {
 		LineEndPattern:   "end",
 	}
 	cfg.FingerprintSize = 1024
-	cfg.Encoding = helper.EncodingConfig{Encoding: "utf16"}
+	cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf16"}
 	return cfg
 }
 
