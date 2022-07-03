@@ -66,8 +66,6 @@
 - `mongodbatlasexporter`: Fix mongodbatlas.system.memory.usage.max not being reported (#11126)
 - `receiver/awsxrayreceiver`: Fix null span exception fields causing null pointer exception (#11431)
 - `pkg/stanza`: use ObservedTimestamp to decide if flush log for recombine operator (#11433)
-- `spanmetricsprocessor`: Fix concurrency bug causing premature key eviction (#13406)
-
 
 ## v0.53.0
 
