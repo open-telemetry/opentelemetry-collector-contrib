@@ -369,7 +369,7 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	return tags
 }
 
-func (c *WatchClient) getPodFromAPI(pod *api_v1.Pod) *Pod {
+func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:      pod.Name,
 		Namespace: pod.GetNamespace(),
@@ -452,7 +452,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
-	newPod := c.getPodFromAPI(pod)
+	newPod := c.podFromAPI(pod)
 
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -472,8 +472,8 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 }
 
 func (c *WatchClient) forgetPod(pod *api_v1.Pod) {
-	newPod := c.getPodFromAPI(pod)
-	for _, id := range c.getIdentifiersFromAssoc(newPod) {
+	podToRemove := c.podFromAPI(pod)
+	for _, id := range c.getIdentifiersFromAssoc(podToRemove) {
 		p, ok := c.GetPod(id)
 
 		if ok && p.Name == pod.Name {

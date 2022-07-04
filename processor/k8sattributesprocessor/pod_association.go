@@ -33,7 +33,7 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 		return extractPodIDNoAssociations(ctx, attrs)
 	}
 
-	connectionIP := getConnectionIP(ctx)
+	connectionIP := connectionIP(ctx)
 	for _, asso := range associations {
 		skip := false
 
@@ -42,11 +42,11 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 			// If association configured to take IP address from connection
 			switch {
 			case source.From == kube.ConnectionSource:
-				if connectionIP.Value == "" {
+				if connectionIP == "" {
 					skip = true
 					break
 				}
-				ret[i] = connectionIP
+				ret[i] = kube.PodIdentifierAttributeFromConnection(connectionIP)
 			case source.From == kube.ResourceSource:
 				// Extract values based on configured resource_attribute.
 				attributeValue := stringAttributeFromMap(attrs, source.Name)
@@ -92,10 +92,10 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 		}
 	}
 
-	connectionIP := getConnectionIP(ctx)
-	if connectionIP.Value != "" {
+	connectionIP := connectionIP(ctx)
+	if connectionIP != "" {
 		return kube.PodIdentifier{
-			connectionIP,
+			kube.PodIdentifierAttributeFromConnection(connectionIP),
 		}
 	}
 
@@ -109,18 +109,18 @@ func extractPodIDNoAssociations(ctx context.Context, attrs pcommon.Map) kube.Pod
 	return kube.PodIdentifier{}
 }
 
-func getConnectionIP(ctx context.Context) kube.PodIdentifierAttribute {
+func connectionIP(ctx context.Context) string {
 	c := client.FromContext(ctx)
 	if c.Addr == nil {
-		return kube.PodIdentifierAttribute{}
+		return ""
 	}
 	switch addr := c.Addr.(type) {
 	case *net.UDPAddr:
-		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
+		return addr.IP.String()
 	case *net.TCPAddr:
-		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
+		return addr.IP.String()
 	case *net.IPAddr:
-		return kube.PodIdentifierAttributeFromConnection(addr.IP.String())
+		return addr.IP.String()
 	}
 
 	// If this is not a known address type, check for known "untyped" formats.
@@ -131,11 +131,11 @@ func getConnectionIP(ctx context.Context) kube.PodIdentifierAttribute {
 		ipString := c.Addr.String()[:lastColonIndex]
 		ip := net.ParseIP(ipString)
 		if ip != nil {
-			return kube.PodIdentifierAttributeFromConnection(ip.String())
+			return ip.String()
 		}
 	}
 
-	return kube.PodIdentifierAttributeFromConnection(c.Addr.String())
+	return c.Addr.String()
 
 }
 
