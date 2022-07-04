@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: enhancement
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: sapmexporter
+
+# A brief description of the change
+note: Add config option to log responses from Splunk APM
+
+# One or more tracking issues related to the change
+issues: [11425]

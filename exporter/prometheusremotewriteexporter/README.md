@@ -1,12 +1,16 @@
 # Prometheus Remote Write Exporter
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Supported pipeline types | metrics           |
+| Distributions            | [core], [contrib] |
+
 Prometheus Remote Write Exporter sends OpenTelemetry metrics
 to Prometheus [remote write compatible
 backends](https://prometheus.io/docs/operating/integrations/)
 such as Cortex and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
-
-Supported pipeline types: metrics
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are
 dropped by this exporter.
@@ -42,6 +46,8 @@ The following settings can be optionally configured:
   - `enabled`: enable the sending queue
   - `queue_size`: number of OTLP metrics that can be queued. Ignored if `enabled` is `false`
   - `num_consumers`: minimum number of workers to use to fan out the outgoing requests.
+- `resource_to_telemetry_conversion`
+  - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 
 Example:
 
@@ -53,6 +59,8 @@ exporters:
       directory: ./prom_rw # The directory to store the WAL in
       buffer_size: 100 # Optional count of elements to be read from the WAL before truncating; default of 300
       truncate_frequency: 45s # Optional frequency for how often the WAL should be truncated. It is a time.ParseDuration; default of 1m
+    resource_to_telemetry_conversion:
+      enabled: true # Convert resource attributes to metric labels
 ```
 
 Example:
@@ -77,3 +85,7 @@ Several helper files are leveraged to provide additional capabilities automatica
 ## Metric names and labels normalization
 
 OpenTelemetry metric names and attributes are normalized to be compliant with Prometheus naming rules. [Details on this normalization process are described in the Prometheus translator module](../../pkg/translator/prometheus/).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
