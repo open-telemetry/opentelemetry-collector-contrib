@@ -6,7 +6,7 @@ require (
 	github.com/leoluk/perflib_exporter v0.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.54.0
 	github.com/shirou/gopsutil/v3 v3.22.5
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.opentelemetry.io/collector/semconv v0.54.0
