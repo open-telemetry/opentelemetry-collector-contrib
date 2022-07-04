@@ -266,7 +266,7 @@ func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor
 			actual += fmt.Sprintf(`
 - sources:
   - from: %s
-  - name: %s`, assoc.From, assoc.Name)
+    name: %s`, assoc.From, assoc.Name)
 		}
 	}
 
