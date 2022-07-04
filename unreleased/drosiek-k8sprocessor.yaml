@@ -5,7 +5,7 @@ change_type: deprecation
 component: k8sattributesprocessor
 
 # A brief description of the change
-note: Announcing `pod_association` rules will be deprecated. Use `pod_associations.sources` rules instead. This is in order to support metadata enrichment based on multiple attributes.
+note: Announcing `pod_association` rules will be deprecated. Use `pod_association.sources` rules instead. This is in order to support metadata enrichment based on multiple attributes.
 
 # One or more tracking issues related to the change
 issues: [4309]
