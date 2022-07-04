@@ -70,7 +70,7 @@ func createMetricsExporter(
 		return nil, errors.New("nil config")
 	}
 	adxCfg := config.(*Config)
-	updateConfig(adxCfg, set.Logger)
+	setDefaultIngestionType(adxCfg, set.Logger)
 
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
@@ -99,7 +99,7 @@ func createTracesExporter(
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	adxCfg := config.(*Config)
-	updateConfig(adxCfg, set.Logger)
+	setDefaultIngestionType(adxCfg, set.Logger)
 
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
@@ -128,7 +128,7 @@ func createLogsExporter(
 	config config.Exporter,
 ) (exp component.LogsExporter, err error) {
 	adxCfg := config.(*Config)
-	updateConfig(adxCfg, set.Logger)
+	setDefaultIngestionType(adxCfg, set.Logger)
 
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
@@ -151,7 +151,7 @@ func createLogsExporter(
 	return exporter, nil
 }
 
-func updateConfig(config *Config, logger *zap.Logger) {
+func setDefaultIngestionType(config *Config, logger *zap.Logger) {
 	// If ingestion type is not set , it falls back to queued ingestion.
 	// This form of ingestion is always available on all clusters
 	if config.IngestionType == "" {

@@ -105,7 +105,6 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 			}
 		}
 	}
-	// Takes care of the residual data.
 	if len(logsBuffer) != 0 {
 		if err := e.ingestData(logsBuffer); err != nil {
 			return err

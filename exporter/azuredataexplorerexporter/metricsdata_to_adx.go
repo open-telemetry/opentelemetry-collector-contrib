@@ -52,7 +52,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	// default to collectors host name. Ignore the error here. This should not cause the failure of the process
 	host, err := os.Hostname()
 	if err != nil {
-		logger.Warn("Kernel hostname could not be retrieved")
+		logger.Warn("Default collector hostname could not be retrieved", zap.Error(err))
 	}
 	resourceAttrs := res.Attributes().AsRaw()
 	if h := resourceAttrs[hostkey]; h != nil {
