@@ -31,7 +31,6 @@ func Test_createDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		Endpoint:         defaultBroker,

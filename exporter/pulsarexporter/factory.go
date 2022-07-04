@@ -66,7 +66,6 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 func createDefaultConfig() config.Exporter {
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		Endpoint:         defaultBroker,
