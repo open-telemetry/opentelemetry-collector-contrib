@@ -21,20 +21,22 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr            = "azuredataexplorer"
-	managedingesttype  = "managed"
-	queuedingesttest   = "queued"
+	managedIngestType  = "managed"
+	queuedIngestTest   = "queued"
 	unknown            = "unknown"
-	defaultmetrictable = "OTELMetrics"
-	defaultlogtable    = "OTELLogs"
-	defaulttracetable  = "OTELTraces"
-	metricstype        = 1
-	logstype           = 2
-	tracestype         = 3
+	otelDb             = "oteldb"
+	defaultMetricTable = "OTELMetrics"
+	defaultLogTable    = "OTELLogs"
+	defaultTraceTable  = "OTELTraces"
+	metricsType        = 1
+	logsType           = 2
+	tracesType         = 3
 )
 
 // Creates a factory for the ADX Exporter
@@ -51,15 +53,11 @@ func NewFactory() component.ExporterFactory {
 /*Create default configurations*/
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ClusterUri:      "https://CLUSTER.kusto.windows.net",
-		ApplicationId:   unknown,
-		ApplicationKey:  unknown,
-		TenantId:        unknown,
-		Database:        unknown,
-		OTELMetricTable: defaultmetrictable,
-		OTELLogTable:    defaultlogtable,
-		OTELTraceTable:  defaulttracetable,
-		IngestionType:   queuedingesttest,
+		Database:        otelDb,
+		OTELMetricTable: defaultMetricTable,
+		OTELLogTable:    defaultLogTable,
+		OTELTraceTable:  defaultTraceTable,
+		IngestionType:   queuedIngestTest,
 	}
 }
 
@@ -72,15 +70,11 @@ func createMetricsExporter(
 		return nil, errors.New("nil config")
 	}
 	adxCfg := config.(*Config)
-	// In case the ingestion type is not set , it falls back to queued ingestion.
-	// This form of ingestion is always available on all clusters
-	if adxCfg.IngestionType == "" {
-		set.Logger.Warn("Ingestion type is not set , will be defaulted to queued ingestion")
-		adxCfg.IngestionType = queuedingesttest
-	}
+	updateConfig(adxCfg, set.Logger)
+
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, metricstype)
+	adp, err := newExporter(adxCfg, set.Logger, metricsType)
 
 	if err != nil {
 		return nil, err
@@ -105,15 +99,11 @@ func createTracesExporter(
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	adxCfg := config.(*Config)
-	// In case the ingestion type is not set , it falls back to queued ingestion.
-	// This form of ingestion is always available on all clusters
-	if adxCfg.IngestionType == "" {
-		set.Logger.Warn("Ingestion type is not set , will be defaulted to queued ingestion")
-		adxCfg.IngestionType = queuedingesttest
-	}
+	updateConfig(adxCfg, set.Logger)
+
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, tracestype)
+	adp, err := newExporter(adxCfg, set.Logger, tracesType)
 
 	if err != nil {
 		return nil, err
@@ -138,15 +128,11 @@ func createLogsExporter(
 	config config.Exporter,
 ) (exp component.LogsExporter, err error) {
 	adxCfg := config.(*Config)
-	// In case the ingestion type is not set , it falls back to queued ingestion.
-	// This form of ingestion is always available on all clusters
-	if adxCfg.IngestionType == "" {
-		set.Logger.Warn("Ingestion type is not set , will be defaulted to queued ingestion")
-		adxCfg.IngestionType = queuedingesttest
-	}
+	updateConfig(adxCfg, set.Logger)
+
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, logstype)
+	adp, err := newExporter(adxCfg, set.Logger, logsType)
 
 	if err != nil {
 		return nil, err
@@ -163,4 +149,13 @@ func createLogsExporter(
 		return nil, err
 	}
 	return exporter, nil
+}
+
+func updateConfig(config *Config, logger *zap.Logger) {
+	// If ingestion type is not set , it falls back to queued ingestion.
+	// This form of ingestion is always available on all clusters
+	if config.IngestionType == "" {
+		logger.Warn("Ingestion type is not set , will be defaulted to queued ingestion")
+		config.IngestionType = queuedIngestTest
+	}
 }

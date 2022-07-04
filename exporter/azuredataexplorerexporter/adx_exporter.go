@@ -35,7 +35,7 @@ import (
 type adxDataProducer struct {
 	client        *kusto.Client       // client for logs , traces and metrics
 	ingestor      ingest.Ingestor     // ingestion for  logs, traces and metrics
-	ingestoptions []ingest.FileOption // Options for the ingestion
+	ingestOptions []ingest.FileOption // Options for the ingestion
 	logger        *zap.Logger         // Loggers for tracing the flow
 }
 
@@ -50,35 +50,35 @@ const (
 
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-	transformedadxmetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
-	metricsBuffer := make([]string, len(transformedadxmetrics))
+	transformedAdxMetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
+	metricsBuffer := make([]string, len(transformedAdxMetrics))
 	if err != nil {
 		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
 		return err
 	}
 	// Since the transform succeeded ,  using the option for ingestion ingest the data into ADX
-	for idx, tm := range transformedadxmetrics {
-		adxmetricjsonstring, err := jsoniter.MarshalToString(tm)
+	for idx, tm := range transformedAdxMetrics {
+		adxMetricJsonString, err := jsoniter.MarshalToString(tm)
 		if err != nil {
 			e.logger.Error("Error performing serialization of data.", zap.Error(err))
 		}
-		metricsBuffer[idx] = adxmetricjsonstring
+		metricsBuffer[idx] = adxMetricJsonString
 	}
 	if len(metricsBuffer) != 0 {
 		if err := e.ingestData(metricsBuffer); err != nil {
 			return err
 		}
 	}
-	metricsflushed := len(transformedadxmetrics)
-	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsflushed)
+	metricsFlushed := len(transformedAdxMetrics)
+	e.logger.Sugar().Infof("Flushing %d metrics to sink", metricsFlushed)
 	return nil
 }
 
 func (e *adxDataProducer) ingestData(b []string) error {
 
-	ingestreader := strings.NewReader(strings.Join(b, nextline))
+	ingestReader := strings.NewReader(strings.Join(b, nextline))
 
-	if _, err := e.ingestor.FromReader(context.Background(), ingestreader, e.ingestoptions...); err != nil {
+	if _, err := e.ingestor.FromReader(context.Background(), ingestReader, e.ingestOptions...); err != nil {
 		e.logger.Error("Error performing managed data ingestion.", zap.Error(err))
 		return err
 	}
@@ -86,22 +86,22 @@ func (e *adxDataProducer) ingestData(b []string) error {
 }
 
 func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
-	resourcelogs := logData.ResourceLogs()
+	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
-	for i := 0; i < resourcelogs.Len(); i++ {
-		resource := resourcelogs.At(i)
-		scopelogs := resourcelogs.At(i).ScopeLogs()
-		for j := 0; j < scopelogs.Len(); j++ {
-			scope := scopelogs.At(j)
-			logs := scopelogs.At(j).LogRecords()
+	for i := 0; i < resourceLogs.Len(); i++ {
+		resource := resourceLogs.At(i)
+		scopeLogs := resourceLogs.At(i).ScopeLogs()
+		for j := 0; j < scopeLogs.Len(); j++ {
+			scope := scopeLogs.At(j)
+			logs := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				logdata := logs.At(k)
-				transformedadxlog := mapToAdxLog(resource.Resource(), scope.Scope(), logdata, e.logger)
-				adxlogjsonbytes, err := jsoniter.MarshalToString(transformedadxlog)
+				logData := logs.At(k)
+				transformedADXLog := mapToAdxLog(resource.Resource(), scope.Scope(), logData, e.logger)
+				adxLogJsonBytes, err := jsoniter.MarshalToString(transformedADXLog)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				logsBuffer = append(logsBuffer, adxlogjsonbytes)
+				logsBuffer = append(logsBuffer, adxLogJsonBytes)
 			}
 		}
 	}
@@ -115,26 +115,25 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 }
 
 func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
-	resourcespans := traceData.ResourceSpans()
+	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
-	for i := 0; i < resourcespans.Len(); i++ {
-		resource := resourcespans.At(i)
-		scopespans := resourcespans.At(i).ScopeSpans()
-		for j := 0; j < scopespans.Len(); j++ {
-			scope := scopespans.At(j)
-			spans := scopespans.At(j).Spans()
+	for i := 0; i < resourceSpans.Len(); i++ {
+		resource := resourceSpans.At(i)
+		scopeSpans := resourceSpans.At(i).ScopeSpans()
+		for j := 0; j < scopeSpans.Len(); j++ {
+			scope := scopeSpans.At(j)
+			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				spandata := spans.At(k)
-				transformedadxtrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spandata, e.logger)
-				adxtracejsonbytes, err := jsoniter.MarshalToString(transformedadxtrace)
+				spanData := spans.At(k)
+				transformedADXTrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spanData, e.logger)
+				adxTraceJsonBytes, err := jsoniter.MarshalToString(transformedADXTrace)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				spanBuffer = append(spanBuffer, adxtracejsonbytes)
+				spanBuffer = append(spanBuffer, adxTraceJsonBytes)
 			}
 		}
 	}
-	// Takes care of the residual data.
 	if len(spanBuffer) != 0 {
 		if err := e.ingestData(spanBuffer); err != nil {
 			return err
@@ -165,12 +164,12 @@ func (adp *adxDataProducer) Close(context.Context) error {
 /*
 Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
 */
-func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*adxDataProducer, error) {
-	tablename, err := getTableName(config, telemetrydatatype)
+func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*adxDataProducer, error) {
+	tableName, err := getTableName(config, telemetryDataType)
 	if err != nil {
 		return nil, err
 	}
-	metricclient, err := buildAdxClient(config)
+	metricClient, err := buildAdxClient(config)
 
 	if err != nil {
 		return nil, err
@@ -178,22 +177,22 @@ func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*ad
 
 	var ingestor ingest.Ingestor
 
-	var ingestoptions []ingest.FileOption
-	ingestoptions = append(ingestoptions, ingest.FileFormat(ingest.JSON))
+	var ingestOptions []ingest.FileOption
+	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
 	// Expect that this mapping is already existent
-	if refoption := getMappingRef(config, telemetrydatatype); refoption != nil {
-		ingestoptions = append(ingestoptions, refoption)
+	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
+		ingestOptions = append(ingestOptions, refOption)
 	}
 	// The exporter could be configured to run in either modes. Using managedstreaming or batched queueing
-	if strings.ToLower(config.IngestionType) == managedingesttype {
-		mi, err := createManagedStreamingIngestor(config, metricclient, tablename)
+	if strings.ToLower(config.IngestionType) == managedIngestType {
+		mi, err := createManagedStreamingIngestor(config, metricClient, tableName)
 		if err != nil {
 			return nil, err
 		}
 		ingestor = mi
 		err = nil
 	} else {
-		qi, err := createQueuedIngestor(config, metricclient, tablename)
+		qi, err := createQueuedIngestor(config, metricClient, tableName)
 		if err != nil {
 			return nil, err
 		}
@@ -201,8 +200,8 @@ func newExporter(config *Config, logger *zap.Logger, telemetrydatatype int) (*ad
 		err = nil
 	}
 	return &adxDataProducer{
-		client:        metricclient,
-		ingestoptions: ingestoptions,
+		client:        metricClient,
+		ingestOptions: ingestOptions,
 		ingestor:      ingestor,
 		logger:        logger,
 	}, nil
@@ -213,17 +212,17 @@ Common functions that are used by all the 3 parts of OTEL , namely Traces , Logs
 */
 
 /* Fetchs the coresponding ingetionRef if the mapping is provided*/
-func getMappingRef(config *Config, telemetrydatatype int) ingest.FileOption {
-	switch telemetrydatatype {
-	case metricstype:
+func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
+	switch telemetryDataType {
+	case metricsType:
 		if !isEmpty(config.OTELMetricTableMapping) {
 			return ingest.IngestionMappingRef(config.OTELMetricTableMapping, ingest.JSON)
 		}
-	case tracestype:
+	case tracesType:
 		if !isEmpty(config.OTELTraceTableMapping) {
 			return ingest.IngestionMappingRef(config.OTELTraceTableMapping, ingest.JSON)
 		}
-	case logstype:
+	case logsType:
 		if !isEmpty(config.OTELLogTableMapping) {
 			return ingest.IngestionMappingRef(config.OTELLogTableMapping, ingest.JSON)
 		}
@@ -267,11 +266,11 @@ func getScopeMap(sc pcommon.InstrumentationScope) map[string]interface{} {
 
 func getTableName(config *Config, telemetrydatatype int) (string, error) {
 	switch telemetrydatatype {
-	case metricstype:
+	case metricsType:
 		return config.OTELMetricTable, nil
-	case logstype:
+	case logsType:
 		return config.OTELLogTable, nil
-	case tracestype:
+	case tracesType:
 		return config.OTELTraceTable, nil
 	}
 	return "", errors.New("invalid telemetry datatype")

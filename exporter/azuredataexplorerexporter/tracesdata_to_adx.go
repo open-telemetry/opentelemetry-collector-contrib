@@ -38,9 +38,9 @@ type Link struct {
 
 func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope, spanData ptrace.Span, logger *zap.Logger) *AdxTrace {
 
-	traceattrib := spanData.Attributes().AsRaw()
-	clonedtraceattrib := cloneMap(traceattrib)
-	copyAttributes(clonedtraceattrib, getScopeMap(scope))
+	traceAttrib := spanData.Attributes().AsRaw()
+	clonedTraceAttrib := cloneMap(traceAttrib)
+	copyMap(clonedTraceAttrib, getScopeMap(scope))
 
 	return &AdxTrace{
 		TraceId:            spanData.TraceID().HexString(),
@@ -52,7 +52,7 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 		StartTime:          spanData.StartTimestamp().AsTime().Format(time.RFC3339),
 		EndTime:            spanData.EndTimestamp().AsTime().Format(time.RFC3339),
 		ResourceAttributes: resource.Attributes().AsRaw(),
-		TraceAttributes:    clonedtraceattrib,
+		TraceAttributes:    clonedTraceAttrib,
 		Events:             getEventsData(spanData),
 		Links:              getLinksData(spanData),
 	}

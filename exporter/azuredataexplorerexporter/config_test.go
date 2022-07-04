@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			OTELMetricTable: "OTELMetrics",
 			OTELLogTable:    "OTELLogs",
 			OTELTraceTable:  "OTELTraces",
-			IngestionType:   managedingesttype,
+			IngestionType:   managedIngestType,
 		},
 		exporter)
 

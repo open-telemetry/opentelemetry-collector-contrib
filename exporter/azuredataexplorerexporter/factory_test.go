@@ -58,15 +58,15 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 	// the fallback should be queued
-	assert.Equal(t, queuedingesttest, adxCfg.IngestionType)
+	assert.Equal(t, queuedIngestTest, adxCfg.IngestionType)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
-	assert.Equal(t, unknown, cfg.Database)
-	assert.Equal(t, queuedingesttest, cfg.IngestionType)
+	assert.Equal(t, otelDb, cfg.Database)
+	assert.Equal(t, queuedIngestTest, cfg.IngestionType)
 }
 
 // Given a new factory and no-op exporter , the LogExporter exporter should work.
@@ -100,7 +100,7 @@ func TestCreateLogsExporterWhenIngestEmpty(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 	// the fallback should be queued
-	assert.Equal(t, queuedingesttest, adxCfg.IngestionType)
+	assert.Equal(t, queuedIngestTest, adxCfg.IngestionType)
 }
 
 // Given a new factory and no-op exporter , the LogExporter exporter should work.
@@ -134,5 +134,5 @@ func TestCreateTracesExporterWhenIngestEmpty(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, exporter)
 	// the fallback should be queued
-	assert.Equal(t, queuedingesttest, adxCfg.IngestionType)
+	assert.Equal(t, queuedIngestTest, adxCfg.IngestionType)
 }

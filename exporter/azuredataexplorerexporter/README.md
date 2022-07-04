@@ -22,7 +22,7 @@ The following settings can be optionally configured and have default values:
 - `metrics_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`metrics_table_name` 
 - `logs_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`logs_table_name`
 - `traces_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`traces_table_name`
-- `ingestion_type` (default = queued): ADX ingest can happen in managed [streaming](https://docs.microsoft.com/azure/data-explorer/kusto/management/streamingingestionpolicy) or [queued](https://docs.microsoft.com/azure/data-explorer/kusto/management/batchingpolicy) modes.
+- `ingestion_type` (possible values=`queued` / `managed`,  default = queued): ADX ingest can happen in managed [streaming](https://docs.microsoft.com/azure/data-explorer/kusto/management/streamingingestionpolicy) or [queued](https://docs.microsoft.com/azure/data-explorer/kusto/management/batchingpolicy) modes.
 #### Note: [Streaming ingestion](https://docs.microsoft.com/azure/data-explorer/ingest-data-streaming?tabs=azure-portal%2Ccsharp) has to be enabled on ADX [configure the ADX cluster] in case of `streaming` option
 
 An example configuration is provided as follows:

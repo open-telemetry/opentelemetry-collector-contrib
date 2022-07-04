@@ -49,8 +49,8 @@ func (adxCfg *Config) Validate() error {
 		return errors.New(`mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
 	}
 
-	if !(adxCfg.IngestionType == managedingesttype || adxCfg.IngestionType == queuedingesttest || isEmpty(adxCfg.IngestionType)) {
-		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedingesttype, queuedingesttest, adxCfg.IngestionType)
+	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
+		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
 	}
 
 	return nil

@@ -26,9 +26,9 @@ Convert the plog to the type ADXLog, this matches the scheme in the Log table in
 
 func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, logData plog.LogRecord, logger *zap.Logger) *AdxLog {
 
-	logattrib := logData.Attributes().AsRaw()
-	clonedlogattrib := cloneMap(logattrib)
-	copyAttributes(clonedlogattrib, getScopeMap(scope))
+	logAttrib := logData.Attributes().AsRaw()
+	clonedLogAttrib := cloneMap(logAttrib)
+	copyMap(clonedLogAttrib, getScopeMap(scope))
 	adxLog := &AdxLog{
 		Timestamp:          logData.Timestamp().AsTime().Format(time.RFC3339),
 		ObservedTimestamp:  logData.ObservedTimestamp().AsTime().Format(time.RFC3339),
@@ -38,7 +38,7 @@ func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, 
 		SeverityNumber:     int32(logData.SeverityNumber()),
 		Body:               logData.Body().AsString(),
 		ResourceAttributes: resource.Attributes().AsRaw(),
-		LogsAttributes:     clonedlogattrib,
+		LogsAttributes:     clonedLogAttrib,
 	}
 	return adxLog
 }
