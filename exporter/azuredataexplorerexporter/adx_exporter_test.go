@@ -37,16 +37,16 @@ import (
 func TestNewExporter(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 	c := Config{ClusterUri: "https://CLUSTER.kusto.windows.net",
-		ApplicationId:          "unknown",
-		ApplicationKey:         "unknown",
-		TenantId:               "unknown",
-		Database:               "not-configured",
-		OTELMetricTable:        "OTELMetrics",
-		OTELLogTable:           "OTELLogs",
-		OTELTraceTable:         "OTELTraces",
-		OTELMetricTableMapping: "otelmetrics_mapping",
-		OTELLogTableMapping:    "otellogs_mapping",
-		OTELTraceTableMapping:  "oteltraces_mapping",
+		ApplicationId:      "unknown",
+		ApplicationKey:     "unknown",
+		TenantId:           "unknown",
+		Database:           "not-configured",
+		MetricTable:        "OTELMetrics",
+		LogTable:           "OTELLogs",
+		TraceTable:         "OTELTraces",
+		MetricTableMapping: "otelmetrics_mapping",
+		LogTableMapping:    "otellogs_mapping",
+		TraceTableMapping:  "oteltraces_mapping",
 	}
 	texp, err := newExporter(&c, logger, metricsType)
 	assert.Error(t, err)

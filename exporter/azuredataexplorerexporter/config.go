@@ -30,12 +30,12 @@ type Config struct {
 	ApplicationKey          string `mapstructure:"application_key"`
 	TenantId                string `mapstructure:"tenant_id"`
 	Database                string `mapstructure:"db_name"`
-	OTELMetricTable         string `mapstructure:"metrics_table_name"`
-	OTELLogTable            string `mapstructure:"logs_table_name"`
-	OTELTraceTable          string `mapstructure:"traces_table_name"`
-	OTELMetricTableMapping  string `mapstructure:"metrics_table_json_mapping"`
-	OTELLogTableMapping     string `mapstructure:"logs_table_json_mapping"`
-	OTELTraceTableMapping   string `mapstructure:"traces_table_json_mapping"`
+	MetricTable             string `mapstructure:"metrics_table_name"`
+	LogTable                string `mapstructure:"logs_table_name"`
+	TraceTable              string `mapstructure:"traces_table_name"`
+	MetricTableMapping      string `mapstructure:"metrics_table_json_mapping"`
+	LogTableMapping         string `mapstructure:"logs_table_json_mapping"`
+	TraceTableMapping       string `mapstructure:"traces_table_json_mapping"`
 	IngestionType           string `mapstructure:"ingestion_type"`
 }
 

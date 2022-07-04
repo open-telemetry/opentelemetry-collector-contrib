@@ -214,16 +214,16 @@ Common functions that are used by all the 3 parts of OTEL , namely Traces , Logs
 func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 	switch telemetryDataType {
 	case metricsType:
-		if !isEmpty(config.OTELMetricTableMapping) {
-			return ingest.IngestionMappingRef(config.OTELMetricTableMapping, ingest.JSON)
+		if !isEmpty(config.MetricTableMapping) {
+			return ingest.IngestionMappingRef(config.MetricTableMapping, ingest.JSON)
 		}
 	case tracesType:
-		if !isEmpty(config.OTELTraceTableMapping) {
-			return ingest.IngestionMappingRef(config.OTELTraceTableMapping, ingest.JSON)
+		if !isEmpty(config.TraceTableMapping) {
+			return ingest.IngestionMappingRef(config.TraceTableMapping, ingest.JSON)
 		}
 	case logsType:
-		if !isEmpty(config.OTELLogTableMapping) {
-			return ingest.IngestionMappingRef(config.OTELLogTableMapping, ingest.JSON)
+		if !isEmpty(config.LogTableMapping) {
+			return ingest.IngestionMappingRef(config.LogTableMapping, ingest.JSON)
 		}
 	}
 	return nil
@@ -266,11 +266,11 @@ func getScopeMap(sc pcommon.InstrumentationScope) map[string]interface{} {
 func getTableName(config *Config, telemetrydatatype int) (string, error) {
 	switch telemetrydatatype {
 	case metricsType:
-		return config.OTELMetricTable, nil
+		return config.MetricTable, nil
 	case logsType:
-		return config.OTELLogTable, nil
+		return config.LogTable, nil
 	case tracesType:
-		return config.OTELTraceTable, nil
+		return config.TraceTable, nil
 	}
 	return "", errors.New("invalid telemetry datatype")
 }
