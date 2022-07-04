@@ -1,8 +1,4 @@
 receivers:
-  # The following demonstrates how to enable protocols with defaults.
-  skywalking/defaults:
-    protocols:
-      grpc:
   skywalking:
     protocols:
       grpc:
@@ -15,14 +11,19 @@ receivers:
         endpoint: 0.0.0.0:12801
 
 exporters:
-  nop:
+  jaeger:
+    endpoint: localhost:14250
+    tls:
+      insecure: true
+  #zipkin:
+  #  endpoint: "http://localhost:9411/api/v2/spans"
 
 processors:
-  nop:
+  batch: {}
 
 service:
   pipelines:
     traces:
       receivers: [skywalking]
-      processors: [nop]
-      exporters: [nop]
+      processors: [batch]
+      exporters: [jaeger]

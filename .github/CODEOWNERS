@@ -20,6 +20,7 @@
 
 * @open-telemetry/collector-contrib-approvers
 
+cmd/chloggen/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
