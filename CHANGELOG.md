@@ -51,7 +51,6 @@
 - `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions (#10903)
 - `transformprocessor`: `replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics. (#11125)
 - `coralogixexporter`: Add support for metrics (#11065)
-- `coreinternal/attraction`: Supports pattern for delete and hash attractions (#10822)
 
 ### 🧰 Bug fixes 🧰
 
