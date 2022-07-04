@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.22
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3
+	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3
+	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3
 	github.com/DataDog/sketches-go v1.4.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2
 	github.com/aws/aws-sdk-go v1.44.43
@@ -29,8 +29,8 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.0 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
