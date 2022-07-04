@@ -26,7 +26,6 @@
 - `saphanareceiver`: Fix component memory query, add better error handling (#11507)
 - `sqlqueryreceiver`: Add core functionality to SQL query receiver (#10867)
 - `sapmexporter`: Add config option to log responses from Splunk APM. (#11425)
-- `transformprocessor`: Add .string accessor to get hex string for trace_id and span_id
 - `splunkhecexporter`: Update limits for max_content_length settings (#11550)
 - `filterprocessor`: Add ability to filter `Spans` (#6341)
 - `prometheusexporter` : Added a feature to prometheusexporter to export exemplars along with histogram metrics (#9945)
