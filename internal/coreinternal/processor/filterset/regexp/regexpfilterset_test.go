@@ -15,6 +15,7 @@
 package regexp
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -205,4 +206,35 @@ func TestWithCacheSize(t *testing.T) {
 
 	_, newOk := fs.cache.Get(newest)
 	assert.True(t, newOk)
+}
+
+func TestConcurrentCacheUsage(t *testing.T) {
+	fs, err := NewFilterSet(validRegexpFilters, &Config{
+		CacheEnabled:       true,
+		CacheMaxNumEntries: 10,
+	})
+	assert.NotNil(t, fs)
+	assert.NoError(t, err)
+
+	cacheUsageRoutine := func() {
+		matches := []string{
+			"prefix/test/match",
+			"test/match/suffix",
+		}
+
+		// use cache
+		for _, m := range matches {
+			fs.Matches(m)
+			fs.cache.Get(m)
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		i := i
+		t.Run(fmt.Sprintf("cache-thread-%d", i), func(t *testing.T) {
+			t.Parallel()
+			cacheUsageRoutine()
+		})
+	}
+
 }

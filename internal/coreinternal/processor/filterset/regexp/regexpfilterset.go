@@ -17,7 +17,7 @@ package regexp // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"regexp"
 
-	"github.com/golang/groupcache/lru"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 // FilterSet encapsulates a set of filters and caches match results.
@@ -32,6 +32,8 @@ type FilterSet struct {
 	cache        *lru.Cache
 }
 
+const defaultCacheSize = 512
+
 // NewFilterSet constructs a FilterSet of re2 regex strings.
 // If any of the given filters fail to compile into re2, an error is returned.
 func NewFilterSet(filters []string, cfg *Config) (*FilterSet, error) {
@@ -41,7 +43,17 @@ func NewFilterSet(filters []string, cfg *Config) (*FilterSet, error) {
 
 	if cfg != nil && cfg.CacheEnabled {
 		fs.cacheEnabled = true
-		fs.cache = lru.New(cfg.CacheMaxNumEntries)
+		var err error
+		if cfg.CacheMaxNumEntries == 0 {
+			// When cache size was not specified, use the default
+			fs.cache, err = lru.New(defaultCacheSize)
+		} else {
+			fs.cache, err = lru.New(cfg.CacheMaxNumEntries)
+		}
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := fs.addFilters(filters); err != nil {

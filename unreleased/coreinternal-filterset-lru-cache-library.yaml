@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: coreinternal/filterset
+
+# A brief description of the change
+note: Use a thread-safe LRU cache library and change `cachemaxnumentries` default setting. Due to library change, having unlimited cache (for `cachemaxnumentries= 0`) was replaced by using a cache of a default size of 512 elements
+
+# One or more tracking issues related to the change
+issues: [11829]
