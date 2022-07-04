@@ -259,14 +259,24 @@ func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor
 	deprecated := ""
 	actual := ""
 	for _, assoc := range oCfg.Association {
-		if assoc.From != "" || assoc.Name != "" {
-			deprecated += fmt.Sprintf(`
-- from: %s
-  name: %s`, assoc.From, assoc.Name)
-			actual += fmt.Sprintf(`
+		if assoc.From == "" && assoc.Name == "" {
+			continue
+		}
+
+		deprecated += fmt.Sprintf(`
+- from: %s`, assoc.From)
+		actual += fmt.Sprintf(`
 - sources:
-  - from: %s
-    name: %s`, assoc.From, assoc.Name)
+  - from: %s`, assoc.From)
+
+		if assoc.Name != "" {
+			deprecated += fmt.Sprintf(`
+  name: %s`, assoc.Name)
+		}
+
+		if assoc.From != kube.ConnectionSource {
+			actual += fmt.Sprintf(`
+    name: %s`, assoc.Name)
 		}
 	}
 
