@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.54.0
-	go.opentelemetry.io/collector/pdata v0.54.0
-	go.opentelemetry.io/collector/semconv v0.54.0
+	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector/pdata v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector/semconv v0.54.1-0.20220705210223-9f0d97ca5741
 
 )
 
@@ -51,7 +51,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.21.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/shirou/gopsutil/v3 v3.22.6 // indirect
-	github.com/spf13/cobra v1.4.0 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
