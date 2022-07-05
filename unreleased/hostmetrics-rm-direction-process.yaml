@@ -6,7 +6,7 @@ note: "Remove direction for paging metrics. The feature gate: `receiver.hostmetr
 
 issues: [11819]
 
-subtext: |2
-    - `process.disk.io` will become:
-      - `process.disk.io.read`
-      - `process.disk.io.write`
+subtext:
+  - `process.disk.io` will become:
+    - `process.disk.io.read`
+    - `process.disk.io.write`
