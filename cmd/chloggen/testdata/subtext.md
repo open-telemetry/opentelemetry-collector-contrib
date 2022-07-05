@@ -6,23 +6,10 @@
 
 ## 🛑 Breaking changes 🛑
 - `processor/oops`: Change behavior when ... (#12350)
-- `processor/oops`: Change behavior when ... (#12350)
   - foo
     - bar
   - blah
     - 1234567
-
-### 🚩 Deprecations 🚩
-- `exporter/old`: Deprecate old (#12348)
-
-### 🚀 New components 🚀
-- `exporter/new`: Add new exporter ... (#12349)
-
-### 💡 Enhancements 💡
-- `receiver/foo`: Add some bar (#12345)
-
-### 🧰 Bug fixes 🧰
-- `testbed`: Fix blah (#12346, #12347)
 
 
 ## v0.44.0
