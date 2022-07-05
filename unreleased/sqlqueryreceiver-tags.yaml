@@ -8,4 +8,4 @@ component: sqlqueryreceiver
 note: Add `static_attributes` optional configuration to allow adding attributes/tags to queried metrics. 
 
 # One or more tracking issues related to the change
-issues: []
+issues: [#11868]
