@@ -17,20 +17,21 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // gauge metrics only need a timestamp, not a
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.Timestamp) error {
+func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTs pcommon.Timestamp) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
-	dataPoint.SetStartTimestamp(ts)
-	dataPoint.SetTimestamp(ts)
+	dataPoint.SetStartTimestamp(startTs)
+	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
