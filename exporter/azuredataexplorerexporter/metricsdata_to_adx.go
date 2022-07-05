@@ -58,33 +58,43 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 	if h := resourceAttrs[hostkey]; h != nil {
 		host = h.(string)
 	}
+	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricDataType) *AdxMetric {
+		clonedScopedAttributes := cloneMap(scopeattrs)
+		copyMap(clonedScopedAttributes, attr.AsRaw())
+		if isEmpty(name) {
+			name = md.Name()
+		}
+		if isEmpty(desc) {
+			desc = md.Description()
+		}
+		return &AdxMetric{
+			Timestamp:          times.Format(time.RFC3339),
+			MetricName:         name,
+			MetricType:         mt.String(),
+			MetricUnit:         md.Unit(),
+			MetricDescription:  desc,
+			MetricValue:        value(),
+			MetricAttributes:   clonedScopedAttributes,
+			Host:               host,
+			ResourceAttributes: resourceAttrs,
+		}
+	}
 	switch md.DataType() {
 	case pmetric.MetricDataTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			clonedScopeAttrs := cloneMap(scopeattrs)
-			copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
-			var metricValue float64
-			switch dataPoint.ValueType() {
-			case pmetric.NumberDataPointValueTypeInt:
-				metricValue = float64(dataPoint.IntVal())
-			case pmetric.NumberDataPointValueTypeDouble:
-				metricValue = float64(dataPoint.DoubleVal())
-			}
-			adxMetrics[gi] = &AdxMetric{
-				Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-				MetricName:         md.Name(),
-				MetricType:         pmetric.MetricDataTypeGauge.String(),
-				MetricUnit:         md.Unit(),
-				MetricDescription:  md.Description(),
-				MetricValue:        metricValue,
-				MetricAttributes:   clonedScopeAttrs,
-				Host:               host,
-				ResourceAttributes: resourceAttrs,
-			}
-
+			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+				var metricValue float64
+				switch dataPoint.ValueType() {
+				case pmetric.NumberDataPointValueTypeInt:
+					metricValue = float64(dataPoint.IntVal())
+				case pmetric.NumberDataPointValueTypeDouble:
+					metricValue = float64(dataPoint.DoubleVal())
+				}
+				return metricValue
+			}, "", "", pmetric.MetricDataTypeGauge)
 		}
 		return adxMetrics
 	case pmetric.MetricDataTypeHistogram:
@@ -94,37 +104,25 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			dataPoint := dataPoints.At(gi)
 			bounds := dataPoint.MExplicitBounds()
 			counts := dataPoint.MBucketCounts()
-			clonedScopeAttrs := cloneMap(scopeattrs)
-			copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
 			// first, add one event for sum, and one for count
 			{
-				metricValue := dataPoint.Sum()
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
-					MetricType:         pmetric.MetricDataTypeHistogram.String(),
-					MetricUnit:         md.Unit(),
-					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), sumdescription),
-					MetricValue:        metricValue,
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+						return dataPoint.Sum()
+					},
+						fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
+						fmt.Sprintf("%s%s", md.Description(), sumdescription),
+						pmetric.MetricDataTypeHistogram))
 			}
 			{
-				// Change int to float. The value is a float64 in the table
-				metricValue := float64(dataPoint.Count())
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_%s", md.Name(), countsuffix),
-					MetricType:         pmetric.MetricDataTypeHistogram.String(), // A count does not have a unit
-					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
-					MetricUnit:         md.Unit(),
-					MetricValue:        metricValue,
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				adxMetrics = append(adxMetrics,
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+						// Change int to float. The value is a float64 in the table
+						return float64(dataPoint.Count())
+					},
+						fmt.Sprintf("%s_%s", md.Name(), countsuffix),
+						fmt.Sprintf("%s%s", md.Description(), countdescription),
+						pmetric.MetricDataTypeHistogram))
 			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
@@ -134,46 +132,35 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			value := uint64(0)
 			// now create buckets for each bound.
 			for bi := 0; bi < len(bounds); bi++ {
-				clonedScopeAttrs := cloneMap(scopeattrs)
-				copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
+				var customMap pcommon.Map
+				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
 				// Add the LE field for the bucket's bound
-				clonedScopeAttrs["le"] = float64ToDimValue(bounds[bi])
+				customMap.InsertString("le", float64ToDimValue(bounds[bi]))
 				value += counts[bi]
 
-				// Change int to float. The value is a float64 in the table
-				metricValue := float64(value)
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_bucket", md.Name()),
-					MetricType:         pmetric.MetricDataTypeHistogram.String(),
-					MetricUnit:         md.Unit(),
-					MetricDescription:  md.Description(),
-					MetricValue:        metricValue,
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), customMap, func() float64 {
+					// Change int to float. The value is a float64 in the table
+					return float64(value)
+				},
+					fmt.Sprintf("%s_bucket", md.Name()),
+					"",
+					pmetric.MetricDataTypeHistogram))
 			}
 			// add an upper bound for +Inf
 			{
 
-				clonedScopeAttrs := cloneMap(scopeattrs)
-				copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
+				var customMap pcommon.Map
+				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
 				// Add the LE field for the bucket's bound
-				clonedScopeAttrs["le"] = float64ToDimValue(math.Inf(1))
-				metricValue := float64(value + counts[len(counts)-1])
-				// Change int to float. The value is a float64 in the table
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_bucket", md.Name()),
-					MetricType:         pmetric.MetricDataTypeHistogram.String(),
-					MetricValue:        metricValue,
-					MetricUnit:         md.Unit(),
-					MetricDescription:  md.Description(),
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				customMap.InsertString("le", float64ToDimValue(math.Inf(1)))
+
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), customMap, func() float64 {
+					// Change int to float. The value is a float64 in the table
+					return float64(value + counts[len(counts)-1])
+				},
+					fmt.Sprintf("%s_bucket", md.Name()),
+					"",
+					pmetric.MetricDataTypeHistogram))
 			}
 		}
 		return adxMetrics
@@ -182,26 +169,17 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		adxMetrics := make([]*AdxMetric, dataPoints.Len())
 		for gi := 0; gi < dataPoints.Len(); gi++ {
 			dataPoint := dataPoints.At(gi)
-			clonedScopeAttrs := cloneMap(scopeattrs)
-			copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
-			var metricValue float64
-			switch dataPoint.ValueType() {
-			case pmetric.NumberDataPointValueTypeInt:
-				metricValue = float64(dataPoint.IntVal())
-			case pmetric.NumberDataPointValueTypeDouble:
-				metricValue = float64(dataPoint.DoubleVal())
-			}
-			adxMetrics[gi] = &AdxMetric{
-				Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-				MetricName:         md.Name(),
-				MetricType:         pmetric.MetricDataTypeSum.String(),
-				MetricUnit:         md.Unit(),
-				MetricDescription:  md.Description(),
-				MetricValue:        metricValue,
-				Host:               host,
-				MetricAttributes:   clonedScopeAttrs,
-				ResourceAttributes: resourceAttrs,
-			}
+			adxMetrics[gi] = createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+				var metricValue float64
+				switch dataPoint.ValueType() {
+				case pmetric.NumberDataPointValueTypeInt:
+					metricValue = float64(dataPoint.IntVal())
+				case pmetric.NumberDataPointValueTypeDouble:
+					metricValue = float64(dataPoint.DoubleVal())
+				}
+				return metricValue
+			}, "", "", pmetric.MetricDataTypeSum)
+
 		}
 		return adxMetrics
 	case pmetric.MetricDataTypeSummary:
@@ -211,58 +189,41 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			dataPoint := dataPoints.At(gi)
 			// first, add one event for sum, and one for count
 			{
-				clonedScopeAttrs := cloneMap(scopeattrs)
-				copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
-
-				metricValue := float64(dataPoint.Sum())
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
-					MetricType:         pmetric.MetricDataTypeSummary.String(),
-					MetricUnit:         md.Unit(), // Sum of all the samples
-					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), sumdescription),
-					MetricValue:        metricValue,
-					Host:               host,
-					MetricAttributes:   clonedScopeAttrs,
-					ResourceAttributes: resourceAttrs,
-				})
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
+					return float64(dataPoint.Sum())
+				},
+					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
+					fmt.Sprintf("%s%s", md.Description(), sumdescription),
+					pmetric.MetricDataTypeSummary))
 			}
 			//counts
 			{
-				clonedScopeAttrs := cloneMap(scopeattrs)
-				copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
-				metricValue := float64(dataPoint.Count())
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:          dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName:         fmt.Sprintf("%s_%s", md.Name(), countsuffix),
-					MetricType:         pmetric.MetricDataTypeSummary.String(), // There is no metric unit for number of / count of
-					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
-					MetricValue:        metricValue,
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
+					dataPoint.Attributes(),
+					func() float64 {
+						return float64(dataPoint.Count())
+					},
+					fmt.Sprintf("%s_%s", md.Name(), countsuffix),
+					fmt.Sprintf("%s%s", md.Description(), countdescription),
+					pmetric.MetricDataTypeSummary))
+
 			}
 			// now create values for each quantile.
 			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {
 				dp := dataPoint.QuantileValues().At(bi)
-				clonedScopeAttrs := cloneMap(scopeattrs)
-				copyMap(clonedScopeAttrs, dataPoint.Attributes().AsRaw())
-				clonedScopeAttrs["qt"] = float64ToDimValue(dp.Quantile())
-				quantilename := fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64))
-				clonedScopeAttrs[quantilename] = sanitizeFloat(dp.Value())
-				metricValue := dp.Value()
-				adxMetrics = append(adxMetrics, &AdxMetric{
-					Timestamp:  dataPoint.Timestamp().AsTime().Format(time.RFC3339),
-					MetricName: quantilename,
-					MetricType: pmetric.MetricDataTypeSummary.String(),
-					// There is no unit for a quantile. Will be empty
-					MetricDescription:  fmt.Sprintf("%s%s", md.Description(), countdescription),
-					MetricValue:        metricValue,
-					MetricAttributes:   clonedScopeAttrs,
-					Host:               host,
-					ResourceAttributes: resourceAttrs,
-				})
+				var customMap pcommon.Map
+				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
+				customMap.InsertString("qt", float64ToDimValue(dp.Quantile()))
+				quantileName := fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64))
+				customMap.InsertDouble(quantileName, sanitizeFloat(dp.Value()).(float64))
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
+					customMap,
+					func() float64 {
+						return dp.Value()
+					},
+					quantileName,
+					fmt.Sprintf("%s%s", md.Description(), countdescription),
+					pmetric.MetricDataTypeSummary))
 			}
 		}
 		return adxMetrics
