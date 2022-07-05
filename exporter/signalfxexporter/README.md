@@ -6,9 +6,6 @@
 | Supported pipeline types | logs (events), metrics, traces (trace to metric correlation only) |
 | Distributions            | [contrib]                                                         |
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
-[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
-
 This exporter can be used to send metrics, events, and trace correlation to SignalFx.
 
 Apart from metrics, the exporter is also capable of sending metric metadata
