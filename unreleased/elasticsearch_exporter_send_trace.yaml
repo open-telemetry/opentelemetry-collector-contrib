@@ -8,4 +8,4 @@ component: elasticsearchexporter
 note: Support sending OpenTelemetry tracing data to Elasticsearch index or data stream.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [12069]
