@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/gobwas/glob v0.2.3
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.opentelemetry.io/otel/trace v1.7.0

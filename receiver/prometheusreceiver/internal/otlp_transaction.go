@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
@@ -155,7 +154,9 @@ func (t *transaction) Commit() error {
 
 	if metricsL.Len() > 0 {
 		metrics := t.metricSliceToMetrics(metricsL)
-		t.sink.ConsumeMetrics(ctx, *metrics)
+		if err = t.sink.ConsumeMetrics(ctx, *metrics); err != nil {
+			return err
+		}
 	}
 
 	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, nil)

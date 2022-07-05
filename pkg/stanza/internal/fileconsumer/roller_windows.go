@@ -25,6 +25,10 @@ func newRoller() roller {
 	return &closeImmediately{}
 }
 
+func (r *closeImmediately) readLostFiles(ctx context.Context, readers []*Reader) {
+	return
+}
+
 func (r *closeImmediately) roll(_ context.Context, readers []*Reader) {
 	for _, reader := range readers {
 		reader.Close()

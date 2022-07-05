@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
@@ -125,11 +124,12 @@ func (mtp *metricsTransformProcessor) mergeInt64(points []*metricspb.Point, aggr
 		intVal = points[0].GetInt64Value()
 	}
 	for _, p := range points[1:] {
-		if aggrType == Sum || aggrType == Mean {
+		switch aggrType {
+		case Sum, Mean:
 			intVal += p.GetInt64Value()
-		} else if aggrType == Max {
+		case Max:
 			intVal = mtp.maxInt64(intVal, p.GetInt64Value())
-		} else if aggrType == Min {
+		case Min:
 			intVal = mtp.minInt64(intVal, p.GetInt64Value())
 		}
 	}
@@ -147,11 +147,12 @@ func (mtp *metricsTransformProcessor) mergeDouble(points []*metricspb.Point, agg
 		doubleVal = points[0].GetDoubleValue()
 	}
 	for _, p := range points[1:] {
-		if aggrType == Sum || aggrType == Mean {
+		switch aggrType {
+		case Sum, Mean:
 			doubleVal += p.GetDoubleValue()
-		} else if aggrType == Max {
+		case Max:
 			doubleVal = math.Max(doubleVal, p.GetDoubleValue())
-		} else if aggrType == Min {
+		case Min:
 			doubleVal = math.Min(doubleVal, p.GetDoubleValue())
 		}
 	}

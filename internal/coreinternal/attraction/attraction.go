@@ -131,10 +131,12 @@ const (
 	UPSERT Action = "upsert"
 
 	// DELETE deletes the attribute. If the key doesn't exist, no action is performed.
+	// Supports pattern which is matched against attribute key.
 	DELETE Action = "delete"
 
 	// HASH calculates the SHA-1 hash of an existing value and overwrites the
 	// value with it's SHA-1 hash result.
+	// Supports pattern which is matched against attribute key.
 	HASH Action = "hash"
 
 	// EXTRACT extracts values using a regular expression rule from the input
@@ -176,13 +178,22 @@ type AttrProc struct {
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	var attributeActions []attributeAction
 	for i, a := range settings.Actions {
-		// `key` is a required field
-		if a.Key == "" {
-			return nil, fmt.Errorf("error creating AttrProc due to missing required field \"key\" at the %d-th actions", i)
-		}
-
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
+
+		switch a.Action {
+		case DELETE, HASH:
+			// requires `key` and/or `pattern`
+			if a.Key == "" && a.RegexPattern == "" {
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field (at least one of \"key\" and \"pattern\" have to be used) at the %d-th actions", i)
+			}
+		default:
+			// `key` is a required field
+			if a.Key == "" {
+				return nil, fmt.Errorf("error creating AttrProc due to missing required field \"key\" at the %d-th actions", i)
+			}
+		}
+
 		action := attributeAction{
 			Key:    a.Key,
 			Action: a.Action,
@@ -217,8 +228,16 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				action.FromContext = a.FromContext
 			}
 		case HASH, DELETE:
-			if valueSourceCount > 0 || a.RegexPattern != "" {
-				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use value sources or \"pattern\" field. These must not be specified for %d-th action", a.Action, i)
+			if a.Value != nil || a.FromAttribute != "" {
+				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
+			}
+
+			if a.RegexPattern != "" {
+				re, err := regexp.Compile(a.RegexPattern)
+				if err != nil {
+					return nil, fmt.Errorf("error creating AttrProc. Field \"pattern\" has invalid pattern: \"%s\" to be set at the %d-th actions", a.RegexPattern, i)
+				}
+				action.Regex = re
 			}
 			if a.ConvertedType != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use the \"converted_type\" field. This must not be specified for %d-th action", a.Action, i)
@@ -282,6 +301,10 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 		switch action.Action {
 		case DELETE:
 			attrs.Remove(action.Key)
+
+			for _, k := range getMatchingKeys(action.Regex, attrs) {
+				attrs.Remove(k)
+			}
 		case INSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
@@ -301,7 +324,11 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			}
 			attrs.Upsert(action.Key, av)
 		case HASH:
-			hashAttribute(action, attrs)
+			hashAttribute(action.Key, attrs)
+
+			for _, k := range getMatchingKeys(action.Regex, attrs) {
+				hashAttribute(k, attrs)
+			}
 		case EXTRACT:
 			extractAttributes(action, attrs)
 		case CONVERT:
@@ -365,8 +392,8 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs pcommon.Map) {
-	if value, exists := attrs.Get(action.Key); exists {
+func hashAttribute(key string, attrs pcommon.Map) {
+	if value, exists := attrs.Get(key); exists {
 		sha1Hasher(value)
 	}
 }
@@ -397,4 +424,20 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	for i := 1; i < len(matches); i++ {
 		attrs.UpsertString(action.AttrNames[i], matches[i])
 	}
+}
+
+func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
+	keys := []string{}
+
+	if regexp == nil {
+		return keys
+	}
+
+	attrs.Range(func(k string, v pcommon.Value) bool {
+		if regexp.MatchString(k) {
+			keys = append(keys, k)
+		}
+		return true
+	})
+	return keys
 }
