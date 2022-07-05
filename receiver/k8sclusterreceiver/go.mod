@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.54.0
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.opentelemetry.io/collector/semconv v0.54.0

@@ -7,7 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.54.0
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.uber.org/multierr v1.8.0
@@ -22,7 +22,7 @@ require (
 	cloud.google.com/go/iam v0.3.0 // indirect
 	cloud.google.com/go/logging v1.4.2 // indirect
 	cloud.google.com/go/monitoring v1.5.0 // indirect
-	cloud.google.com/go/pubsub v1.23.0 // indirect
+	cloud.google.com/go/pubsub v1.23.1 // indirect
 	cloud.google.com/go/spanner v1.34.0 // indirect
 	cloud.google.com/go/trace v1.2.0 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
@@ -43,11 +43,11 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.22 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.0 // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -66,12 +66,12 @@ require (
 	github.com/aerospike/aerospike-client-go/v5 v5.8.0 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-alpha9 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.36 // indirect
+	github.com/aliyun/aliyun-log-go-sdk v0.1.37 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
 	github.com/apache/arrow/go/arrow v0.0.0-20211112161151-bc219186db40 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.43 // indirect
+	github.com/aws/aws-sdk-go v1.44.47 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.10.1 // indirect
@@ -188,7 +188,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/hashicorp/go-version v1.5.0 // indirect
+	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/serf v0.9.7 // indirect
@@ -223,7 +223,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/karrick/godirwalk v1.16.1 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/klauspost/compress v1.15.6 // indirect
+	github.com/klauspost/compress v1.15.7 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
@@ -456,7 +456,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.9 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20210429002308-3879420cc921 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.5 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.6 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.37 // indirect
@@ -474,7 +474,7 @@ require (
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.429 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.434 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/tidwall/gjson v1.12.1 // indirect
@@ -520,18 +520,18 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
-	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9 // indirect
-	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
+	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
-	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c // indirect
+	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
-	google.golang.org/api v0.85.0 // indirect
+	google.golang.org/api v0.86.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220617124728-180714bec0ad // indirect
+	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f // indirect
 	google.golang.org/grpc v1.47.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
