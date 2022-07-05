@@ -16,7 +16,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -32,7 +32,7 @@ jobs:
         with:
           repository: prometheus/compliance
           path: compliance
-          ref: f0482884578bac67b053e3eaa1ca7f783d146557 
+          ref: f0482884578bac67b053e3eaa1ca7f783d146557
       - name: Copy binary to compliance directory
         run: mkdir compliance/remote_write_sender/bin && cp ./bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
       - name: Run compliance tests
