@@ -29,7 +29,7 @@ func newBooleanValueEvaluator(expr *BooleanValue, functions map[string]interface
 			return nil, err
 		}
 		return condition, nil
-	case expr.Expr != nil:
+	case expr.ConstExpr != nil:
 	case expr.SubExpr != nil:
 	}
 

@@ -16,12 +16,42 @@ package common
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
+
+func Booleanp(b Boolean) *Boolean {
+	return &b
+}
+
+// Helper for test cases where the WHERE clause is all that matters.
+// Parse string should start with `set(name, "test") where`...
+func set_name_test(b *BooleanValue) *ParsedQuery {
+	return &ParsedQuery{
+		Invocation: Invocation{
+			Function: "set",
+			Arguments: []Value{
+				{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				{
+					String: testhelper.Strp("test"),
+				},
+			},
+		},
+		WhereClause: b,
+	}
+}
 
 func Test_parse(t *testing.T) {
 	tests := []struct {
@@ -367,6 +397,18 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
+		{
+			query: `set(name, "test") where true`,
+			expected: set_name_test(&BooleanValue{
+				ConstExpr: Booleanp(true),
+			}),
+		},
+		// {
+		// 	query: `set(name, "test") where true and true`,
+		// 	expected: set_name_test(&BooleanValue{
+		// 		ConstExpr: Booleanp(true),
+		// 	}),
+		// },
 		// {
 		// 	query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
 		// 	expected: &ParsedQuery{
@@ -417,11 +459,14 @@ func Test_parse(t *testing.T) {
 		// },
 	}
 
+	// create a test name that doesn't confuse vscode so we can rerun tests with one click
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
-		t.Run(tt.query, func(t *testing.T) {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
 			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, parsed)
+			assert.EqualValues(t, tt.expected, parsed)
 		})
 	}
 }

@@ -36,7 +36,7 @@ type ParsedQuery struct {
 // nolint:govet
 type BooleanValue struct {
 	Condition *Condition    `( @@`
-	Expr      *BooleanValue `| @@`
+	ConstExpr *Boolean      `| @Boolean`
 	SubExpr   *BooleanValue `| "(" @@ ")" )`
 }
 
