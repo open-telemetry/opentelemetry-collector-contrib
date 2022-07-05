@@ -419,12 +419,44 @@ func Test_parse(t *testing.T) {
 				},
 			}),
 		},
-		// {
-		// 	query: `set(name, "test") where true and true`,
-		// 	expected: set_name_test(&BooleanValue{
-		// 		ConstExpr: Booleanp(true),
-		// 	}),
-		// },
+		{
+			query: `set(name, "test") where true and false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `set(name, "test") where true or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
 		// {
 		// 	query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
 		// 	expected: &ParsedQuery{
