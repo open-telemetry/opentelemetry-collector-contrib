@@ -30,7 +30,7 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 * `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults to `cumulative`.
 * `description` (optional): the description applied to the metric.
 * `unit` (optional): the units applied to the metric.
-* `tags` (optional): tags applied to the metrics
+* `static_attributes` (optional): static labels applied to the metrics
 
 ### Example
 
@@ -45,7 +45,7 @@ receivers:
           - metric_name: movie.genres
             value_column: "count"
             attribute_columns: [ "genre" ]
-            tags: 
+            static_attributes: 
                dbinstance: mydbinstance
 ```
 
