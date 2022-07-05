@@ -16,6 +16,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -38,6 +39,7 @@ var _ component.LogsExporter = (*logExporterImp)(nil)
 
 type logExporterImp struct {
 	loadBalancer loadBalancer
+	routingKey   RoutingKey
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
@@ -45,6 +47,7 @@ type logExporterImp struct {
 
 // Create new logs exporter
 func newLogsExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*logExporterImp, error) {
+	var r RoutingKey
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -55,8 +58,16 @@ func newLogsExporter(params component.ExporterCreateSettings, cfg config.Exporte
 		return nil, err
 	}
 
+	switch cfg.(*Config).RoutingKey {
+	case 1:
+		r = svcRouting
+	default:
+		r = traceID
+	}
+
 	return &logExporterImp{
 		loadBalancer: lb,
+		routingKey:   r,
 	}, nil
 }
 
@@ -85,16 +96,23 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 }
 
 func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
-	traceID := traceIDFromLogs(ld)
-	balancingKey := traceID
-	if traceID == pcommon.InvalidTraceID() {
-		// every log may not contain a traceID
-		// generate a random traceID as balancingKey
-		// so the log can be routed to a random backend
-		balancingKey = random()
+	var (
+		routingId []byte
+		err       error
+	)
+	switch e.routingKey {
+	case svcRouting:
+		routingId, err = routingIdentifierFromLogs(ld, e.routingKey)
+		if err != nil {
+			// every log may not contain a traceID
+			// generate a random traceID as balancingKey
+			// so the log can be routed to a random backend
+			balancingKey := random().Bytes()
+			routingId = balancingKey[:]
+		}
 	}
 
-	endpoint := e.loadBalancer.Endpoint(balancingKey)
+	endpoint := e.loadBalancer.Endpoint(routingId)
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
@@ -122,23 +140,34 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	return err
 }
 
-func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
+func routingIdentifierFromLogs(ld plog.Logs, key RoutingKey) ([]byte, error) {
 	rl := ld.ResourceLogs()
 	if rl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New(fmt.Sprintf("Invalid Trace ID"))
 	}
 
 	sl := rl.At(0).ScopeLogs()
 	if sl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New(fmt.Sprintf("Invalid Trace ID"))
 	}
 
 	logs := sl.At(0).LogRecords()
 	if logs.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New(fmt.Sprintf("Invalid Trace ID"))
 	}
 
-	return logs.At(0).TraceID()
+	switch key {
+	case svcRouting:
+		svc, ok := rl.At(0).Resource().Attributes().Get("service.name")
+		if !ok {
+			return nil, errors.New("unable to get service name from resource")
+		}
+		return []byte(svc.StringVal()), nil
+	default:
+		tid := logs.At(0).TraceID().Bytes()
+		return tid[:], nil
+	}
+
 }
 
 func random() pcommon.TraceID {
