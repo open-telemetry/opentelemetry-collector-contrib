@@ -18,15 +18,19 @@ import (
 	"fmt"
 	"strconv"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
+// gauge metrics only need a timestamp, not a
+func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.Timestamp) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
+	dataPoint.SetStartTimestamp(ts)
+	dataPoint.SetTimestamp(ts)
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)

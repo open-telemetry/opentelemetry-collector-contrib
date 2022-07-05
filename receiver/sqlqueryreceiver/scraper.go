@@ -18,9 +18,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -64,10 +66,11 @@ func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	sms := rm.ScopeMetrics()
 	sm := sms.AppendEmpty()
 	ms := sm.Metrics()
+	ts := pcommon.NewTimestampFromTime(time.Now())
 	var errs error
 	for _, metricCfg := range s.query.Metrics {
 		for i, row := range rows {
-			if err = rowToMetric(row, metricCfg, ms.AppendEmpty()); err != nil {
+			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), ts); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
 				errs = multierr.Append(errs, err)
 			}
