@@ -48,19 +48,12 @@ jobs:
             echo "The CHANGELOG was not modified."
           fi
 
-      - name: Ensure one ./unreleased/*.yaml addition
+      - name: Ensure ./unreleased/*.yaml addition(s)
         run: |
           git fetch origin ${{ github.base_ref }} --depth=1
           if [[ 1 -gt $(git diff --diff-filter=A --name-only FETCH_HEAD ./unreleased | grep -c \\.yaml) ]]
           then
             echo "No changelog entry was added to the ./unreleased/ directory."
-            echo "Please add a .yaml file to the ./unreleased/ directory."
-            echo "See CONTRIBUTING.md for more details."
-            echo "Alternately, add the \"Skip Changelog\" label if this job should be skipped."
-            false
-          elif [[ 1 -lt $(git diff --diff-filter=A --name-only FETCH_HEAD ./unreleased | grep -c \\.yaml) ]]
-          then
-            echo "More than 1 changelog entry was added to the ./unreleased/ directory."
             echo "Please add a .yaml file to the ./unreleased/ directory."
             echo "See CONTRIBUTING.md for more details."
             echo "Alternately, add the \"Skip Changelog\" label if this job should be skipped."
