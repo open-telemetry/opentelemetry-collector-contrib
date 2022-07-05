@@ -30,7 +30,7 @@ Each _metric_ in the configuration will produce one OTel metric per row returned
 * `aggregation` (optional): only applicable for `data_type=sum`; can be `cumulative` or `delta`; defaults to `cumulative`.
 * `description` (optional): the description applied to the metric.
 * `unit` (optional): the units applied to the metric.
-* `static_attributes` (optional): static labels applied to the metrics
+* `static_attributes` (optional): static attributes applied to the metrics
 
 ### Example
 
