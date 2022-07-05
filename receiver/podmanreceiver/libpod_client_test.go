@@ -19,6 +19,7 @@ package podmanreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -261,7 +262,7 @@ loop:
 
 		select {
 		case err := <-errs:
-			if err != nil && err != io.EOF {
+			if err != nil && !errors.Is(err, io.EOF) {
 				t.Fatal(err)
 			}
 			assert.Equal(t, io.EOF, err)
