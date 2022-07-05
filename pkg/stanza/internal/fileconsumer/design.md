@@ -25,6 +25,15 @@ If logs are replicated to multiple files, or if log files are copied manually, i
 
 In some rare circumstances, a logger may print a very verbose preamble to each log file. When this occurs, fingerprinting may fail to differentiate files from one another. This can be overcome by customizing the size of the fingerprint using the `fingerprint_size` setting.
 
+### Log line ordering across file rotations
+
+In general, we offer no guarantees as to the relative ordering of log lines originating from different files. For the common use case of files being rotated outside the watched pattern, we make a best-effort attempt at reading the rotated file to the end before reading the new file. This guarantees log line ordering across rotations, assuming the following conditions are met:
+
+* rotated file names don't match the watched pattern
+* rotated files aren't written to after the rotation
+
+A minor reordering of log lines often doesn't matter, but it can when using the recombine operator later in the pipeline, for example.
+
 # Readers
 
 Readers are a convenience struct, which exist for the purpose of managing files and their associated metadata. 
