@@ -4,30 +4,6 @@
 
 <!-- next version -->
 
-## Unreleased
-
-## 🛑 Breaking changes 🛑
-
-- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
-  - If users were disabling this feature gate, they may have to update
-    monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
-
-### 🚩 Deprecations 🚩
-
-- `hostmetricsreceiver`: remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
-  - `system.network.dropped` will become:
-    - `system.network.dropped.receive`
-    - `system.network.dropped.transmit`
-  - `system.network.errors` will become:
-    - `system.network.errors.receive`
-    - `system.network.errors.transmit`
-  - `system.network.io` will become:
-    - `system.network.io.receive`
-    - `system.network.io.transmit`
-  - `system.network.packets` will become:
-    - `system.network.packets.receive`
-    - `system.network.packets.transmit`
-
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑

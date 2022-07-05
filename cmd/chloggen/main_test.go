@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -148,6 +150,9 @@ func TestValidateE2E(t *testing.T) {
 }
 
 func TestUpdateE2E(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows line breaks cause comparison failures w/ golden files.")
+	}
 	tests := []struct {
 		name    string
 		entries []*Entry
@@ -195,6 +200,11 @@ func TestUpdateE2E(t *testing.T) {
 			entries: []*Entry{breakingEntry()},
 			version: "v0.45.0",
 		},
+		{
+			name:    "subtext",
+			entries: []*Entry{entryWithSubtext()},
+			version: "v0.45.0",
+		},
 	}
 
 	for _, tc := range tests {
@@ -231,6 +241,7 @@ func getSampleEntries() []*Entry {
 		deprecationEntry(),
 		newComponentEntry(),
 		breakingEntry(),
+		entryWithSubtext(),
 	}
 }
 
@@ -276,6 +287,18 @@ func breakingEntry() *Entry {
 		Component:  "processor/oops",
 		Note:       "Change behavior when ...",
 		Issues:     []int{12350},
+	}
+}
+
+func entryWithSubtext() *Entry {
+	lines := []string{"- foo\n  - bar\n- blah\n  - 1234567"}
+
+	return &Entry{
+		ChangeType: breaking,
+		Component:  "processor/oops",
+		Note:       "Change behavior when ...",
+		Issues:     []int{12350},
+		SubText:    strings.Join(lines, "\n"),
 	}
 }
 
