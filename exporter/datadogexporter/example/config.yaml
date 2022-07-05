@@ -185,6 +185,11 @@ exporters:
     ## Trace exporter specific configuration.
     #
     # traces:
+      ## @param max_events_per_second - integer - optional - default: 200
+      ## Maximum number of APM Analytics events per second to sample.
+      #
+      # max_events_per_second: 200
+
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send traces to.
       ## If unset it will be determined from the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).

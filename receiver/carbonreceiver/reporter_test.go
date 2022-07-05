@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package carbonreceiver
 
 import (
@@ -28,7 +27,9 @@ import (
 func TestReporterObservability(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentIDWithName(typeStr, "fake_receiver")
 	reporter := newReporter(receiverID, tt.ToReceiverCreateSettings())

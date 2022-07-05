@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package metricsgenerationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 
 import (
@@ -57,7 +56,6 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
 	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), params.Logger)
 
 	return processorhelper.NewMetricsProcessor(

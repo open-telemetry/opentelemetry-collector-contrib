@@ -162,7 +162,12 @@ func TestLoadConfig(t *testing.T) {
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: "https://trace.agent.datadoghq.eu",
 		},
-		IgnoreResources: []string{},
+		SpanNameRemappings: map[string]string{
+			"old_name1": "new_name1",
+			"old_name2": "new_name2",
+		},
+		SpanNameAsResourceName: true,
+		IgnoreResources:        []string{},
 	}, apiConfig.Traces)
 	assert.True(t, apiConfig.SendMetadata)
 	assert.False(t, apiConfig.OnlyMetadata)
@@ -243,6 +248,7 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 	t.Setenv("DD_TAGS", "envexample:tag envexample2:tag")
 	t.Setenv("DD_URL", "https://api.datadoghq.com")
 	t.Setenv("DD_APM_URL", "https://trace.agent.datadoghq.com")
+	t.Setenv("DD_APM_MAX_TPS", "15")
 
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
@@ -295,6 +301,10 @@ func TestLoadConfigEnvVariables(t *testing.T) {
 		ddconfig.TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: "https://trace.agent.datadoghq.test",
+			},
+			SpanNameRemappings: map[string]string{
+				"old_name3": "new_name3",
+				"old_name4": "new_name4",
 			},
 			IgnoreResources: []string{},
 		}, apiConfig.Traces)
