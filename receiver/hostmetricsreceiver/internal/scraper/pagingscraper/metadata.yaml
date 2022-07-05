@@ -39,6 +39,28 @@ metrics:
       monotonic: true
     attributes: [direction, type]
 
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics feature gate is enabled
+  system.paging.operations.page_in:
+    enabled: true
+    description: The number of page_in operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics feature gate is enabled
+  system.paging.operations.page_out:
+    enabled: true
+    description: The number of page_out operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [type]
+
   system.paging.faults:
     enabled: true
     description: The number of page faults.
