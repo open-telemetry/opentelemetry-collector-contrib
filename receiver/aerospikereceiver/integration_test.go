@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package aerospikereceiver_test
 
 import (
@@ -27,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
@@ -36,12 +32,12 @@ import (
 func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
 
-	ct := containertest.New(t)
-	container := ct.StartImage("aerospike:ce-5.7.0.17", containertest.WithPortReady(3000))
+	// ct := containertest.New(t)
+	// container := ct.StartImage("aerospike:ce-5.7.0.17", containertest.WithPortReady(3000))
 
 	f := aerospikereceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*aerospikereceiver.Config)
-	cfg.Endpoint = container.AddrForPort(3000)
+	cfg.Endpoint = "localhost:3000" // container.AddrForPort(3000)
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
 	consumer := new(consumertest.MetricsSink)
