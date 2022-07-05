@@ -7,7 +7,7 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/elastic/go-structform v0.0.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.uber.org/atomic v1.9.0

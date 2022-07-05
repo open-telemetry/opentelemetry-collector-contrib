@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.elastic.co/apm v1.15.0
 	go.elastic.co/fastjson v1.1.0
 	go.opentelemetry.io/collector v0.54.0
