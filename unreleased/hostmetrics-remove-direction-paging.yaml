@@ -1,0 +1,9 @@
+change_type: deprecation
+
+component: hostmetricsreceiver
+
+note: >
+  Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics` can be set to apply the following (#11849)
+    - `system.paging.operations` will become:
+      - `system.paging.operations.page_in`
+      - `system.paging.operations.page_out`

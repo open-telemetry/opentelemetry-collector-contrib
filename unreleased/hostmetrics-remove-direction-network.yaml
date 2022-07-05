@@ -1,0 +1,18 @@
+change_type: deprecation
+
+component: hostmetricsreceiver
+
+note: >
+  Remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics` can be set to apply the following (#11818)
+    - `system.network.dropped` will become:
+      - `system.network.dropped.receive`
+      - `system.network.dropped.transmit`
+    - `system.network.errors` will become:
+      - `system.network.errors.receive`
+      - `system.network.errors.transmit`
+    - `system.network.io` will become:
+      - `system.network.io.receive`
+      - `system.network.io.transmit`
+    - `system.network.packets` will become:
+      - `system.network.packets.receive`
+      - `system.network.packets.transmit`
