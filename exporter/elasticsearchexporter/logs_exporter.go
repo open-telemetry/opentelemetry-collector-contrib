@@ -67,15 +67,18 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	// TODO: Apply encoding and field mapping settings.
 	model := &encodeModel{dedup: true, dedot: false}
 
-	return &elasticsearchLogsExporter{
+	if cfg.Index != "" && cfg.Index != defaultLogsIndex {
+		cfg.LogsIndex = cfg.Index
+	}
+	esLogsExp := &elasticsearchLogsExporter{
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
-
 		index:       cfg.LogsIndex,
 		maxAttempts: maxAttempts,
 		model:       model,
-	}, nil
+	}
+	return esLogsExp, nil
 }
 
 func (e *elasticsearchLogsExporter) Shutdown(ctx context.Context) error {

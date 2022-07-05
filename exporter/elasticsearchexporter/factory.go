@@ -47,7 +47,7 @@ func createDefaultConfig() config.Exporter {
 		HTTPClientSettings: HTTPClientSettings{
 			Timeout: 90 * time.Second,
 		},
-		Index:       defaultLogsIndex,
+		Index:       "",
 		LogsIndex:   defaultLogsIndex,
 		TracesIndex: defaultTracesIndex,
 		Retry: RetrySettings{
@@ -92,10 +92,6 @@ func createLogsExporter(
 func createTracesExporter(ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
-
-	if cfg.(*Config).Index != defaultLogsIndex {
-		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
-	}
 
 	exporter, err := newTracesExporter(set.Logger, cfg.(*Config))
 	if err != nil {

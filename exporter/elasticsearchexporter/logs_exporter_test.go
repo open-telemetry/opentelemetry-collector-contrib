@@ -78,6 +78,13 @@ func TestExporter_New(t *testing.T) {
 			}),
 			want: success,
 		},
+		"create from default config with endpoints and deprecated index_option": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Index = "foo-index"
+				cfg.Endpoints = []string{"test:9200"}
+			}),
+			want: success,
+		},
 		"create with cloudid": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="

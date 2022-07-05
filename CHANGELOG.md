@@ -28,9 +28,6 @@
     - `system.network.packets.receive`
     - `system.network.packets.transmit`
 
-### 💡 Enhancements 💡
-- `elasticsearchexporter`: Support sending OpenTelemetry tracing data to Elasticsearch index or data stream.(#10180)
-
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑
