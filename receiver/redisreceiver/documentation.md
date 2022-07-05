@@ -12,6 +12,8 @@ These are the metrics available for this scraper.
 | **redis.clients.connected** | Number of client connections (excluding connections from replicas) |  | Sum(Int) | <ul> </ul> |
 | **redis.clients.max_input_buffer** | Biggest input buffer among current client connections |  | Gauge(Int) | <ul> </ul> |
 | **redis.clients.max_output_buffer** | Longest output list among current client connections |  | Gauge(Int) | <ul> </ul> |
+| redis.cmd.calls | Total number of calls for a command |  | Sum(Int) | <ul> <li>cmd</li> </ul> |
+| redis.cmd.usec | Total time for all executions of this command | us | Sum(Int) | <ul> <li>cmd</li> </ul> |
 | **redis.commands** | Number of commands processed per second | {ops}/s | Gauge(Int) | <ul> </ul> |
 | **redis.commands.processed** | Total number of commands processed by the server |  | Sum(Int) | <ul> </ul> |
 | **redis.connections.received** | Total number of connections accepted by the server |  | Sum(Int) | <ul> </ul> |
@@ -25,6 +27,7 @@ These are the metrics available for this scraper.
 | **redis.keyspace.hits** | Number of successful lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
 | **redis.keyspace.misses** | Number of failed lookup of keys in the main dictionary |  | Sum(Int) | <ul> </ul> |
 | **redis.latest_fork** | Duration of the latest fork operation in microseconds | us | Gauge(Int) | <ul> </ul> |
+| redis.maxmemory | The value of the maxmemory configuration directive | By | Gauge(Int) | <ul> </ul> |
 | **redis.memory.fragmentation_ratio** | Ratio between used_memory_rss and used_memory |  | Gauge(Double) | <ul> </ul> |
 | **redis.memory.lua** | Number of bytes used by the Lua engine | By | Gauge(Int) | <ul> </ul> |
 | **redis.memory.peak** | Peak memory consumed by Redis (in bytes) | By | Gauge(Int) | <ul> </ul> |
@@ -35,6 +38,7 @@ These are the metrics available for this scraper.
 | **redis.rdb.changes_since_last_save** | Number of changes since the last dump |  | Sum(Int) | <ul> </ul> |
 | **redis.replication.backlog_first_byte_offset** | The master offset of the replication backlog buffer |  | Gauge(Int) | <ul> </ul> |
 | **redis.replication.offset** | The server's current replication offset |  | Gauge(Int) | <ul> </ul> |
+| redis.role | Redis node's role |  | Sum(Int) | <ul> <li>role</li> </ul> |
 | **redis.slaves.connected** | Number of connected replicas |  | Sum(Int) | <ul> </ul> |
 | **redis.uptime** | Number of seconds since Redis server start | s | Sum(Int) | <ul> </ul> |
 
@@ -51,5 +55,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| cmd | Redis command name |  |
 | db | Redis database identifier |  |
+| role | Redis node's role | replica, primary |
 | state | Redis CPU usage state |  |
