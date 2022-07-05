@@ -11,6 +11,5 @@ note:
 issues: []
 
 # (Optional) One or more lines of additional information to render under the primary note.
-# These lines will be inserted directly into the document, so must be formatted accordingly.
-# Use "subtext: |2" to preserve two spaces of indentation relative to the current level
+# These lines will be padded with 2 spaces and then inserted directly into the document.
 subtext:

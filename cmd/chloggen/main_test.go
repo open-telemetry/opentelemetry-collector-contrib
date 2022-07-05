@@ -150,6 +150,9 @@ func TestValidateE2E(t *testing.T) {
 }
 
 func TestUpdateE2E(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows line breaks cause comparison failures w/ golden files.")
+	}
 	tests := []struct {
 		name    string
 		entries []*Entry
@@ -288,24 +291,14 @@ func breakingEntry() *Entry {
 }
 
 func entryWithSubtext() *Entry {
-	lines := []string{
-		"  - foo",
-		"    - bar",
-		"  - blah",
-		"    - 1234567",
-	}
-	var subtext string
-	if runtime.GOOS == "windows" {
-		subtext = strings.Join(lines, "\r\n")
-	} else {
-		subtext = strings.Join(lines, "\n")
-	}
+	lines := []string{"- foo\n  - bar\n- blah\n  - 1234567"}
+
 	return &Entry{
 		ChangeType: breaking,
 		Component:  "processor/oops",
 		Note:       "Change behavior when ...",
 		Issues:     []int{12350},
-		SubText:    subtext,
+		SubText:    strings.Join(lines, "\n"),
 	}
 }
 

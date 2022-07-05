@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"strings"
 )
 
@@ -73,11 +72,9 @@ func (e Entry) String() string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("- `%s`: %s (%s)", e.Component, e.Note, issueStr))
 	if e.SubText != "" {
-		if runtime.GOOS == "windows" {
-			sb.WriteString("\r")
-		}
-		sb.WriteString("\n")
-		sb.WriteString(e.SubText)
+		sb.WriteString("\n  ")
+		lines := strings.Split(strings.ReplaceAll(e.SubText, "\r\n", "\n"), "\n")
+		sb.WriteString(strings.Join(lines, "\n  "))
 	}
 	return sb.String()
 }
