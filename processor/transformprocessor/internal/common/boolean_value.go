@@ -18,45 +18,64 @@ import (
 	"fmt"
 )
 
-func newBooleanValueEvaluator(expr *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
+	f, err := newBooleanTermEvaluator(expr.Left, functions, pathParser)
+	if err != nil {
+		return nil, err
+	}
+	funcs := []condFunc{f}
+	for _, rhs := range expr.Right {
+		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
+	}
+
+	return orFuncs(funcs), nil
+}
+
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+	if term == nil {
+		return alwaysTrue, nil
+	}
+	f, err := newBooleanValueEvaluator(term.Left, functions, pathParser)
+	if err != nil {
+		return nil, err
+	}
+	funcs := []condFunc{f}
+	for _, rhs := range term.Right {
+		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser)
+		if err != nil {
+			return nil, err
+		}
+		funcs = append(funcs, f)
+	}
+
+	return andFuncs(funcs), nil
+}
+
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+	if value == nil {
+		return alwaysTrue, nil
+	}
 	switch {
-	case expr.Condition != nil:
-		condition, err := newConditionEvaluator(expr.Condition, functions, pathParser)
+	case value.Condition != nil:
+		condition, err := newConditionEvaluator(value.Condition, functions, pathParser)
 		if err != nil {
 			return nil, err
 		}
 		return condition, nil
-	case expr.ConstExpr != nil:
-	case expr.SubExpr != nil:
+	case value.ConstExpr != nil:
+		return func(ctx TransformContext) bool {
+			return bool(*value.ConstExpr)
+		}, nil
+	case value.SubExpr != nil:
+		return newBooleanValueEvaluator(value.SubExpr, functions, pathParser)
 	}
 
-	// left, err := NewGetter(cond.Left, functions, pathParser)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// right, err := NewGetter(cond.Right, functions, pathParser)
-	// // TODO(anuraaga): Check if both left and right are literals and const-evaluate
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// switch cond.Op {
-	// case "==":
-	// 	return func(ctx TransformContext) bool {
-	// 		a := left.Get(ctx)
-	// 		b := right.Get(ctx)
-	// 		return a == b
-	// 	}, nil
-	// case "!=":
-	// 	return func(ctx TransformContext) bool {
-	// 		a := left.Get(ctx)
-	// 		b := right.Get(ctx)
-	// 		return a != b
-	// 	}, nil
-	// }
-
-	return nil, fmt.Errorf("unhandled boolean operation %v", expr)
+	return nil, fmt.Errorf("unhandled boolean operation %v", value)
 }

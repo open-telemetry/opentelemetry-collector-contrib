@@ -26,8 +26,8 @@ import (
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
 type ParsedQuery struct {
-	Invocation  Invocation    `@@`
-	WhereClause *BooleanValue `( "where" @@ )?`
+	Invocation  Invocation         `@@`
+	WhereClause *BooleanExpression `( "where" @@ )?`
 }
 
 // BooleanValue represents something that evaluates to a boolean --
@@ -162,7 +162,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newBooleanValueEvaluator(parsed.WhereClause, functions, pathParser)
+		condition, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue

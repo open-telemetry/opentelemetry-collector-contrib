@@ -30,7 +30,7 @@ func Booleanp(b Boolean) *Boolean {
 
 // Helper for test cases where the WHERE clause is all that matters.
 // Parse string should start with `set(name, "test") where`...
-func set_name_test(b *BooleanValue) *ParsedQuery {
+func set_name_test(b *BooleanExpression) *ParsedQuery {
 	return &ParsedQuery{
 		Invocation: Invocation{
 			Function: "set",
@@ -190,20 +190,24 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &BooleanValue{
-					Condition: &Condition{
-						Left: Value{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
 									},
 								},
+								Op: "==",
+								Right: Value{
+									String: testhelper.Strp("fido"),
+								},
 							},
-						},
-						Op: "==",
-						Right: Value{
-							String: testhelper.Strp("fido"),
 						},
 					},
 				},
@@ -236,20 +240,24 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &BooleanValue{
-					Condition: &Condition{
-						Left: Value{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
 									},
 								},
+								Op: "!=",
+								Right: Value{
+									String: testhelper.Strp("fido"),
+								},
 							},
-						},
-						Op: "!=",
-						Right: Value{
-							String: testhelper.Strp("fido"),
 						},
 					},
 				},
@@ -282,20 +290,24 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				WhereClause: &BooleanValue{
-					Condition: &Condition{
-						Left: Value{
-							Path: &Path{
-								Fields: []Field{
-									{
-										Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
 									},
 								},
+								Op: "==",
+								Right: Value{
+									String: testhelper.Strp("fido"),
+								},
 							},
-						},
-						Op: "==",
-						Right: Value{
-							String: testhelper.Strp("fido"),
 						},
 					},
 				},
@@ -399,8 +411,12 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			query: `set(name, "test") where true`,
-			expected: set_name_test(&BooleanValue{
-				ConstExpr: Booleanp(true),
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
 			}),
 		},
 		// {
