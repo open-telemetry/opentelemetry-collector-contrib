@@ -17,6 +17,7 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -87,7 +88,8 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 
 	rs.recordCommonMetrics(now, inf)
 	rs.recordKeyspaceMetrics(now, inf)
-
+	rs.recordRoleMetrics(now, inf)
+	rs.recordCmdStatsMetrics(now, inf)
 	return rs.mb.Emit(), nil
 }
 
@@ -137,5 +139,47 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
 		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
 		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+	}
+}
+
+// recordRoleMetrics records metrics from 'role' Redis info key-value pairs
+// e.g. "role:master"
+func (rs *redisScraper) recordRoleMetrics(ts pcommon.Timestamp, inf info) {
+	if str, ok := inf["role"]; ok {
+		if str == "master" {
+			rs.mb.RecordRedisRoleDataPoint(ts, 1, metadata.AttributeRolePrimary)
+		} else {
+			rs.mb.RecordRedisRoleDataPoint(ts, 1, metadata.AttributeRoleReplica)
+		}
+	}
+}
+
+// recordCmdStatsMetrics records metrics from 'command_stats' Redis info key-value pairs
+// e.g. "cmdstat_mget:calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0"
+// but only calls and usec at the moment.
+func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, inf info) {
+	cmdPrefix := "cmdstat_"
+	for key, val := range inf {
+		if !strings.HasPrefix(key, cmdPrefix) {
+			continue
+		}
+
+		cmd := key[len(cmdPrefix):]
+		parts := strings.Split(strings.TrimSpace(val), ",")
+		for _, element := range parts {
+			subParts := strings.Split(element, "=")
+			if len(subParts) == 1 {
+				continue
+			}
+			parsed, err := strconv.ParseInt(subParts[1], 10, 64)
+			if err != nil { // skip bad items
+				continue
+			}
+			if subParts[0] == "calls" {
+				rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
+			} else if subParts[0] == "usec" {
+				rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
+			}
+		}
 	}
 }

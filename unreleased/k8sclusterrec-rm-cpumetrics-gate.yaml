@@ -1,0 +1,18 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: k8sclusterreceiver
+
+# A brief description of the change
+note: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed
+
+# One or more tracking issues related to the change
+issues: [10838]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be inserted directly into the document, so must be formatted accordingly.
+# Use "subtext: |2" to preserve two spaces of indentation relative to the current level
+subtext: |2
+    - If users were disabling this feature gate, they may have to update
+      monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).

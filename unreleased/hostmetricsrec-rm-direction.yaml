@@ -1,0 +1,28 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: deprecation
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: hostmetricsreceiver
+
+# A brief description of the change
+note: "Remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following"
+
+# One or more tracking issues related to the change
+issues: [11820]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be inserted directly into the document, so must be formatted accordingly.
+# Use "subtext: |2" to preserve two spaces of indentation relative to the current level
+subtext: |2
+    - `system.network.dropped` will become:
+      - `system.network.dropped.receive`
+      - `system.network.dropped.transmit`
+    - `system.network.errors` will become:
+      - `system.network.errors.receive`
+      - `system.network.errors.transmit`
+    - `system.network.io` will become:
+      - `system.network.io.receive`
+      - `system.network.io.transmit`
+    - `system.network.packets` will become:
+      - `system.network.packets.receive`
+      - `system.network.packets.transmit`

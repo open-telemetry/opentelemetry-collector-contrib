@@ -27,9 +27,9 @@ require (
 	github.com/prometheus/prometheus v0.36.2
 	github.com/shirou/gopsutil/v3 v3.22.6
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.54.0
-	go.opentelemetry.io/collector/pdata v0.54.0
-	go.opentelemetry.io/collector/semconv v0.54.0
+	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector/pdata v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector/semconv v0.54.1-0.20220705210223-9f0d97ca5741
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
@@ -178,7 +178,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
-	github.com/spf13/cobra v1.4.0 // indirect
+	github.com/spf13/cobra v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.11.0 // indirect
