@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: deprecation
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: simpleprometheusreceiver
+
+# A brief description of the change
+note: Announcing `tls_enable`, `tls_config` will be deprecated and use `confighttp.HTTPClientSettings` instead.
+
+# One or more tracking issues related to the change
+issues: [11553]

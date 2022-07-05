@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sampling
 
 import (
@@ -226,7 +225,8 @@ func BenchmarkStringTagFilterEvaluatePlainText(b *testing.B) {
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"value"}, false, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		filter.Evaluate(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		assert.NoError(b, err)
 	}
 }
 
@@ -235,7 +235,8 @@ func BenchmarkStringTagFilterEvaluateRegex(b *testing.B) {
 	filter := NewStringAttributeFilter(zap.NewNop(), "example", []string{"v[0-9]+.HealthCheck$"}, true, 0, false)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		filter.Evaluate(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		_, err := filter.Evaluate(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), trace)
+		assert.NoError(b, err)
 	}
 }
 
