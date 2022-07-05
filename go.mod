@@ -923,7 +923,3 @@ retract v0.37.0 // Contains dependencies on v0.36.0 components, which should hav
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-// Replacing prometheus/client_golang so that cmd/otelcontribcol/main_testbed.go passes. This is needed because the test runs exporter/prometheusexporter that requires the exemplars feature in github.com/prometheus/client_golang.
-// This replace can be removed once the exemplars feature (https://github.com/prometheus/client_golang/pull/986) is available in a release version and this go.mod is updated to use that.
-replace github.com/prometheus/client_golang => github.com/prometheus/client_golang v1.12.2-0.20220318110013-3bc8f2c651ff
