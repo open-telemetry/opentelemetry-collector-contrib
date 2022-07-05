@@ -207,16 +207,26 @@ func TestPodHostNetwork(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Equal(t, 0, len(c.Pods))
 
+	// pod will not be added if no rule matches
 	pod := &api_v1.Pod{}
 	pod.Name = "podA"
 	pod.Status.PodIP = "1.1.1.1"
 	pod.Spec.HostNetwork = true
 	c.handlePodAdd(pod)
+	assert.Equal(t, len(c.Pods), 0)
+
+	// pod will be added if rule matches
+	pod.Name = "podB"
+	pod.Status.PodIP = "2.2.2.2"
+	pod.UID = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+	pod.Spec.HostNetwork = true
+	c.handlePodAdd(pod)
 	assert.Equal(t, len(c.Pods), 1)
-	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
-	assert.Equal(t, got.Address, "1.1.1.1")
-	assert.Equal(t, got.Name, "podA")
-	assert.True(t, got.Ignore)
+	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")]
+	assert.Equal(t, got.Address, "2.2.2.2")
+	assert.Equal(t, got.Name, "podB")
+	assert.Equal(t, got.PodUID, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+	assert.False(t, got.Ignore)
 }
 
 func TestPodAddOutOfSync(t *testing.T) {
@@ -770,7 +780,7 @@ func TestPodIgnorePatterns(t *testing.T) {
 		ignore: false,
 		pod:    api_v1.Pod{},
 	}, {
-		ignore: true,
+		ignore: false,
 		pod: api_v1.Pod{
 			Spec: api_v1.PodSpec{
 				HostNetwork: true,

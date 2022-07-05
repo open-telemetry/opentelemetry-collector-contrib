@@ -371,11 +371,12 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
-		Name:      pod.Name,
-		Namespace: pod.GetNamespace(),
-		Address:   pod.Status.PodIP,
-		PodUID:    string(pod.UID),
-		StartTime: pod.Status.StartTime,
+		Name:        pod.Name,
+		Namespace:   pod.GetNamespace(),
+		Address:     pod.Status.PodIP,
+		HostNetwork: pod.Spec.HostNetwork,
+		PodUID:      string(pod.UID),
+		StartTime:   pod.Status.StartTime,
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -401,6 +402,14 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 			switch {
 			case source.From == ConnectionSource:
 				if pod.Address == "" {
+					skip = true
+					break
+				}
+				// Host network mode is not supported right now with IP based
+				// tagging as all pods in host network get same IP addresses.
+				// Such pods are very rare and usually are used to monitor or control
+				// host traffic (e.g, linkerd, flannel) instead of service business needs.
+				if pod.HostNetwork {
 					skip = true
 					break
 				}
@@ -442,7 +451,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		})
 	}
 
-	if pod.Address != "" {
+	if pod.Address != "" && !pod.HostNetwork {
 		ids = append(ids, PodIdentifier{
 			PodIdentifierAttributeFromConnection(pod.Address),
 		})
@@ -493,15 +502,6 @@ func (c *WatchClient) appendDeleteQueue(podID PodIdentifier, podName string) {
 }
 
 func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
-	// Host network mode is not supported right now with IP based
-	// tagging as all pods in host network get same IP addresses.
-	// Such pods are very rare and usually are used to monitor or control
-	// host traffic (e.g, linkerd, flannel) instead of service business needs.
-	// We plan to support host network pods in future.
-	if pod.Spec.HostNetwork {
-		return true
-	}
-
 	// Check if user requested the pod to be ignored through annotations
 	if v, ok := pod.Annotations[ignoreAnnotation]; ok {
 		if strings.ToLower(strings.TrimSpace(v)) == "true" {
