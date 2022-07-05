@@ -82,3 +82,23 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [direction]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics feature gate is enabled
+  process.disk.io.read:
+    enabled: true
+    description: Disk bytes read.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics feature gate is enabled
+  process.disk.io.write:
+    enabled: true
+    description: Disk bytes written.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
