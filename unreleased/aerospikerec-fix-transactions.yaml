@@ -5,7 +5,7 @@ change_type: bug_fix
 component: aerospikereceiver
 
 # A brief description of the change
-note: - Fix typo in metric name. Ensure namespace transactions are collected (#12085)
+note: Fix typo in metric name. Ensure namespace transactions are collected (#12085)
 
 # One or more tracking issues related to the change
 issues: [12083]
