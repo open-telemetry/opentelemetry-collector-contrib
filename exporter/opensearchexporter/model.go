@@ -16,14 +16,13 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"bytes"
-
-	"go.opentelemetry.io/collector/model/pdata"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/objmodel"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 type mappingModel interface {
-	encodeLog(pdata.Resource, pdata.LogRecord) ([]byte, error)
+	encodeLog(pcommon.Resource, plog.LogRecord) ([]byte, error)
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -37,7 +36,7 @@ type encodeModel struct {
 	dedot bool
 }
 
-func (m *encodeModel) encodeLog(resource pdata.Resource, record pdata.LogRecord) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord) ([]byte, error) {
 	var document objmodel.Document
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddID("TraceId", record.TraceID())
