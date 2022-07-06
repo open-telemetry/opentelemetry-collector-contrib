@@ -1,0 +1,30 @@
+receivers:
+  nop:
+
+processors:
+  deltatocumulative:
+    include:
+      match_type: strict
+      metrics:
+        - metric1
+        - metric2
+    exclude:
+      match_type: strict
+      metrics:
+        - metric3
+        - metric4
+    max_staleness: 10s
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [deltatocumulative]
+      exporters: [nop]
+    metrics:
+      receivers: [nop]
+      processors: [deltatocumulative]
+      exporters: [nop]
