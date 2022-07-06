@@ -34,16 +34,12 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 // TODO rename this struct
 type Input struct {
 	*zap.SugaredLogger
-	finder                  Finder
-	captureFileName         bool
-	captureFilePath         bool
-	captureFileNameResolved bool
-	captureFilePathResolved bool
-	PollInterval            time.Duration
-	SplitterConfig          helper.SplitterConfig
-	MaxLogSize              int
-	MaxConcurrentFiles      int
-	SeenPaths               map[string]struct{}
+	finder             Finder
+	PollInterval       time.Duration
+	SplitterConfig     helper.SplitterConfig
+	MaxLogSize         int
+	MaxConcurrentFiles int
+	SeenPaths          map[string]struct{}
 
 	persister operator.Persister
 
