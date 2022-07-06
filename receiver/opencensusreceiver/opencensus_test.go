@@ -14,12 +14,12 @@
 
 //lint:file-ignore U1000 t.Skip() flaky test causes unused function warning.
 
-// nolint:errcheck
 package opencensusreceiver
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -404,7 +404,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -432,7 +432,9 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
@@ -553,7 +555,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -581,7 +583,9 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 

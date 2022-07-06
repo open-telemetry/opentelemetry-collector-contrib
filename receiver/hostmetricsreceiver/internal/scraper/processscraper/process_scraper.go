@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
@@ -88,8 +90,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	data, err := s.getProcessMetadata()
 	if err != nil {
-		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
-		if !isPartial {
+		var partialErr scrapererror.PartialScrapeError
+		if !errors.As(err, &partialErr) {
 			return pmetric.NewMetrics(), err
 		}
 
@@ -199,7 +201,12 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	if featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID) {
+		s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
+		s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
+	} else {
+		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
+		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	}
 	return nil
 }

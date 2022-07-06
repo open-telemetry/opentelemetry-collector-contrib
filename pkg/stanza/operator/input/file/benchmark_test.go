@@ -15,13 +15,13 @@
 package file
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -121,7 +121,7 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = 10 * defaultFingerprintSize
+				cfg.FingerprintSize = 10 * fileconsumer.DefaultFingerprintSize
 				return cfg
 			},
 		},
@@ -135,7 +135,7 @@ func BenchmarkFileInput(b *testing.B) {
 				cfg.Include = []string{
 					"file*.log",
 				}
-				cfg.FingerprintSize = defaultFingerprintSize / 10
+				cfg.FingerprintSize = fileconsumer.DefaultFingerprintSize / 10
 				return cfg
 			},
 		},
@@ -143,10 +143,9 @@ func BenchmarkFileInput(b *testing.B) {
 
 	for _, bench := range cases {
 		b.Run(bench.name, func(b *testing.B) {
-			rootDir, err := ioutil.TempDir("", "")
-			require.NoError(b, err)
+			rootDir := b.TempDir()
 
-			files := []*benchFile{}
+			var files []*benchFile
 			for _, path := range bench.paths {
 				file := openFile(b, filepath.Join(rootDir, path))
 				files = append(files, simpleTextFile(b, file))

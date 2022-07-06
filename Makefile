@@ -36,6 +36,10 @@ ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
 INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | uniq | xargs $(TO_MOD_DIR) )
 
+ifeq ($(GOOS),windows)
+	EXTENSION := .exe
+endif
+
 .DEFAULT_GOAL := all
 
 all-modules:
@@ -254,6 +258,27 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: chlog-install
+chlog-install:
+	cd cmd/chloggen && $(GOCMD) install .
+
+FILENAME?=$(shell git branch --show-current)
+.PHONY: chlog-new
+chlog-new: chlog-install
+	chloggen new -filename $(FILENAME)
+
+.PHONY: chlog-validate
+chlog-validate: chlog-install
+	chloggen validate
+
+.PHONY: chlog-preview
+chlog-preview: chlog-install
+	chloggen update -dry
+
+.PHONY: chlog-update
+chlog-update: chlog-install
+	chloggen update -version $(VERSION)
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
@@ -271,29 +296,6 @@ otelcontribcol-unstable:
 otelcontribcol-testbed:
 	GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ./bin/otelcontribcol_testbed_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		$(BUILD_INFO) -tags $(GO_BUILD_TAGS),testbed ./cmd/otelcontribcol
-
-.PHONY: otelcontribcol-all-sys
-otelcontribcol-all-sys: otelcontribcol-darwin_amd64 otelcontribcol-darwin_arm64 otelcontribcol-linux_amd64 otelcontribcol-linux_arm64 otelcontribcol-windows_amd64
-
-.PHONY: otelcontribcol-darwin_amd64
-otelcontribcol-darwin_amd64:
-	GOOS=darwin  GOARCH=amd64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-darwin_arm64
-otelcontribcol-darwin_arm64:
-	GOOS=darwin  GOARCH=arm64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-linux_amd64
-otelcontribcol-linux_amd64:
-	GOOS=linux   GOARCH=amd64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-linux_arm64
-otelcontribcol-linux_arm64:
-	GOOS=linux   GOARCH=arm64 $(MAKE) otelcontribcol
-
-.PHONY: otelcontribcol-windows_amd64
-otelcontribcol-windows_amd64:
-	GOOS=windows GOARCH=amd64 EXTENSION=.exe $(MAKE) otelcontribcol
 
 .PHONY: update-dep
 update-dep:
@@ -338,6 +340,10 @@ build-examples:
 checkdoc:
 	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
+.PHONY: all-checklinks
+all-checklinks:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="checklinks"
+
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
 # Accepts command to execute as first parameter.
@@ -349,7 +355,8 @@ endef
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
-             receiver/splunkhecreceiver/testdata
+             receiver/splunkhecreceiver/testdata \
+             receiver/mongodbatlasreceiver/testdata/alerts/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs

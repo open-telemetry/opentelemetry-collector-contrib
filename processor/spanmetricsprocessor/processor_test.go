@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package spanmetricsprocessor
 
 import (
@@ -333,7 +332,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	for n := 0; n < b.N; n++ {
-		p.ConsumeTraces(ctx, traces)
+		assert.NoError(b, p.ConsumeTraces(ctx, traces))
 	}
 }
 
@@ -453,20 +452,20 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 
 		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
 		var foundLatencyIndex int
-		for foundLatencyIndex = 0; foundLatencyIndex < len(dp.MExplicitBounds()); foundLatencyIndex++ {
-			if dp.MExplicitBounds()[foundLatencyIndex] > sampleLatency {
+		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
+			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
 				break
 			}
 		}
 
 		// Then verify that all histogram buckets are empty except for the bucket with the 11ms latency.
 		var wantBucketCount uint64
-		for bi := 0; bi < len(dp.MBucketCounts()); bi++ {
+		for bi := 0; bi < dp.BucketCounts().Len(); bi++ {
 			wantBucketCount = 0
 			if bi == foundLatencyIndex {
 				wantBucketCount = uint64(numCumulativeConsumptions)
 			}
-			assert.Equal(t, wantBucketCount, dp.MBucketCounts()[bi])
+			assert.Equal(t, wantBucketCount, dp.BucketCounts().At(bi))
 		}
 		verifyMetricLabels(dp, t, seenMetricIDs)
 	}
@@ -774,7 +773,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	//testcases with skipSanitizeLabel flag turned on
+	// testcases with skipSanitizeLabel flag turned on
 	cfg.skipSanitizeLabel = true
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
 	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))

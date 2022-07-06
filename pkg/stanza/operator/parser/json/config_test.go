@@ -70,7 +70,7 @@ func TestConfig(t *testing.T) {
 			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityParser := helper.NewConfig()
+				severityParser := helper.NewSeverityConfig()
 				severityParser.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",

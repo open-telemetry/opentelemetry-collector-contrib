@@ -294,8 +294,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(timestamp)
-		dpLatency.SetMExplicitBounds(p.latencyBounds)
-		dpLatency.SetMBucketCounts(p.latencyBucketCounts[key])
+		dpLatency.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.latencyBounds))
+		dpLatency.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.latencyBucketCounts[key]))
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
@@ -529,11 +529,11 @@ func sanitize(s string, skipSanitizeLabel bool) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = "key_" + s
 	}
-	//replace labels starting with _ only when skipSanitizeLabel is disabled
+	// replace labels starting with _ only when skipSanitizeLabel is disabled
 	if !skipSanitizeLabel && strings.HasPrefix(s, "_") {
 		s = "key" + s
 	}
-	//labels starting with __ are reserved in prometheus
+	// labels starting with __ are reserved in prometheus
 	if strings.HasPrefix(s, "__") {
 		s = "key" + s
 	}

@@ -127,7 +127,8 @@ func (ms *metricsets) upsert(m model.Metrics) {
 	} else {
 		head := (*ms)[:i]
 		tail := append([]model.Metrics{m}, (*ms)[i:]...)
-		*ms = append(head, tail...)
+		head = append(head, tail...)
+		*ms = head
 	}
 }
 

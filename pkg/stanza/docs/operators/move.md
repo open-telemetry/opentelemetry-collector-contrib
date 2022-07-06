@@ -204,7 +204,6 @@ Remove a layer from the body
     }
   }
 }
-}
 ```
 
 </td>

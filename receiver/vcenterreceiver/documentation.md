@@ -71,7 +71,7 @@ metrics:
 | disk_direction (direction) | The direction of disk latency. | read, write |
 | disk_state | The state of storage and whether it is already allocated or free. | available, used |
 | disk_type | The type of storage device that is being recorded. | virtual, physical |
-| host_effective (effective) | Whether the host is effective in the vCenter cluster. | true, false |
+| host_effective (effective) | Whether the host is effective in the vCenter cluster. |  |
 | latency_type (type) | The type of disk latency being reported. | kernel, device |
 | throughput_direction (direction) | The direction of network throughput. | transmitted, received |
 | vm_count_power_state (power_state) | Whether the virtual machines are powered on or off. | on, off |

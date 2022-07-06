@@ -12,13 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package carbonreceiver
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"testing"
 	"time"
@@ -164,8 +162,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 }
 
 func Test_carbonreceiver_EndToEnd(t *testing.T) {
-	host := "localhost"
-	port := int(testutil.GetAvailablePort(t))
+	addr := testutil.GetAvailableLocalAddress(t)
 	tests := []struct {
 		name     string
 		configFn func() *Config
@@ -177,7 +174,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				return createDefaultConfig().(*Config)
 			},
 			clientFn: func(t *testing.T) *client.Graphite {
-				c, err := client.NewGraphite(client.TCP, host, port)
+				c, err := client.NewGraphite(client.TCP, addr)
 				require.NoError(t, err)
 				return c
 			},
@@ -190,7 +187,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 				return cfg
 			},
 			clientFn: func(t *testing.T) *client.Graphite {
-				c, err := client.NewGraphite(client.UDP, host, port)
+				c, err := client.NewGraphite(client.UDP, addr)
 				require.NoError(t, err)
 				return c
 			},
@@ -199,7 +196,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
-			cfg.Endpoint = fmt.Sprintf("%s:%d", host, port)
+			cfg.Endpoint = addr
 			sink := new(consumertest.MetricsSink)
 			rcv, err := New(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 			require.NoError(t, err)
@@ -210,7 +207,9 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			runtime.Gosched()
-			defer r.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, r.Shutdown(context.Background()))
+			}()
 
 			snd := tt.clientFn(t)
 

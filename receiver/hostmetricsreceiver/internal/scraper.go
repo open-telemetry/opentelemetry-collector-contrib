@@ -34,7 +34,3 @@ type ScraperFactory interface {
 // Config is the configuration of a scraper.
 type Config interface {
 }
-
-// ConfigSettings provides common settings for scraper configuration.
-type ConfigSettings struct {
-}

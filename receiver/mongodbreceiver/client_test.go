@@ -53,13 +53,13 @@ func (fc *fakeClient) GetVersion(ctx context.Context) (*version.Version, error) 
 	return args.Get(0).(*version.Version), args.Error(1)
 }
 
-func (fc *fakeClient) ServerStatus(ctx context.Context, DBName string) (bson.M, error) {
-	args := fc.Called(ctx, DBName)
+func (fc *fakeClient) ServerStatus(ctx context.Context, dbName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName)
 	return args.Get(0).(bson.M), args.Error(1)
 }
 
-func (fc *fakeClient) DBStats(ctx context.Context, DBName string) (bson.M, error) {
-	args := fc.Called(ctx, DBName)
+func (fc *fakeClient) DBStats(ctx context.Context, dbName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName)
 	return args.Get(0).(bson.M), args.Error(1)
 }
 

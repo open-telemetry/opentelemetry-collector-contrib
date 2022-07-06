@@ -79,6 +79,12 @@ func getSubPolicyEvaluator(logger *zap.Logger, cfg *SubPolicyCfg) (sampling.Poli
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
 	case And:
 		return getNewAndPolicy(logger, cfg.AndCfg)
+	case SpanCount:
+		scCfg := cfg.SpanCountCfg
+		return sampling.NewSpanCount(logger, scCfg.MinSpans), nil
+	case TraceState:
+		tsfCfg := cfg.TraceStateCfg
+		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package mongodbreceiver
 
 import (
@@ -90,7 +89,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(actualMetrics, expectedMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
 }
 
 func TestScrapeNoClient(t *testing.T) {
