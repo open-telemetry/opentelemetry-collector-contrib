@@ -1,4 +1,4 @@
-FROM oracle/database:21.3.0-xe
+FROM container-registry.oracle.com/database/express:latest
 
 ENV ORACLE_PWD=mysecurepassword
 
