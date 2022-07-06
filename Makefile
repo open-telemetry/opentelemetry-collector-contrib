@@ -356,7 +356,8 @@ endef
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
-             receiver/mongodbatlasreceiver/testdata/alerts/certs
+             receiver/mongodbatlasreceiver/testdata/alerts/certs \
+             receiver/mongodbreceiver/testdata/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
