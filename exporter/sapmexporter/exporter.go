@@ -17,6 +17,7 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jaegertracing/jaeger/model"
 	sapmclient "github.com/signalfx/sapm-proto/client"
@@ -118,9 +119,18 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	// so need to remove that after conversion.
 	filterToken(batches)
 
-	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
+	ingestResponse, err := se.client.ExportWithAccessTokenAndGetResponse(ctx, batches, accessToken)
+	if se.config.LogDetailedResponse && ingestResponse != nil {
+		if ingestResponse.Err != nil {
+			se.logger.Debug("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
+		} else {
+			se.logger.Debug("Detailed response from ingest", zap.ByteString("response", ingestResponse.Body))
+		}
+	}
+
 	if err != nil {
-		if sendErr, ok := err.(*sapmclient.ErrSend); ok && sendErr.Permanent {
+		sendErr := &sapmclient.ErrSend{}
+		if errors.As(err, &sendErr) && sendErr.Permanent {
 			return consumererror.NewPermanent(sendErr)
 		}
 		return err

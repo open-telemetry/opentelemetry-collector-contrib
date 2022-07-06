@@ -107,17 +107,23 @@ func (kp *kubernetesprocessor) processLogs(ctx context.Context, ld plog.Logs) (p
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pcommon.Resource) {
-	podIdentifierKey, podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
-	if podIdentifierKey != "" {
-		resource.Attributes().InsertString(podIdentifierKey, string(podIdentifierValue))
-	}
+	podIdentifierValue := extractPodID(ctx, resource.Attributes(), kp.podAssociations)
+	kp.logger.Debug("evaluating pod identifier", zap.Any("value", podIdentifierValue))
 
+	for i := range podIdentifierValue {
+		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
+			resource.Attributes().InsertString(k8sIPLabelName, podIdentifierValue[i].Value)
+			break
+		}
+	}
 	if kp.passthroughMode {
 		return
 	}
 
-	if podIdentifierKey != "" {
+	if podIdentifierValue.IsNotEmpty() {
 		if pod, ok := kp.kc.GetPod(podIdentifierValue); ok {
+			kp.logger.Debug("getting the pod", zap.Any("pod", pod))
+
 			for key, val := range pod.Attributes {
 				resource.Attributes().InsertString(key, val)
 			}

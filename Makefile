@@ -258,6 +258,27 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: chlog-install
+chlog-install:
+	cd cmd/chloggen && $(GOCMD) install .
+
+FILENAME?=$(shell git branch --show-current)
+.PHONY: chlog-new
+chlog-new: chlog-install
+	chloggen new -filename $(FILENAME)
+
+.PHONY: chlog-validate
+chlog-validate: chlog-install
+	chloggen validate
+
+.PHONY: chlog-preview
+chlog-preview: chlog-install
+	chloggen update -dry
+
+.PHONY: chlog-update
+chlog-update: chlog-install
+	chloggen update -version $(VERSION)
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
@@ -319,6 +340,10 @@ build-examples:
 checkdoc:
 	checkdoc --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
 
+.PHONY: all-checklinks
+all-checklinks:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="checklinks"
+
 # Function to execute a command. Note the empty line before endef to make sure each command
 # gets executed separately instead of concatenated with previous one.
 # Accepts command to execute as first parameter.
@@ -330,7 +355,8 @@ endef
 # List of directories where certificates are stored for unit tests.
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
-             receiver/splunkhecreceiver/testdata
+             receiver/splunkhecreceiver/testdata \
+             receiver/mongodbatlasreceiver/testdata/alerts/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs

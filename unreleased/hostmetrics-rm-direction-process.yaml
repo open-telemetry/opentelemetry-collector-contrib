@@ -1,0 +1,12 @@
+change_type: deprecation
+
+component: hostmetricsreceiver
+
+note: "Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics` can be set to apply the following"
+
+issues: [11819]
+
+subtext: |
+  - `process.disk.io` will become:
+    - `process.disk.io.read`
+    - `process.disk.io.write`

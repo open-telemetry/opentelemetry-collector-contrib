@@ -245,12 +245,12 @@ func initDoubleHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetTimestamp(TestMetricTimestamp)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
-	hdp1.SetMBucketCounts([]uint64{0, 1})
+	hdp1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1}))
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
 	initMetricAttachment(exemplar.FilteredAttributes())
-	hdp1.SetMExplicitBounds([]float64{1})
+	hdp1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
 }
 
 func initDoubleSummaryMetric(sm pmetric.Metric) {

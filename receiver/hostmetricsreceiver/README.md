@@ -1,7 +1,7 @@
 # Host Metrics Receiver
 
 | Status                   |                   |
-| ------------------------ |-------------------|
+| ------------------------ | ----------------- |
 | Stability                | [beta]            |
 | Supported pipeline types | metrics           |
 | Distributions            | [core], [contrib] |
@@ -27,14 +27,14 @@ hostmetrics:
 The available scrapers are:
 
 | Scraper    | Supported OSs                | Description                                            |
-|------------|------------------------------|--------------------------------------------------------|
+| ---------- | ---------------------------- | ------------------------------------------------------ |
 | cpu        | All except Mac<sup>[1]</sup> | CPU utilization metrics                                |
 | disk       | All except Mac<sup>[1]</sup> | Disk I/O metrics                                       |
 | load       | All                          | CPU load metrics                                       |
 | filesystem | All                          | File System utilization metrics                        |
 | memory     | All                          | Memory utilization metrics                             |
 | network    | All                          | Network interface I/O metrics & TCP connection metrics |
-| paging     | All                          | Paging/Swap space utilization and I/O metrics
+| paging     | All                          | Paging/Swap space utilization and I/O metrics          |
 | processes  | Linux                        | Process count metrics                                  |
 | process    | Linux & Windows              | Per process CPU, Memory, and Disk I/O metrics          |
 
@@ -129,6 +129,114 @@ service:
     metrics:
       receivers: [hostmetrics, hostmetrics/disk]
 ```
+
+### Feature gate configurations
+
+- `receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics`
+  - Description
+    - Some network metrics reported by the hostmetricsreceiver are transitioning from being reported
+		with a direction attribute to being reported with the direction included in the metric name to adhere to the
+		OpenTelemetry specification. Please update any monitoring this might affect.
+  - Affected Metrics
+    - `system.network.dropped` will become:
+      - `system.network.dropped.receive`
+      - `system.network.dropped.transmit`
+    - `system.network.errors` will become:
+      - `system.network.errors.receive`
+      - `system.network.errors.transmit`
+    - `system.network.io` will become:
+      - `system.network.io.receive`
+      - `system.network.io.transmit`
+    - `system.network.packets` will become:
+      - `system.network.packets.receive`
+      - `system.network.packets.transmit`
+  - Stages and Timeline
+    - Alpha (current stage)
+      - In this stage the feature gate is disabled by default and must be enabled by the user. This allows users to preemptively opt in and start using the bug fix by enabling the feature gate.
+      - Collector version: v0.55.0
+      - Release Date: Early July 2022
+    - Beta
+      - In this stage the feature gate is enabled by default and can be disabled by the user.
+      - Collector version: v0.57.0
+      - Release Date: Early August 2022
+    - Generally Available
+      - In this stage the feature gate is permanently enabled and the feature gate is no longer available for anyone.
+      - Users could experience some friction in this stage, they may have to update monitoring for the affected metrics or be blocked from upgrading the collector to versions v0.59.0 and newer.
+      - Collector version: v0.59.0
+      - Release Date: Early September 2022
+  - Usage
+    - Feature gate identifiers prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
+    - Start the otelcol with the feature gate enabled:
+      - otelcol {other_arguments} --feature-gates=receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics
+    - Start the otelcol with the feature gate disabled:
+      - otelcol {other_arguments} --feature-gates=-receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics
+  - More information:
+    - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
+    - https://github.com/open-telemetry/opentelemetry-specification/pull/2617
+- `receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics`
+  - Description
+    - Some paging metrics reported by the hostmetricsreceiver are transitioning from being reported
+		with a direction attribute to being reported with the direction included in the metric name to adhere to the
+		OpenTelemetry specification. Please update any monitoring this might affect.
+  - Affected Metrics
+    - `system.paging.operations` will become:
+      - `system.paging.operations.page_in`
+      - `system.paging.operations.page_out`
+  - Stages and Timeline
+    - Alpha (current stage)
+      - In this stage the feature gate is disabled by default and must be enabled by the user. This allows users to preemptively opt in and start using the bug fix by enabling the feature gate.
+      - Collector version: v0.55.0
+      - Release Date: Early July 2022
+    - Beta
+      - In this stage the feature gate is enabled by default and can be disabled by the user.
+      - Collector version: v0.57.0
+      - Release Date: Early August 2022
+    - Generally Available
+      - In this stage the feature gate is permanently enabled and the feature gate is no longer available for anyone.
+      - Users could experience some friction in this stage, they may have to update monitoring for the affected metrics or be blocked from upgrading the collector to versions v0.59.0 and newer.
+      - Collector version: v0.59.0
+      - Release Date: Early September 2022
+  - Usage
+    - Feature gate identifiers prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
+    - Start the otelcol with the feature gate enabled:
+      - otelcol {other_arguments} --feature-gates=receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics
+    - Start the otelcol with the feature gate disabled:
+      - otelcol {other_arguments} --feature-gates=-receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics
+  - More information:
+    - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
+    - https://github.com/open-telemetry/opentelemetry-specification/pull/2617
+- `receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics`
+  - Description
+    - Some process metrics reported by the hostmetricsreceiver are transitioning from being reported
+		with a direction attribute to being reported with the direction included in the metric name to adhere to the
+		OpenTelemetry specification. Please update any monitoring this might affect.
+  - Affected Metrics
+    - `process.disk.io` will become:
+      - `process.disk.io.read`
+      - `process.disk.io.write`
+  - Stages and Timeline
+    - Alpha (current stage)
+      - In this stage the feature gate is disabled by default and must be enabled by the user. This allows users to preemptively opt in and start using the bug fix by enabling the feature gate.
+      - Collector version: v0.55.0
+      - Release Date: Early July 2022
+    - Beta
+      - In this stage the feature gate is enabled by default and can be disabled by the user.
+      - Collector version: v0.57.0
+      - Release Date: Early August 2022
+    - Generally Available
+      - In this stage the feature gate is permanently enabled and the feature gate is no longer available for anyone.
+      - Users could experience some friction in this stage, they may have to update monitoring for the affected metrics or be blocked from upgrading the collector to versions v0.59.0 and newer.
+      - Collector version: v0.59.0
+      - Release Date: Early September 2022
+  - Usage
+    - Feature gate identifiers prefixed with - will disable the gate and prefixing with + or with no prefix will enable the gate.
+    - Start the otelcol with the feature gate enabled:
+      - otelcol {other_arguments} --feature-gates=receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics
+    - Start the otelcol with the feature gate disabled:
+      - otelcol {other_arguments} --feature-gates=-receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics
+  - More information:
+    - https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815
+    - https://github.com/open-telemetry/opentelemetry-specification/pull/2617
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

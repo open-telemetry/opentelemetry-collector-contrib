@@ -1,0 +1,16 @@
+receivers:
+  sqlserver:
+    collection_interval: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [sqlserver]
+      processors: [nop]
+      exporters: [nop]

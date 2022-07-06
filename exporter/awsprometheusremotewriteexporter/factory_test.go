@@ -12,12 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsprometheusremotewriteexporter
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +32,7 @@ func TestType(t *testing.T) {
 	assert.Equal(t, af.Type(), config.Type(typeStr))
 }
 
-//Tests whether or not the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
+// Tests whether the default Exporter factory can instantiate a properly interfaced Exporter with default conditions
 func TestCreateDefaultConfig(t *testing.T) {
 	af := NewFactory()
 	cfg := af.CreateDefaultConfig()
@@ -42,7 +40,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 }
 
-//Tests whether or not a correct Metrics Exporter from the default Config parameters
+// Tests whether a correct Metrics Exporter from the default Config parameters
 func TestCreateMetricsExporter(t *testing.T) {
 	af := NewFactory()
 	validConfigWithAuth := af.CreateDefaultConfig().(*Config)
@@ -51,8 +49,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 	// Some form of AWS credentials chain required to test valid auth case
 	// This is a set of mock credentials strictly for testing purposes. Users
 	// should not set their credentials like this in production.
-	os.Setenv("AWS_ACCESS_KEY", "mock_value")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "mock_value2")
+	t.Setenv("AWS_ACCESS_KEY", "mock_value")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "mock_value2")
 
 	invalidConfigWithAuth := af.CreateDefaultConfig().(*Config)
 	invalidConfigWithAuth.AuthConfig = AuthConfig{Region: "", Service: "service"}

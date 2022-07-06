@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
@@ -74,7 +73,7 @@ func newCollectdReceiver(
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
 		}
 	}()
 	return nil
@@ -125,7 +124,13 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return
 	}
-	w.Write([]byte("OK"))
+
+	_, err = w.Write([]byte("OK"))
+	if err != nil {
+		cdr.handleHTTPErr(w, err, "unable to write response")
+		return
+	}
+
 }
 
 func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]string {

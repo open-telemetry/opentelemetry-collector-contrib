@@ -15,7 +15,6 @@
 package logs
 
 import (
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -53,7 +52,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
 	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{9, 6, 4})
+	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -134,7 +133,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: uint32(3),
+			orig: int64(3),
 			new:  int64(4),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetFlags(uint32(4))
@@ -148,7 +147,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewTraceID(traceID),
-			new:  hex.EncodeToString(traceID2[:]),
+			new:  pcommon.NewTraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -161,7 +160,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID),
-			new:  hex.EncodeToString(spanID2[:]),
+			new:  pcommon.NewSpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -247,7 +246,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -342,7 +341,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: uint32(10),
+			orig: int64(10),
 			new:  int64(20),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetDroppedAttributesCount(20)
@@ -479,7 +478,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -624,7 +623,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertBool("bool", true)
 	log.Attributes().UpsertInt("int", 10)
 	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertMBytes("bytes", []byte{1, 3, 2})
+	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
 	arrStr := pcommon.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
@@ -647,8 +646,8 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().Upsert("arr_float", arrFloat)
 
 	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{2, 3, 4})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 	log.Attributes().Upsert("arr_bytes", arrBytes)
 
 	log.SetDroppedAttributesCount(10)

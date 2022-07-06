@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusreceiver
 
 import (
@@ -31,7 +30,6 @@ import (
 
 const testDir = "./testdata/openmetrics/"
 
-// nolint:unused
 var skippedTests = map[string]struct{}{
 	"bad_clashing_names_0": {}, "bad_clashing_names_1": {}, "bad_clashing_names_2": {},
 	"bad_counter_values_0": {}, "bad_counter_values_1": {}, "bad_counter_values_2": {},
@@ -84,7 +82,6 @@ func TestOpenMetricsPositive(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-// nolint:unused
 func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
@@ -100,7 +97,7 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
+	skip(t, "Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
 
 	targetsMap := getOpenMetricsTestData(true)
 	targets := make([]*testData, 0)
@@ -119,7 +116,7 @@ func TestOpenMetricsNegative(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-//reads test data from testdata/openmetrics directory
+// reads test data from testdata/openmetrics directory
 func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 	testDir, err := os.Open(testDir)
 	if err != nil {
@@ -127,12 +124,12 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 	}
 	defer testDir.Close()
 
-	//read all test file names in testdata/openmetrics
+	// read all test file names in testdata/openmetrics
 	testList, _ := testDir.Readdirnames(0)
 
 	targetsData := make(map[string]string)
 	for _, testName := range testList {
-		//ignore hidden files
+		// ignore hidden files
 		if strings.HasPrefix(testName, ".") {
 			continue
 		}

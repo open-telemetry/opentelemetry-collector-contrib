@@ -43,7 +43,7 @@ func newElasticTracesExporter(
 ) (component.TracesExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), set.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %v", err)
+		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %w", err)
 	}
 	return exporterhelper.NewTracesExporter(cfg, set, func(ctx context.Context, traces ptrace.Traces) error {
 		var errs error
@@ -63,7 +63,7 @@ func newElasticMetricsExporter(
 ) (component.MetricsExporter, error) {
 	exporter, err := newElasticExporter(cfg.(*Config), set.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %v", err)
+		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %w", err)
 	}
 	return exporterhelper.NewMetricsExporter(cfg, set, func(ctx context.Context, input pmetric.Metrics) error {
 		var errs error
@@ -84,7 +84,7 @@ type elasticExporter struct {
 
 func newElasticExporter(config *Config, logger *zap.Logger) (*elasticExporter, error) {
 	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid config: %s", err)
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 	transport, err := newTransport(config)
 	if err != nil {
@@ -96,7 +96,7 @@ func newElasticExporter(config *Config, logger *zap.Logger) (*elasticExporter, e
 func newTransport(config *Config) (transport.Transport, error) {
 	transport, err := transport.NewHTTPTransport()
 	if err != nil {
-		return nil, fmt.Errorf("error creating HTTP transport: %v", err)
+		return nil, fmt.Errorf("error creating HTTP transport: %w", err)
 	}
 	tlsConfig, err := config.LoadTLSConfig()
 	if err != nil {
@@ -125,7 +125,10 @@ func newTransport(config *Config) (transport.Transport, error) {
 // returning the number of spans that were dropped along with any errors.
 func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.ResourceSpans) (int, error) {
 	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rs.Resource(), &w)
+	if err := elastic.EncodeResourceMetadata(rs.Resource(), &w); err != nil {
+		return rs.ScopeSpans().Len(), err
+	}
+
 	var errs []error
 	var count int
 	scopeSpansSlice := rs.ScopeSpans()
@@ -153,7 +156,9 @@ func (e *elasticExporter) ExportResourceSpans(ctx context.Context, rs ptrace.Res
 // returning the number of metrics that were dropped along with any errors.
 func (e *elasticExporter) ExportResourceMetrics(ctx context.Context, rm pmetric.ResourceMetrics) (int, error) {
 	var w fastjson.Writer
-	elastic.EncodeResourceMetadata(rm.Resource(), &w)
+	if err := elastic.EncodeResourceMetadata(rm.Resource(), &w); err != nil {
+		return rm.ScopeMetrics().Len(), err
+	}
 	var errs error
 	var totalDropped int
 	scopeMetricsSlice := rm.ScopeMetrics()
