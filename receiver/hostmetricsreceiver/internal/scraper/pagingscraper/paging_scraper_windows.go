@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/service/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -52,13 +53,23 @@ type scraper struct {
 	perfCounterScraper perfcounters.PerfCounterScraper
 
 	// for mocking
-	bootTime      func() (uint64, error)
-	pageFileStats func() ([]*pageFileStats, error)
+	bootTime                             func() (uint64, error)
+	pageFileStats                        func() ([]*pageFileStats, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
+	return &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		perfCounterScraper:                   &perfcounters.PerfLibScraper{},
+		bootTime:                             host.BootTime,
+		pageFileStats:                        getPageFileStats,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -140,10 +151,11 @@ func (s *scraper) scrapePagingOperationsMetric() error {
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
-	if featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID) {
+	if s.emitMetricsWithoutDirectionAttribute {
 		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeTypeMajor)
-	} else {
+	}
+	if s.emitMetricsWithDirectionAttribute {
 		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
 	}

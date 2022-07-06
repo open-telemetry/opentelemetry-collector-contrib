@@ -29,6 +29,7 @@ metrics:
       monotonic: false
     attributes: [device, state]
 
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   system.paging.operations:
     enabled: true
     description: The number of paging operations.
@@ -39,7 +40,7 @@ metrics:
       monotonic: true
     attributes: [direction, type]
 
-# produced when receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics feature gate is enabled
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
   system.paging.operations.page_in:
     enabled: true
     description: The number of page_in operations.
@@ -50,7 +51,7 @@ metrics:
       monotonic: true
     attributes: [type]
 
-# produced when receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics feature gate is enabled
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
   system.paging.operations.page_out:
     enabled: true
     description: The number of page_out operations.
