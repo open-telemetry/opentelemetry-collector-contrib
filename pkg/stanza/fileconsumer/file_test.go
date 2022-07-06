@@ -1081,14 +1081,7 @@ func TestEncodings(t *testing.T) {
 				require.NoError(t, operator.Stop())
 			}()
 
-			for _, expected := range tc.expected {
-				select {
-				case call := <-emitCalls:
-					require.Equal(t, expected, call.token)
-				case <-time.After(500 * time.Millisecond):
-					require.FailNow(t, "Timed out waiting for entry to be read")
-				}
-			}
+			waitForTokens(t, emitCalls, tc.expected)
 		})
 	}
 }
