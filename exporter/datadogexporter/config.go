@@ -266,6 +266,10 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// flushInterval defines the interval in seconds at which the writer flushes traces
+	// to the intake; used in tests.
+	flushInterval float64
 }
 
 // TagsConfig defines the tag-related configuration
