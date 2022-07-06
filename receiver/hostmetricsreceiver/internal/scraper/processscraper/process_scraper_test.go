@@ -31,6 +31,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -45,39 +46,60 @@ func skipTestOnUnsupportedOS(t *testing.T) {
 
 func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
+	type testCase struct {
+		name                                       string
+		removeDirectionAttributeFeatureGateEnabled bool
+	}
+	testCases := []testCase{
+		{
+			name: "Standard",
+		},
+		{
+			name: "Standard with direction removed",
+			removeDirectionAttributeFeatureGateEnabled: true,
+		},
+	}
 
 	const bootTime = 100
 	const expectedStartTime = 100 * 1e9
 
-	scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
-	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
-	require.NoError(t, err, "Failed to create process scraper: %v", err)
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+	originalVal := featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			featuregate.GetRegistry().Apply(map[string]bool{removeDirectionAttributeFeatureGateID: test.removeDirectionAttributeFeatureGateEnabled})
 
-	md, err := scraper.scrape(context.Background())
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+			scraper.bootTime = func() (uint64, error) { return bootTime, nil }
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	// may receive some partial errors as a result of attempting to:
-	// a) read native system processes on Windows (e.g. Registry process)
-	// b) read info on processes that have just terminated
-	//
-	// so validate that we have at some errors & some valid data
-	if err != nil {
-		require.True(t, scrapererror.IsPartialScrapeError(err))
-		noProcessesScraped := md.ResourceMetrics().Len()
-		var scraperErr scrapererror.PartialScrapeError
-		require.ErrorAs(t, err, &scraperErr)
-		noProcessesErrored := scraperErr.Failed
-		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
-		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+			md, err := scraper.scrape(context.Background())
+
+			// may receive some partial errors as a result of attempting to:
+			// a) read native system processes on Windows (e.g. Registry process)
+			// b) read info on processes that have just terminated
+			//
+			// so validate that we have at some errors & some valid data
+			if err != nil {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				noProcessesScraped := md.ResourceMetrics().Len()
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				noProcessesErrored := scraperErr.Failed
+				require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+				require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+			}
+
+			require.Greater(t, md.ResourceMetrics().Len(), 1)
+			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
+			assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
+		})
 	}
-
-	require.Greater(t, md.ResourceMetrics().Len(), 1)
-	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
-	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
+	featuregate.GetRegistry().Apply(map[string]bool{removeDirectionAttributeFeatureGateID: originalVal})
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
@@ -120,16 +142,26 @@ func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.Resource
 	}
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
-	diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
-	assert.Equal(t, "process.disk.io", diskIOMetric.Name())
-	if startTime != 0 {
-		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+func assertDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp, removeDirection bool) {
+	if removeDirection {
+		for _, metricName := range []string{"process.disk.io.read", "process.disk.io.write"} {
+			diskIOMetric := getMetric(t, metricName, resourceMetrics)
+			assert.Equal(t, metricName, diskIOMetric.Name())
+			if startTime != 0 {
+				internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+			}
+		}
+	} else {
+		diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
+		assert.Equal(t, "process.disk.io", diskIOMetric.Name())
+		if startTime != 0 {
+			internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+		}
+		internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction",
+			pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
+		internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction",
+			pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
 	}
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 0, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionRead.String()))
-	internal.AssertSumMetricHasAttributeValue(t, diskIOMetric, 1, "direction",
-		pcommon.NewValueString(metadata.AttributeDirectionWrite.String()))
 }
 
 func assertSameTimeStampForAllMetricsWithinResource(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
