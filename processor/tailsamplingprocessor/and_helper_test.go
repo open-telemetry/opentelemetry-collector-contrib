@@ -49,7 +49,7 @@ func TestAndHelper(t *testing.T) {
 			SubPolicyCfg: []AndSubPolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
-						Name: "test-and-policy-1",
+						Name: "test-and-policy-2",
 						Type: And, // nested and is not allowed
 					},
 				},
