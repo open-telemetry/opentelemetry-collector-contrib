@@ -2345,7 +2345,6 @@ go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
 go.opentelemetry.io/collector v0.51.0/go.mod h1:2pHwJxKDhSd4t42GkiCosU9G3szHoWUK2R0qnB6X67A=
 go.opentelemetry.io/collector v0.52.0/go.mod h1:a9GvaOhyc0nVOUzqvdv5mxyWghCSso/WRO2GgRl4I1g=
-go.opentelemetry.io/collector v0.54.0/go.mod h1:FgNzyfb4sAGb5cqusB5znETJ8Pz4OQUBGbOeGIZ2rlQ=
 go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741 h1:7T3Ny//abpETnvHICAdqof/rM2BjspfAlKXGPjCmaxA=
 go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741/go.mod h1:Nk6a4r4pLL8py74bEg8xUeoZCA4eSDsaXokGch9ZsyY=
 go.opentelemetry.io/collector/model v0.38.0/go.mod h1:gS8A27wi+8gM3hrXL+dEjTbrbLxktjHjAwwqI31ELgQ=
