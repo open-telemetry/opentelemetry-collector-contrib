@@ -5,7 +5,7 @@ change_type: bug_fix
 component: mongodbatlasreceiver
 
 # A brief description of the change
-note: fix typo in Makefile for mongodbatlasreceiver cert generation
+note: fix typo in Makefile for mongodbatlasreceiver test cert generation
 
 # One or more tracking issues related to the change
 issues: [12117]
