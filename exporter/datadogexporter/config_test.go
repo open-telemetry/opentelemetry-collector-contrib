@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package datadogexporter
 
 import (
 	"testing"
@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-func TestHostTags(t *testing.T) {
+func TestHostTagsTagsConfig(t *testing.T) {
 	tc := TagsConfig{
 		Hostname: "customhost",
 		Env:      "customenv",

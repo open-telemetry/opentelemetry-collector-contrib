@@ -76,7 +76,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 	}
 
 	tlsConfig, err := c.LoadTLSConfig()
-	if err != nil && tlsConfig != nil {
+	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}
 
