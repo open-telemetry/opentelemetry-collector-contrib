@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: opentelemetry
+    component: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: opentelemetry
+      component: otel-collector
+  template:
+    metadata:
+      labels:
+        app: opentelemetry
+        component: otel-collector
+    spec:
+      containers:
+      - name: app
+        # Define your application
+        # ...
+
+        env:
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+          # The application SDK must use this environment variable in order to successfully
+          # connect to the DaemonSet's collector.
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://$(HOST_IP):4318"
