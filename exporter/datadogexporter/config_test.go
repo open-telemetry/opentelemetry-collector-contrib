@@ -21,63 +21,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-func TestHostTagsTagsConfig(t *testing.T) {
-	tc := TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service: "customservice",
-		Version: "customversion",
-		Tags:    []string{"key1:val1", "key2:val2"},
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key1:val1",
-			"key2:val2",
-		},
-		tc.getHostTags(),
-	)
-
-	tc = TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		Tags:       []string{"key1:val1", "key2:val2"},
-		EnvVarTags: "key3:val3 key4:val4",
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key1:val1",
-			"key2:val2",
-		},
-		tc.getHostTags(),
-	)
-
-	tc = TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		EnvVarTags: "key3:val3 key4:val4",
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key3:val3",
-			"key4:val4",
-		},
-		tc.getHostTags(),
-	)
-}
-
 func TestValidate(t *testing.T) {
 
 	tests := []struct {
@@ -103,7 +46,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API:          APIConfig{Key: "notnull"},
 				OnlyMetadata: true,
-				SendMetadata: false,
+				HostMetadata: HostMetadataConfig{Enabled: false},
 			},
 			err: errNoMetadata.Error(),
 		},
@@ -222,9 +165,10 @@ func TestUnmarshal(t *testing.T) {
 		},
 	}
 
+	f := NewFactory()
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			cfg := futureDefaultConfig()
+			cfg := f.CreateDefaultConfig().(*Config)
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
