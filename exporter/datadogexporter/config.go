@@ -26,10 +26,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
@@ -371,7 +369,7 @@ type HostMetadataConfig struct {
 	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
 	//    If this is empty it will use available system APIs and cloud provider endpoints.
 	//
-	// The current default if 'first_resource'.
+	// The default is 'config_or_system'.
 	HostnameSource HostnameSource `mapstructure:"hostname_source"`
 
 	// Tags is a list of host tags.
@@ -543,13 +541,5 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
 	}
 
-	const settingName = "host_metadata::hostname_source"
-	if !configMap.IsSet(settingName) && !featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
-		c.warnings = append(c.warnings, fmt.Errorf(
-			"%q will change its default value on a future version. Use the %q feature gate to preview this and other hostname changes",
-			settingName,
-			metadata.HostnamePreviewFeatureGate,
-		))
-	}
 	return nil
 }

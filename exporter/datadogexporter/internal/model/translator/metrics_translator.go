@@ -423,25 +423,6 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 			}
 		}
 
-		// Log related to the preview hostname feature flag.
-		// TODO (#10424): Remove this once the feature flag is enabled by default.
-		if !t.cfg.previewHostnameFromAttributes {
-			previewSrc, previewOk := attributes.SourceFromAttributes(rm.Resource().Attributes(), true)
-			if !previewOk {
-				previewSrc, _ = t.cfg.fallbackSourceProvider.Source(context.Background())
-			}
-
-			if previewSrc != src {
-				t.onceHostnameChanged.Do(func() {
-					t.logger.Warn(
-						"The source resolved from attributes on one of your metrics will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424",
-						zap.Any("current source", src),
-						zap.Any("future hostname", previewSrc),
-					)
-				})
-			}
-		}
-
 		var host string
 		switch src.Kind {
 		case source.HostnameKind:
