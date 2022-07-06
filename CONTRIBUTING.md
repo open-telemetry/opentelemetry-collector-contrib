@@ -21,6 +21,8 @@ Pull requests that contain user-facing changes will require a changelog entry. K
 
 The changelog is primarily directed at the first three groups but it is sometimes appropriate to include important updates relevant only to the forth group.
 
+If a changelog entry is not required, a maintainer or approver will add the `Skip Changelog` label to the pull request.
+
 **Examples**
 
 Changelog entry required:
