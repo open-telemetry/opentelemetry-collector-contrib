@@ -75,9 +75,9 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter),
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithLogsExporter(f.createLogsExporter),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(f.createLogsExporter, stability),
 	)
 }
 

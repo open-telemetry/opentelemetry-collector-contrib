@@ -43,8 +43,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter),
-		component.WithLogsExporter(f.createLogsExporter))
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(f.createLogsExporter, stability))
 }
 
 // Implements the interface from go.opentelemetry.io/collector/exporter/factory.go
