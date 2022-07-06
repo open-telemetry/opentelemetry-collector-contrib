@@ -41,10 +41,28 @@ type Provider struct {
 	detector gcpDetector
 }
 
+func platformDescription(platform gcp.Platform) string {
+	switch platform {
+	case gcp.UnknownPlatform:
+		return "Unknown platform"
+	case gcp.GKE:
+		return "Google Kubernetes Engine"
+	case gcp.GCE:
+		return "Google Cloud Engine"
+	case gcp.CloudRun:
+		return "Google Cloud Run"
+	case gcp.CloudFunctions:
+		return "Google Cloud Functions"
+	case gcp.AppEngineStandard, gcp.AppEngineFlex:
+		return "Google AppEngine"
+	}
+	return "Unrecognized platform"
+}
+
 // Hostname returns the GCP cloud integration hostname.
 func (p *Provider) Source(context.Context) (source.Source, error) {
-	if p.detector.CloudPlatform() != gcp.GCE {
-		return source.Source{}, fmt.Errorf("not on Google Cloud Engine")
+	if platform := p.detector.CloudPlatform(); platform != gcp.GCE && platform != gcp.GKE {
+		return source.Source{}, fmt.Errorf("not on GCE or GKE (platform: %s)", platformDescription(platform))
 	}
 
 	name, err := p.detector.GCEHostName()

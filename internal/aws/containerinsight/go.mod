@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/co
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.54.0
 	go.uber.org/zap v1.21.0
 )
