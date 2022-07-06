@@ -25,91 +25,12 @@ import (
 	"time"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
-	sms := rm.ScopeMetrics()
-	assert.Equal(t, 1, sms.Len())
-	sm := sms.At(0)
-	ms := sm.Metrics()
-	assert.Equal(t, 4, ms.Len())
-
-	metricsByName := map[string][]pmetric.Metric{}
-	for i := 0; i < ms.Len(); i++ {
-		metric := ms.At(i)
-		name := metric.Name()
-		metricsByName[name] = append(metricsByName[name], metric)
-	}
-
-	for _, metric := range metricsByName["genre.count"] {
-		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get(genreAttrKey)
-		genreStr := genre.AsString()
-		switch genreStr {
-		case "SciFi":
-			assert.EqualValues(t, 3, pt.IntVal())
-		case "Action":
-			assert.EqualValues(t, 2, pt.IntVal())
-		default:
-			assert.Failf(t, "unexpected genre: %s", genreStr)
-		}
-	}
-
-	for _, metric := range metricsByName["genre.imdb"] {
-		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get(genreAttrKey)
-		genreStr := genre.AsString()
-		switch genreStr {
-		case "SciFi":
-			assert.InDelta(t, 8.2, pt.DoubleVal(), 0.1)
-		case "Action":
-			assert.InDelta(t, 7.65, pt.DoubleVal(), 0.1)
-		default:
-			assert.Failf(t, "unexpected genre: %s", genreStr)
-		}
-	}
-}
-
-func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
-	sms := rm.ScopeMetrics()
-	assert.Equal(t, 1, sms.Len())
-	sm := sms.At(0)
-	ms := sm.Metrics()
-	for i := 0; i < ms.Len(); i++ {
-		metric := ms.At(0)
-		switch metric.Name() {
-		case "a":
-			assertIntGaugeEquals(t, 1, metric)
-		case "b":
-			assertIntGaugeEquals(t, 2, metric)
-		case "c":
-			assertIntGaugeEquals(t, 3, metric)
-		case "d":
-			assertDoubleGaugeEquals(t, 4.1, metric)
-		case "e":
-			assertDoubleGaugeEquals(t, 4.2, metric)
-		case "f":
-			assertDoubleGaugeEquals(t, 4.3, metric)
-		case "g":
-			assertDoubleGaugeEquals(t, 4.4, metric)
-		}
-	}
-}
-
-func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
-	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
-}
-
-func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
-	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
-}
 
 func TestPostgresIntegration(t *testing.T) {
 	externalPort := "15432"
@@ -310,4 +231,81 @@ func TestOracleDBIntegration(t *testing.T) {
 	metrics := consumer.AllMetrics()[0]
 	rms := metrics.ResourceMetrics()
 	testMovieMetrics(t, rms.At(0), genreKey)
+}
+
+func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
+	sms := rm.ScopeMetrics()
+	assert.Equal(t, 1, sms.Len())
+	sm := sms.At(0)
+	ms := sm.Metrics()
+	assert.Equal(t, 4, ms.Len())
+
+	metricsByName := map[string][]pmetric.Metric{}
+	for i := 0; i < ms.Len(); i++ {
+		metric := ms.At(i)
+		name := metric.Name()
+		metricsByName[name] = append(metricsByName[name], metric)
+	}
+
+	for _, metric := range metricsByName["genre.count"] {
+		pt := metric.Gauge().DataPoints().At(0)
+		genre, _ := pt.Attributes().Get(genreAttrKey)
+		genreStr := genre.AsString()
+		switch genreStr {
+		case "SciFi":
+			assert.EqualValues(t, 3, pt.IntVal())
+		case "Action":
+			assert.EqualValues(t, 2, pt.IntVal())
+		default:
+			assert.Failf(t, "unexpected genre: %s", genreStr)
+		}
+	}
+
+	for _, metric := range metricsByName["genre.imdb"] {
+		pt := metric.Gauge().DataPoints().At(0)
+		genre, _ := pt.Attributes().Get(genreAttrKey)
+		genreStr := genre.AsString()
+		switch genreStr {
+		case "SciFi":
+			assert.InDelta(t, 8.2, pt.DoubleVal(), 0.1)
+		case "Action":
+			assert.InDelta(t, 7.65, pt.DoubleVal(), 0.1)
+		default:
+			assert.Failf(t, "unexpected genre: %s", genreStr)
+		}
+	}
+}
+
+func testPGTypeMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
+	sms := rm.ScopeMetrics()
+	assert.Equal(t, 1, sms.Len())
+	sm := sms.At(0)
+	ms := sm.Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		metric := ms.At(0)
+		switch metric.Name() {
+		case "a":
+			assertIntGaugeEquals(t, 1, metric)
+		case "b":
+			assertIntGaugeEquals(t, 2, metric)
+		case "c":
+			assertIntGaugeEquals(t, 3, metric)
+		case "d":
+			assertDoubleGaugeEquals(t, 4.1, metric)
+		case "e":
+			assertDoubleGaugeEquals(t, 4.2, metric)
+		case "f":
+			assertDoubleGaugeEquals(t, 4.3, metric)
+		case "g":
+			assertDoubleGaugeEquals(t, 4.4, metric)
+		}
+	}
+}
+
+func assertIntGaugeEquals(t *testing.T, expected int, metric pmetric.Metric) bool {
+	return assert.EqualValues(t, expected, metric.Gauge().DataPoints().At(0).IntVal())
+}
+
+func assertDoubleGaugeEquals(t *testing.T, expected float64, metric pmetric.Metric) bool {
+	return assert.InDelta(t, expected, metric.Gauge().DataPoints().At(0).DoubleVal(), 0.1)
 }
