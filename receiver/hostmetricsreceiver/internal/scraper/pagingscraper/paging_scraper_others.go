@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -125,10 +126,18 @@ func (s *scraper) scrapePagingMetrics() error {
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, swap *mem.SwapMemoryStat) {
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMinor)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMinor)
+	if featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID) {
+		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.Sin), metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.Sout), metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.PgIn), metadata.AttributeTypeMinor)
+		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.PgOut), metadata.AttributeTypeMinor)
+	} else {
+
+		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMinor)
+		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgOut), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMinor)
+	}
 }
 
 func (s *scraper) recordPageFaultsDataPoints(now pcommon.Timestamp, swap *mem.SwapMemoryStat) {

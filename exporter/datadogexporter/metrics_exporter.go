@@ -33,7 +33,6 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
@@ -44,7 +43,7 @@ import (
 
 type metricsExporter struct {
 	params         component.ExporterCreateSettings
-	cfg            *config.Config
+	cfg            *Config
 	ctx            context.Context
 	client         *datadog.Client
 	tr             *translator.Translator
@@ -54,8 +53,8 @@ type metricsExporter struct {
 	sourceProvider source.Provider
 }
 
-// translatorFromConfig creates a new metrics translator from the exporter config.
-func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider source.Provider) (*translator.Translator, error) {
+// translatorFromConfig creates a new metrics translator from the exporter
+func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source.Provider) (*translator.Translator, error) {
 	options := []translator.Option{
 		translator.WithDeltaTTL(cfg.Metrics.DeltaTTL),
 		translator.WithFallbackSourceProvider(sourceProvider),
@@ -66,7 +65,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider
 	}
 
 	switch cfg.Metrics.SummaryConfig.Mode {
-	case config.SummaryModeGauges:
+	case SummaryModeGauges:
 		options = append(options, translator.WithQuantiles())
 	}
 
@@ -90,9 +89,9 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider
 
 	var numberMode translator.NumberMode
 	switch cfg.Metrics.SumConfig.CumulativeMonotonicMode {
-	case config.CumulativeMonotonicSumModeRawValue:
+	case CumulativeMonotonicSumModeRawValue:
 		numberMode = translator.NumberModeRawValue
-	case config.CumulativeMonotonicSumModeToDelta:
+	case CumulativeMonotonicSumModeToDelta:
 		numberMode = translator.NumberModeCumulativeToDelta
 	}
 
@@ -105,7 +104,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *config.Config, sourceProvider
 	return translator.New(logger, options...)
 }
 
-func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
+func newMetricsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*metricsExporter, error) {
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)

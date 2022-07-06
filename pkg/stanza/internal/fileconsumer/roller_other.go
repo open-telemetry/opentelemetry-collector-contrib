@@ -30,7 +30,7 @@ func newRoller() roller {
 	return &detectLostFiles{[]*Reader{}}
 }
 
-func (r *detectLostFiles) roll(ctx context.Context, readers []*Reader) {
+func (r *detectLostFiles) readLostFiles(ctx context.Context, readers []*Reader) {
 	// Detect files that have been rotated out of matching pattern
 	lostReaders := make([]*Reader, 0, len(r.oldReaders))
 OUTER:
@@ -52,7 +52,9 @@ OUTER:
 		}(reader)
 	}
 	lostWG.Wait()
+}
 
+func (r *detectLostFiles) roll(ctx context.Context, readers []*Reader) {
 	for _, reader := range r.oldReaders {
 		reader.Close()
 	}
