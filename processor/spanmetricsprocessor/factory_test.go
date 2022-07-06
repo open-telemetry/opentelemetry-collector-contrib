@@ -39,7 +39,7 @@ func TestNewProcessor(t *testing.T) {
 			wantLatencyHistogramBuckets: defaultLatencyHistogramBucketsMs,
 		},
 		{
-			name:                    "full config with 1 explicit bucket configured should have 1 latency bounds bucket",
+			name:                    "1 configured latency histogram bucket should result in 1 explicit latency bucket (+1 implicit +Inf bucket)",
 			latencyHistogramBuckets: []time.Duration{2 * time.Millisecond},
 			dimensions: []Dimension{
 				{"http.method", &defaultMethod},
