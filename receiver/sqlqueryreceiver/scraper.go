@@ -32,6 +32,7 @@ import (
 type scraper struct {
 	id                 config.ComponentID
 	query              Query
+	scrapeCfg          scraperhelper.ScraperControllerSettings
 	clientProviderFunc clientProviderFunc
 	dbProviderFunc     dbProviderFunc
 	logger             *zap.Logger
@@ -70,7 +71,7 @@ func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 	for _, metricCfg := range s.query.Metrics {
 		for i, row := range rows {
-			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), ts); err != nil {
+			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), ts, s.scrapeCfg); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
 				errs = multierr.Append(errs, err)
 			}
