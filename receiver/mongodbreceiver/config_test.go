@@ -179,7 +179,7 @@ func TestOptions(t *testing.T) {
 
 func TestOptionsTLS(t *testing.T) {
 	// loading valid ca file
-	caFile := filepath.Join("testdata", "certs", "ca-1.cert")
+	caFile := filepath.Join("testdata", "certs", "ca.crt")
 
 	cfg := &Config{
 		Hosts: []confignet.NetAddr{
