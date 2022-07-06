@@ -4,11 +4,11 @@ go 1.17
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.55.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
-	go.opentelemetry.io/collector/pdata v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector v0.55.0
+	go.opentelemetry.io/collector/pdata v0.55.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -38,7 +38,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
