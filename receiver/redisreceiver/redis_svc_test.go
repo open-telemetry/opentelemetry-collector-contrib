@@ -28,6 +28,6 @@ func TestParser(t *testing.T) {
 	s := newFakeAPIParser()
 	info, err := s.info()
 	require.Nil(t, err)
-	require.Equal(t, 123, len(info))
+	require.Equal(t, 128, len(info))
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
 }

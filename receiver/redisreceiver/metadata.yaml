@@ -5,8 +5,51 @@ attributes:
     description: Redis CPU usage state
   db:
     description: Redis database identifier
+  role:
+    description: Redis node's role
+    enum:
+      - replica
+      - primary
+  cmd:
+    description: Redis command name
 
 metrics:
+  redis.maxmemory:
+    enabled: false
+    description: The value of the maxmemory configuration directive
+    unit: By
+    gauge:
+      value_type: int
+
+  redis.role:
+    enabled: false
+    description: Redis node's role
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [role]
+
+  redis.cmd.calls:
+    enabled: false
+    description: Total number of calls for a command
+    unit: ""
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [cmd]
+
+  redis.cmd.usec:
+    enabled: false
+    description: Total time for all executions of this command
+    unit: us
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [cmd]
+
   redis.uptime:
     enabled: true
     description: Number of seconds since Redis server start
