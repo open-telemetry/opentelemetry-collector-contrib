@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	typeStr             = "kafka"
+	typeStr = "kafka"
+	// The stability level of the exporter.
+	stability           = component.StabilityLevelBeta
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"

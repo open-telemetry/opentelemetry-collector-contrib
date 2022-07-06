@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "sumologic"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory returns a new factory for the sumologic exporter.
@@ -33,8 +35,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
-		component.WithMetricsExporter(createMetricsExporter),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
 	)
 }
 

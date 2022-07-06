@@ -27,7 +27,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr         = "azuremonitor"
+	typeStr = "azuremonitor"
+	// The stability level of the exporter.
+	stability       = component.StabilityLevelBeta
 	defaultEndpoint = "https://dc.services.visualstudio.com/v2/track"
 )
 
