@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	typeStr = "postgresql"
+	typeStr   = "postgresql"
+	stability = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ReceiverFactory {
