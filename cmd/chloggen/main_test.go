@@ -45,6 +45,10 @@ func TestNew(t *testing.T) {
 			filename: "some-change.yml",
 		},
 		{
+			name:     "replace_forward_slash",
+			filename: "replace/forward/slash",
+		},
+		{
 			name:     "bad_extension",
 			filename: "my-change.txt",
 			wantErr:  "non-yaml extension",
@@ -332,4 +336,9 @@ func writeEntryYAML(ctx chlogContext, filename string, entry *Entry) error {
 	}
 	path := filepath.Join(ctx.unreleasedDir, filename)
 	return os.WriteFile(path, entryBytes, os.FileMode(0755))
+}
+
+func TestCleanFilename(t *testing.T) {
+	require.Equal(t, "fix_some_bug", cleanFileName("fix/some_bug"))
+	require.Equal(t, "fix_some_bug", cleanFileName("fix\\some_bug"))
 }
