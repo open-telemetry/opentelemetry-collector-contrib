@@ -300,7 +300,7 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
 				k := tagParts[0]
-                v := tagParts[1]
+				v := tagParts[1]
 				kvs = append(kvs, attribute.String(k, v))
 			}
 
