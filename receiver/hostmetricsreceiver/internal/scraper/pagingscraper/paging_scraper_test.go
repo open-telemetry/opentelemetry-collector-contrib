@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
@@ -33,12 +32,13 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                                       string
-		config                                     Config
-		bootTimeFunc                               func() (uint64, error)
-		expectedStartTime                          pcommon.Timestamp
-		initializationErr                          string
-		removeDirectionAttributeFeatureGateEnabled bool
+		name                                   string
+		config                                 Config
+		expectedStartTime                      pcommon.Timestamp
+		initializationErr                      string
+		expectMetricsWithDirectionAttribute    bool
+		expectMetricsWithoutDirectionAttribute bool
+		mutateScraper                          func(*scraper)
 	}
 
 	config := metadata.DefaultMetricsSettings()
@@ -46,34 +46,43 @@ func TestScrape(t *testing.T) {
 
 	testCases := []testCase{
 		{
-			name:   "Standard",
-			config: Config{Metrics: config},
+			name:                                "Standard",
+			config:                              Config{Metrics: config},
+			expectMetricsWithDirectionAttribute: true,
 		},
 		{
-			name:   "Standard with direction removed",
-			config: Config{Metrics: config},
-			removeDirectionAttributeFeatureGateEnabled: true,
+			name:                                   "Standard with direction removed",
+			config:                                 Config{Metrics: config},
+			expectMetricsWithDirectionAttribute:    false,
+			expectMetricsWithoutDirectionAttribute: true,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithDirectionAttribute = false
+				s.emitMetricsWithoutDirectionAttribute = true
+			},
 		},
 		{
-			name:              "Validate Start Time",
-			config:            Config{Metrics: config},
-			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			name:   "Validate Start Time",
+			config: Config{Metrics: config},
+			mutateScraper: func(s *scraper) {
+				s.bootTime = func() (uint64, error) { return 100, nil }
+			},
 			expectedStartTime: 100 * 1e9,
 		},
 		{
-			name:              "Boot Time Error",
-			config:            Config{Metrics: config},
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			name:   "Boot Time Error",
+			config: Config{Metrics: config},
+			mutateScraper: func(s *scraper) {
+				s.bootTime = func() (uint64, error) { return 0, errors.New("err1") }
+			},
 			initializationErr: "err1",
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			featuregate.GetRegistry().Apply(map[string]bool{removeDirectionAttributeFeatureGateID: test.removeDirectionAttributeFeatureGateEnabled})
 			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
-			if test.bootTimeFunc != nil {
-				scraper.bootTime = test.bootTimeFunc
+			if test.mutateScraper != nil {
+				test.mutateScraper(scraper)
 			}
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
@@ -92,7 +101,7 @@ func TestScrape(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				expectedMetrics = 3
 			}
-			if test.removeDirectionAttributeFeatureGateEnabled {
+			if test.expectMetricsWithoutDirectionAttribute {
 				// in/out are separated into an additional metric
 				expectedMetrics++
 			}
@@ -105,11 +114,14 @@ func TestScrape(t *testing.T) {
 				startIndex++
 			}
 
-			if test.removeDirectionAttributeFeatureGateEnabled {
-				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex), metrics.At(startIndex + 1)}, test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
+			if test.expectMetricsWithoutDirectionAttribute {
+				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex),
+					metrics.At(startIndex + 1)}, test.expectedStartTime, true)
 				startIndex++
-			} else {
-				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)}, test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
+			}
+			if test.expectMetricsWithDirectionAttribute {
+				assertPagingOperationsMetricValid(t, []pmetric.Metric{metrics.At(startIndex)},
+					test.expectedStartTime, false)
 			}
 
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)

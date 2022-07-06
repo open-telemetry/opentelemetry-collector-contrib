@@ -12,29 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build windows
-// +build windows
-
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import "context"
 
-type closeImmediately struct{}
-
-func newRoller() roller {
-	return &closeImmediately{}
-}
-
-func (r *closeImmediately) readLostFiles(ctx context.Context, readers []*Reader) {
-	return
-}
-
-func (r *closeImmediately) roll(_ context.Context, readers []*Reader) {
-	for _, reader := range readers {
-		reader.Close()
-	}
-}
-
-func (r *closeImmediately) cleanup() {
-	return
+type roller interface {
+	readLostFiles(context.Context, []*Reader)
+	roll(context.Context, []*Reader)
+	cleanup()
 }
