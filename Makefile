@@ -359,7 +359,6 @@ CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/mongodbatlasreceiver/testdata/alerts/certs \
              receiver/mongodbreceiver/testdata/certs
 
-
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
 certs:
