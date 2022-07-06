@@ -73,6 +73,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   process.disk.io:
     enabled: true
     description: Disk bytes transferred.
@@ -83,7 +84,7 @@ metrics:
       monotonic: true
     attributes: [direction]
 
-# produced when receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics feature gate is enabled
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
   process.disk.io.read:
     enabled: true
     description: Disk bytes read.
@@ -93,7 +94,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
 
-# produced when receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics feature gate is enabled
+  # produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
   process.disk.io.write:
     enabled: true
     description: Disk bytes written.
