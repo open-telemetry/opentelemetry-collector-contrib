@@ -4,6 +4,88 @@
 
 <!-- next version -->
 
+# v0.55.0
+
+## 🛑 Breaking changes 🛑
+- `datadogexporter`: Remove `Sanitize` method from `Config` struct. (#8373)
+- `datadogexporter`: (Under `exporter.datadog.hostname.preview` feature gate) Remove `docker` hostname detector (#11834)
+- `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
+    - If users were disabling this feature gate, they may have to update
+      monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
+  
+- `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
+
+### 🚩 Deprecations 🚩
+- `datadogexporter`: Deprecate `config` package in favor of structs on the `datadogexporter` package. (#8373)
+- `k8sattributesprocessor`: Announcing `pod_association` rules will be deprecated. Use `pod_association.sources` rules instead. This is in order to support metadata enrichment based on multiple attributes. (#4309)
+- `hostmetricsreceiver`: Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics` can be set to apply the following (#11849)
+    - `system.paging.operations` will become:
+      - `system.paging.operations.page_in`
+      - `system.paging.operations.page_out`
+- `hostmetricsreceiver`: Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics` can be set to apply the following (#11819)
+  - `process.disk.io` will become:
+    - `process.disk.io.read`
+    - `process.disk.io.write`
+  
+- `hostmetricsreceiver`: Remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
+    - `system.network.dropped` will become:
+      - `system.network.dropped.receive`
+      - `system.network.dropped.transmit`
+    - `system.network.errors` will become:
+      - `system.network.errors.receive`
+      - `system.network.errors.transmit`
+    - `system.network.io` will become:
+      - `system.network.io.receive`
+      - `system.network.io.transmit`
+    - `system.network.packets` will become:
+      - `system.network.packets.receive`
+      - `system.network.packets.transmit`
+  
+- `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
+- `simpleprometheusreceiver`: Announcing `tls_enable`, `tls_config` will be deprecated and use `confighttp.HTTPClientSettings` instead. (#11553)
+
+### 🚀 New components 🚀
+- `sqlqueryreceiver`: Enable the component (#11848)
+
+### 💡 Enhancements 💡
+- `cmd/chloggen`: Update CI process to validate new changelog strategy (#11841)
+- `cmd/chloggen`: Add new tool for conflict-free CHANGELOG.md management (#11539)
+- `coralogixexporter`: Add support for metrics (#11065)
+- `coreinternal/attraction`: Supports pattern for delete and hash attractions (#11886)
+- `filterprocessor`: Add ability to filter `Spans` (#6341)
+- `flinkmetricsreceiver`: Add attribute values to metadata (#11520)
+- `k8sattributesprocessor`: do not ignore hostNetwork pods for enrichment based on non IP attribute (#12073)
+- `logzioexporter`: Add support for logs pipeline and support for exporterhelper (#10821)
+- `pkg/stanza`: Export `pkg/stanza/fileconsumer` package (#11844)
+- `prometheusreceiver`: Add `target_info` labels to resource attributes (#11034)
+- `redisreceiver`: Add more metrics, `redis.maxmemory`, `redis.role`, `redis.cmd.calls` `redis.cmd.usec` (#11090)
+- `sapmexporter`: Add config option to log responses from Splunk APM (#11425)
+- `splunkhecexporter`: Update limits for max_content_length settings (#11550)
+- `sqlqueryreceiver`: Add core functionality (#10867)
+- `tracegen`: Add additional resource attributes (#11145)
+- `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions. (#10903)
+- `transformprocessor`: replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics (#11125)
+
+### 🧰 Bug fixes 🧰
+- `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
+- `aerospikereceiver`: Fix typo in metric name. Ensure namespace transactions are collected (#12085) (#12083)
+- `coralogixexporter`: Fix metrics bearer token (#11831)
+- `datadogexporter`: (Under `exporter.datadog.hostname.preview` feature gate) Make the hostname reported on GKE match the Datadog GCP integration hostname. (#11893)
+- `datadogexporter`: The `traces.span_name_remappings` setting now correctly refers to the OpenTelemetry key to be renamed without any sort of normalization. (#9693)
+- `datadogexporter`: Unify traces exporter behavior with Datadog Agent OTLP traces ingest. (#9693)
+- `filelogreceiver`: Read log lines from lost files first in a poll cycle (#12084)
+- `filestorageextension`: Copy values returned by Get (#11776)
+- `cmd/chloggen`: Fix problem where 'new' command would fail when branch name contained '/' (#11887)
+- `kafkaexporter`: Fixed config.Topic mutation causing **Logs|Metrics|Traces** to default to 1 topic (#11420)
+- `mongodbreceiver`: do not ignore TLS Settings in mongodbreceiver (#12092)
+- `prometheusexporter`: Expose the same metric from different targets correctly (#4986)
+- `redactionprocessor`: Respect allow_all_keys configuration (#11542)
+- `saphanareceiver`: Fix component memory query, add better error handling (#11507)
+- `sapmreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11518)
+- `signalfxreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11513)
+- `splunkhecreceiver`: Fix issue where component instance use in multiple pipelines leads to start failures (#11517)
+
+
 ## v0.54.0
 
 ## 🛑 Breaking changes 🛑
