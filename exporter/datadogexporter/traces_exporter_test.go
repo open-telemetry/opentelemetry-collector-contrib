@@ -231,10 +231,10 @@ func TestTraceExporter(t *testing.T) {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
-	var got string
+	got := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
-		got = req.Header.Get("Content-Type")
+		got <- req.Header.Get("Content-Type")
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 
@@ -259,6 +259,7 @@ func TestTraceExporter(t *testing.T) {
 				Endpoint: server.URL,
 			},
 			IgnoreResources: []string{},
+			flushInterval:   0.1,
 		},
 	}
 
@@ -270,9 +271,14 @@ func TestTraceExporter(t *testing.T) {
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, simpleTraces())
 	assert.NoError(t, err)
-	time.Sleep(10 * time.Millisecond) // we need a bit of time for channels to receive things
+	timeout := time.After(2 * time.Second)
+	select {
+	case out := <-got:
+		require.Equal(t, "application/x-protobuf", out)
+	case <-timeout:
+		t.Fatal("Timed out")
+	}
 	require.NoError(t, exporter.Shutdown(context.Background()))
-	require.Equal(t, "application/x-protobuf", got)
 }
 
 func TestNewTracesExporter(t *testing.T) {
