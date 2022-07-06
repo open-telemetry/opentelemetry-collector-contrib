@@ -28,8 +28,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestRecorderCounters requires each perf counter record created to exist in the available counters.
-func TestRecorderCounters(t *testing.T) {
+// TestPerfCounterRecorders requires each perf counter record created to exist in the available counters.
+func TestPerfCounterRecorders(t *testing.T) {
 	expectedCounters := getAvailableCounters(t)
 
 	for _, counter := range perfCounterRecorders {
