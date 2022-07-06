@@ -32,7 +32,6 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
@@ -44,7 +43,7 @@ import (
 
 type traceExporter struct {
 	params         component.ExporterCreateSettings
-	cfg            *config.Config
+	cfg            *Config
 	ctx            context.Context // ctx triggers shutdown upon cancellation
 	client         *datadog.Client // client sends runnimg metrics to backend & performs API validation
 	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
@@ -54,7 +53,7 @@ type traceExporter struct {
 	sourceProvider source.Provider // is able to source the origin of a trace (hostname, container, etc)
 }
 
-func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *config.Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
+func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
 	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
