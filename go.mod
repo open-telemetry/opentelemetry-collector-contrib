@@ -33,6 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.54.0
@@ -145,8 +146,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.54.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter v0.54.0
-	github.com/open-telemetry/opentelemetry-log-collection v0.29.1
 	github.com/prometheus/prometheus v0.36.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
@@ -432,6 +431,7 @@ require (
 	github.com/opencontainers/runtime-spec v1.0.3-0.20210326190908-1c3f411f0417 // indirect
 	github.com/opencontainers/selinux v1.10.0 // indirect
 	github.com/openlyinc/pointy v1.1.2 // indirect
+	github.com/opensearch-project/opensearch-go v1.1.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
@@ -506,7 +506,6 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
-	github.com/opensearch-project/opensearch-go v1.1.0 // indirect
 	go.elastic.co/apm v1.15.0 // indirect
 	go.elastic.co/fastjson v1.1.0 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect

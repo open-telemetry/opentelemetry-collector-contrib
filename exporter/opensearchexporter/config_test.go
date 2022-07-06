@@ -39,20 +39,20 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, len(cfg.Exporters), 2)
 
 	defaultCfg := factory.CreateDefaultConfig()
-	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+	defaultCfg.(*Config).Endpoints = []string{"https://opensearch.example.com:9200"}
 	r0 := cfg.Exporters[config.NewComponentID(typeStr)]
 	assert.Equal(t, r0, defaultCfg)
 
 	r1 := cfg.Exporters[config.NewComponentIDWithName(typeStr, "customname")].(*Config)
 	assert.Equal(t, r1, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "customname")),
-		Endpoints:        []string{"https://elastic.example.com:9200"},
+		Endpoints:        []string{"https://opensearch.example.com:9200"},
 		CloudID:          "TRNMxjXlNJEt",
 		Index:            "myindex",
 		Pipeline:         "mypipeline",
 		HTTPClientSettings: HTTPClientSettings{
 			Authentication: AuthenticationSettings{
-				User:     "elastic",
+				User:     "opensearch",
 				Password: "search",
 				APIKey:   "AvFsEiPs==",
 			},
