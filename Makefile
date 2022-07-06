@@ -356,7 +356,7 @@ endef
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
-             receiver/mongodbatlasreceiver/testdata/alerts/cert \
+             receiver/mongodbatlasreceiver/testdata/alerts/certs \
              receiver/mongodbreceiver/testdata/certs
 
 
