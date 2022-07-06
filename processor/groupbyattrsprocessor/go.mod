@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/group
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor v0.55.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
@@ -23,7 +23,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.54.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.55.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
