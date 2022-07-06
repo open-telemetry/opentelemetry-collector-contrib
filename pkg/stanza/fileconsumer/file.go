@@ -277,7 +277,7 @@ func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Rea
 	if err != nil {
 		return nil, err
 	}
-	newReader, err := f.NewReader(file.Name(), file, fp, splitter, f.emit)
+	newReader, err := f.NewReader(file.Name(), file, fp, splitter)
 	if err != nil {
 		return nil, err
 	}
@@ -351,7 +351,7 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		newReader, err := f.NewReader("", nil, nil, splitter, f.emit)
+		newReader, err := f.NewReader("", nil, nil, splitter)
 		if err != nil {
 			return err
 		}
