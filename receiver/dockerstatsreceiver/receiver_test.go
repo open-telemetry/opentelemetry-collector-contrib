@@ -21,7 +21,6 @@ package dockerstatsreceiver
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -40,28 +39,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
-func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
-	statsFile, err := os.Open(responseBodyFile)
+var mockFolder = filepath.Join("testdata", "mock")
+
+func newMockServer(tb testing.TB) *httptest.Server {
+	statsFile, err := os.Open(filepath.Join(mockFolder, "stats.json"))
 	assert.NoError(tb, err)
 	stats, err := ioutil.ReadAll(statsFile)
-	//defer statsFile.Close()
-
-	containerFile, err := os.Open(filepath.Join("testdata", "container.json"))
 	assert.NoError(tb, err)
-	container, err := ioutil.ReadAll(containerFile)
-	//defer containerFile.Close()
+	_ = statsFile.Close()
 
-	require.NoError(tb, err)
+	containersFile, err := os.Open(filepath.Join(mockFolder, "containers.json"))
+	assert.NoError(tb, err)
+	containers, err := ioutil.ReadAll(containersFile)
+	assert.NoError(tb, err)
+	_ = containersFile.Close()
+
+	detailedContainerFile, err := os.Open(filepath.Join(mockFolder, "container.json"))
+	assert.NoError(tb, err)
+	detailedContainer, err := ioutil.ReadAll(detailedContainerFile)
+	assert.NoError(tb, err)
+	_ = detailedContainerFile.Close()
+
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
 		if strings.Contains(req.URL.Path, "/containers/json") {
 			rw.WriteHeader(http.StatusOK)
-			_, err := rw.Write(container)
+			_, err := rw.Write(containers)
 			require.NoError(tb, err)
-			fmt.Println(container)
-		} else {
+		} else if strings.Contains(req.URL.Path, "containers/"+containerID+"/json") {
+			rw.WriteHeader(http.StatusOK)
+			_, err := rw.Write(detailedContainer)
+			require.NoError(tb, err)
+		} else if strings.Contains(req.URL.Path, "stats") {
 			rw.WriteHeader(http.StatusOK)
 			_, err := rw.Write(stats)
 			require.NoError(tb, err)
+		} else {
+			rw.WriteHeader(http.StatusNotFound)
 		}
 		return
 	}))
@@ -102,15 +116,14 @@ func TestErrorsInStart(t *testing.T) {
 	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
 
-func TestScrape(t *testing.T) {
-	// use golden testing thing?
-	ms := newMockServer(t, filepath.Join("testdata", "stats.json"))
+func TestScrapes(t *testing.T) {
+	ms := newMockServer(t)
 	defer ms.Close()
-	time.Sleep(time.Second)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL
-	cfg.Timeout = time.Hour
+	cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
+	cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
 
 	receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
 	err := receiver.start(context.Background(), componenttest.NewNopHost())
@@ -118,10 +131,9 @@ func TestScrape(t *testing.T) {
 
 	actualMetrics, err := receiver.scrape(context.Background())
 	require.NoError(t, err)
-	require.NotNil(t, actualMetrics.ResourceMetrics())
-	assert.Equal(t, actualMetrics.ResourceMetrics().Len(), 1)
+	assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
 
-	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "expected_default_metrics.json"))
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, "expected_metrics.json"))
 	assert.NoError(t, err)
 	assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
