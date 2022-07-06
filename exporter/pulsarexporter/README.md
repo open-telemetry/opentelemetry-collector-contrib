@@ -4,7 +4,7 @@
 | ------------------------ |-----------------------|
 | Stability                | [in-development]      |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | [contrib]        |
+| Distributions            | none        |
 
 Pulsar exporter exports logs, metrics, and traces to Pulsar. This exporter uses a synchronous producer
 that blocks and able to batch messages.
