@@ -1,0 +1,18 @@
+---
+receivers:
+  chrony/custom:
+    endpoint: "udp://localhost:3030"
+    timeout: 10s
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [chrony/custom]
+      processors: [nop]
+      exporters: [nop]
