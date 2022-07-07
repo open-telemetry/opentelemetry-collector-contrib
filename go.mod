@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.17
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.55.0
@@ -149,7 +148,6 @@ require (
 	github.com/prometheus/prometheus v0.36.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.55.0
-	go.opentelemetry.io/collector/pdata v0.55.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220624220833-87e55d714810
 )
@@ -204,6 +202,7 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/aerospike/aerospike-client-go/v5 v5.8.0 // indirect
+	github.com/alecthomas/participle/v2 v2.0.0-alpha9 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.37 // indirect
 	github.com/antonmedv/expr v1.9.0 // indirect
@@ -511,6 +510,7 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.55.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.32.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
