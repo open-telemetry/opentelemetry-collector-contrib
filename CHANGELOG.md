@@ -4,8 +4,6 @@
 
 <!-- next version -->
 
-Test
-
 # v0.55.0
 
 ## 🛑 Breaking changes 🛑
