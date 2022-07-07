@@ -31,6 +31,7 @@ jobs:
             ~/go/pkg/mod
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
+      # This is a temporary line, to create an unrelated change that demonstrates the problem.
       - name: Ensure no changes to the CHANGELOG
         run: |
           # Only the latest commit of the feature branch is available
