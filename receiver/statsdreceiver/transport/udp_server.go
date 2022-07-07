@@ -72,7 +72,7 @@ func (u *udpServer) ListenAndServe(
 				err)
 			var netErr net.Error
 			if errors.As(err, &netErr) {
-				if netErr.Temporary() { // nolint SA1019
+				if netErr.Timeout() {
 					continue
 				}
 			}

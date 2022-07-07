@@ -155,6 +155,7 @@ func createKubernetesProcessor(
 	kp := &kubernetesprocessor{logger: params.Logger}
 
 	warnDeprecatedMetadataConfig(kp.logger, cfg)
+	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
 
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
@@ -251,4 +252,43 @@ func errWrongKeyConfig(cfg config.Processor) error {
 	}
 
 	return nil
+}
+
+func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor) {
+	oCfg := cfg.(*Config)
+	deprecated := ""
+	actual := ""
+	for _, assoc := range oCfg.Association {
+		if assoc.From == "" && assoc.Name == "" {
+			continue
+		}
+
+		deprecated += fmt.Sprintf(`
+- from: %s`, assoc.From)
+		actual += fmt.Sprintf(`
+- sources:
+  - from: %s`, assoc.From)
+
+		if assoc.Name != "" {
+			deprecated += fmt.Sprintf(`
+  name: %s`, assoc.Name)
+		}
+
+		if assoc.From != kube.ConnectionSource {
+			actual += fmt.Sprintf(`
+    name: %s`, assoc.Name)
+		}
+	}
+
+	if deprecated != "" {
+		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
+
+pod_association:%s
+
+with
+
+pod_association:%s
+
+`, deprecated, actual))
+	}
 }

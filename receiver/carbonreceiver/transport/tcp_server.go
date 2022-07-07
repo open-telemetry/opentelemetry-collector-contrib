@@ -108,9 +108,9 @@ func (t *tcpServer) ListenAndServe(
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),
-				netErr.Temporary(), // nolint SA1019
+				netErr.Timeout(),
 				netErr)
-			if netErr.Temporary() { // nolint SA1019
+			if netErr.Timeout() {
 				continue
 			}
 		}
@@ -201,7 +201,7 @@ func (t *tcpServer) handleConnection(
 		netErr := &net.OpError{}
 		if errors.As(err, &netErr) {
 			t.reporter.OnDebugf("TCP Transport (%s) - net.OpError: %v", t.ln.Addr(), netErr)
-			if !netErr.Temporary() || netErr.Timeout() {
+			if netErr.Timeout() {
 				// We want to end on timeout so idle connections are purged.
 				span.End()
 				return

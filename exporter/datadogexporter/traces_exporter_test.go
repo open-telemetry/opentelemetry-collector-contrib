@@ -29,14 +29,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	otelconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/service/featuregate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
@@ -130,20 +129,20 @@ func TestTracesSource(t *testing.T) {
 	}))
 	defer tracesServer.Close()
 
-	cfg := config.Config{
-		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewComponentID(typeStr)),
-		API: config.APIConfig{
+	cfg := Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: config.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname: "fallbackHostname",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
 		},
-		Traces: config.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr:         confignet.TCPAddr{Endpoint: tracesServer.URL},
 			IgnoreResources: []string{},
 		},
@@ -232,34 +231,35 @@ func TestTraceExporter(t *testing.T) {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
-	var got string
+	got := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
-		got = req.Header.Get("Content-Type")
+		got <- req.Header.Get("Content-Type")
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 
 	defer server.Close()
-	cfg := config.Config{
-		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewComponentID(typeStr)),
-		API: config.APIConfig{
+	cfg := Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: config.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: metricsServer.URL,
 			},
 		},
-		Traces: config.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
 			IgnoreResources: []string{},
+			flushInterval:   0.1,
 		},
 	}
 
@@ -271,16 +271,21 @@ func TestTraceExporter(t *testing.T) {
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, simpleTraces())
 	assert.NoError(t, err)
-	time.Sleep(10 * time.Millisecond) // we need a bit of time for channels to receive things
+	timeout := time.After(2 * time.Second)
+	select {
+	case out := <-got:
+		require.Equal(t, "application/x-protobuf", out)
+	case <-timeout:
+		t.Fatal("Timed out")
+	}
 	require.NoError(t, exporter.Shutdown(context.Background()))
-	require.Equal(t, "application/x-protobuf", got)
 }
 
 func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &config.Config{}
+	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
 	params := componenttest.NewNopExporterCreateSettings()
@@ -295,25 +300,25 @@ func TestNewTracesExporter(t *testing.T) {
 func TestPushTraceData(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	cfg := &config.Config{
-		API: config.APIConfig{
+	cfg := &Config{
+		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: config.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname: "test-host",
 			Env:      "test_env",
 			Tags:     []string{"key:val"},
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
-		Traces: config.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: config.HostnameSourceFirstResource,
+			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"bytes"
@@ -145,6 +145,11 @@ func (f *Input) poll(ctx context.Context) {
 
 	readers := f.makeReaders(matches)
 	f.firstCheck = false
+
+	// take care of files which disappeared from the pattern since the last poll cycle
+	// this can mean either files which were removed, or rotated into a name not matching the pattern
+	// we do this before reading existing files to ensure we emit older log lines before newer ones
+	f.roller.readLostFiles(ctx, readers)
 
 	var wg sync.WaitGroup
 	for _, reader := range readers {
