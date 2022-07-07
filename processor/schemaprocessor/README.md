@@ -1,10 +1,10 @@
 # Schema Transformer Processor
 
-| Status                   |                  |
-| ------------------------ | ---------------- |
-| Stability                | [in development] |
-| Supported pipeline types | metrics, traces, logs     |
-| Distributions            | none             |
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [in development]      |
+| Supported pipeline types | metrics, traces, logs |
+| Distributions            | none                  |
 
 The _Schema Processor_ is used to convert existing telemetry data or signals to a version of the semantic convention defined as part of the configuration.
 The processor works by using a set of target schema URLs that are used to match incoming signals.
