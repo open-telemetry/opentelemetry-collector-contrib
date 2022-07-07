@@ -18,16 +18,7 @@
 ### 🚩 Deprecations 🚩
 - `datadogexporter`: Deprecate `config` package in favor of structs on the `datadogexporter` package. (#8373)
 - `k8sattributesprocessor`: Announcing `pod_association` rules will be deprecated. Use `pod_association.sources` rules instead. This is in order to support metadata enrichment based on multiple attributes. (#4309)
-- `hostmetricsreceiver`: Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributePagingMetrics` can be set to apply the following (#11849)
-    - `system.paging.operations` will become:
-      - `system.paging.operations.page_in`
-      - `system.paging.operations.page_out`
-- `hostmetricsreceiver`: Remove direction for paging metrics. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttributeProcessMetrics` can be set to apply the following (#11819)
-  - `process.disk.io` will become:
-    - `process.disk.io.read`
-    - `process.disk.io.write`
-  
-- `hostmetricsreceiver`: Remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
+- `hostmetricsreceiver`: Remove direction for network, paging and process metrics. The feature gates `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` and `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` can be used to control the transition (#11815)
     - `system.network.dropped` will become:
       - `system.network.dropped.receive`
       - `system.network.dropped.transmit`
@@ -40,7 +31,13 @@
     - `system.network.packets` will become:
       - `system.network.packets.receive`
       - `system.network.packets.transmit`
-  
+    - `system.paging.operations` will become:
+      - `system.paging.operations.page_in`
+      - `system.paging.operations.page_out`
+    - `process.disk.io` will become:
+      - `process.disk.io.read`
+      - `process.disk.io.write`
+
 - `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 - `simpleprometheusreceiver`: Announcing `tls_enable`, `tls_config` will be deprecated and use `confighttp.HTTPClientSettings` instead. (#11553)
 
