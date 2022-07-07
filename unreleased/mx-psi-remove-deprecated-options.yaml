@@ -20,3 +20,4 @@ subtext:  |2
     - [Remove `metrics::report_quantiles` in favor of `metrics::summaries::mode`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845)
     - [Remove `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489)
     - [Remove automatic support for environment variable detection in favor of Collector's `${}` syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396)
+    - Remove `metrics::instrumentation_library_metadata_as_tags` in favor of `metrics::instrumentation_scope_as_tags`

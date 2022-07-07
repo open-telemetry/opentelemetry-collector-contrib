@@ -438,6 +438,12 @@ var removedSettings = []renameError{
 		oldRemovedIn: "v0.53.0",
 		issueNumber:  8845,
 	},
+	{
+		oldName:      "metrics::instrumentation_library_metadata_as_tags",
+		newName:      "metrics::instrumentation_scope_as_tags",
+		oldRemovedIn: "v0.56.0",
+		issueNumber:  11135,
+	},
 }
 
 // Error implements the error interface.

@@ -202,6 +202,15 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: "\"metrics::report_quantiles\" was removed in favor of \"metrics::summaries::mode\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845",
 		},
+		{
+			name: "instrumentation_library_metadata_as_tags custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"instrumentation_library_metadata_as_tags": true,
+				},
+			}),
+			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
+		},
 	}
 
 	f := NewFactory()
