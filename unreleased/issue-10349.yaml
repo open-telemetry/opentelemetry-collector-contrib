@@ -5,7 +5,7 @@ change_type: breaking
 component: transformprocessor
 
 # A brief description of the change
-note: `metric.type` is now accessed as an enum/int64 instead of a string.
+note: Field `metric.type` is now accessed as an enum/int64 instead of a string.
 
 # One or more tracking issues related to the change
 issues: [10349]
