@@ -119,12 +119,7 @@ func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}
 
-	auth, err := cfg.auth()
-	if err != nil {
-		return pulsar.ClientOptions{}, err
-	}
-
-	options.Authentication = auth
+	options.Authentication = cfg.auth()
 
 	return options, nil
 }
