@@ -3,7 +3,7 @@
 | Status                   |                  |
 | ------------------------ | ---------------- |
 | Stability                | [in development] |
-| Supported pipeline types | traces, logs     |
+| Supported pipeline types | metrics, traces, logs     |
 | Distributions            | none             |
 
 The _Schema Processor_ is used to convert existing telemetry data or signals to a version of the semantic convention defined as part of the configuration.
