@@ -33,9 +33,6 @@ jobs:
             ~/go/pkg/mod
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
-      - name: Debug CHNAGELOG diff
-        run: git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md
-
       - name: Ensure no changes to the CHANGELOG
         run: |
           if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md) ]]
@@ -48,9 +45,6 @@ jobs:
           else
             echo "The CHANGELOG was not modified."
           fi
-
-      - name: Debug unreleased diff
-        run: git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./unreleased
 
       - name: Ensure ./unreleased/*.yaml addition(s)
         run: |
