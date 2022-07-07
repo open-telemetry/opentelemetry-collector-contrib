@@ -29,7 +29,7 @@ const (
 	// typeStr is the value of "type" for this processor in the configuration.
 	typeStr config.Type = "groupbytrace"
 	// The stability level of the processor.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelBeta
 
 	defaultWaitDuration   = time.Second
 	defaultNumTraces      = 1_000_000
