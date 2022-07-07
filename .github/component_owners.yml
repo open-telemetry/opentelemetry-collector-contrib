@@ -14,6 +14,9 @@ components:
     - oxeye-nikolay
     - nikosokolik
 
+  instrumentation/opentelemetry-instrumentation-redis:
+    - sungwonh
+
   instrumentation/opentelemetry-instrumentation-remoulade:
     - ben-natan
     - machine424
