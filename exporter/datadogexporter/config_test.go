@@ -163,6 +163,45 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
 		},
+		{
+			name: "metrics::send_monotonic_counter custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"send_monotonic_counter": true,
+				},
+			}),
+			err: "\"metrics::send_monotonic_counter\" was removed in favor of \"metrics::sums::cumulative_monotonic_mode\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
+		},
+		{
+			name: "tags custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"tags": []string{},
+			}),
+			err: "\"tags\" was removed in favor of \"host_metadata::tags\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "send_metadata custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"send_metadata": false,
+			}),
+			err: "\"send_metadata\" was removed in favor of \"host_metadata::enabled\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "use_resource_metadata custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"use_resource_metadata": false,
+			}),
+			err: "\"use_resource_metadata\" was removed in favor of \"host_metadata::hostname_source\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "metrics::report_quantiles custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"report_quantiles": true,
+				},
+			}),
+			err: "\"metrics::report_quantiles\" was removed in favor of \"metrics::summaries::mode\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845",
+		},
 	}
 
 	f := NewFactory()
