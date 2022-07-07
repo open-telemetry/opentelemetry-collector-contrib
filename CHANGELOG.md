@@ -4,6 +4,8 @@
 
 <!-- next version -->
 
+Test
+
 # v0.55.0
 
 ## 🛑 Breaking changes 🛑
@@ -12,7 +14,7 @@
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
     - If users were disabling this feature gate, they may have to update
       monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
-  
+
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
@@ -26,7 +28,7 @@
   - `process.disk.io` will become:
     - `process.disk.io.read`
     - `process.disk.io.write`
-  
+
 - `hostmetricsreceiver`: Remove direction attribute. The feature gate: `receiver.hostmetricsreceiver.removeDirectionAttribute` can be set to apply the following (#11820)
     - `system.network.dropped` will become:
       - `system.network.dropped.receive`
@@ -40,7 +42,7 @@
     - `system.network.packets` will become:
       - `system.network.packets.receive`
       - `system.network.packets.transmit`
-  
+
 - `logzioexporter`: Announcing `custom_endpoint`, `drain_interval`, `queue_capacity`, `queue_max_length` configuration options will be deprecated in upcoming releases (#10821)
 - `simpleprometheusreceiver`: Announcing `tls_enable`, `tls_config` will be deprecated and use `confighttp.HTTPClientSettings` instead. (#11553)
 
