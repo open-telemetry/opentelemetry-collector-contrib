@@ -75,14 +75,12 @@ func TestClientOptions(t *testing.T) {
 
 	c := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 
-	options, err := c.clientOptions()
-	assert.NoError(t, err)
+	options := c.clientOptions()
 
 	assert.Equal(t, &pulsar.ClientOptions{
 		URL:                   "pulsar://localhost:6650",
-		ConnectionTimeout:     20 * time.Second,
-		OperationTimeout:      20 * time.Second,
 		TLSTrustCertsFilePath: "ca.pem",
+		Authentication:        pulsar.NewAuthenticationTLS("cert.pem", "key.pem"),
 	}, &options)
 
 }

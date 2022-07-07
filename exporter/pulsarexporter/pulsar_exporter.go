@@ -133,11 +133,8 @@ func (e *PulsarLogsProducer) Close(context.Context) error {
 }
 
 func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
+	options := config.clientOptions()
 
-	options, err := config.clientOptions()
-	if err != nil {
-		return nil, nil, err
-	}
 	client, err := pulsar.NewClient(options)
 
 	if err != nil {
