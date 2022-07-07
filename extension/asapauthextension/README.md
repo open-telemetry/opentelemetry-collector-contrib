@@ -1,5 +1,10 @@
 # ASAP Client Authentication Extension
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Distributions            | [contrib]             |
+
 This extension provides [Atlassian Service Authentication Protocol](https://s2sauth.bitbucket.io/) (ASAP) client 
 credentials for HTTP or gRPC based exporters. 
 
@@ -34,3 +39,6 @@ exporters:
     auth:
       authenticator: asapclient    
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
