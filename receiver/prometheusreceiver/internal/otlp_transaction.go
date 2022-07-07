@@ -227,7 +227,11 @@ func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetr
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()
-	metricsL.CopyTo(ilm.Metrics())
+	if t.jobsMap != nil {
+		metricsL.CopyTo(ilm.Metrics())
+	} else {
+		metricsL.MoveAndAppendTo(ilm.Metrics())
+	}
 	t.nodeResource.CopyTo(rms.Resource())
 	return &metrics
 }
