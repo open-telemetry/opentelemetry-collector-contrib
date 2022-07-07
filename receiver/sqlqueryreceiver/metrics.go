@@ -51,15 +51,17 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.T
 }
 
 func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
+	// default is gauge but add ts to all metrics
+	// start time is not needed on gauge metrics
 	dp.SetTimestamp(ts)
 
-	switch cfg.Aggregation {
 	// Cumulative sum should have a start time set to the beginning of the data points cumulation
-	case MetricAggregationCumulative:
+	if cfg.Aggregation == MetricAggregationCumulative && cfg.DataType != MetricDataTypeGauge {
 		dp.SetStartTimestamp(ts)
+	}
 
 	// Non-cumulative sum should have a start time set to the previous endpoint
-	case MetricAggregationDelta:
+	if cfg.Aggregation == MetricAggregationDelta && cfg.DataType != MetricDataTypeGauge {
 		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts.AsTime().Add(-scrapeCfg.CollectionInterval)))
 	}
 }
