@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -47,8 +46,6 @@ type Translator struct {
 	prevPts *ttlCache
 	logger  *zap.Logger
 	cfg     translatorConfig
-
-	onceHostnameChanged sync.Once
 }
 
 // New creates a new translator with given options.

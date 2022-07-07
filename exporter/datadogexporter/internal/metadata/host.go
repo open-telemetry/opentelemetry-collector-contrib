@@ -38,12 +38,16 @@ const (
 	HostnamePreviewFeatureGate = "exporter.datadog.hostname.preview"
 )
 
-func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
+var (
+	hostnamePreviewGate = featuregate.Gate{
 		ID:          HostnamePreviewFeatureGate,
 		Description: "Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default.",
 		Enabled:     true,
-	})
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(hostnamePreviewGate)
 }
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
