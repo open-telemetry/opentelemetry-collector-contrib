@@ -28,7 +28,9 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.T
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
-	dataPoint := setTimestamp(cfg, dest, ts, scrapeCfg)
+	dataPointSlice := setMetricFields(cfg, dest)
+	dataPoint := dataPointSlice.AppendEmpty()
+	setTimestamp(cfg, dataPoint, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
@@ -48,9 +50,7 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.T
 	return nil
 }
 
-func setTimestamp(cfg MetricCfg, dest pmetric.Metric, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) pmetric.NumberDataPoint {
-	dataPointSlice := setMetricFields(cfg, dest)
-	dp := dataPointSlice.AppendEmpty()
+func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
 	dp.SetTimestamp(ts)
 
 	switch cfg.Aggregation {
@@ -62,7 +62,6 @@ func setTimestamp(cfg MetricCfg, dest pmetric.Metric, ts pcommon.Timestamp, scra
 	case MetricAggregationDelta:
 		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts.AsTime().Add(-scrapeCfg.CollectionInterval)))
 	}
-	return dp
 }
 
 func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPointSlice {
