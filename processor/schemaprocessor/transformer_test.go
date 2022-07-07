@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,7 +33,7 @@ func TestTransformerStart(t *testing.T) {
 	t.Parallel()
 
 	trans := newTestTransformer(t)
-	assert.NoError(t, trans.start(context.Background(), nil))
+	assert.NoError(t, trans.start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestTransformerProcessing(t *testing.T) {
