@@ -15,16 +15,13 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"go.uber.org/zap"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -125,7 +122,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := scanner.Scan()
 		if !ok {
-			if err := getScannerError(scanner); err != nil {
+			if err := scanner.getError(); err != nil {
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
@@ -149,16 +146,6 @@ func (r *Reader) Close() {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
 	}
-}
-
-func getScannerError(scanner *PositionalScanner) error {
-	err := scanner.Err()
-	if errors.Is(err, bufio.ErrTooLong) {
-		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
-	} else if err != nil {
-		return stanzaerrors.Wrap(err, "scanner error")
-	}
-	return nil
 }
 
 // Read from the file and update the fingerprint if necessary

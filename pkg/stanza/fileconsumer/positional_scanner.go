@@ -16,7 +16,10 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
+	"errors"
 	"io"
+
+	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // PositionalScanner is a scanner that maintains position
@@ -47,4 +50,14 @@ func NewPositionalScanner(r io.Reader, maxLogSize int, startOffset int64, splitF
 // Pos returns the current position of the scanner
 func (ps *PositionalScanner) Pos() int64 {
 	return ps.pos
+}
+
+func (ps *PositionalScanner) getError() error {
+	err := ps.Err()
+	if errors.Is(err, bufio.ErrTooLong) {
+		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
+	} else if err != nil {
+		return stanzaerrors.Wrap(err, "scanner error")
+	}
+	return nil
 }
