@@ -80,6 +80,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 		r.consumer,
 		r.settings,
 		gcInterval(r.cfg.PrometheusConfig),
+		r.cfg.DisableStartTime,
 		r.cfg.UseStartTimeMetric,
 		r.cfg.StartTimeMetricRegex,
 		r.cfg.ID(),

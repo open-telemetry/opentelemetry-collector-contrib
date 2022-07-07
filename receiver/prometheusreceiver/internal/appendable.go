@@ -29,12 +29,13 @@ import (
 type appendable struct {
 	sink                 consumer.Metrics
 	jobsMap              *JobsMap
+	disableStartTime     bool
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	receiverID           config.ComponentID
-	externalLabels       labels.Labels
 
-	settings component.ReceiverCreateSettings
+	externalLabels labels.Labels
+	settings       component.ReceiverCreateSettings
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -42,18 +43,22 @@ func NewAppendable(
 	sink consumer.Metrics,
 	set component.ReceiverCreateSettings,
 	gcInterval time.Duration,
+	disableStartTime bool,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels) storage.Appendable {
 	var jobsMap *JobsMap
-	if !useStartTimeMetric {
-		jobsMap = NewJobsMap(gcInterval)
+	if !disableStartTime {
+		if !useStartTimeMetric {
+			jobsMap = NewJobsMap(gcInterval)
+		}
 	}
 	return &appendable{
 		sink:                 sink,
 		settings:             set,
 		jobsMap:              jobsMap,
+		disableStartTime:     disableStartTime,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		receiverID:           receiverID,
