@@ -39,3 +39,11 @@ var (
 	_ Signal = (*ptrace.Span)(nil)
 	_ Signal = (*ptrace.SpanEvent)(nil)
 )
+
+// AttributeKey is a type alias of string to help
+// make clear what the strings being stored represent
+type AttributeKey = string
+
+// SignalName is a type alias of a string to help
+// make clear what a type field is being used for.
+type SignalName = string
