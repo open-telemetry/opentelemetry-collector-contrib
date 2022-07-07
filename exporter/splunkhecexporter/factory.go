@@ -70,9 +70,9 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
 		MaxConnections:          defaultMaxIdleCons,
-		MaxContentLengthLogs:    maxContentLengthLogsLimit,
-		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
-		MaxContentLengthTraces:  maxContentLengthTracesLimit,
+		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
+		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
+		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,
