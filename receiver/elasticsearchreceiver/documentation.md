@@ -8,6 +8,9 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
+| **elasticsearch.breaker.estimated_size** | Estimated memory used, in bytes, for the operation. | By | Gauge(Int) | <ul> <li>circuit_breaker_name</li> </ul> |
+| **elasticsearch.breaker.limit_size** | Memory limit, in bytes, for the circuit breaker. | By | Sum(Int) | <ul> <li>circuit_breaker_name</li> </ul> |
+| **elasticsearch.breaker.tripped** | Total number of times the circuit breaker has been triggered and prevented an out of memory error. | 1 | Sum(Int) | <ul> <li>circuit_breaker_name</li> </ul> |
 | **elasticsearch.cluster.data_nodes** | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.health** | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable. | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
 | **elasticsearch.cluster.nodes** | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
@@ -18,14 +21,33 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.cluster.io** | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | **elasticsearch.node.fs.disk.available** | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.free** | The total number of unallocated disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.operations** | The total number of read and write operations across all file stores for this node. | {operations} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.read_bytes** | The total number of kilobytes read across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.read_operations** | The total number of read operations across all file stores for this node. | {operations} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.total** | The total amount of disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.write_bytes** | The total number of kilobytes written across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.write_operations** | The total number of write operations across all file stores for this node. | {operations} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.http.connections** | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.shards.data_set.size** | Total data set size, in bytes, of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.shards.reserved.size** | A prediction, in bytes, of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.size** | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.thread_pool.tasks.finished** | The number of tasks finished by the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>task_state</li> </ul> |
 | **elasticsearch.node.thread_pool.tasks.queued** | The number of queued tasks in the thread pool. | {tasks} | Sum(Int) | <ul> <li>thread_pool_name</li> </ul> |
 | **elasticsearch.node.thread_pool.threads** | The number of threads in the thread pool. | {threads} | Sum(Int) | <ul> <li>thread_pool_name</li> <li>thread_state</li> </ul> |
+| **elasticsearch.node.translog.operations** | Number of transaction log operations. | 1 | Gauge(Int) | <ul> </ul> |
+| **elasticsearch.node.translog.size** | Size, in bytes, of the transaction log. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.translog.uncommitted.size** | Size, in bytes, of uncommitted transaction log operations. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.os.cpu.load_avg.15m** | Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
+| **elasticsearch.os.cpu.load_avg.1m** | One-minute load average on the system (field is not present if one-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
+| **elasticsearch.os.cpu.load_avg.5m** | Five-minute load average on the system (field is not present if five-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
+| **elasticsearch.os.cpu.memory.free** | Amount of free physical memory in bytes. | 1 | Sum(Int) | <ul> </ul> |
+| **elasticsearch.os.cpu.memory.total** | Total amount of physical memory in bytes. | 1 | Sum(Int) | <ul> </ul> |
+| **elasticsearch.os.cpu.memory.used** | Amount of used physical memory in bytes. | 1 | Sum(Int) | <ul> </ul> |
+| **elasticsearch.os.cpu.usage** | Recent CPU usage for the whole system, or -1 if not supported. | 1 | Gauge(Int) | <ul> </ul> |
 | **jvm.classes.loaded** | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
 | **jvm.gc.collections.count** | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
 | **jvm.gc.collections.elapsed** | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
@@ -59,6 +81,7 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | cache_name | The name of cache. | fielddata, query |
+| circuit_breaker_name (name) | The name of circuit breaker. |  |
 | collector_name (name) | The name of the garbage collector. |  |
 | direction | The direction of network data. | received, sent |
 | disk_usage_state (state) | The state of a section of space on disk. | used, free |
