@@ -170,28 +170,28 @@ func TestUnmarshal(t *testing.T) {
 					"send_monotonic_counter": true,
 				},
 			}),
-			err: "\"metrics::send_monotonic_counter\" was removed in favor of \"metrics::sums::cumulative_monotonic_mode\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
+			err: "\"metrics::send_monotonic_counter\" was removed in favor of \"metrics::sums::cumulative_monotonic_mode\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
 		},
 		{
 			name: "tags custom error",
 			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"tags": []string{},
 			}),
-			err: "\"tags\" was removed in favor of \"host_metadata::tags\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+			err: "\"tags\" was removed in favor of \"host_metadata::tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "send_metadata custom error",
 			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"send_metadata": false,
 			}),
-			err: "\"send_metadata\" was removed in favor of \"host_metadata::enabled\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+			err: "\"send_metadata\" was removed in favor of \"host_metadata::enabled\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "use_resource_metadata custom error",
 			configMap: confmap.NewFromStringMap(map[string]interface{}{
 				"use_resource_metadata": false,
 			}),
-			err: "\"use_resource_metadata\" was removed in favor of \"host_metadata::hostname_source\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+			err: "\"use_resource_metadata\" was removed in favor of \"host_metadata::hostname_source\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
 		},
 		{
 			name: "metrics::report_quantiles custom error",
@@ -200,7 +200,7 @@ func TestUnmarshal(t *testing.T) {
 					"report_quantiles": true,
 				},
 			}),
-			err: "\"metrics::report_quantiles\" was removed in favor of \"metrics::summaries::mode\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845",
+			err: "\"metrics::report_quantiles\" was removed in favor of \"metrics::summaries::mode\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845",
 		},
 		{
 			name: "instrumentation_library_metadata_as_tags custom error",
@@ -209,7 +209,7 @@ func TestUnmarshal(t *testing.T) {
 					"instrumentation_library_metadata_as_tags": true,
 				},
 			}),
-			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
+			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
 		},
 	}
 
