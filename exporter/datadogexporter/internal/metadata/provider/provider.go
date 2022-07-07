@@ -34,14 +34,14 @@ type chainProvider struct {
 
 func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 	for _, source := range p.priorityList {
-		zapSource := zap.String("source", source)
+		zapProvider := zap.String("provider", source)
 		provider := p.providers[source]
 		src, err := provider.Source(ctx)
 		if err == nil {
-			p.logger.Info("Resolved source", zapSource, zap.Any("source", source))
+			p.logger.Info("Resolved source", zapProvider, zap.Any("source", src))
 			return src, nil
 		}
-		p.logger.Debug("Unavailable source provider", zapSource, zap.Error(err))
+		p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
 	}
 
 	return source.Source{}, fmt.Errorf("no source provider was available")
@@ -66,7 +66,7 @@ type configProvider struct {
 
 func (p *configProvider) Source(context.Context) (source.Source, error) {
 	if p.hostname == "" {
-		return source.Source{}, fmt.Errorf("invalid configuration hostname: %q", p.hostname)
+		return source.Source{}, fmt.Errorf("empty configuration hostname")
 	}
 	return source.Source{Kind: source.HostnameKind, Identifier: p.hostname}, nil
 }
