@@ -18,13 +18,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func Test_createDefaultConfig(t *testing.T) {
@@ -70,18 +68,4 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 	require.Error(t, err)
 	assert.Nil(t, mr)
-}
-
-type customTraceMashaler struct {
-	EncodingName string
-}
-
-// Marshal serializes spans into sarama's ProducerMessages
-func (c customTraceMashaler) Marshal(ptrace.Traces, string) ([]*pulsar.ProducerMessage, error) {
-	return nil, nil
-}
-
-// Encoding returns encoding name
-func (c customTraceMashaler) Encoding() string {
-	return c.EncodingName
 }

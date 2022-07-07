@@ -60,14 +60,14 @@ type Athenz struct {
 	TenantDomain    string `mapstructure:"tenant_domain"`
 	TenantService   string `mapstructure:"tenant_service"`
 	PrivateKey      string `mapstructure:"private_key"`
-	KeyId           string `mapstructure:"key_id"`
+	KeyID           string `mapstructure:"key_id"`
 	PrincipalHeader string `mapstructure:"principal_header"`
-	ZtsUrl          string `mapstructure:"zts_url"`
+	ZtsURL          string `mapstructure:"zts_url"`
 }
 
 type OAuth2 struct {
-	IssuerUrl string `mapstructure:"issuer_url"`
-	ClientId  string `mapstructure:"client_id"`
+	IssuerURL string `mapstructure:"issuer_url"`
+	ClientID  string `mapstructure:"client_id"`
 	Audience  string `mapstructure:"audience"`
 }
 
@@ -79,20 +79,20 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
-func (cfg *Config) auth() (pulsar.Authentication, error) {
+func (cfg *Config) auth() pulsar.Authentication {
 	authentication := cfg.Authentication
 	if authentication.TLS != nil {
-		return pulsar.NewAuthenticationTLS(authentication.TLS.CertFile, authentication.TLS.KeyFile), nil
+		return pulsar.NewAuthenticationTLS(authentication.TLS.CertFile, authentication.TLS.KeyFile)
 	}
 	if authentication.Token != nil {
-		return pulsar.NewAuthenticationToken(authentication.Token.Token), nil
+		return pulsar.NewAuthenticationToken(authentication.Token.Token)
 	}
 	if authentication.OAuth2 != nil {
 		return pulsar.NewAuthenticationOAuth2(map[string]string{
-			"issuerUrl": authentication.OAuth2.IssuerUrl,
-			"clientId":  authentication.OAuth2.ClientId,
+			"issuerUrl": authentication.OAuth2.IssuerURL,
+			"clientId":  authentication.OAuth2.ClientID,
 			"audience":  authentication.OAuth2.Audience,
-		}), nil
+		})
 	}
 	if authentication.Athenz != nil {
 		return pulsar.NewAuthenticationAthenz(map[string]string{
@@ -100,13 +100,13 @@ func (cfg *Config) auth() (pulsar.Authentication, error) {
 			"tenantDomain":    authentication.Athenz.TenantDomain,
 			"tenantService":   authentication.Athenz.TenantService,
 			"privateKey":      authentication.Athenz.PrivateKey,
-			"keyId":           authentication.Athenz.KeyId,
+			"keyId":           authentication.Athenz.KeyID,
 			"principalHeader": authentication.Athenz.PrincipalHeader,
-			"ztsUrl":          authentication.Athenz.ZtsUrl,
-		}), nil
+			"ztsUrl":          authentication.Athenz.ZtsURL,
+		})
 	}
 
-	return nil, nil
+	return nil
 }
 
 func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
