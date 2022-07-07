@@ -5,7 +5,7 @@ change_type: enhancement
 component: sqlqueryreceiver
 
 # A brief description of the change
-note: Add `static_attributes` optional configuration to allow adding attributes/tags to queried metrics. 
+note: Add static_attributes optional configuration to allow adding attributes/tags to queried metrics. 
 
 # One or more tracking issues related to the change
-issues: [#11868]
+issues: [11868]
