@@ -258,6 +258,27 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: chlog-install
+chlog-install:
+	cd cmd/chloggen && $(GOCMD) install .
+
+FILENAME?=$(shell git branch --show-current)
+.PHONY: chlog-new
+chlog-new: chlog-install
+	chloggen new -filename $(FILENAME)
+
+.PHONY: chlog-validate
+chlog-validate: chlog-install
+	chloggen validate
+
+.PHONY: chlog-preview
+chlog-preview: chlog-install
+	chloggen update -dry
+
+.PHONY: chlog-update
+chlog-update: chlog-install
+	chloggen update -version $(VERSION)
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
@@ -335,7 +356,8 @@ endef
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
-             receiver/mongodbatlasreceiver/testdata/alerts/certs
+             receiver/mongodbatlasreceiver/testdata/alerts/cert \
+             receiver/mongodbreceiver/testdata/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs

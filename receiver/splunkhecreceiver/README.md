@@ -1,13 +1,17 @@
 # Splunk HEC Receiver
 
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [beta]        |
+| Supported pipeline types | logs, metrics |
+| Distributions            | [contrib]     |
+
 The Splunk HEC receiver accepts events in the [Splunk HEC
 format](https://docs.splunk.com/Documentation/Splunk/8.0.5/Data/FormateventsforHTTPEventCollector).
 This allows the collector to receive logs and metrics.
 The collector accepts data formatted as JSON [HEC events](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector#Event_data) 
 under any path or as EOL separated log [raw data](https://docs.splunk.com/Documentation/Splunk/8.2.2/Data/FormateventsforHTTPEventCollector#Raw_event_parsing) 
 if sent to the `raw_path` path.
-
-Supported pipeline types: logs, metrics
 
 > :construction: This receiver is in beta and configuration fields are subject to change.
 
@@ -57,3 +61,7 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -25,8 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper/internal/metadata"
 )
 
@@ -45,14 +47,18 @@ type scraper struct {
 	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime    func() (uint64, error)
-	ioCounters  func(bool) ([]net.IOCountersStat, error)
-	connections func(string) ([]net.ConnectionStat, error)
+	bootTime                             func() (uint64, error)
+	ioCounters                           func(bool) ([]net.IOCountersStat, error)
+	connections                          func(string) ([]net.ConnectionStat, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
+	scraper.emitMetricsWithDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID)
+	scraper.emitMetricsWithoutDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
 
 	var err error
 
@@ -124,29 +130,53 @@ func (s *scraper) recordNetworkCounterMetrics() error {
 
 func (s *scraper) recordNetworkPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemNetworkPacketsTransmitDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name)
+			s.mb.RecordSystemNetworkPacketsReceiveDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name)
+		}
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+			s.mb.RecordSystemNetworkPacketsDataPoint(now, int64(ioCounters.PacketsRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		}
 	}
 }
 
 func (s *scraper) recordNetworkDroppedPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemNetworkDroppedTransmitDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name)
+			s.mb.RecordSystemNetworkDroppedReceiveDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name)
+		}
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+			s.mb.RecordSystemNetworkDroppedDataPoint(now, int64(ioCounters.Dropin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		}
 	}
 }
 
 func (s *scraper) recordNetworkErrorPacketsMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemNetworkErrorsTransmitDataPoint(now, int64(ioCounters.Errout), ioCounters.Name)
+			s.mb.RecordSystemNetworkErrorsReceiveDataPoint(now, int64(ioCounters.Errin), ioCounters.Name)
+		}
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errout), ioCounters.Name, metadata.AttributeDirectionTransmit)
+			s.mb.RecordSystemNetworkErrorsDataPoint(now, int64(ioCounters.Errin), ioCounters.Name, metadata.AttributeDirectionReceive)
+		}
 	}
 }
 
 func (s *scraper) recordNetworkIOMetric(now pcommon.Timestamp, ioCountersSlice []net.IOCountersStat) {
 	for _, ioCounters := range ioCountersSlice {
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
-		s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemNetworkIoTransmitDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name)
+			s.mb.RecordSystemNetworkIoReceiveDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name)
+		}
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesSent), ioCounters.Name, metadata.AttributeDirectionTransmit)
+			s.mb.RecordSystemNetworkIoDataPoint(now, int64(ioCounters.BytesRecv), ioCounters.Name, metadata.AttributeDirectionReceive)
+		}
 	}
 }
 
