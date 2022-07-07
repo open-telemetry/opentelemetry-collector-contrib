@@ -297,7 +297,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Reso
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if _, found := l.config.Labels.Attributes[k]; !found {
 			b.WriteString(k)
-			b.WriteString("=\"")
+			b.WriteString("=")
 			// encapsulate with double quotes. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11827
 			b.WriteString(strconv.Quote(v.AsString()))
 			b.WriteRune(' ')
