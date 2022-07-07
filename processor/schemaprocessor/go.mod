@@ -6,6 +6,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.56.0
 	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/otel/schema v0.0.2
 	go.uber.org/zap v1.21.0
 )
 
