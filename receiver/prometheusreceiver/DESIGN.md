@@ -126,8 +126,8 @@ shown in the flowchart below:
 
 It basically does the following things in turn:
 
-  1. make a http call to fetch data from the binding [target](#target)'s metrics endpoint with [scraper](#scraper)
-  2. acquired a [storage appender](#storage-appender) instance with the [Appendable](#appendable) interface 
+  1. make a http call to fetch data from the binding [target](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/target.go)'s metrics endpoint with [scraper](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L506-L511)
+  2. acquired a [storage appender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95) instance with the [Appendable](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/manager.go#L37-L39) interface 
   3. feed the data to a textParser
   4. parse and feed metric data points to storage appender
   5. commit if success or rollback
@@ -688,4 +688,4 @@ will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 ### Others
 
 For any other Prometheus metrics types, they will be transformed into the
-OpenTelemetry [Gauge](#gauge) type.
+OpenTelemetry [Gauge](https://prometheus.io/docs/concepts/metric_types/#guage) type.
