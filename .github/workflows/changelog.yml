@@ -34,11 +34,11 @@ jobs:
           key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
 
       - name: Debug CHNAGELOG diff
-        run: git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }})
+        run: git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md
 
       - name: Ensure no changes to the CHANGELOG
         run: |
-          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) | grep CHANGELOG) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md) ]]
           then
             echo "The CHANGELOG should not be directly modified."
             echo "Please add a .yaml file to the ./unreleased/ directory."
