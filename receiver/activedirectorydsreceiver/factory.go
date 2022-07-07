@@ -27,13 +27,14 @@ import (
 const (
 	defaultCollectionInterval = 10 * time.Second
 	typeStr                   = "active_directory_ds"
+	stability                 = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

@@ -29,6 +29,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "metricstransform"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -38,7 +40,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
