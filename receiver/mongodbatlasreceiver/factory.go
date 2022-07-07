@@ -29,6 +29,7 @@ import (
 
 const (
 	typeStr              = "mongodbatlas"
+	stability            = component.StabilityLevelBeta
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
 )
@@ -38,8 +39,8 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability))
 }
 
 func createMetricsReceiver(

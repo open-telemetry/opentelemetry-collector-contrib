@@ -39,6 +39,8 @@ import (
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 type factory struct {
@@ -63,8 +65,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
 	)
 }
 
