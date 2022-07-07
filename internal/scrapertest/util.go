@@ -62,6 +62,13 @@ func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
 	if a.ScopeMetrics().Len() != b.ScopeMetrics().Len() {
 		return a.ScopeMetrics().Len() < b.ScopeMetrics().Len()
 	}
+	for i := 0; i < a.ScopeMetrics().Len(); i++ {
+		aSm := a.ScopeMetrics().At(i)
+		bSm := b.ScopeMetrics().At(i)
+		if aSm.Metrics().Len() < bSm.Metrics().Len() {
+			return true
+		}
+	}
 	return false
 }
 
