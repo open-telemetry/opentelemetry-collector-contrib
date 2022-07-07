@@ -62,20 +62,6 @@ jobs:
             echo "A changelog entry was added to the ./unreleased/ directory!"
           fi
 
-      - name: Ensure no other ./unreleased/*.yaml changes
-        run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          if [[ 0 -eq $(git diff --diff-filter=CDMRTUXB --name-only FETCH_HEAD ./unreleased | grep -c \\.yaml) ]]
-          then
-            echo "No other changes to ./unreleased/ directory!"
-          else
-            echo "Unrelated changes to ./unreleased/ directory detected."
-            echo "Only a single file may be added to ./unreleased/ directory per PR. No other changes are allowed to this directory."
-            echo "See CONTRIBUTING.md for more details."
-            echo "Alternately, add the \"Skip Changelog\" label if this job should be skipped."
-            false
-          fi
-
       - name: Validate ./unreleased/*.yaml changes
         run: |
           make chlog-validate \

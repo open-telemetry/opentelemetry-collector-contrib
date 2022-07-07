@@ -16,6 +16,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -174,4 +175,25 @@ func TestOptions(t *testing.T) {
 		(2 * time.Minute).Milliseconds(),
 	)
 	require.Equal(t, "rs-1", *clientOptions.ReplicaSet)
+}
+
+func TestOptionsTLS(t *testing.T) {
+	// loading valid ca file
+	caFile := filepath.Join("testdata", "certs", "ca.crt")
+
+	cfg := &Config{
+		Hosts: []confignet.NetAddr{
+			{
+				Endpoint: "localhost:27017",
+			},
+		},
+		TLSClientSetting: configtls.TLSClientSetting{
+			Insecure: false,
+			TLSSetting: configtls.TLSSetting{
+				CAFile: caFile,
+			},
+		},
+	}
+	opts := cfg.ClientOptions()
+	require.NotNil(t, opts.TLSConfig)
 }

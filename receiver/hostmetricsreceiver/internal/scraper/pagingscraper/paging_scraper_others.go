@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/service/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
 
@@ -45,14 +46,24 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
-	bootTime         func() (uint64, error)
-	getPageFileStats func() ([]*pageFileStats, error)
-	swapMemory       func() (*mem.SwapMemoryStat, error)
+	bootTime                             func() (uint64, error)
+	getPageFileStats                     func() ([]*pageFileStats, error)
+	swapMemory                           func() (*mem.SwapMemoryStat, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newPagingScraper creates a Paging Scraper
 func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
-	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, getPageFileStats: getPageFileStats, swapMemory: mem.SwapMemory}
+	return &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		bootTime:                             host.BootTime,
+		getPageFileStats:                     getPageFileStats,
+		swapMemory:                           mem.SwapMemory,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -126,13 +137,14 @@ func (s *scraper) scrapePagingMetrics() error {
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, swap *mem.SwapMemoryStat) {
-	if featuregate.GetRegistry().IsEnabled(removeDirectionAttributeFeatureGateID) {
+	if s.emitMetricsWithoutDirectionAttribute {
 		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.Sin), metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.Sout), metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, int64(swap.PgIn), metadata.AttributeTypeMinor)
 		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, int64(swap.PgOut), metadata.AttributeTypeMinor)
-	} else {
+	}
 
+	if s.emitMetricsWithDirectionAttribute {
 		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sin), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.Sout), metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
 		s.mb.RecordSystemPagingOperationsDataPoint(now, int64(swap.PgIn), metadata.AttributeDirectionPageIn, metadata.AttributeTypeMinor)
