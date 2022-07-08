@@ -35,7 +35,7 @@ jobs:
 
       - name: Ensure no changes to the CHANGELOG
         run: |
-          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./CHANGELOG.md) ]]
           then
             echo "The CHANGELOG should not be directly modified."
             echo "Please add a .yaml file to the ./unreleased/ directory."
@@ -48,7 +48,7 @@ jobs:
 
       - name: Ensure ./unreleased/*.yaml addition(s)
         run: |
-          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./unreleased | grep -c \\.yaml) ]]
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ${{ github.event.pull_request.head.sha }} ./unreleased | grep -c \\.yaml) ]]
           then
             echo "No changelog entry was added to the ./unreleased/ directory."
             echo "Please add a .yaml file to the ./unreleased/ directory."
