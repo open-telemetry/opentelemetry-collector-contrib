@@ -32,7 +32,7 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 			return replace(s, pattern, value, logger)
 		} else {
 			logger.Debug("No resource attribute found for pattern " + pattern)
-			return strings.Replace(s, pattern, "undefined", -1), false
+			return strings.ReplaceAll(s, pattern, "undefined"), false
 		}
 	}
 	return s, true
@@ -41,9 +41,9 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 func replace(s, pattern string, value string, logger *zap.Logger) (string, bool) {
 	if value == "" {
 		logger.Debug("Empty resource attribute value found for pattern " + pattern)
-		return strings.Replace(s, pattern, "undefined", -1), false
+		return strings.ReplaceAll(s, pattern, "undefined"), false
 	}
-	return strings.Replace(s, pattern, value, -1), true
+	return strings.ReplaceAll(s, pattern, value), true
 }
 
 func getLogInfo(rm *cwLogBody, config *Config) (string, string, bool) {
