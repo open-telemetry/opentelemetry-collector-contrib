@@ -284,11 +284,38 @@ func withFilterFields(filters ...FieldFilterConfig) option {
 func withExtractPodAssociations(podAssociations ...PodAssociationConfig) option {
 	return func(p *kubernetesprocessor) error {
 		associations := make([]kube.Association, 0, len(podAssociations))
+		var assoc kube.Association
 		for _, association := range podAssociations {
-			associations = append(associations, kube.Association{
-				From: association.From,
-				Name: association.Name,
-			})
+			assoc = kube.Association{
+				Sources: []kube.AssociationSource{},
+			}
+
+			var name string
+
+			if association.From != "" {
+				if association.From == kube.ConnectionSource {
+					name = ""
+				} else {
+					name = association.Name
+				}
+				assoc.Sources = append(assoc.Sources, kube.AssociationSource{
+					From: association.From,
+					Name: name,
+				})
+			} else {
+				for _, associationSource := range association.Sources {
+					if associationSource.From == kube.ConnectionSource {
+						name = ""
+					} else {
+						name = associationSource.Name
+					}
+					assoc.Sources = append(assoc.Sources, kube.AssociationSource{
+						From: associationSource.From,
+						Name: name,
+					})
+				}
+			}
+			associations = append(associations, assoc)
 		}
 		p.podAssociations = associations
 		return nil

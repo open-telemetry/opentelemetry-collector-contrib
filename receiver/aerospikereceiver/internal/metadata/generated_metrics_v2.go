@@ -19,11 +19,11 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for aerospikereceiver metrics.
 type MetricsSettings struct {
-	AeropsikeNamespaceTransactionCount MetricSettings `mapstructure:"aeropsike.namespace.transaction.count"`
 	AerospikeNamespaceDiskAvailable    MetricSettings `mapstructure:"aerospike.namespace.disk.available"`
 	AerospikeNamespaceMemoryFree       MetricSettings `mapstructure:"aerospike.namespace.memory.free"`
 	AerospikeNamespaceMemoryUsage      MetricSettings `mapstructure:"aerospike.namespace.memory.usage"`
 	AerospikeNamespaceScanCount        MetricSettings `mapstructure:"aerospike.namespace.scan.count"`
+	AerospikeNamespaceTransactionCount MetricSettings `mapstructure:"aerospike.namespace.transaction.count"`
 	AerospikeNodeConnectionCount       MetricSettings `mapstructure:"aerospike.node.connection.count"`
 	AerospikeNodeConnectionOpen        MetricSettings `mapstructure:"aerospike.node.connection.open"`
 	AerospikeNodeMemoryFree            MetricSettings `mapstructure:"aerospike.node.memory.free"`
@@ -31,9 +31,6 @@ type MetricsSettings struct {
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
-		AeropsikeNamespaceTransactionCount: MetricSettings{
-			Enabled: true,
-		},
 		AerospikeNamespaceDiskAvailable: MetricSettings{
 			Enabled: true,
 		},
@@ -44,6 +41,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		AerospikeNamespaceScanCount: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceTransactionCount: MetricSettings{
 			Enabled: true,
 		},
 		AerospikeNodeConnectionCount: MetricSettings{
@@ -284,60 +284,6 @@ var MapAttributeTransactionType = map[string]AttributeTransactionType{
 	"write":  AttributeTransactionTypeWrite,
 }
 
-type metricAeropsikeNamespaceTransactionCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills aeropsike.namespace.transaction.count metric with initial data.
-func (m *metricAeropsikeNamespaceTransactionCount) init() {
-	m.data.SetName("aeropsike.namespace.transaction.count")
-	m.data.SetDescription("Number of transactions performed on the namespace")
-	m.data.SetUnit("{transactions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricAeropsikeNamespaceTransactionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, transactionTypeAttributeValue string, transactionResultAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(transactionTypeAttributeValue))
-	dp.Attributes().Insert("result", pcommon.NewValueString(transactionResultAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricAeropsikeNamespaceTransactionCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricAeropsikeNamespaceTransactionCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricAeropsikeNamespaceTransactionCount(settings MetricSettings) metricAeropsikeNamespaceTransactionCount {
-	m := metricAeropsikeNamespaceTransactionCount{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricAerospikeNamespaceDiskAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -543,6 +489,60 @@ func newMetricAerospikeNamespaceScanCount(settings MetricSettings) metricAerospi
 	return m
 }
 
+type metricAerospikeNamespaceTransactionCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.transaction.count metric with initial data.
+func (m *metricAerospikeNamespaceTransactionCount) init() {
+	m.data.SetName("aerospike.namespace.transaction.count")
+	m.data.SetDescription("Number of transactions performed on the namespace")
+	m.data.SetUnit("{transactions}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricAerospikeNamespaceTransactionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, transactionTypeAttributeValue string, transactionResultAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert("type", pcommon.NewValueString(transactionTypeAttributeValue))
+	dp.Attributes().Insert("result", pcommon.NewValueString(transactionResultAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceTransactionCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceTransactionCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceTransactionCount(settings MetricSettings) metricAerospikeNamespaceTransactionCount {
+	m := metricAerospikeNamespaceTransactionCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricAerospikeNodeConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -707,11 +707,11 @@ type MetricsBuilder struct {
 	resourceCapacity                         int                 // maximum observed number of resource attributes.
 	metricsBuffer                            pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                component.BuildInfo // contains version information
-	metricAeropsikeNamespaceTransactionCount metricAeropsikeNamespaceTransactionCount
 	metricAerospikeNamespaceDiskAvailable    metricAerospikeNamespaceDiskAvailable
 	metricAerospikeNamespaceMemoryFree       metricAerospikeNamespaceMemoryFree
 	metricAerospikeNamespaceMemoryUsage      metricAerospikeNamespaceMemoryUsage
 	metricAerospikeNamespaceScanCount        metricAerospikeNamespaceScanCount
+	metricAerospikeNamespaceTransactionCount metricAerospikeNamespaceTransactionCount
 	metricAerospikeNodeConnectionCount       metricAerospikeNodeConnectionCount
 	metricAerospikeNodeConnectionOpen        metricAerospikeNodeConnectionOpen
 	metricAerospikeNodeMemoryFree            metricAerospikeNodeMemoryFree
@@ -732,11 +732,11 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
 		buildInfo:                                buildInfo,
-		metricAeropsikeNamespaceTransactionCount: newMetricAeropsikeNamespaceTransactionCount(settings.AeropsikeNamespaceTransactionCount),
 		metricAerospikeNamespaceDiskAvailable:    newMetricAerospikeNamespaceDiskAvailable(settings.AerospikeNamespaceDiskAvailable),
 		metricAerospikeNamespaceMemoryFree:       newMetricAerospikeNamespaceMemoryFree(settings.AerospikeNamespaceMemoryFree),
 		metricAerospikeNamespaceMemoryUsage:      newMetricAerospikeNamespaceMemoryUsage(settings.AerospikeNamespaceMemoryUsage),
 		metricAerospikeNamespaceScanCount:        newMetricAerospikeNamespaceScanCount(settings.AerospikeNamespaceScanCount),
+		metricAerospikeNamespaceTransactionCount: newMetricAerospikeNamespaceTransactionCount(settings.AerospikeNamespaceTransactionCount),
 		metricAerospikeNodeConnectionCount:       newMetricAerospikeNodeConnectionCount(settings.AerospikeNodeConnectionCount),
 		metricAerospikeNodeConnectionOpen:        newMetricAerospikeNodeConnectionOpen(settings.AerospikeNodeConnectionOpen),
 		metricAerospikeNodeMemoryFree:            newMetricAerospikeNodeMemoryFree(settings.AerospikeNodeMemoryFree),
@@ -806,11 +806,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/aerospikereceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricAeropsikeNamespaceTransactionCount.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceDiskAvailable.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryFree.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryUsage.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceScanCount.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceTransactionCount.emit(ils.Metrics())
 	mb.metricAerospikeNodeConnectionCount.emit(ils.Metrics())
 	mb.metricAerospikeNodeConnectionOpen.emit(ils.Metrics())
 	mb.metricAerospikeNodeMemoryFree.emit(ils.Metrics())
@@ -831,16 +831,6 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	mb.metricsBuffer.MoveTo(metrics)
 	return metrics
-}
-
-// RecordAeropsikeNamespaceTransactionCountDataPoint adds a data point to aeropsike.namespace.transaction.count metric.
-func (mb *MetricsBuilder) RecordAeropsikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for AeropsikeNamespaceTransactionCount, value was %s: %w", inputVal, err)
-	}
-	mb.metricAeropsikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
-	return nil
 }
 
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
@@ -880,6 +870,16 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceScanCountDataPoint(ts pcommon.
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceScanCount, value was %s: %w", inputVal, err)
 	}
 	mb.metricAerospikeNamespaceScanCount.recordDataPoint(mb.startTime, ts, val, scanTypeAttributeValue.String(), scanResultAttributeValue.String())
+	return nil
+}
+
+// RecordAerospikeNamespaceTransactionCountDataPoint adds a data point to aerospike.namespace.transaction.count metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceTransactionCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
 	return nil
 }
 

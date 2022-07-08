@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package googlecloudpubsubreceiver
 
 import (
@@ -54,7 +53,9 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Subscription: "projects/my-project/subscriptions/otlp",
 		},
 	}
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.metricsConsumer = consumertest.NewNop()
 	receiver.logsConsumer = consumertest.NewNop()

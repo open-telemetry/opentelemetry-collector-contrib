@@ -20,12 +20,15 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const typeStr = "sqlquery"
+const (
+	typeStr   = "sqlquery"
+	stability = component.StabilityLevelUndefined
+)
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiverFunc(sql.Open, newDbClient)),
+		component.WithMetricsReceiverAndStabilityLevel(createReceiverFunc(sql.Open, newDbClient), stability),
 	)
 }

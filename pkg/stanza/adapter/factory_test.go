@@ -20,13 +20,14 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestCreateReceiver(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
 		cfg.Operators = []map[string]interface{}{
 			{
@@ -39,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 	})
 
 	t.Run("Success with ConverterConfig", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		cfg := factory.CreateDefaultConfig().(*TestConfig)
 		cfg.Converter = ConverterConfig{
 			MaxFlushCount: 1,
@@ -51,7 +52,7 @@ func TestCreateReceiver(t *testing.T) {
 	})
 
 	t.Run("DecodeInputConfigFailure", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Input = map[string]interface{}{
 			"type": "unknown",
@@ -62,7 +63,7 @@ func TestCreateReceiver(t *testing.T) {
 	})
 
 	t.Run("DecodeOperatorConfigsFailureMissingFields", func(t *testing.T) {
-		factory := NewFactory(TestReceiverType{})
+		factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 		badCfg := factory.CreateDefaultConfig().(*TestConfig)
 		badCfg.Operators = []map[string]interface{}{
 			{

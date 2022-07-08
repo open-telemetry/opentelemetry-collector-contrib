@@ -16,12 +16,12 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,15 +32,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/featuregate"
 
-	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 type factory struct {
@@ -65,8 +65,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
 	)
 }
 
@@ -104,23 +104,23 @@ func (f *factory) createDefaultConfig() config.Exporter {
 		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
 	}
 
-	hostnameSource := ddconfig.HostnameSourceFirstResource
+	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
-		hostnameSource = ddconfig.HostnameSourceConfigOrSystem
+		hostnameSource = HostnameSourceConfigOrSystem
 	}
 
-	return &ddconfig.Config{
+	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-		API: ddconfig.APIConfig{
+		API: APIConfig{
 			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
 			Site: site,
 		},
 
-		TagsConfig: ddconfig.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname:   os.Getenv("DD_HOST"),
 			Env:        env,
 			Service:    os.Getenv("DD_SERVICE"),
@@ -128,38 +128,38 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
 		},
 
-		Metrics: ddconfig.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: metricsEndpoint,
 			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
-			ExporterConfig: ddconfig.MetricsExporterConfig{
+			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
 				InstrumentationScopeMetadataAsTags:   false,
 			},
-			HistConfig: ddconfig.HistogramConfig{
+			HistConfig: HistogramConfig{
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
-			SumConfig: ddconfig.SumConfig{
-				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
-			SummaryConfig: ddconfig.SummaryConfig{
-				Mode: ddconfig.SummaryModeGauges,
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
 			},
 		},
 
-		Traces: ddconfig.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: tracesEndpoint,
 			},
 			IgnoreResources: []string{},
 		},
 
-		HostMetadata: ddconfig.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: hostnameSource,
 		},
@@ -169,18 +169,24 @@ func (f *factory) createDefaultConfig() config.Exporter {
 	}
 }
 
+// checkAndCastConfig checks the configuration type and its warnings, and casts it to
+// the Datadog Config struct.
+func checkAndCastConfig(set component.ExporterCreateSettings, c config.Exporter) *Config {
+	cfg, ok := c.(*Config)
+	if !ok {
+		panic("programming error: config structure is not of type *datadogexporter.Config")
+	}
+	cfg.logWarnings(set.Logger)
+	return cfg
+}
+
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
-
-	cfg := c.(*ddconfig.Config)
-
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	cfg := checkAndCastConfig(set, c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -239,17 +245,13 @@ func (f *factory) createTracesExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
-	cfg, ok := c.(*ddconfig.Config)
-	if !ok {
-		return nil, errors.New("programming error: config structure is not of type *ddconfig.Config")
-	}
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	cfg := checkAndCastConfig(set, c)
+
 	var (
 		pusher consumer.ConsumeTracesFunc
 		stop   component.ShutdownFunc
 	)
+
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
