@@ -69,7 +69,8 @@ type Reader struct {
 }
 
 // NewReader creates a new file reader
-func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter, emit EmitFunc) (*Reader, error) {
+func (f *Input) NewReader(file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
+	path := file.Name()
 	r := &Reader{
 		SugaredLogger:  f.SugaredLogger.With("path", path),
 		Fingerprint:    fp,
@@ -83,7 +84,7 @@ func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter 
 
 // Copy creates a deep copy of a Reader
 func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter, r.fileInput.emit)
+	reader, err := r.fileInput.NewReader(file, r.Fingerprint.Copy(), r.splitter)
 	if err != nil {
 		return nil, err
 	}
