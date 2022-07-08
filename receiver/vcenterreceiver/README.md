@@ -1,10 +1,12 @@
 # vCenter Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 This receiver fetches metrics from a vCenter or ESXi host running VMware vSphere APIs.
-
-Supported pipeline types: `metrics`
-
-> :construction: This receiver is in **Alpha**. Configuration fields and metric data model are subject to change.
 
 ## Prerequisites
 
@@ -44,3 +46,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
