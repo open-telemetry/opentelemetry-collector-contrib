@@ -43,25 +43,16 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 		return nil, err
 	}
 
-	sfs, err := newSourceFormats(cfg)
-	if err != nil {
-		return nil, err
-	}
+	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)
 	if err != nil {
 		return nil, err
 	}
 
-	pf, err := newPrometheusFormatter()
-	if err != nil {
-		return nil, err
-	}
+	pf := newPrometheusFormatter()
 
-	gf, err := newGraphiteFormatter(cfg.GraphiteTemplate)
-	if err != nil {
-		return nil, err
-	}
+	gf := newGraphiteFormatter(cfg.GraphiteTemplate)
 
 	se := &sumologicexporter{
 		config:              cfg,

@@ -1,12 +1,13 @@
+// Deprecated: awsprometheusremotewrite exporter is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter
 
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.44.28
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.53.0
-	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.0
+	github.com/aws/aws-sdk-go v1.44.47
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.55.0
+	github.com/stretchr/testify v1.8.0
+	go.opentelemetry.io/collector v0.55.0
 )
 
 require (
@@ -23,18 +24,19 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.6 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/klauspost/compress v1.15.7 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.53.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.53.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.55.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.55.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.55.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/common v0.34.0 // indirect
-	github.com/prometheus/prometheus v0.36.0 // indirect
+	github.com/prometheus/common v0.35.0 // indirect
+	github.com/prometheus/prometheus v0.36.2 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -42,8 +44,8 @@ require (
 	github.com/tidwall/tinylru v1.1.0 // indirect
 	github.com/tidwall/wal v1.1.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.53.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.53.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.55.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/metric v0.30.0 // indirect
@@ -64,6 +66,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite

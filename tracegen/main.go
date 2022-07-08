@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -100,8 +102,18 @@ func main() {
 		}
 	}()
 
+	var attributes []attribute.KeyValue
+	// may be overridden by `-otlp-attributes service.name="foo"`
+	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
+
+	if len(cfg.ResourceAttributes) > 0 {
+		for k, v := range cfg.ResourceAttributes {
+			attributes = append(attributes, attribute.String(k, v))
+		}
+	}
+
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(cfg.ServiceName))),
+		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
 	tracerProvider.RegisterSpanProcessor(ssp)

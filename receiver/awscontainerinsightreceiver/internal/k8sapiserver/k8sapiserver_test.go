@@ -186,10 +186,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		k.isLeadingC = make(chan bool)
 	}
 
-	originalHostName := os.Getenv("HOST_NAME")
-	originalNamespace := os.Getenv("K8S_NAMESPACE")
-	os.Setenv("HOST_NAME", hostName)
-	os.Setenv("K8S_NAMESPACE", "namespace")
+	t.Setenv("HOST_NAME", hostName)
+	t.Setenv("K8S_NAMESPACE", "namespace")
 	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption,
 		leadingOption, broadcasterOption, isLeadingCOption)
 
@@ -238,9 +236,6 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 	}
 
 	k8sAPIServer.Shutdown()
-	// restore env variables
-	os.Setenv("HOST_NAME", originalHostName)
-	os.Setenv("K8S_NAMESPACE", originalNamespace)
 }
 
 func TestK8sAPIServer_init(t *testing.T) {
@@ -250,13 +245,9 @@ func TestK8sAPIServer_init(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 
-	originalHostName := os.Getenv("HOST_NAME")
-	os.Setenv("HOST_NAME", "hostname")
+	t.Setenv("HOST_NAME", "hostname")
 
 	err = k8sAPIServer.init()
 	assert.NotNil(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable K8S_NAMESPACE is not set"))
-
-	// restore env variables
-	os.Setenv("HOST_NAME", originalHostName)
 }

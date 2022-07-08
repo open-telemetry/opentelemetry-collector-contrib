@@ -25,7 +25,9 @@ import (
 )
 
 const (
-	typeStr              = "observiq"
+	typeStr = "observiq"
+	// The stability level of the exporter.
+	stability            = component.StabilityLevelDeprecated
 	defaultHTTPTimeout   = 20 * time.Second
 	defaultEndpoint      = "https://nozzle.app.observiq.com/v1/add"
 	defaultDialerTimeout = 10 * time.Second
@@ -36,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
 	)
 }
 
@@ -60,6 +62,7 @@ func createLogsExporter(
 	params component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
+	params.Logger.Warn("The observiq exporter is deprecated and will be removed in v0.56.0.")
 	if config == nil {
 		return nil, errors.New("nil config")
 	}

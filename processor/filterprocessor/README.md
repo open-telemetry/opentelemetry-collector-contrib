@@ -1,13 +1,18 @@
 # Filter Processor
 
-- Supported pipeline types: logs, metrics, spans
-- The filter processor can be configured to include or exclude:
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | metrics, logs, traces |
+| Distributions            | [core], [contrib]     |
+
+The filter processor can be configured to include or exclude:
 
 - logs, based on resource attributes using the `strict` or `regexp` match types
 - metrics based on metric name in the case of the `strict` or `regexp` match types,
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
-- Spans based on tags, resources, and names, all with full regex support
+- Spans based on span names, and resource attributes, all with full regex support
 
 It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
@@ -42,7 +47,7 @@ This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
 
-More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
+More details can found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
 
 Examples:
 
@@ -241,3 +246,7 @@ processors:
           - Key: container.host
             Value: (localhost|127.0.0.1)
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

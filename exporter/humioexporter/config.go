@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package humioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 
 import (
@@ -35,7 +34,7 @@ const (
 
 // LogsConfig represents the Humio configuration settings specific to logs
 type LogsConfig struct {
-	//Ingest token for identifying and authorizing with a Humio repository
+	// Ingest token for identifying and authorizing with a Humio repository
 	IngestToken string `mapstructure:"ingest_token"`
 
 	// The name of a custom log parser to use, if no parser is associated with the ingest token
@@ -44,7 +43,7 @@ type LogsConfig struct {
 
 // TracesConfig represents the Humio configuration settings specific to traces
 type TracesConfig struct {
-	//Ingest token for identifying and authorizing with a Humio repository
+	// Ingest token for identifying and authorizing with a Humio repository
 	IngestToken string `mapstructure:"ingest_token"`
 
 	// Whether to use Unix timestamps, or to fall back to ISO 8601 formatted strings

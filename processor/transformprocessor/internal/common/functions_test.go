@@ -252,6 +252,17 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
+			name: "getter arg with nil literal",
+			inv: Invocation{
+				Function: "testing_getter",
+				Arguments: []Value{
+					{
+						IsNil: (*IsNil)(testhelper.Boolp(true)),
+					},
+				},
+			},
+		},
+		{
 			name: "string arg",
 			inv: Invocation{
 				Function: "testing_string",

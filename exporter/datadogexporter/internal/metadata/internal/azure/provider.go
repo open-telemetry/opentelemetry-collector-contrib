@@ -16,26 +16,48 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 )
 
-var _ provider.HostnameProvider = (*Provider)(nil)
+var _ source.Provider = (*Provider)(nil)
+var _ provider.ClusterNameProvider = (*Provider)(nil)
 
 type Provider struct {
 	detector azure.Provider
 }
 
 // Hostname returns the Azure cloud integration hostname.
-func (p *Provider) Hostname(ctx context.Context) (string, error) {
+func (p *Provider) Source(ctx context.Context) (source.Source, error) {
+	metadata, err := p.detector.Metadata(ctx)
+	if err != nil {
+		return source.Source{}, err
+	}
+
+	return source.Source{Kind: source.HostnameKind, Identifier: metadata.VMID}, nil
+}
+
+// ClusterName gets the AKS cluster name from the resource group name.
+func (p *Provider) ClusterName(ctx context.Context) (string, error) {
 	metadata, err := p.detector.Metadata(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	return metadata.VMID, nil
+	// Code comes from https://github.com/DataDog/datadog-agent/blob/1b4afdd6a/pkg/util/cloudproviders/azure/azure.go#L72
+	// It expects the resource group name to have the format (MC|mc)_resource-group_cluster-name_zone.
+	splitAll := strings.Split(metadata.ResourceGroupName, "_")
+	if len(splitAll) < 4 || strings.ToLower(splitAll[0]) != "mc" {
+		return "", fmt.Errorf("cannot parse the clustername from resource group name: %s", metadata.ResourceGroupName)
+	}
+
+	return splitAll[len(splitAll)-2], nil
 }
 
 // NewProvider creates a new Azure hostname provider.

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
@@ -80,16 +79,16 @@ func (receiver *pubsubReceiver) generateClientOptions() (copts []option.ClientOp
 	if receiver.userAgent != "" {
 		copts = append(copts, option.WithUserAgent(receiver.userAgent))
 	}
-	if receiver.config.endpoint != "" {
-		if receiver.config.insecure {
+	if receiver.config.Endpoint != "" {
+		if receiver.config.Insecure {
 			var dialOpts []grpc.DialOption
 			if receiver.userAgent != "" {
 				dialOpts = append(dialOpts, grpc.WithUserAgent(receiver.userAgent))
 			}
-			conn, _ := grpc.Dial(receiver.config.endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
+			conn, _ := grpc.Dial(receiver.config.Endpoint, append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))...)
 			copts = append(copts, option.WithGRPCConn(conn))
 		} else {
-			copts = append(copts, option.WithEndpoint(receiver.config.endpoint))
+			copts = append(copts, option.WithEndpoint(receiver.config.Endpoint))
 		}
 	}
 	return copts
@@ -149,8 +148,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {
-	switch compression {
-	case gZip:
+	if compression == gZip {
 		reader, err := gzip.NewReader(bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
@@ -241,14 +239,12 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 	}
 
 	ceContentEncoding := attributes["content-encoding"]
-	switch ceContentEncoding {
-	case "gzip":
+	if ceContentEncoding == "gzip" {
 		otlpCompression = gZip
 	}
 
 	if otlpCompression == uncompressed && receiver.config.Compression != "" {
-		switch receiver.config.Compression {
-		case "gzip":
+		if receiver.config.Compression == "gzip" {
 			otlpCompression = gZip
 		}
 	}

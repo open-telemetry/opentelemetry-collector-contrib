@@ -20,6 +20,10 @@ The following configuration options are supported:
   a fallback, when no `content-type` attribute is present.
 * `compression` (Optional): The compression that will be used on received data from the subscription. When set it can 
   only be `gzip`. This will only be used as a fallback, when no `content-encoding` attribute is present.
+* `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
+  or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
+* `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
+   emulator instance. Only has effect if Endpoint is not ""
 
 ```yaml
 receivers:

@@ -29,6 +29,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resource"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -38,9 +40,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

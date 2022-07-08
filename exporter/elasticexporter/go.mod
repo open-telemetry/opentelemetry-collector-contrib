@@ -4,12 +4,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.17
 
 require (
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.8.0
 	go.elastic.co/apm v1.15.0
 	go.elastic.co/fastjson v1.1.0
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
-	go.opentelemetry.io/collector/semconv v0.53.0
+	go.opentelemetry.io/collector v0.55.0
+	go.opentelemetry.io/collector/pdata v0.55.0
+	go.opentelemetry.io/collector/semconv v0.55.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -30,7 +30,7 @@ require (
 	github.com/jcchavezs/porto v0.1.0 // indirect
 	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -51,7 +51,7 @@ require (
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/tools v0.1.9 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect

@@ -3,15 +3,15 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seve
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.53.0
-	github.com/stretchr/testify v1.7.2
-	go.opentelemetry.io/collector v0.53.0
-	go.opentelemetry.io/collector/pdata v0.53.0
-	go.opentelemetry.io/collector/semconv v0.53.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.55.0
+	github.com/stretchr/testify v1.8.0
+	go.opentelemetry.io/collector v0.55.0
+	go.opentelemetry.io/collector/pdata v0.55.0
+	go.opentelemetry.io/collector/semconv v0.55.0
 	go.uber.org/zap v1.21.0
-	k8s.io/api v0.24.1
-	k8s.io/apimachinery v0.24.1
-	k8s.io/client-go v0.24.1
+	k8s.io/api v0.24.2
+	k8s.io/apimachinery v0.24.2
+	k8s.io/client-go v0.24.2
 )
 
 require (
@@ -33,7 +33,7 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/knadh/koanf v1.4.1 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
@@ -56,7 +56,7 @@ require (
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect

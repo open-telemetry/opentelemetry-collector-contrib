@@ -300,10 +300,10 @@ func TestCompaction(t *testing.T) {
 	// compact the db
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient1.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check size after compaction
@@ -314,15 +314,17 @@ func TestCompaction(t *testing.T) {
 	// remove data from database
 	for i = 0; i < numEntries; i++ {
 		key = fmt.Sprintf("key_%d", i)
-		err = fsClient1.Delete(ctx, key)
+		err = c.Delete(ctx, key)
 		require.NoError(t, err)
 	}
 
 	// compact after data removal
-	fsClient2, err := fsClient1.Compact(ctx, tempDir, cfg.Timeout, 1)
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient2.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check size
@@ -369,10 +371,10 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in the same directory
 	c, ok := client.(*fileStorageClient)
 	require.True(t, ok)
-	fsClient1, err := c.Compact(ctx, tempDir, cfg.Timeout, 1)
+	err = c.Compact(tempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient1.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check if only db exists in tempDir
@@ -384,10 +386,12 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	// perform compaction in different directory
 	emptyTempDir := t.TempDir()
 
-	fsClient2, err := fsClient1.Compact(ctx, emptyTempDir, cfg.Timeout, 1)
+	c, ok = client.(*fileStorageClient)
+	require.True(t, ok)
+	err = c.Compact(emptyTempDir, cfg.Timeout, 1)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		require.NoError(t, fsClient2.Close(ctx))
+		require.NoError(t, client.Close(ctx))
 	})
 
 	// check if emptyTempDir is empty after compaction

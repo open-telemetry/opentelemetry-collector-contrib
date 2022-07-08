@@ -25,6 +25,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "fluentforward"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory return a new component.ReceiverFactory for fluentd forwarder.
@@ -32,7 +34,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

@@ -15,6 +15,7 @@
 package internal
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -773,8 +774,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetMExplicitBounds([]float64{10, 20})
-				pt0.SetMBucketCounts([]uint64{1, 1, 8})
+				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -810,8 +811,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetMExplicitBounds([]float64{10, 20})
-				pt0.SetMBucketCounts([]uint64{1, 1, 8})
+				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -819,8 +820,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
 				pt1.SetSum(50)
-				pt1.SetMExplicitBounds([]float64{10, 20})
-				pt1.SetMBucketCounts([]uint64{1, 1, 1})
+				pt1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("key2", "v2")
@@ -861,8 +862,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetMExplicitBounds([]float64{10, 20})
-				pt0.SetMBucketCounts([]uint64{1, 1, 8})
+				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -870,8 +871,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
 				pt1.SetSum(50)
-				pt1.SetMExplicitBounds([]float64{10, 20})
-				pt1.SetMBucketCounts([]uint64{1, 1, 1})
+				pt1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().InsertString("key2", "v2")
@@ -884,8 +885,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt2 := hist1.DataPoints().AppendEmpty()
 				pt2.SetCount(3)
 				pt2.SetSum(50)
-				pt2.SetMExplicitBounds([]float64{10, 20})
-				pt2.SetMBucketCounts([]uint64{1, 1, 1})
+				pt2.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt2.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt2.SetTimestamp(startTsNanos)
 				pt2.SetStartTimestamp(startTsNanos)
 
@@ -915,8 +916,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(10)
 				pt0.SetSum(99)
-				pt0.SetMExplicitBounds([]float64{10, 20})
-				pt0.SetMBucketCounts([]uint64{1, 1, 8})
+				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -946,8 +947,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
-				pt0.SetMBucketCounts([]uint64{3})
-				pt0.SetMExplicitBounds([]float64{})
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -976,8 +976,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(100)
-				pt0.SetMBucketCounts([]uint64{3})
-				pt0.SetMExplicitBounds([]float64{})
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 
@@ -1006,8 +1005,8 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
 				pt0.SetSum(0)
-				pt0.SetMExplicitBounds([]float64{10, 20})
-				pt0.SetMBucketCounts([]uint64{1, 1, 1})
+				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
+				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().InsertString("foo", "bar")
@@ -1217,12 +1216,12 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); err != errMetricNameNotFound {
+		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
 			return
 		}
 
-		if _, _, _, err := b.Build(); err != errNoDataToBuild {
+		if _, _, _, err := b.Build(); !errors.Is(err, errNoDataToBuild) {
 			t.Error("expecting errNoDataToBuild error, but get nil")
 		}
 	})
@@ -1230,7 +1229,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
@@ -1238,7 +1237,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); err != errEmptyBoundaryLabel {
+		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})

@@ -19,6 +19,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,12 +41,13 @@ var (
 var _ gcpDetector = (*mockDetector)(nil)
 
 type mockDetector struct {
+	platform     gcp.Platform
 	projectID    string
 	instanceName string
 }
 
 func (m *mockDetector) CloudPlatform() gcp.Platform {
-	return gcp.GCE
+	return m.platform
 }
 
 func (m *mockDetector) ProjectID() (string, error) {
@@ -55,21 +58,28 @@ func (m *mockDetector) GCEHostName() (string, error) {
 	return m.instanceName, nil
 }
 
+func (m *mockDetector) GKEClusterName() (string, error) {
+	return "", fmt.Errorf("not available")
+}
+
 func TestProvider(t *testing.T) {
 	tests := []struct {
 		name         string
 		projectID    string
+		platform     gcp.Platform
 		instanceName string
 		hostname     string
 	}{
 		{
 			name:         "good hostname",
+			platform:     gcp.GCE,
 			projectID:    testCloudAccount,
 			instanceName: testHostname,
 			hostname:     testGCPIntegrationHostname,
 		},
 		{
 			name:         "bad hostname",
+			platform:     gcp.GKE,
 			projectID:    testCloudAccount,
 			instanceName: testBadHostname,
 			hostname:     testGCPIntegrationBadHostname,
@@ -79,13 +89,15 @@ func TestProvider(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			provider := &Provider{detector: &mockDetector{
+				platform:     testInstance.platform,
 				projectID:    testInstance.projectID,
 				instanceName: testInstance.instanceName,
 			}}
 
-			hostname, err := provider.Hostname(context.Background())
+			src, err := provider.Source(context.Background())
 			require.NoError(t, err)
-			assert.Equal(t, testInstance.hostname, hostname)
+			assert.Equal(t, source.HostnameKind, src.Kind)
+			assert.Equal(t, testInstance.hostname, src.Identifier)
 		})
 	}
 }
