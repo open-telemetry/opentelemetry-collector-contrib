@@ -36,6 +36,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
+var patternKeyToAttributeMap = map[string]string{
+	"ClusterName":          "aws.ecs.cluster.name",
+	"TaskId":               "aws.ecs.task.id",
+	"NodeName":             "k8s.node.name",
+	"PodName":              "pod",
+	"ContainerInstanceId":  "aws.ecs.container.instance.id",
+	"TaskDefinitionFamily": "aws.ecs.task.family",
+}
+
 type exporter struct {
 	Config                 *Config
 	logger                 *zap.Logger
@@ -106,9 +115,15 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			InputLogEvent: logEvent,
 			GeneratedTime: time.Now(),
 		}
-		cwLogsPusher := e.getPusher(e.Config.LogGroupName, e.Config.LogStreamName)
+		body := &cwLogBody{}
+		err := json.Unmarshal([]byte(*logEvent.InputLogEvent.Message), body)
+		if err != nil {
+			return err
+		}
+		logGroup, logStream, _ := getLogInfo(body, e.Config)
+		cwLogsPusher := e.getPusher(logGroup, logStream)
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
-		err := cwLogsPusher.AddLogEntry(logEvent)
+		err = cwLogsPusher.AddLogEntry(logEvent)
 		if err != nil {
 			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
 		}
@@ -116,7 +131,6 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		flushErr := cwLogsPusher.ForceFlush()
 		if flushErr != nil {
 			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-			return flushErr
 		}
 	}
 

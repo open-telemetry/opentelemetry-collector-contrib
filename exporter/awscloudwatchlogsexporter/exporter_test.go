@@ -16,7 +16,9 @@ package awscloudwatchlogsexporter
 
 import (
 	"context"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -239,8 +241,8 @@ func TestConsumeLogs(t *testing.T) {
 	factory := NewFactory()
 	expCfg := factory.CreateDefaultConfig().(*Config)
 	expCfg.Region = "us-west-2"
-	expCfg.LogGroupName = "testGroup"
-	expCfg.LogStreamName = "testStream"
+	expCfg.LogGroupName = "{PodName}"
+	expCfg.LogStreamName = "{PodName}"
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsPusher(expCfg, componenttest.NewNopExporterCreateSettings())
 	assert.Nil(t, err)
@@ -248,6 +250,8 @@ func TestConsumeLogs(t *testing.T) {
 	ld := plog.NewLogs()
 	r := ld.ResourceLogs().AppendEmpty()
 	r.Resource().Attributes().UpsertString("hello", "test")
+	timestamp := strconv.FormatInt(time.Now().UTC().UnixNano(), 10)
+	r.Resource().Attributes().UpsertString("pod", timestamp)
 	logRecords := r.ScopeLogs().AppendEmpty().LogRecords()
 	logRecords.EnsureCapacity(5)
 	logRecords.AppendEmpty()
