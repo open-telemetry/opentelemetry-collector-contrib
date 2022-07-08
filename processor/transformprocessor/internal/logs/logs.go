@@ -109,9 +109,21 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 	case "flags":
 		return accessFlags(), nil
 	case "trace_id":
-		return accessTraceID(), nil
+		if len(path) == 1 {
+			return accessTraceID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringTraceID(), nil
+		}
 	case "span_id":
-		return accessSpanID(), nil
+		if len(path) == 1 {
+			return accessSpanID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringSpanID(), nil
+		}
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
@@ -322,6 +334,21 @@ func accessTraceID() pathGetSetter {
 	}
 }
 
+func accessStringTraceID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).TraceID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
+				}
+			}
+		},
+	}
+}
+
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
@@ -330,6 +357,21 @@ func accessSpanID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
+			}
+		},
+	}
+}
+
+func accessStringSpanID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).SpanID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
+				}
 			}
 		},
 	}
