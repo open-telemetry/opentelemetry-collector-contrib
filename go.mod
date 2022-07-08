@@ -180,7 +180,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.22 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.23 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3 // indirect
@@ -525,6 +525,7 @@ require (
 	go.uber.org/goleak v1.1.12 // indirect
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
+	golang.org/x/exp v0.0.0-20200908183739-ae8ad444f925 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
