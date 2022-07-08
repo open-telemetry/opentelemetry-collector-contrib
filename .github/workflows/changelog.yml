@@ -49,6 +49,12 @@ jobs:
       - name: Debug ./unreleased/*.yaml addition(s)
         run: git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./unreleased
 
+      - name: Print origin/main
+        run: git rev-parse origin/main
+
+      - name: Print merge-base
+        run: git merge-base origin/main ${{ github.event.pull_request.head.sha }}
+
       - name: Ensure ./unreleased/*.yaml addition(s)
         run: |
           if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./unreleased | grep -c \\.yaml) ]]
