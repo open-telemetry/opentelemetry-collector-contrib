@@ -16,23 +16,35 @@ package honeycombexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "honeycomb"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelDeprecated
 )
+
+var once sync.Once
 
 // NewFactory creates a factory for Honeycomb exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability))
+}
+
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("Honeycomb exporter is deprecated and will be removed in future versions.")
+	})
 }
 
 func createDefaultConfig() config.Exporter {
@@ -59,6 +71,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
+	logDeprecation(set.Logger)
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		set,

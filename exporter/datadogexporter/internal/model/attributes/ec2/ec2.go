@@ -48,9 +48,10 @@ func isDefaultHostname(hostname string) bool {
 
 // HostnameFromAttributes gets a valid hostname from labels
 // if available
-func HostnameFromAttributes(attrs pcommon.Map) (string, bool) {
+func HostnameFromAttributes(attrs pcommon.Map, usePreviewRules bool) (string, bool) {
 	hostName, ok := attrs.Get(conventions.AttributeHostName)
-	if ok && !isDefaultHostname(hostName.StringVal()) {
+	// With hostname preview rules, return the EC2 instance id always.
+	if !usePreviewRules && ok && !isDefaultHostname(hostName.StringVal()) {
 		return hostName.StringVal(), true
 	}
 

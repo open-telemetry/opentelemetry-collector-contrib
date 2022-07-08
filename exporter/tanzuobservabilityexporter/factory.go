@@ -20,37 +20,32 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-const exporterType = "tanzuobservability"
+const (
+	exporterType = "tanzuobservability"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		exporterType,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
 	)
 }
 
 func createDefaultConfig() config.Exporter {
-	tracesCfg := TracesConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:30001"},
-	}
-	metricsCfg := MetricsConfig{
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: "http://localhost:2878"},
-	}
 	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(exporterType)),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		Traces:           tracesCfg,
-		Metrics:          metricsCfg,
 	}
 }
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package splunkhecexporter
 
 import (
@@ -40,8 +41,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 	doubleVal := 1234.5678
 	int64Val := int64(123)
 
-	distributionBounds := []float64{1, 2, 4}
-	distributionCounts := []uint64{4, 2, 3, 5}
+	distributionBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4})
+	distributionCounts := pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 5})
 
 	tests := []struct {
 		name              string
@@ -279,7 +280,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
 				histogramPt.SetExplicitBounds(distributionBounds)
-				histogramPt.SetBucketCounts([]uint64{4, 2, 3})
+				histogramPt.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3}))
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))

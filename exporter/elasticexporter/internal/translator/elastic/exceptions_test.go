@@ -300,9 +300,8 @@ func encodeSpanEvents(t *testing.T, language string, events ...ptrace.SpanEvent)
 	var recorder transporttest.RecorderTransport
 	resource := pcommon.NewResource()
 	resource.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, language)
-	elastic.EncodeResourceMetadata(resource, &w)
-	err := elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w)
-	assert.NoError(t, err)
+	assert.NoError(t, elastic.EncodeResourceMetadata(resource, &w))
+	assert.NoError(t, elastic.EncodeSpan(span, pcommon.NewInstrumentationScope(), resource, &w))
 	sendStream(t, &w, &recorder)
 
 	payloads := recorder.Payloads()

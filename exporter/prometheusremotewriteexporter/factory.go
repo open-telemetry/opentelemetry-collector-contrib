@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -31,6 +30,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheusremotewrite"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a new Prometheus Remote Write exporter.
@@ -38,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter))
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability))
 }
 
 func createMetricsExporter(_ context.Context, set component.ExporterCreateSettings,
@@ -86,7 +87,6 @@ func createDefaultConfig() config.Exporter {
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		sanitizeLabel:    featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID),
 		RetrySettings: exporterhelper.RetrySettings{
 			Enabled:         true,
 			InitialInterval: 50 * time.Millisecond,

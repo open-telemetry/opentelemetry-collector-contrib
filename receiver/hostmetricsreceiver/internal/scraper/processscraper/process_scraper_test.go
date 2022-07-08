@@ -45,37 +45,82 @@ func skipTestOnUnsupportedOS(t *testing.T) {
 
 func TestScrape(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
+	type testCase struct {
+		name                                   string
+		expectMetricsWithDirectionAttribute    bool
+		expectMetricsWithoutDirectionAttribute bool
+		mutateScraper                          func(*scraper)
+	}
+	testCases := []testCase{
+		{
+			name:                                   "Standard",
+			expectMetricsWithDirectionAttribute:    true,
+			expectMetricsWithoutDirectionAttribute: false,
+		},
+		{
+			name:                                   "Standard with direction removed",
+			expectMetricsWithDirectionAttribute:    false,
+			expectMetricsWithoutDirectionAttribute: true,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithDirectionAttribute = false
+				s.emitMetricsWithoutDirectionAttribute = true
+			},
+		},
+		{
+			name:                                   "Emit both old and new metrics",
+			expectMetricsWithDirectionAttribute:    true,
+			expectMetricsWithoutDirectionAttribute: true,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithDirectionAttribute = true
+				s.emitMetricsWithoutDirectionAttribute = true
+			},
+		},
+	}
 
 	const bootTime = 100
 	const expectedStartTime = 100 * 1e9
 
-	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
-	scraper.bootTime = func() (uint64, error) { return bootTime, nil }
-	require.NoError(t, err, "Failed to create process scraper: %v", err)
-	err = scraper.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
+	for _, test := range testCases {
+		t.Run(test.name, func(t *testing.T) {
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+			if test.mutateScraper != nil {
+				test.mutateScraper(scraper)
+			}
+			scraper.bootTime = func() (uint64, error) { return bootTime, nil }
+			require.NoError(t, err, "Failed to create process scraper: %v", err)
+			err = scraper.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
-	md, err := scraper.scrape(context.Background())
+			md, err := scraper.scrape(context.Background())
 
-	// may receive some partial errors as a result of attempting to:
-	// a) read native system processes on Windows (e.g. Registry process)
-	// b) read info on processes that have just terminated
-	//
-	// so validate that we have at some errors & some valid data
-	if err != nil {
-		require.True(t, scrapererror.IsPartialScrapeError(err))
-		noProcessesScraped := md.ResourceMetrics().Len()
-		noProcessesErrored := err.(scrapererror.PartialScrapeError).Failed
-		require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
-		require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+			// may receive some partial errors as a result of attempting to:
+			// a) read native system processes on Windows (e.g. Registry process)
+			// b) read info on processes that have just terminated
+			//
+			// so validate that we have at some errors & some valid data
+			if err != nil {
+				require.True(t, scrapererror.IsPartialScrapeError(err))
+				noProcessesScraped := md.ResourceMetrics().Len()
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				noProcessesErrored := scraperErr.Failed
+				require.Lessf(t, 0, noProcessesErrored, "Failed to scrape metrics - : error, but 0 failed process %v", err)
+				require.Lessf(t, 0, noProcessesScraped, "Failed to scrape metrics - : 0 successful scrapes %v", err)
+			}
+
+			require.Greater(t, md.ResourceMetrics().Len(), 1)
+			assertProcessResourceAttributesExist(t, md.ResourceMetrics())
+			assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			if test.expectMetricsWithDirectionAttribute {
+				assertOldDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
+			if test.expectMetricsWithoutDirectionAttribute {
+				assertNewDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
+			assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
+		})
 	}
-
-	require.Greater(t, md.ResourceMetrics().Len(), 1)
-	assertProcessResourceAttributesExist(t, md.ResourceMetrics())
-	assertCPUTimeMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertMemoryUsageMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
-	assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
 }
 
 func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice) {
@@ -118,9 +163,19 @@ func assertMemoryUsageMetricValid(t *testing.T, resourceMetrics pmetric.Resource
 	}
 }
 
-func assertDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+func assertNewDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
+	startTime pcommon.Timestamp) {
+	for _, metricName := range []string{"process.disk.io.read", "process.disk.io.write"} {
+		diskIOMetric := getMetric(t, metricName, resourceMetrics)
+		if startTime != 0 {
+			internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+		}
+	}
+}
+
+func assertOldDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice,
+	startTime pcommon.Timestamp) {
 	diskIOMetric := getMetric(t, "process.disk.io", resourceMetrics)
-	assert.Equal(t, "process.disk.io", diskIOMetric.Name())
 	if startTime != 0 {
 		internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
 	}
@@ -163,11 +218,11 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(&Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Include: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(&Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
+	_, err = newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Exclude: MatchConfig{Names: []string{"test"}}, Metrics: metadata.DefaultMetricsSettings()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -175,7 +230,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+	scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
@@ -324,7 +379,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				}
 			}
 
-			scraper, err := newProcessScraper(config)
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -428,7 +483,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				t.Skipf("skipping test %v on %v", test.name, runtime.GOOS)
 			}
 
-			scraper, err := newProcessScraper(&Config{Metrics: metadata.DefaultMetricsSettings()})
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -463,7 +518,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			assert.True(t, isPartial)
 			if isPartial {
 				expectedFailures := getExpectedScrapeFailures(test.nameError, test.exeError, test.timesError, test.memoryInfoError, test.ioCountersError)
-				assert.Equal(t, expectedFailures, err.(scrapererror.PartialScrapeError).Failed)
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				assert.Equal(t, expectedFailures, scraperErr.Failed)
 			}
 		})
 	}
@@ -534,13 +591,14 @@ func TestScrapeMetrics_MuteProcessNameError(t *testing.T) {
 			if !test.omitConfigField {
 				config.MuteProcessNameError = test.muteProcessNameError
 			}
-			scraper, err := newProcessScraper(config)
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handleMock := &processHandleMock{}
 			handleMock.On("Name").Return("test", processNameError)
+			handleMock.On("Exe").Return("test", processNameError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil

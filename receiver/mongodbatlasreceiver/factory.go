@@ -28,8 +28,10 @@ import (
 )
 
 const (
-	typeStr            = "mongodbatlas"
-	defaultGranularity = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	typeStr              = "mongodbatlas"
+	stability            = component.StabilityLevelBeta
+	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
+	defaultAlertsEnabled = false
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
@@ -37,7 +39,8 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability))
 }
 
 func createMetricsReceiver(
@@ -47,12 +50,27 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ms, err := newMongoDBAtlasScraper(params.Logger, cfg)
+	ms, err := newMongoDBAtlasScraper(params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(ms))
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	params component.ReceiverCreateSettings,
+	rConf config.Receiver,
+	consumer consumer.Logs,
+) (component.LogsReceiver, error) {
+	cfg := rConf.(*Config)
+	recv, err := newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+	}
+
+	return recv, nil
 }
 
 func createDefaultConfig() config.Receiver {
@@ -61,5 +79,8 @@ func createDefaultConfig() config.Receiver {
 		Granularity:               defaultGranularity,
 		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
 		Metrics:                   metadata.DefaultMetricsSettings(),
+		Alerts: AlertConfig{
+			Enabled: defaultAlertsEnabled,
+		},
 	}
 }

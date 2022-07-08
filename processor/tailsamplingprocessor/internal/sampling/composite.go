@@ -109,11 +109,11 @@ func (c *Composite) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decisio
 			return Unspecified, err
 		}
 
-		if decision == Sampled {
+		if decision == Sampled || decision == InvertSampled {
 			// The subpolicy made a decision to Sample. Now we need to make our decision.
 
 			// Calculate resulting SPS counter if we decide to sample this trace
-			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount
+			spansInSecondIfSampled := sub.sampledSPS + trace.SpanCount.Load()
 
 			// Check if the rate will be within the allocated bandwidth.
 			if spansInSecondIfSampled <= sub.allocatedSPS && spansInSecondIfSampled <= c.maxTotalSPS {

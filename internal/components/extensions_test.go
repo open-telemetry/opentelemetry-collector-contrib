@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 // nolint:errcheck
 package components
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -91,10 +97,12 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "basicauth",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["basicauth"].CreateDefaultConfig().(*basicauthextension.Config)
-				f := testutil.NewTemporaryFile(t)
-				f.WriteString("username:password")
+				// No need to clean up, t.TempDir will be deleted entirely.
+				fileName := filepath.Join(t.TempDir(), "random.file")
+				require.NoError(t, os.WriteFile(fileName, []byte("username:password"), 0600))
+
 				cfg.Htpasswd = &basicauthextension.HtpasswdSettings{
-					File:   f.Name(),
+					File:   fileName,
 					Inline: "username:password",
 				}
 				return cfg
@@ -181,8 +189,7 @@ func TestDefaultExtensions(t *testing.T) {
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["db_storage"].CreateDefaultConfig().(*dbstorage.Config)
 				cfg.DriverName = "sqlite3"
-				tempFolder := testutil.NewTemporaryDirectory(t)
-				cfg.DataSource = tempFolder + "/foo.db"
+				cfg.DataSource = filepath.Join(t.TempDir(), "foo.db")
 				return cfg
 			},
 		},
@@ -190,7 +197,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "file_storage",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["file_storage"].CreateDefaultConfig().(*filestorage.Config)
-				cfg.Directory = testutil.NewTemporaryDirectory(t)
+				cfg.Directory = t.TempDir()
 				return cfg
 			},
 		},

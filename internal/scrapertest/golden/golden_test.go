@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package golden
 
 import (
+	"bytes"
 	"io/ioutil"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -31,15 +32,20 @@ func TestWriteMetrics(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
-	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	WriteMetrics(tempDir, metrics)
+	actualFile := filepath.Join(t.TempDir(), "metrics.json")
+	require.NoError(t, WriteMetrics(actualFile, metrics))
 
-	actualBytes, err := ioutil.ReadFile(tempDir)
+	actualBytes, err := ioutil.ReadFile(actualFile)
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
 	expectedBytes, err := ioutil.ReadFile(expectedFile)
 	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// ioutil adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
 
 	require.Equal(t, expectedBytes, actualBytes)
 }
@@ -61,8 +67,7 @@ func TestRoundTrip(t *testing.T) {
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	tempDir := filepath.Join(t.TempDir(), "metrics.json")
-	err := WriteMetrics(tempDir, expectedMetrics)
-	require.NoError(t, err)
+	require.NoError(t, WriteMetrics(tempDir, expectedMetrics))
 
 	actualMetrics, err := ReadMetrics(tempDir)
 	require.NoError(t, err)

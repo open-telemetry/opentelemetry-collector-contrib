@@ -83,7 +83,6 @@ func getResourceForCronJob(cj *batchv1.CronJob) *resourcepb.Resource {
 			conventions.AttributeK8SCronJobUID:    string(cj.UID),
 			conventions.AttributeK8SCronJobName:   cj.Name,
 			conventions.AttributeK8SNamespaceName: cj.Namespace,
-			conventions.AttributeK8SClusterName:   cj.ClusterName,
 		},
 	}
 }
@@ -95,7 +94,6 @@ func getResourceForCronJobBeta(cj *batchv1beta1.CronJob) *resourcepb.Resource {
 			conventions.AttributeK8SCronJobUID:    string(cj.UID),
 			conventions.AttributeK8SCronJobName:   cj.Name,
 			conventions.AttributeK8SNamespaceName: cj.Namespace,
-			conventions.AttributeK8SClusterName:   cj.ClusterName,
 		},
 	}
 }

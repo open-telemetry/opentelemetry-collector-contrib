@@ -19,6 +19,7 @@ import (
 	"go/build"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -73,12 +74,12 @@ func (dr DirResolver) PackageDir(t reflect.Type) (string, error) {
 
 // localPackageDir returns the path to a local package.
 func (dr DirResolver) localPackageDir(pkg string) string {
-	return path.Join(dr.SrcRoot, pkg)
+	return filepath.Join(dr.SrcRoot, pkg)
 }
 
 // externalPackageDir returns the path to an external package.
 func (dr DirResolver) externalPackageDir(pkg string) (string, error) {
-	line, version, err := grepMod(path.Join(dr.SrcRoot, "go.mod"), pkg)
+	line, version, err := grepMod(filepath.Join(dr.SrcRoot, "go.mod"), pkg)
 	if err != nil {
 		return "", err
 	}
@@ -86,7 +87,7 @@ func (dr DirResolver) externalPackageDir(pkg string) (string, error) {
 	if goPath == "" {
 		goPath = build.Default.GOPATH
 	}
-	pkgPath := dr.buildExternalPath(goPath, pkg, line, version)
+	pkgPath := filepath.FromSlash(dr.buildExternalPath(goPath, pkg, line, version))
 	if _, err = os.ReadDir(pkgPath); err != nil {
 		return "", err
 	}

@@ -95,7 +95,6 @@ func getResourceForDaemonSet(ds *appsv1.DaemonSet) *resourcepb.Resource {
 			conventions.AttributeK8SDaemonSetUID:  string(ds.UID),
 			conventions.AttributeK8SDaemonSetName: ds.Name,
 			conventions.AttributeK8SNamespaceName: ds.Namespace,
-			conventions.AttributeK8SClusterName:   ds.ClusterName,
 		},
 	}
 }

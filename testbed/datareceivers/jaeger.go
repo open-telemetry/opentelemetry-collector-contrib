@@ -53,7 +53,7 @@ func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 		return err
 	}
 
-	return jr.receiver.Start(context.Background(), jr)
+	return jr.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (jr *jaegerDataReceiver) Stop() error {

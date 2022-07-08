@@ -46,8 +46,8 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) resourceOptions() []metadata.ResourceOption {
-	opts := make([]metadata.ResourceOption, 0, 6)
+func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
+	opts := make([]metadata.ResourceMetricsOption, 0, 6)
 	opts = append(opts,
 		metadata.WithProcessPid(int64(m.pid)),
 		metadata.WithProcessExecutableName(m.executable.name),

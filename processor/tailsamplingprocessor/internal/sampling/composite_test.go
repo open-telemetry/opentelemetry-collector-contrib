@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -35,7 +36,7 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
-	trace := &TraceData{SpanCount: 1}
+	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
 	return trace
 }
 
@@ -63,7 +64,7 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,
-		SpanCount:       1,
+		SpanCount:       atomic.NewInt64(1),
 	}
 }
 
@@ -146,6 +147,25 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
 	n2 := NewAlwaysSample(zap.NewNop())
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+
+	for i := 1; i <= 10; i++ {
+		trace := createTrace()
+
+		decision, err := c.Evaluate(traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		assert.Equal(t, decision, expected)
+	}
+}
+
+func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
+
+	// The first policy does not match, the second matches through invert
+	n1 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, false)
+	n2 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, true)
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
 
 	for i := 1; i <= 10; i++ {

@@ -40,7 +40,7 @@ metrics:
   apache.current_connections:
     enabled: true
     description: The number of active connections currently attached to the HTTP server.
-    unit: connections
+    unit: "{connections}"
     sum:
       value_type: int
       input_type: string
@@ -50,7 +50,7 @@ metrics:
   apache.workers:
     enabled: true
     description: The number of workers currently attached to the HTTP server.
-    unit: connections
+    unit: "{workers}"
     sum:
       value_type: int
       input_type: string
@@ -60,7 +60,7 @@ metrics:
   apache.requests:
     enabled: true
     description: The number of requests serviced by the HTTP server per second.
-    unit: 1
+    unit: "{requests}"
     sum:
       value_type: int
       input_type: string
@@ -78,12 +78,12 @@ metrics:
     attributes: [ server_name ]
   apache.scoreboard:
     enabled: true
-    description: The number of connections in each state.
+    description: The number of workers in each state.
     extended_documentation: >-
       The apache scoreboard is an encoded representation of the state of all the server's workers.
       This metric decodes the scoreboard and presents a count of workers in each state.
-      Additional details can be found [here](https://support.cpanel.net/hc/en-us/articles/360052040234-Understanding-the-Apache-scoreboard).
-    unit: scoreboard
+      Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION).
+    unit: "{workers}"
     sum:
       value_type: int
       monotonic: false

@@ -30,6 +30,12 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| database | The name of a database. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |

@@ -1,8 +1,12 @@
 # PostgreSQL Receiver
 
-This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/9.6/monitoring-stats.html).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
-Supported pipeline types: `metrics`
+This receiver queries the PostgreSQL [statistics collector](https://www.postgresql.org/docs/9.6/monitoring-stats.html).
 
 > :construction: This receiver is in **BETA**. Configuration fields and metric data model are subject to change.
 
@@ -58,3 +62,6 @@ The full list of settings exposed for this receiver are documented [here](./conf
 ## Metrics
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

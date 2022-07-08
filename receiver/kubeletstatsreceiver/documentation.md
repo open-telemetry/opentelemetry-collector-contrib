@@ -51,7 +51,14 @@ These are the metrics available for this scraper.
 | **k8s.volume.inodes.free** | The free inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |
 | **k8s.volume.inodes.used** | The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems. | 1 | Gauge(Int) | <ul> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Resource attributes
 
@@ -59,11 +66,11 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- |
 | aws.volume.id | The id of the AWS Volume | String |
 | container.id | Container id used to identify container | String |
-| container.name | Container name used by container runtime | String |
 | fs.type | The filesystem type of the Volume | String |
 | gce.pd.name | The name of the persistent disk in GCE | String |
 | glusterfs.endpoints.name | The endpoint name that details Glusterfs topology | String |
 | glusterfs.path | Glusterfs volume path | String |
+| k8s.container.name | Container name used by container runtime | String |
 | k8s.namespace.name | The name of the namespace that the pod is running in | String |
 | k8s.node.name | The name of the Node | String |
 | k8s.persistentvolumeclaim.name | The name of the Persistent Volume Claim | String |

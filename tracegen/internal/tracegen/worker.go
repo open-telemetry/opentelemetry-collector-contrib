@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
 
 import (
 	"context"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
@@ -27,12 +25,13 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
 
 type worker struct {
-	running          *uint32         // pointer to shared flag that indicates it's time to stop the test
+	running          *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
 	numTraces        int             // how many traces the worker has to generate (only when duration==0)
 	propagateContext bool            // whether the worker needs to propagate the trace context via HTTP headers
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
@@ -51,7 +50,7 @@ func (w worker) simulateTraces() {
 	tracer := otel.Tracer("tracegen")
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
-	for atomic.LoadUint32(w.running) == 1 {
+	for w.running.Load() {
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			attribute.String("span.kind", "client"), // is there a semantic convention for this?
 			semconv.NetPeerIPKey.String(fakeIP),
@@ -74,7 +73,9 @@ func (w worker) simulateTraces() {
 			semconv.PeerServiceKey.String("tracegen-client"),
 		))
 
-		limiter.Wait(context.Background())
+		if err := limiter.Wait(context.Background()); err != nil {
+			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
+		}
 
 		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
 		child.End(opt)

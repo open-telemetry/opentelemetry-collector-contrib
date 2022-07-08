@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
@@ -33,6 +31,7 @@ import (
 const (
 	defaultApplicationName  = "defaultApp"
 	defaultServiceName      = "defaultService"
+	defaultMetricsPort      = 2878
 	labelApplication        = "application"
 	labelError              = "error"
 	labelEventName          = "name"
@@ -68,28 +67,32 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 	if !ok {
 		return nil, fmt.Errorf("invalid config: %#v", c)
 	}
-
-	endpoint, err := url.Parse(cfg.Traces.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse traces.endpoint: %v", err)
+	if !cfg.hasTracesEndpoint() {
+		return nil, fmt.Errorf("traces.endpoint required")
 	}
-	tracingPort, err := strconv.Atoi(endpoint.Port())
+	tracingHost, tracingPort, err := cfg.parseTracesEndpoint()
 	if err != nil {
-		// the port is empty, otherwise url.Parse would have failed above
-		return nil, fmt.Errorf("traces.endpoint requires a port")
+		return nil, fmt.Errorf("failed to parse traces.endpoint: %w", err)
+	}
+	metricsPort := defaultMetricsPort
+	if cfg.hasMetricsEndpoint() {
+		_, metricsPort, err = cfg.parseMetricsEndpoint()
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
+		}
 	}
 
 	// we specify a MetricsPort so the SDK can report its internal metrics
 	// but don't currently export any metrics from the pipeline
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
-		Host:                 endpoint.Hostname(),
-		MetricsPort:          2878,
+		Host:                 tracingHost,
+		MetricsPort:          metricsPort,
 		TracingPort:          tracingPort,
 		FlushIntervalSeconds: 1,
 		SDKMetricsTags:       map[string]string{"otel.traces.collector_version": settings.BuildInfo.Version},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
+		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}
 
 	return &tracesExporter{

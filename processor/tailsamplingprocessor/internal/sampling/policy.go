@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 )
 
 // TraceData stores the sampling related trace data.
@@ -32,7 +33,7 @@ type TraceData struct {
 	// Decisiontime time when sampling decision was taken.
 	DecisionTime time.Time
 	// SpanCount track the number of spans on the trace.
-	SpanCount int64
+	SpanCount *atomic.Int64
 	// ReceivedBatches stores all the batches received for the trace.
 	ReceivedBatches []ptrace.Traces
 }

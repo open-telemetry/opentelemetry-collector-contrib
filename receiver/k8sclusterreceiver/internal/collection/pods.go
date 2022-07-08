@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
@@ -118,7 +119,6 @@ func getResourceForPod(pod *corev1.Pod) *resourcepb.Resource {
 			conventions.AttributeK8SPodName:       pod.Name,
 			conventions.AttributeK8SNodeName:      pod.Spec.NodeName,
 			conventions.AttributeK8SNamespaceName: pod.Namespace,
-			conventions.AttributeK8SClusterName:   pod.ClusterName,
 		},
 	}
 }

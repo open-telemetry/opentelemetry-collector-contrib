@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package k8sapiserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 
 import (
@@ -112,7 +113,7 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 	}
 
 	if err := k.init(); err != nil {
-		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %v", err)
+		return nil, fmt.Errorf("fail to initialize k8sapiserver, err: %w", err)
 	}
 
 	return k, nil
@@ -230,7 +231,7 @@ func (k *K8sAPIServer) init() error {
 	}
 
 	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsResourceLock,
+		resourcelock.ConfigMapsLeasesResourceLock,
 		lockNamespace, lockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),

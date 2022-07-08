@@ -27,7 +27,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -44,19 +46,30 @@ const (
 
 // scraper for Paging Metrics
 type scraper struct {
-	config *Config
-	mb     *metadata.MetricsBuilder
+	settings component.ReceiverCreateSettings
+	config   *Config
+	mb       *metadata.MetricsBuilder
 
 	perfCounterScraper perfcounters.PerfCounterScraper
 
 	// for mocking
-	bootTime      func() (uint64, error)
-	pageFileStats func() ([]*pageFileStats, error)
+	bootTime                             func() (uint64, error)
+	pageFileStats                        func() ([]*pageFileStats, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
+func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+	return &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		perfCounterScraper:                   &perfcounters.PerfLibScraper{},
+		bootTime:                             host.BootTime,
+		pageFileStats:                        getPageFileStats,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -65,7 +78,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
 	return s.perfCounterScraper.Initialize(memory)
 }
@@ -138,6 +151,12 @@ func (s *scraper) scrapePagingOperationsMetric() error {
 }
 
 func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+	if s.emitMetricsWithoutDirectionAttribute {
+		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeTypeMajor)
+	}
+	if s.emitMetricsWithDirectionAttribute {
+		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+	}
 }

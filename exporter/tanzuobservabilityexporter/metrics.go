@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"sync/atomic"
 
 	"github.com/wavefronthq/wavefront-sdk-go/histogram"
 	"github.com/wavefronthq/wavefront-sdk-go/senders"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/atomic"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -180,37 +180,20 @@ type flushCloser interface {
 	Close()
 }
 
-// counter represents an internal counter metric. The zero value is ready to use
-type counter struct {
-	count int64
-}
-
-// Report reports this counter to tanzu observability. name is the name of
+// report the counter to tanzu observability. name is the name of
 // the metric to be reported. tags is the tags for the metric. sender is what
 // sends the metric to tanzu observability. Any errors get added to errs.
-func (c *counter) Report(
-	name string, tags map[string]string, sender gaugeSender, errs *[]error,
-) {
-	err := sender.SendMetric(name, float64(c.Get()), 0, "", tags)
+func report(count *atomic.Int64, name string, tags map[string]string, sender gaugeSender, errs *[]error) {
+	err := sender.SendMetric(name, float64(count.Load()), 0, "", tags)
 	if err != nil {
 		*errs = append(*errs, err)
 	}
 }
 
-// Inc increments this counter by one.
-func (c *counter) Inc() {
-	atomic.AddInt64(&c.count, 1)
-}
-
-// Get gets the value of this counter.
-func (c *counter) Get() int64 {
-	return atomic.LoadInt64(&c.count)
-}
-
 // logMissingValue keeps track of metrics with missing values. metric is the
 // metric with the missing value. settings logs the missing value. count counts
 // metrics with missing values.
-func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings, count *counter) {
+func logMissingValue(metric pmetric.Metric, settings component.TelemetrySettings, count *atomic.Int64) {
 	namef := zap.String(metricNameString, metric.Name())
 	typef := zap.String(metricTypeString, metric.DataType().String())
 	settings.Logger.Debug("Metric missing value", namef, typef)
@@ -240,7 +223,7 @@ func pushGaugeNumberDataPoint(
 	errs *[]error,
 	sender gaugeSender,
 	settings component.TelemetrySettings,
-	missingValues *counter,
+	missingValues *atomic.Int64,
 ) {
 	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	ts := numberDataPoint.Timestamp().AsTime().Unix()
@@ -263,7 +246,7 @@ type gaugeSender interface {
 type gaugeConsumer struct {
 	sender        gaugeSender
 	settings      component.TelemetrySettings
-	missingValues counter
+	missingValues *atomic.Int64
 }
 
 // newGaugeConsumer returns a typedMetricConsumer that consumes gauge metrics
@@ -271,8 +254,9 @@ type gaugeConsumer struct {
 func newGaugeConsumer(
 	sender gaugeSender, settings component.TelemetrySettings) typedMetricConsumer {
 	return &gaugeConsumer{
-		sender:   sender,
-		settings: settings,
+		sender:        sender,
+		settings:      settings,
+		missingValues: atomic.NewInt64(0),
 	}
 }
 
@@ -290,18 +274,18 @@ func (g *gaugeConsumer) Consume(mi metricInfo, errs *[]error) {
 			errs,
 			g.sender,
 			g.settings,
-			&g.missingValues)
+			g.missingValues)
 	}
 }
 
 func (g *gaugeConsumer) PushInternalMetrics(errs *[]error) {
-	g.missingValues.Report(missingValueMetricName, typeIsGaugeTags, g.sender, errs)
+	report(g.missingValues, missingValueMetricName, typeIsGaugeTags, g.sender, errs)
 }
 
 type sumConsumer struct {
 	sender        senders.MetricSender
 	settings      component.TelemetrySettings
-	missingValues counter
+	missingValues *atomic.Int64
 }
 
 // newSumConsumer returns a typedMetricConsumer that consumes sum metrics
@@ -309,8 +293,9 @@ type sumConsumer struct {
 func newSumConsumer(
 	sender senders.MetricSender, settings component.TelemetrySettings) typedMetricConsumer {
 	return &sumConsumer{
-		sender:   sender,
-		settings: settings,
+		sender:        sender,
+		settings:      settings,
+		missingValues: atomic.NewInt64(0),
 	}
 }
 
@@ -330,20 +315,20 @@ func (s *sumConsumer) Consume(mi metricInfo, errs *[]error) {
 			s.pushNumberDataPoint(mi, numberDataPoints.At(i), errs)
 		} else {
 			pushGaugeNumberDataPoint(
-				mi, numberDataPoints.At(i), errs, s.sender, s.settings, &s.missingValues)
+				mi, numberDataPoints.At(i), errs, s.sender, s.settings, s.missingValues)
 		}
 	}
 }
 
 func (s *sumConsumer) PushInternalMetrics(errs *[]error) {
-	s.missingValues.Report(missingValueMetricName, typeIsSumTags, s.sender, errs)
+	report(s.missingValues, missingValueMetricName, typeIsSumTags, s.sender, errs)
 }
 
 func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric.NumberDataPoint, errs *[]error) {
 	tags := attributesToTagsForMetrics(numberDataPoint.Attributes(), mi.SourceKey)
 	value, err := getValue(numberDataPoint)
 	if err != nil {
-		logMissingValue(mi.Metric, s.settings, &s.missingValues)
+		logMissingValue(mi.Metric, s.settings, s.missingValues)
 		return
 	}
 	err = s.sender.SendDeltaCounter(mi.Name(), value, mi.Source, tags)
@@ -355,24 +340,28 @@ func (s *sumConsumer) pushNumberDataPoint(mi metricInfo, numberDataPoint pmetric
 // histogramReporting takes care of logging and internal metrics for histograms
 type histogramReporting struct {
 	settings                 component.TelemetrySettings
-	malformedHistograms      counter
-	noAggregationTemporality counter
+	malformedHistograms      *atomic.Int64
+	noAggregationTemporality *atomic.Int64
 }
 
 // newHistogramReporting returns a new histogramReporting instance.
 func newHistogramReporting(settings component.TelemetrySettings) *histogramReporting {
-	return &histogramReporting{settings: settings}
+	return &histogramReporting{
+		settings:                 settings,
+		malformedHistograms:      atomic.NewInt64(0),
+		noAggregationTemporality: atomic.NewInt64(0),
+	}
 }
 
 // Malformed returns the number of malformed histogram data points.
 func (r *histogramReporting) Malformed() int64 {
-	return r.malformedHistograms.Get()
+	return r.malformedHistograms.Load()
 }
 
 // NoAggregationTemporality returns the number of histogram metrics that have no
 // aggregation temporality.
 func (r *histogramReporting) NoAggregationTemporality() int64 {
-	return r.noAggregationTemporality.Get()
+	return r.noAggregationTemporality.Load()
 }
 
 // LogMalformed logs seeing one malformed data point.
@@ -392,12 +381,8 @@ func (r *histogramReporting) LogNoAggregationTemporality(metric pmetric.Metric) 
 // Report sends the counts in this instance to wavefront.
 // sender is what sends to wavefront. Any errors sending get added to errs.
 func (r *histogramReporting) Report(sender gaugeSender, errs *[]error) {
-	r.malformedHistograms.Report(malformedHistogramMetricName, nil, sender, errs)
-	r.noAggregationTemporality.Report(
-		noAggregationTemporalityMetricName,
-		typeIsHistogramTags,
-		sender,
-		errs)
+	report(r.malformedHistograms, malformedHistogramMetricName, nil, sender, errs)
+	report(r.noAggregationTemporality, noAggregationTemporalityMetricName, typeIsHistogramTags, sender, errs)
 }
 
 type histogramConsumer struct {
@@ -489,7 +474,7 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	ts := histogram.Timestamp().AsTime().Unix()
 	explicitBounds := histogram.ExplicitBounds()
 	bucketCounts := histogram.BucketCounts()
-	if len(bucketCounts) != len(explicitBounds)+1 {
+	if bucketCounts.Len() != explicitBounds.Len()+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
@@ -497,9 +482,9 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 		tags["_le"] = leTag
 	}
 	var leCount uint64
-	for i := range bucketCounts {
+	for i := 0; i < bucketCounts.Len(); i++ {
 		tags["le"] = leTagValue(explicitBounds, i)
-		leCount += bucketCounts[i]
+		leCount += bucketCounts.At(i)
 		err := c.sender.SendMetric(name, float64(leCount), ts, mi.Source, tags)
 		if err != nil {
 			*errs = append(*errs, err)
@@ -507,11 +492,11 @@ func (c *cumulativeHistogramDataPointConsumer) Consume(
 	}
 }
 
-func leTagValue(explicitBounds []float64, bucketIndex int) string {
-	if bucketIndex == len(explicitBounds) {
+func leTagValue(explicitBounds pcommon.ImmutableFloat64Slice, bucketIndex int) string {
+	if bucketIndex == explicitBounds.Len() {
 		return "+Inf"
 	}
-	return strconv.FormatFloat(explicitBounds[bucketIndex], 'f', -1, 64)
+	return strconv.FormatFloat(explicitBounds.At(bucketIndex), 'f', -1, 64)
 }
 
 type deltaHistogramDataPointConsumer struct {
@@ -535,14 +520,14 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	ts := his.Timestamp().AsTime().Unix()
 	explicitBounds := his.ExplicitBounds()
 	bucketCounts := his.BucketCounts()
-	if len(bucketCounts) != len(explicitBounds)+1 {
+	if bucketCounts.Len() != explicitBounds.Len()+1 {
 		reporting.LogMalformed(mi.Metric)
 		return
 	}
-	centroids := make([]histogram.Centroid, len(bucketCounts))
-	for i := range bucketCounts {
+	centroids := make([]histogram.Centroid, bucketCounts.Len())
+	for i := 0; i < bucketCounts.Len(); i++ {
 		centroids[i] = histogram.Centroid{
-			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts[i])}
+			Value: centroidValue(explicitBounds, i), Count: int(bucketCounts.At(i))}
 	}
 	err := d.sender.SendDistribution(name, centroids, allGranularity, ts, mi.Source, tags)
 	if err != nil {
@@ -550,26 +535,26 @@ func (d *deltaHistogramDataPointConsumer) Consume(
 	}
 }
 
-func centroidValue(explicitBounds []float64, index int) float64 {
-	length := len(explicitBounds)
+func centroidValue(explicitBounds pcommon.ImmutableFloat64Slice, index int) float64 {
+	length := explicitBounds.Len()
 	if length == 0 {
 		// This is the best we can do.
 		return 0.0
 	}
 	if index == 0 {
-		return explicitBounds[0]
+		return explicitBounds.At(0)
 	}
 	if index == length {
-		return explicitBounds[length-1]
+		return explicitBounds.At(length - 1)
 	}
-	return (explicitBounds[index-1] + explicitBounds[index]) / 2.0
+	return (explicitBounds.At(index-1) + explicitBounds.At(index)) / 2.0
 }
 
 // histogramDataPoint represents either a regular or exponential histogram data point
 type histogramDataPoint interface {
 	Count() uint64
-	ExplicitBounds() []float64
-	BucketCounts() []uint64
+	ExplicitBounds() pcommon.ImmutableFloat64Slice
+	BucketCounts() pcommon.ImmutableUInt64Slice
 	Attributes() pcommon.Map
 	Timestamp() pcommon.Timestamp
 }
@@ -701,8 +686,8 @@ func quantileTagValue(quantile float64) string {
 
 type exponentialHistogramDataPoint struct {
 	pmetric.ExponentialHistogramDataPoint
-	bucketCounts   []uint64
-	explicitBounds []float64
+	bucketCounts   pcommon.ImmutableUInt64Slice
+	explicitBounds pcommon.ImmutableFloat64Slice
 }
 
 // newExponentialHistogram converts a pmetric.ExponentialHistogramDataPoint into a histogramDataPoint
@@ -721,14 +706,13 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 	// ExponentialHistogramDataPoints have buckets with negative explicit bounds, buckets with
 	// positive explicit bounds, and a "zero" bucket. Our job is to merge these bucket groups into
 	// a single list of buckets and explicit bounds.
-	negativeBucketCounts := dataPoint.Negative().BucketCounts()
-	positiveBucketCounts := dataPoint.Positive().BucketCounts()
+	negativeBucketCounts := dataPoint.Negative().BucketCounts().AsRaw()
+	positiveBucketCounts := dataPoint.Positive().BucketCounts().AsRaw()
 
 	// The total number of buckets is the number of negative buckets + the number of positive
-	// buckets + 1 for the zero bucket + 1 bucket for negative infinity up to the negative explicit
-	// bound with largest magnitude + 1 bucket for the largest positive explicit bound up to
+	// buckets + 1 for the zero bucket + 1 bucket for the largest positive explicit bound up to
 	// positive infinity.
-	numBucketCounts := 1 + len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
+	numBucketCounts := len(negativeBucketCounts) + 1 + len(positiveBucketCounts) + 1
 
 	// We pre-allocate the slice setting its length to 0 so that GO doesn't have to keep
 	// re-allocating the slice as it grows.
@@ -748,8 +732,8 @@ func newExponentialHistogramDataPoint(dataPoint pmetric.ExponentialHistogramData
 		dataPoint.Positive().Offset(), base, positiveBucketCounts, &bucketCounts, &explicitBounds)
 	return &exponentialHistogramDataPoint{
 		ExponentialHistogramDataPoint: dataPoint,
-		bucketCounts:                  bucketCounts,
-		explicitBounds:                explicitBounds,
+		bucketCounts:                  pcommon.NewImmutableUInt64Slice(bucketCounts),
+		explicitBounds:                pcommon.NewImmutableFloat64Slice(explicitBounds),
 	}
 }
 
@@ -763,12 +747,8 @@ func appendNegativeBucketsAndExplicitBounds(
 	bucketCounts *[]uint64,
 	explicitBounds *[]float64,
 ) {
-	// The count in the first bucket which includes negative infinity is always 0.
-	*bucketCounts = append(*bucketCounts, 0)
-
 	// The smallest negative explicit bound.
 	le := -math.Pow(base, float64(negativeOffset)+float64(len(negativeBucketCounts)))
-	*explicitBounds = append(*explicitBounds, le)
 
 	// The first negativeBucketCount has a negative explicit bound with the smallest magnitude;
 	// the last negativeBucketCount has a negative explicit bound with the largest magnitude.
@@ -816,11 +796,11 @@ func appendPositiveBucketsAndExplicitBounds(
 	*bucketCounts = append(*bucketCounts, 0)
 }
 
-func (e *exponentialHistogramDataPoint) ExplicitBounds() []float64 {
+func (e *exponentialHistogramDataPoint) ExplicitBounds() pcommon.ImmutableFloat64Slice {
 	return e.explicitBounds
 }
 
-func (e *exponentialHistogramDataPoint) BucketCounts() []uint64 {
+func (e *exponentialHistogramDataPoint) BucketCounts() pcommon.ImmutableUInt64Slice {
 	return e.bucketCounts
 }
 

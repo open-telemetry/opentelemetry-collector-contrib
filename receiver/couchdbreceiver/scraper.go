@@ -36,11 +36,11 @@ type couchdbScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newCouchdbScraper(settings component.TelemetrySettings, config *Config) *couchdbScraper {
+func newCouchdbScraper(settings component.ReceiverCreateSettings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
-		settings: settings,
+		settings: settings.TelemetrySettings,
 		config:   config,
-		mb:       metadata.NewMetricsBuilder(config.Metrics),
+		mb:       metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
 import (
@@ -34,13 +33,15 @@ import (
 func TestLoadConfig(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
-	factories.Exporters[typestr] = factory
-	// t.Log("new exporter " + typestr)
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	require.NoError(t, err)
-	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	err = apiConfig.Validate()
 	require.NoError(t, err)
+
 	assert.Equal(t, apiConfig, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
@@ -50,6 +51,12 @@ func TestLoadConfig(t *testing.T) {
 		// Deprecated: [v0.47.0] SubSystem will remove in the next version
 		SubSystem:       "SUBSYSTEM_NAME",
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "https://",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
@@ -71,14 +78,14 @@ func TestLoadConfig(t *testing.T) {
 func TestExporter(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
-	factories.Exporters[typestr] = factory
-	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("example", "config.yaml"), factories)
-	apiConfig := cfg.Exporters[config.NewComponentID(typestr)].(*Config)
+	factories.Exporters[typeStr] = factory
+	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-	te := newCoralogixExporter(apiConfig, params)
-	te.client.startConnection(context.Background(), componenttest.NewNopHost())
+	te, err := newCoralogixExporter(apiConfig, params)
+	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
+	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
 	td := ptrace.NewTraces()
-	err := te.tracesPusher(context.Background(), td)
-	assert.Nil(t, err)
+	assert.NoError(t, te.tracesPusher(context.Background(), td))
 }

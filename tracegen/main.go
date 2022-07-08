@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package main
 
 import (
@@ -21,6 +20,8 @@ import (
 	"flag"
 	"fmt"
 	"time"
+
+	"go.opentelemetry.io/otel/attribute"
 
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.opentelemetry.io/otel"
@@ -93,10 +94,26 @@ func main() {
 	}()
 
 	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer ssp.Shutdown(context.Background())
+	defer func() {
+		logger.Info("stop the batch span processor")
+		if err := ssp.Shutdown(context.Background()); err != nil {
+			logger.Error("failed to stop the batch span processor", zap.Error(err))
+			return
+		}
+	}()
+
+	var attributes []attribute.KeyValue
+	// may be overridden by `-otlp-attributes service.name="foo"`
+	attributes = append(attributes, semconv.ServiceNameKey.String(cfg.ServiceName))
+
+	if len(cfg.ResourceAttributes) > 0 {
+		for k, v := range cfg.ResourceAttributes {
+			attributes = append(attributes, attribute.String(k, v))
+		}
+	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, semconv.ServiceNameKey.String(cfg.ServiceName))),
+		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
 	tracerProvider.RegisterSpanProcessor(ssp)

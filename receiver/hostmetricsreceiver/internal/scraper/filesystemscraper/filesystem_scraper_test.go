@@ -153,7 +153,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				IncludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
-			newErrRegex: "^error creating device include filters:",
+			newErrRegex: "^error creating include_devices filter:",
 		},
 		{
 			name: "Invalid Exclude Device Filter",
@@ -161,7 +161,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				ExcludeDevices: DeviceMatchConfig{Devices: []string{"test"}},
 			},
-			newErrRegex: "^error creating device exclude filters:",
+			newErrRegex: "^error creating exclude_devices filter:",
 		},
 		{
 			name: "Invalid Include Filesystems Filter",
@@ -169,7 +169,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				IncludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
-			newErrRegex: "^error creating type include filters:",
+			newErrRegex: "^error creating include_fs_types filter:",
 		},
 		{
 			name: "Invalid Exclude Filesystems Filter",
@@ -177,7 +177,7 @@ func TestScrape(t *testing.T) {
 				Metrics:        metadata.DefaultMetricsSettings(),
 				ExcludeFSTypes: FSTypeMatchConfig{FSTypes: []string{"test"}},
 			},
-			newErrRegex: "^error creating type exclude filters:",
+			newErrRegex: "^error creating exclude_fs_types filter:",
 		},
 		{
 			name: "Invalid Include Moountpoints Filter",
@@ -185,7 +185,7 @@ func TestScrape(t *testing.T) {
 				Metrics:            metadata.DefaultMetricsSettings(),
 				IncludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
-			newErrRegex: "^error creating mountpoint include filters:",
+			newErrRegex: "^error creating include_mount_points filter:",
 		},
 		{
 			name: "Invalid Exclude Moountpoints Filter",
@@ -193,7 +193,7 @@ func TestScrape(t *testing.T) {
 				Metrics:            metadata.DefaultMetricsSettings(),
 				ExcludeMountPoints: MountPointMatchConfig{MountPoints: []string{"test"}},
 			},
-			newErrRegex: "^error creating mountpoint exclude filters:",
+			newErrRegex: "^error creating exclude_mount_points filter:",
 		},
 		{
 			name:           "Partitions Error",
@@ -209,7 +209,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newFileSystemScraper(context.Background(), &test.config)
+			scraper, err := newFileSystemScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -241,7 +241,9 @@ func TestScrape(t *testing.T) {
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+					var scraperErr scrapererror.PartialScrapeError
+					require.ErrorAs(t, err, &scraperErr)
+					assert.Equal(t, metricsLen, scraperErr.Failed)
 				}
 
 				return

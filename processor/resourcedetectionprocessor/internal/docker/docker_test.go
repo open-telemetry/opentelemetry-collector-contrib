@@ -24,8 +24,11 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
+
+var _ docker.Provider = (*mockMetadata)(nil)
 
 type mockMetadata struct {
 	mock.Mock

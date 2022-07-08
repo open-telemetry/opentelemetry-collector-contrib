@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -34,14 +35,14 @@ type memcachedScraper struct {
 }
 
 func newMemcachedScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 ) memcachedScraper {
 	return memcachedScraper{
-		logger:    logger,
+		logger:    settings.Logger,
 		config:    config,
 		newClient: newMemcachedClient,
-		mb:        metadata.NewMetricsBuilder(config.Metrics),
+		mb:        metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
@@ -158,8 +159,6 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		}
 
 		// Calculated Metrics
-		attributes := pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("increment"))
 		parsedHit, okHit := r.parseInt("incr_hits", stats.Stats["incr_hits"])
 		parsedMiss, okMiss := r.parseInt("incr_misses", stats.Stats["incr_misses"])
 		if okHit && okMiss {
@@ -167,8 +166,6 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				metadata.AttributeOperationIncrement)
 		}
 
-		attributes = pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("decrement"))
 		parsedHit, okHit = r.parseInt("decr_hits", stats.Stats["decr_hits"])
 		parsedMiss, okMiss = r.parseInt("decr_misses", stats.Stats["decr_misses"])
 		if okHit && okMiss {
@@ -176,8 +173,6 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				metadata.AttributeOperationDecrement)
 		}
 
-		attributes = pcommon.NewMap()
-		attributes.Insert(metadata.A.Operation, pcommon.NewValueString("get"))
 		parsedHit, okHit = r.parseInt("get_hits", stats.Stats["get_hits"])
 		parsedMiss, okMiss = r.parseInt("get_misses", stats.Stats["get_misses"])
 		if okHit && okMiss {

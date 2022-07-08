@@ -26,8 +26,11 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
+
+var _ system.Provider = (*mockMetadata)(nil)
 
 type mockMetadata struct {
 	mock.Mock
@@ -45,6 +48,16 @@ func (m *mockMetadata) FQDN() (string, error) {
 
 func (m *mockMetadata) OSType() (string, error) {
 	args := m.MethodCalled("OSType")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) LookupCNAME() (string, error) {
+	args := m.MethodCalled("LookupCNAME")
+	return args.String(0), args.Error(1)
+}
+
+func (m *mockMetadata) ReverseLookupHost() (string, error) {
+	args := m.MethodCalled("ReverseLookupHost")
 	return args.String(0), args.Error(1)
 }
 

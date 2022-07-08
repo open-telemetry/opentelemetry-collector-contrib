@@ -47,7 +47,6 @@ func getResourceForReplicationController(rc *corev1.ReplicationController) *reso
 			k8sKeyReplicationControllerUID:        string(rc.UID),
 			k8sKeyReplicationControllerName:       rc.Name,
 			conventions.AttributeK8SNamespaceName: rc.Namespace,
-			conventions.AttributeK8SClusterName:   rc.ClusterName,
 		},
 	}
 }

@@ -15,6 +15,6 @@
 //go:build !windows
 // +build !windows
 
-//go:generate mdatagen metadata.yaml
+//go:generate mdatagen --experimental-gen metadata.yaml
 
 package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"

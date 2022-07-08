@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package googlecloudpubsubreceiver
 
 import (
@@ -45,8 +44,8 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 		userAgent: "test-user-agent",
 
 		config: &Config{
-			endpoint:  srv.Addr,
-			insecure:  true,
+			Endpoint:  srv.Addr,
+			Insecure:  true,
 			ProjectID: "my-project",
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 12 * time.Second,
@@ -54,7 +53,9 @@ func TestStartReceiverNoSubscription(t *testing.T) {
 			Subscription: "projects/my-project/subscriptions/otlp",
 		},
 	}
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		assert.NoError(t, receiver.Shutdown(ctx))
+	}()
 	receiver.tracesConsumer = consumertest.NewNop()
 	receiver.metricsConsumer = consumertest.NewNop()
 	receiver.logsConsumer = consumertest.NewNop()
@@ -95,8 +96,8 @@ func TestReceiver(t *testing.T) {
 		userAgent: "test-user-agent",
 
 		config: &Config{
-			endpoint:  srv.Addr,
-			insecure:  true,
+			Endpoint:  srv.Addr,
+			Insecure:  true,
 			ProjectID: "my-project",
 			TimeoutSettings: exporterhelper.TimeoutSettings{
 				Timeout: 1 * time.Second,

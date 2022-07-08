@@ -1,12 +1,15 @@
 # Cumulative to Delta Processor
 
-**Status: under development; Not recommended for production usage.**
-
-Supported pipeline types: metrics
+| Status                   |                           |
+|--------------------------|---------------------------|
+| Stability                | [beta]                    |
+| Supported pipeline types | metrics                   |
+| Distributions            | [contrib]                 |
+| Warnings                 | [Statefulness](#warnings) |
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts cumulative sum metrics to cumulative delta. Non-monotonic sums are excluded.  
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum metrics to monotonic, delta sum metrics. Non-monotonic sums are excluded.
 
 ## Configuration
 
@@ -72,3 +75,11 @@ processors:
         # If include/exclude are not specified
         # convert all cumulative sum metrics to delta
 ```
+
+## Warnings
+
+- [Statefulness](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#statefulness): The cumulativetodelta processor's calculates delta by remembering the previous value of a metric.  For this reason, the calculation is only accurate if the metric is continuously sent to the same instance of the collector.  As a result, the cumulativetodelta processor may not work as expected if used in a deployment of multiple collectors.  When using this processor it is best for the data source to being sending data to a single collector.
+
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

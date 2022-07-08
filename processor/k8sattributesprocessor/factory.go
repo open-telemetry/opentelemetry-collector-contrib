@@ -32,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "k8sattributes"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
@@ -43,9 +45,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
 	)
 }
 
@@ -155,6 +157,7 @@ func createKubernetesProcessor(
 	kp := &kubernetesprocessor{logger: params.Logger}
 
 	warnDeprecatedMetadataConfig(kp.logger, cfg)
+	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
 
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
@@ -226,17 +229,19 @@ func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg config.Processor) {
 		case metadataDeployment:
 			oldName = metadataDeployment
 			newName = conventions.AttributeK8SDeploymentName
-		case metadataCluster:
-			oldName = metadataCluster
-			newName = conventions.AttributeK8SClusterName
 		case metadataNode:
 			oldName = metadataNode
 			newName = conventions.AttributeK8SNodeName
+		case deprecatedMetadataCluster:
+			logger.Warn("cluster metadata param has been deprecated and will be removed soon")
+		case conventions.AttributeK8SClusterName:
+			logger.Warn("k8s.cluster.name metadata param has been deprecated and will be removed soon")
 		}
 		if oldName != "" {
 			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
 		}
 	}
+
 }
 
 func errWrongKeyConfig(cfg config.Processor) error {
@@ -249,4 +254,43 @@ func errWrongKeyConfig(cfg config.Processor) error {
 	}
 
 	return nil
+}
+
+func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor) {
+	oCfg := cfg.(*Config)
+	deprecated := ""
+	actual := ""
+	for _, assoc := range oCfg.Association {
+		if assoc.From == "" && assoc.Name == "" {
+			continue
+		}
+
+		deprecated += fmt.Sprintf(`
+- from: %s`, assoc.From)
+		actual += fmt.Sprintf(`
+- sources:
+  - from: %s`, assoc.From)
+
+		if assoc.Name != "" {
+			deprecated += fmt.Sprintf(`
+  name: %s`, assoc.Name)
+		}
+
+		if assoc.From != kube.ConnectionSource {
+			actual += fmt.Sprintf(`
+    name: %s`, assoc.Name)
+		}
+	}
+
+	if deprecated != "" {
+		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
+
+pod_association:%s
+
+with
+
+pod_association:%s
+
+`, deprecated, actual))
+	}
 }
