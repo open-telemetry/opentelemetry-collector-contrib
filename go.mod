@@ -731,6 +731,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourceto
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ./pkg/stanza
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage => ./pkg/telemetryquerylanguage
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ./pkg/translator/jaeger
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ./pkg/translator/opencensus
@@ -923,5 +925,3 @@ retract v0.37.0 // Contains dependencies on v0.36.0 components, which should hav
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage => ./pkg/telemetryquerylanguage
