@@ -17,6 +17,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -158,31 +159,25 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed stats, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		//res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
 
-		r.recordContainerStats(now, res.stats, res.container)
+		// todo verify this with multiple containers
+		r.recordContainerStats(now, res.stats, res.container).ResourceMetrics().CopyTo(md.ResourceMetrics())
 	}
 
-	return r.mb.Emit(), errs
+	return md, errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) pmetric.Metrics {
 
-	// Record memory metrics
-	memoryStats := &containerStats.MemoryStats
-	totalCache := memoryStats.Stats["total_cache"]
-	totalUsage := memoryStats.Usage - totalCache
-	r.mb.RecordMemoryMaxDataPoint(now, int64(memoryStats.MaxUsage))
-	r.mb.RecordMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
-	r.mb.RecordMemoryUsageTotalDataPoint(now, int64(totalUsage))
-	r.mb.RecordMemoryUsageTotalCacheDataPoint(now, int64(totalCache))
-	r.mb.RecordMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
+	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 
 	// Five always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := 5 + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -213,5 +208,100 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		}
 	}
 
-	r.mb.Emit(resourceMetricsOptions...)
+	return r.mb.Emit(resourceMetricsOptions...)
+}
+
+func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
+	totalCache := memoryStats.Stats["total_cache"]
+	totalUsage := memoryStats.Usage - totalCache
+	r.mb.RecordContainerMemoryMaxDataPoint(now, int64(memoryStats.MaxUsage))
+	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
+	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	r.mb.RecordContainerMemoryUsageTotalCacheDataPoint(now, int64(totalCache))
+	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+
+	// todo more metrics here
+}
+
+type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string)
+
+type blkioMapper struct {
+	opToRecorderMap map[string]blkioRecorder
+	entries         []dtypes.BlkioStatEntry
+}
+
+func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.BlkioStats) {
+	// These maps can be avoided once the operation is changed to an attribute instead of being in the metric name
+	for _, blkioRecorder := range []blkioMapper{
+		{entries: blkioStats.IoMergedRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoMergedRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoMergedRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoMergedRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoMergedRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoMergedRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoMergedRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoQueuedRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoQueuedRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoQueuedRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoQueuedRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoQueuedRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoQueuedRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoQueuedRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoServiceBytesRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoServiceBytesRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoServiceBytesRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoServiceBytesRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoServiceTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoServiceTimeRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoServiceTimeRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoServiceTimeRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoServiceTimeRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoServicedRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoServicedRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoServicedRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoServicedRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoServicedRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoServicedRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoServicedRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoTimeRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoTimeRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoTimeRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoTimeRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoTimeRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoTimeRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.IoWaitTimeRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioIoWaitTimeRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioIoWaitTimeRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioIoWaitTimeRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioIoWaitTimeRecursiveTotalDataPoint,
+		}},
+		{entries: blkioStats.SectorsRecursive, opToRecorderMap: map[string]blkioRecorder{
+			"read":    r.mb.RecordContainerBlockioSectorsRecursiveReadDataPoint,
+			"write":   r.mb.RecordContainerBlockioSectorsRecursiveWriteDataPoint,
+			"sync":    r.mb.RecordContainerBlockioSectorsRecursiveSyncDataPoint,
+			"async":   r.mb.RecordContainerBlockioSectorsRecursiveAsyncDataPoint,
+			"discard": r.mb.RecordContainerBlockioSectorsRecursiveDiscardDataPoint,
+			"total":   r.mb.RecordContainerBlockioSectorsRecursiveTotalDataPoint,
+		}},
+	} {
+		for _, entry := range blkioRecorder.entries {
+			if recorder, ok := blkioRecorder.opToRecorderMap[strings.ToLower(entry.Op)]; ok {
+				recorder(now, int64(entry.Value), strconv.FormatUint(entry.Major, 10), strconv.FormatUint(entry.Minor, 10))
+			}
+		}
+	}
 }

@@ -8,11 +8,68 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **memory.max** | Maximum memory usage. | By | Sum(Int) | <ul> </ul> |
-| **memory.percent** | Percentage of memory used | 1 | Gauge(Double) | <ul> </ul> |
-| **memory.usage.limit** | Memory limit of the container. | By | Sum(Int) | <ul> </ul> |
-| **memory.usage.total** | Memory usage of the container. Note that this excludes the buffer cache | By | Sum(Int) | <ul> </ul> |
-| memory.usage.total_cache | Total amount of memory used by the processes of this control group that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Sum(Int) | <ul> </ul> |
+| **container.blockio.io_merged_recursive.async** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_merged_recursive.discard** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_merged_recursive.read** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_merged_recursive.sync** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_merged_recursive.total** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_merged_recursive.write** | Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.async** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.discard** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.read** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.sync** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.total** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_queued_recursive.write** | Number of requests queued up for this cgroup and its descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.async** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.discard** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.read** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.sync** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.total** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_bytes_recursive.write** | Number of bytes transferred to/from the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | By | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.async** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.discard** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.read** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.sync** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.total** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_service_time_recursive.write** | Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ns | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.async** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.discard** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.read** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.sync** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.total** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_serviced_recursive.write** | Number of IOs (bio) issued to the disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.async** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.discard** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.read** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.sync** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.total** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_time_recursive.write** | Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | ms | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.async** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.discard** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.read** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.sync** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.total** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.io_wait_time_recursive.write** | Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.async** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.discard** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.read** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.sync** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.total** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.blockio.sectors_recursive.write** | Number of sectors transferred to/from disk by the group and descendant groups. https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt | 1 | Sum(Int) | <ul> <li>device_major</li> <li>device_minor</li> </ul> |
+| **container.cpu.percent** | Percent of CPU used by the container. | ns | Gauge(Double) | <ul> </ul> |
+| **container.cpu.throttling_data.periods** | Number of periods with throttling active. | 1 | Sum(Int) | <ul> </ul> |
+| **container.cpu.throttling_data.throttled_time** | Aggregate time the container was throttled. | ns | Sum(Int) | <ul> </ul> |
+| **container.cpu.throttling_data.throttling_periods** | Number of periods when the container hits its throttling limit. | 1 | Sum(Int) | <ul> </ul> |
+| **container.cpu.usage.kernelmode** | Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows). | ns | Sum(Int) | <ul> </ul> |
+| container.cpu.usage.percpu | Per-core CPU usage by the container. | ns | Sum(Int) | <ul> <li>core</li> </ul> |
+| **container.cpu.usage.system** | System CPU usage. | ns | Sum(Int) | <ul> </ul> |
+| **container.cpu.usage.total** | Total CPU time consumed. | ns | Sum(Int) | <ul> </ul> |
+| **container.cpu.usage.usermode** | Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows). | ns | Sum(Int) | <ul> </ul> |
+| **container.memory.max** | Maximum memory usage. | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.percent** | Percentage of memory used. | 1 | Gauge(Double) | <ul> </ul> |
+| **container.memory.usage.limit** | Memory limit of the container. | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.usage.total** | Memory usage of the container. This excludes the total cache. | By | Gauge(Int) | <ul> </ul> |
+| container.memory.usage.total_cache | Total amount of memory used by the processes of this control group that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Gauge(Int) | <ul> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -27,7 +84,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| container.hostname | The hostname of the container | String |
+| container.hostname | The hostname of the container. | String |
 | container.id | The ID of the container. | String |
 | container.image.name | The name of the docker image in use by the container. | String |
 | container.name | The name of the container. | String |
@@ -37,3 +94,6 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| core | The CPU core number when utilising per-CPU metrics. |  |
+| device_major | Device major number |  |
+| device_minor | Device minor number |  |

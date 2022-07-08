@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -120,24 +121,48 @@ func TestScrapes(t *testing.T) {
 	ms := newMockServer(t)
 	defer ms.Close()
 
-	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = ms.URL
-	cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
-	cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
+	testCases := []struct {
+		desc                string
+		scrape              func(*receiver) (pmetric.Metrics, error)
+		expectedMetricsFile string
+		mockDockerEngine    *httptest.Server
+	}{
+		{
+			desc: "scrape v1 (no mdatagen)",
+			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
+				return rcv.scrape(context.Background())
+			},
+			expectedMetricsFile: "expected_metrics.json",
+			mockDockerEngine:    ms,
+		},
+		{
+			desc: "scrape v2 (uses mdatagen)",
+			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
+				return rcv.scrapeV2(context.Background())
+			},
+			expectedMetricsFile: "expected_metrics.json",
+			mockDockerEngine:    ms,
+		},
+	}
 
-	receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
-	err := receiver.start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Endpoint = tc.mockDockerEngine.URL
+			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
+			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
 
-	actualMetrics, err := receiver.scrape(context.Background())
-	require.NoError(t, err)
-	assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
+			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
+			err := receiver.start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
 
-	expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, "expected_metrics.json"))
-	assert.NoError(t, err)
-	assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
-}
+			actualMetrics, err := tc.scrape(receiver)
+			require.NoError(t, err)
+			assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
 
-func TestScrapeV2(t *testing.T) {
-
+			expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, tc.expectedMetricsFile))
+			assert.NoError(t, err)
+			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+		})
+	}
 }
