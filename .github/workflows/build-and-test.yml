@@ -208,6 +208,7 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Run Integration Tests
         run: make integration-tests-with-cover
 
   correctness-traces:
