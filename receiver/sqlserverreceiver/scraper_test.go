@@ -120,18 +120,7 @@ func (_m MockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, e
 // }
 
 var goldenScrapePath = filepath.Join("testdata", "golden_scrape.json")
-
-// var partialScrapePath = filepath.Join("testdata", "partial_scrape.json")
-
-// func createTestCounterValues() []winperfcounters.CounterValue{}  {
-// 	counterValues := []winperfcounters.CounterValue{}
-// 	for i, counterRecord := range perfCounterRecorders {
-// 		counter := winperfcounters.CounterValue{
-
-// 		}
-// 		counterValues = append(counterValues, counter)
-// 	}
-// }
+var dbInstance = "db-instance"
 
 func TestScrape(t *testing.T) {
 	factory := NewFactory()
@@ -139,10 +128,9 @@ func TestScrape(t *testing.T) {
 	settings := componenttest.NewNopReceiverCreateSettings()
 	scraper := newSqlServerScraper(settings, cfg)
 
-	var i float64
-	for _, rec := range perfCounterRecorders {
+	for i, rec := range perfCounterRecorders {
 		perfCounterWatcher := &MockPerfCounterWatcher{}
-		perfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "db-instance", Value: i}}, nil)
+		perfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: dbInstance, Value: float64(i)}}, nil)
 		i++
 		for _, recorder := range rec.recorders {
 			scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
@@ -151,159 +139,6 @@ func TestScrape(t *testing.T) {
 			})
 		}
 	}
-
-	// General Statistics
-	// generalStatisticsPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// generalStatisticsPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockGeneralStatisticsWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"User Connections": *generalStatisticsPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockGeneralStatisticsWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockGeneralStatisticsWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// // SQL Statistics
-	// sqlStatisticsPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// sqlStatisticsPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockSqlStatisticsWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"Batch Requests/sec":      *sqlStatisticsPerfCounterWatcher,
-	// 	"SQL Compilations/sec":    *sqlStatisticsPerfCounterWatcher,
-	// 	"SQL Re-Compilations/sec": *sqlStatisticsPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockSqlStatisticsWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockSqlStatisticsWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// // Locks
-	// locksPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// locksPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockLocksWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"Lock Waits/sec":         *locksPerfCounterWatcher,
-	// 	"Average Wait Time (ms)": *locksPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockLocksWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockLocksWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// // SQLServer:Buffer Manager
-	// bufferManagerPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// bufferManagerPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockBufferManagerWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"Buffer cache hit ratio": *bufferManagerPerfCounterWatcher,
-	// 	"Checkpoint pages/sec":   *bufferManagerPerfCounterWatcher,
-	// 	"Lazy writes/sec":        *bufferManagerPerfCounterWatcher,
-	// 	"Page life expectancy":   *bufferManagerPerfCounterWatcher,
-	// 	"Page reads/sec":         *bufferManagerPerfCounterWatcher,
-	// 	"Page writes/sec":        *bufferManagerPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockBufferManagerWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockBufferManagerWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// // SQLServer:Access Methods
-	// accessManagerPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// accessManagerPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockAccessManagerWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"Page Splits/sec": *accessManagerPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockAccessManagerWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockAccessManagerWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	// // SQLServer:Databases
-	// databasesPerfCounterWatcher := &MockPerfCounterWatcher{}
-	// databasesPerfCounterWatcher.On("ScrapeData").Return([]winperfcounters.CounterValue{{InstanceName: "instance", Value: 1}}, nil)
-
-	// mockDatabasesWatcherRecorders := map[string]MockPerfCounterWatcher{
-	// 	"Log Bytes Flushed/sec":  *databasesPerfCounterWatcher,
-	// 	"Log Flushes/sec":        *databasesPerfCounterWatcher,
-	// 	"Log Flush Waits/sec":    *databasesPerfCounterWatcher,
-	// 	"Log Growths":            *databasesPerfCounterWatcher,
-	// 	"Log Shrinks":            *databasesPerfCounterWatcher,
-	// 	"Percent Log Used":       *databasesPerfCounterWatcher,
-	// 	"Transactions/sec":       *databasesPerfCounterWatcher,
-	// 	"Write Transactions/sec": *databasesPerfCounterWatcher,
-	// }
-
-	// for _, rec := range perfCounterRecorders {
-	// 	for perfCounterName, recorder := range rec.recorders {
-	// 		for mockCounterName := range mockDatabasesWatcherRecorders {
-	// 			if perfCounterName == mockCounterName {
-	// 				mock, ok := mockDatabasesWatcherRecorders[perfCounterName]
-	// 				require.True(t, ok)
-	// 				scraper.watcherRecorders = append(scraper.watcherRecorders, watcherRecorder{
-	// 					watcher:  mock,
-	// 					recorder: recorder,
-	// 				})
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	scrapeData, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -317,12 +152,3 @@ func TestScrape(t *testing.T) {
 	err = scrapertest.CompareMetrics(expectedMetrics, scrapeData)
 	require.NoError(t, err)
 }
-
-// why not just start it, then for each value add
-// func createCounters(scraper *sqlServerScraper) error {
-// 	// may need to sort the records map for consistency
-// 	for _, watcherRecord := range scraper.watcherRecorders {
-// 		watcherRecord.watcher
-// 	}
-// 	return nil
-// }
