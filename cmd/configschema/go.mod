@@ -42,7 +42,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.22 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.23 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3 // indirect
