@@ -34,16 +34,12 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 // TODO rename this struct
 type Input struct {
 	*zap.SugaredLogger
-	finder                  Finder
-	captureFileName         bool
-	captureFilePath         bool
-	captureFileNameResolved bool
-	captureFilePathResolved bool
-	PollInterval            time.Duration
-	SplitterConfig          helper.SplitterConfig
-	MaxLogSize              int
-	MaxConcurrentFiles      int
-	SeenPaths               map[string]struct{}
+	finder             Finder
+	PollInterval       time.Duration
+	SplitterConfig     helper.SplitterConfig
+	MaxLogSize         int
+	MaxConcurrentFiles int
+	SeenPaths          map[string]struct{}
 
 	persister operator.Persister
 
@@ -268,7 +264,6 @@ func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Rea
 		if err != nil {
 			return nil, err
 		}
-		newReader.fileAttributes = f.resolveFileAttributes(file.Name())
 		return newReader, nil
 	}
 
@@ -277,7 +272,7 @@ func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Rea
 	if err != nil {
 		return nil, err
 	}
-	newReader, err := f.NewReader(file.Name(), file, fp, splitter, f.emit)
+	newReader, err := f.NewReader(file, fp, splitter)
 	if err != nil {
 		return nil, err
 	}
@@ -351,14 +346,14 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		newReader, err := f.NewReader("", nil, nil, splitter, f.emit)
-		if err != nil {
+
+		// Only the offset, fingerprint, and splitter
+		// will be used before this reader is discarded
+		unsafeReader := &Reader{fileInput: f, splitter: splitter}
+		if err = dec.Decode(unsafeReader); err != nil {
 			return err
 		}
-		if err = dec.Decode(newReader); err != nil {
-			return err
-		}
-		f.knownFiles = append(f.knownFiles, newReader)
+		f.knownFiles = append(f.knownFiles, unsafeReader)
 	}
 
 	return nil

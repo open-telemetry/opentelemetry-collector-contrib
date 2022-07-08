@@ -19,10 +19,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
-
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 )
 
 var _ source.Provider = (*Provider)(nil)
