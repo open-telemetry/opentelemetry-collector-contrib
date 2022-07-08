@@ -1,9 +1,9 @@
 # Performance Profiler
 
-| Status                   |                      |
-| ------------------------ |----------------------|
-| Stability                | [beta]               |
-| Distributions            | [contrib]            |
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [beta]            |
+| Distributions            | [core], [contrib] |
 
 Performance Profiler extension enables the golang `net/http/pprof` endpoint.
 This is typically used by developers to collect performance profiles and
@@ -38,3 +38,4 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
