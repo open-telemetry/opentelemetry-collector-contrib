@@ -19,10 +19,11 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net/http"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"net/http"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
 	"github.com/tinylib/msgp/msgp"
