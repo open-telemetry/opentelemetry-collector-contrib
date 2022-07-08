@@ -26,6 +26,7 @@ import (
 
 const (
 	typeStr              = "googlecloudpubsub"
+	stability            = component.StabilityLevelBeta
 	reportTransport      = "pubsub"
 	reportFormatProtobuf = "protobuf"
 )
@@ -37,9 +38,9 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		f.CreateDefaultConfig,
-		component.WithTracesReceiver(f.CreateTracesReceiver),
-		component.WithMetricsReceiver(f.CreateMetricsReceiver),
-		component.WithLogsReceiver(f.CreateLogsReceiver),
+		component.WithTracesReceiverAndStabilityLevel(f.CreateTracesReceiver, stability),
+		component.WithMetricsReceiverAndStabilityLevel(f.CreateMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(f.CreateLogsReceiver, stability),
 	)
 }
 

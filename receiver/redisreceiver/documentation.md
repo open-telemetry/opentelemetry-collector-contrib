@@ -51,6 +51,12 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| redis.version | Redis server's version. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |

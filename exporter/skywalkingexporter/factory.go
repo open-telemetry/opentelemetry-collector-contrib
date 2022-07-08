@@ -27,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "skywalking"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Skywalking exporter.
@@ -34,8 +36,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
-		component.WithMetricsExporter(createMetricsExporter))
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {

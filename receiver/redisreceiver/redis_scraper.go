@@ -90,7 +90,7 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdStatsMetrics(now, inf)
-	return rs.mb.Emit(), nil
+	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
@@ -140,6 +140,15 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
 		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
 		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
 	}
+}
+
+// getRedisVersion retrieves version string from 'redis_version' Redis info key-value pairs
+// e.g. "redis_version:5.0.7"
+func (rs *redisScraper) getRedisVersion(inf info) string {
+	if str, ok := inf["redis_version"]; ok {
+		return str
+	}
+	return "unknown"
 }
 
 // recordRoleMetrics records metrics from 'role' Redis info key-value pairs

@@ -17,6 +17,8 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
+  - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
+  - Hex String of traceid and spanid are handled using `trace_id.string`,`span_id.string` accessor.
 - Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
 - Enums: Any enum in the OTLP protobuf can be used directly. For example, you can set the span kind like `set(kind, SPAN_KIND_UNSPECIFIED) where kind != SPAN_KIND_UNSPECIFIED`.  You can also use the literal int value if you desire. In addition, the grammar recognises `METRIC_DATA_TYPE_NONE`, `METRIC_DATA_TYPE_GAUGE`, `METRIC_DATA_TYPE_SUM`, `METRIC_DATA_TYPE_HISTOGRAM`, `METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`, and `METRIC_DATA_TYPE_SUMMARY` for `metric.type`
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
