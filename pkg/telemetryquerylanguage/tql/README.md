@@ -4,9 +4,11 @@ The Telemetry Query Language is a query language for transforming open telemetry
 
 This package reads in TQL queries and converts them to invokable conditions and functions based on the TQL's grammar.
 
+The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the conditions and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry. 
+
 ## Grammar
 
-The TQL grammar includes Invocations, Values and Conditions.  The TQL makes an assumption that queries are separated by signal; there is no way in the grammar to specify a specific signal.
+The TQL grammar includes Invocations, Values and Conditions.
 
 ### Invocations
 
