@@ -31,6 +31,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "sapm"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":7276"
@@ -41,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver))
+		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

@@ -18,13 +18,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 )
 
 func TestHostTags(t *testing.T) {
-	c := config.Config{
-		TagsConfig: config.TagsConfig{
+	c := Config{
+		TagsConfig: TagsConfig{
 			Hostname: "customhost",
 			Env:      "customenv",
 			// Service and version should be only used for traces
@@ -32,7 +30,7 @@ func TestHostTags(t *testing.T) {
 			Version: "customversion",
 		},
 
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Tags: []string{"key1:val1", "key2:val2"},
 		},
 	}
@@ -46,8 +44,8 @@ func TestHostTags(t *testing.T) {
 		getHostTags(&c),
 	)
 
-	c = config.Config{
-		TagsConfig: config.TagsConfig{
+	c = Config{
+		TagsConfig: TagsConfig{
 			Hostname: "customhost",
 			Env:      "customenv",
 			// Service and version should be only used for traces
@@ -56,7 +54,7 @@ func TestHostTags(t *testing.T) {
 			EnvVarTags: "key3:val3 key4:val4",
 		},
 
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Tags: []string{"key1:val1", "key2:val2"},
 		},
 	}
@@ -70,8 +68,8 @@ func TestHostTags(t *testing.T) {
 		getHostTags(&c),
 	)
 
-	c = config.Config{
-		TagsConfig: config.TagsConfig{
+	c = Config{
+		TagsConfig: TagsConfig{
 			Hostname: "customhost",
 			Env:      "customenv",
 			// Service and version should be only used for traces

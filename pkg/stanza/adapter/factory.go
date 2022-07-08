@@ -35,11 +35,11 @@ type LogReceiverType interface {
 }
 
 // NewFactory creates a factory for a Stanza-based receiver
-func NewFactory(logReceiverType LogReceiverType) component.ReceiverFactory {
+func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver(logReceiverType)),
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver(logReceiverType), sl),
 	)
 }
 

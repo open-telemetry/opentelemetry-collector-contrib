@@ -27,13 +27,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
-const typeStr = "awscloudwatchlogs"
+const (
+	typeStr = "awscloudwatchlogs"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+)
 
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter))
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {

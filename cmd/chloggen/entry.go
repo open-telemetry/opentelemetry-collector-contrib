@@ -24,6 +24,7 @@ type Entry struct {
 	Component  string `yaml:"component"`
 	Note       string `yaml:"note"`
 	Issues     []int  `yaml:"issues"`
+	SubText    string `yaml:"subtext"`
 }
 
 var changeTypes = []string{
@@ -67,5 +68,13 @@ func (e Entry) String() string {
 		issueStrs = append(issueStrs, fmt.Sprintf("#%d", issue))
 	}
 	issueStr := strings.Join(issueStrs, ", ")
-	return fmt.Sprintf("- `%s`: %s (%s)", e.Component, e.Note, issueStr)
+
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("- `%s`: %s (%s)", e.Component, e.Note, issueStr))
+	if e.SubText != "" {
+		sb.WriteString("\n  ")
+		lines := strings.Split(strings.ReplaceAll(e.SubText, "\r\n", "\n"), "\n")
+		sb.WriteString(strings.Join(lines, "\n  "))
+	}
+	return sb.String()
 }

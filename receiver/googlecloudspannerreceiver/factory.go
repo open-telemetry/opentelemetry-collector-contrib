@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	typeStr = "googlecloudspanner"
+	typeStr   = "googlecloudspanner"
+	stability = component.StabilityLevelBeta
 
 	defaultCollectionInterval     = 60 * time.Second
 	defaultTopMetricsQueryMaxRows = 100
@@ -36,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

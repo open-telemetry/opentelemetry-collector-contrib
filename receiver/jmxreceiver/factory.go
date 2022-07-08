@@ -26,6 +26,7 @@ import (
 
 const (
 	typeStr      = "jmx"
+	stability    = component.StabilityLevelAlpha
 	otlpEndpoint = "0.0.0.0:0"
 )
 
@@ -33,7 +34,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
