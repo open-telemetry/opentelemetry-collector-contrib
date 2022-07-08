@@ -1,6 +1,9 @@
 # File Storage
 
-> :construction: This receiver is currently in **BETA**.
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Distributions            | [contrib]            |
 
 The File Storage extension can persist state to the local file system. 
 
@@ -82,3 +85,6 @@ processors:
 exporters:
   nop:
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

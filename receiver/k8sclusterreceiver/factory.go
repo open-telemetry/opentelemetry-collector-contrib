@@ -30,6 +30,8 @@ import (
 const (
 	// Value of "type" key in configuration.
 	typeStr = "k8s_cluster"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	// supported distributions
 	distributionKubernetes = "kubernetes"
@@ -85,5 +87,5 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }

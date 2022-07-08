@@ -30,6 +30,7 @@ import (
 
 const (
 	typeStr           = "awsfirehose"
+	stability         = component.StabilityLevelAlpha
 	defaultRecordType = cwmetricstream.TypeStr
 	defaultEndpoint   = "0.0.0.0:4433"
 )
@@ -47,7 +48,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // validateRecordType checks the available record types for the

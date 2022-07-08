@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -33,11 +35,7 @@ jobs:
 
       - name: Ensure no changes to the CHANGELOG
         run: |
-          # Only the latest commit of the feature branch is available
-          # automatically. To diff with the base branch, we need to
-          # fetch that too (and we only need its latest commit).
-          git fetch origin ${{ github.base_ref }} --depth=1
-          if [[ $(git diff --name-only FETCH_HEAD | grep CHANGELOG) ]]
+          if [[ $(git diff --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./CHANGELOG.md) ]]
           then
             echo "The CHANGELOG should not be directly modified."
             echo "Please add a .yaml file to the ./unreleased/ directory."
@@ -50,8 +48,7 @@ jobs:
 
       - name: Ensure ./unreleased/*.yaml addition(s)
         run: |
-          git fetch origin ${{ github.base_ref }} --depth=1
-          if [[ 1 -gt $(git diff --diff-filter=A --name-only FETCH_HEAD ./unreleased | grep -c \\.yaml) ]]
+          if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main ${{ github.event.pull_request.head.sha }}) ./unreleased | grep -c \\.yaml) ]]
           then
             echo "No changelog entry was added to the ./unreleased/ directory."
             echo "Please add a .yaml file to the ./unreleased/ directory."
