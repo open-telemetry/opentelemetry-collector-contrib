@@ -22,9 +22,11 @@ import (
 
 // Config defines configuration for Pulsar exporter.
 type Config struct {
-	config.ExporterSettings      `mapstructure:",squash"`
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	config.ExporterSettings `mapstructure:",squash"`
+
+	exporterhelper.TimeoutSettings `mapstructure:",squash"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 
 	// Endpoint of pulsar broker (default "pulsar://localhost:6650")
 	Endpoint string `mapstructure:"endpoint"`

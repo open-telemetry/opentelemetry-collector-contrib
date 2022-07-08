@@ -8,6 +8,7 @@ exporters:
       tls:
         cert_file: cert.pem
         key_file: key.pem
+    timeout: 20s
     sending_queue:
       enabled: true
       num_consumers: 2

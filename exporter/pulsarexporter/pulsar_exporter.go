@@ -17,7 +17,6 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
-
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -142,7 +141,8 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	}
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
-		Topic: config.Topic,
+		Topic:       config.Topic,
+		SendTimeout: config.Timeout,
 	})
 
 	if err != nil {
