@@ -452,14 +452,9 @@ func (e renameError) Error() string {
 	)
 }
 
-// OccursIn reports whether the removed config setting defined in e is used
-func (e renameError) OccursIn(configMap *confmap.Conf) bool {
-	return configMap.IsSet(e.oldName)
-}
-
 func handleRemovedSettings(configMap *confmap.Conf) (err error) {
 	for _, removedErr := range removedSettings {
-		if removedErr.OccursIn(configMap) {
+		if configMap.IsSet(removedErr.oldName) {
 			err = multierr.Append(err, removedErr)
 		}
 	}
