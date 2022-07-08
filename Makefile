@@ -377,3 +377,11 @@ multimod-prerelease: install-tools
 crosslink: install-tools
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
+
+.PHONY: clean
+clean:
+	@echo "Removing coverage files"
+	find . -type f -name 'coverage.txt' -delete
+	find . -type f -name 'coverage.html' -delete
+	find . -type f -name 'integration-coverage.txt' -delete
+	find . -type f -name 'integration-coverage.html' -delete
