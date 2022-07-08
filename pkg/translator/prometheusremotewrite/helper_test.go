@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/prometheus/prometheus/model/timestamp"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -590,6 +591,87 @@ func TestMostRecentTimestampInMetric(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := mostRecentTimestampInMetric(tc.input)
 			assert.Exactly(t, tc.expected, got)
+		})
+	}
+}
+
+func Test_addSingleHistogramDataPoint(t *testing.T) {
+
+	emptyBuckets := pcommon.NewImmutableUInt64Slice([]uint64{})
+
+	for _, tt := range []struct {
+		name      string
+		histogram *pmetric.HistogramDataPoint
+		metric    pmetric.Metric
+		settings  Settings
+		expected  map[string]*prompb.TimeSeries
+	}{
+		{
+			name:      "histogram_without_buckets",
+			histogram: getHistogramDataPoint(),
+			metric:    getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, emptyBuckets),
+			settings:  Settings{Namespace: "foo"},
+			expected: map[string]*prompb.TimeSeries{
+				"Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "foo_valid_Histogram_bucket",
+						},
+						{
+							Name:  "le",
+							Value: "+Inf",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     math.NaN(),
+							Timestamp: 0,
+						},
+					},
+				},
+				"Histogram-__name__-foo_valid_Histogram_count": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "foo_valid_Histogram_count",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     0,
+							Timestamp: 0,
+						},
+					},
+				},
+				"Histogram-__name__-foo_valid_Histogram_sum": {
+					Labels: []prompb.Label{
+						{
+							Name:  "__name__",
+							Value: "foo_valid_Histogram_sum",
+						},
+					},
+					Samples: []prompb.Sample{
+						{
+							Value:     0,
+							Timestamp: 0,
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			tsMap := map[string]*prompb.TimeSeries{}
+			addSingleHistogramDataPoint(*tt.histogram, getResource(map[string]pcommon.Value{}), tt.metric, tt.settings, tsMap)
+
+			// Because NaN != Nan we have to explicitly test these rather than just using assert.Exactly
+			assert.Exactly(t, tt.expected["Histogram-__name__-foo_valid_Histogram_sum"], tsMap["Histogram-__name__-foo_valid_Histogram_sum"])
+			assert.Exactly(t, tt.expected["Histogram-__name__-foo_valid_Histogram_count"], tsMap["Histogram-__name__-foo_valid_Histogram_count"])
+			assert.Exactly(t, tt.expected["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Labels, tsMap["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Labels)
+			assert.Equal(t, len(tt.expected["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Samples), 1)
+			assert.Exactly(t, tt.expected["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Samples[0].Timestamp, tsMap["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Samples[0].Timestamp)
+			assert.True(t, value.IsStaleNaN(tsMap["Histogram-__name__-foo_valid_Histogram_bucket-le-+Inf"].Samples[0].Value))
 		})
 	}
 }

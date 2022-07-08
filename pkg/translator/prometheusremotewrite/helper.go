@@ -340,12 +340,13 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	infBucket := &prompb.Sample{
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) || pt.BucketCounts().Len() == 0 {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
 		cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
 		infBucket.Value = float64(cumulativeCount)
 	}
+
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
 	sig := addSample(tsMap, infBucket, infLabels, metric.DataType().String())
 
