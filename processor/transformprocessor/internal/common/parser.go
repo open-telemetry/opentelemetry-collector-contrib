@@ -35,9 +35,9 @@ type ParsedQuery struct {
 // a parenthesized subexpression.
 // nolint:govet
 type BooleanValue struct {
-	Condition *Condition    `( @@`
-	ConstExpr *Boolean      `| @Boolean`
-	SubExpr   *BooleanValue `| "(" @@ ")" )`
+	Condition *Condition         `( @@`
+	ConstExpr *Boolean           `| @Boolean`
+	SubExpr   *BooleanExpression `| "(" @@ ")" )`
 }
 
 // OpBooleanValue represents the right side of an AND boolean expression.

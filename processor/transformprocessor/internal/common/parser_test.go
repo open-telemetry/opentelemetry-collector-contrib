@@ -28,31 +28,6 @@ func Booleanp(b Boolean) *Boolean {
 	return &b
 }
 
-// Helper for test cases where the WHERE clause is all that matters.
-// Parse string should start with `set(name, "test") where`...
-func set_name_test(b *BooleanExpression) *ParsedQuery {
-	return &ParsedQuery{
-		Invocation: Invocation{
-			Function: "set",
-			Arguments: []Value{
-				{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				{
-					String: testhelper.Strp("test"),
-				},
-			},
-		},
-		WhereClause: b,
-	}
-}
-
 func Test_parse(t *testing.T) {
 	tests := []struct {
 		query    string
@@ -409,102 +384,6 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
-		{
-			query: `set(name, "test") where true`,
-			expected: set_name_test(&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
-					},
-				},
-			}),
-		},
-		{
-			query: `set(name, "test") where true and false`,
-			expected: set_name_test(&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
-					},
-					Right: []*OpBooleanValue{
-						{
-							Operator: "and",
-							Value: &BooleanValue{
-								ConstExpr: Booleanp(false),
-							},
-						},
-					},
-				},
-			}),
-		},
-		{
-			query: `set(name, "test") where true or false`,
-			expected: set_name_test(&BooleanExpression{
-				Left: &Term{
-					Left: &BooleanValue{
-						ConstExpr: Booleanp(true),
-					},
-				},
-				Right: []*OpTerm{
-					{
-						Operator: "or",
-						Term: &Term{
-							Left: &BooleanValue{
-								ConstExpr: Booleanp(false),
-							},
-						},
-					},
-				},
-			}),
-		},
-		// {
-		// 	query: `set(name, "test") where name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
-		// 	expected: &ParsedQuery{
-		// 		Invocation: Invocation{
-		// 			Function: "set",
-		// 			Arguments: []Value{
-		// 				{
-		// 					Path: &Path{
-		// 						Fields: []Field{
-		// 							{
-		// 								Name:   "attributes",
-		// 								MapKey: testhelper.Strp("test"),
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 				{
-		// 					IsNil: (*IsNil)(testhelper.Boolp(true)),
-		// 				},
-		// 			},
-		// 		},
-		// 		WhereClause: nil,
-		// 	},
-		// },
-		// {
-		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
-		// 	expected: &ParsedQuery{
-		// 		Invocation: Invocation{
-		// 			Function: "set",
-		// 			Arguments: []Value{
-		// 				{
-		// 					Path: &Path{
-		// 						Fields: []Field{
-		// 							{
-		// 								Name:   "attributes",
-		// 								MapKey: testhelper.Strp("test"),
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 				{
-		// 					IsNil: (*IsNil)(testhelper.Boolp(true)),
-		// 				},
-		// 			},
-		// 		},
-		// 		WhereClause: nil,
-		// 	},
-		// },
 	}
 
 	// create a test name that doesn't confuse vscode so we can rerun tests with one click
@@ -562,4 +441,188 @@ func testParsePath(val *Path) (GetSetter, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("bad path %v", val)
+}
+
+// Helper for test cases where the WHERE clause is all that matters.
+// Parse string should start with `set(name, "test") where`...
+func set_name_test(b *BooleanExpression) *ParsedQuery {
+	return &ParsedQuery{
+		Invocation: Invocation{
+			Function: "set",
+			Arguments: []Value{
+				{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				{
+					String: testhelper.Strp("test"),
+				},
+			},
+		},
+		WhereClause: b,
+	}
+}
+
+func Test_parseWhere(t *testing.T) {
+	tests := []struct {
+		query    string
+		expected *ParsedQuery
+	}{
+		{
+			query: `true`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+			}),
+		},
+		{
+			query: `true and false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true and true and false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and true or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and (true or false)`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								SubExpr: &BooleanExpression{
+									Left: &Term{
+										Left: &BooleanValue{
+											ConstExpr: Booleanp(true),
+										},
+									},
+									Right: []*OpTerm{
+										{
+											Operator: "or",
+											Term: &Term{
+												Left: &BooleanValue{
+													ConstExpr: Booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		// MORE TESTS TO DO
+		// 	query: `name != "foo" and name != "bar"`,
+		// 	query: `name != "foo" and resource.attribute["test"] == "bar"`,
+		// 	query: `name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
+		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
+	}
+
+	// create a test name that doesn't confuse vscode so we can rerun tests with one click
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
+			query := `set(name, "test") where ` + tt.query
+			parsed, err := parseQuery(query)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, parsed)
+		})
+	}
 }

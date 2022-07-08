@@ -74,7 +74,7 @@ func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interfac
 			return bool(*value.ConstExpr)
 		}, nil
 	case value.SubExpr != nil:
-		return newBooleanValueEvaluator(value.SubExpr, functions, pathParser)
+		return newBooleanExpressionEvaluator(value.SubExpr, functions, pathParser)
 	}
 
 	return nil, fmt.Errorf("unhandled boolean operation %v", value)

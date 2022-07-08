@@ -15,7 +15,6 @@
 package common
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/alecthomas/participle/v2/lexer"
@@ -100,7 +99,6 @@ func Test_lexer(t *testing.T) {
 			assert.NoError(t, err)
 			i := 0
 			for tok, err := x.Next(); tok.EOF() != true; tok, err = x.Next() {
-				fmt.Println(tok)
 				if tt.expectErr {
 					// if we expected an error, just make sure there was one and don't check anything else
 					assert.Error(t, err)
