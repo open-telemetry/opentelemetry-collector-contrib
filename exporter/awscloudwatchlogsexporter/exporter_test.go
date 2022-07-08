@@ -253,10 +253,6 @@ func TestConsumeLogs(t *testing.T) {
 	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())
 
-	logPusher := new(mockPusher)
-	logPusher.On("AddLogEntry", nil).Return("").Once()
-	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.(*exporter).pusher = logPusher
 	require.NoError(t, exp.(*exporter).ConsumeLogs(ctx, ld))
 	require.NoError(t, exp.Shutdown(ctx))
 }

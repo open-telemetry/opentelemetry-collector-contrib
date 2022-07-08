@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -36,12 +37,13 @@ import (
 )
 
 type exporter struct {
-	Config           *Config
-	logger           *zap.Logger
-	retryCount       int
-	collectorID      string
-	svcStructuredLog *cwlogs.Client
-	pusher           cwlogs.Pusher
+	Config                 *Config
+	logger                 *zap.Logger
+	retryCount             int
+	collectorID            string
+	svcStructuredLog       *cwlogs.Client
+	pusherMapLock          sync.Mutex
+	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 }
 
 func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
@@ -65,15 +67,13 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 		return nil, err
 	}
 
-	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
-
 	logsExporter := &exporter{
-		svcStructuredLog: svcStructuredLog,
-		Config:           expConfig,
-		logger:           params.Logger,
-		retryCount:       *awsConfig.MaxRetries,
-		collectorID:      collectorIdentifier.String(),
-		pusher:           pusher,
+		svcStructuredLog:       svcStructuredLog,
+		Config:                 expConfig,
+		logger:                 params.Logger,
+		retryCount:             *awsConfig.MaxRetries,
+		collectorID:            collectorIdentifier.String(),
+		groupStreamToPusherMap: map[string]map[string]cwlogs.Pusher{},
 	}
 	return logsExporter, nil
 }
@@ -95,7 +95,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 }
 
 func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	cwLogsPusher := e.pusher
+
 	logEvents, _ := logsToCWLogs(e.logger, ld)
 	if len(logEvents) == 0 {
 		return nil
@@ -106,18 +106,20 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			InputLogEvent: logEvent,
 			GeneratedTime: time.Now(),
 		}
+		cwLogsPusher := e.getPusher(e.Config.LogGroupName, e.Config.LogStreamName)
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
 		err := cwLogsPusher.AddLogEntry(logEvent)
 		if err != nil {
 			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
 		}
+		e.logger.Debug("Log events are successfully put")
+		flushErr := cwLogsPusher.ForceFlush()
+		if flushErr != nil {
+			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
+			return flushErr
+		}
 	}
-	e.logger.Debug("Log events are successfully put")
-	flushErr := cwLogsPusher.ForceFlush()
-	if flushErr != nil {
-		e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-		return flushErr
-	}
+
 	return nil
 }
 
@@ -126,8 +128,11 @@ func (e *exporter) Capabilities() consumer.Capabilities {
 }
 
 func (e *exporter) Shutdown(ctx context.Context) error {
-	if e.pusher != nil {
-		e.pusher.ForceFlush()
+	for _, pusher := range e.listPushers() {
+		err := pusher.ForceFlush()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -251,4 +256,36 @@ func attrValue(value pcommon.Value) interface{} {
 	default:
 		return nil
 	}
+}
+
+func (e *exporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
+	e.pusherMapLock.Lock()
+	defer e.pusherMapLock.Unlock()
+
+	var ok bool
+	var streamToPusherMap map[string]cwlogs.Pusher
+	if streamToPusherMap, ok = e.groupStreamToPusherMap[logGroup]; !ok {
+		streamToPusherMap = map[string]cwlogs.Pusher{}
+		e.groupStreamToPusherMap[logGroup] = streamToPusherMap
+	}
+
+	var emfPusher cwlogs.Pusher
+	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
+		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
+		streamToPusherMap[logStream] = emfPusher
+	}
+	return emfPusher
+}
+
+func (e *exporter) listPushers() []cwlogs.Pusher {
+	e.pusherMapLock.Lock()
+	defer e.pusherMapLock.Unlock()
+
+	pushers := []cwlogs.Pusher{}
+	for _, pusherMap := range e.groupStreamToPusherMap {
+		for _, pusher := range pusherMap {
+			pushers = append(pushers, pusher)
+		}
+	}
+	return pushers
 }
