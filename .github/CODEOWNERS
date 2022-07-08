@@ -98,6 +98,7 @@ internal/splunk/                                     @open-telemetry/collector-c
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
+pkg/telemetryquerylanguage/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @anuraaga
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
