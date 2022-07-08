@@ -33,6 +33,7 @@ type scraper struct {
 	id                 config.ComponentID
 	query              Query
 	scrapeCfg          scraperhelper.ScraperControllerSettings
+	startTime          pcommon.Timestamp
 	clientProviderFunc clientProviderFunc
 	dbProviderFunc     dbProviderFunc
 	logger             *zap.Logger
@@ -53,13 +54,15 @@ func (s *scraper) Start(context.Context, component.Host) error {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
 	s.client = s.clientProviderFunc(s.db, s.query.SQL, s.logger)
+	s.startTime = pcommon.NewTimestampFromTime(time.Now())
+
 	return nil
 }
 
 func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
-	ts := pcommon.NewTimestampFromTime(time.Now())
 	rows, err := s.client.metricRows(ctx)
+	ts := pcommon.NewTimestampFromTime(time.Now())
 	if err != nil {
 		return out, fmt.Errorf("scraper: %w", err)
 	}
@@ -71,7 +74,7 @@ func (s scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var errs error
 	for _, metricCfg := range s.query.Metrics {
 		for i, row := range rows {
-			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), ts, s.scrapeCfg); err != nil {
+			if err = rowToMetric(row, metricCfg, ms.AppendEmpty(), s.startTime, ts, s.scrapeCfg); err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
 				errs = multierr.Append(errs, err)
 			}

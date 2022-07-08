@@ -24,13 +24,13 @@ import (
 )
 
 // gauge metrics only need a timestamp, not a
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
+func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
-	setTimestamp(cfg, dataPoint, ts, scrapeCfg)
+	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
@@ -50,12 +50,12 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, ts pcommon.T
 	return nil
 }
 
-func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
+func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
 	dp.SetTimestamp(ts)
 
 	// Cumulative sum should have a start time set to the beginning of the data points cumulation
 	if cfg.Aggregation == MetricAggregationCumulative && cfg.DataType != MetricDataTypeGauge {
-		dp.SetStartTimestamp(ts)
+		dp.SetStartTimestamp(startTime)
 	}
 
 	// Non-cumulative sum should have a start time set to the previous endpoint
