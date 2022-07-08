@@ -208,6 +208,10 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Setup Oracle DB Docker Image Dependency
+        shell: bash
+        run: |
+          docker pull container-registry.oracle.com/database/express:latest
       - name: Run Integration Tests
         run: make integration-tests-with-cover
 
