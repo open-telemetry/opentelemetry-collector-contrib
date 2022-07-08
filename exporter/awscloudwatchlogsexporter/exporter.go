@@ -52,6 +52,7 @@ type exporter struct {
 	collectorID            string
 	svcStructuredLog       *cwlogs.Client
 	pusherMapLock          sync.Mutex
+	pusherOverride         cwlogs.Pusher
 	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
 }
 
@@ -120,8 +121,13 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		if err != nil {
 			return err
 		}
+		var cwLogsPusher cwlogs.Pusher
 		logGroup, logStream, _ := getLogInfo(body, e.Config)
-		cwLogsPusher := e.getPusher(logGroup, logStream)
+		if e.pusherOverride != nil {
+			cwLogsPusher = e.pusherOverride
+		} else {
+			cwLogsPusher = e.getPusher(logGroup, logStream)
+		}
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
 		err = cwLogsPusher.AddLogEntry(logEvent)
 		if err != nil {

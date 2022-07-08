@@ -245,6 +245,10 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogStreamName = "{PodName}"
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsPusher(expCfg, componenttest.NewNopExporterCreateSettings())
+	logPusher := new(mockPusher)
+	logPusher.On("AddLogEntry", nil).Return("").Once()
+	logPusher.On("ForceFlush", nil).Return("").Twice()
+	exp.(*exporter).pusherOverride = logPusher
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
