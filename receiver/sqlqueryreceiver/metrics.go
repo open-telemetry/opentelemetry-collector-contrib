@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-// gauge metrics only need a timestamp, not a
 func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
