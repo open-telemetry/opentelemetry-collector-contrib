@@ -17,6 +17,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"sort"
 	"strings"
 	"time"
@@ -24,50 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 )
-
-var patternKeyToAttributeMap = map[string]string{
-	"ClusterName":          "aws.ecs.cluster.name",
-	"TaskId":               "aws.ecs.task.id",
-	"NodeName":             "k8s.node.name",
-	"PodName":              "pod",
-	"ContainerInstanceId":  "aws.ecs.container.instance.id",
-	"TaskDefinitionFamily": "aws.ecs.task.family",
-}
-
-func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
-	success := true
-	var foundAndReplaced bool
-	for key := range patternKeyToAttributeMap {
-		s, foundAndReplaced = replacePatternWithAttrValue(s, key, attrMap, logger)
-		success = success && foundAndReplaced
-	}
-	return s, success
-}
-
-func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
-	pattern := "{" + patternKey + "}"
-	if strings.Contains(s, pattern) {
-		if value, ok := attrMap[patternKey]; ok {
-			return replace(s, pattern, value, logger)
-		} else if value, ok := attrMap[patternKeyToAttributeMap[patternKey]]; ok {
-			return replace(s, pattern, value, logger)
-		} else {
-			logger.Debug("No resource attribute found for pattern " + pattern)
-			return strings.Replace(s, pattern, "undefined", -1), false
-		}
-	}
-	return s, true
-}
-
-func replace(s, pattern string, value string, logger *zap.Logger) (string, bool) {
-	if value == "" {
-		logger.Debug("Empty resource attribute value found for pattern " + pattern)
-		return strings.Replace(s, pattern, "undefined", -1), false
-	}
-	return strings.Replace(s, pattern, value, -1), true
-}
 
 // getNamespace retrieves namespace for given set of metrics from user config.
 func getNamespace(rm *pmetric.ResourceMetrics, namespace string) string {
@@ -103,10 +61,10 @@ func getLogInfo(rm *pmetric.ResourceMetrics, cWNamespace string, config *Config)
 
 	// Override log group/stream if specified in config. However, in this case, customer won't have correlation experience
 	if len(config.LogGroupName) > 0 {
-		logGroup, groupReplaced = replacePatterns(config.LogGroupName, strAttributeMap, config.logger)
+		logGroup, groupReplaced = cwlogs.ReplacePatterns(config.LogGroupName, strAttributeMap, config.logger)
 	}
 	if len(config.LogStreamName) > 0 {
-		logStream, streamReplaced = replacePatterns(config.LogStreamName, strAttributeMap, config.logger)
+		logStream, streamReplaced = cwlogs.ReplacePatterns(config.LogStreamName, strAttributeMap, config.logger)
 	}
 
 	return logGroup, logStream, (groupReplaced && streamReplaced)

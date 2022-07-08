@@ -36,15 +36,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
-var patternKeyToAttributeMap = map[string]string{
-	"ClusterName":          "aws.ecs.cluster.name",
-	"TaskId":               "aws.ecs.task.id",
-	"NodeName":             "k8s.node.name",
-	"PodName":              "pod",
-	"ContainerInstanceId":  "aws.ecs.container.instance.id",
-	"TaskDefinitionFamily": "aws.ecs.task.family",
-}
-
 type exporter struct {
 	Config                 *Config
 	logger                 *zap.Logger

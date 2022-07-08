@@ -17,6 +17,7 @@ package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"encoding/json"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -68,10 +69,10 @@ func addToGroupedMetric(pmd *pmetric.Metric, groupedMetrics map[interface{}]*gro
 		// if patterns are provided for a valid key and that key doesn't exist in the resource attributes, it is replaced with `undefined`.
 		if !patternReplaceSucceeded {
 			if strings.Contains(metadata.logGroup, "undefined") {
-				metadata.logGroup, _ = replacePatterns(config.LogGroupName, labels, config.logger)
+				metadata.logGroup, _ = cwlogs.ReplacePatterns(config.LogGroupName, labels, config.logger)
 			}
 			if strings.Contains(metadata.logStream, "undefined") {
-				metadata.logStream, _ = replacePatterns(config.LogStreamName, labels, config.logger)
+				metadata.logStream, _ = cwlogs.ReplacePatterns(config.LogStreamName, labels, config.logger)
 			}
 		}
 
