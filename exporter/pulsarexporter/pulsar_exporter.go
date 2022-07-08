@@ -17,6 +17,7 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"fmt"
+
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
