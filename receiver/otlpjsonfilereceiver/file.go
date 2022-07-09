@@ -17,13 +17,22 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 )
 
 const (
-	typeStr = "file"
+	typeStr   = "file"
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for file receiver
@@ -31,69 +40,96 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
-		component.WithLogsReceiver(createLogsReceiver),
-		component.WithTracesReceiver(createTracesReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability),
+		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability))
 }
 
 type cfg struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	Path                    string                   `mapstructure:"path"`
+	fileconsumer.Config     `mapstructure:",squash"`
 }
 
 func createDefaultConfig() config.Receiver {
 	return &cfg{
-		Path:             "",
+		Config:           *fileconsumer.NewConfig(),
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 	}
 }
 
 type receiver struct {
-	watcher *watcher
+	input *fileconsumer.Input
+	id    config.ComponentID
 }
 
 func (f *receiver) Start(ctx context.Context, host component.Host) error {
-	return f.watcher.start(ctx)
+	storageClient, err := adapter.GetStorageClient(ctx, f.id, component.KindReceiver, host)
+	if err != nil {
+		return err
+	}
+	return f.input.Start(storageClient)
 }
 
 func (f *receiver) Shutdown(ctx context.Context) error {
-	return f.watcher.stop()
+	return f.input.Stop()
 }
 
-var watchers = map[string]*watcher{}
-
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
-	path := configuration.(*cfg).Path
-	w, ok := watchers[path]
-	if !ok {
-		w = &watcher{path: configuration.(*cfg).Path, logger: settings.Logger}
-		watchers[path] = w
+	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+		l, err := logsUnmarshaler.UnmarshalLogs(token)
+		if err != nil {
+			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+		} else {
+			err := logs.ConsumeLogs(ctx, l)
+			if err != nil {
+				settings.Logger.Error("Error consuming line", zap.Error(err))
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
 	}
-	w.logsConsumer = logs
 
-	return &receiver{watcher: w}, nil
+	return &receiver{input: input, id: configuration.ID()}, nil
 }
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
-	path := configuration.(*cfg).Path
-	w, ok := watchers[path]
-	if !ok {
-		w = &watcher{path: configuration.(*cfg).Path, logger: settings.Logger}
-		watchers[path] = w
+	metricsUnmarshaler := pmetric.NewJSONUnmarshaler()
+	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+		l, err := metricsUnmarshaler.UnmarshalMetrics(token)
+		if err != nil {
+			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+		} else {
+			err := metrics.ConsumeMetrics(ctx, l)
+			if err != nil {
+				settings.Logger.Error("Error consuming line", zap.Error(err))
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
 	}
-	w.metricsConsumer = metrics
 
-	return &receiver{watcher: w}, nil
+	return &receiver{input: input, id: configuration.ID()}, nil
 }
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, traces consumer.Traces) (component.TracesReceiver, error) {
-	path := configuration.(*cfg).Path
-	w, ok := watchers[path]
-	if !ok {
-		w = &watcher{path: configuration.(*cfg).Path, logger: settings.Logger}
-		watchers[path] = w
+	tracesUnmarshaler := ptrace.NewJSONUnmarshaler()
+	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+		l, err := tracesUnmarshaler.UnmarshalTraces(token)
+		if err != nil {
+			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+		} else {
+			err := traces.ConsumeTraces(ctx, l)
+			if err != nil {
+				settings.Logger.Error("Error consuming line", zap.Error(err))
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
 	}
-	w.tracesConsumer = traces
 
-	return &receiver{watcher: w}, nil
+	return &receiver{input: input, id: configuration.ID()}, nil
 }
