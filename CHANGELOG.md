@@ -4,10 +4,6 @@
 
 <!-- next version -->
 
-### 💡 Enhancements 💡
-- `hostmetricsreceiver`: New config setting `scrape_process_delay` is used to indicate the minimum amount of time a process must be running
-  before process metrics can be scraped for it.  The default value is 0 seconds ("0s"). (#8976) 
-
 # v0.55.0
 
 ## 🛑 Breaking changes 🛑
