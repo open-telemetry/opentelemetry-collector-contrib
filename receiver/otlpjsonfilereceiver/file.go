@@ -95,7 +95,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		return nil, err
 	}
 
-	return &receiver{input: input, id: configuration.ID())}, nil
+	return &receiver{input: input, id: configuration.ID()}, nil
 }
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
