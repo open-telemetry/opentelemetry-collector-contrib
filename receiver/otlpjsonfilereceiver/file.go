@@ -16,6 +16,7 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/obsreport"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -23,15 +24,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 )
 
 const (
-	typeStr   = "file"
+	typeStr   = "otlpjsonfile"
 	stability = component.StabilityLevelAlpha
+	transport = "file"
 )
 
 // NewFactory creates a factory for file receiver
@@ -75,35 +76,43 @@ func (f *receiver) Shutdown(ctx context.Context) error {
 
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
 	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             configuration.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
 	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+		ctx = obsrecv.StartMetricsOp(ctx)
 		l, err := logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
-			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+			obsrecv.EndLogsOp(ctx, typeStr, 0, err)
 		} else {
-			err := logs.ConsumeLogs(ctx, l)
-			if err != nil {
-				settings.Logger.Error("Error consuming line", zap.Error(err))
-			}
+			err = logs.ConsumeLogs(ctx, l)
+			obsrecv.EndLogsOp(ctx, typeStr, l.LogRecordCount(), err)
 		}
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &receiver{input: input, id: configuration.ID()}, nil
+	return &receiver{input: input, id: configuration.ID())}, nil
 }
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
 	metricsUnmarshaler := pmetric.NewJSONUnmarshaler()
+	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             configuration.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
 	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
-		l, err := metricsUnmarshaler.UnmarshalMetrics(token)
+		ctx = obsrecv.StartMetricsOp(ctx)
+		m, err := metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
-			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+			obsrecv.EndMetricsOp(ctx, typeStr, 0, err)
 		} else {
-			err := metrics.ConsumeMetrics(ctx, l)
-			if err != nil {
-				settings.Logger.Error("Error consuming line", zap.Error(err))
-			}
+			err = metrics.ConsumeMetrics(ctx, m)
+			obsrecv.EndMetricsOp(ctx, typeStr, m.MetricCount(), err)
 		}
 	})
 	if err != nil {
@@ -115,15 +124,19 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, traces consumer.Traces) (component.TracesReceiver, error) {
 	tracesUnmarshaler := ptrace.NewJSONUnmarshaler()
+	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             configuration.ID(),
+		Transport:              transport,
+		ReceiverCreateSettings: settings,
+	})
 	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
-		l, err := tracesUnmarshaler.UnmarshalTraces(token)
+		ctx = obsrecv.StartTracesOp(ctx)
+		t, err := tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
-			settings.Logger.Warn("Error unmarshaling line", zap.Error(err))
+			obsrecv.EndTracesOp(ctx, typeStr, 0, err)
 		} else {
-			err := traces.ConsumeTraces(ctx, l)
-			if err != nil {
-				settings.Logger.Error("Error consuming line", zap.Error(err))
-			}
+			err = traces.ConsumeTraces(ctx, t)
+			obsrecv.EndTracesOp(ctx, typeStr, t.SpanCount(), err)
 		}
 	})
 	if err != nil {
