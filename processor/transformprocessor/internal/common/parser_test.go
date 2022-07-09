@@ -652,9 +652,56 @@ func Test_parseWhere(t *testing.T) {
 					},
 				},
 			}),
-		}, // MORE TESTS TO DO
-		// 	query: ``,
-		// 	query: `name == "foo" or name == "bar"`,
+		},
+		{
+			query: `name == "foo" or name == "bar"`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						Condition: &Condition{
+							Left: Value{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							Op: "==",
+							Right: Value{
+								String: testhelper.Strp("foo"),
+							},
+						},
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								Condition: &Condition{
+									Left: Value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: "==",
+									Right: Value{
+										String: testhelper.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		// MORE TESTS TO DO
 		// 	query: `name != "foo" and resource.attribute["test"] == "bar"`,
 		// 	query: `name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
 		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
