@@ -15,16 +15,19 @@
 package groupbytraceprocessor
 
 import (
+
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
 	// test
-	c := createDefaultConfig().(*Config)
+	c := createDefaultConfig().(*common.Config)
 
 	// verify
 	assert.Equal(t, defaultNumTraces, c.NumTraces)
@@ -35,12 +38,10 @@ func TestDefaultConfiguration(t *testing.T) {
 }
 
 func TestCreateTestProcessor(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-
-	next := &mockProcessor{}
+	c := createDefaultConfig().(*common.Config)
 
 	// test
-	p, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), c, next)
+	p, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), c, consumertest.NewNop())
 
 	// verify
 	assert.NoError(t, err)
@@ -50,27 +51,26 @@ func TestCreateTestProcessor(t *testing.T) {
 func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 	// prepare
 	f := NewFactory()
-	next := &mockProcessor{}
 
 	// test
 	for _, tt := range []struct {
-		config      *Config
+		config      *common.Config
 		expectedErr error
 	}{
 		{
-			&Config{
+			&common.Config{
 				DiscardOrphans: true,
 			},
 			errDiscardOrphansNotSupported,
 		},
 		{
-			&Config{
+			&common.Config{
 				StoreOnDisk: true,
 			},
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, next)
+		p, err := f.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.config, consumertest.NewNop())
 
 		// verify
 		assert.Error(t, tt.expectedErr, err)

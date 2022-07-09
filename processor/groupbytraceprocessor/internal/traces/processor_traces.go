@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
 	"context"
@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
 )
 
 // groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
@@ -45,14 +46,14 @@ import (
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
 type groupByTraceProcessor struct {
 	nextConsumer consumer.Traces
-	config       Config
+	config       common.Config
 	logger       *zap.Logger
 
 	// the event machine handling all operations for this processor
 	eventMachine *eventMachine
 
 	// the trace storage
-	st storage
+	st Storage
 }
 
 var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
@@ -60,7 +61,7 @@ var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
 const bufferSize = 10_000
 
 // newGroupByTraceProcessor returns a new processor.
-func newGroupByTraceProcessor(logger *zap.Logger, st storage, nextConsumer consumer.Traces, config Config) *groupByTraceProcessor {
+func NewGroupByTraceProcessor(logger *zap.Logger, st Storage, nextConsumer consumer.Traces, config common.Config) *groupByTraceProcessor {
 	// the event machine will buffer up to N concurrent events before blocking
 	eventMachine := newEventMachine(logger, 10000, config.NumWorkers, config.NumTraces)
 
@@ -112,7 +113,7 @@ func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
 
 func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
-	if worker.buffer.contains(traceID) {
+	if worker.buffer.Contains(traceID) {
 		sp.logger.Debug("trace is already in memory storage")
 
 		// it exists in memory already, just append the spans to the trace in the storage
@@ -128,7 +129,7 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 	// traceID in the map and the spans to the storage
 
 	// place the trace ID in the buffer, and check if an item had to be evicted
-	evicted := worker.buffer.put(traceID)
+	evicted := worker.buffer.Put(traceID)
 	if !evicted.IsEmpty() {
 		// delete from the storage
 		worker.fire(event{
@@ -163,7 +164,7 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 	sp.logger.Debug("processing expired", zap.String("traceID",
 		traceID.HexString()))
 
-	if !worker.buffer.contains(traceID) {
+	if !worker.buffer.Contains(traceID) {
 		// we likely received multiple batches with spans for the same trace
 		// and released this trace already
 		sp.logger.Debug("skipping the processing of expired trace",
@@ -174,7 +175,7 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 	}
 
 	// delete from the map and erase its memory entry
-	worker.buffer.delete(traceID)
+	worker.buffer.Delete(traceID)
 
 	// this might block, but we don't need to wait
 	sp.logger.Debug("marking the trace as released",

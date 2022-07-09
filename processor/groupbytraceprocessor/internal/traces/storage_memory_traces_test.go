@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package groupbytraceprocessor
+package traces
 
 import (
 	"testing"
@@ -26,7 +26,7 @@ import (
 
 func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// prepare
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	traceIDs := []pcommon.TraceID{
 		pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
@@ -61,7 +61,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 
 func TestMemoryDeleteTrace(t *testing.T) {
 	// prepare
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -88,7 +88,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -139,7 +139,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
 	// prepare
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package groupbytraceprocessor
+package traces
 
 import (
 	"context"
@@ -31,6 +31,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
+)
+
+const (
+	defaultNumTraces      = 1_000_000
+	defaultNumWorkers     = 1
 )
 
 func TestTraceIsDispatchedAfterDuration(t *testing.T) {
@@ -38,7 +44,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	traces := simpleTraces()
 
 	wgReceived := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
 		NumWorkers:   4,
@@ -52,7 +58,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	}
 
 	wgDeleted := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
-	backing := newMemoryStorage()
+	backing := NewMemoryStorage()
 	st := &mockStorage{
 		onCreateOrAppend: backing.createOrAppend,
 		onGet:            backing.get,
@@ -62,7 +68,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer p.Shutdown(ctx)
@@ -81,12 +87,12 @@ func TestInternalCacheLimit(t *testing.T) {
 	// prepare
 	wg := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
 
-	config := Config{
+	config := common.Config{
 		// should be long enough for the test to run without traces being finished, but short enough to not
 		// badly influence the testing experience
 		WaitDuration: 50 * time.Millisecond,
 
-		// we create 6 traces, only 5 should be at the storage in the end
+		// we create 6 traces, only 5 should be at the Storage in the end
 		NumTraces: 5,
 
 		NumWorkers: 1,
@@ -103,9 +109,9 @@ func TestInternalCacheLimit(t *testing.T) {
 		return nil
 	}
 
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
@@ -143,16 +149,16 @@ func TestInternalCacheLimit(t *testing.T) {
 
 func TestProcessorCapabilities(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
 		NumWorkers:   1,
 	}
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 	next := &mockProcessor{}
 
 	// test
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	caps := p.Capabilities()
 
 	// verify
@@ -162,12 +168,12 @@ func TestProcessorCapabilities(t *testing.T) {
 
 func TestProcessBatchDoesntFail(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
 		NumWorkers:   1,
 	}
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 	next := &mockProcessor{}
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -179,7 +185,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	assert.NotNil(t, p)
 
 	// test
@@ -188,7 +194,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 
 func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -200,7 +206,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -223,7 +229,7 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -236,7 +242,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -259,7 +265,7 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 
 func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    5,
 		NumWorkers:   1,
@@ -272,7 +278,7 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -297,12 +303,12 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 func TestAddSpansToExistingTrace(t *testing.T) {
 	// prepare
 	wg := &sync.WaitGroup{}
-	config := Config{
+	config := common.Config{
 		WaitDuration: 50 * time.Millisecond,
 		NumTraces:    8,
 		NumWorkers:   4,
 	}
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	var receivedTraces []ptrace.ResourceSpans
 	next := &mockProcessor{
@@ -315,7 +321,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	ctx := context.Background()
@@ -344,7 +350,7 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 
 func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -352,7 +358,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -387,7 +393,7 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 
 func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -400,7 +406,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -414,7 +420,7 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 
 func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -426,7 +432,7 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -442,12 +448,12 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 	// prepare
 	wg := &sync.WaitGroup{}
 
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Nanosecond, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
 	}
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			// we should receive two batches, each one with one trace
@@ -457,7 +463,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	ctx := context.Background()
@@ -495,7 +501,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 
 func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Second, // we are not waiting for this whole time
 		NumTraces:    8,
 		NumWorkers:   4,
@@ -503,7 +509,7 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(t, p)
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
@@ -546,12 +552,12 @@ func TestAsyncOnRelease(t *testing.T) {
 
 func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: 50 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		NumWorkers:   4 * defaultNumWorkers,
 	}
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	// For each input trace there are always <= 2 events in the machine simultaneously.
 	semaphoreCh := make(chan struct{}, bufferSize/2)
@@ -560,7 +566,7 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		return nil
 	}}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := NewGroupByTraceProcessor(zap.NewNop(), st, next, config)
 	require.NotNil(b, p)
 
 	ctx := context.Background()
@@ -607,7 +613,7 @@ type mockStorage struct {
 	onShutdown       func() error
 }
 
-var _ storage = (*mockStorage)(nil)
+var _ Storage = (*mockStorage)(nil)
 
 func (st *mockStorage) createOrAppend(traceID pcommon.TraceID, trace ptrace.Traces) error {
 	if st.onCreateOrAppend != nil {

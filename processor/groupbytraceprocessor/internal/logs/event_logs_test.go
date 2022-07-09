@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package groupbytraceprocessor
+package logs
 
 import (
 	"errors"
@@ -26,7 +26,7 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
@@ -39,22 +39,22 @@ func TestEventCallback(t *testing.T) {
 		registerCallback func(em *eventMachine, wg *sync.WaitGroup)
 	}{
 		{
-			casename: "onTraceReceived",
-			typ:      traceReceived,
-			payload:  tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
+			casename: "onLogReceived",
+			typ:      logReceived,
+			payload:  logsWithID{id: pcommon.InvalidTraceID(), td: plog.NewLogs()},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
+				em.onLogReceived = func(received logsWithID, worker *eventMachineWorker) error {
 					wg.Done()
 					return nil
 				}
 			},
 		},
 		{
-			casename: "onTraceExpired",
-			typ:      traceExpired,
+			casename: "onLogExpired",
+			typ:      logExpired,
 			payload:  pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
+				em.onLogExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
 					wg.Done()
 					assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
@@ -62,22 +62,22 @@ func TestEventCallback(t *testing.T) {
 			},
 		},
 		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
-			payload:  []ptrace.ResourceSpans{},
+			casename: "onLogReleased",
+			typ:      logReleased,
+			payload:  []plog.ResourceLogs{},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(expired []ptrace.ResourceSpans) error {
+				em.onLogReleased = func(expired []plog.ResourceLogs) error {
 					wg.Done()
 					return nil
 				}
 			},
 		},
 		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
+			casename: "onLogRemoved",
+			typ:      logRemoved,
 			payload:  pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pcommon.TraceID) error {
+				em.onLogRemoved = func(expired pcommon.TraceID) error {
 					wg.Done()
 					assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), expired)
 					return nil
@@ -116,20 +116,20 @@ func TestEventCallbackNotSet(t *testing.T) {
 		typ      eventType
 	}{
 		{
-			casename: "onTraceReceived",
-			typ:      traceReceived,
+			casename: "onLogReceived",
+			typ:      logReceived,
 		},
 		{
-			casename: "onTraceExpired",
-			typ:      traceExpired,
+			casename: "onLogExpired",
+			typ:      logExpired,
 		},
 		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
+			casename: "onLogReleased",
+			typ:      logReleased,
 		},
 		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
+			casename: "onLogRemoved",
+			typ:      logRemoved,
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
@@ -164,37 +164,37 @@ func TestEventInvalidPayload(t *testing.T) {
 		registerCallback func(*eventMachine, *sync.WaitGroup)
 	}{
 		{
-			casename: "onTraceReceived",
-			typ:      traceReceived,
+			casename: "onLogReceived",
+			typ:      logReceived,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
+				em.onLogReceived = func(received logsWithID, worker *eventMachineWorker) error {
 					return nil
 				}
 			},
 		},
 		{
-			casename: "onTraceExpired",
-			typ:      traceExpired,
+			casename: "onLogExpired",
+			typ:      logExpired,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
+				em.onLogExpired = func(expired pcommon.TraceID, worker *eventMachineWorker) error {
 					return nil
 				}
 			},
 		},
 		{
-			casename: "onTraceReleased",
-			typ:      traceReleased,
+			casename: "onLogReleased",
+			typ:      logReleased,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceReleased = func(released []ptrace.ResourceSpans) error {
+				em.onLogReleased = func(released []plog.ResourceLogs) error {
 					return nil
 				}
 			},
 		},
 		{
-			casename: "onTraceRemoved",
-			typ:      traceRemoved,
+			casename: "onLogRemoved",
+			typ:      logRemoved,
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
-				em.onTraceRemoved = func(expired pcommon.TraceID) error {
+				em.onLogRemoved = func(expired pcommon.TraceID) error {
 					return nil
 				}
 			},
@@ -280,15 +280,15 @@ func TestEventTracePerWorker(t *testing.T) {
 
 			var wg sync.WaitGroup
 			var workerForTrace *eventMachineWorker
-			em.onTraceReceived = func(td tracesWithID, w *eventMachineWorker) error {
+			em.onLogReceived = func(td logsWithID, w *eventMachineWorker) error {
 				workerForTrace = w
 				w.fire(event{
-					typ:     traceExpired,
+					typ:     logExpired,
 					payload: pcommon.NewTraceID([16]byte{1}),
 				})
 				return nil
 			}
-			em.onTraceExpired = func(id pcommon.TraceID, w *eventMachineWorker) error {
+			em.onLogExpired = func(id pcommon.TraceID, w *eventMachineWorker) error {
 				assert.Equal(t, workerForTrace, w)
 				wg.Done()
 				return nil
@@ -296,10 +296,10 @@ func TestEventTracePerWorker(t *testing.T) {
 			em.startInBackground()
 			defer em.shutdown()
 
-			td := ptrace.NewTraces()
-			ils := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+			td := plog.NewLogs()
+			ils := td.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 			if tt.traceID != [16]byte{} {
-				span := ils.Spans().AppendEmpty()
+				span := ils.LogRecords().AppendEmpty()
 				span.SetTraceID(pcommon.NewTraceID(tt.traceID))
 			}
 
@@ -357,18 +357,18 @@ func TestEventShutdown(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	traceReceivedFired := atomic.NewInt64(0)
-	traceExpiredFired := atomic.NewInt64(0)
+	logReceivedFired := atomic.NewInt64(0)
+	logExpiredFired := atomic.NewInt64(0)
 	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
-	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
-		traceReceivedFired.Store(1)
+	em.onLogReceived = func(logsWithID, *eventMachineWorker) error {
+		logReceivedFired.Store(1)
 		return nil
 	}
-	em.onTraceExpired = func(pcommon.TraceID, *eventMachineWorker) error {
-		traceExpiredFired.Store(1)
+	em.onLogExpired = func(pcommon.TraceID, *eventMachineWorker) error {
+		logExpiredFired.Store(1)
 		return nil
 	}
-	em.onTraceRemoved = func(pcommon.TraceID) error {
+	em.onLogRemoved = func(pcommon.TraceID) error {
 		wg.Wait()
 		return nil
 	}
@@ -376,20 +376,20 @@ func TestEventShutdown(t *testing.T) {
 
 	// test
 	em.workers[0].fire(event{
-		typ:     traceReceived,
-		payload: tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
+		typ:     logReceived,
+		payload: logsWithID{id: pcommon.InvalidTraceID(), td: plog.NewLogs()},
 	})
 	em.workers[0].fire(event{
-		typ:     traceRemoved,
+		typ:     logRemoved,
 		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 	em.workers[0].fire(event{
-		typ:     traceRemoved,
+		typ:     logRemoved,
 		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	time.Sleep(10 * time.Millisecond)  // give it a bit of time to process the items
-	assert.Equal(t, 1, em.numEvents()) // we should have one pending event in the queue, the second traceRemoved event
+	assert.Equal(t, 1, em.numEvents()) // we should have one pending event in the queue, the second logRemoved event
 
 	shutdownWg := sync.WaitGroup{}
 	shutdownWg.Add(1)
@@ -405,18 +405,18 @@ func TestEventShutdown(t *testing.T) {
 
 	// new events should *not* be processed
 	em.workers[0].fire(event{
-		typ:     traceExpired,
+		typ:     logExpired,
 		payload: pcommon.NewTraceID([16]byte{1, 2, 3, 4}),
 	})
 
 	// verify
-	assert.Equal(t, int64(1), traceReceivedFired.Load())
+	assert.Equal(t, int64(1), logReceivedFired.Load())
 
 	// If the code is wrong, there's a chance that the test will still pass
 	// in case the event is processed after the assertion.
 	// for this reason, we add a small delay here
 	time.Sleep(10 * time.Millisecond)
-	assert.Equal(t, int64(0), traceExpiredFired.Load())
+	assert.Equal(t, int64(0), logExpiredFired.Load())
 
 	// wait until the shutdown has returned
 	shutdownWg.Wait()
@@ -457,8 +457,8 @@ func TestPeriodicMetrics(t *testing.T) {
 	assertGaugeNotCreated(t, mNumEventsInQueue)
 
 	// test
-	em.workers[0].fire(event{typ: traceReceived})
-	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
+	em.workers[0].fire(event{typ: logReceived})
+	em.workers[0].fire(event{typ: logReceived}) // the first is consumed right away, the second is in the queue
 	go em.periodicMetrics()
 
 	// ensure our gauge is showing 1 item in the queue
@@ -486,7 +486,7 @@ func TestForceShutdown(t *testing.T) {
 	em.shutdownTimeout = 20 * time.Millisecond
 
 	// test
-	em.workers[0].fire(event{typ: traceExpired})
+	em.workers[0].fire(event{typ: logExpired})
 
 	start := time.Now()
 	em.shutdown() // should take about 20ms to return

@@ -23,6 +23,11 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+
+    "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/traces"
+
 )
 
 const (
@@ -44,17 +49,20 @@ var (
 // NewFactory returns a new factory for the Filter processor.
 func NewFactory() component.ProcessorFactory {
 	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
-	_ = view.Register(MetricViews()...)
+	_ = view.Register(traces.MetricViews()...)
+	_ = view.Register(logs.MetricViews()...)
 
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor))
+		component.WithTracesProcessor(createTracesProcessor),
+		component.WithLogsProcessor(createLogsProcessor))
+
 }
 
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() config.Processor {
-	return &Config{
+	return &common.Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		NumTraces:         defaultNumTraces,
 		NumWorkers:        defaultNumWorkers,
@@ -73,9 +81,9 @@ func createTracesProcessor(
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
-	oCfg := cfg.(*Config)
+	oCfg := cfg.(*common.Config)
 
-	var st storage
+	var st traces.Storage
 	if oCfg.StoreOnDisk {
 		return nil, errDiskStorageNotSupported
 	}
@@ -84,7 +92,29 @@ func createTracesProcessor(
 	}
 
 	// the only supported storage for now
-	st = newMemoryStorage()
+	st = traces.NewMemoryStorage()
 
-	return newGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
+	return traces.NewGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
+}
+
+func createLogsProcessor(
+	_ context.Context,
+	params component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
+
+	oCfg := cfg.(*common.Config)
+
+	var st logs.Storage
+	if oCfg.StoreOnDisk {
+		return nil, errDiskStorageNotSupported
+	}
+	if oCfg.DiscardOrphans {
+		return nil, errDiscardOrphansNotSupported
+	}
+
+	// the only supported storage for now
+	st = logs.NewMemoryStorage()
+
+	return logs.NewGroupByTraceProcessor(params.Logger, st, nextConsumer, *oCfg), nil
 }

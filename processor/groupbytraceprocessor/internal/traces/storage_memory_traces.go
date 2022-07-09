@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
 	"context"
@@ -32,9 +32,9 @@ type memoryStorage struct {
 	metricsCollectionInterval time.Duration
 }
 
-var _ storage = (*memoryStorage)(nil)
+var _ Storage = (*memoryStorage)(nil)
 
-func newMemoryStorage() *memoryStorage {
+func NewMemoryStorage() *memoryStorage {
 	return &memoryStorage{
 		content:                   make(map[pcommon.TraceID][]ptrace.ResourceSpans),
 		metricsCollectionInterval: time.Second,

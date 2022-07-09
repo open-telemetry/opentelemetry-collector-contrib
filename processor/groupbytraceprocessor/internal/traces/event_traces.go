@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+package traces // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
 	"context"
@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
 )
 
 const (
@@ -106,7 +107,7 @@ func newEventMachine(logger *zap.Logger, bufferSize int, numWorkers int, numTrac
 	for i := range em.workers {
 		em.workers[i] = &eventMachineWorker{
 			machine: em,
-			buffer:  newRingBuffer(numTraces / numWorkers),
+			buffer:  common.NewRingBuffer(numTraces / numWorkers),
 			events:  make(chan event, bufferSize/numWorkers),
 		}
 	}
@@ -317,7 +318,7 @@ type eventMachineWorker struct {
 	machine *eventMachine
 
 	// the ring buffer holds the IDs for all the in-flight traces
-	buffer *ringBuffer
+	buffer *common.RingBuffer
 
 	events chan event
 }
