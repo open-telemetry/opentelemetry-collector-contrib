@@ -153,7 +153,7 @@ func TestInternalCacheLimit(t *testing.T) {
 
 func TestProcessorCapabilities(t *testing.T) {
 	// prepare
-	config := Config{
+	config := common.Config{
 		WaitDuration: time.Nanosecond,
 		NumTraces:    10,
 		NumWorkers:   1,

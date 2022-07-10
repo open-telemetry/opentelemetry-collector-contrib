@@ -88,7 +88,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
-	st := newMemoryStorage()
+	st := NewMemoryStorage()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
