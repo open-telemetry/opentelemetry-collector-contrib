@@ -554,7 +554,7 @@ func TestAsyncOnRelease(t *testing.T) {
 		blockCh: blockCh,
 	}
 
-	sp := &groupByTraceProcessor{
+	sp := &GroupByTraceProcessor{
 		logger:       zap.NewNop(),
 		nextConsumer: blocker,
 	}

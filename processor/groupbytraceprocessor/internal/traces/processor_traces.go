@@ -32,7 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
 )
 
-// groupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
+// GroupByTraceProcessor is a processor that keeps traces in memory for a given duration, with the expectation
 // that the trace will be complete once this duration expires. After the duration, the trace is sent to the next consumer.
 // This processor uses a buffered event machine, which converts operations into events for non-blocking processing, but
 // keeping all operations serialized per worker scope. This ensures that we don't need locks but that the state is consistent across go routines.
@@ -44,7 +44,7 @@ import (
 // async markAsReleased -> event(traceReleased) -> onTraceReleased -> nextConsumer
 // Each worker in the eventMachine also uses a ring buffer to hold the in-flight trace IDs, so that we don't hold more than the given maximum number
 // of traces in memory/storage. Items that are evicted from the buffer are discarded without warning.
-type groupByTraceProcessor struct {
+type GroupByTraceProcessor struct {
 	nextConsumer consumer.Traces
 	config       common.Config
 	logger       *zap.Logger
@@ -56,16 +56,16 @@ type groupByTraceProcessor struct {
 	st Storage
 }
 
-var _ component.TracesProcessor = (*groupByTraceProcessor)(nil)
+var _ component.TracesProcessor = (*GroupByTraceProcessor)(nil)
 
 const bufferSize = 10_000
 
 // newGroupByTraceProcessor returns a new processor.
-func NewGroupByTraceProcessor(logger *zap.Logger, st Storage, nextConsumer consumer.Traces, config common.Config) *groupByTraceProcessor {
+func NewGroupByTraceProcessor(logger *zap.Logger, st Storage, nextConsumer consumer.Traces, config common.Config) *GroupByTraceProcessor {
 	// the event machine will buffer up to N concurrent events before blocking
 	eventMachine := newEventMachine(logger, 10000, config.NumWorkers, config.NumTraces)
 
-	sp := &groupByTraceProcessor{
+	sp := &GroupByTraceProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
 		config:       config,
@@ -82,7 +82,7 @@ func NewGroupByTraceProcessor(logger *zap.Logger, st Storage, nextConsumer consu
 	return sp
 }
 
-func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
+func (sp *GroupByTraceProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	var errs error
 	for _, singleTrace := range batchpersignal.SplitTraces(td) {
 		errs = multierr.Append(errs, sp.eventMachine.consume(singleTrace))
@@ -90,12 +90,12 @@ func (sp *groupByTraceProcessor) ConsumeTraces(_ context.Context, td ptrace.Trac
 	return errs
 }
 
-func (sp *groupByTraceProcessor) Capabilities() consumer.Capabilities {
+func (sp *GroupByTraceProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // Start is invoked during service startup.
-func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
+func (sp *GroupByTraceProcessor) Start(context.Context, component.Host) error {
 	// start these metrics, as it might take a while for them to receive their first event
 	stats.Record(context.Background(), mTracesEvicted.M(0))
 	stats.Record(context.Background(), mIncompleteReleases.M(0))
@@ -106,12 +106,12 @@ func (sp *groupByTraceProcessor) Start(context.Context, component.Host) error {
 }
 
 // Shutdown is invoked during service shutdown.
-func (sp *groupByTraceProcessor) Shutdown(_ context.Context) error {
+func (sp *GroupByTraceProcessor) Shutdown(_ context.Context) error {
 	sp.eventMachine.shutdown()
 	return sp.st.shutdown()
 }
 
-func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
+func (sp *GroupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eventMachineWorker) error {
 	traceID := trace.id
 	if worker.buffer.Contains(traceID) {
 		sp.logger.Debug("trace is already in memory storage")
@@ -160,7 +160,7 @@ func (sp *groupByTraceProcessor) onTraceReceived(trace tracesWithID, worker *eve
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker *eventMachineWorker) error {
+func (sp *GroupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker *eventMachineWorker) error {
 	sp.logger.Debug("processing expired", zap.String("traceID",
 		traceID.HexString()))
 
@@ -187,7 +187,7 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 	return nil
 }
 
-func (sp *groupByTraceProcessor) markAsReleased(traceID pcommon.TraceID, fire func(...event)) error {
+func (sp *GroupByTraceProcessor) markAsReleased(traceID pcommon.TraceID, fire func(...event)) error {
 	// #get is a potentially blocking operation
 	trace, err := sp.st.get(traceID)
 	if err != nil {
@@ -213,7 +213,7 @@ func (sp *groupByTraceProcessor) markAsReleased(traceID pcommon.TraceID, fire fu
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) error {
+func (sp *GroupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) error {
 	trace := ptrace.NewTraces()
 	for _, rs := range rss {
 		trs := trace.ResourceSpans().AppendEmpty()
@@ -233,7 +233,7 @@ func (sp *groupByTraceProcessor) onTraceReleased(rss []ptrace.ResourceSpans) err
 	return nil
 }
 
-func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
+func (sp *GroupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 	trace, err := sp.st.delete(traceID)
 	if err != nil {
 		return fmt.Errorf("couldn't delete trace %q from the storage: %w", traceID.HexString(), err)
@@ -246,7 +246,7 @@ func (sp *groupByTraceProcessor) onTraceRemoved(traceID pcommon.TraceID) error {
 	return nil
 }
 
-func (sp *groupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {
+func (sp *GroupByTraceProcessor) addSpans(traceID pcommon.TraceID, trace ptrace.Traces) error {
 	sp.logger.Debug("creating trace at the storage", zap.String("traceID", traceID.HexString()))
 	return sp.st.createOrAppend(traceID, trace)
 }

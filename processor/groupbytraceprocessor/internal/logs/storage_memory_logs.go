@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type memoryStorage struct {
+type MemoryStorage struct {
 	sync.RWMutex
 	content                   map[pcommon.TraceID][]plog.ResourceLogs
 	stopped                   bool
@@ -32,16 +32,16 @@ type memoryStorage struct {
 	metricsCollectionInterval time.Duration
 }
 
-var _ Storage = (*memoryStorage)(nil)
+var _ Storage = (*MemoryStorage)(nil)
 
-func NewMemoryStorage() *memoryStorage {
-	return &memoryStorage{
+func NewMemoryStorage() *MemoryStorage {
+	return &MemoryStorage{
 		content:                   make(map[pcommon.TraceID][]plog.ResourceLogs),
 		metricsCollectionInterval: time.Second,
 	}
 }
 
-func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td plog.Logs) error {
+func (st *MemoryStorage) createOrAppend(traceID pcommon.TraceID, td plog.Logs) error {
 	st.Lock()
 	defer st.Unlock()
 
@@ -57,7 +57,7 @@ func (st *memoryStorage) createOrAppend(traceID pcommon.TraceID, td plog.Logs) e
 
 	return nil
 }
-func (st *memoryStorage) get(traceID pcommon.TraceID) ([]plog.ResourceLogs, error) {
+func (st *MemoryStorage) get(traceID pcommon.TraceID) ([]plog.ResourceLogs, error) {
 	st.RLock()
 	rss, ok := st.content[traceID]
 	st.RUnlock()
@@ -77,7 +77,7 @@ func (st *memoryStorage) get(traceID pcommon.TraceID) ([]plog.ResourceLogs, erro
 
 // delete will return a reference to a ResourceLogs. Changes to the returned object may not be applied
 // to the version in the storage.
-func (st *memoryStorage) delete(traceID pcommon.TraceID) ([]plog.ResourceLogs, error) {
+func (st *MemoryStorage) delete(traceID pcommon.TraceID) ([]plog.ResourceLogs, error) {
 	st.Lock()
 	defer st.Unlock()
 
@@ -85,19 +85,19 @@ func (st *memoryStorage) delete(traceID pcommon.TraceID) ([]plog.ResourceLogs, e
 	return st.content[traceID], nil
 }
 
-func (st *memoryStorage) start() error {
+func (st *MemoryStorage) start() error {
 	go st.periodicMetrics()
 	return nil
 }
 
-func (st *memoryStorage) shutdown() error {
+func (st *MemoryStorage) shutdown() error {
 	st.stoppedLock.Lock()
 	defer st.stoppedLock.Unlock()
 	st.stopped = true
 	return nil
 }
 
-func (st *memoryStorage) periodicMetrics() {
+func (st *MemoryStorage) periodicMetrics() {
 	numLogs := st.count()
 	stats.Record(context.Background(), mNumLogsInMemory.M(int64(numLogs)))
 
@@ -113,7 +113,7 @@ func (st *memoryStorage) periodicMetrics() {
 	})
 }
 
-func (st *memoryStorage) count() int {
+func (st *MemoryStorage) count() int {
 	st.RLock()
 	defer st.RUnlock()
 	return len(st.content)
