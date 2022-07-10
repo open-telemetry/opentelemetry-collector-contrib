@@ -23,7 +23,7 @@ import (
 
 func TestRingBufferCapacity(t *testing.T) {
 	// prepare
-	buffer := newRingBuffer(5)
+	buffer :=  NewRingBuffer(5)
 
 	// test
 	traceIDs := []pcommon.TraceID{
@@ -35,42 +35,42 @@ func TestRingBufferCapacity(t *testing.T) {
 		pcommon.NewTraceID([16]byte{6, 7, 8, 9}),
 	}
 	for _, traceID := range traceIDs {
-		buffer.put(traceID)
+		buffer.Put(traceID)
 	}
 
 	// verify
 	for i := 5; i > 0; i-- { // last 5 traces
 		traceID := traceIDs[i]
-		assert.True(t, buffer.contains(traceID))
+		assert.True(t, buffer.Contains(traceID))
 	}
 
 	// the first trace should have been evicted
-	assert.False(t, buffer.contains(traceIDs[0]))
+	assert.False(t, buffer.Contains(traceIDs[0]))
 }
 
 func TestDeleteFromBuffer(t *testing.T) {
 	// prepare
-	buffer := newRingBuffer(2)
+	buffer :=  NewRingBuffer(2)
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
-	buffer.put(traceID)
+	buffer.Put(traceID)
 
 	// test
-	deleted := buffer.delete(traceID)
+	deleted := buffer.Delete(traceID)
 
 	// verify
 	assert.True(t, deleted)
-	assert.False(t, buffer.contains(traceID))
+	assert.False(t, buffer.Contains(traceID))
 }
 
 func TestDeleteNonExistingFromBuffer(t *testing.T) {
 	// prepare
-	buffer := newRingBuffer(2)
+	buffer :=  NewRingBuffer(2)
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test
-	deleted := buffer.delete(traceID)
+	deleted := buffer.Delete(traceID)
 
 	// verify
 	assert.False(t, deleted)
-	assert.False(t, buffer.contains(traceID))
+	assert.False(t, buffer.Contains(traceID))
 }
