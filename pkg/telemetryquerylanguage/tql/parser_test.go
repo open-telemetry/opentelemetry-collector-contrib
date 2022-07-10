@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// This is not in tqltest because it depends on a type that's a member of TQL.
 func Booleanp(b Boolean) *Boolean {
 	return &b
 }
