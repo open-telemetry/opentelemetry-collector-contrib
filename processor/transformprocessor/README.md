@@ -18,6 +18,7 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
   - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
+  - Hex String of traceid and spanid are handled using `trace_id.string`,`span_id.string` accessor.
 - Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
@@ -26,6 +27,8 @@ Supported functions:
 - `SpanID(bytes)` - `bytes` is a byte slice of exactly 8 bytes. The function returns a SpanID from `bytes`. e.g., `SpanID(0x0000000000000000)`
 
 - `TraceID(bytes)` - `bytes` is a byte slice of exactly 16 bytes. The function returns a TraceID from `bytes`. e.g., `TraceID(0x00000000000000000000000000000000)`
+
+- `IsMatch(target, pattern)` - `target` is either a path expression to a telemetry field to retrieve or a literal string.  `pattern` is a regexp pattern. The function matches the target against the pattern, returning true if the match is successful and false otherwise.  If target is nil or not a string false is always returned. 
 
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.

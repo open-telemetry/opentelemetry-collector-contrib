@@ -23,7 +23,11 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-const typeStr = "schema"
+const (
+	typeStr = "schema"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
+)
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
@@ -43,9 +47,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		newDefaultConfiguration,
-		component.WithLogsProcessor(f.createLogsProcessor),
-		component.WithMetricsProcessor(f.createMetricsProcessor),
-		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithLogsProcessorAndStabilityLevel(f.createLogsProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsProcessor, stability),
+		component.WithTracesProcessorAndStabilityLevel(f.createTracesProcessor, stability),
 	)
 }
 

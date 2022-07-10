@@ -9,10 +9,18 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **system.network.connections** | The number of connections. | {connections} | Sum(Int) | <ul> <li>protocol</li> <li>state</li> </ul> |
-| **system.network.dropped** | The number of packets dropped. | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.errors** | The number of errors encountered. | {errors} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.io** | The number of bytes transmitted and received. | By | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
-| **system.network.packets** | The number of packets transferred. | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| **system.network.dropped** | The number of packets dropped. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| **system.network.dropped.receive** | The number of packets dropped on receive. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.dropped.transmit** | The number of packets dropped on transmit. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.errors** | The number of errors encountered. (Deprecated) | {errors} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| **system.network.errors.receive** | The number of errors encountered on receive. | {errors} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.errors.transmit** | The number of errors encountered on transmit. | {errors} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.io** | The number of bytes transmitted and received. (Deprecated) | By | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| **system.network.io.receive** | The number of bytes received. | By | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.io.transmit** | The number of bytes transmitted. | By | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.packets** | The number of packets transferred. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
+| **system.network.packets.receive** | The number of packets received. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
+| **system.network.packets.transmit** | The number of packets transmitted. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:

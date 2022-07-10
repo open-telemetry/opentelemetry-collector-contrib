@@ -42,7 +42,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 	// test
 	for _, traceID := range traceIDs {
 		span.SetTraceID(traceID)
-		st.createOrAppend(traceID, baseTrace)
+		assert.NoError(t, st.createOrAppend(traceID, baseTrace))
 	}
 
 	// verify
@@ -52,7 +52,7 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 		expected[0].ScopeSpans().At(0).Spans().At(0).SetTraceID(traceID)
 
 		retrieved, err := st.get(traceID)
-		st.createOrAppend(traceID, baseTrace)
+		assert.NoError(t, st.createOrAppend(traceID, baseTrace))
 
 		require.NoError(t, err)
 		assert.Equal(t, expected, retrieved)
@@ -72,7 +72,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
 
-	st.createOrAppend(traceID, trace)
+	assert.NoError(t, st.createOrAppend(traceID, trace))
 
 	// test
 	deleted, err := st.delete(traceID)
@@ -88,7 +88,7 @@ func TestMemoryDeleteTrace(t *testing.T) {
 
 func TestMemoryAppendSpans(t *testing.T) {
 	// prepare
-	st := NewMemoryStorage()
+	st := newMemoryStorage()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -100,7 +100,7 @@ func TestMemoryAppendSpans(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	st.createOrAppend(traceID, trace)
+	assert.NoError(t, st.createOrAppend(traceID, trace))
 
 	secondTrace := ptrace.NewTraces()
 	secondRss := secondTrace.ResourceSpans()

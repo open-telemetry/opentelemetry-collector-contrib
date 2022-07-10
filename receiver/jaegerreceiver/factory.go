@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	typeStr = "jaeger"
+	typeStr   = "jaeger"
+	stability = component.StabilityLevelBeta
 
 	// Protocol values.
 	protoGRPC          = "grpc"
@@ -49,7 +50,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver))
+		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for Jaeger receiver.
