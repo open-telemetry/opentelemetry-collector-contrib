@@ -18,13 +18,37 @@ import (
 	"fmt"
 )
 
-type CondFunc = func(ctx TransformContext) bool
+type condFunc = func(ctx TransformContext) bool
 
 var alwaysTrue = func(ctx TransformContext) bool {
 	return true
 }
 
-func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (CondFunc, error) {
+// builds a function that returns a short-circuited result of ANDing together condFuncs
+func andFuncs(funcs []condFunc) condFunc {
+	return func(ctx TransformContext) bool {
+		for _, f := range funcs {
+			if !f(ctx) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+// builds a function that returns a short-circuited result of ORing together condFuncs
+func orFuncs(funcs []condFunc) condFunc {
+	return func(ctx TransformContext) bool {
+		for _, f := range funcs {
+			if f(ctx) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}

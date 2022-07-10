@@ -16,12 +16,16 @@ package tql
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
+	"github.com/stretchr/testify/assert"
 )
+
+func Booleanp(b Boolean) *Boolean {
+	return &b
+}
 
 func Test_parse(t *testing.T) {
 	tests := []struct {
@@ -39,7 +43,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -53,7 +57,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -67,7 +71,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -100,7 +104,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -130,7 +134,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -160,19 +164,25 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "==",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -204,19 +214,25 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "!=",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "!=",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -248,19 +264,25 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Condition: &Condition{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "==",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
@@ -276,7 +298,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -293,7 +315,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -310,7 +332,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -334,7 +356,7 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
@@ -358,16 +380,19 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 	}
 
+	// create a test name that doesn't confuse vscode so we can rerun tests with one click
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
-		t.Run(tt.query, func(t *testing.T) {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
 			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, parsed)
+			assert.EqualValues(t, tt.expected, parsed)
 		})
 	}
 }
@@ -385,6 +410,15 @@ func Test_parse_failure(t *testing.T) {
 		`set(trace_id, TraceIDWrapper{not a hex string})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
+		`set("foo") where name = "fido"`,
+		`set("foo") where name or "fido"`,
+		`set("foo") where name and "fido"`,
+		`set("foo") where name and`,
+		`set("foo") where name or`,
+		`set("foo") where (`,
+		`set("foo") where )`,
+		`set("foo") where (name == "fido"))`,
+		`set("foo") where ((name == "fido")`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
@@ -406,4 +440,281 @@ func testParsePath(val *Path) (GetSetter, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("bad path %v", val)
+}
+
+// Helper for test cases where the WHERE clause is all that matters.
+// Parse string should start with `set(name, "test") where`...
+func set_name_test(b *BooleanExpression) *ParsedQuery {
+	return &ParsedQuery{
+		Invocation: Invocation{
+			Function: "set",
+			Arguments: []Value{
+				{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				{
+					String: tqltest.Strp("test"),
+				},
+			},
+		},
+		WhereClause: b,
+	}
+}
+
+func Test_parseWhere(t *testing.T) {
+	tests := []struct {
+		query    string
+		expected *ParsedQuery
+	}{
+		{
+			query: `true`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+			}),
+		},
+		{
+			query: `true and false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true and true and false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and true or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and (true or false)`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								SubExpr: &BooleanExpression{
+									Left: &Term{
+										Left: &BooleanValue{
+											ConstExpr: Booleanp(true),
+										},
+									},
+									Right: []*OpTerm{
+										{
+											Operator: "or",
+											Term: &Term{
+												Left: &BooleanValue{
+													ConstExpr: Booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `name != "foo" and name != "bar"`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						Condition: &Condition{
+							Left: Value{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							Op: "!=",
+							Right: Value{
+								String: tqltest.Strp("foo"),
+							},
+						},
+					},
+					Right: []*OpBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								Condition: &Condition{
+									Left: Value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: "!=",
+									Right: Value{
+										String: tqltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `name == "foo" or name == "bar"`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						Condition: &Condition{
+							Left: Value{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							Op: "==",
+							Right: Value{
+								String: tqltest.Strp("foo"),
+							},
+						},
+					},
+				},
+				Right: []*OpTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								Condition: &Condition{
+									Left: Value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: "==",
+									Right: Value{
+										String: tqltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		// MORE TESTS TO DO
+		// 	query: `name != "foo" and resource.attribute["test"] == "bar"`,
+		// 	query: `name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
+		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
+	}
+
+	// create a test name that doesn't confuse vscode so we can rerun tests with one click
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
+			query := `set(name, "test") where ` + tt.query
+			parsed, err := parseQuery(query)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, parsed)
+		})
+	}
 }
