@@ -42,7 +42,7 @@ func TestMemoryCreateAndGetLog(t *testing.T) {
 	// test
 	for _, traceID := range traceIDs {
 		span.SetTraceID(traceID)
-		st.createOrAppend(traceID, baseLog)
+		assert.NoError(t, st.createOrAppend(traceID, baseLog))
 	}
 
 	// verify
@@ -52,7 +52,7 @@ func TestMemoryCreateAndGetLog(t *testing.T) {
 		expected[0].ScopeLogs().At(0).LogRecords().At(0).SetTraceID(traceID)
 
 		retrieved, err := st.get(traceID)
-		st.createOrAppend(traceID, baseLog)
+		assert.NoError(t, st.createOrAppend(traceID, baseLog))
 
 		require.NoError(t, err)
 		assert.Equal(t, expected, retrieved)
@@ -72,7 +72,7 @@ func TestMemoryDeleteLog(t *testing.T) {
 	span := ils.LogRecords().AppendEmpty()
 	span.SetTraceID(traceID)
 
-	st.createOrAppend(traceID, log)
+	assert.NoError(t, st.createOrAppend(traceID, log))
 
 	// test
 	deleted, err := st.delete(traceID)
@@ -100,7 +100,7 @@ func TestMemoryAppendLogRecords(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 
-	st.createOrAppend(traceID, log)
+	assert.NoError(t, st.createOrAppend(traceID, log))
 
 	secondLog := plog.NewLogs()
 	secondRss := secondLog.ResourceLogs()

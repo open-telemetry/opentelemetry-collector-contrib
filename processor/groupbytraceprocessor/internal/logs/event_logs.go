@@ -255,7 +255,7 @@ func workerIndexForTraceID(traceID pcommon.TraceID, numWorkers int) uint64 {
 	}()
 
 	bytes := traceID.Bytes()
-	hash.Write(bytes[:])
+	_, _ = hash.Write(bytes[:])
 	return hash.Sum64() % uint64(numWorkers)
 }
 

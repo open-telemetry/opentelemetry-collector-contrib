@@ -71,7 +71,9 @@ func TestLogIsDispatchedAfterDuration(t *testing.T) {
 	p := NewGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	// test
 	wgReceived.Add(1) // one should be received
@@ -115,7 +117,9 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	// test
 	traceIDs := [][16]byte{
@@ -189,7 +193,7 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	assert.NotNil(t, p)
 
 	// test
-	p.onLogReceived(logsWithID{id: traceID, td: log}, p.eventMachine.workers[0])
+	assert.NoError(t, p.onLogReceived(logsWithID{id: traceID, td: log}, p.eventMachine.workers[0]))
 }
 
 func TestLogDisappearedFromStorageBeforeReleasing(t *testing.T) {
@@ -214,7 +218,9 @@ func TestLogDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	err := p.ConsumeLogs(context.Background(), batch)
 	require.NoError(t, err)
@@ -250,7 +256,9 @@ func TestLogErrorFromStorageWhileReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	err := p.ConsumeLogs(context.Background(), batch)
 	require.NoError(t, err)
@@ -325,7 +333,9 @@ func TestAddLogRecordsToExistingLog(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -338,8 +348,8 @@ func TestAddLogRecordsToExistingLog(t *testing.T) {
 
 	wg.Add(1)
 
-	p.ConsumeLogs(context.Background(), first)
-	p.ConsumeLogs(context.Background(), second)
+	assert.NoError(t, p.ConsumeLogs(context.Background(), first))
+    assert.NoError(t, p.ConsumeLogs(context.Background(), second))
 
 	wg.Wait()
 
@@ -467,7 +477,9 @@ func TestLogsAreDispatchedInIndividualBatches(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(t, p.Shutdown(ctx))
+    }()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -489,8 +501,8 @@ func TestLogsAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-	p.eventMachine.consume(firstLog)
-	p.eventMachine.consume(secondLog)
+    assert.NoError(t, p.eventMachine.consume(firstLog))
+    assert.NoError(t, p.eventMachine.consume(secondLog))
 
 	wg.Wait()
 
@@ -529,7 +541,7 @@ func TestErrorOnProcessResourceLogsContinuesProcessing(t *testing.T) {
 	}
 
 	// test
-	p.onLogReceived(logsWithID{id: traceID, td: log}, p.eventMachine.workers[0])
+	assert.Error(t, p.onLogReceived(logsWithID{id: traceID, td: log}, p.eventMachine.workers[0]))
 
 	// verify
 	assert.True(t, returnedError)
@@ -570,12 +582,14 @@ func BenchmarkConsumeLogsCompleteOnFirstBatch(b *testing.B) {
 
 	ctx := context.Background()
 	require.NoError(b, p.Start(ctx, nil))
-	defer p.Shutdown(ctx)
+    defer func() {
+        assert.NoError(b, p.Shutdown(ctx))
+    }()
 
 	for n := 0; n < b.N; n++ {
 		traceID := pcommon.NewTraceID([16]byte{byte(1 + n), 2, 3, 4})
 		log := simpleLogsWithID(traceID)
-		p.ConsumeLogs(context.Background(), log)
+		assert.NoError(b, p.ConsumeLogs(context.Background(), log))
 	}
 }
 
