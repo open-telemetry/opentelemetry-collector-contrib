@@ -67,12 +67,12 @@ func Test_lexer(t *testing.T) {
 			{"Ident", "oreo"},
 			{"Ident", "corn"}, // should not parse "or" as an operator
 		}},
-		{"g", "if, AND, Or but", false, []result{
+		{"g", "if, and, or but", false, []result{
 			{"Ident", "if"},
 			{"Punct", ","},
-			{"OpAnd", "AND"},
+			{"OpAnd", "and"},
 			{"Punct", ","},
-			{"OpOr", "Or"},
+			{"OpOr", "or"},
 			{"Ident", "but"},
 		}},
 		{"h", "{}", true, []result{
