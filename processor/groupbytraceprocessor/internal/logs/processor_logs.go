@@ -180,9 +180,9 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 	// this might block, but we don't need to wait
 	sp.logger.Debug("marking the log as released",
 		zap.String("traceID", traceID.HexString()))
-    go func() {
-        _ = sp.markAsReleased(traceID, worker.fire)
-    }()
+	go func() {
+		_ = sp.markAsReleased(traceID, worker.fire)
+	}()
 
 	return nil
 }

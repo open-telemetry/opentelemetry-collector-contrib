@@ -23,7 +23,7 @@ import (
 
 func TestRingBufferCapacity(t *testing.T) {
 	// prepare
-	buffer :=  NewRingBuffer(5)
+	buffer := NewRingBuffer(5)
 
 	// test
 	traceIDs := []pcommon.TraceID{
@@ -50,7 +50,7 @@ func TestRingBufferCapacity(t *testing.T) {
 
 func TestDeleteFromBuffer(t *testing.T) {
 	// prepare
-	buffer :=  NewRingBuffer(2)
+	buffer := NewRingBuffer(2)
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 	buffer.Put(traceID)
 
@@ -64,7 +64,7 @@ func TestDeleteFromBuffer(t *testing.T) {
 
 func TestDeleteNonExistingFromBuffer(t *testing.T) {
 	// prepare
-	buffer :=  NewRingBuffer(2)
+	buffer := NewRingBuffer(2)
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
 	// test

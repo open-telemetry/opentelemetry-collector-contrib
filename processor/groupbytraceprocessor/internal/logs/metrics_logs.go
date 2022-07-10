@@ -22,12 +22,12 @@ import (
 )
 
 var (
-	mNumLogsConf      = stats.Int64("processor_groupbytrace_conf_num_logs", "Maximum number of logs to hold in the internal storage", stats.UnitDimensionless)
+	mNumLogsConf        = stats.Int64("processor_groupbytrace_conf_num_logs", "Maximum number of logs to hold in the internal storage", stats.UnitDimensionless)
 	mNumEventsInQueue   = stats.Int64("processor_groupbytrace_num_events_in_queue", "Number of events currently in the queue", stats.UnitDimensionless)
-	mNumLogsInMemory  = stats.Int64("processor_groupbytrace_num_logs_in_memory", "Number of logs currently in the in-memory storage", stats.UnitDimensionless)
-	mLogsEvicted      = stats.Int64("processor_groupbytrace_logs_evicted", "Logs evicted from the internal buffer", stats.UnitDimensionless)
-	mReleasedLogRecords      = stats.Int64("processor_groupbytrace_logRecords_released", "LogRecords released to the next consumer", stats.UnitDimensionless)
-	mReleasedLogs     = stats.Int64("processor_groupbytrace_logs_released", "Logs released to the next consumer", stats.UnitDimensionless)
+	mNumLogsInMemory    = stats.Int64("processor_groupbytrace_num_logs_in_memory", "Number of logs currently in the in-memory storage", stats.UnitDimensionless)
+	mLogsEvicted        = stats.Int64("processor_groupbytrace_logs_evicted", "Logs evicted from the internal buffer", stats.UnitDimensionless)
+	mReleasedLogRecords = stats.Int64("processor_groupbytrace_logRecords_released", "LogRecords released to the next consumer", stats.UnitDimensionless)
+	mReleasedLogs       = stats.Int64("processor_groupbytrace_logs_released", "Logs released to the next consumer", stats.UnitDimensionless)
 	mIncompleteReleases = stats.Int64("processor_groupbytrace_incomplete_releases", "Releases that are suspected to have been incomplete", stats.UnitDimensionless)
 	mEventLatency       = stats.Int64("processor_groupbytrace_event_latency", "How long the queue events are taking to be processed", stats.UnitMilliseconds)
 )

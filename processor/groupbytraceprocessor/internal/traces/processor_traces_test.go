@@ -35,8 +35,8 @@ import (
 )
 
 const (
-	defaultNumTraces      = 1_000_000
-	defaultNumWorkers     = 1
+	defaultNumTraces  = 1_000_000
+	defaultNumWorkers = 1
 )
 
 func TestTraceIsDispatchedAfterDuration(t *testing.T) {

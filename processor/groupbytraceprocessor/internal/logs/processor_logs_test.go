@@ -35,8 +35,8 @@ import (
 )
 
 const (
-	defaultNumTraces      = 1_000_000
-	defaultNumWorkers     = 1
+	defaultNumTraces  = 1_000_000
+	defaultNumWorkers = 1
 )
 
 func TestLogIsDispatchedAfterDuration(t *testing.T) {
@@ -71,9 +71,9 @@ func TestLogIsDispatchedAfterDuration(t *testing.T) {
 	p := NewGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	// test
 	wgReceived.Add(1) // one should be received
@@ -117,9 +117,9 @@ func TestInternalCacheLimit(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	// test
 	traceIDs := [][16]byte{
@@ -218,9 +218,9 @@ func TestLogDisappearedFromStorageBeforeReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	err := p.ConsumeLogs(context.Background(), batch)
 	require.NoError(t, err)
@@ -256,9 +256,9 @@ func TestLogErrorFromStorageWhileReleasing(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	err := p.ConsumeLogs(context.Background(), batch)
 	require.NoError(t, err)
@@ -291,10 +291,10 @@ func TestLogErrorFromStorageWhileProcessingLog(t *testing.T) {
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
-    log := plog.NewLogs()
-    rs := log.ResourceLogs().AppendEmpty()
-    ils := rs.ScopeLogs().AppendEmpty()
-    span := ils.LogRecords().AppendEmpty()
+	log := plog.NewLogs()
+	rs := log.ResourceLogs().AppendEmpty()
+	ils := rs.ScopeLogs().AppendEmpty()
+	span := ils.LogRecords().AppendEmpty()
 	span.SetTraceID(traceID)
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
 
@@ -333,9 +333,9 @@ func TestAddLogRecordsToExistingLog(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -349,7 +349,7 @@ func TestAddLogRecordsToExistingLog(t *testing.T) {
 	wg.Add(1)
 
 	assert.NoError(t, p.ConsumeLogs(context.Background(), first))
-    assert.NoError(t, p.ConsumeLogs(context.Background(), second))
+	assert.NoError(t, p.ConsumeLogs(context.Background(), second))
 
 	wg.Wait()
 
@@ -477,9 +477,9 @@ func TestLogsAreDispatchedInIndividualBatches(t *testing.T) {
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(t, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(t, p.Shutdown(ctx))
+	}()
 
 	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4})
 
@@ -501,8 +501,8 @@ func TestLogsAreDispatchedInIndividualBatches(t *testing.T) {
 	// test
 	wg.Add(2)
 
-    assert.NoError(t, p.eventMachine.consume(firstLog))
-    assert.NoError(t, p.eventMachine.consume(secondLog))
+	assert.NoError(t, p.eventMachine.consume(firstLog))
+	assert.NoError(t, p.eventMachine.consume(secondLog))
 
 	wg.Wait()
 
@@ -582,9 +582,9 @@ func BenchmarkConsumeLogsCompleteOnFirstBatch(b *testing.B) {
 
 	ctx := context.Background()
 	require.NoError(b, p.Start(ctx, nil))
-    defer func() {
-        assert.NoError(b, p.Shutdown(ctx))
-    }()
+	defer func() {
+		assert.NoError(b, p.Shutdown(ctx))
+	}()
 
 	for n := 0; n < b.N; n++ {
 		traceID := pcommon.NewTraceID([16]byte{byte(1 + n), 2, 3, 4})
@@ -594,7 +594,7 @@ func BenchmarkConsumeLogsCompleteOnFirstBatch(b *testing.B) {
 }
 
 type mockProcessor struct {
-	mutex    sync.Mutex
+	mutex  sync.Mutex
 	onLogs func(context.Context, plog.Logs) error
 }
 
