@@ -4,11 +4,11 @@ The Telemetry Query Language is a query language for transforming open telemetry
 
 This package reads in TQL queries and converts them to invokable conditions and functions based on the TQL's grammar.
 
-The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the conditions and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry. 
+The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the conditions and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry.
 
 ## Grammar
 
-The TQL grammar includes Invocations, Values and Conditions.
+The TQL grammar includes Invocations, Values and Expressions.
 
 ### Invocations
 
@@ -25,7 +25,7 @@ Example Invocations
 
 ### Values
 
-Values are the things that get passed to an Invocation or used in a Condition. Values can be either a Path, a Literal, or an Invocation.  
+Values are the things that get passed to an Invocation or used in an Expression. Values can be either a Path, a Literal, or an Invocation.
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
@@ -33,7 +33,7 @@ Invocations as Values allows calling functions as parameters to other functions.
 
 A Path Value is a reference to a telemetry field.  Paths are made up of string identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the TQL.**  Instead, the user must provide a `PathExpressionParser` that the TQL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
 
-- Identifiers are used to map to a telemetry field.  
+- Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
 - Square brackets and keys (`["key"]`) are used to access maps or slices.
 
@@ -50,7 +50,7 @@ Literals are literal interpretations of the Value into a Go value.  Accepted lit
 - Ints.  Ints are represented by any digit, optionally prepended by plus (`+`) or minus (`-`). Internally the TQL represents all ints as `int64`
 - Floats.  Floats are represented by digits separated by a dot (`.`), optionally prepended by plus (`+`) or minus (`-`). The leading digit is optional. Internally the TQL represents all Floats as `float64.
 - Bools.  Bools are represented by the exact strings `true` and `false`.
-- Nil.  Nil is represented by the exact string `nil`. 
+- Nil.  Nil is represented by the exact string `nil`.
 - Byte slices.  Byte slices are represented via a hex string prefaced with `0x`
 
 Example Literals
@@ -61,11 +61,20 @@ Example Literals
 - `nil`,
 - `0x0001`
 
+### Expressions
+
+Expressions allow a decision to be made about whether an Invocation should be called. The TQL does not force an expression to be used, it only allows the opportunity for the expression to be invoked before invoking the associated Invocation. Expressions always evaluate to a boolean value (true or false).
+
+Expressions can consist of the literal string `where` followed by one or more Conditions (see below).
+Conditions can be joined with the literal strings `and` and `or`.
+Note that `and` expressions have higher precedence than `or`.
+Expressions can be grouped with parentheses to override evaluation precedence.
+
 ### Conditions
 
-Conditions allow a decision to be made about whether an Invocation should be called. The TQL does not force a condition to be used, it only allows the opportunity for the condition to be invoked before invoking the associated Invocation.  Conditions allways return true or false.
-
-Conditions are made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
+Conditions can be either:
+- A literal boolean value (`true` or `false`).
+- A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
 Operators determine how the two Values are compared.  The valid operators are:
 
@@ -110,14 +119,14 @@ traces:
 ```
 traces:
   replace_match(name, "GET /user/*/list/*", "GET /user/{userId}/list/{listId}")
-``` 
+```
 
 ### Reduce cardinality of any matching attribute
 
 ```
 traces:
   replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-``` 
+```
 
 ### Decrease the size of the telemetry payload
 
@@ -134,7 +143,7 @@ logs:
 
 ```
 metrics:
-  drop() where attributes["http.target"] = "/health"
+  drop() where attributes["http.target"] == "/health"
 ```
 
 ### Attach information from resource into telemetry
@@ -142,6 +151,14 @@ metrics:
 ```
 metrics:
   set(attributes["k8s_pod"], resource.attributes["k8s.pod.name"])
+```
+
+### Decorate error spans with additional information
+
+```
+traces:
+  set(attributes["whose_fault"], "theirs") where attributes["http.status"] == 400 or attributes["http.status"] == 404
+  set(attributes["whose_fault"], "ours") where attributes["http.status"] == 500
 ```
 
 ### Group spans by trace ID
