@@ -93,14 +93,14 @@ attributes:
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.estimated_size:
-    description: Estimated memory used, in bytes, for the operation.
+    description: Estimated memory used for the operation.
     unit: By
     gauge:
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
   elasticsearch.breaker.limit_size:
-    description: Memory limit, in bytes, for the circuit breaker.
+    description: Memory limit for the circuit breaker.
     unit: By
     sum:
       monotonic: false
@@ -162,16 +162,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.fs.disk.operations:
-    description: The total number of read and write operations across all file stores for this node.
-    unit: "{operations}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [  ]
-    enabled: true
-  elasticsearch.node.fs.disk.read_operations:
+  elasticsearch.node.fs.disk.operation.read:
     description: The total number of read operations across all file stores for this node.
     unit:  "{operations}"
     sum:
@@ -180,7 +171,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.fs.disk.write_operations:
+  elasticsearch.node.fs.disk.operation.write:
     description: The total number of write operations across all file stores for this node.
     unit:  "{operations}"
     sum:
@@ -189,7 +180,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.fs.disk.read_bytes:
+  elasticsearch.node.fs.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
     unit: By
     sum:
@@ -198,7 +189,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.fs.disk.write_bytes:
+  elasticsearch.node.fs.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
     unit: By
     sum:
@@ -252,7 +243,7 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
-  elasticsearch.node.shards.size:
+  elasticsearch.node.shard.size:
     description: The size of the shards assigned to this node.
     unit: By
     sum:
@@ -261,8 +252,8 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticsearch.node.shards.data_set.size:
-    description: Total data set size, in bytes, of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
+  elasticsearch.node.shard.data_set.size:
+    description: Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
     unit: By
     sum:
       monotonic: false
@@ -270,8 +261,8 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.shards.reserved.size:
-    description: A prediction, in bytes, of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
+  elasticsearch.node.shard.reserved.size:
+    description: A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
     unit: By
     sum:
       monotonic: false
@@ -281,13 +272,13 @@ metrics:
     enabled: true
   elasticsearch.node.translog.operations:
     description: Number of transaction log operations.
-    unit: 1
+    unit: "{operations}"
     gauge:
       value_type: int
     attributes: [ ]
     enabled: true
   elasticsearch.node.translog.size:
-    description: Size, in bytes, of the transaction log.
+    description: Size of the transaction log.
     unit: By
     sum:
       monotonic: false
@@ -296,7 +287,7 @@ metrics:
     attributes: [ ]
     enabled: true
   elasticsearch.node.translog.uncommitted.size:
-    description: Size, in bytes, of uncommitted transaction log operations.
+    description: Size of uncommitted transaction log operations.
     unit: By
     sum:
       monotonic: false

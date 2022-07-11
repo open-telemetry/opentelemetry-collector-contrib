@@ -31,19 +31,18 @@ type MetricsSettings struct {
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
 	ElasticsearchNodeFsDiskFree              MetricSettings `mapstructure:"elasticsearch.node.fs.disk.free"`
-	ElasticsearchNodeFsDiskOperations        MetricSettings `mapstructure:"elasticsearch.node.fs.disk.operations"`
-	ElasticsearchNodeFsDiskReadBytes         MetricSettings `mapstructure:"elasticsearch.node.fs.disk.read_bytes"`
-	ElasticsearchNodeFsDiskReadOperations    MetricSettings `mapstructure:"elasticsearch.node.fs.disk.read_operations"`
+	ElasticsearchNodeFsDiskIoRead            MetricSettings `mapstructure:"elasticsearch.node.fs.disk.io.read"`
+	ElasticsearchNodeFsDiskIoWrite           MetricSettings `mapstructure:"elasticsearch.node.fs.disk.io.write"`
+	ElasticsearchNodeFsDiskOperationRead     MetricSettings `mapstructure:"elasticsearch.node.fs.disk.operation.read"`
+	ElasticsearchNodeFsDiskOperationWrite    MetricSettings `mapstructure:"elasticsearch.node.fs.disk.operation.write"`
 	ElasticsearchNodeFsDiskTotal             MetricSettings `mapstructure:"elasticsearch.node.fs.disk.total"`
-	ElasticsearchNodeFsDiskWriteBytes        MetricSettings `mapstructure:"elasticsearch.node.fs.disk.write_bytes"`
-	ElasticsearchNodeFsDiskWriteOperations   MetricSettings `mapstructure:"elasticsearch.node.fs.disk.write_operations"`
 	ElasticsearchNodeHTTPConnections         MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
 	ElasticsearchNodeOpenFiles               MetricSettings `mapstructure:"elasticsearch.node.open_files"`
 	ElasticsearchNodeOperationsCompleted     MetricSettings `mapstructure:"elasticsearch.node.operations.completed"`
 	ElasticsearchNodeOperationsTime          MetricSettings `mapstructure:"elasticsearch.node.operations.time"`
-	ElasticsearchNodeShardsDataSetSize       MetricSettings `mapstructure:"elasticsearch.node.shards.data_set.size"`
-	ElasticsearchNodeShardsReservedSize      MetricSettings `mapstructure:"elasticsearch.node.shards.reserved.size"`
-	ElasticsearchNodeShardsSize              MetricSettings `mapstructure:"elasticsearch.node.shards.size"`
+	ElasticsearchNodeShardDataSetSize        MetricSettings `mapstructure:"elasticsearch.node.shard.data_set.size"`
+	ElasticsearchNodeShardReservedSize       MetricSettings `mapstructure:"elasticsearch.node.shard.reserved.size"`
+	ElasticsearchNodeShardSize               MetricSettings `mapstructure:"elasticsearch.node.shard.size"`
 	ElasticsearchNodeThreadPoolTasksFinished MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.finished"`
 	ElasticsearchNodeThreadPoolTasksQueued   MetricSettings `mapstructure:"elasticsearch.node.thread_pool.tasks.queued"`
 	ElasticsearchNodeThreadPoolThreads       MetricSettings `mapstructure:"elasticsearch.node.thread_pool.threads"`
@@ -114,22 +113,19 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeFsDiskFree: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskOperations: MetricSettings{
+		ElasticsearchNodeFsDiskIoRead: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskReadBytes: MetricSettings{
+		ElasticsearchNodeFsDiskIoWrite: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeFsDiskReadOperations: MetricSettings{
+		ElasticsearchNodeFsDiskOperationRead: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeFsDiskOperationWrite: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeFsDiskTotal: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchNodeFsDiskWriteBytes: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchNodeFsDiskWriteOperations: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeHTTPConnections: MetricSettings{
@@ -144,13 +140,13 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchNodeOperationsTime: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsDataSetSize: MetricSettings{
+		ElasticsearchNodeShardDataSetSize: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsReservedSize: MetricSettings{
+		ElasticsearchNodeShardReservedSize: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchNodeShardsSize: MetricSettings{
+		ElasticsearchNodeShardSize: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeThreadPoolTasksFinished: MetricSettings{
@@ -545,7 +541,7 @@ type metricElasticsearchBreakerEstimatedSize struct {
 // init fills elasticsearch.breaker.estimated_size metric with initial data.
 func (m *metricElasticsearchBreakerEstimatedSize) init() {
 	m.data.SetName("elasticsearch.breaker.estimated_size")
-	m.data.SetDescription("Estimated memory used, in bytes, for the operation.")
+	m.data.SetDescription("Estimated memory used for the operation.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -596,7 +592,7 @@ type metricElasticsearchBreakerLimitSize struct {
 // init fills elasticsearch.breaker.limit_size metric with initial data.
 func (m *metricElasticsearchBreakerLimitSize) init() {
 	m.data.SetName("elasticsearch.breaker.limit_size")
-	m.data.SetDescription("Memory limit, in bytes, for the circuit breaker.")
+	m.data.SetDescription("Memory limit for the circuit breaker.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -1266,66 +1262,15 @@ func newMetricElasticsearchNodeFsDiskFree(settings MetricSettings) metricElastic
 	return m
 }
 
-type metricElasticsearchNodeFsDiskOperations struct {
+type metricElasticsearchNodeFsDiskIoRead struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.fs.disk.operations metric with initial data.
-func (m *metricElasticsearchNodeFsDiskOperations) init() {
-	m.data.SetName("elasticsearch.node.fs.disk.operations")
-	m.data.SetDescription("The total number of read and write operations across all file stores for this node.")
-	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricElasticsearchNodeFsDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsDiskOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchNodeFsDiskOperations(settings MetricSettings) metricElasticsearchNodeFsDiskOperations {
-	m := metricElasticsearchNodeFsDiskOperations{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchNodeFsDiskReadBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.node.fs.disk.read_bytes metric with initial data.
-func (m *metricElasticsearchNodeFsDiskReadBytes) init() {
-	m.data.SetName("elasticsearch.node.fs.disk.read_bytes")
+// init fills elasticsearch.node.fs.disk.io.read metric with initial data.
+func (m *metricElasticsearchNodeFsDiskIoRead) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.io.read")
 	m.data.SetDescription("The total number of kilobytes read across all file stores for this node.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1333,7 +1278,7 @@ func (m *metricElasticsearchNodeFsDiskReadBytes) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeFsDiskReadBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricElasticsearchNodeFsDiskIoRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1344,14 +1289,14 @@ func (m *metricElasticsearchNodeFsDiskReadBytes) recordDataPoint(start pcommon.T
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsDiskReadBytes) updateCapacity() {
+func (m *metricElasticsearchNodeFsDiskIoRead) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskReadBytes) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchNodeFsDiskIoRead) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1359,8 +1304,8 @@ func (m *metricElasticsearchNodeFsDiskReadBytes) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricElasticsearchNodeFsDiskReadBytes(settings MetricSettings) metricElasticsearchNodeFsDiskReadBytes {
-	m := metricElasticsearchNodeFsDiskReadBytes{settings: settings}
+func newMetricElasticsearchNodeFsDiskIoRead(settings MetricSettings) metricElasticsearchNodeFsDiskIoRead {
+	m := metricElasticsearchNodeFsDiskIoRead{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1368,23 +1313,23 @@ func newMetricElasticsearchNodeFsDiskReadBytes(settings MetricSettings) metricEl
 	return m
 }
 
-type metricElasticsearchNodeFsDiskReadOperations struct {
+type metricElasticsearchNodeFsDiskIoWrite struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.fs.disk.read_operations metric with initial data.
-func (m *metricElasticsearchNodeFsDiskReadOperations) init() {
-	m.data.SetName("elasticsearch.node.fs.disk.read_operations")
-	m.data.SetDescription("The total number of read operations across all file stores for this node.")
-	m.data.SetUnit("{operations}")
+// init fills elasticsearch.node.fs.disk.io.write metric with initial data.
+func (m *metricElasticsearchNodeFsDiskIoWrite) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.io.write")
+	m.data.SetDescription("The total number of kilobytes written across all file stores for this node.")
+	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeFsDiskReadOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricElasticsearchNodeFsDiskIoWrite) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1395,14 +1340,14 @@ func (m *metricElasticsearchNodeFsDiskReadOperations) recordDataPoint(start pcom
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsDiskReadOperations) updateCapacity() {
+func (m *metricElasticsearchNodeFsDiskIoWrite) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskReadOperations) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchNodeFsDiskIoWrite) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1410,8 +1355,110 @@ func (m *metricElasticsearchNodeFsDiskReadOperations) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricElasticsearchNodeFsDiskReadOperations(settings MetricSettings) metricElasticsearchNodeFsDiskReadOperations {
-	m := metricElasticsearchNodeFsDiskReadOperations{settings: settings}
+func newMetricElasticsearchNodeFsDiskIoWrite(settings MetricSettings) metricElasticsearchNodeFsDiskIoWrite {
+	m := metricElasticsearchNodeFsDiskIoWrite{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeFsDiskOperationRead struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.fs.disk.operation.read metric with initial data.
+func (m *metricElasticsearchNodeFsDiskOperationRead) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.operation.read")
+	m.data.SetDescription("The total number of read operations across all file stores for this node.")
+	m.data.SetUnit("{operations}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeFsDiskOperationRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeFsDiskOperationRead) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeFsDiskOperationRead) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeFsDiskOperationRead(settings MetricSettings) metricElasticsearchNodeFsDiskOperationRead {
+	m := metricElasticsearchNodeFsDiskOperationRead{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeFsDiskOperationWrite struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.fs.disk.operation.write metric with initial data.
+func (m *metricElasticsearchNodeFsDiskOperationWrite) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.operation.write")
+	m.data.SetDescription("The total number of write operations across all file stores for this node.")
+	m.data.SetUnit("{operations}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeFsDiskOperationWrite) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeFsDiskOperationWrite) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeFsDiskOperationWrite) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeFsDiskOperationWrite(settings MetricSettings) metricElasticsearchNodeFsDiskOperationWrite {
+	m := metricElasticsearchNodeFsDiskOperationWrite{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1463,108 +1510,6 @@ func (m *metricElasticsearchNodeFsDiskTotal) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeFsDiskTotal(settings MetricSettings) metricElasticsearchNodeFsDiskTotal {
 	m := metricElasticsearchNodeFsDiskTotal{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchNodeFsDiskWriteBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.node.fs.disk.write_bytes metric with initial data.
-func (m *metricElasticsearchNodeFsDiskWriteBytes) init() {
-	m.data.SetName("elasticsearch.node.fs.disk.write_bytes")
-	m.data.SetDescription("The total number of kilobytes written across all file stores for this node.")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricElasticsearchNodeFsDiskWriteBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsDiskWriteBytes) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskWriteBytes) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchNodeFsDiskWriteBytes(settings MetricSettings) metricElasticsearchNodeFsDiskWriteBytes {
-	m := metricElasticsearchNodeFsDiskWriteBytes{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchNodeFsDiskWriteOperations struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.node.fs.disk.write_operations metric with initial data.
-func (m *metricElasticsearchNodeFsDiskWriteOperations) init() {
-	m.data.SetName("elasticsearch.node.fs.disk.write_operations")
-	m.data.SetDescription("The total number of write operations across all file stores for this node.")
-	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-}
-
-func (m *metricElasticsearchNodeFsDiskWriteOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeFsDiskWriteOperations) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeFsDiskWriteOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchNodeFsDiskWriteOperations(settings MetricSettings) metricElasticsearchNodeFsDiskWriteOperations {
-	m := metricElasticsearchNodeFsDiskWriteOperations{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1780,23 +1725,23 @@ func newMetricElasticsearchNodeOperationsTime(settings MetricSettings) metricEla
 	return m
 }
 
-type metricElasticsearchNodeShardsDataSetSize struct {
+type metricElasticsearchNodeShardDataSetSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.shards.data_set.size metric with initial data.
-func (m *metricElasticsearchNodeShardsDataSetSize) init() {
-	m.data.SetName("elasticsearch.node.shards.data_set.size")
-	m.data.SetDescription("Total data set size, in bytes, of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.")
+// init fills elasticsearch.node.shard.data_set.size metric with initial data.
+func (m *metricElasticsearchNodeShardDataSetSize) init() {
+	m.data.SetName("elasticsearch.node.shard.data_set.size")
+	m.data.SetDescription("Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeShardsDataSetSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricElasticsearchNodeShardDataSetSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1807,14 +1752,14 @@ func (m *metricElasticsearchNodeShardsDataSetSize) recordDataPoint(start pcommon
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeShardsDataSetSize) updateCapacity() {
+func (m *metricElasticsearchNodeShardDataSetSize) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeShardsDataSetSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchNodeShardDataSetSize) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1822,8 +1767,8 @@ func (m *metricElasticsearchNodeShardsDataSetSize) emit(metrics pmetric.MetricSl
 	}
 }
 
-func newMetricElasticsearchNodeShardsDataSetSize(settings MetricSettings) metricElasticsearchNodeShardsDataSetSize {
-	m := metricElasticsearchNodeShardsDataSetSize{settings: settings}
+func newMetricElasticsearchNodeShardDataSetSize(settings MetricSettings) metricElasticsearchNodeShardDataSetSize {
+	m := metricElasticsearchNodeShardDataSetSize{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1831,23 +1776,23 @@ func newMetricElasticsearchNodeShardsDataSetSize(settings MetricSettings) metric
 	return m
 }
 
-type metricElasticsearchNodeShardsReservedSize struct {
+type metricElasticsearchNodeShardReservedSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.shards.reserved.size metric with initial data.
-func (m *metricElasticsearchNodeShardsReservedSize) init() {
-	m.data.SetName("elasticsearch.node.shards.reserved.size")
-	m.data.SetDescription("A prediction, in bytes, of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.")
+// init fills elasticsearch.node.shard.reserved.size metric with initial data.
+func (m *metricElasticsearchNodeShardReservedSize) init() {
+	m.data.SetName("elasticsearch.node.shard.reserved.size")
+	m.data.SetDescription("A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeShardsReservedSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricElasticsearchNodeShardReservedSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1858,14 +1803,14 @@ func (m *metricElasticsearchNodeShardsReservedSize) recordDataPoint(start pcommo
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeShardsReservedSize) updateCapacity() {
+func (m *metricElasticsearchNodeShardReservedSize) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeShardsReservedSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchNodeShardReservedSize) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1873,8 +1818,8 @@ func (m *metricElasticsearchNodeShardsReservedSize) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricElasticsearchNodeShardsReservedSize(settings MetricSettings) metricElasticsearchNodeShardsReservedSize {
-	m := metricElasticsearchNodeShardsReservedSize{settings: settings}
+func newMetricElasticsearchNodeShardReservedSize(settings MetricSettings) metricElasticsearchNodeShardReservedSize {
+	m := metricElasticsearchNodeShardReservedSize{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1882,15 +1827,15 @@ func newMetricElasticsearchNodeShardsReservedSize(settings MetricSettings) metri
 	return m
 }
 
-type metricElasticsearchNodeShardsSize struct {
+type metricElasticsearchNodeShardSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.node.shards.size metric with initial data.
-func (m *metricElasticsearchNodeShardsSize) init() {
-	m.data.SetName("elasticsearch.node.shards.size")
+// init fills elasticsearch.node.shard.size metric with initial data.
+func (m *metricElasticsearchNodeShardSize) init() {
+	m.data.SetName("elasticsearch.node.shard.size")
 	m.data.SetDescription("The size of the shards assigned to this node.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -1898,7 +1843,7 @@ func (m *metricElasticsearchNodeShardsSize) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricElasticsearchNodeShardsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricElasticsearchNodeShardSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1909,14 +1854,14 @@ func (m *metricElasticsearchNodeShardsSize) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchNodeShardsSize) updateCapacity() {
+func (m *metricElasticsearchNodeShardSize) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchNodeShardsSize) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchNodeShardSize) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1924,8 +1869,8 @@ func (m *metricElasticsearchNodeShardsSize) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricElasticsearchNodeShardsSize(settings MetricSettings) metricElasticsearchNodeShardsSize {
-	m := metricElasticsearchNodeShardsSize{settings: settings}
+func newMetricElasticsearchNodeShardSize(settings MetricSettings) metricElasticsearchNodeShardSize {
+	m := metricElasticsearchNodeShardSize{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2104,7 +2049,7 @@ type metricElasticsearchNodeTranslogOperations struct {
 func (m *metricElasticsearchNodeTranslogOperations) init() {
 	m.data.SetName("elasticsearch.node.translog.operations")
 	m.data.SetDescription("Number of transaction log operations.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
@@ -2152,7 +2097,7 @@ type metricElasticsearchNodeTranslogSize struct {
 // init fills elasticsearch.node.translog.size metric with initial data.
 func (m *metricElasticsearchNodeTranslogSize) init() {
 	m.data.SetName("elasticsearch.node.translog.size")
-	m.data.SetDescription("Size, in bytes, of the transaction log.")
+	m.data.SetDescription("Size of the transaction log.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2203,7 +2148,7 @@ type metricElasticsearchNodeTranslogUncommittedSize struct {
 // init fills elasticsearch.node.translog.uncommitted.size metric with initial data.
 func (m *metricElasticsearchNodeTranslogUncommittedSize) init() {
 	m.data.SetName("elasticsearch.node.translog.uncommitted.size")
-	m.data.SetDescription("Size, in bytes, of uncommitted transaction log operations.")
+	m.data.SetDescription("Size of uncommitted transaction log operations.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -3167,19 +3112,18 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable         metricElasticsearchNodeFsDiskAvailable
 	metricElasticsearchNodeFsDiskFree              metricElasticsearchNodeFsDiskFree
-	metricElasticsearchNodeFsDiskOperations        metricElasticsearchNodeFsDiskOperations
-	metricElasticsearchNodeFsDiskReadBytes         metricElasticsearchNodeFsDiskReadBytes
-	metricElasticsearchNodeFsDiskReadOperations    metricElasticsearchNodeFsDiskReadOperations
+	metricElasticsearchNodeFsDiskIoRead            metricElasticsearchNodeFsDiskIoRead
+	metricElasticsearchNodeFsDiskIoWrite           metricElasticsearchNodeFsDiskIoWrite
+	metricElasticsearchNodeFsDiskOperationRead     metricElasticsearchNodeFsDiskOperationRead
+	metricElasticsearchNodeFsDiskOperationWrite    metricElasticsearchNodeFsDiskOperationWrite
 	metricElasticsearchNodeFsDiskTotal             metricElasticsearchNodeFsDiskTotal
-	metricElasticsearchNodeFsDiskWriteBytes        metricElasticsearchNodeFsDiskWriteBytes
-	metricElasticsearchNodeFsDiskWriteOperations   metricElasticsearchNodeFsDiskWriteOperations
 	metricElasticsearchNodeHTTPConnections         metricElasticsearchNodeHTTPConnections
 	metricElasticsearchNodeOpenFiles               metricElasticsearchNodeOpenFiles
 	metricElasticsearchNodeOperationsCompleted     metricElasticsearchNodeOperationsCompleted
 	metricElasticsearchNodeOperationsTime          metricElasticsearchNodeOperationsTime
-	metricElasticsearchNodeShardsDataSetSize       metricElasticsearchNodeShardsDataSetSize
-	metricElasticsearchNodeShardsReservedSize      metricElasticsearchNodeShardsReservedSize
-	metricElasticsearchNodeShardsSize              metricElasticsearchNodeShardsSize
+	metricElasticsearchNodeShardDataSetSize        metricElasticsearchNodeShardDataSetSize
+	metricElasticsearchNodeShardReservedSize       metricElasticsearchNodeShardReservedSize
+	metricElasticsearchNodeShardSize               metricElasticsearchNodeShardSize
 	metricElasticsearchNodeThreadPoolTasksFinished metricElasticsearchNodeThreadPoolTasksFinished
 	metricElasticsearchNodeThreadPoolTasksQueued   metricElasticsearchNodeThreadPoolTasksQueued
 	metricElasticsearchNodeThreadPoolThreads       metricElasticsearchNodeThreadPoolThreads
@@ -3235,19 +3179,18 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:         newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
 		metricElasticsearchNodeFsDiskFree:              newMetricElasticsearchNodeFsDiskFree(settings.ElasticsearchNodeFsDiskFree),
-		metricElasticsearchNodeFsDiskOperations:        newMetricElasticsearchNodeFsDiskOperations(settings.ElasticsearchNodeFsDiskOperations),
-		metricElasticsearchNodeFsDiskReadBytes:         newMetricElasticsearchNodeFsDiskReadBytes(settings.ElasticsearchNodeFsDiskReadBytes),
-		metricElasticsearchNodeFsDiskReadOperations:    newMetricElasticsearchNodeFsDiskReadOperations(settings.ElasticsearchNodeFsDiskReadOperations),
+		metricElasticsearchNodeFsDiskIoRead:            newMetricElasticsearchNodeFsDiskIoRead(settings.ElasticsearchNodeFsDiskIoRead),
+		metricElasticsearchNodeFsDiskIoWrite:           newMetricElasticsearchNodeFsDiskIoWrite(settings.ElasticsearchNodeFsDiskIoWrite),
+		metricElasticsearchNodeFsDiskOperationRead:     newMetricElasticsearchNodeFsDiskOperationRead(settings.ElasticsearchNodeFsDiskOperationRead),
+		metricElasticsearchNodeFsDiskOperationWrite:    newMetricElasticsearchNodeFsDiskOperationWrite(settings.ElasticsearchNodeFsDiskOperationWrite),
 		metricElasticsearchNodeFsDiskTotal:             newMetricElasticsearchNodeFsDiskTotal(settings.ElasticsearchNodeFsDiskTotal),
-		metricElasticsearchNodeFsDiskWriteBytes:        newMetricElasticsearchNodeFsDiskWriteBytes(settings.ElasticsearchNodeFsDiskWriteBytes),
-		metricElasticsearchNodeFsDiskWriteOperations:   newMetricElasticsearchNodeFsDiskWriteOperations(settings.ElasticsearchNodeFsDiskWriteOperations),
 		metricElasticsearchNodeHTTPConnections:         newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
 		metricElasticsearchNodeOpenFiles:               newMetricElasticsearchNodeOpenFiles(settings.ElasticsearchNodeOpenFiles),
 		metricElasticsearchNodeOperationsCompleted:     newMetricElasticsearchNodeOperationsCompleted(settings.ElasticsearchNodeOperationsCompleted),
 		metricElasticsearchNodeOperationsTime:          newMetricElasticsearchNodeOperationsTime(settings.ElasticsearchNodeOperationsTime),
-		metricElasticsearchNodeShardsDataSetSize:       newMetricElasticsearchNodeShardsDataSetSize(settings.ElasticsearchNodeShardsDataSetSize),
-		metricElasticsearchNodeShardsReservedSize:      newMetricElasticsearchNodeShardsReservedSize(settings.ElasticsearchNodeShardsReservedSize),
-		metricElasticsearchNodeShardsSize:              newMetricElasticsearchNodeShardsSize(settings.ElasticsearchNodeShardsSize),
+		metricElasticsearchNodeShardDataSetSize:        newMetricElasticsearchNodeShardDataSetSize(settings.ElasticsearchNodeShardDataSetSize),
+		metricElasticsearchNodeShardReservedSize:       newMetricElasticsearchNodeShardReservedSize(settings.ElasticsearchNodeShardReservedSize),
+		metricElasticsearchNodeShardSize:               newMetricElasticsearchNodeShardSize(settings.ElasticsearchNodeShardSize),
 		metricElasticsearchNodeThreadPoolTasksFinished: newMetricElasticsearchNodeThreadPoolTasksFinished(settings.ElasticsearchNodeThreadPoolTasksFinished),
 		metricElasticsearchNodeThreadPoolTasksQueued:   newMetricElasticsearchNodeThreadPoolTasksQueued(settings.ElasticsearchNodeThreadPoolTasksQueued),
 		metricElasticsearchNodeThreadPoolThreads:       newMetricElasticsearchNodeThreadPoolThreads(settings.ElasticsearchNodeThreadPoolThreads),
@@ -3352,19 +3295,18 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(ils.Metrics())
 	mb.metricElasticsearchNodeFsDiskFree.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskOperations.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskReadBytes.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskReadOperations.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskIoRead.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskIoWrite.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskOperationRead.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskOperationWrite.emit(ils.Metrics())
 	mb.metricElasticsearchNodeFsDiskTotal.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskWriteBytes.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskWriteOperations.emit(ils.Metrics())
 	mb.metricElasticsearchNodeHTTPConnections.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsDataSetSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsReservedSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsSize.emit(ils.Metrics())
+	mb.metricElasticsearchNodeShardDataSetSize.emit(ils.Metrics())
+	mb.metricElasticsearchNodeShardReservedSize.emit(ils.Metrics())
+	mb.metricElasticsearchNodeShardSize.emit(ils.Metrics())
 	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(ils.Metrics())
 	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(ils.Metrics())
 	mb.metricElasticsearchNodeThreadPoolThreads.emit(ils.Metrics())
@@ -3478,34 +3420,29 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskFreeDataPoint(ts pcommon.
 	mb.metricElasticsearchNodeFsDiskFree.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeFsDiskOperationsDataPoint adds a data point to elasticsearch.node.fs.disk.operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskOperationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskOperations.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeFsDiskIoReadDataPoint adds a data point to elasticsearch.node.fs.disk.io.read metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskIoReadDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskIoRead.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeFsDiskReadBytesDataPoint adds a data point to elasticsearch.node.fs.disk.read_bytes metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskReadBytesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskReadBytes.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeFsDiskIoWriteDataPoint adds a data point to elasticsearch.node.fs.disk.io.write metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskIoWriteDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskIoWrite.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeFsDiskReadOperationsDataPoint adds a data point to elasticsearch.node.fs.disk.read_operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskReadOperationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskReadOperations.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeFsDiskOperationReadDataPoint adds a data point to elasticsearch.node.fs.disk.operation.read metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskOperationReadDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskOperationRead.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeFsDiskOperationWriteDataPoint adds a data point to elasticsearch.node.fs.disk.operation.write metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskOperationWriteDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskOperationWrite.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeFsDiskTotalDataPoint adds a data point to elasticsearch.node.fs.disk.total metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskTotalDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeFsDiskTotal.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordElasticsearchNodeFsDiskWriteBytesDataPoint adds a data point to elasticsearch.node.fs.disk.write_bytes metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskWriteBytesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskWriteBytes.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordElasticsearchNodeFsDiskWriteOperationsDataPoint adds a data point to elasticsearch.node.fs.disk.write_operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskWriteOperationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskWriteOperations.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
@@ -3528,19 +3465,19 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcom
 	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
-// RecordElasticsearchNodeShardsDataSetSizeDataPoint adds a data point to elasticsearch.node.shards.data_set.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsDataSetSize.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeShardDataSetSizeDataPoint adds a data point to elasticsearch.node.shard.data_set.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeShardDataSetSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeShardDataSetSize.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeShardsReservedSizeDataPoint adds a data point to elasticsearch.node.shards.reserved.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsReservedSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsReservedSize.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeShardReservedSizeDataPoint adds a data point to elasticsearch.node.shard.reserved.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeShardReservedSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeShardReservedSize.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
+// RecordElasticsearchNodeShardSizeDataPoint adds a data point to elasticsearch.node.shard.size metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeShardSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeShardSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.

@@ -86,11 +86,10 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
 		r.mb.RecordElasticsearchNodeFsDiskTotalDataPoint(now, info.FS.Total.TotalBytes)
 		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
-		r.mb.RecordElasticsearchNodeFsDiskReadOperationsDataPoint(now, info.FS.IOStats.Total.ReadOperations)
-		r.mb.RecordElasticsearchNodeFsDiskWriteOperationsDataPoint(now, info.FS.IOStats.Total.WriteOperations)
-		r.mb.RecordElasticsearchNodeFsDiskOperationsDataPoint(now, info.FS.IOStats.Total.Operations)
-		r.mb.RecordElasticsearchNodeFsDiskReadBytesDataPoint(now, info.FS.IOStats.Total.ReadBytes)
-		r.mb.RecordElasticsearchNodeFsDiskWriteBytesDataPoint(now, info.FS.IOStats.Total.WriteBytes)
+		r.mb.RecordElasticsearchNodeFsDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadOperations)
+		r.mb.RecordElasticsearchNodeFsDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteOperations)
+		r.mb.RecordElasticsearchNodeFsDiskOperationReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
+		r.mb.RecordElasticsearchNodeFsDiskOperationWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
 
 		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
 		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
@@ -123,9 +122,9 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush)
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
-		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
-		r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
-		r.mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
+		r.mb.RecordElasticsearchNodeShardDataSetSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
+		r.mb.RecordElasticsearchNodeShardDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+		r.mb.RecordElasticsearchNodeShardReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
 
 		for tpName, tpInfo := range info.ThreadPoolInfo {
 			r.mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(now, tpInfo.ActiveThreads, tpName, metadata.AttributeThreadStateActive)
