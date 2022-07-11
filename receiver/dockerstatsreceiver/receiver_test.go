@@ -160,6 +160,9 @@ func TestScrapes(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
 
+			actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetName("")
+			actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("")
+
 			expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, tc.expectedMetricsFile))
 			assert.NoError(t, err)
 			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))

@@ -217,10 +217,50 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 	r.mb.RecordContainerMemoryMaxDataPoint(now, int64(memoryStats.MaxUsage))
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
-	r.mb.RecordContainerMemoryUsageTotalCacheDataPoint(now, int64(totalCache))
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
 
-	// todo more metrics here
+	recorders := map[string]func(pcommon.Timestamp, int64){
+		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
+		"total_cache":               r.mb.RecordContainerMemoryTotalCacheDataPoint,
+		"rss":                       r.mb.RecordContainerMemoryRssDataPoint,
+		"total_rss":                 r.mb.RecordContainerMemoryTotalRssDataPoint,
+		"rss_huge":                  r.mb.RecordContainerMemoryRssHugeDataPoint,
+		"total_rss_huge":            r.mb.RecordContainerMemoryTotalRssHugeDataPoint,
+		"dirty":                     r.mb.RecordContainerMemoryDirtyDataPoint,
+		"total_dirty":               r.mb.RecordContainerMemoryTotalDirtyDataPoint,
+		"writeback":                 r.mb.RecordContainerMemoryWritebackDataPoint,
+		"total_writeback":           r.mb.RecordContainerMemoryTotalWritebackDataPoint,
+		"mapped_file":               r.mb.RecordContainerMemoryMappedFileDataPoint,
+		"total_mapped_file":         r.mb.RecordContainerMemoryTotalMappedFileDataPoint,
+		"pgpgin":                    r.mb.RecordContainerMemoryPgpginDataPoint,
+		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
+		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
+		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
+		"swap":                      r.mb.RecordContainerMemorySwapDataPoint,
+		"total_swap":                r.mb.RecordContainerMemoryTotalSwapDataPoint,
+		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
+		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
+		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,
+		"total_pgmajfault":          r.mb.RecordContainerMemoryTotalPgmajfaultDataPoint,
+		"inactive_anon":             r.mb.RecordContainerMemoryInactiveAnonDataPoint,
+		"total_inactive_anon":       r.mb.RecordContainerMemoryTotalInactiveAnonDataPoint,
+		"active_anon":               r.mb.RecordContainerMemoryActiveAnonDataPoint,
+		"total_active_anon":         r.mb.RecordContainerMemoryTotalActiveAnonDataPoint,
+		"inactive_file":             r.mb.RecordContainerMemoryInactiveFileDataPoint,
+		"total_inactive_file":       r.mb.RecordContainerMemoryTotalInactiveFileDataPoint,
+		"active_file":               r.mb.RecordContainerMemoryActiveFileDataPoint,
+		"total_active_file":         r.mb.RecordContainerMemoryTotalActiveFileDataPoint,
+		"unevictable":               r.mb.RecordContainerMemoryUnevictableDataPoint,
+		"total_unevictable":         r.mb.RecordContainerMemoryTotalUnevictableDataPoint,
+		"hierarchical_memory_limit": r.mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
+		"hierarchical_memsw_limit":  r.mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
+	}
+
+	for name, val := range memoryStats.Stats {
+		if recorder, ok := recorders[name]; ok {
+			recorder(now, int64(val))
+		}
+	}
 }
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string)
@@ -303,5 +343,22 @@ func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.
 				recorder(now, int64(entry.Value), strconv.FormatUint(entry.Major, 10), strconv.FormatUint(entry.Minor, 10))
 			}
 		}
+	}
+}
+
+func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]dtypes.NetworkStats) {
+	if networks == nil || *networks == nil {
+		return
+	}
+
+	for netInterface, stats := range *networks {
+		r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.RxBytes), netInterface)
+		r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.TxBytes), netInterface)
+		r.mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(now, int64(stats.RxDropped), netInterface)
+		r.mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(now, int64(stats.TxDropped), netInterface)
+		r.mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(now, int64(stats.RxPackets), netInterface)
+		r.mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(now, int64(stats.TxPackets), netInterface)
+		r.mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(now, int64(stats.RxErrors), netInterface)
+		r.mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(now, int64(stats.TxErrors), netInterface)
 	}
 }
