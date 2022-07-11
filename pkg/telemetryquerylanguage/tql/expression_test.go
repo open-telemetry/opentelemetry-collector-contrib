@@ -120,15 +120,15 @@ func Test_newGetter(t *testing.T) {
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
-type testGetSetter struct {
-	getter ExprFunc
-	setter func(ctx TransformContext, val interface{})
+type TestGetSetter struct {
+	Getter ExprFunc
+	Setter func(ctx TransformContext, val interface{})
 }
 
-func (path testGetSetter) Get(ctx TransformContext) interface{} {
-	return path.getter(ctx)
+func (path TestGetSetter) Get(ctx TransformContext) interface{} {
+	return path.Getter(ctx)
 }
 
-func (path testGetSetter) Set(ctx TransformContext, val interface{}) {
-	path.setter(ctx, val)
+func (path TestGetSetter) Set(ctx TransformContext, val interface{}) {
+	path.Setter(ctx, val)
 }
