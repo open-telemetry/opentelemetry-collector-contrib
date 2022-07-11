@@ -95,11 +95,15 @@ Meeting notes are available as a public [Google doc](https://docs.google.com/doc
 Approvers ([@open-telemetry/python-approvers](https://github.com/orgs/open-telemetry/teams/python-approvers)):
 
 - [Aaron Abbott](https://github.com/aabmass), Google
-- [Alex Boten](https://github.com/codeboten), Lightstep
 - [Nathaniel Ruiz Nowell](https://github.com/NathanielRN), AWS
 - [Owais Lone](https://github.com/owais), Splunk
 - [Sanket Mehta](https://github.com/sanketmehta28), Cisco
 - [Ashutosh Goel](https://github.com/ashu658), Cisco
+
+Emeritus Approvers:
+
+- [Hector Hernandez](https://github.com/hectorhdzg), Microsoft
+- [Yusuke Tsutsumi](https://github.com/toumorokoshi), Google
 
 *Find more about the approver role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#approver).*
 
@@ -108,6 +112,10 @@ Maintainers ([@open-telemetry/python-maintainers](https://github.com/orgs/open-t
 - [Diego Hurtado](https://github.com/ocelotl), Lightstep
 - [Leighton Chen](https://github.com/lzchen), Microsoft
 - [Srikanth Chekuri](https://github.com/srikanthccv)
+
+Emeritus Maintainers:
+
+- [Alex Boten](https://github.com/codeboten), Lightstep
 
 *Find more about the maintainer role in [community repository](https://github.com/open-telemetry/community/blob/main/community-membership.md#maintainer).*
 
