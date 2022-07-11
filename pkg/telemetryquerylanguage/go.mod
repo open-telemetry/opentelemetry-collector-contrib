@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.55.0
+	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
 	go.uber.org/multierr v1.8.0
 )
 
