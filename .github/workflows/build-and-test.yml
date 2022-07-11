@@ -64,6 +64,14 @@ jobs:
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
+    outputs:
+      receiver-0: ${{ steps.result.outputs.receiver-0-out }}
+      receiver-1: ${{ steps.result.outputs.receiver-1-out }}
+      processor: ${{ steps.result.outputs.processor-out }}
+      exporter: ${{ steps.result.outputs.exporter-out }}
+      extension: ${{ steps.result.outputs.extension-out }}
+      internal: ${{ steps.result.outputs.internal-out }}
+      other: ${{ steps.result.outputs.other-out }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -92,12 +100,34 @@ jobs:
           key: go-lint-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
+      # By default, the output value is empty. Any failure or cancellation
+      # will trigger this step, which sets a non-empty output value.
+      - if: ${{ !success() }}
+        id: result
+        name: Denote Failure
+        run: echo "::set-output name=${{ matrix.group }}-out::1"
   lint:
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: [setup-environment, lint-matrix]
     steps:
-      - name: Unit Tests Complete
-        run: echo "lint complete"
+      # If any job failed, echo will produce a non-empty result, triggering failure.
+      - name: Rollup result
+        run: |
+          if [[ $(echo \
+          ${{needs.lint-matrix.outputs.receiver-0}}\
+          ${{needs.lint-matrix.outputs.receiver-1}}\
+          ${{needs.lint-matrix.outputs.processor}}\
+          ${{needs.lint-matrix.outputs.exporter}}\
+          ${{needs.lint-matrix.outputs.extension}}\
+          ${{needs.lint-matrix.outputs.internal}}\
+          ${{needs.lint-matrix.outputs.other}}) ]]
+          then
+            echo "One or more matrix jobs failed."
+            false
+          else
+            echo "All matrix jobs passed!"
+          fi
   checks:
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -152,6 +182,14 @@ jobs:
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
+    outputs:
+      receiver-0: ${{ steps.result.outputs.receiver-0-out }}
+      receiver-1: ${{ steps.result.outputs.receiver-1-out }}
+      processor: ${{ steps.result.outputs.processor-out }}
+      exporter: ${{ steps.result.outputs.exporter-out }}
+      extension: ${{ steps.result.outputs.extension-out }}
+      internal: ${{ steps.result.outputs.internal-out }}
+      other: ${{ steps.result.outputs.other-out }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -180,15 +218,37 @@ jobs:
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make gotest GROUP=${{ matrix.group }}
+      # By default, the output value is empty. Any failure or cancellation
+      # will trigger this step, which sets a non-empty output value.
+      - if: ${{ !success() }}
+        id: result
+        name: Denote Failure
+        run: echo "::set-output name=${{ matrix.group }}-out::1"
   unittest:
+    if: ${{ always() }}
     strategy:
       matrix:
         go-version: [1.18, 1.17]
     runs-on: ubuntu-latest
     needs: [setup-environment, unittest-matrix]
     steps:
-      - name: Unit Tests Complete
-        run: echo "unittest (${{ matrix.go-version }}) complete"
+      # If any job failed, echo will produce a non-empty result, triggering failure.
+      - name: Rollup result
+        run: |
+          if [[ $(echo \
+          ${{needs.unittest-matrix.outputs.receiver-0}}\
+          ${{needs.unittest-matrix.outputs.receiver-1}}\
+          ${{needs.unittest-matrix.outputs.processor}}\
+          ${{needs.unittest-matrix.outputs.exporter}}\
+          ${{needs.unittest-matrix.outputs.extension}}\
+          ${{needs.unittest-matrix.outputs.internal}}\
+          ${{needs.unittest-matrix.outputs.other}}) ]]
+          then
+            echo "One or more matrix jobs failed."
+            false
+          else
+            echo "All matrix jobs passed!"
+          fi
 
   integration-tests:
     runs-on: ubuntu-latest
