@@ -31,6 +31,8 @@ var registry = map[string]interface{}{
 	"replace_all_matches":  replaceAllMatches,
 	"replace_pattern":      replacePattern,
 	"replace_all_patterns": replaceAllPatterns,
+	"delete_key":           deleteKey,
+	"delete_matching_keys": deleteMatchingKeys,
 }
 
 type PathExpressionParser func(*Path) (GetSetter, error)

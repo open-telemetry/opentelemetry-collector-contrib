@@ -61,6 +61,7 @@ func TestPostgresIntegration(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Driver = "postgres"
 	config.DataSource = fmt.Sprintf("host=localhost port=%s user=otel password=otel sslmode=disable", externalPort)
+	genreKey := "genre"
 	config.Queries = []Query{
 		{
 			SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
@@ -68,14 +69,14 @@ func TestPostgresIntegration(t *testing.T) {
 				{
 					MetricName:       "genre.count",
 					ValueColumn:      "count",
-					AttributeColumns: []string{"genre"},
+					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeInt,
 					DataType:         MetricDataTypeGauge,
 				},
 				{
 					MetricName:       "genre.imdb",
 					ValueColumn:      "avg",
-					AttributeColumns: []string{"genre"},
+					AttributeColumns: []string{genreKey},
 					ValueType:        MetricValueTypeDouble,
 					DataType:         MetricDataTypeGauge,
 				},
@@ -151,11 +152,90 @@ func TestPostgresIntegration(t *testing.T) {
 	)
 	metrics := consumer.AllMetrics()[0]
 	rms := metrics.ResourceMetrics()
-	testMovieMetrics(t, rms.At(0))
+	testMovieMetrics(t, rms.At(0), genreKey)
 	testPGTypeMetrics(t, rms.At(1))
 }
 
-func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
+// This test ensures the collector can connect to an Oracle DB, and properly get metrics. It's not intended to
+// test the receiver itself.
+func TestOracleDBIntegration(t *testing.T) {
+	externalPort := "51521"
+	internalPort := "1521"
+
+	// The Oracle DB container takes close to 10 minutes on a local machine to do the default setup, so the best way to
+	// account for startup time is to wait for the container to be healthy before continuing test.
+	waitStrategy := wait.NewHealthStrategy().WithStartupTimeout(15 * time.Minute)
+	req := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.oracledb",
+		},
+		ExposedPorts: []string{externalPort + ":" + internalPort},
+		WaitingFor:   waitStrategy,
+	}
+	ctx := context.Background()
+
+	container, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		},
+	)
+	require.NotNil(t, container)
+	require.NoError(t, err)
+
+	genreKey := "GENRE"
+	factory := NewFactory()
+	config := factory.CreateDefaultConfig().(*Config)
+	config.Driver = "oracle"
+	config.DataSource = "oracle://otel:password@localhost:51521/XE"
+	config.Queries = []Query{
+		{
+			SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from sys.movie group by genre",
+			Metrics: []MetricCfg{
+				{
+					MetricName:       "genre.count",
+					ValueColumn:      "COUNT",
+					AttributeColumns: []string{genreKey},
+					ValueType:        MetricValueTypeInt,
+					DataType:         MetricDataTypeGauge,
+				},
+				{
+					MetricName:       "genre.imdb",
+					ValueColumn:      "AVG",
+					AttributeColumns: []string{genreKey},
+					ValueType:        MetricValueTypeDouble,
+					DataType:         MetricDataTypeGauge,
+				},
+			},
+		},
+	}
+	consumer := &consumertest.MetricsSink{}
+	receiver, err := factory.CreateMetricsReceiver(
+		ctx,
+		componenttest.NewNopReceiverCreateSettings(),
+		config,
+		consumer,
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Eventuallyf(
+		t,
+		func() bool {
+			return consumer.DataPointCount() > 0
+		},
+		15*time.Minute,
+		1*time.Second,
+		"failed to receive more than 0 metrics",
+	)
+	metrics := consumer.AllMetrics()[0]
+	rms := metrics.ResourceMetrics()
+	testMovieMetrics(t, rms.At(0), genreKey)
+}
+
+func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics, genreAttrKey string) {
 	sms := rm.ScopeMetrics()
 	assert.Equal(t, 1, sms.Len())
 	sm := sms.At(0)
@@ -171,7 +251,7 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 
 	for _, metric := range metricsByName["genre.count"] {
 		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get("genre")
+		genre, _ := pt.Attributes().Get(genreAttrKey)
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
@@ -185,7 +265,7 @@ func testMovieMetrics(t *testing.T, rm pmetric.ResourceMetrics) {
 
 	for _, metric := range metricsByName["genre.imdb"] {
 		pt := metric.Gauge().DataPoints().At(0)
-		genre, _ := pt.Attributes().Get("genre")
+		genre, _ := pt.Attributes().Get(genreAttrKey)
 		genreStr := genre.AsString()
 		switch genreStr {
 		case "SciFi":
