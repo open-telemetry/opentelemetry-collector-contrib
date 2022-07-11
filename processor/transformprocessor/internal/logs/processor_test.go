@@ -109,6 +109,21 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
 			},
 		},
+		{
+			query: `delete_key(attributes, "http.url") where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.path", "/health")
+			},
+		},
+		{
+			query: `delete_matching_keys(attributes, "http.*t.*") where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.url", "http://localhost/health")
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -34,6 +34,10 @@ Supported functions:
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
 
+- `delete_key(target, key)` - `target` is a path expression to a map type field. `key` is a string that is a key in the map.  The key will be deleted from the map.  e.g., `delete_key(attributes, "http.request.header.authorization")`
+
+- `delete_matching_keys(target, pattern)` - `target` is a path expression to a map type field. `pattern` is a regex string.  All keys that match the pattern will be deleted from the map.  e.g., `delete_matching_keys(attributes, ".*\.header\.authorization")`
+
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
 
