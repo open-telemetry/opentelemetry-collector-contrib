@@ -573,5 +573,6 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 		}
 	}
 
+	// Consider metric invalid if all its data points were removed after applying the operations.
 	return isMetricEmpty || countDataPoints(metric) > 0
 }
