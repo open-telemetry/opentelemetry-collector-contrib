@@ -151,6 +151,24 @@ metrics:
     unit: By
     gauge:
       value_type: int
+  container.memory.rss_huge:
+    enabled: true
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup."
+    unit: By
+    gauge:
+      value_type: int
+  container.memory.dirty:
+    enabled: true
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup."
+    unit: By
+    gauge:
+      value_type: int
+  container.memory.writeback:
+    enabled: true
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup."
+    unit: By
+    gauge:
+      value_type: int
   container.memory.mapped_file:
     enabled: true
     description: "Indicates the amount of memory mapped by the processes in the control group."
@@ -160,6 +178,7 @@ metrics:
   container.memory.pgpgin:
     enabled: true
     description: "Number of pages read from disk by the cgroup."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "1"
     sum:
       value_type: int
@@ -168,6 +187,7 @@ metrics:
   container.memory.pgpgout:
     enabled: true
     description: "Number of pages written to disk by the cgroup."
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt)."
     unit: "1"
     sum:
       value_type: int
@@ -210,14 +230,14 @@ metrics:
   container.memory.inactive_file:
     enabled: true
     description: "Cache memory that has been identified as inactive by the kernel."
-    extended_documentation: "https://docs.docker.com/config/containers/runmetrics/"
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
     gauge:
       value_type: int
   container.memory.active_file:
     enabled: true
     description: "Cache memory that has been identified as active by the kernel."
-    extended_documentation: "https://docs.docker.com/config/containers/runmetrics/"
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)"
     unit: By
     gauge:
       value_type: int
@@ -239,7 +259,7 @@ metrics:
     unit: By
     gauge:
       value_type: int
-  container.memory.usage.total_cache:
+  container.memory.total_cache:
     enabled: false
     description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs."
     unit: By
@@ -248,6 +268,24 @@ metrics:
   container.memory.total_rss:
     enabled: true
     description: "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups."
+    unit: By
+    gauge:
+      value_type: int
+  container.memory.total_rss_huge:
+    enabled: true
+    description: "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups."
+    unit: By
+    gauge:
+      value_type: int
+  container.memory.total_dirty:
+    enabled: true
+    description: "Bytes that are waiting to get written back to the disk, from this cgroup and descendants."
+    unit: By
+    gauge:
+      value_type: int
+  container.memory.total_writeback:
+    enabled: true
+    description: "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants."
     unit: By
     gauge:
       value_type: int
@@ -310,14 +348,14 @@ metrics:
   container.memory.total_inactive_file:
     enabled: true
     description: "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups."
-    extended_documentation: "https://docs.docker.com/config/containers/runmetrics/"
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
     gauge:
       value_type: int
   container.memory.total_active_file:
     enabled: true
     description: "Cache memory that has been identified as active by the kernel. Includes descendant cgroups."
-    extended_documentation: "https://docs.docker.com/config/containers/runmetrics/"
+    extended_documentation: "[More docs](https://docs.docker.com/config/containers/runmetrics/)."
     unit: By
     gauge:
       value_type: int
@@ -333,7 +371,7 @@ metrics:
   container.blockio.io_merged_recursive.read: &merged
     enabled: true
     description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "1"
     sum:
       value_type: int
@@ -351,7 +389,7 @@ metrics:
   container.blockio.io_queued_recursive.read: &queued
     enabled: true
     description: "Number of requests queued up for this cgroup and its descendant cgroups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "1"
     sum:
       value_type: int
@@ -369,7 +407,7 @@ metrics:
   container.blockio.io_service_bytes_recursive.read: &service_bytes
     enabled: true
     description: "Number of bytes transferred to/from the disk by the group and descendant groups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: By
     sum:
       value_type: int
@@ -387,7 +425,7 @@ metrics:
   container.blockio.io_service_time_recursive.read: &service_time
     enabled: true
     description: "Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ns
     sum:
       value_type: int
@@ -405,7 +443,7 @@ metrics:
   container.blockio.io_serviced_recursive.read: &serviced
     enabled: true
     description: "Number of IOs (bio) issued to the disk by the group and descendant groups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "1"
     sum:
       value_type: int
@@ -423,7 +461,7 @@ metrics:
   container.blockio.io_time_recursive.read: &time
     enabled: true
     description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: ms
     sum:
       value_type: int
@@ -441,7 +479,7 @@ metrics:
   container.blockio.io_wait_time_recursive.read: &wait_time
     enabled: true
     description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "1" # Should be in ns but preserving legacy mistake for now
     sum:
       value_type: int
@@ -459,7 +497,7 @@ metrics:
   container.blockio.sectors_recursive.read: &sectors
     enabled: true
     description: "Number of sectors transferred to/from disk by the group and descendant groups."
-    extended_documentation: "https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt"
+    extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
     unit: "1"
     sum:
       value_type: int
