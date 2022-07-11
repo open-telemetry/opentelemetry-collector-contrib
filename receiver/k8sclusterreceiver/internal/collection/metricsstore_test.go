@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package collection
 
 import (
@@ -50,11 +49,11 @@ func TestMetricsStoreOperations(t *testing.T) {
 
 	// Update metric store with metrics
 	for _, u := range updates {
-		ms.update(&corev1.Pod{
+		require.NoError(t, ms.update(&corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				UID: u.id,
 			},
-		}, u.rm)
+		}, u.rm))
 	}
 
 	// Asset values form updates
@@ -67,19 +66,19 @@ func TestMetricsStoreOperations(t *testing.T) {
 	require.Equal(t, expectedMetricData, ms.getMetricData(time.Now()).ResourceMetrics().Len())
 
 	// Remove non existent item
-	ms.remove(&corev1.Pod{
+	require.NoError(t, ms.remove(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			UID: "1",
 		},
-	})
+	}))
 	require.Equal(t, len(updates), len(ms.metricsCache))
 
 	// Remove valid item from cache
-	ms.remove(&corev1.Pod{
+	require.NoError(t, ms.remove(&corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			UID: updates[1].id,
 		},
-	})
+	}))
 	expectedMetricData -= len(updates[1].rm)
 	require.Equal(t, len(updates)-1, len(ms.metricsCache))
 	require.Equal(t, expectedMetricData, ms.getMetricData(time.Now()).ResourceMetrics().Len())
