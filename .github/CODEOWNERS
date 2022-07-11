@@ -44,7 +44,7 @@ exporter/fileexporter/                               @open-telemetry/collector-c
 exporter/googlecloudexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
 exporter/googlemanagedprometheusexporter/            @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @tbarker25 @damemi
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
-exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @paulosman @lizthegrey @MikeGoldsmith
+exporter/honeycombexporter/                          @open-telemetry/collector-contrib-approvers @lizthegrey @MikeGoldsmith
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
