@@ -104,8 +104,8 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 	return multierr.Combine(errs...)
 }
 
-func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, record ptrace.Span) error {
-	document, err := e.model.encodeSpan(resource, record)
+func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span) error {
+	document, err := e.model.encodeSpan(resource, span)
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}

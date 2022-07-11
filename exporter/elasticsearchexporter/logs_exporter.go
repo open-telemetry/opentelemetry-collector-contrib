@@ -67,14 +67,15 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	// TODO: Apply encoding and field mapping settings.
 	model := &encodeModel{dedup: true, dedot: false}
 
+	var indexStr string
 	if cfg.Index != "" && cfg.Index != defaultLogsIndex {
-		cfg.LogsIndex = cfg.Index
+		indexStr = cfg.Index
 	}
 	esLogsExp := &elasticsearchLogsExporter{
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
-		index:       cfg.LogsIndex,
+		index:       indexStr,
 		maxAttempts: maxAttempts,
 		model:       model,
 	}

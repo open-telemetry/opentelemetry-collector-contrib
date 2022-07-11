@@ -72,7 +72,7 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	if cfg.(*Config).Index != defaultLogsIndex {
+	if cfg.(*Config).Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
