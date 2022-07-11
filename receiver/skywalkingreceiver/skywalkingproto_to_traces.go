@@ -38,6 +38,7 @@ const (
 	AttributeSkywalkingSpanID         = "sw8.span_id"
 	AttributeSkywalkingTraceID        = "sw8.trace_id"
 	AttributeSkywalkingSegmentID      = "sw8.segment_id"
+	AttributeSkywalkingParentSpanID   = "sw8.parent_span_id"
 	AttributeNetworkAddressUsedAtPeer = "network.AddressUsedAtPeer"
 )
 
@@ -131,8 +132,9 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 	if attrs.Len() == 0 {
 		attrs.Clear()
 	}
-	attrs.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+
 	attrs.InsertString(AttributeSkywalkingSegmentID, segmentID)
+	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
 	switch {
@@ -202,6 +204,13 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 	} else {
 		dest.SetCode(ptrace.StatusCodeOk)
 		dest.SetMessage("SUCCESS")
+	}
+}
+
+func setSwSpanIDToAttributes(span *agentV3.SpanObject, dest pcommon.Map) {
+	dest.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	if span.ParentSpanId != -1 {
+		dest.InsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
 	}
 }
 
