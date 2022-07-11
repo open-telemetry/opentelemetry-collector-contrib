@@ -1,3 +1,11 @@
+# OTLP JSON File Receiver
+
+| Status                   |                            |
+| ------------------------ |----------------------------|
+| Stability                | [alpha]                    |
+| Supported pipeline types | logs, metrics, traces      |
+| Distributions            | [contrib]                  |
+
 This receiver will read pipeline data from JSON files. The data is written in
 [Protobuf JSON
 encoding](https://developers.google.com/protocol-buffers/docs/proto3#json)
