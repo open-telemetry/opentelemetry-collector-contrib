@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func Test_truncateAll(t *testing.T) {
+func Test_deleteMatchingKeys(t *testing.T) {
 	input := pcommon.NewMap()
 	input.InsertString("test", "hello world")
 	input.InsertInt("test2", 3)
@@ -33,55 +33,36 @@ func Test_truncateAll(t *testing.T) {
 		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
-		},
 	}
 
 	tests := []struct {
-		name   string
-		target tql.GetSetter
-		limit  int64
-		want   func(pcommon.Map)
+		name    string
+		target  tql.Getter
+		pattern string
+		want    func(pcommon.Map)
 	}{
 		{
-			name:   "truncate map",
-			target: target,
-			limit:  1,
+			name:    "delete everything",
+			target:  target,
+			pattern: "test.*",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "h")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.EnsureCapacity(3)
 			},
 		},
 		{
-			name:   "truncate map to zero",
-			target: target,
-			limit:  0,
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.InsertString("test", "")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
-			},
-		},
-		{
-			name:   "truncate nothing",
-			target: target,
-			limit:  100,
+			name:    "delete attributes that end in a number",
+			target:  target,
+			pattern: "\\d$",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
 			},
 		},
 		{
-			name:   "truncate exact",
-			target: target,
-			limit:  11,
+			name:    "delete nothing",
+			target:  target,
+			pattern: "not a matching pattern",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.InsertString("test", "hello world")
@@ -99,7 +80,7 @@ func Test_truncateAll(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := truncateAll(tt.target, tt.limit)
+			exprFunc, _ := deleteMatchingKeys(tt.target, tt.pattern)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -110,28 +91,8 @@ func Test_truncateAll(t *testing.T) {
 	}
 }
 
-func Test_truncateAll_validation(t *testing.T) {
-	tests := []struct {
-		name   string
-		target tql.GetSetter
-		limit  int64
-	}{
-		{
-			name:   "limit less than zero",
-			target: &testGetSetter{},
-			limit:  int64(-1),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := truncateAll(tt.target, tt.limit)
-			assert.Error(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
-		})
-	}
-}
-
-func Test_truncateAll_bad_input(t *testing.T) {
-	input := pcommon.NewValueString("not a map")
+func Test_deleteMatchingKeys_bad_input(t *testing.T) {
+	input := pcommon.NewValueInt(1)
 	ctx := tqltest.TestTransformContext{
 		Item: input,
 	}
@@ -140,18 +101,16 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			t.Errorf("nothing should be set in this scenario")
-		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
+	exprFunc, err := deleteMatchingKeys(target, "anything")
+	assert.Nil(t, err)
 	exprFunc(ctx)
 
-	assert.Equal(t, pcommon.NewValueString("not a map"), input)
+	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
-func Test_truncateAll_get_nil(t *testing.T) {
+func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
@@ -160,11 +119,22 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			t.Errorf("nothing should be set in this scenario")
+	}
+
+	exprFunc, _ := deleteMatchingKeys(target, "anything")
+	exprFunc(ctx)
+}
+
+func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
+	target := &testGetSetter{
+		getter: func(ctx tql.TransformContext) interface{} {
+			t.Errorf("nothing should be received in this scenario")
+			return nil
 		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
-	exprFunc(ctx)
+	invalidRegexPattern := "*"
+	exprFunc, err := deleteMatchingKeys(target, invalidRegexPattern)
+	assert.Nil(t, exprFunc)
+	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

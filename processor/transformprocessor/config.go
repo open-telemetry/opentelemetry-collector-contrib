@@ -15,12 +15,12 @@
 package transformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
@@ -44,15 +44,15 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+	_, err := tql.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
+	_, err = tql.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
+	_, err = tql.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

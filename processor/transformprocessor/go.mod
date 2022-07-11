@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/trans
 go 1.17
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/gobwas/glob v0.2.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage v0.0.0-20220708224235-1002c97e004c
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.55.0
 	go.opentelemetry.io/collector/pdata v0.55.0
@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/alecthomas/participle/v2 v2.0.0-alpha9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -42,3 +43,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage => ../../pkg/telemetryquerylanguage

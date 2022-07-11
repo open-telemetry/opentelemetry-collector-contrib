@@ -14,13 +14,29 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+import (
+	"fmt"
+	"regexp"
 
-func set(target tql.Setter, value tql.Getter) (tql.ExprFunc, error) {
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
+func deleteMatchingKeys(target tql.Getter, pattern string) (tql.ExprFunc, error) {
+	compiledPattern, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)
+	}
 	return func(ctx tql.TransformContext) interface{} {
-		val := value.Get(ctx)
-		if val != nil {
-			target.Set(ctx, val)
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			attrs.RemoveIf(func(key string, _ pcommon.Value) bool {
+				return compiledPattern.MatchString(key)
+			})
 		}
 		return nil
 	}, nil

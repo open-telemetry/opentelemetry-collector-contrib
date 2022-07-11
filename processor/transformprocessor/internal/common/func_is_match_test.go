@@ -17,22 +17,22 @@ package common
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_isMatch(t *testing.T) {
 	tests := []struct {
 		name     string
-		target   Getter
+		target   tql.Getter
 		pattern  string
 		expected bool
 	}{
 		{
 			name: "replace match true",
 			target: &testGetSetter{
-				getter: func(ctx TransformContext) interface{} {
+				getter: func(ctx tql.TransformContext) interface{} {
 					return "hello world"
 				},
 			},
@@ -42,7 +42,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match false",
 			target: &testGetSetter{
-				getter: func(ctx TransformContext) interface{} {
+				getter: func(ctx tql.TransformContext) interface{} {
 					return "goodbye world"
 				},
 			},
@@ -52,7 +52,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "replace match complex",
 			target: &testGetSetter{
-				getter: func(ctx TransformContext) interface{} {
+				getter: func(ctx tql.TransformContext) interface{} {
 					return "-12.001"
 				},
 			},
@@ -62,7 +62,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target not a string",
 			target: &testGetSetter{
-				getter: func(ctx TransformContext) interface{} {
+				getter: func(ctx tql.TransformContext) interface{} {
 					return 1
 				},
 			},
@@ -72,7 +72,7 @@ func Test_isMatch(t *testing.T) {
 		{
 			name: "target nil",
 			target: &testGetSetter{
-				getter: func(ctx TransformContext) interface{} {
+				getter: func(ctx tql.TransformContext) interface{} {
 					return nil
 				},
 			},
@@ -82,7 +82,7 @@ func Test_isMatch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := testhelper.TestTransformContext{}
+			ctx := tqltest.TestTransformContext{}
 
 			exprFunc, _ := isMatch(tt.target, tt.pattern)
 			actual := exprFunc(ctx)
@@ -94,7 +94,7 @@ func Test_isMatch(t *testing.T) {
 
 func Test_isMatch_validation(t *testing.T) {
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return "anything"
 		},
 	}

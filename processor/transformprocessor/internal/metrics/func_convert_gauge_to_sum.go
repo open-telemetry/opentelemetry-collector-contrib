@@ -17,12 +17,11 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func convertGaugeToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
+func convertGaugeToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, error) {
 	var aggTemp pmetric.MetricAggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -33,7 +32,7 @@ func convertGaugeToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, e
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 
-	return func(ctx common.TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		mtc, ok := ctx.(metricTransformContext)
 		if !ok {
 			return nil

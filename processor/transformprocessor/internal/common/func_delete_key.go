@@ -14,13 +14,20 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
-import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
-func set(target tql.Setter, value tql.Getter) (tql.ExprFunc, error) {
+func deleteKey(target tql.Getter, key string) (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
-		val := value.Get(ctx)
-		if val != nil {
-			target.Set(ctx, val)
+		val := target.Get(ctx)
+		if val == nil {
+			return nil
+		}
+
+		if attrs, ok := val.(pcommon.Map); ok {
+			attrs.Remove(key)
 		}
 		return nil
 	}, nil

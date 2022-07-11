@@ -17,17 +17,18 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func spanID(bytes []byte) (ExprFunc, error) {
+func spanID(bytes []byte) (tql.ExprFunc, error) {
 	if len(bytes) != 8 {
 		return nil, errors.New("span ids must be 8 bytes")
 	}
 	var idArr [8]byte
 	copy(idArr[:8], bytes)
 	id := pcommon.NewSpanID(idArr)
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		return id
 	}, nil
 }

@@ -17,14 +17,15 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func truncateAll(target GetSetter, limit int64) (ExprFunc, error) {
+func truncateAll(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		if limit < 0 {
 			return nil
 		}

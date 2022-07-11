@@ -14,15 +14,18 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
-import "go.opentelemetry.io/collector/pdata/pcommon"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
-func keepKeys(target GetSetter, keys []string) (ExprFunc, error) {
+func keepKeys(target tql.GetSetter, keys []string) (tql.ExprFunc, error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
 			return nil

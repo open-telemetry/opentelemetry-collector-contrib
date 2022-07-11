@@ -17,12 +17,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
@@ -32,7 +31,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		path      []common.Field
+		path      []tql.Field
 		orig      interface{}
 		new       interface{}
 		modified  func(pmetric.NumberDataPoint)
@@ -40,7 +39,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -53,7 +52,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -66,7 +65,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_double",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "value_double",
 				},
@@ -80,7 +79,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "value_int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "value_int",
 				},
@@ -93,7 +92,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "flags",
 				},
@@ -106,7 +105,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "exemplars",
 				},
@@ -119,7 +118,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "attributes",
 				},
@@ -133,10 +132,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -147,10 +146,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -161,10 +160,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -175,10 +174,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -189,10 +188,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -203,10 +202,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -220,10 +219,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -237,10 +236,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -254,10 +253,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -271,10 +270,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -340,14 +339,14 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []common.Field
+		path     []tql.Field
 		orig     interface{}
 		new      interface{}
 		modified func(pmetric.HistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -360,7 +359,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -373,7 +372,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "flags",
 				},
@@ -386,7 +385,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "count",
 				},
@@ -399,7 +398,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "sum",
 				},
@@ -412,7 +411,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "bucket_counts",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "bucket_counts",
 				},
@@ -425,7 +424,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "explicit_bounds",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "explicit_bounds",
 				},
@@ -438,7 +437,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "exemplars",
 				},
@@ -451,7 +450,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "attributes",
 				},
@@ -465,10 +464,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -479,10 +478,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -493,10 +492,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -507,10 +506,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -521,10 +520,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -535,10 +534,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -552,10 +551,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -569,10 +568,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -586,10 +585,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -603,10 +602,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -678,14 +677,14 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []common.Field
+		path     []tql.Field
 		orig     interface{}
 		new      interface{}
 		modified func(pmetric.ExponentialHistogramDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -698,7 +697,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -711,7 +710,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "flags",
 				},
@@ -724,7 +723,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "count",
 				},
@@ -737,7 +736,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "sum",
 				},
@@ -750,7 +749,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "scale",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "scale",
 				},
@@ -763,7 +762,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "zero_count",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "zero_count",
 				},
@@ -776,7 +775,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "positive",
 				},
@@ -789,7 +788,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive offset",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "positive",
 				},
@@ -805,7 +804,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "positive bucket_counts",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "positive",
 				},
@@ -821,7 +820,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "negative",
 				},
@@ -834,7 +833,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative offset",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "negative",
 				},
@@ -850,7 +849,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "negative bucket_counts",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "negative",
 				},
@@ -866,7 +865,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "exemplars",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "exemplars",
 				},
@@ -879,7 +878,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "attributes",
 				},
@@ -893,10 +892,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -907,10 +906,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -921,10 +920,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -935,10 +934,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: 1.2,
@@ -949,10 +948,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -963,10 +962,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -980,10 +979,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -997,10 +996,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1014,10 +1013,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1031,10 +1030,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1107,14 +1106,14 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []common.Field
+		path     []tql.Field
 		orig     interface{}
 		new      interface{}
 		modified func(pmetric.SummaryDataPoint)
 	}{
 		{
 			name: "start_time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "start_time_unix_nano",
 				},
@@ -1127,7 +1126,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -1140,7 +1139,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "flags",
 				},
@@ -1153,7 +1152,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "count",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "count",
 				},
@@ -1166,7 +1165,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "sum",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "sum",
 				},
@@ -1179,7 +1178,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "quantile_values",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "quantile_values",
 				},
@@ -1192,7 +1191,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "attributes",
 				},
@@ -1206,10 +1205,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -1220,10 +1219,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -1234,10 +1233,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -1248,10 +1247,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: 1.2,
@@ -1262,10 +1261,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -1276,10 +1275,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1293,10 +1292,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1310,10 +1309,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1327,10 +1326,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1344,10 +1343,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1442,14 +1441,14 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []common.Field
+		path     []tql.Field
 		orig     interface{}
 		new      interface{}
 		modified func(metric pmetric.Metric)
 	}{
 		{
 			name: "metric",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1462,7 +1461,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric name",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1478,7 +1477,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric description",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1494,7 +1493,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric unit",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1510,7 +1509,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric type",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1525,7 +1524,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric aggregation_temporality",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},
@@ -1541,7 +1540,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 		},
 		{
 			name: "metric is_monotonic",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "metric",
 				},

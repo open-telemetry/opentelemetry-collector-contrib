@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func Test_truncateAll(t *testing.T) {
+func Test_deleteKey(t *testing.T) {
 	input := pcommon.NewMap()
 	input.InsertString("test", "hello world")
 	input.InsertInt("test2", 3)
@@ -33,55 +33,38 @@ func Test_truncateAll(t *testing.T) {
 		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
-			ctx.GetItem().(pcommon.Map).Clear()
-			val.(pcommon.Map).CopyTo(ctx.GetItem().(pcommon.Map))
-		},
 	}
 
 	tests := []struct {
 		name   string
-		target tql.GetSetter
-		limit  int64
+		target tql.Getter
+		key    string
 		want   func(pcommon.Map)
 	}{
 		{
-			name:   "truncate map",
+			name:   "delete test",
 			target: target,
-			limit:  1,
+			key:    "test",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "h")
-				expectedMap.InsertInt("test2", 3)
 				expectedMap.InsertBool("test3", true)
+				expectedMap.InsertInt("test2", 3)
 			},
 		},
 		{
-			name:   "truncate map to zero",
+			name:   "delete test2",
 			target: target,
-			limit:  0,
-			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
-				expectedMap.InsertString("test", "")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
-			},
-		},
-		{
-			name:   "truncate nothing",
-			target: target,
-			limit:  100,
+			key:    "test2",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
 				expectedMap.InsertBool("test3", true)
 			},
 		},
 		{
-			name:   "truncate exact",
+			name:   "delete nothing",
 			target: target,
-			limit:  11,
+			key:    "not a valid key",
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.InsertString("test", "hello world")
@@ -99,7 +82,7 @@ func Test_truncateAll(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := truncateAll(tt.target, tt.limit)
+			exprFunc, _ := deleteKey(tt.target, tt.key)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -110,27 +93,7 @@ func Test_truncateAll(t *testing.T) {
 	}
 }
 
-func Test_truncateAll_validation(t *testing.T) {
-	tests := []struct {
-		name   string
-		target tql.GetSetter
-		limit  int64
-	}{
-		{
-			name:   "limit less than zero",
-			target: &testGetSetter{},
-			limit:  int64(-1),
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := truncateAll(tt.target, tt.limit)
-			assert.Error(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
-		})
-	}
-}
-
-func Test_truncateAll_bad_input(t *testing.T) {
+func Test_deleteKey_bad_input(t *testing.T) {
 	input := pcommon.NewValueString("not a map")
 	ctx := tqltest.TestTransformContext{
 		Item: input,
@@ -145,13 +108,15 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
+	key := "anything"
+
+	exprFunc, _ := deleteKey(target, key)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
 }
 
-func Test_truncateAll_get_nil(t *testing.T) {
+func Test_deleteKey_get_nil(t *testing.T) {
 	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
@@ -165,6 +130,8 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
+	key := "anything"
+
+	exprFunc, _ := deleteKey(target, key)
 	exprFunc(ctx)
 }

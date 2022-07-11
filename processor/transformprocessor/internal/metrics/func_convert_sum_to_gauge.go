@@ -15,13 +15,12 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func convertSumToGauge() (common.ExprFunc, error) {
-	return func(ctx common.TransformContext) interface{} {
+func convertSumToGauge() (tql.ExprFunc, error) {
+	return func(ctx tql.TransformContext) interface{} {
 		mtc, ok := ctx.(metricTransformContext)
 		if !ok {
 			return nil
