@@ -27,6 +27,11 @@ import (
 	"golang.org/x/time/rate"
 )
 
+var (
+	errFormatOTLPAttributes       = fmt.Errorf("value should be of the format key=\"value\"")
+	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
+)
+
 // Config describes the test scenario.
 type Config struct {
 	WorkerCount      int
@@ -55,11 +60,11 @@ func (v *KeyValue) String() string {
 func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
-		return fmt.Errorf("value should be of the format key=\"value\"")
+		return errFormatOTLPAttributes
 	}
 	val := kv[1]
 	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
-		return fmt.Errorf("value should be a string wrapped in double quotes")
+		return errDoubleQuotesOTLPAttributes
 	}
 
 	(*v)[kv[0]] = val[1 : len(val)-1]
