@@ -41,11 +41,11 @@ type GetSetter interface {
 	Setter
 }
 
-type literal struct {
+type Literal struct {
 	value interface{}
 }
 
-func (l literal) Get(ctx TransformContext) interface{} {
+func (l Literal) Get(ctx TransformContext) interface{} {
 	return l.value
 }
 
@@ -59,23 +59,23 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 
 func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
-		return &literal{value: nil}, nil
+		return &Literal{value: nil}, nil
 	}
 
 	if s := val.String; s != nil {
-		return &literal{value: *s}, nil
+		return &Literal{value: *s}, nil
 	}
 	if f := val.Float; f != nil {
-		return &literal{value: *f}, nil
+		return &Literal{value: *f}, nil
 	}
 	if i := val.Int; i != nil {
-		return &literal{value: *i}, nil
+		return &Literal{value: *i}, nil
 	}
 	if b := val.Bool; b != nil {
-		return &literal{value: bool(*b)}, nil
+		return &Literal{value: bool(*b)}, nil
 	}
 	if b := val.Bytes; b != nil {
-		return &literal{value: ([]byte)(*b)}, nil
+		return &Literal{value: ([]byte)(*b)}, nil
 	}
 
 	if val.Path != nil {
