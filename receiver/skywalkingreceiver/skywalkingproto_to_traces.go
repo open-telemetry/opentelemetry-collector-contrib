@@ -35,6 +35,9 @@ const (
 	AttributeParentService            = "parent.service"
 	AttributeParentInstance           = "parent.service.instance"
 	AttributeParentEndpoint           = "parent.endpoint"
+	AttributeSkywalkingSpanID         = "sw8.span_id"
+	AttributeSkywalkingTraceID        = "sw8.trace_id"
+	AttributeSkywalkingSegmentID      = "sw8.segment_id"
 	AttributeNetworkAddressUsedAtPeer = "network.AddressUsedAtPeer"
 )
 
@@ -56,11 +59,14 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 
 	resourceSpan := traceData.ResourceSpans().AppendEmpty()
 	rs := resourceSpan.Resource()
+
 	for _, span := range swSpans {
 		swTagsToInternalResource(span, rs)
-		rs.Attributes().Insert(conventions.AttributeServiceName, pcommon.NewValueString(segment.GetService()))
-		rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pcommon.NewValueString(segment.GetServiceInstance()))
 	}
+
+	rs.Attributes().Insert(conventions.AttributeServiceName, pcommon.NewValueString(segment.GetService()))
+	rs.Attributes().Insert(conventions.AttributeServiceInstanceID, pcommon.NewValueString(segment.GetServiceInstance()))
+	rs.Attributes().Insert(AttributeSkywalkingTraceID, pcommon.NewValueString(segment.GetTraceId()))
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
@@ -125,7 +131,8 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 	if attrs.Len() == 0 {
 		attrs.Clear()
 	}
-
+	attrs.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	attrs.InsertString(AttributeSkywalkingSegmentID, segmentID)
 	setInternalSpanStatus(span, dest.Status())
 
 	switch {
