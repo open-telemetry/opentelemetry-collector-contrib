@@ -116,6 +116,13 @@ func TestLogRecord_Matching_False(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_severity_text_regexp_dont_match",
+			properties: &filterconfig.MatchProperties{
+				Config:           *createConfig(filterset.Regexp),
+				LogSeverityTexts: []string{"debug.*"},
+			},
+		},
 	}
 
 	lr := plog.NewLogRecord()
