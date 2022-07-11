@@ -55,6 +55,33 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, scraper.Shutdown(ctx))
 }
 
+func TestScrapeWithoutDirectionAttribute(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t)
+
+	cfg := &Config{
+		Metrics:  metadata.DefaultMetricsSettings(),
+		Endpoint: mockServer.URL,
+		Username: mock.MockUsername,
+		Password: mock.MockPassword,
+	}
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper.emitMetricsWithDirectionAttribute = false
+	scraper.emitMetricsWithoutDirectionAttribute = true
+
+	metrics, err := scraper.scrape(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, metrics.MetricCount(), 0)
+
+	goldenPath := filepath.Join("testdata", "metrics", "expected_without_direction.json")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	err = scrapertest.CompareMetrics(expectedMetrics, metrics)
+	require.NoError(t, err)
+	require.NoError(t, scraper.Shutdown(ctx))
+}
+
 func TestScrape_NoClient(t *testing.T) {
 	ctx := context.Background()
 	scraper := &vcenterMetricScraper{

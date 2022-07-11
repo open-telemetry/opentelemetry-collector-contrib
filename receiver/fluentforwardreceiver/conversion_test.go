@@ -215,7 +215,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 		err := event.DecodeMsg(reader)
 		require.NotNil(t, err)
 		require.Contains(t, err.Error(), "gzip")
-		print(err.Error())
+		fmt.Println(err.Error())
 	})
 }
 

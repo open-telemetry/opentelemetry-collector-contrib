@@ -27,7 +27,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                  = "googlecloud"
+	typeStr = "googlecloud"
+	// The stability level of the exporter.
+	stability                = component.StabilityLevelBeta
 	defaultTimeout           = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 	pdataExporterFeatureGate = "exporter.googlecloud.OTLPDirect"
 )
@@ -45,9 +47,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
 	)
 }
 

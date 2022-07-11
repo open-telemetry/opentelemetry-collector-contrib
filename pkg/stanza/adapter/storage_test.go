@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
@@ -83,7 +82,7 @@ func createReceiver(t *testing.T) *receiver {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
-	factory := NewFactory(TestReceiverType{})
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),

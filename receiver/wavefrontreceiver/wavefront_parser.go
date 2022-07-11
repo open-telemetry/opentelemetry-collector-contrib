@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package wavefrontreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
 
 import (
@@ -152,7 +151,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
-				metricName = strings.Replace(metricName, "..", ".", -1)
+				metricName = strings.ReplaceAll(metricName, "..", ".")
 			}
 
 			break

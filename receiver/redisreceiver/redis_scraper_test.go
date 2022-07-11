@@ -38,7 +38,8 @@ func TestRedisRunnable(t *testing.T) {
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
-	assert.Equal(t, len(rs.dataPointRecorders())+6, md.DataPointCount())
+	// -1 because maxmemory is by default disabled, so recorder is there, but there won't be data point
+	assert.Equal(t, len(rs.dataPointRecorders())+6-1, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()

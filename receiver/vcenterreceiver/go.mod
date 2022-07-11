@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/vmware/govmomi v0.28.0
-	go.opentelemetry.io/collector v0.54.0
-	go.opentelemetry.io/collector/pdata v0.54.0
+	go.opentelemetry.io/collector v0.55.0
+	go.opentelemetry.io/collector/pdata v0.55.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -14,15 +14,15 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
-	github.com/stretchr/testify v1.7.4
+	github.com/stretchr/testify v1.8.0
 )
 
 require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 
 require (
 	github.com/basgys/goxml2json v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.54.0
-	golang.org/x/sys v0.0.0-20220307203707-22a9840ba4d7 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.55.0
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 )
 
 require (

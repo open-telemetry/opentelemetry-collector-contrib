@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package saphanareceiver
 
 import (
@@ -44,7 +43,7 @@ func (m *testResultWrapper) Scan(dest ...interface{}) error {
 		*d = m.contents[m.current][i]
 	}
 
-	m.current = m.current + 1
+	m.current++
 	return nil
 }
 

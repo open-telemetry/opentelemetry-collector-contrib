@@ -1,10 +1,9 @@
 # ClickHouse Exporter
 
-**Status: experimental**
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [alpha]    |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
@@ -117,5 +116,5 @@ PARTITION BY toDate(Timestamp)
 ORDER BY (toUnixTimestamp(Timestamp));
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

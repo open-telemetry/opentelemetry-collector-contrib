@@ -41,6 +41,10 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 			actualMetrics.Len())
 	}
 
+	// sort ResourceMetrics
+	expectedMetrics.Sort(sortResourceMetrics)
+	actualMetrics.Sort(sortResourceMetrics)
+
 	numResources := expectedMetrics.Len()
 
 	// Keep track of matching resources so that each can only be matched once
@@ -123,6 +127,10 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 	if expected.Len() != actual.Len() {
 		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
+
+	// Sort MetricSlices
+	expected.Sort(sortMetricSlice)
+	actual.Sort(sortMetricSlice)
 
 	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
 

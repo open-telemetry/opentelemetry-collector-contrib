@@ -66,6 +66,20 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
+			query: `replace_pattern(attributes["http.method"], "get", "post")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpdateString("http.method", "post")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().UpdateString("http.method", "post")
+			},
+		},
+		{
+			query: `replace_all_patterns(attributes, "get", "post")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpdateString("http.method", "post")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().UpdateString("http.method", "post")
+			},
+		},
+		{
 			query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
@@ -85,6 +99,12 @@ func TestProcess(t *testing.T) {
 		},
 		{
 			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
 			},
