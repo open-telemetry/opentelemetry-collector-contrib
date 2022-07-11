@@ -161,7 +161,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 	// Verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, p.latencyBounds)
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -450,7 +450,13 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
-		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
+		// Verify bucket counts.
+
+		// The bucket counts should be 1 greater than the explicit bounds as documented in:
+		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
+		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
+
+		// Find the bucket index where the 11ms latency should belong in.
 		var foundLatencyIndex int
 		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
 			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
