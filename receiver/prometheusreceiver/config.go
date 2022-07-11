@@ -43,9 +43,9 @@ const (
 // Config defines configuration for Prometheus receiver.
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-	PrometheusConfig        *promconfig.Config `mapstructure:"-"`
-	BufferPeriod            time.Duration      `mapstructure:"buffer_period"`
-	BufferCount             int                `mapstructure:"buffer_count"`
+	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
+	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
+	BufferCount             int                      `mapstructure:"buffer_count"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
@@ -54,7 +54,8 @@ type Config struct {
 	// in incorrect rate calculations.
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
-	DisableStartTime     bool   `mapstructure:"disable_start_time"`
+	// DisableStartTime disables start time calculation of all metrics
+	DisableStartTime bool `mapstructure:"disable_start_time"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
