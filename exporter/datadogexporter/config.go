@@ -18,7 +18,6 @@ import (
 	"encoding"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -26,10 +25,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
-	"go.uber.org/zap"
+	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 )
 
@@ -47,12 +44,9 @@ const (
 type APIConfig struct {
 	// Key is the Datadog API key to associate your Agent's data with your organization.
 	// Create a new API key here: https://app.datadoghq.com/account/settings
-	//
-	// It can also be set through the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	Key string `mapstructure:"key"`
 
 	// Site is the site of the Datadog intake to send data to.
-	// It can also be set through the `DD_SITE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// The default value is "datadoghq.com".
 	Site string `mapstructure:"site"`
 
@@ -63,22 +57,11 @@ type APIConfig struct {
 
 // MetricsConfig defines the metrics exporter specific configuration options
 type MetricsConfig struct {
-	// Quantiles states whether to report quantiles from summary metrics.
-	// By default, the minimum, maximum and average are reported.
-	// Deprecated: [v0.50.0] Use `metrics::summaries::mode` (SummaryConfig.Mode) instead.
-	Quantiles bool `mapstructure:"report_quantiles"`
-
-	// SendMonotonic states whether to report cumulative monotonic metrics as counters
-	// or gauges
-	// Deprecated: [v0.48.0] Use `metrics::sums::cumulative_monotonic_mode` (SumConfig.CumulativeMonotonicMode) instead.
-	SendMonotonic bool `mapstructure:"send_monotonic_counter"`
-
 	// DeltaTTL defines the time that previous points of a cumulative monotonic
 	// metric are kept in memory to calculate deltas
 	DeltaTTL int64 `mapstructure:"delta_ttl"`
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
-	// It can also be set through the `DD_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead)..
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
 
@@ -224,12 +207,6 @@ type MetricsExporterConfig struct {
 	// resource attributes into metric labels, which are then converted into tags
 	ResourceAttributesAsTags bool `mapstructure:"resource_attributes_as_tags"`
 
-	// Deprecated: [0.54.0] Use InstrumentationScopeMetadataAsTags instead in favor of https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
-	// Both must not be enabled at the same time.
-	// InstrumentationLibraryMetadataAsTags, if set to true, adds the name and version of the
-	// instrumentation library that created a metric to the metric tags
-	InstrumentationLibraryMetadataAsTags bool `mapstructure:"instrumentation_library_metadata_as_tags"`
-
 	// InstrumentationScopeMetadataAsTags, if set to true, adds the name and version of the
 	// instrumentation scope that created a metric to the metric tags
 	InstrumentationScopeMetadataAsTags bool `mapstructure:"instrumentation_scope_metadata_as_tags"`
@@ -238,15 +215,8 @@ type MetricsExporterConfig struct {
 // TracesConfig defines the traces exporter specific configuration options
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
-	// It can also be set through the `DD_APM_URL` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, the value is obtained from the Site.
 	confignet.TCPAddr `mapstructure:",squash"`
-
-	// SampleRate is the rate at which to sample this event. Default is 1,
-	// meaning no sampling. If you want to send one event out of every 250
-	// times Send() is called, you would specify 250 here.
-	// Deprecated: [v0.50.0] Not used anywhere.
-	SampleRate uint `mapstructure:"sample_rate"`
 
 	// ignored resources
 	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
@@ -276,54 +246,8 @@ type TracesConfig struct {
 // It is embedded in the configuration
 type TagsConfig struct {
 	// Hostname is the host name for unified service tagging.
-	// It can also be set through the `DD_HOST` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
 	// If unset, it is determined automatically.
-	// See https://docs.datadoghq.com/agent/faq/how-datadog-agent-determines-the-hostname
-	// for more details.
 	Hostname string `mapstructure:"hostname"`
-
-	// Env is the environment for unified service tagging.
-	// Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
-	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-	Env string `mapstructure:"env"`
-
-	// Service is the service for unified service tagging.
-	// Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
-	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-	Service string `mapstructure:"service"`
-
-	// Version is the version for unified service tagging.
-	// Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
-	// This option will be removed in v0.52.0.
-	// It can also be set through the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-	Version string `mapstructure:"version"`
-
-	// EnvVarTags is the list of space-separated tags passed by the `DD_TAGS` environment variable
-	// Superseded by Tags if the latter is set.
-	// Should not be set in the user-provided config.
-	//
-	// Deprecated: [v0.47.0] Use `host_metadata::tags` HostMetadataConfig.Tags instead.
-	EnvVarTags string `mapstructure:"envvartags"`
-
-	// Tags is the list of default tags to add to every metric or trace.
-	// Deprecated: [v0.49.0] Use `host_metadata::tags` (HostMetadataConfig.Tags)
-	Tags []string `mapstructure:"tags"`
-}
-
-// getHostTags gets the host tags extracted from the configuration
-func (t *TagsConfig) getHostTags() []string {
-	tags := t.Tags
-
-	if len(tags) == 0 {
-		tags = strings.Split(t.EnvVarTags, " ")
-	}
-
-	if t.Env != "none" {
-		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
-	}
-	return tags
 }
 
 // HostnameSource is the source for the hostname of host metadata.
@@ -418,13 +342,6 @@ type Config struct {
 	// HostMetadata defines the host metadata specific configuration
 	HostMetadata HostMetadataConfig `mapstructure:"host_metadata"`
 
-	// SendMetadata defines whether to send host metadata
-	// This is undocumented and only used for unit testing.
-	//
-	// This can't be disabled if `only_metadata` is true.
-	// Deprecated: [v0.49.0] Use `host_metadata::enabled` (HostMetadata.Enabled) instead.
-	SendMetadata bool `mapstructure:"send_metadata"`
-
 	// OnlyMetadata defines whether to only send metadata
 	// This is useful for agent-collector setups, so that
 	// metadata about a host is sent to the backend even
@@ -433,25 +350,6 @@ type Config struct {
 	// This flag is incompatible with disabling host metadata,
 	// `use_resource_metadata`, or `host_metadata::hostname_source != first_resource`
 	OnlyMetadata bool `mapstructure:"only_metadata"`
-
-	// UseResourceMetadata defines whether to use resource attributes
-	// for completing host metadata (such as the hostname or host tags).
-	//
-	// By default this is true: the first resource attribute getting to
-	// the exporter will be used for host metadata.
-	// Disable this in the Collector if you are using an agent-collector setup.
-	// Deprecated: [v0.49.0] Use `host_metadata::hostname_source` (HostMetadata.HostnameSource) instead.
-	UseResourceMetadata bool `mapstructure:"use_resource_metadata"`
-
-	// warnings stores non-fatal configuration errors.
-	warnings []error
-}
-
-// logWarnings logs warning messages that were generated on unmarshaling.
-func (c *Config) logWarnings(logger *zap.Logger) {
-	for _, err := range c.warnings {
-		logger.Warn(fmt.Sprintf("%v", err))
-	}
 }
 
 var _ config.Exporter = (*Config)(nil)
@@ -498,6 +396,71 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+var _ error = (*renameError)(nil)
+
+// renameError is an error related to a renamed setting.
+type renameError struct {
+	// oldName of the configuration option.
+	oldName string
+	// newName of the configuration option.
+	newName string
+	// issueNumber on opentelemetry-collector-contrib for tracking
+	issueNumber uint
+}
+
+// List of settings that have been removed, but for which we keep a custom error.
+var removedSettings = []renameError{
+	{
+		oldName:     "metrics::send_monotonic_counter",
+		newName:     "metrics::sums::cumulative_monotonic_mode",
+		issueNumber: 8489,
+	},
+	{
+		oldName:     "tags",
+		newName:     "host_metadata::tags",
+		issueNumber: 9099,
+	},
+	{
+		oldName:     "send_metadata",
+		newName:     "host_metadata::enabled",
+		issueNumber: 9099,
+	},
+	{
+		oldName:     "use_resource_metadata",
+		newName:     "host_metadata::hostname_source",
+		issueNumber: 9099,
+	},
+	{
+		oldName:     "metrics::report_quantiles",
+		newName:     "metrics::summaries::mode",
+		issueNumber: 8845,
+	},
+	{
+		oldName:     "metrics::instrumentation_library_metadata_as_tags",
+		newName:     "metrics::instrumentation_scope_as_tags",
+		issueNumber: 11135,
+	},
+}
+
+// Error implements the error interface.
+func (e renameError) Error() string {
+	return fmt.Sprintf(
+		"%q was removed in favor of %q. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d",
+		e.oldName,
+		e.newName,
+		e.issueNumber,
+	)
+}
+
+func handleRemovedSettings(configMap *confmap.Conf) (err error) {
+	for _, removedErr := range removedSettings {
+		if configMap.IsSet(removedErr.oldName) {
+			err = multierr.Append(err, removedErr)
+		}
+	}
+	return
+}
+
 var _ config.Unmarshallable = (*Config)(nil)
 
 // Unmarshal a configuration map into the configuration struct.
@@ -514,46 +477,11 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	c.API.Key = strings.TrimSpace(c.API.Key)
 
 	// If an endpoint is not explicitly set, override it based on the site.
-	// TODO (#8396) Remove DD_URL check.
-	if !configMap.IsSet("metrics::endpoint") && os.Getenv("DD_URL") == "" {
+	if !configMap.IsSet("metrics::endpoint") {
 		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
-	// TODO (#8396) Remove DD_APM_URL check.
-	if !configMap.IsSet("traces::endpoint") && os.Getenv("DD_APM_URL") == "" {
+	if !configMap.IsSet("traces::endpoint") {
 		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
-	}
-
-	// Add deprecation warnings for deprecated settings.
-	renamingWarnings, err := handleRenamedSettings(configMap, c)
-	if err != nil {
-		return err
-	}
-	c.warnings = append(c.warnings, renamingWarnings...)
-
-	// Add warnings about autodetected environment variables.
-	c.warnings = append(c.warnings, warnUseOfEnvVars(configMap, c)...)
-
-	deprecationTemplate := "%q has been deprecated and will be removed in %s or later. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/%d"
-	if c.Service != "" {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "service", "v0.52.0", 8781))
-	}
-	if c.Version != "" {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "version", "v0.52.0", 8783))
-	}
-	if configMap.IsSet("env") {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "env", "v0.52.0", 9016))
-	}
-	if c.Traces.SampleRate != 0 {
-		c.warnings = append(c.warnings, fmt.Errorf(deprecationTemplate, "traces.sample_rate", "v0.52.0", 9771))
-	}
-
-	const settingName = "host_metadata::hostname_source"
-	if !configMap.IsSet(settingName) && !featuregate.GetRegistry().IsEnabled(metadata.HostnamePreviewFeatureGate) {
-		c.warnings = append(c.warnings, fmt.Errorf(
-			"%q will change its default value on a future version. Use the %q feature gate to preview this and other hostname changes",
-			settingName,
-			metadata.HostnamePreviewFeatureGate,
-		))
 	}
 	return nil
 }

@@ -462,6 +462,7 @@ require (
 	github.com/signalfx/golib/v3 v3.3.37 // indirect
 	github.com/signalfx/sapm-proto v0.11.0 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20201202163743-65b4fa925fc8 // indirect
+	github.com/sijms/go-ora/v2 v2.4.26 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.10 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
