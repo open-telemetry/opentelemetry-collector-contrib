@@ -18,8 +18,9 @@ import (
 	"fmt"
 
 	"github.com/gobwas/glob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 func replaceAllMatches(target tql.GetSetter, pattern string, replacement string) (tql.ExprFunc, error) {

@@ -17,8 +17,9 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"errors"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 func traceID(bytes []byte) (tql.ExprFunc, error) {
