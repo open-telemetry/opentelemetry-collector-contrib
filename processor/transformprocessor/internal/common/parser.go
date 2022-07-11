@@ -27,50 +27,50 @@ import (
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
 // nolint:govet
 type ParsedQuery struct {
-	Invocation Invocation `@@`
-	Condition  *Condition `( "where" @@ )?`
+	Invocation Invocation `parser:"@@" mapstructure:"invocation"`
+	Condition  *Condition `parser:"( 'where' @@ )?" mapstructure:"condition"`
 }
 
 // Condition represents an optional boolean condition on the RHS of a query.
 // nolint:govet
 type Condition struct {
-	Left  Value  `@@`
-	Op    string `@("==" | "!=")`
-	Right Value  `@@`
+	Left  Value  `parser:"@@" mapstructure:"left"`
+	Op    string `parser:"@('==' | '!=')" mapstructure:"op"`
+	Right Value  `parser:"@@" mapstructure:"right"`
 }
 
 // Invocation represents a function call.
 // nolint:govet
 type Invocation struct {
-	Function  string  `@Ident`
-	Arguments []Value `"(" ( @@ ( "," @@ )* )? ")"`
+	Function  string  `parser:"@Ident" mapstructure:"function"`
+	Arguments []Value `parser:"'(' ( @@ ( ',' @@ )* )? ')'" mapstructure:"arguments"`
 }
 
 // Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
 // expression, function call, or literal.
 // nolint:govet
 type Value struct {
-	Invocation *Invocation `( @@`
-	Bytes      *Bytes      `| @Bytes`
-	String     *string     `| @String`
-	Float      *float64    `| @Float`
-	Int        *int64      `| @Int`
-	Bool       *Boolean    `| @("true" | "false")`
-	IsNil      *IsNil      `| @"nil"`
-	Path       *Path       `| @@ )`
+	Invocation *Invocation `parser:"( @@" mapstructure:"invocation"`
+	Bytes      *Bytes      `parser:"| @Bytes" mapstructure:"bytes"`
+	String     *string     `parser:"| @String" mapstructure:"string"`
+	Float      *float64    `parser:"| @Float" mapstructure:"float"`
+	Int        *int64      `parser:"| @Int" mapstructure:"int"`
+	Bool       *Boolean    `parser:"| @('true' | 'false')" mapstructure:"bool"`
+	IsNil      *IsNil      `parser:"| @'nil'" mapstructure:"is_nil"`
+	Path       *Path       `parser:"| @@ )" mapstructure:"path"`
 }
 
 // Path represents a telemetry path expression.
 // nolint:govet
 type Path struct {
-	Fields []Field `@@ ( "." @@ )*`
+	Fields []Field `parser:"@@ ( '.' @@ )*" mapstructure:"fields"`
 }
 
 // Field is an item within a Path.
 // nolint:govet
 type Field struct {
-	Name   string  `@Ident`
-	MapKey *string `( "[" @String "]" )?`
+	Name   string  `parser:"@Ident" mapstructure:"name"`
+	MapKey *string `parser:"( '[' @String ']' )?" mapstructure:"map_key"`
 }
 
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
@@ -110,35 +110,62 @@ func (n *IsNil) Capture(_ []string) error {
 }
 
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
-	queries := make([]Query, 0)
+	parsedQueries := make([]ParsedQuery, 0)
 	var errors error
 
 	for _, statement := range statements {
 		parsed, err := parseQuery(statement)
 		if err != nil {
 			errors = multierr.Append(errors, err)
-			continue
+		} else {
+			parsedQueries = append(parsedQueries, *parsed)
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+	}
+
+	queries, err := InterpretQueries(parsedQueries, functions, pathParser)
+	errors = multierr.Append(errors, err)
+	if errors != nil {
+		return nil, errors
+	}
+	return queries, nil
+}
+
+func InterpretQueries(parsedQueries []ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+	queries := make([]Query, 0)
+	var errors error
+
+	for _, parsedQuery := range parsedQueries {
+		query, err := generateQuery(parsedQuery, functions, pathParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
-			continue
+		} else {
+			queries = append(queries, query)
 		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		queries = append(queries, Query{
-			Function:  function,
-			Condition: condition,
-		})
 	}
 
 	if errors != nil {
 		return nil, errors
 	}
 	return queries, nil
+}
+
+func generateQuery(parsedQuery ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser) (Query, error) {
+	var errors error
+	function, err := NewFunctionCall(parsedQuery.Invocation, functions, pathParser)
+	if err != nil {
+		errors = multierr.Append(errors, err)
+	}
+	condition, err := newConditionEvaluator(parsedQuery.Condition, functions, pathParser)
+	if err != nil {
+		errors = multierr.Append(errors, err)
+	}
+	if errors != nil {
+		return Query{}, errors
+	}
+	return Query{
+		Function:  function,
+		Condition: condition,
+	}, nil
 }
 
 var parser = newParser()

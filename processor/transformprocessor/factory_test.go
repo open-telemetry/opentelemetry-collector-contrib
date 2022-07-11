@@ -44,17 +44,20 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Traces: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: traces.DefaultFunctions(),
 		},
 		Metrics: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: metrics.DefaultFunctions(),
 		},
 		Logs: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: logs.DefaultFunctions(),
 		},
@@ -66,7 +69,7 @@ func TestFactoryCreateProcessor_Empty(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	err := cfg.Validate()
-	assert.NoError(t, err)
+	assert.Error(t, err)
 }
 
 func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {

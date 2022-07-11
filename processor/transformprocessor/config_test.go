@@ -18,6 +18,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -70,6 +72,217 @@ func TestLoadingConfig(t *testing.T) {
 	})
 }
 
+func TestLoadingOperationsConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "operations_config.yaml"), factories)
+	assert.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	p0 := cfg.Processors[config.NewComponentID(typeStr)]
+	assert.Equal(t, p0, &Config{
+		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		Traces: SignalConfig{
+			Queries: nil,
+			Operations: []common.ParsedQuery{
+				{
+					Invocation: common.Invocation{
+						Function: "set",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("bear"),
+							},
+						},
+					},
+					Condition: &common.Condition{
+						Left: common.Value{
+							Path: &common.Path{
+								Fields: []common.Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("http.path"),
+									},
+								},
+							},
+						},
+						Op: "==",
+						Right: common.Value{
+							String: testhelper.Strp("/animal"),
+						},
+					},
+				},
+				{
+					Invocation: common.Invocation{
+						Function: "keep_keys",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("http.method"),
+							},
+							{
+								String: testhelper.Strp("http.path"),
+							},
+						},
+					},
+				},
+			},
+
+			functions: traces.DefaultFunctions(),
+		},
+		Metrics: SignalConfig{
+			Queries: nil,
+			Operations: []common.ParsedQuery{
+				{
+					Invocation: common.Invocation{
+						Function: "set",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "metric",
+										},
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("bear"),
+							},
+						},
+					},
+					Condition: &common.Condition{
+						Left: common.Value{
+							Path: &common.Path{
+								Fields: []common.Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("http.path"),
+									},
+								},
+							},
+						},
+						Op: "==",
+						Right: common.Value{
+							String: testhelper.Strp("/animal"),
+						},
+					},
+				},
+				{
+					Invocation: common.Invocation{
+						Function: "keep_keys",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("http.method"),
+							},
+							{
+								String: testhelper.Strp("http.path"),
+							},
+						},
+					},
+				},
+			},
+
+			functions: metrics.DefaultFunctions(),
+		},
+		Logs: SignalConfig{
+			Queries: nil,
+			Operations: []common.ParsedQuery{
+				{
+					Invocation: common.Invocation{
+						Function: "set",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "body",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("bear"),
+							},
+						},
+					},
+					Condition: &common.Condition{
+						Left: common.Value{
+							Path: &common.Path{
+								Fields: []common.Field{
+									{
+										Name:   "attributes",
+										MapKey: testhelper.Strp("http.path"),
+									},
+								},
+							},
+						},
+						Op: "==",
+						Right: common.Value{
+							String: testhelper.Strp("/animal"),
+						},
+					},
+				},
+				{
+					Invocation: common.Invocation{
+						Function: "keep_keys",
+						Arguments: []common.Value{
+							{
+								Path: &common.Path{
+									Fields: []common.Field{
+										{
+											Name: "attributes",
+										},
+									},
+								},
+							},
+							{
+								String: testhelper.Strp("http.method"),
+							},
+							{
+								String: testhelper.Strp("http.path"),
+							},
+						},
+					},
+				},
+			},
+
+			functions: logs.DefaultFunctions(),
+		},
+	})
+}
+
 func TestLoadInvalidConfig(t *testing.T) {
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
@@ -98,6 +311,14 @@ func TestLoadInvalidConfig(t *testing.T) {
 	assert.NotNil(t, cfg)
 
 	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_unknown_function_log.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_both_syntax_type.yaml"), factories)
+	assert.Error(t, err)
+	assert.NotNil(t, cfg)
+
+	cfg, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_config_no_operations_or_queries.yaml"), factories)
 	assert.Error(t, err)
 	assert.NotNil(t, cfg)
 }

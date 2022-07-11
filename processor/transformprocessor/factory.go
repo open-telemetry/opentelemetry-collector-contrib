@@ -50,17 +50,20 @@ func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		Logs: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: logs.DefaultFunctions(),
 		},
 		Traces: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: traces.DefaultFunctions(),
 		},
 		Metrics: SignalConfig{
-			Queries: []string{},
+			Queries:    nil,
+			Operations: nil,
 
 			functions: metrics.DefaultFunctions(),
 		},

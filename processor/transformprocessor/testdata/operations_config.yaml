@@ -1,0 +1,93 @@
+processors:
+  transform:
+    traces:
+      operations:
+        - invocation:
+            function: set
+            arguments:
+              - path:
+                  fields:
+                    - name: name
+              - string: bear
+          condition:
+            left:
+              path:
+                fields:
+                  - name: attributes
+                    map_key: http.path
+            op: ==
+            right:
+              string: /animal
+        - invocation:
+            function: keep_keys
+            arguments:
+              - path: 
+                  fields:
+                    - name: attributes
+              - string: http.method
+              - string: http.path
+    metrics:
+      operations:
+        - invocation:
+            function: set
+            arguments:
+              - path:
+                  fields:
+                    - name: metric
+                    - name: name
+              - string: bear
+          condition:
+            left:
+              path:
+                fields:
+                  - name: attributes
+                    map_key: http.path
+            op: ==
+            right:
+              string: /animal
+        - invocation:
+            function: keep_keys
+            arguments:
+              - path:
+                  fields:
+                    - name: attributes
+              - string: http.method
+              - string: http.path
+    logs:
+      operations:
+        - invocation:
+            function: set
+            arguments:
+              - path:
+                  fields:
+                    - name: body
+              - string: bear
+          condition:
+            left:
+              path:
+                fields:
+                  - name: attributes
+                    map_key: http.path
+            op: ==
+            right:
+              string: /animal
+        - invocation:
+            function: keep_keys
+            arguments:
+              - path:
+                  fields:
+                    - name: attributes
+              - string: http.method
+              - string: http.path
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [transform]
+      exporters: [nop]

@@ -1,0 +1,27 @@
+processors:
+  transform:
+    traces:
+      operations:
+        - invocation:
+            function: set
+            arguments:
+              - path:
+                  fields:
+                    name: name
+              - string: bear
+      queries:
+        - set(name, "bear") where attributes["http.path"] == "/animal"
+        - not_a_function(attributes, "http.method", "http.path")
+
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [transform]
+      exporters: [nop]
