@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -47,9 +46,9 @@ type MetricExtractor interface {
 type CAdvisorMetric struct {
 	// source of the metric for debugging merge conflict
 	cgroupPath string
-	//key/value pairs that are typed and contain the metric (numerical) data
+	// key/value pairs that are typed and contain the metric (numerical) data
 	fields map[string]interface{}
-	//key/value string pairs that are used to identify the metrics
+	// key/value string pairs that are used to identify the metrics
 	tags map[string]string
 
 	logger *zap.Logger
