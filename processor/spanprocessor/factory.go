@@ -36,6 +36,13 @@ const (
 	statusCodeUnset = "Unset"
 	statusCodeError = "Error"
 	statusCodeOk    = "Ok"
+
+	spanKindInternal    = "Internal"
+	spanKindClient      = "Client"
+	spanKindServer      = "Server"
+	spanKindProducer    = "Producer"
+	spanKindConsumer    = "Consumer"
+	spanKindUnspecified = "Unspecified"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -45,8 +52,9 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
 //	Move this to the error package that allows for span name and field to be specified.
 var (
-	errMissingRequiredField       = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\" or \"setStatus\" must be specified")
+	errMissingRequiredField       = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\" or \"setStatus\" must be specified or \"spankind\" must be specified")
 	errIncorrectStatusCode        = errors.New("error creating \"span\" processor: \"status\" must have specified \"code\" as \"Ok\" or \"Error\" or \"Unset\"")
+	errIncorrectKind              = errors.New("error creating \"span\" processor: \"kind\" must have specified \"Internal\", \"Client\", \"Server\", \"Producer\", \"Consumer\" or \"Unspecified\"")
 	errIncorrectStatusDescription = errors.New("error creating \"span\" processor: \"description\" can be specified only for \"code\" \"Error\"")
 )
 
@@ -76,7 +84,7 @@ func createTracesProcessor(
 	oCfg := cfg.(*Config)
 	if len(oCfg.Rename.FromAttributes) == 0 &&
 		(oCfg.Rename.ToAttributes == nil || len(oCfg.Rename.ToAttributes.Rules) == 0) &&
-		oCfg.SetStatus == nil {
+		oCfg.SetStatus == nil && oCfg.SetKind == nil {
 		return nil, errMissingRequiredField
 	}
 
@@ -89,6 +97,11 @@ func createTracesProcessor(
 		}
 	}
 
+	if oCfg.SetKind != nil {
+		if oCfg.SetKind.Kind != spanKindInternal && oCfg.SetKind.Kind != spanKindClient && oCfg.SetKind.Kind != spanKindServer && oCfg.SetKind.Kind != spanKindProducer && oCfg.SetKind.Kind != spanKindConsumer && oCfg.SetKind.Kind != spanKindUnspecified {
+			return nil, errIncorrectKind
+		}
+	}
 	sp, err := newSpanProcessor(*oCfg)
 	if err != nil {
 		return nil, err

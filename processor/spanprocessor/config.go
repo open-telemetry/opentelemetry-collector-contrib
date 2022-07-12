@@ -38,6 +38,8 @@ type Config struct {
 
 	// SetStatus specifies status which should be set for this span.
 	SetStatus *Status `mapstructure:"status"`
+
+	SetKind *Kind `mapstructure:"spankind"`
 }
 
 // Name specifies the attributes to use to re-name a span.
@@ -90,6 +92,11 @@ type Status struct {
 
 	// Description is an optional field documenting Error statuses.
 	Description string `mapstructure:"description"`
+}
+
+type Kind struct {
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind
+	Kind string `mapstructure:"kind"`
 }
 
 var _ config.Processor = (*Config)(nil)

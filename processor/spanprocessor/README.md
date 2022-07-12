@@ -123,6 +123,20 @@ span/set_status:
     description: "some error description"
 ```
 
+### Set kind for span
+
+The following setting is required:
+
+- `kind`: Represents span kind. One of the following values "Internal", "Client", "Server", "Producer", "Consumer", "Unspecified".
+
+Example:
+
+```yaml
+# https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind
+span/set_kind:
+  spankind:
+    kind: Client
+```
 
 Refer to [config.yaml](./testdata/config.yaml) for detailed
 examples on using the processor.

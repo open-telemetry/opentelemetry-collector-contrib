@@ -99,6 +99,7 @@ func (sp *spanProcessor) processTraces(_ context.Context, td ptrace.Traces) (ptr
 				sp.processFromAttributes(s)
 				sp.processToAttributes(s)
 				sp.processUpdateStatus(s)
+				sp.processUpdateKind(s)
 			}
 		}
 	}
@@ -236,6 +237,26 @@ func (sp *spanProcessor) processUpdateStatus(span ptrace.Span) {
 		case statusCodeUnset:
 			span.Status().SetCode(ptrace.StatusCodeUnset)
 			span.Status().SetMessage("")
+		}
+	}
+}
+
+func (sp *spanProcessor) processUpdateKind(span ptrace.Span) {
+	cfg := sp.config.SetKind
+	if cfg != nil {
+		switch cfg.Kind {
+		case spanKindInternal:
+			span.SetKind(ptrace.SpanKindInternal)
+		case spanKindClient:
+			span.SetKind(ptrace.SpanKindClient)
+		case spanKindServer:
+			span.SetKind(ptrace.SpanKindServer)
+		case spanKindConsumer:
+			span.SetKind(ptrace.SpanKindConsumer)
+		case spanKindProducer:
+			span.SetKind(ptrace.SpanKindProducer)
+		default:
+			span.SetKind(ptrace.SpanKindUnspecified)
 		}
 	}
 }

@@ -605,6 +605,15 @@ func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attr
 	return td
 }
 
+func generateTraceDataSetKind(kind ptrace.SpanKind, attrs map[string]interface{}) ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetKind(kind)
+	pcommon.NewMapFromRaw(attrs).Sort().CopyTo(span.Attributes())
+	return td
+}
+
 func TestSpanProcessor_setStatusCode(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -622,6 +631,24 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
 	assert.EqualValues(t, generateTraceDataSetStatus(ptrace.StatusCodeError, "Set custom error message", nil), td)
+}
+
+func TestSpanProcessor_setKind(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.SetKind = &Kind{
+		Kind: spanKindServer,
+	}
+	tp, err := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), oCfg, consumertest.NewNop())
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	td := generateTraceDataSetKind(ptrace.SpanKindClient, nil)
+
+	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
+
+	assert.EqualValues(t, generateTraceDataSetKind(ptrace.SpanKindServer, nil), td)
 }
 
 func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
