@@ -113,8 +113,8 @@ type Field struct {
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
 // invocation and the expression to match telemetry for invoking the function.
 type Query struct {
-	Function   ExprFunc
-	Expression ExpressionEvaluator
+	Function  ExprFunc
+	Condition BoolExpressionEvaluator
 }
 
 // Bytes type for capturing byte arrays
@@ -167,8 +167,8 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			continue
 		}
 		queries = append(queries, Query{
-			Function:   function,
-			Expression: expression,
+			Function:  function,
+			Condition: expression,
 		})
 	}
 
