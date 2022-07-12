@@ -124,7 +124,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.Error(t, err)
 		})
 	}
@@ -337,10 +337,27 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Enum arg",
+			inv: Invocation{
+				Function: "testing_enum",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "TEST_ENUM",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath)
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 		})
 	}
@@ -425,6 +442,12 @@ func functionThatHasAnError() (ExprFunc, error) {
 	}, err
 }
 
+func functionWithEnum(_ Enum) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
 func DefaultFunctionsForTests() map[string]interface{} {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
@@ -439,5 +462,6 @@ func DefaultFunctionsForTests() map[string]interface{} {
 	functions["testing_int"] = functionWithInt
 	functions["testing_bool"] = functionWithBool
 	functions["testing_multiple_args"] = functionWithMultipleArgs
+	functions["testing_enum"] = functionWithEnum
 	return functions
 }

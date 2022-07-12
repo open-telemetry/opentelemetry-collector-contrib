@@ -25,7 +25,7 @@ Example Invocations
 
 ### Values
 
-Values are the things that get passed to an Invocation or used in a Condition. Values can be either a Path, a Literal, or an Invocation.  
+Values are the things that get passed to an Invocation or used in a Condition. Values can be either a Path, a Literal, an Enum, or an Invocation.  
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
@@ -61,9 +61,17 @@ Example Literals
 - `nil`,
 - `0x0001`
 
+#### Enums
+
+Enums are a special type of Path that gets interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by the TQL.** Instead, the user must provide a `EnumParser` that the TQL can use to interpret the Enum.  The `EnumParser` returns an `int64` instead of a function, which means that the Enum's numeric value is retrieved during parsing instead of during execution.
+
+Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.  
+
+When defining a function that will be used as an Invocation by the TQL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
+
 ### Conditions
 
-Conditions allow a decision to be made about whether an Invocation should be called. The TQL does not force a condition to be used, it only allows the opportunity for the condition to be invoked before invoking the associated Invocation.  Conditions allways return true or false.
+Conditions allow a decision to be made about whether an Invocation should be called. The TQL does not force a condition to be used, it only allows the opportunity for the condition to be invoked before invoking the associated Invocation.  Conditions always return true or false.
 
 Conditions are made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 

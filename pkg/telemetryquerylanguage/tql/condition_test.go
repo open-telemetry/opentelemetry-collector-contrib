@@ -94,10 +94,28 @@ func Test_newConditionEvaluator(t *testing.T) {
 			name: "no condition",
 			cond: nil,
 		},
+		{
+			name: "compare Enum to int",
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "TEST_ENUM",
+							},
+						},
+					},
+				},
+				Right: Value{
+					Int: tqltest.Intp(0),
+				},
+				Op: "==",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
+			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.True(t, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
@@ -114,7 +132,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 			Right: Value{
 				String: tqltest.Strp("cat"),
 			},
-		}, DefaultFunctionsForTests(), testParsePath)
+		}, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 		assert.Error(t, err)
 	})
 }
