@@ -16,6 +16,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -119,7 +120,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+		res.md.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
 	return md, errs
@@ -166,18 +167,17 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-
-		// todo verify this with multiple containers
-		r.recordContainerStats(now, res.stats, res.container).ResourceMetrics().CopyTo(md.ResourceMetrics())
+		r.recordContainerStats(now, res.stats, res.container).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
 	return md, errs
 }
 
 func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) pmetric.Metrics {
-
+	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
+	r.recordNetworkMetrics(now, &containerStats.Networks)
 
 	// Five always-present resource attrs + the user-configured resource attrs
 	resourceCapacity := 5 + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
@@ -214,7 +214,7 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
 	totalCache := memoryStats.Stats["total_cache"]
 	totalUsage := memoryStats.Usage - totalCache
-	r.mb.RecordContainerMemoryMaxDataPoint(now, int64(memoryStats.MaxUsage))
+	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats))
 	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
 	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
@@ -360,5 +360,20 @@ func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[str
 		r.mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(now, int64(stats.TxPackets), netInterface)
 		r.mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(now, int64(stats.RxErrors), netInterface)
 		r.mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(now, int64(stats.TxErrors), netInterface)
+	}
+}
+
+func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUStats, prevStats *dtypes.CPUStats) {
+	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
+	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
+	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
+	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
+	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
+	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
+	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
+	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+
+	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
+		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
 	}
 }
