@@ -33,10 +33,10 @@ type PusherCache interface {
 	// and then clear the existing cache.
 	Shutdown(ctx context.Context) error
 
-	// Current list of all pushers in the cache.
+	// ListPushers will return a list of all pushers in the cache.
 	ListPushers() []Pusher
 
-	// Flush all current pushers
+	// Flush will cause all pushers to flush to the AWS API
 	Flush() error
 }
 
@@ -53,6 +53,9 @@ func (pc *DefaultPusherCache) GetPusher(logGroup, logStream string, client Clien
 	streamToPusherMap, ok := pc.groupStreamToPusherMap[logGroup]
 	if !ok {
 		streamToPusherMap = map[string]Pusher{}
+		if pc.groupStreamToPusherMap == nil {
+			pc.groupStreamToPusherMap = map[string]map[string]Pusher{}
+		}
 		pc.groupStreamToPusherMap[logGroup] = streamToPusherMap
 	}
 
@@ -76,7 +79,7 @@ func (pc *DefaultPusherCache) ListPushers() (pushers []Pusher) {
 	return pushers
 }
 
-func (pc *DefaultPusherCache) Shutdown(ctx context.Context) (errs error) {
+func (pc *DefaultPusherCache) Shutdown(_ context.Context) (errs error) {
 	return pc.Flush()
 }
 
