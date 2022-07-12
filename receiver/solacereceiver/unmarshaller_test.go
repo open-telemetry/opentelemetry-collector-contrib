@@ -102,41 +102,41 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						replyToTopic         = "someReplyToTopic"
 					)
 					validData, err := proto.Marshal(&model_v1.SpanData{
-						TraceId:                      []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
-						SpanId:                       []byte{7, 6, 5, 4, 3, 2, 1, 0},
-						StartTimeUnixNano:            1234567890,
-						EndTimeUnixNano:              2234567890,
-						RouterName:                   &routerName,
-						MessageVpnName:               &vpnName,
-						Protocol:                     "MQTT",
-						ProtocolVersion:              &protocolVersion,
-						ApplicationMessageId:         &applicationMessageID,
-						CorrelationId:                &correlationID,
-						BinaryAttachmentSize:         1000,
-						XmlAttachmentSize:            200,
-						MetadataSize:                 34,
-						ClientUsername:               "someClientUsername",
-						ClientName:                   "someClient1234",
-						ReplyToTopic:                 &replyToTopic,
-						ReplicationGroupMessageId:    []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
-						Priority:                     &priority,
-						Ttl:                          &ttl,
-						DmqEligible:                  true,
-						DroppedEnqeueueEventsSuccess: 42,
-						DroppedEnqueueEventsFailed:   24,
-						HostIp:                       []byte{1, 2, 3, 4},
-						HostPort:                     55555,
-						PeerIp:                       []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
-						PeerPort:                     12345,
+						TraceId:                     []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+						SpanId:                      []byte{7, 6, 5, 4, 3, 2, 1, 0},
+						StartTimeUnixNano:           1234567890,
+						EndTimeUnixNano:             2234567890,
+						RouterName:                  &routerName,
+						MessageVpnName:              &vpnName,
+						SolosVersion:                "10.0.0",
+						Protocol:                    "MQTT",
+						ProtocolVersion:             &protocolVersion,
+						ApplicationMessageId:        &applicationMessageID,
+						CorrelationId:               &correlationID,
+						BinaryAttachmentSize:        1000,
+						XmlAttachmentSize:           200,
+						MetadataSize:                34,
+						ClientUsername:              "someClientUsername",
+						ClientName:                  "someClient1234",
+						ReplyToTopic:                &replyToTopic,
+						ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
+						Priority:                    &priority,
+						Ttl:                         &ttl,
+						DmqEligible:                 true,
+						DroppedEnqueueEventsSuccess: 42,
+						DroppedEnqueueEventsFailed:  24,
+						HostIp:                      []byte{1, 2, 3, 4},
+						HostPort:                    55555,
+						PeerIp:                      []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
+						PeerPort:                    12345,
+						BrokerReceiveTimeUnixNano:   1357924680,
+						DroppedUserProperties:       false,
 						UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 							"special_key": {
 								Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
 									BoolValue: true,
 								},
 							},
-						},
-						AdReceiveEvent: &model_v1.SpanData_AdReceiveEvent{
-							TimeUnixNano: 123456789,
 						},
 						EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
 							{
@@ -175,6 +175,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				populateAttributes(t, &resourceAttrs, map[string]interface{}{
 					"service.name":        "someRouterName",
 					"service.instance.id": "someVpnName",
+					"service.version":     "10.0.0",
 				})
 				instrumentation := resource.ScopeSpans().AppendEmpty()
 				span := instrumentation.Spans().AppendEmpty()
@@ -204,20 +205,23 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.solace.dropped_enqueue_events_success": int64(42),
 					"messaging.solace.dropped_enqueue_events_failed":  int64(24),
 					"messaging.solace.reply_to_topic":                 "someReplyToTopic",
+					"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
+					"messaging.solace.dropped_user_properties":        false,
 					"net.host.ip":                                     "1.2.3.4",
 					"net.host.port":                                   int64(55555),
 					"net.peer.ip":                                     "2345:425:2ca1::567:5673:23b5",
 					"net.peer.port":                                   int64(12345),
 					"messaging.solace.user_properties.special_key":    true,
 				})
-				populateEvent(t, &span, "AD Receive", 123456789, nil)
 				populateEvent(t, &span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":             "somequeue",
-					"messaging.solace.destination_type": "queue",
+					"messaging.destination":                 "somequeue",
+					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, &span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":             "sometopic",
-					"messaging.solace.destination_type": "topic-endpoint",
+					"messaging.destination":                 "sometopic",
+					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, &span, "commit", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",
@@ -264,6 +268,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 	var (
 		routerName = "someRouterName"
 		vpnName    = "someVpnName"
+		version    = "10.0.0"
 	)
 	tests := []struct {
 		name                        string
@@ -276,16 +281,20 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 			spanData: &model_v1.SpanData{
 				RouterName:     &routerName,
 				MessageVpnName: &vpnName,
+				SolosVersion:   version,
 			},
 			want: map[string]interface{}{
 				"service.name":        routerName,
 				"service.instance.id": vpnName,
+				"service.version":     version,
 			},
 		},
 		{
 			name:     "Does Not Map Fields When Not Present",
 			spanData: &model_v1.SpanData{},
-			want:     map[string]interface{}{},
+			want: map[string]interface{}{
+				"service.version": "",
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -386,26 +395,28 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		{
 			name: "With All Valid Attributes",
 			spanData: &model_v1.SpanData{
-				Protocol:                     "MQTT",
-				ProtocolVersion:              &protocolVersion,
-				ApplicationMessageId:         &applicationMessageID,
-				CorrelationId:                &correlationID,
-				BinaryAttachmentSize:         1000,
-				XmlAttachmentSize:            200,
-				MetadataSize:                 34,
-				ClientUsername:               "someClientUsername",
-				ClientName:                   "someClient1234",
-				ReplyToTopic:                 &replyToTopic,
-				ReplicationGroupMessageId:    []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
-				Priority:                     &priority,
-				Ttl:                          &ttl,
-				DmqEligible:                  true,
-				DroppedEnqeueueEventsSuccess: 42,
-				DroppedEnqueueEventsFailed:   24,
-				HostIp:                       []byte{1, 2, 3, 4},
-				HostPort:                     55555,
-				PeerIp:                       []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
-				PeerPort:                     12345,
+				Protocol:                    "MQTT",
+				ProtocolVersion:             &protocolVersion,
+				ApplicationMessageId:        &applicationMessageID,
+				CorrelationId:               &correlationID,
+				BinaryAttachmentSize:        1000,
+				XmlAttachmentSize:           200,
+				MetadataSize:                34,
+				ClientUsername:              "someClientUsername",
+				ClientName:                  "someClient1234",
+				ReplyToTopic:                &replyToTopic,
+				ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
+				Priority:                    &priority,
+				Ttl:                         &ttl,
+				DmqEligible:                 true,
+				DroppedEnqueueEventsSuccess: 42,
+				DroppedEnqueueEventsFailed:  24,
+				HostIp:                      []byte{1, 2, 3, 4},
+				HostPort:                    55555,
+				PeerIp:                      []byte{35, 69, 4, 37, 44, 161, 0, 0, 0, 0, 5, 103, 86, 115, 35, 181},
+				PeerPort:                    12345,
+				BrokerReceiveTimeUnixNano:   1357924680,
+				DroppedUserProperties:       false,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": {
 						Value: &model_v1.SpanData_UserPropertyValue_BoolValue{
@@ -436,22 +447,26 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"net.peer.ip":                                     "2345:425:2ca1::567:5673:23b5",
 				"net.peer.port":                                   int64(12345),
 				"messaging.solace.user_properties.special_key":    true,
+				"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
+				"messaging.solace.dropped_user_properties":        false,
 			},
 		},
 		{
 			name: "With Only Required Fields",
 			spanData: &model_v1.SpanData{
-				Protocol:                     "MQTT",
-				BinaryAttachmentSize:         1000,
-				XmlAttachmentSize:            200,
-				MetadataSize:                 34,
-				ClientUsername:               "someClientUsername",
-				ClientName:                   "someClient1234",
-				DmqEligible:                  true,
-				DroppedEnqeueueEventsSuccess: 42,
-				DroppedEnqueueEventsFailed:   24,
-				HostPort:                     55555,
-				PeerPort:                     12345,
+				Protocol:                    "MQTT",
+				BinaryAttachmentSize:        1000,
+				XmlAttachmentSize:           200,
+				MetadataSize:                34,
+				ClientUsername:              "someClientUsername",
+				ClientName:                  "someClient1234",
+				DmqEligible:                 true,
+				DroppedEnqueueEventsSuccess: 42,
+				DroppedEnqueueEventsFailed:  24,
+				HostPort:                    55555,
+				PeerPort:                    12345,
+				BrokerReceiveTimeUnixNano:   1357924680,
+				DroppedUserProperties:       true,
 				UserProperties: map[string]*model_v1.SpanData_UserPropertyValue{
 					"special_key": nil,
 				},
@@ -468,6 +483,8 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.dropped_enqueue_events_failed":  int64(24),
 				"net.host.port":                                   int64(55555),
 				"net.peer.port":                                   int64(12345),
+				"messaging.solace.broker_receive_time_unix_nano":  int64(1357924680),
+				"messaging.solace.dropped_user_properties":        true,
 			},
 			expectedUnmarshallingErrors: 2,
 		},
@@ -497,17 +514,6 @@ func TestUnmarshallerEvents(t *testing.T) {
 			spanData:             &model_v1.SpanData{},
 			populateExpectedSpan: func(span *ptrace.Span) {},
 		},
-		{ // when an ad receive event is present, expect it to be added to the span events
-			name: "AD Receive",
-			spanData: &model_v1.SpanData{
-				AdReceiveEvent: &model_v1.SpanData_AdReceiveEvent{
-					TimeUnixNano: 123456789,
-				},
-			},
-			populateExpectedSpan: func(span *ptrace.Span) {
-				populateEvent(t, span, "AD Receive", 123456789, nil)
-			},
-		},
 		{ // when an enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Queue",
 			spanData: &model_v1.SpanData{
@@ -520,8 +526,9 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span *ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":             "somequeue",
-					"messaging.solace.destination_type": "queue",
+					"messaging.destination":                 "somequeue",
+					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 			},
 		},
@@ -530,9 +537,10 @@ func TestUnmarshallerEvents(t *testing.T) {
 			spanData: &model_v1.SpanData{
 				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
 					{
-						Dest:             &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
-						TimeUnixNano:     123456789,
-						ErrorDescription: &someErrorString,
+						Dest:               &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+						TimeUnixNano:       123456789,
+						ErrorDescription:   &someErrorString,
+						RejectsAllEnqueues: true,
 					},
 				},
 			},
@@ -541,6 +549,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					"messaging.destination":                  "sometopic",
 					"messaging.solace.destination_type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
+					"messaging.solace.rejects_all_enqueues":  true,
 				})
 			},
 		},
@@ -560,12 +569,14 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span *ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":             "somequeue",
-					"messaging.solace.destination_type": "queue",
+					"messaging.destination":                 "somequeue",
+					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":             "sometopic",
-					"messaging.solace.destination_type": "topic-endpoint",
+					"messaging.destination":                 "sometopic",
+					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 			},
 		},
@@ -581,8 +592,9 @@ func TestUnmarshallerEvents(t *testing.T) {
 			},
 			populateExpectedSpan: func(span *ptrace.Span) {
 				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":             "#P2P/QUE/solbroker/some-topic-endpoint",
-					"messaging.solace.destination_type": "queue",
+					"messaging.destination":                 "#P2P/QUE/solbroker/some-topic-endpoint",
+					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 			},
 		},
@@ -602,6 +614,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					"messaging.destination":                  "#P2P/TE/solbroker/some-topic-endpoint",
 					"messaging.solace.destination_type":      "topic-endpoint",
 					"messaging.solace.enqueue_error_message": someErrorString,
+					"messaging.solace.rejects_all_enqueues":  false,
 				})
 			},
 		},
@@ -722,17 +735,15 @@ func TestUnmarshallerEvents(t *testing.T) {
 		{ // when a both a queue and topic endpoint enqueue event is present, expect it to be added to the span events
 			name: "Multiple Events",
 			spanData: &model_v1.SpanData{
-				AdReceiveEvent: &model_v1.SpanData_AdReceiveEvent{
-					TimeUnixNano: 123456789,
-				},
 				EnqueueEvents: []*model_v1.SpanData_EnqueueEvent{
 					{
 						Dest:         &model_v1.SpanData_EnqueueEvent_QueueName{QueueName: "somequeue"},
 						TimeUnixNano: 123456789,
 					},
 					{
-						Dest:         &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
-						TimeUnixNano: 2345678,
+						Dest:               &model_v1.SpanData_EnqueueEvent_TopicEndpointName{TopicEndpointName: "sometopic"},
+						TimeUnixNano:       2345678,
+						RejectsAllEnqueues: true,
 					},
 				},
 				TransactionEvent: &model_v1.SpanData_TransactionEvent{
@@ -749,14 +760,15 @@ func TestUnmarshallerEvents(t *testing.T) {
 				},
 			},
 			populateExpectedSpan: func(span *ptrace.Span) {
-				populateEvent(t, span, "AD Receive", 123456789, nil)
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
-					"messaging.destination":             "somequeue",
-					"messaging.solace.destination_type": "queue",
+					"messaging.destination":                 "somequeue",
+					"messaging.solace.destination_type":     "queue",
+					"messaging.solace.rejects_all_enqueues": false,
 				})
 				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
-					"messaging.destination":             "sometopic",
-					"messaging.solace.destination_type": "topic-endpoint",
+					"messaging.destination":                 "sometopic",
+					"messaging.solace.destination_type":     "topic-endpoint",
+					"messaging.solace.rejects_all_enqueues": true,
 				})
 				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",

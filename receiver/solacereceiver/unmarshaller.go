@@ -134,7 +134,7 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 	const (
 		routerNameAttrKey     = "service.name"
 		messageVpnNameAttrKey = "service.instance.id"
-		routerVersionAttrKey  = "service.version"
+		solosVersionAttrKey   = "service.version"
 	)
 	if spanData.RouterName != nil {
 		attrMap.InsertString(routerNameAttrKey, *spanData.RouterName)
@@ -142,7 +142,7 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 	if spanData.MessageVpnName != nil {
 		attrMap.InsertString(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
-	// TODO service.version
+	attrMap.InsertString(solosVersionAttrKey, spanData.SolosVersion)
 }
 
 func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan *ptrace.Span) {
@@ -210,6 +210,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		droppedEnqueueEventsSuccessAttrKey = "messaging.solace.dropped_enqueue_events_success"
 		droppedEnqueueEventsFailedAttrKey  = "messaging.solace.dropped_enqueue_events_failed"
 		replyToAttrKey                     = "messaging.solace.reply_to_topic"
+		receiveTimeAttrKey                 = "messaging.solace.broker_receive_time_unix_nano"
+		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_user_properties"
 		hostIPAttrKey                      = "net.host.ip"
 		hostPortAttrKey                    = "net.host.port"
 		peerIPAttrKey                      = "net.peer.ip"
@@ -229,6 +231,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	attrMap.InsertInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
 	attrMap.InsertString(clientUsernameAttrKey, spanData.ClientUsername)
 	attrMap.InsertString(clientNameAttrKey, spanData.ClientName)
+	attrMap.InsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
@@ -245,7 +248,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		attrMap.InsertString(replyToAttrKey, *spanData.ReplyToTopic)
 	}
 	attrMap.InsertBool(dmqEligibleAttrKey, spanData.DmqEligible)
-	attrMap.InsertInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqeueueEventsSuccess))
+	attrMap.InsertInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
 	attrMap.InsertInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
 	hostIPLen := len(spanData.HostIp)
@@ -266,6 +269,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	}
 	attrMap.InsertInt(peerPortAttrKey, int64(spanData.PeerPort))
 
+	attrMap.InsertBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
 			u.insertUserProperty(attrMap, key, value.Value)
@@ -275,11 +279,6 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 
 // mapEvents maps all events contained in SpanData to relevant events within clientSpan.Events()
 func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan *ptrace.Span) {
-	// handle AD events
-	if adReceiveEvent := spanData.AdReceiveEvent; adReceiveEvent != nil {
-		u.mapADReceiveEvent(adReceiveEvent, clientSpan)
-	}
-
 	// handle enqueue events
 	for _, enqueueEvent := range spanData.EnqueueEvents {
 		u.mapEnqueueEvent(enqueueEvent, clientSpan)
@@ -291,14 +290,6 @@ func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, cli
 	}
 }
 
-// mapADReceiveEvent maps a SpanData_AdReceiveEvent to a ClientSpan.Event
-func (u *solaceMessageUnmarshallerV1) mapADReceiveEvent(adReceiveEvent *model_v1.SpanData_AdReceiveEvent, clientSpan *ptrace.Span) {
-	const adEventName = "AD Receive"
-	clientEvent := clientSpan.Events().AppendEmpty()
-	clientEvent.SetName(adEventName)
-	clientEvent.SetTimestamp(pcommon.Timestamp(adReceiveEvent.TimeUnixNano))
-}
-
 // mapEnqueueEvent maps a SpanData_EnqueueEvent to a ClientSpan.Event
 func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpan *ptrace.Span) {
 	const (
@@ -306,6 +297,7 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 		messagingDestinationEventKey     = "messaging.destination"
 		messagingDestinationTypeEventKey = "messaging.solace.destination_type"
 		statusMessageEventKey            = "messaging.solace.enqueue_error_message"
+		rejectsAllEnqueuesKey            = "messaging.solace.rejects_all_enqueues"
 		queueKind                        = "queue"
 		topicEndpointKind                = "topic-endpoint"
 		anonymousQueuePrefix             = "#P2P"
@@ -336,6 +328,7 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
 	clientEvent.Attributes().InsertString(messagingDestinationEventKey, destinationName)
 	clientEvent.Attributes().InsertString(messagingDestinationTypeEventKey, destinationType)
+	clientEvent.Attributes().InsertBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
 		clientEvent.Attributes().InsertString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
 	}
