@@ -15,19 +15,20 @@
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
+	"fmt"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
 func attrsString(attrs map[string]interface{}) map[string]string {
 	out := make(map[string]string, len(attrs))
 	for k, s := range attrs {
-		out[k] = s.(string)
+		out[k] = fmt.Sprint(s)
 	}
 	return out
 }
 
-func getLogInfo(rm *cwLogBody, config *Config) (string, string, bool) {
-	var logGroup, logStream string
+func getLogInfo(rm *cwLogBody, config *Config) (logGroup, logStream string, replaced bool) {
 	groupReplaced := true
 	streamReplaced := true
 
@@ -40,6 +41,6 @@ func getLogInfo(rm *cwLogBody, config *Config) (string, string, bool) {
 	if len(config.LogStreamName) > 0 {
 		logStream, streamReplaced = cwlogs.ReplacePatterns(config.LogStreamName, strAttributeMap, config.logger)
 	}
-
-	return logGroup, logStream, groupReplaced && streamReplaced
+	replaced = groupReplaced && streamReplaced
+	return
 }

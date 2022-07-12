@@ -23,7 +23,7 @@ import (
 func ReplacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
 	success := true
 	var foundAndReplaced bool
-	for key := range PatternKeyToAttributeMap {
+	for key := range patternKeyToAttributeMap {
 		s, foundAndReplaced = replacePatternWithAttrValue(s, key, attrMap, logger)
 		success = success && foundAndReplaced
 	}
@@ -35,7 +35,7 @@ func replacePatternWithAttrValue(s, patternKey string, attrMap map[string]string
 	if strings.Contains(s, pattern) {
 		if value, ok := attrMap[patternKey]; ok {
 			return replace(s, pattern, value, logger)
-		} else if value, ok := attrMap[PatternKeyToAttributeMap[patternKey]]; ok {
+		} else if value, ok := attrMap[patternKeyToAttributeMap[patternKey]]; ok {
 			return replace(s, pattern, value, logger)
 		} else {
 			logger.Debug("No resource attribute found for pattern " + pattern)

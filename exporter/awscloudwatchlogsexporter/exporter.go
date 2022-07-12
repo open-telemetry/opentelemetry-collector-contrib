@@ -110,13 +110,14 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		body := &cwLogBody{}
 		err := json.Unmarshal([]byte(*logEvent.InputLogEvent.Message), body)
 		if err != nil {
-			return err
+			e.logger.Error("Unable to unmarshal log message", zap.Error(err))
+			continue
 		}
 		var cwLogsPusher cwlogs.Pusher
-		logGroup, logStream, _ := getLogInfo(body, e.Config)
 		if e.pusherOverride != nil {
 			cwLogsPusher = e.pusherOverride
 		} else {
+			logGroup, logStream, _ := getLogInfo(body, e.Config)
 			cwLogsPusher = e.getPusher(logGroup, logStream)
 		}
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))

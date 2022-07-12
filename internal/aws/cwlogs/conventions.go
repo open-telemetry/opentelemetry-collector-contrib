@@ -14,7 +14,7 @@
 
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
-var PatternKeyToAttributeMap = map[string]string{
+var patternKeyToAttributeMap = map[string]string{
 	"ClusterName":          "aws.ecs.cluster.name",
 	"TaskId":               "aws.ecs.task.id",
 	"NodeName":             "k8s.node.name",
