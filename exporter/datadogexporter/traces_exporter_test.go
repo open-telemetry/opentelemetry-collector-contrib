@@ -136,8 +136,6 @@ func TestTracesSource(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "fallbackHostname",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
@@ -246,8 +244,6 @@ func TestTraceExporter(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
@@ -306,8 +302,6 @@ func TestPushTraceData(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},

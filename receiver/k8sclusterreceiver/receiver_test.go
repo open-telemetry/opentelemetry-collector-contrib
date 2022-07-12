@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclusterreceiver
 
 import (
@@ -42,7 +41,9 @@ import (
 func TestReceiver(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
@@ -85,13 +86,15 @@ func TestReceiver(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"updated metrics not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
@@ -111,7 +114,9 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 func TestReceiverWithManyResources(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
@@ -135,7 +140,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 var numCalls *atomic.Int32
@@ -148,7 +153,9 @@ var consumeMetadataInvocation = func() {
 func TestReceiverWithMetadata(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	client := newFakeClientWithAllResources()
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
@@ -182,7 +189,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
 
-	r.Shutdown(ctx)
+	require.NoError(t, r.Shutdown(ctx))
 }
 
 func getUpdatedPod(pod *corev1.Pod) interface{} {
