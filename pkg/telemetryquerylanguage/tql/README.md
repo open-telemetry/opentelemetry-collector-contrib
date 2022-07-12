@@ -2,9 +2,9 @@
 
 The Telemetry Query Language is a query language for transforming open telemetry data based on the [OpenTelemetry Collector Processing Exploration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md).
 
-This package reads in TQL queries and converts them to invokable conditions and functions based on the TQL's grammar.
+This package reads in TQL queries and converts them to invokable Booleans and functions based on the TQL's grammar.
 
-The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the conditions and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry.
+The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry.
 
 ## Grammar
 
@@ -65,14 +65,14 @@ Example Literals
 
 Expressions allow a decision to be made about whether an Invocation should be called. The TQL does not force an expression to be used, it only allows the opportunity for the expression to be invoked before invoking the associated Invocation. Expressions always evaluate to a boolean value (true or false).
 
-Expressions can consist of the literal string `where` followed by one or more Conditions (see below).
-Conditions can be joined with the literal strings `and` and `or`.
+Expressions consist of the literal string `where` followed by one or more Booleans (see below).
+Booleans can be joined with the literal strings `and` and `or`.
 Note that `and` expressions have higher precedence than `or`.
 Expressions can be grouped with parentheses to override evaluation precedence.
 
-### Conditions
+### Booleans
 
-Conditions can be either:
+Booleans can be either:
 - A literal boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 

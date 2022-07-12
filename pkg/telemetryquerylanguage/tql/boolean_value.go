@@ -18,7 +18,8 @@ import (
 	"fmt"
 )
 
-type condFunc = func(ctx TransformContext) bool
+// ExpressionEvaluator is a function that returns the result.
+type ExpressionEvaluator = func(ctx TransformContext) bool
 
 var alwaysTrue = func(ctx TransformContext) bool {
 	return true
@@ -29,7 +30,7 @@ var alwaysFalse = func(ctx TransformContext) bool {
 }
 
 // builds a function that returns a short-circuited result of ANDing together condFuncs
-func andFuncs(funcs []condFunc) condFunc {
+func andFuncs(funcs []ExpressionEvaluator) ExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if !f(ctx) {
@@ -41,7 +42,7 @@ func andFuncs(funcs []condFunc) condFunc {
 }
 
 // builds a function that returns a short-circuited result of ORing together condFuncs
-func orFuncs(funcs []condFunc) condFunc {
+func orFuncs(funcs []ExpressionEvaluator) ExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if f(ctx) {
@@ -52,7 +53,7 @@ func orFuncs(funcs []condFunc) condFunc {
 	}
 }
 
-func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newComparisonEvaluator(cond *Comparison, functions map[string]interface{}, pathParser PathExpressionParser) (ExpressionEvaluator, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}
@@ -84,7 +85,7 @@ func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pa
 	return nil, fmt.Errorf("unrecognized boolean operation %v", cond.Op)
 }
 
-func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser) (ExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
@@ -92,7 +93,7 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	funcs := []condFunc{f}
+	funcs := []ExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
 		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser)
 		if err != nil {
@@ -104,7 +105,7 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	return orFuncs(funcs), nil
 }
 
-func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser) (ExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
@@ -112,7 +113,7 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	if err != nil {
 		return nil, err
 	}
-	funcs := []condFunc{f}
+	funcs := []ExpressionEvaluator{f}
 	for _, rhs := range term.Right {
 		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser)
 		if err != nil {
@@ -124,17 +125,17 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	return andFuncs(funcs), nil
 }
 
-func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser) (ExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}
 	switch {
-	case value.Condition != nil:
-		condition, err := newConditionEvaluator(value.Condition, functions, pathParser)
+	case value.Comparison != nil:
+		comparison, err := newComparisonEvaluator(value.Comparison, functions, pathParser)
 		if err != nil {
 			return nil, err
 		}
-		return condition, nil
+		return comparison, nil
 	case value.ConstExpr != nil:
 		if *value.ConstExpr {
 			return alwaysTrue, nil

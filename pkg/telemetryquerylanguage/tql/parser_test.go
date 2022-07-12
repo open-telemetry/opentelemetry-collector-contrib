@@ -168,7 +168,7 @@ func Test_parse(t *testing.T) {
 				WhereClause: &BooleanExpression{
 					Left: &Term{
 						Left: &BooleanValue{
-							Condition: &Condition{
+							Comparison: &Comparison{
 								Left: Value{
 									Path: &Path{
 										Fields: []Field{
@@ -218,7 +218,7 @@ func Test_parse(t *testing.T) {
 				WhereClause: &BooleanExpression{
 					Left: &Term{
 						Left: &BooleanValue{
-							Condition: &Condition{
+							Comparison: &Comparison{
 								Left: Value{
 									Path: &Path{
 										Fields: []Field{
@@ -268,7 +268,7 @@ func Test_parse(t *testing.T) {
 				WhereClause: &BooleanExpression{
 					Left: &Term{
 						Left: &BooleanValue{
-							Condition: &Condition{
+							Comparison: &Comparison{
 								Left: Value{
 									Path: &Path{
 										Fields: []Field{
@@ -612,7 +612,7 @@ func Test_parseWhere(t *testing.T) {
 			expected: set_name_test(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
-						Condition: &Condition{
+						Comparison: &Comparison{
 							Left: Value{
 								Path: &Path{
 									Fields: []Field{
@@ -632,7 +632,7 @@ func Test_parseWhere(t *testing.T) {
 						{
 							Operator: "and",
 							Value: &BooleanValue{
-								Condition: &Condition{
+								Comparison: &Comparison{
 									Left: Value{
 										Path: &Path{
 											Fields: []Field{
@@ -658,7 +658,7 @@ func Test_parseWhere(t *testing.T) {
 			expected: set_name_test(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
-						Condition: &Condition{
+						Comparison: &Comparison{
 							Left: Value{
 								Path: &Path{
 									Fields: []Field{
@@ -680,7 +680,7 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &Term{
 							Left: &BooleanValue{
-								Condition: &Condition{
+								Comparison: &Comparison{
 									Left: Value{
 										Path: &Path{
 											Fields: []Field{

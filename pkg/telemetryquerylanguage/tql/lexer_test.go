@@ -91,7 +91,7 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"j", "3!=4.9", false, []result{
 			{"Int", "3"},
-			{"OpComparison", "=="},
+			{"OpComparison", "!="},
 			{"Float", "4.9"},
 		}},
 	}

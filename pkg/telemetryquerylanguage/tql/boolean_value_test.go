@@ -21,15 +21,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_newConditionEvaluator(t *testing.T) {
+func Test_newComparisonEvaluator(t *testing.T) {
 	tests := []struct {
 		name string
-		cond *Condition
+		cond *Comparison
 		item interface{}
 	}{
 		{
 			name: "literals match",
-			cond: &Condition{
+			cond: &Comparison{
 				Left: Value{
 					String: tqltest.Strp("hello"),
 				},
@@ -41,7 +41,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "literals don't match",
-			cond: &Condition{
+			cond: &Comparison{
 				Left: Value{
 					String: tqltest.Strp("hello"),
 				},
@@ -53,7 +53,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression matches",
-			cond: &Condition{
+			cond: &Comparison{
 				Left: Value{
 					Path: &Path{
 						Fields: []Field{
@@ -72,7 +72,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression not matches",
-			cond: &Condition{
+			cond: &Comparison{
 				Left: Value{
 					Path: &Path{
 						Fields: []Field{
@@ -96,7 +96,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
+			evaluate, err := newComparisonEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
 			assert.NoError(t, err)
 			assert.True(t, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
@@ -105,7 +105,7 @@ func Test_newConditionEvaluator(t *testing.T) {
 	}
 
 	t.Run("invalid", func(t *testing.T) {
-		_, err := newConditionEvaluator(&Condition{
+		_, err := newComparisonEvaluator(&Comparison{
 			Left: Value{
 				String: tqltest.Strp("bear"),
 			},

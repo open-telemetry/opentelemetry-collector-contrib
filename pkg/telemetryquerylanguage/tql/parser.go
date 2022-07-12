@@ -34,9 +34,9 @@ type ParsedQuery struct {
 // a parenthesized subexpression.
 // nolint:govet
 type BooleanValue struct {
-	Condition *Condition         `( @@`
-	ConstExpr *Boolean           `| @Boolean`
-	SubExpr   *BooleanExpression `| "(" @@ ")" )`
+	Comparison *Comparison        `( @@`
+	ConstExpr  *Boolean           `| @Boolean`
+	SubExpr    *BooleanExpression `| "(" @@ ")" )`
 }
 
 // OpBooleanValue represents the right side of an AND boolean expression.
@@ -68,9 +68,9 @@ type BooleanExpression struct {
 	Right []*OpTerm `@@*`
 }
 
-// Condition represents an optional boolean condition.
+// Comparison represents an optional boolean condition.
 // nolint:govet
-type Condition struct {
+type Comparison struct {
 	Left  Value  `@@`
 	Op    string `@OpComparison`
 	Right Value  `@@`
@@ -111,10 +111,10 @@ type Field struct {
 }
 
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
-// invocation and the condition to match telemetry for invoking the function.
+// invocation and the expression to match telemetry for invoking the function.
 type Query struct {
-	Function  ExprFunc
-	Condition condFunc
+	Function   ExprFunc
+	Expression ExpressionEvaluator
 }
 
 // Bytes type for capturing byte arrays
@@ -161,14 +161,14 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser)
+		expression, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		queries = append(queries, Query{
-			Function:  function,
-			Condition: condition,
+			Function:   function,
+			Expression: expression,
 		})
 	}
 
