@@ -574,6 +574,40 @@ func Test_parseWhere(t *testing.T) {
 			}),
 		},
 		{
+			query: `(false and true) or false`,
+			expected: set_name_test(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						SubExpr: &BooleanExpression{
+							Left: &Term{
+								Left: &BooleanValue{
+									ConstExpr: Booleanp(false),
+								},
+								Right: []*OpAndBooleanValue{
+									{
+										Operator: "and",
+										Value: &BooleanValue{
+											ConstExpr: Booleanp(true),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*OpOrTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
 			query: `false and (true or false)`,
 			expected: set_name_test(&BooleanExpression{
 				Left: &Term{
