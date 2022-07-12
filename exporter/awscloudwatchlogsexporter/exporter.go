@@ -41,7 +41,6 @@ type exporter struct {
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	pusherOverride   cwlogs.Pusher
 	pusherCache      cwlogs.PusherCache
 }
 
@@ -72,7 +71,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherCache:      &cwlogs.DefaultPusherCache{Logger: params.Logger},
+		pusherCache:      cwlogs.NewDefaultPusherCache(params.Logger),
 	}
 	return logsExporter, nil
 }
@@ -111,13 +110,9 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			e.logger.Error("Unable to unmarshal log message", zap.Error(err))
 			continue
 		}
-		var cwLogsPusher cwlogs.Pusher
-		if e.pusherOverride != nil {
-			cwLogsPusher = e.pusherOverride
-		} else {
-			logGroup, logStream, _ := getLogInfo(body, e.Config)
-			cwLogsPusher = e.pusherCache.GetPusher(logGroup, logStream, *e.svcStructuredLog, e.retryCount)
-		}
+		logGroup, logStream, _ := getLogInfo(body, e.Config)
+		cwLogsPusher := e.pusherCache.GetPusher(logGroup, logStream, *e.svcStructuredLog, e.retryCount)
+
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
 		err = cwLogsPusher.AddLogEntry(logEvent)
 		if err != nil {

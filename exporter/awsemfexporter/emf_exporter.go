@@ -84,7 +84,7 @@ func newEmfPusher(
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
-		pusherCache:      &cwlogs.DefaultPusherCache{Logger: logger},
+		pusherCache:      cwlogs.NewDefaultPusherCache(logger),
 	}
 
 	return emfExporter, nil

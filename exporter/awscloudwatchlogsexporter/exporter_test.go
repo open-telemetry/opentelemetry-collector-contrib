@@ -33,6 +33,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
+type mockCache struct {
+	mock.Mock
+}
+
+func (p *mockCache) GetPusher(logGroup, logStream string, client cwlogs.Client, retries int) cwlogs.Pusher {
+	args := p.Called(logGroup, logStream, client, retries)
+	return args.Get(0).(cwlogs.Pusher)
+}
+
+func (p *mockCache) ListPushers() []cwlogs.Pusher {
+	args := p.Called(nil)
+	return []cwlogs.Pusher{args.Get(0).(cwlogs.Pusher)}
+}
+
+func (p *mockCache) Flush() error {
+	args := p.Called(nil)
+	return args.Error(0)
+}
+
+func (p *mockCache) Shutdown(ctx context.Context) error {
+	args := p.Called(nil)
+	return args.Error(0)
+}
+
 type mockPusher struct {
 	mock.Mock
 }
@@ -248,7 +272,12 @@ func TestConsumeLogs(t *testing.T) {
 	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.(*exporter).pusherOverride = logPusher
+
+	cache := new(mockCache)
+	cache.On("GetPusher", mock.Anything, mock.Anything, mock.Anything, 0).Return(logPusher, nil).Once()
+	cache.On("Shutdown", mock.Anything).Return(nil).Once()
+	exp.(*exporter).pusherCache = cache
+
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
