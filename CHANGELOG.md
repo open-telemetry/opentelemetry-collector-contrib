@@ -4,6 +4,12 @@
 
 <!-- next version -->
 
+## Unreleased
+
+### 🧰 Bug fixes 🧰
+- `prometheusexporter`: Fix cumulative condition for Delta-to-cumulative (#12340)
+
+
 # v0.55.0
 
 ## 🛑 Breaking changes 🛑
