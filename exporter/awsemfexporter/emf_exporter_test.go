@@ -252,11 +252,6 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
-	assert.True(t, ok)
-	emfPusher, ok := streamToPusherMap["test-logStreamName"]
-	assert.True(t, ok)
-	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
@@ -322,11 +317,6 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["/aws/ecs/containerinsights/test-cluster-name/performance"]
-	assert.True(t, ok)
-	emfPusher, ok := streamToPusherMap["test-task-id"]
-	assert.True(t, ok)
-	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
@@ -392,11 +382,6 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
-	assert.True(t, ok)
-	emfPusher, ok := streamToPusherMap["test-task-id"]
-	assert.True(t, ok)
-	assert.NotNil(t, emfPusher)
 }
 
 func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
@@ -462,11 +447,6 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	require.NoError(t, exp.Start(ctx, nil))
 	require.Error(t, exp.ConsumeMetrics(ctx, md))
 	require.NoError(t, exp.Shutdown(ctx))
-	streamToPusherMap, ok := exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"]
-	assert.True(t, ok)
-	emfPusher, ok := streamToPusherMap["{WrongKey}"]
-	assert.True(t, ok)
-	assert.NotNil(t, emfPusher)
 }
 
 func TestPushMetricsDataWithErr(t *testing.T) {
@@ -488,9 +468,6 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
 	logPusher.On("ForceFlush", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
-	streamToPusherMap := map[string]cwlogs.Pusher{"test-logStreamName": logPusher}
-	exp.(*emfExporter).groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
-	exp.(*emfExporter).groupStreamToPusherMap["test-logGroupName"] = streamToPusherMap
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{

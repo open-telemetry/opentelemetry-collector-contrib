@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -37,14 +36,13 @@ import (
 )
 
 type exporter struct {
-	Config                 *Config
-	logger                 *zap.Logger
-	retryCount             int
-	collectorID            string
-	svcStructuredLog       *cwlogs.Client
-	pusherMapLock          sync.Mutex
-	pusherOverride         cwlogs.Pusher
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
+	Config           *Config
+	logger           *zap.Logger
+	retryCount       int
+	collectorID      string
+	svcStructuredLog *cwlogs.Client
+	pusherOverride   cwlogs.Pusher
+	pusherCache      cwlogs.PusherCache
 }
 
 func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
@@ -69,12 +67,12 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 	}
 
 	logsExporter := &exporter{
-		svcStructuredLog:       svcStructuredLog,
-		Config:                 expConfig,
-		logger:                 params.Logger,
-		retryCount:             *awsConfig.MaxRetries,
-		collectorID:            collectorIdentifier.String(),
-		groupStreamToPusherMap: map[string]map[string]cwlogs.Pusher{},
+		svcStructuredLog: svcStructuredLog,
+		Config:           expConfig,
+		logger:           params.Logger,
+		retryCount:       *awsConfig.MaxRetries,
+		collectorID:      collectorIdentifier.String(),
+		pusherCache:      &cwlogs.DefaultPusherCache{},
 	}
 	return logsExporter, nil
 }
@@ -118,7 +116,7 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			cwLogsPusher = e.pusherOverride
 		} else {
 			logGroup, logStream, _ := getLogInfo(body, e.Config)
-			cwLogsPusher = e.getPusher(logGroup, logStream)
+			cwLogsPusher = e.pusherCache.GetPusher(logGroup, logStream, *e.svcStructuredLog, e.retryCount)
 		}
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
 		err = cwLogsPusher.AddLogEntry(logEvent)
@@ -139,14 +137,9 @@ func (e *exporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *exporter) Shutdown(ctx context.Context) error {
-	for _, pusher := range e.listPushers() {
-		err := pusher.ForceFlush()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (e *exporter) Shutdown(ctx context.Context) (errs error) {
+	return e.pusherCache.Shutdown(ctx)
+
 }
 
 func (e *exporter) Start(ctx context.Context, host component.Host) error {
@@ -268,36 +261,4 @@ func attrValue(value pcommon.Value) interface{} {
 	default:
 		return nil
 	}
-}
-
-func (e *exporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
-	e.pusherMapLock.Lock()
-	defer e.pusherMapLock.Unlock()
-
-	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = e.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		e.groupStreamToPusherMap[logGroup] = streamToPusherMap
-	}
-
-	var emfPusher cwlogs.Pusher
-	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), e.retryCount, *e.svcStructuredLog, e.logger)
-		streamToPusherMap[logStream] = emfPusher
-	}
-	return emfPusher
-}
-
-func (e *exporter) listPushers() []cwlogs.Pusher {
-	e.pusherMapLock.Lock()
-	defer e.pusherMapLock.Unlock()
-
-	pushers := []cwlogs.Pusher{}
-	for _, pusherMap := range e.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			pushers = append(pushers, pusher)
-		}
-	}
-	return pushers
 }

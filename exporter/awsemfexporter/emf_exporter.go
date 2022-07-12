@@ -19,9 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
@@ -45,17 +43,15 @@ const (
 )
 
 type emfExporter struct {
-	// Each (log group, log stream) keeps a separate pusher because of each (log group, log stream) requires separate stream token.
-	groupStreamToPusherMap map[string]map[string]cwlogs.Pusher
-	svcStructuredLog       *cwlogs.Client
-	config                 config.Exporter
-	logger                 *zap.Logger
+	svcStructuredLog *cwlogs.Client
+	config           config.Exporter
+	logger           *zap.Logger
 
 	metricTranslator metricTranslator
 
-	pusherMapLock sync.Mutex
-	retryCnt      int
-	collectorID   string
+	retryCnt    int
+	collectorID string
+	pusherCache cwlogs.PusherCache
 }
 
 // newEmfPusher func creates an EMF Exporter instance with data push callback func
@@ -88,8 +84,8 @@ func newEmfPusher(
 		retryCnt:         *awsConfig.MaxRetries,
 		logger:           logger,
 		collectorID:      collectorIdentifier.String(),
+		pusherCache:      &cwlogs.DefaultPusherCache{},
 	}
-	emfExporter.groupStreamToPusherMap = map[string]map[string]cwlogs.Pusher{}
 
 	return emfExporter, nil
 }
@@ -157,7 +153,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				logStream = defaultLogStream
 			}
 
-			emfPusher := emf.getPusher(logGroup, logStream)
+			emfPusher := emf.pusherCache.GetPusher(logGroup, logStream, *emf.svcStructuredLog, emf.retryCnt)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {
@@ -168,7 +164,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 
 	if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-		for _, emfPusher := range emf.listPushers() {
+		for _, emfPusher := range emf.pusherCache.ListPushers() {
 			returnError := emfPusher.ForceFlush()
 			if returnError != nil {
 				// TODO now we only have one logPusher, so it's ok to return after first error occurred
@@ -186,55 +182,13 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	return nil
 }
 
-func (emf *emfExporter) getPusher(logGroup, logStream string) cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
-
-	var ok bool
-	var streamToPusherMap map[string]cwlogs.Pusher
-	if streamToPusherMap, ok = emf.groupStreamToPusherMap[logGroup]; !ok {
-		streamToPusherMap = map[string]cwlogs.Pusher{}
-		emf.groupStreamToPusherMap[logGroup] = streamToPusherMap
-	}
-
-	var emfPusher cwlogs.Pusher
-	if emfPusher, ok = streamToPusherMap[logStream]; !ok {
-		emfPusher = cwlogs.NewPusher(aws.String(logGroup), aws.String(logStream), emf.retryCnt, *emf.svcStructuredLog, emf.logger)
-		streamToPusherMap[logStream] = emfPusher
-	}
-	return emfPusher
-}
-
-func (emf *emfExporter) listPushers() []cwlogs.Pusher {
-	emf.pusherMapLock.Lock()
-	defer emf.pusherMapLock.Unlock()
-
-	pushers := []cwlogs.Pusher{}
-	for _, pusherMap := range emf.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			pushers = append(pushers, pusher)
-		}
-	}
-	return pushers
-}
-
 func (emf *emfExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return emf.pushMetricsData(ctx, md)
 }
 
 // Shutdown stops the exporter and is invoked during shutdown.
 func (emf *emfExporter) Shutdown(ctx context.Context) error {
-	for _, emfPusher := range emf.listPushers() {
-		returnError := emfPusher.ForceFlush()
-		if returnError != nil {
-			err := wrapErrorIfBadRequest(returnError)
-			if err != nil {
-				emf.logger.Error("Error when gracefully shutting down emf_exporter. Skipping to next logPusher.", zap.Error(err))
-			}
-		}
-	}
-
-	return nil
+	return emf.pusherCache.Shutdown(ctx)
 }
 
 func (emf *emfExporter) Capabilities() consumer.Capabilities {
