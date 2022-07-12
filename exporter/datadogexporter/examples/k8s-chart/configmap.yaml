@@ -29,6 +29,10 @@ data:
         timeout: 10s
     service:
       pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [resourcedetection, k8sattributes, batch]
+          exporters: [datadog]
         traces:
           receivers: [otlp]
           processors: [resourcedetection, k8sattributes, batch]
