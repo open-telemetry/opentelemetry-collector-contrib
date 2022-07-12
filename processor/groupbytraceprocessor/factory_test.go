@@ -19,10 +19,10 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenttest"
-    "go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
