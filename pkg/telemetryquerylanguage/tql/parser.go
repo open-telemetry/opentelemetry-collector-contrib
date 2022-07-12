@@ -16,7 +16,6 @@ package tql // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"encoding/hex"
-	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -136,7 +135,7 @@ func (b *Bytes) Capture(values []string) error {
 type Boolean bool
 
 func (b *Boolean) Capture(values []string) error {
-	*b = Boolean(strings.EqualFold(values[0], "true"))
+	*b = values[0] == "true"
 	return nil
 }
 
