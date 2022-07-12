@@ -158,6 +158,11 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 	return exp.scrubber.Scrub(exp.PushMetricsData(ctx, md))
 }
 
+// Define as a variable for tests.
+var getPushTime = func() uint64 {
+	return uint64(time.Now().UTC().UnixNano())
+}
+
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 
 	// Start host metadata with resource attributes from
@@ -172,13 +177,21 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		})
 	}
 
+	pushTime := getPushTime()
 	consumer := metrics.NewConsumer()
-	pushTime := uint64(time.Now().UTC().UnixNano())
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
-	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
+	src, err := exp.sourceProvider.Source(ctx)
+	if err != nil {
+		return err
+	}
+	var tags []string
+	if src.Kind == source.AWSECSFargateKind {
+		tags = append(tags, exp.cfg.HostMetadata.Tags...)
+	}
+	ms, sl := consumer.All(pushTime, exp.params.BuildInfo, tags)
 	metrics.ProcessMetrics(ms)
 
 	err = nil
