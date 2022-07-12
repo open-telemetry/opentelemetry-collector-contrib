@@ -224,7 +224,7 @@ OUTER:
 
 	readers := make([]*Reader, 0, len(fps))
 	for i := 0; i < len(fps); i++ {
-		reader, err := f.newReader(files[i], fps[i], f.firstCheck)
+		reader, err := f.newReader(files[i], fps[i])
 		if err != nil {
 			f.Errorw("Failed to create reader", zap.Error(err))
 			continue
@@ -254,7 +254,7 @@ func (f *Input) saveCurrent(readers []*Reader) {
 	}
 }
 
-func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Reader, error) {
+func (f *Input) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
 	if oldReader, ok := f.findFingerprintMatch(fp); ok {
 		return f.readerFactory.copy(oldReader, file)

@@ -117,7 +117,9 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	}
 
 	if !b.fromBeginning {
-		r.offsetToEnd()
+		if err := r.offsetToEnd(); err != nil {
+			return nil, err
+		}
 	}
 
 	return r, nil
