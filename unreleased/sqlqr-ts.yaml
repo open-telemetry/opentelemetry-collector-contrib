@@ -5,7 +5,7 @@ change_type: bug_fix
 component: sqlqueryreceiver
 
 # A brief description of the change
-note: Metrics did not container a timestamp. Timestamps are required for a variety of backends, especially prometheus. In order to work with prometheus we must set the metrics timestamp because metrics with the default timestamp (year 1970) will be dropped by prometheus backends. 
+note: Metrics did not contain a timestamp. Timestamps are required for a variety of backends, especially prometheus. In order to work with prometheus we must set the metrics timestamp because metrics with the default timestamp (year 1970) will be dropped by prometheus backends. 
 
 # One or more tracking issues related to the change
 issues: [12088]
