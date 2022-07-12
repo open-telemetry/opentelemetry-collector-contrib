@@ -9,7 +9,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.55.0
 	github.com/stretchr/testify v1.8.0
-	github.com/uber/jaeger-lib v2.4.1+incompatible
 	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
 	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
 	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
@@ -65,6 +64,7 @@ require (
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
+	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
