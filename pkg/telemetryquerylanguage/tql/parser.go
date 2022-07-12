@@ -72,7 +72,7 @@ type BooleanExpression struct {
 // nolint:govet
 type Condition struct {
 	Left  Value  `@@`
-	Op    string `@OpEq`
+	Op    string `@OpComparison`
 	Right Value  `@@`
 }
 
@@ -200,7 +200,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
-		{Name: `OpEq`, Pattern: `==|!=`},
+		{Name: `OpComparison`, Pattern: `==|!=`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},

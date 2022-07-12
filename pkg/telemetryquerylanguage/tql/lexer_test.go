@@ -46,7 +46,7 @@ func Test_lexer(t *testing.T) {
 		}},
 		{"b", "3==4.9", false, []result{
 			{"Int", "3"},
-			{"OpEq", "=="},
+			{"OpComparison", "=="},
 			{"Float", "4.9"},
 		}},
 		{"c", "foo bar bazz", false, []result{
@@ -88,6 +88,11 @@ func Test_lexer(t *testing.T) {
 			{"Punct", ","},
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
+		}},
+		{"j", "3!=4.9", false, []result{
+			{"Int", "3"},
+			{"OpComparison", "=="},
+			{"Float", "4.9"},
 		}},
 	}
 
