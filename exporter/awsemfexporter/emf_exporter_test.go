@@ -46,6 +46,30 @@ func init() {
 	os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
 }
 
+type mockCache struct {
+	mock.Mock
+}
+
+func (p *mockCache) GetPusher(logGroup, logStream string, client cwlogs.Client, retries int) cwlogs.Pusher {
+	args := p.Called(logGroup, logStream, client, retries)
+	return args.Get(0).(cwlogs.Pusher)
+}
+
+func (p *mockCache) ListPushers() []cwlogs.Pusher {
+	args := p.Called(nil)
+	return []cwlogs.Pusher{args.Get(0).(cwlogs.Pusher)}
+}
+
+func (p *mockCache) Flush() error {
+	args := p.Called(nil)
+	return args.Error(0)
+}
+
+func (p *mockCache) Shutdown(ctx context.Context) error {
+	args := p.Called(nil)
+	return args.Error(0)
+}
+
 type mockPusher struct {
 	mock.Mock
 }
@@ -468,6 +492,13 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
 	logPusher.On("ForceFlush", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
+
+	cache := new(mockCache)
+	cache.On("GetPusher", expCfg.LogGroupName, expCfg.LogStreamName, mock.Anything, 0).Return(logPusher, nil).Times(3)
+	cache.On("ListPushers", nil).Return(logPusher).Twice()
+	cache.On("Shutdown", nil).Return(nil).Twice()
+
+	exp.(*emfExporter).pusherCache = cache
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{
 		Node: &commonpb.Node{

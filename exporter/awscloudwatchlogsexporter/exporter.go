@@ -72,7 +72,7 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherCache:      &cwlogs.DefaultPusherCache{},
+		pusherCache:      &cwlogs.DefaultPusherCache{Logger: params.Logger},
 	}
 	return logsExporter, nil
 }

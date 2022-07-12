@@ -41,7 +41,7 @@ type PusherCache interface {
 }
 
 type DefaultPusherCache struct {
-	logger                 *zap.Logger
+	Logger                 *zap.Logger
 	pusherMapLock          sync.Mutex
 	groupStreamToPusherMap map[string]map[string]Pusher
 }
@@ -61,7 +61,7 @@ func (pc *DefaultPusherCache) GetPusher(logGroup, logStream string, client Clien
 
 	pusher, ok = streamToPusherMap[logStream]
 	if !ok {
-		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), retries, client, pc.logger)
+		pusher = NewPusher(aws.String(logGroup), aws.String(logStream), retries, client, pc.Logger)
 		streamToPusherMap[logStream] = pusher
 	}
 	return
