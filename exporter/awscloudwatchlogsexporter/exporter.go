@@ -124,10 +124,6 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
 		}
 		e.logger.Debug("Log events are successfully put")
-		flushErr := cwLogsPusher.ForceFlush()
-		if flushErr != nil {
-			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-		}
 	}
 
 	return nil
