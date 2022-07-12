@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package golden
 
 import (
@@ -34,7 +33,7 @@ func TestWriteMetrics(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.json")
-	WriteMetrics(actualFile, metrics)
+	require.NoError(t, WriteMetrics(actualFile, metrics))
 
 	actualBytes, err := ioutil.ReadFile(actualFile)
 	require.NoError(t, err)

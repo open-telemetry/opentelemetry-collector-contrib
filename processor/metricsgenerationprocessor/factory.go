@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package metricsgenerationprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor"
 
 import (
@@ -28,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "experimental_metricsgeneration"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -37,7 +38,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -57,7 +58,6 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
 	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), params.Logger)
 
 	return processorhelper.NewMetricsProcessor(

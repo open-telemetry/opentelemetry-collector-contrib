@@ -32,7 +32,7 @@ import (
 func TestEncodeMetrics(t *testing.T) {
 	var w fastjson.Writer
 	var recorder transporttest.RecorderTransport
-	elastic.EncodeResourceMetadata(pcommon.NewResource(), &w)
+	assert.NoError(t, elastic.EncodeResourceMetadata(pcommon.NewResource(), &w))
 
 	scopeMetrics := pmetric.NewScopeMetrics()
 	metrics := scopeMetrics.Metrics()

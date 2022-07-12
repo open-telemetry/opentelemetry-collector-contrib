@@ -26,6 +26,7 @@ import (
 
 const (
 	typeStr           = "podman_stats"
+	stability         = component.StabilityLevelUnmaintained
 	defaultAPIVersion = "3.3.1"
 )
 
@@ -33,7 +34,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultReceiverConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() *Config {

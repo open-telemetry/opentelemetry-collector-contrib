@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// nolint:errcheck
 package honeycombexporter
 
 import (
@@ -64,7 +62,10 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 			return
 		}
 		callback(data)
-		rw.Write([]byte(`OK`))
+		if _, err = rw.Write([]byte(`OK`)); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}))
 }
 
@@ -84,7 +85,7 @@ func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) []honeycomb
 	ctx := context.Background()
 	err = exporter.ConsumeTraces(ctx, td)
 	require.NoError(t, err)
-	exporter.Shutdown(context.Background())
+	require.NoError(t, exporter.Shutdown(context.Background()))
 
 	return got
 }

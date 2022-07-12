@@ -180,7 +180,7 @@ func TestForwardEvent(t *testing.T) {
 
 func TestEventAcknowledgment(t *testing.T) {
 	connect, _, logs, cancel := setupServer(t)
-	defer func() { fmt.Printf("%v", logs.All()) }()
+	defer func() { fmt.Printf("%v\n", logs.All()) }()
 	defer cancel()
 
 	const chunkValue = "abcdef01234576789"

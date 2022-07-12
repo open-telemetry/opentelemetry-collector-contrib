@@ -32,6 +32,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]interface{} {
 		"keyspace_misses":                 rs.mb.RecordRedisKeyspaceMissesDataPoint,
 		"latest_fork_usec":                rs.mb.RecordRedisLatestForkDataPoint,
 		"master_repl_offset":              rs.mb.RecordRedisReplicationOffsetDataPoint,
+		"maxmemory":                       rs.mb.RecordRedisMaxmemoryDataPoint,
 		"mem_fragmentation_ratio":         rs.mb.RecordRedisMemoryFragmentationRatioDataPoint,
 		"rdb_changes_since_last_save":     rs.mb.RecordRedisRdbChangesSinceLastSaveDataPoint,
 		"rejected_connections":            rs.mb.RecordRedisConnectionsRejectedDataPoint,

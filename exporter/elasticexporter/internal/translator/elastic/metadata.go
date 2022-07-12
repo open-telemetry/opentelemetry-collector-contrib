@@ -13,7 +13,6 @@
 // limitations under the License.
 
 // Package elastic contains an OTLP exporter for Elastic APM.
-// nolint:errcheck
 package elastic // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter/internal/translator/elastic"
 
 import (
@@ -26,7 +25,7 @@ import (
 )
 
 // EncodeResourceMetadata encodes a metadata line from resource, writing to w.
-func EncodeResourceMetadata(resource pcommon.Resource, w *fastjson.Writer) {
+func EncodeResourceMetadata(resource pcommon.Resource, w *fastjson.Writer) (err error) {
 	var agent model.Agent
 	var service model.Service
 	var serviceNode model.ServiceNode
@@ -99,14 +98,21 @@ func EncodeResourceMetadata(resource pcommon.Resource, w *fastjson.Writer) {
 
 	w.RawString(`{"metadata":{`)
 	w.RawString(`"service":`)
-	service.MarshalFastJSON(w)
+	if err := service.MarshalFastJSON(w); err != nil {
+		return err
+	}
 	if system != (model.System{}) {
 		w.RawString(`,"system":`)
-		system.MarshalFastJSON(w)
+		if err := system.MarshalFastJSON(w); err != nil {
+			return err
+		}
 	}
 	if len(labels) > 0 {
 		w.RawString(`,"labels":`)
-		labels.MarshalFastJSON(w)
+		if err := labels.MarshalFastJSON(w); err != nil {
+			return err
+		}
 	}
 	w.RawString("}}\n")
+	return nil
 }

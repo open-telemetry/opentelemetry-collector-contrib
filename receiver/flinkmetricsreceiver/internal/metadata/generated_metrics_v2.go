@@ -663,7 +663,7 @@ func (m *metricFlinkJvmGcCollectionsCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -716,7 +716,7 @@ func (m *metricFlinkJvmGcCollectionsTime) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("garbage_collector_name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1585,7 +1585,7 @@ func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("operator_name", pcommon.NewValueString(operatorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(operatorNameAttributeValue))
 	dp.Attributes().Insert("record", pcommon.NewValueString(recordAttributeValue))
 }
 
@@ -1639,7 +1639,7 @@ func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("operator_name", pcommon.NewValueString(operatorNameAttributeValue))
+	dp.Attributes().Insert("name", pcommon.NewValueString(operatorNameAttributeValue))
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

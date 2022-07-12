@@ -29,8 +29,7 @@ import (
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	md := pmetric.NewMetrics()
-	translateStatsToMetrics(stats, ts, md.ResourceMetrics().AppendEmpty())
+	md := containerStatsToMetrics(ts, container{Image: "localimage"}, stats)
 	assertStatsEqualToMetrics(t, stats, md)
 }
 
@@ -39,9 +38,10 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 	rsm := md.ResourceMetrics().At(0)
 
 	resourceAttrs := map[string]string{
-		"container.runtime": "podman",
-		"container.id":      "abcd1234",
-		"container.name":    "cntrA",
+		"container.runtime":    "podman",
+		"container.id":         "abcd1234",
+		"container.name":       "cntrA",
+		"container.image.name": "localimage",
 	}
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)
