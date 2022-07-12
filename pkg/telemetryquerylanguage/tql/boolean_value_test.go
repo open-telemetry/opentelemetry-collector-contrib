@@ -130,7 +130,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -147,7 +147,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -164,7 +164,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -188,7 +188,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 						ConstExpr: Booleanp(true),
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -207,7 +207,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 						ConstExpr: Booleanp(false),
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -226,7 +226,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 						ConstExpr: Booleanp(false),
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -244,7 +244,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -253,7 +253,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 						},
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -271,7 +271,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -281,7 +281,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 											ConstExpr: Booleanp(true),
 										},
 									},
-									Right: []*OpTerm{
+									Right: []*OpOrTerm{
 										{
 											Operator: "or",
 											Term: &Term{

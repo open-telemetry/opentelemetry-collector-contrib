@@ -490,7 +490,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -508,7 +508,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -533,7 +533,7 @@ func Test_parseWhere(t *testing.T) {
 						ConstExpr: Booleanp(true),
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -552,7 +552,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -561,7 +561,7 @@ func Test_parseWhere(t *testing.T) {
 						},
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{
@@ -580,7 +580,7 @@ func Test_parseWhere(t *testing.T) {
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(false),
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -590,7 +590,7 @@ func Test_parseWhere(t *testing.T) {
 											ConstExpr: Booleanp(true),
 										},
 									},
-									Right: []*OpTerm{
+									Right: []*OpOrTerm{
 										{
 											Operator: "or",
 											Term: &Term{
@@ -628,7 +628,7 @@ func Test_parseWhere(t *testing.T) {
 							},
 						},
 					},
-					Right: []*OpBooleanValue{
+					Right: []*OpAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &BooleanValue{
@@ -675,7 +675,7 @@ func Test_parseWhere(t *testing.T) {
 						},
 					},
 				},
-				Right: []*OpTerm{
+				Right: []*OpOrTerm{
 					{
 						Operator: "or",
 						Term: &Term{

@@ -39,23 +39,23 @@ type BooleanValue struct {
 	SubExpr    *BooleanExpression `| "(" @@ ")" )`
 }
 
-// OpBooleanValue represents the right side of an AND boolean expression.
+// OpAndBooleanValue represents the right side of an AND boolean expression.
 // nolint:govet
-type OpBooleanValue struct {
+type OpAndBooleanValue struct {
 	Operator string        `@OpAnd`
 	Value    *BooleanValue `@@`
 }
 
-// Term represents an arbitrary number of boolean values separated by AND.
+// Term represents an arbitrary number of boolean values joined by AND.
 // nolint:govet
 type Term struct {
-	Left  *BooleanValue     `@@`
-	Right []*OpBooleanValue `@@*`
+	Left  *BooleanValue        `@@`
+	Right []*OpAndBooleanValue `@@*`
 }
 
-// OpTerm represents the right side of an OR boolean expression.
+// OpOrTerm represents the right side of an OR boolean expression.
 // nolint:govet
-type OpTerm struct {
+type OpOrTerm struct {
 	Operator string `@OpOr`
 	Term     *Term  `@@`
 }
@@ -64,8 +64,8 @@ type OpTerm struct {
 // as an arbitrary number of terms separated by OR
 // nolint:govet
 type BooleanExpression struct {
-	Left  *Term     `@@`
-	Right []*OpTerm `@@*`
+	Left  *Term       `@@`
+	Right []*OpOrTerm `@@*`
 }
 
 // Comparison represents an optional boolean condition.
