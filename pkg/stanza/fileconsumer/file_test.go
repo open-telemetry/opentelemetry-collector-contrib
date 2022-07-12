@@ -840,13 +840,10 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
-	fp, err := operator.NewFingerprint(temp)
+	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
-	splitter, err := operator.getMultiline()
-	require.NoError(t, err)
-
-	reader, err := operator.NewReader(tempCopy, fp, splitter)
+	reader, err := operator.readerFactory.newReader(tempCopy, fp)
 	require.NoError(t, err)
 	defer reader.Close()
 
@@ -885,14 +882,11 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
-			fp, err := operator.NewFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			splitter, err := operator.getMultiline()
-			require.NoError(t, err)
-
-			reader, err := operator.NewReader(tempCopy, fp, splitter)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -951,14 +945,11 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
-			fp, err := operator.NewFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			splitter, err := operator.getMultiline()
-			require.NoError(t, err)
-
-			reader, err := operator.NewReader(tempCopy, fp, splitter)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -987,7 +978,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			// Change fingerprint and try to read file again
 			// We do not expect fingerprint change
 			// We test both increasing and decreasing fingerprint size
-			reader.fileInput.fingerprintSize = maxFP * (lineLen / 3)
+			reader.readerConfig.fingerprintSize = maxFP * (lineLen / 3)
 			line := string(tokenWithLength(lineLen-1)) + "\n"
 			fileContent = append(fileContent, []byte(line)...)
 
@@ -995,7 +986,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			reader.ReadToEnd(context.Background())
 			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 
-			reader.fileInput.fingerprintSize = maxFP / 2
+			reader.readerConfig.fingerprintSize = maxFP / 2
 			line = string(tokenWithLength(lineLen-1)) + "\n"
 			fileContent = append(fileContent, []byte(line)...)
 
