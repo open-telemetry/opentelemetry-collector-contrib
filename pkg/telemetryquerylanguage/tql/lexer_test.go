@@ -41,33 +41,38 @@ func Test_lexer(t *testing.T) {
 		expectErr bool
 		output    []result
 	}{
-		{"a", "abc", false, []result{
+		{"basic_ident", "abc", false, []result{
 			{"Ident", "abc"},
 		}},
-		{"b", "3==4.9", false, []result{
+		{"basic_equality", "3==4.9", false, []result{
 			{"Int", "3"},
 			{"OpComparison", "=="},
 			{"Float", "4.9"},
 		}},
-		{"c", "foo bar bazz", false, []result{
+		{"basic_inequality", "3!=4.9", false, []result{
+			{"Int", "3"},
+			{"OpComparison", "!="},
+			{"Float", "4.9"},
+		}},
+		{"unambiguous_names", "foo bar bazz", false, []result{
 			{"Ident", "foo"},
 			{"Ident", "bar"},
 			{"Ident", "bazz"},
 		}},
-		{"d", "iphone android", false, []result{
+		{"name_containing_and", "iphone android", false, []result{
 			{"Ident", "iphone"},
 			{"Ident", "android"}, // should not parse "and" as an operator
 		}},
-		{"e", "iphone and roid", false, []result{
+		{"parse_and", "iphone and roid", false, []result{
 			{"Ident", "iphone"},
 			{"OpAnd", "and"}, // should parse "and" as an operator
 			{"Ident", "roid"},
 		}},
-		{"f", "oreo corn", false, []result{
+		{"name_containing_or", "oreo corn", false, []result{
 			{"Ident", "oreo"},
 			{"Ident", "corn"}, // should not parse "or" as an operator
 		}},
-		{"g", "if, and, or but", false, []result{
+		{"parse_and_or", "if, and, or but", false, []result{
 			{"Ident", "if"},
 			{"Punct", ","},
 			{"OpAnd", "and"},
@@ -75,10 +80,10 @@ func Test_lexer(t *testing.T) {
 			{"OpOr", "or"},
 			{"Ident", "but"},
 		}},
-		{"h", "{}", true, []result{
+		{"nothing_recognizable", "{}", true, []result{
 			{"", ""},
 		}},
-		{"i", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
+		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
 			{"Ident", "set"},
 			{"LParen", "("},
 			{"Ident", "attributes"},
@@ -88,11 +93,6 @@ func Test_lexer(t *testing.T) {
 			{"Punct", ","},
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
-		}},
-		{"j", "3!=4.9", false, []result{
-			{"Int", "3"},
-			{"OpComparison", "!="},
-			{"Float", "4.9"},
 		}},
 	}
 
