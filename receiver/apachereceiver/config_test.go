@@ -82,6 +82,7 @@ func TestValidate(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
+			require.True(t, false)
 		})
 	}
 }
