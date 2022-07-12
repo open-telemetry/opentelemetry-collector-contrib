@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:errcheck
-package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
+package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/logs"
 
 import (
 	"context"
