@@ -26,7 +26,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -41,46 +40,6 @@ import (
 )
 
 var mockFolder = filepath.Join("testdata", "mock")
-
-func newMockServer(tb testing.TB) *httptest.Server {
-	statsFile, err := os.Open(filepath.Join(mockFolder, "stats.json"))
-	assert.NoError(tb, err)
-	stats, err := ioutil.ReadAll(statsFile)
-	assert.NoError(tb, err)
-	_ = statsFile.Close()
-
-	containersFile, err := os.Open(filepath.Join(mockFolder, "containers.json"))
-	assert.NoError(tb, err)
-	containers, err := ioutil.ReadAll(containersFile)
-	assert.NoError(tb, err)
-	_ = containersFile.Close()
-
-	detailedContainerFile, err := os.Open(filepath.Join(mockFolder, "container.json"))
-	assert.NoError(tb, err)
-	detailedContainer, err := ioutil.ReadAll(detailedContainerFile)
-	assert.NoError(tb, err)
-	_ = detailedContainerFile.Close()
-
-	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		containerID := "10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326"
-		if strings.Contains(req.URL.Path, "/containers/json") {
-			rw.WriteHeader(http.StatusOK)
-			_, err := rw.Write(containers)
-			require.NoError(tb, err)
-		} else if strings.Contains(req.URL.Path, "containers/"+containerID+"/json") {
-			rw.WriteHeader(http.StatusOK)
-			_, err := rw.Write(detailedContainer)
-			require.NoError(tb, err)
-		} else if strings.Contains(req.URL.Path, "stats") {
-			rw.WriteHeader(http.StatusOK)
-			_, err := rw.Write(stats)
-			require.NoError(tb, err)
-		} else {
-			rw.WriteHeader(http.StatusNotFound)
-		}
-		return
-	}))
-}
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
@@ -118,8 +77,28 @@ func TestErrorsInStart(t *testing.T) {
 }
 
 func TestScrapes(t *testing.T) {
-	ms := newMockServer(t)
-	defer ms.Close()
+	containerIDs := []string{
+		"10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326",
+		"89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7",
+		"a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce"}
+
+	singleContainerEngineMock, err := dockerMockServer(&map[string]string{
+		"/v1.22/containers/json":                          filepath.Join(mockFolder, "single_container", "containers.json"),
+		"/v1.22/containers/" + containerIDs[0] + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
+		"/v1.22/containers/" + containerIDs[0] + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
+	})
+	defer singleContainerEngineMock.Close()
+	require.NoError(t, err)
+
+	twoContainerEnginerMock, err := dockerMockServer(&map[string]string{
+		"/v1.22/containers/json":                          filepath.Join(mockFolder, "two_containers", "containers.json"),
+		"/v1.22/containers/" + containerIDs[1] + "/json":  filepath.Join(mockFolder, "two_containers", "container1.json"),
+		"/v1.22/containers/" + containerIDs[2] + "/json":  filepath.Join(mockFolder, "two_containers", "container2.json"),
+		"/v1.22/containers/" + containerIDs[1] + "/stats": filepath.Join(mockFolder, "two_containers", "stats1.json"),
+		"/v1.22/containers/" + containerIDs[2] + "/stats": filepath.Join(mockFolder, "two_containers", "stats2.json"),
+	})
+	defer twoContainerEnginerMock.Close()
+	require.NoError(t, err)
 
 	testCases := []struct {
 		desc                string
@@ -128,20 +107,36 @@ func TestScrapes(t *testing.T) {
 		mockDockerEngine    *httptest.Server
 	}{
 		{
-			desc: "scrape v1 (no mdatagen)",
+			desc: "scrapeV1_single_container",
 			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
 				return rcv.scrape(context.Background())
 			},
-			expectedMetricsFile: "expected_metrics.json",
-			mockDockerEngine:    ms,
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
+			mockDockerEngine:    singleContainerEngineMock,
 		},
 		{
-			desc: "scrape v2 (uses mdatagen)",
+			desc: "scrapeV2_single_container",
 			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
 				return rcv.scrapeV2(context.Background())
 			},
-			expectedMetricsFile: "expected_metrics.json",
-			mockDockerEngine:    ms,
+			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
+			mockDockerEngine:    singleContainerEngineMock,
+		},
+		{
+			desc: "scrapeV1_two_containers",
+			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
+				return rcv.scrape(context.Background())
+			},
+			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
+			mockDockerEngine:    twoContainerEnginerMock,
+		},
+		{
+			desc: "scrapeV2_two_containers",
+			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
+				return rcv.scrapeV2(context.Background())
+			},
+			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
+			mockDockerEngine:    twoContainerEnginerMock,
 		},
 	}
 
@@ -158,14 +153,55 @@ func TestScrapes(t *testing.T) {
 
 			actualMetrics, err := tc.scrape(receiver)
 			require.NoError(t, err)
-			assert.Equal(t, 1, actualMetrics.ResourceMetrics().Len())
 
-			actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetName("")
-			actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().SetVersion("")
+			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
-			expectedMetrics, err := golden.ReadMetrics(filepath.Join(mockFolder, tc.expectedMetricsFile))
+			// Unset various fields for comparison purposes (non-mdatagen implementation doesn't have these set)
+			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+				for j := 0; j < actualMetrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+					sm := actualMetrics.ResourceMetrics().At(i).ScopeMetrics().At(j)
+					sm.Scope().SetName("")
+					sm.Scope().SetVersion("")
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						sm.Metrics().At(k).SetDescription("")
+					}
+				}
+			}
+
 			assert.NoError(t, err)
 			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
+}
+
+func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
+	urlToFileContents := make(map[string][]byte, len(*urlToFile))
+	for urlPath, filePath := range *urlToFile {
+		err := func() error {
+			f, err := os.Open(filePath)
+			defer f.Close()
+			if err != nil {
+				return err
+			}
+			fileContents, err := ioutil.ReadAll(f)
+			if err != nil {
+				return err
+			}
+			urlToFileContents[urlPath] = fileContents
+			return nil
+		}()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		data, ok := urlToFileContents[req.URL.Path]
+		if !ok {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		rw.WriteHeader(http.StatusOK)
+		_, _ = rw.Write(data)
+	})), nil
 }
