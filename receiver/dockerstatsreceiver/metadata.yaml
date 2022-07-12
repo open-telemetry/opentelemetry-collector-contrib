@@ -85,15 +85,15 @@ metrics:
   container.cpu.throttling_data.periods:
     enabled: true
     description: "Number of periods with throttling active."
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
       aggregation: cumulative
-  container.cpu.throttling_data.throttling_periods:
+  container.cpu.throttling_data.throttled_periods:
     enabled: true
     description: "Number of periods when the container hits its throttling limit."
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -109,7 +109,7 @@ metrics:
   container.cpu.percent:
     enabled: true
     description: "Percent of CPU used by the container."
-    unit: ns
+    unit: "1"
     gauge:
       value_type: double
 
@@ -127,7 +127,7 @@ metrics:
     unit: By
     gauge:
       value_type: int
-  container.memory.max:
+  container.memory.usage.max:
     enabled: true
     description: "Maximum memory usage."
     unit: By
@@ -202,7 +202,7 @@ metrics:
   container.memory.pgfault:
     enabled: true
     description: "Indicate the number of times that a process of the cgroup triggered a page fault."
-    unit: By
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -210,7 +210,7 @@ metrics:
   container.memory.pgmajfault:
     enabled: true
     description: "Indicate the number of times that a process of the cgroup triggered a major fault."
-    unit: By
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -260,7 +260,7 @@ metrics:
     gauge:
       value_type: int
   container.memory.total_cache:
-    enabled: false
+    enabled: true
     description: "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs."
     unit: By
     gauge:
@@ -297,8 +297,8 @@ metrics:
       value_type: int
   container.memory.total_pgpgin:
     enabled: true
-    description: "Number of pages read from disk by the cgroup and descerdant groups."
-    unit: By
+    description: "Number of pages read from disk by the cgroup and descendant groups."
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -306,7 +306,7 @@ metrics:
   container.memory.total_pgpgout:
     enabled: true
     description: "Number of pages written to disk by the cgroup and descendant groups."
-    unit: By
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -320,7 +320,7 @@ metrics:
   container.memory.total_pgfault:
     enabled: true
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault."
-    unit: By
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -328,7 +328,7 @@ metrics:
   container.memory.total_pgmajfault:
     enabled: true
     description: "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault."
-    unit: By
+    unit: "1"
     sum:
       value_type: int
       aggregation: cumulative
@@ -424,9 +424,9 @@ metrics:
 
   container.blockio.io_service_time_recursive.read: &service_time
     enabled: true
-    description: "Total amount of time between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
+    description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
-    unit: ns
+    unit: "1" # Preserving legacy incorrect unit for now. Should be nanoseconds eventually.
     sum:
       value_type: int
       monotonic: true
