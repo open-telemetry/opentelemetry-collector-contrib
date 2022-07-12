@@ -90,6 +90,12 @@ attributes:
   circuit_breaker_name:
     value: name
     description: The name of circuit breaker.
+  memory_state:
+    value: state
+    description: State of the memory
+    enum:
+      - free
+      - used
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.estimated_size:
@@ -493,30 +499,12 @@ metrics:
       value_type: double
     attributes: [ ]
     enabled: true
-  elasticsearch.os.cpu.memory.total:
-    description: Total amount of physical memory in bytes.
-    unit: 1
+  elasticsearch.os.cpu.memory:
+    description: Amount of physical memory.
+    unit: By
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.os.cpu.memory.free:
-    description: Amount of free physical memory in bytes.
-    unit: 1
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.os.cpu.memory.used:
-    description: Amount of used physical memory in bytes.
-    unit: 1
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
+    attributes: [memory_state]
     enabled: true

@@ -184,9 +184,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
 		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
 
-		r.mb.RecordElasticsearchOsCPUMemoryTotalDataPoint(now, info.OS.Memory.TotalInBy)
-		r.mb.RecordElasticsearchOsCPUMemoryUsedDataPoint(now, info.OS.Memory.UsedInBy)
-		r.mb.RecordElasticsearchOsCPUMemoryFreeDataPoint(now, info.OS.Memory.FreeInBy)
+		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
+		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)
 	}
 }
 
