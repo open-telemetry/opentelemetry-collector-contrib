@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package spanmetricsprocessor
 
 import (
@@ -162,7 +161,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 	// Verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, p.latencyBounds)
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -333,7 +332,7 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	for n := 0; n < b.N; n++ {
-		p.ConsumeTraces(ctx, traces)
+		assert.NoError(b, p.ConsumeTraces(ctx, traces))
 	}
 }
 
@@ -451,7 +450,13 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
-		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
+		// Verify bucket counts.
+
+		// The bucket counts should be 1 greater than the explicit bounds as documented in:
+		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
+		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
+
+		// Find the bucket index where the 11ms latency should belong in.
 		var foundLatencyIndex int
 		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
 			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
@@ -774,7 +779,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	//testcases with skipSanitizeLabel flag turned on
+	// testcases with skipSanitizeLabel flag turned on
 	cfg.skipSanitizeLabel = true
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
 	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))

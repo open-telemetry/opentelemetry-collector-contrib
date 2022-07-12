@@ -142,20 +142,20 @@ const (
 	HTTP5xx = "5xx"
 )
 
-// NewConfig creates a new severity parser config
-func NewConfig() Config {
-	return Config{}
+// NewSeverityConfig creates a new severity parser config
+func NewSeverityConfig() SeverityConfig {
+	return SeverityConfig{}
 }
 
-// Config allows users to specify how to parse a severity from a field.
-type Config struct {
+// SeverityConfig allows users to specify how to parse a severity from a field.
+type SeverityConfig struct {
 	ParseFrom *entry.Field                `mapstructure:"parse_from,omitempty"  json:"parse_from,omitempty"  yaml:"parse_from,omitempty"`
 	Preset    string                      `mapstructure:"preset,omitempty"      json:"preset,omitempty"      yaml:"preset,omitempty"`
 	Mapping   map[interface{}]interface{} `mapstructure:"mapping,omitempty"     json:"mapping,omitempty"     yaml:"mapping,omitempty"`
 }
 
-// Build builds a SeverityParser from a Config
-func (c *Config) Build(logger *zap.SugaredLogger) (SeverityParser, error) {
+// Build builds a SeverityParser from a SeverityConfig
+func (c *SeverityConfig) Build(logger *zap.SugaredLogger) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {

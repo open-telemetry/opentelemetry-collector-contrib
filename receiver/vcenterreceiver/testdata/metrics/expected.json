@@ -228,7 +228,7 @@
                         },
                         {
                             "name": "vcenter.host.disk.throughput",
-                            "description": "Average number of kilobytes read from the disk each second.",
+                            "description": "Average number of kilobytes read from or written to the disk each second.",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
@@ -982,7 +982,7 @@
                         },
                         {
                             "name": "vcenter.host.network.packet.count",
-                            "description": "The number of packets sent and received, as measured over the most recent 20s interval.",
+                            "description": "The number of packets transmitted and received, as measured over the most recent 20s interval.",
                             "unit": "{packets/sec}",
                             "sum": {
                                 "dataPoints": [
@@ -2302,7 +2302,7 @@
                         },
                         {
                             "name": "vcenter.host.network.throughput",
-                            "description": "The amount of data that was sent or received over the network by the host.",
+                            "description": "The amount of data that was transmitted or received over the network by the host.",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
@@ -3516,7 +3516,7 @@
                         },
                         {
                             "name": "vcenter.vm.network.throughput",
-                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "description": "The amount of data that was transmitted or received over the network of the virtual machine.",
                             "unit": "By/sec",
                             "sum": {
                                 "dataPoints": [

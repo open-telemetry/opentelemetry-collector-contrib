@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package honeycombexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 
 import (
@@ -150,13 +149,16 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td ptrace.Traces)
 				startTime := timestampToTime(span.StartTimestamp())
 				endTime := timestampToTime(span.EndTimestamp())
 
-				ev.Add(event{
+				err := ev.Add(event{
 					ID:            getHoneycombSpanID(span.SpanID()),
 					TraceID:       getHoneycombTraceID(span.TraceID()),
 					ParentID:      getHoneycombSpanID(span.ParentSpanID()),
 					Name:          span.Name(),
 					DurationMilli: float64(endTime.Sub(startTime)) / float64(time.Millisecond),
 				})
+				if err != nil {
+					errs = multierr.Append(errs, err)
+				}
 
 				e.sendMessageEvents(span, resourceAttrs)
 				e.sendSpanLinks(span)
@@ -201,13 +203,16 @@ func (e *honeycombExporter) sendSpanLinks(span ptrace.Span) {
 		l := links.At(i)
 
 		ev := e.builder.NewEvent()
-		ev.Add(link{
+		if err := ev.Add(link{
 			TraceID:        getHoneycombTraceID(span.TraceID()),
 			ParentID:       getHoneycombSpanID(span.SpanID()),
 			LinkTraceID:    getHoneycombTraceID(l.TraceID()),
 			LinkSpanID:     getHoneycombSpanID(l.SpanID()),
 			AnnotationType: "link",
-		})
+		}); err != nil {
+			e.onError(err)
+		}
+
 		attrs := spanAttributesToMap(l.Attributes())
 		for k, v := range attrs {
 			ev.AddField(k, v)
@@ -244,13 +249,15 @@ func (e *honeycombExporter) sendMessageEvents(span ptrace.Span, resourceAttrs ma
 		e.addSampleRate(ev, attrs)
 
 		ev.Timestamp = ts
-		ev.Add(spanEvent{
+		if err := ev.Add(spanEvent{
 			Name:           name,
 			TraceID:        getHoneycombTraceID(span.TraceID()),
 			ParentID:       getHoneycombSpanID(span.SpanID()),
 			ParentName:     span.Name(),
 			AnnotationType: "span_event",
-		})
+		}); err != nil {
+			e.onError(err)
+		}
 		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
 		}

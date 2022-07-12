@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusreceiver
 
 import (
@@ -197,22 +196,22 @@ func TestHonorTimeStampsWithFalse(t *testing.T) {
 func setMetricsTimestamp() {
 	onlyOnce.Do(func() {
 		honorTimestampsPage1 = fmt.Sprintf(honorTimestampsPage1,
-			ts1,      //timestamp for gauge
-			ts2, ts3, //timestamp for counter
-			ts4, ts4, ts4, ts4, ts4, ts4, //timestamp for histogram
-			ts5, ts5, ts5, ts5, ts5, //timestamp for summary
+			ts1,      // timestamp for gauge
+			ts2, ts3, // timestamp for counter
+			ts4, ts4, ts4, ts4, ts4, ts4, // timestamp for histogram
+			ts5, ts5, ts5, ts5, ts5, // timestamp for summary
 		)
 		honorTimestampsPage2 = fmt.Sprintf(honorTimestampsPage2,
-			ts6,      //timestamp for gauge
-			ts7, ts8, //timestamp for counter
-			ts9, ts9, ts9, ts9, ts9, ts9, //timestamp for histogram
-			ts10, ts10, ts10, ts10, ts10, //timestamp for summary
+			ts6,      // timestamp for gauge
+			ts7, ts8, // timestamp for counter
+			ts9, ts9, ts9, ts9, ts9, ts9, // timestamp for histogram
+			ts10, ts10, ts10, ts10, ts10, // timestamp for summary
 		)
 		honorTimestampsPage3 = fmt.Sprintf(honorTimestampsPage3,
-			ts11,       //timestamp for gauge
-			ts12, ts13, //timestamp for counter
-			ts14, ts14, ts14, ts14, ts14, ts14, //timestamp for histogram
-			ts15, ts15, ts15, ts15, ts15, //timestamp for summary
+			ts11,       // timestamp for gauge
+			ts12, ts13, // timestamp for counter
+			ts14, ts14, ts14, ts14, ts14, ts14, // timestamp for histogram
+			ts15, ts15, ts15, ts15, ts15, // timestamp for summary
 		)
 	})
 }

@@ -259,6 +259,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "splunk_hec",
 		},
 		{
+			receiver: "sqlquery",
+		},
+		{
 			receiver:     "sqlserver",
 			skipLifecyle: true, // Requires a running windows process
 		},

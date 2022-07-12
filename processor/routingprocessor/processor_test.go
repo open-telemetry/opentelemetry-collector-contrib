@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package routingprocessor
 
 import (
@@ -906,7 +905,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 		}
 
 		exp := newProcessor(zap.NewNop(), cfg)
-		exp.Start(context.Background(), host)
+		assert.NoError(b, exp.Start(context.Background(), host))
 
 		for i := 0; i < b.N; i++ {
 			m := pmetric.NewMetrics()
@@ -917,7 +916,7 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			attrs.InsertString("X-Tenant1", "acme")
 			attrs.InsertString("X-Tenant2", "acme")
 
-			exp.ConsumeMetrics(context.Background(), m)
+			assert.NoError(b, exp.ConsumeMetrics(context.Background(), m))
 		}
 	}
 
