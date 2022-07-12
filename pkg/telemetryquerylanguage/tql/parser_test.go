@@ -735,10 +735,6 @@ func Test_parseWhere(t *testing.T) {
 				},
 			}),
 		},
-		// MORE TESTS TO DO
-		// 	query: `name != "foo" and resource.attribute["test"] == "bar"`,
-		// 	query: `name != "foo" and name != "bar" or resource.attribute["test"] == "something"`,
-		// 	query: `set(name, "test") where (name != "test" and attribute["test"] != "something") or resource.attribute["test"] == "something"`,
 	}
 
 	// create a test name that doesn't confuse vscode so we can rerun tests with one click
