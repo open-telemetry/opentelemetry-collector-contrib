@@ -84,12 +84,9 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeCacheEvictionsDataPoint(now, info.Indices.QueryCache.Evictions, metadata.AttributeCacheNameQuery)
 
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
-		r.mb.RecordElasticsearchNodeFsDiskTotalDataPoint(now, info.FS.Total.TotalBytes)
-		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
-		r.mb.RecordElasticsearchNodeFsDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadOperations)
-		r.mb.RecordElasticsearchNodeFsDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteOperations)
-		r.mb.RecordElasticsearchNodeFsDiskOperationReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
-		r.mb.RecordElasticsearchNodeFsDiskOperationWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
+
+		r.mb.RecordElasticsearchNodeDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
+		r.mb.RecordElasticsearchNodeDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
 
 		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
 		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
@@ -122,9 +119,9 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.FlushOperations.TotalTimeInMs, metadata.AttributeOperationFlush)
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
-		r.mb.RecordElasticsearchNodeShardDataSetSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
-		r.mb.RecordElasticsearchNodeShardDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
-		r.mb.RecordElasticsearchNodeShardReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
+		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
+		r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+		r.mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
 
 		for tpName, tpInfo := range info.ThreadPoolInfo {
 			r.mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(now, tpInfo.ActiveThreads, tpName, metadata.AttributeThreadStateActive)
@@ -137,8 +134,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		}
 
 		for cbName, cbInfo := range info.CircuitBreakerInfo {
-			r.mb.RecordElasticsearchBreakerEstimatedSizeDataPoint(now, cbInfo.EstimatedSizeInBytes, cbName)
-			r.mb.RecordElasticsearchBreakerLimitSizeDataPoint(now, cbInfo.LimitSizeInBytes, cbName)
+			r.mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(now, cbInfo.EstimatedSizeInBytes, cbName)
+			r.mb.RecordElasticsearchBreakerMemoryLimitDataPoint(now, cbInfo.LimitSizeInBytes, cbName)
 			r.mb.RecordElasticsearchBreakerTrippedDataPoint(now, cbInfo.Tripped, cbName)
 		}
 
@@ -146,6 +143,18 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeDocumentsDataPoint(now, info.Indices.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted)
 
 		r.mb.RecordElasticsearchNodeOpenFilesDataPoint(now, info.ProcessStats.OpenFileDescriptorsCount)
+
+		r.mb.RecordElasticsearchNodeTranslogOperationsDataPoint(now, info.Indices.TranslogStats.Operations)
+		r.mb.RecordElasticsearchNodeTranslogSizeDataPoint(now, info.Indices.TranslogStats.SizeInBy)
+		r.mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(now, info.Indices.TranslogStats.UncommittedOperationsInBy)
+
+		r.mb.RecordElasticsearchOsCPUUsageDataPoint(now, info.OS.CPU.Usage)
+		r.mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(now, info.OS.CPU.LoadAvg.OneMinute)
+		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
+		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
+
+		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
+		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)
 
 		r.mb.RecordJvmClassesLoadedDataPoint(now, info.JVMInfo.ClassInfo.CurrentLoadedCount)
 
@@ -174,18 +183,6 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
-
-		r.mb.RecordElasticsearchNodeTranslogOperationsDataPoint(now, info.Indices.TranslogStats.Operations)
-		r.mb.RecordElasticsearchNodeTranslogSizeDataPoint(now, info.Indices.TranslogStats.SizeInBy)
-		r.mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(now, info.Indices.TranslogStats.UncommittedOperationsInBy)
-
-		r.mb.RecordElasticsearchOsCPUUsageDataPoint(now, info.OS.CPU.Usage)
-		r.mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(now, info.OS.CPU.LoadAvg.OneMinute)
-		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
-		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
-
-		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
-		r.mb.RecordElasticsearchOsCPUMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)
 	}
 }
 

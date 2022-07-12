@@ -60,12 +60,12 @@ type OSCpuLoadAvgStats struct {
 }
 
 type CircuitBreakerStats struct {
-	LimitSizeInBytes     int64  `json:"limit_size_in_bytes"`
-	LimitSize            string `json:"limit_size"`
-	EstimatedSizeInBytes int64  `json:"estimated_size_in_bytes"`
-	EstimatedSize        string `json:"estimated_size"`
-	Overhead             int64  `json:"overhead"`
-	Tripped              int64  `json:"tripped"`
+	LimitSizeInBytes     int64   `json:"limit_size_in_bytes"`
+	LimitSize            string  `json:"limit_size"`
+	EstimatedSizeInBytes int64   `json:"estimated_size_in_bytes"`
+	EstimatedSize        string  `json:"estimated_size"`
+	Overhead             float64 `json:"overhead"`
+	Tripped              int64   `json:"tripped"`
 }
 
 type NodeStatsNodesInfoIndices struct {

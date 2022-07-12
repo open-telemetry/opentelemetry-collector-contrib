@@ -32,6 +32,7 @@ attributes:
     enum:
     - used
     - free
+    - available
   direction:
     description: The direction of network data.
     enum:
@@ -98,14 +99,14 @@ attributes:
       - used
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
-  elasticsearch.breaker.estimated_size:
+  elasticsearch.breaker.memory.estimated:
     description: Estimated memory used for the operation.
     unit: By
     gauge:
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
-  elasticsearch.breaker.limit_size:
+  elasticsearch.breaker.memory.limit:
     description: Memory limit for the circuit breaker.
     unit: By
     sum:
@@ -150,43 +151,7 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticsearch.node.fs.disk.total:
-    description: The total amount of disk space across all file stores for this node.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.node.fs.disk.free:
-    description: The total number of unallocated disk space across all file stores for this node.
-    unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.node.fs.disk.operation.read:
-    description: The total number of read operations across all file stores for this node.
-    unit:  "{operations}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.node.fs.disk.operation.write:
-    description: The total number of write operations across all file stores for this node.
-    unit:  "{operations}"
-    sum:
-      monotonic: false
-      aggregation: cumulative
-      value_type: int
-    attributes: [ ]
-    enabled: true
-  elasticsearch.node.fs.disk.io.read:
+  elasticsearch.node.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
     unit: By
     sum:
@@ -195,7 +160,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.fs.disk.io.write:
+  elasticsearch.node.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
     unit: By
     sum:
@@ -249,7 +214,7 @@ metrics:
       value_type: int
     attributes: [operation]
     enabled: true
-  elasticsearch.node.shard.size:
+  elasticsearch.node.shards.size:
     description: The size of the shards assigned to this node.
     unit: By
     sum:
@@ -258,7 +223,7 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
-  elasticsearch.node.shard.data_set.size:
+  elasticsearch.node.shards.data_set.size:
     description: Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
     unit: By
     sum:
@@ -267,7 +232,7 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
-  elasticsearch.node.shard.reserved.size:
+  elasticsearch.node.shards.reserved.size:
     description: A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
     unit: By
     sum:
@@ -279,7 +244,9 @@ metrics:
   elasticsearch.node.translog.operations:
     description: Number of transaction log operations.
     unit: "{operations}"
-    gauge:
+    sum:
+      monotonic: true
+      aggregation: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
