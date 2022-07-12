@@ -63,7 +63,7 @@ Example Literals
 
 ### Expressions
 
-Expressions allow a decision to be made about whether an Invocation should be called. The TQL does not force an expression to be used, it only allows the opportunity for the expression to be invoked before invoking the associated Invocation. Expressions always evaluate to a boolean value (true or false).
+Expressions allow a decision to be made about whether an Invocation should be called. Expressions are optional.  When used, the parsed query will include a `Condition`, which can be used to evaluate the result of the query's Expression. Expressions always evaluate to a boolean value (true or false).
 
 Expressions consist of the literal string `where` followed by one or more Booleans (see below).
 Booleans can be joined with the literal strings `and` and `or`.
