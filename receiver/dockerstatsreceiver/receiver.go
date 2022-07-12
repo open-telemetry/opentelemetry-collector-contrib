@@ -116,7 +116,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
-			// Don't know the number of failed stats, but one container fetch is a partial error.
+			// Don't know the number of failed metrics, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}

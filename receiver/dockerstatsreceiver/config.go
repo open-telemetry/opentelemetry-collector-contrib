@@ -53,7 +53,7 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Whether to report all CPU stats.  Default is false
+	// Whether to report all CPU metrics.  Default is false
 	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
 
 	// Docker client API version. Default is 1.22
