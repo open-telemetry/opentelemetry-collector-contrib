@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "elastic"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelDeprecated
 )
 
 var once sync.Once
@@ -35,8 +37,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
 	)
 }
 

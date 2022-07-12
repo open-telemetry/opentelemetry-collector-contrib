@@ -25,18 +25,53 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
+const (
+	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.vcenterreceiver.emitMetricsWithDirectionAttribute"
+	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute"
+)
+
+var (
+	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some vcenter metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/vcenterreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some vcenter metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/vcenterreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+}
+
 var _ component.Receiver = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client *vcenterClient
-	config *Config
-	mb     *metadata.MetricsBuilder
-	logger *zap.Logger
+	client                               *vcenterClient
+	config                               *Config
+	mb                                   *metadata.MetricsBuilder
+	logger                               *zap.Logger
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func newVmwareVcenterScraper(
@@ -46,10 +81,12 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client: client,
-		config: config,
-		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		client:                               client,
+		config:                               config,
+		logger:                               logger,
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 }
 

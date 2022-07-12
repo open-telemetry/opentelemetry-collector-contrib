@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.17
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.22
+	github.com/DataDog/agent-payload/v5 v5.0.23
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3
@@ -11,15 +11,15 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.2
 	github.com/aws/aws-sdk-go v1.44.47
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.54.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.54.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.55.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.54.1-0.20220705210223-9f0d97ca5741
-	go.opentelemetry.io/collector/pdata v0.54.1-0.20220705210223-9f0d97ca5741
-	go.opentelemetry.io/collector/semconv v0.54.1-0.20220705210223-9f0d97ca5741
+	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -41,7 +41,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/emicklei/go-restful v2.9.5+incompatible // indirect
-	github.com/felixge/httpsnoop v1.0.2 // indirect
+	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.54.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/philhofer/fwd v1.1.1 // indirect
@@ -84,13 +84,14 @@ require (
 	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
 	github.com/tklauser/numcpus v0.4.0 // indirect
+	github.com/vmihailenco/tagparser v0.1.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	github.com/zorkian/go-datadog-api v2.30.0+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.32.0 // indirect
-	go.opentelemetry.io/otel v1.7.0 // indirect
-	go.opentelemetry.io/otel/metric v0.30.0 // indirect
-	go.opentelemetry.io/otel/trace v1.7.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
+	go.opentelemetry.io/otel v1.8.0 // indirect
+	go.opentelemetry.io/otel/metric v0.31.0 // indirect
+	go.opentelemetry.io/otel/trace v1.8.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
@@ -121,6 +122,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metad
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry => ../../pkg/resourcetotelemetry
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil => ../../internal/aws/ecsutil
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 

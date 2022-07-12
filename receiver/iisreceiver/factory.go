@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	typeStr = "iis"
+	typeStr   = "iis"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for iis receiver.
@@ -33,7 +34,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

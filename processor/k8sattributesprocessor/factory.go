@@ -32,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "k8sattributes"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
@@ -43,9 +45,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
 	)
 }
 

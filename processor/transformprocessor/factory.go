@@ -30,7 +30,8 @@ import (
 )
 
 const (
-	typeStr = "transform"
+	typeStr   = "transform"
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -39,9 +40,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor),
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
 	)
 }
 

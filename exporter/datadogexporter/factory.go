@@ -17,10 +17,10 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,13 +32,14 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 type factory struct {
@@ -63,8 +64,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
 	)
 }
 
@@ -80,28 +81,7 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
-// TODO (#8396): Remove `os.Getenv` everywhere.
 func (f *factory) createDefaultConfig() config.Exporter {
-	env := os.Getenv("DD_ENV")
-	if env == "" {
-		env = "none"
-	}
-
-	site := os.Getenv("DD_SITE")
-	if site == "" {
-		site = "datadoghq.com"
-	}
-
-	metricsEndpoint := os.Getenv("DD_URL")
-	if metricsEndpoint == "" {
-		metricsEndpoint = fmt.Sprintf("https://api.%s", site)
-	}
-
-	tracesEndpoint := os.Getenv("DD_APM_URL")
-	if tracesEndpoint == "" {
-		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
-	}
-
 	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
 		hostnameSource = HostnameSourceConfigOrSystem
@@ -114,29 +94,17 @@ func (f *factory) createDefaultConfig() config.Exporter {
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
-			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: site,
-		},
-
-		TagsConfig: TagsConfig{
-			Hostname:   os.Getenv("DD_HOST"),
-			Env:        env,
-			Service:    os.Getenv("DD_SERVICE"),
-			Version:    os.Getenv("DD_VERSION"),
-			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
+			Site: "datadoghq.com",
 		},
 
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: metricsEndpoint,
+				Endpoint: "https://api.datadoghq.com",
 			},
-			SendMonotonic: true,
-			DeltaTTL:      3600,
-			Quantiles:     true,
+			DeltaTTL: 3600,
 			ExporterConfig: MetricsExporterConfig{
-				ResourceAttributesAsTags:             false,
-				InstrumentationLibraryMetadataAsTags: false,
-				InstrumentationScopeMetadataAsTags:   false,
+				ResourceAttributesAsTags:           false,
+				InstrumentationScopeMetadataAsTags: false,
 			},
 			HistConfig: HistogramConfig{
 				Mode:         "distributions",
@@ -152,7 +120,7 @@ func (f *factory) createDefaultConfig() config.Exporter {
 
 		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: tracesEndpoint,
+				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
@@ -161,20 +129,16 @@ func (f *factory) createDefaultConfig() config.Exporter {
 			Enabled:        true,
 			HostnameSource: hostnameSource,
 		},
-
-		SendMetadata:        true,
-		UseResourceMetadata: true,
 	}
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(set component.ExporterCreateSettings, c config.Exporter) *Config {
+func checkAndCastConfig(c config.Exporter) *Config {
 	cfg, ok := c.(*Config)
 	if !ok {
 		panic("programming error: config structure is not of type *datadogexporter.Config")
 	}
-	cfg.logWarnings(set.Logger)
 	return cfg
 }
 
@@ -184,7 +148,7 @@ func (f *factory) createMetricsExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
-	cfg := checkAndCastConfig(set, c)
+	cfg := checkAndCastConfig(c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -243,7 +207,7 @@ func (f *factory) createTracesExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
-	cfg := checkAndCastConfig(set, c)
+	cfg := checkAndCastConfig(c)
 
 	var (
 		pusher consumer.ConsumeTracesFunc

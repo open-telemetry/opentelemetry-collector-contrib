@@ -15,46 +15,14 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"go.uber.org/zap"
 
-	stanzaerrors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
-
-type FileAttributes struct {
-	Name         string
-	Path         string
-	NameResolved string
-	PathResolved string
-}
-
-// resolveFileAttributes resolves file attributes
-// and sets it to empty string in case of error
-func (f *Input) resolveFileAttributes(path string) *FileAttributes {
-	resolved, err := filepath.EvalSymlinks(path)
-	if err != nil {
-		f.Error(err)
-	}
-
-	abs, err := filepath.Abs(resolved)
-	if err != nil {
-		f.Error(err)
-	}
-
-	return &FileAttributes{
-		Path:         path,
-		Name:         filepath.Base(path),
-		PathResolved: abs,
-		NameResolved: filepath.Base(abs),
-	}
-}
 
 // Reader manages a single file
 type Reader struct {
@@ -72,13 +40,18 @@ type Reader struct {
 }
 
 // NewReader creates a new file reader
-func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter, emit EmitFunc) (*Reader, error) {
+func (f *Input) NewReader(file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
+	path := file.Name()
+	attrs, err := resolveFileAttributes(path)
+	if err != nil {
+		f.Errorf("resolve attributes: %w", err)
+	}
 	r := &Reader{
 		SugaredLogger:  f.SugaredLogger.With("path", path),
 		Fingerprint:    fp,
 		file:           file,
 		fileInput:      f,
-		fileAttributes: f.resolveFileAttributes(path),
+		fileAttributes: attrs,
 		splitter:       splitter,
 	}
 	return r, nil
@@ -86,7 +59,7 @@ func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter 
 
 // Copy creates a deep copy of a Reader
 func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter, r.fileInput.emit)
+	reader, err := r.fileInput.NewReader(file, r.Fingerprint.Copy(), r.splitter)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +98,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		ok := scanner.Scan()
 		if !ok {
-			if err := getScannerError(scanner); err != nil {
+			if err := scanner.getError(); err != nil {
 				r.Errorw("Failed during scan", zap.Error(err))
 			}
 			break
@@ -149,16 +122,6 @@ func (r *Reader) Close() {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
 	}
-}
-
-func getScannerError(scanner *PositionalScanner) error {
-	err := scanner.Err()
-	if errors.Is(err, bufio.ErrTooLong) {
-		return stanzaerrors.NewError("log entry too large", "increase max_log_size or ensure that multiline regex patterns terminate")
-	} else if err != nil {
-		return stanzaerrors.Wrap(err, "scanner error")
-	}
-	return nil
 }
 
 // Read from the file and update the fingerprint if necessary
