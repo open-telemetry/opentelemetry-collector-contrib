@@ -8,7 +8,7 @@ component: xrayreceiver
 note: Ensure that the UDP Poller ends the obsreport span it creates with every loop.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [12299]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
