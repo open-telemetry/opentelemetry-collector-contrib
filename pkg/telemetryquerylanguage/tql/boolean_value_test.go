@@ -21,6 +21,103 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_newConditionEvaluator(t *testing.T) {
+	tests := []struct {
+		name string
+		cond *Condition
+		item interface{}
+	}{
+		{
+			name: "literals match",
+			cond: &Condition{
+				Left: Value{
+					String: tqltest.Strp("hello"),
+				},
+				Right: Value{
+					String: tqltest.Strp("hello"),
+				},
+				Op: "==",
+			},
+		},
+		{
+			name: "literals don't match",
+			cond: &Condition{
+				Left: Value{
+					String: tqltest.Strp("hello"),
+				},
+				Right: Value{
+					String: tqltest.Strp("goodbye"),
+				},
+				Op: "!=",
+			},
+		},
+		{
+			name: "path expression matches",
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				Right: Value{
+					String: tqltest.Strp("bear"),
+				},
+				Op: "==",
+			},
+			item: "bear",
+		},
+		{
+			name: "path expression not matches",
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				Right: Value{
+					String: tqltest.Strp("cat"),
+				},
+				Op: "!=",
+			},
+			item: "bear",
+		},
+		{
+			name: "no condition",
+			cond: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			evaluate, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
+			assert.NoError(t, err)
+			assert.True(t, evaluate(tqltest.TestTransformContext{
+				Item: tt.item,
+			}))
+		})
+	}
+
+	t.Run("invalid", func(t *testing.T) {
+		_, err := newConditionEvaluator(&Condition{
+			Left: Value{
+				String: tqltest.Strp("bear"),
+			},
+			Op: "<>",
+			Right: Value{
+				String: tqltest.Strp("cat"),
+			},
+		}, DefaultFunctionsForTests(), testParsePath)
+		assert.Error(t, err)
+	})
+}
+
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	tests := []struct {
 		name string
