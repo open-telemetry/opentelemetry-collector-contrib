@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -136,7 +135,7 @@ type internalPodOwnersObj struct {
 }
 
 func addKubernetesWrapper(labels map[string]string) {
-	//fill in obj
+	// fill in obj
 	filledInObj := kubernetesObj{
 		ContainerName: mapGetHelper(labels, "container"),
 		Docker: &internalDockerObj{
@@ -157,7 +156,7 @@ func addKubernetesWrapper(labels map[string]string) {
 		ServiceName: mapGetHelper(labels, "Service"),
 	}
 
-	//handle nested empty object
+	// handle nested empty object
 	if filledInObj.Docker.ContainerID == "" {
 		filledInObj.Docker = nil
 	}
