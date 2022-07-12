@@ -47,7 +47,7 @@ type Version struct {
 }
 
 // ReadVersionFromPath allows for parsing paths
-// that end in a schema indentifier
+// that end in a schema version number string
 func ReadVersionFromPath(p string) (*Version, error) {
 	if p == "" {
 		return nil, fmt.Errorf("empty path:%w", ErrInvalidVersion)
@@ -57,17 +57,16 @@ func ReadVersionFromPath(p string) (*Version, error) {
 	if strings.HasSuffix(p, "/") {
 		return nil, fmt.Errorf("must not have trailing slash: %w", ErrInvalidVersion)
 	}
-	ident := path.Base(p)
-	return NewVersion(ident)
+	return NewVersion(path.Base(p))
 }
 
 // GetFamilyAndVersion takes a schemaURL and separates the family from the identifier.
-func GetFamilyAndVersion(schemaURL string) (family string, id *Version, err error) {
+func GetFamilyAndVersion(schemaURL string) (family string, version *Version, err error) {
 	u, err := url.Parse(schemaURL)
 	if err != nil {
 		return "", nil, err
 	}
-	id, err = ReadVersionFromPath(u.Path)
+	version, err = ReadVersionFromPath(u.Path)
 	if err != nil {
 		return "", nil, err
 	}
@@ -80,16 +79,7 @@ func GetFamilyAndVersion(schemaURL string) (family string, id *Version, err erro
 		return "", nil, fmt.Errorf("must have a host name: %w", ErrInvalidFamily)
 	}
 
-	return u.String(), id, err
-}
-
-func joinSchemaFamilyAndVersion(family string, version *Version) string {
-	u, err := url.Parse(family)
-	if err != nil {
-		return ""
-	}
-	u.Path = path.Join(u.Path, version.String())
-	return u.String()
+	return u.String(), version, err
 }
 
 // NewVersion converts a near semver like string (ie 1.4.0) into
@@ -122,7 +112,7 @@ func (v *Version) String() string {
 
 // Compare returns a digit to represent if the v is equal, less than,
 // or greater than o.
-// The values are 0, 1 and -1 respectively.
+// The values are 0, -1 and 1 respectively.
 func (v *Version) Compare(o *Version) int {
 	var (
 		major = diff(v.Major, o.Major)
