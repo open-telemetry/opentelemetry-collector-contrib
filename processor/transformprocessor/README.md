@@ -150,6 +150,65 @@ All logs
 4) Set `body` to the `http.route` attribute if it is set
 5) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
 
+## Declarative Syntax
+
+The transform processor also supports configuration using a declarative syntax.  Instead of providing SQL-like queries to be parsed by the grammar, you can provide the configuration directly.  The configuration is still validated as if it had been parsed by the grammar.
+
+Declarative syntax configuration is provided via the `operations` field. Only one of `queries` or `operations` can be used.  See [config.go](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/config.go) for the complete object structure for operations.
+
+Example configuration:
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+exporters:
+  nop
+
+processors:
+  transform:
+    traces:
+      operations:
+        - invocation:
+            function: set
+            arguments:
+              - path:
+                  fields:
+                    - name: status
+                    - name: code
+              - int: 1
+          condition:
+            left:
+              path:
+                fields:
+                  - name: attributes
+                    map_key: http.path
+            op: ==
+            right:
+              string: /health
+        - invocation:
+            function: keep_keys
+            arguments:
+              - path:
+                  fields:
+                    - name: resource
+                    - name: attributes
+              - string: service.name
+              - string: service.namespace
+              - string: cloud.region
+              - string: process.command_line
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [nop]
+```
+
+
+
 ## Contributing
  <!-- markdown-link-check-disable-next-line -->
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
