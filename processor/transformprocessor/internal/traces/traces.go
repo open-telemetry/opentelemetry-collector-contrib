@@ -92,14 +92,15 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		if len(path) == 1 {
 			return accessResource(), nil
 		}
-		switch path[1].Name {
-		case "attributes":
+
+		if path[1].Name == "attributes" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {
 				return accessResourceAttributes(), nil
 			}
 			return accessResourceAttributesKey(mapKey), nil
 		}
+
 	case "instrumentation_library":
 		if len(path) == 1 {
 			return accessInstrumentationScope(), nil
