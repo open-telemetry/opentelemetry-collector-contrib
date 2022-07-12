@@ -58,6 +58,27 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 	path.setter(ctx, val)
 }
 
+var symbolTable = map[string]common.Enum{
+	"SPAN_KIND_UNSPECIFIED": 0,
+	"SPAN_KIND_INTERNAL":    1,
+	"SPAN_KIND_SERVER":      2,
+	"SPAN_KIND_CLIENT":      3,
+	"SPAN_KIND_PRODUCER":    4,
+	"SPAN_KIND_CONSUMER":    5,
+	"STATUS_CODE_UNSET":     0,
+	"STATUS_CODE_OK":        1,
+	"STATUS_CODE_ERROR":     2,
+}
+
+func ParseEnum(val *common.Path) (*common.Enum, bool) {
+	if val != nil && len(val.Fields) > 0 {
+		if enum, ok := symbolTable[val.Fields[0].Name]; ok {
+			return &enum, true
+		}
+	}
+	return nil, false
+}
+
 func ParsePath(val *common.Path) (common.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
@@ -350,7 +371,7 @@ func accessName() pathGetSetter {
 func accessKind() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Kind()
+			return int64(ctx.GetItem().(ptrace.Span).Kind())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -498,7 +519,7 @@ func accessStatus() pathGetSetter {
 func accessStatusCode() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status().Code()
+			return int64(ctx.GetItem().(ptrace.Span).Status().Code())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {

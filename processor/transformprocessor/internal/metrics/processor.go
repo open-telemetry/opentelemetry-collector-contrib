@@ -30,7 +30,7 @@ type Processor struct {
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := common.ParseQueries(statements, functions, ParsePath)
+	queries, err := common.ParseQueries(statements, functions, ParsePath, ParseEnum)
 	if err != nil {
 		return nil, err
 	}
