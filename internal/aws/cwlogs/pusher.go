@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
@@ -29,7 +28,7 @@ import (
 const (
 	// http://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html
 	// In truncation logic, it assuming this constant value is larger than perEventHeaderBytes + len(truncatedSuffix)
-	defaultMaxEventPayloadBytes = 1024 * 256 //256KB
+	defaultMaxEventPayloadBytes = 1024 * 256 // 256KB
 	// http://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 	maxRequestEventCount   = 10000
 	perEventHeaderBytes    = 26
@@ -39,8 +38,8 @@ const (
 
 	truncatedSuffix = "[Truncated...]"
 
-	eventTimestampLimitInPast  = 14 * 24 * time.Hour //None of the log events in the batch can be older than 14 days
-	evenTimestampLimitInFuture = -2 * time.Hour      //None of the log events in the batch can be more than 2 hours in the future.
+	eventTimestampLimitInPast  = 14 * 24 * time.Hour // None of the log events in the batch can be older than 14 days
+	evenTimestampLimitInFuture = -2 * time.Hour      // None of the log events in the batch can be more than 2 hours in the future.
 )
 
 var (
@@ -82,11 +81,11 @@ func (logEvent *Event) Validate(logger *zap.Logger) error {
 		return errors.New("empty log event message")
 	}
 
-	//http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
-	//* None of the log events in the batch can be more than 2 hours in the
-	//future.
-	//* None of the log events in the batch can be older than 14 days or the
-	//retention period of the log group.
+	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
+	// * None of the log events in the batch can be more than 2 hours in the
+	// future.
+	// * None of the log events in the batch can be older than 14 days or the
+	// retention period of the log group.
 	currentTime := time.Now().UTC()
 	utcTime := time.Unix(0, *logEvent.InputLogEvent.Timestamp*int64(time.Millisecond)).UTC()
 	duration := currentTime.Sub(utcTime)
@@ -107,11 +106,11 @@ func (logEvent *Event) eventPayloadBytes() int {
 // eventBatch struct to present a log event batch
 type eventBatch struct {
 	putLogEventsInput *cloudwatchlogs.PutLogEventsInput
-	//the total bytes already in this log event batch
+	// the total bytes already in this log event batch
 	byteTotal int
-	//min timestamp recorded in this log event batch (ms)
+	// min timestamp recorded in this log event batch (ms)
 	minTimestampMs int64
-	//max timestamp recorded in this log event batch (ms)
+	// max timestamp recorded in this log event batch (ms)
 	maxTimestampMs int64
 }
 

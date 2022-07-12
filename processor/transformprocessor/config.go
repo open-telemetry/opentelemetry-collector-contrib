@@ -60,26 +60,26 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if c.Traces.Operations != nil {
-		_, err := common.InterpretQueries(c.Traces.Operations, c.Traces.functions, traces.ParsePath)
+		_, err := common.InterpretQueries(c.Traces.Operations, c.Traces.functions, traces.ParsePath, traces.ParseEnum)
 		errors = multierr.Append(errors, err)
 	} else {
-		_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+		_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath, traces.ParseEnum)
 		errors = multierr.Append(errors, err)
 	}
 
 	if c.Metrics.Operations != nil {
-		_, err := common.InterpretQueries(c.Metrics.Operations, c.Metrics.functions, metrics.ParsePath)
+		_, err := common.InterpretQueries(c.Metrics.Operations, c.Metrics.functions, metrics.ParsePath, metrics.ParseEnum)
 		errors = multierr.Append(errors, err)
 	} else {
-		_, err := common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
+		_, err := common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath, metrics.ParseEnum)
 		errors = multierr.Append(errors, err)
 	}
 
 	if c.Logs.Operations != nil {
-		_, err := common.InterpretQueries(c.Logs.Operations, c.Logs.functions, logs.ParsePath)
+		_, err := common.InterpretQueries(c.Logs.Operations, c.Logs.functions, logs.ParsePath, logs.ParseEnum)
 		errors = multierr.Append(errors, err)
 	} else {
-		_, err := common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
+		_, err := common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath, logs.ParseEnum)
 		errors = multierr.Append(errors, err)
 	}
 

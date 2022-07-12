@@ -7,17 +7,6 @@ processors:
 exporters:
   datadog/api:
     hostname: customhostname
-    # Deprecated; kept here to avoid regressions.
-    env: prod
-    # Deprecated; kept here to avoid regressions.
-    service: myservice
-    # Deprecated; kept here to avoid regressions.
-    version: myversion
-
-    # Deprecated; kept here to avoid regressions.
-    tags:
-      - example:tag
-
     api:
       key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       site: datadoghq.eu
@@ -43,8 +32,6 @@ exporters:
 
     metrics:
       endpoint: https://api.datadoghq.test
-      # Deprecated; kept here to avoid regressions
-      report_quantiles: false
 
     traces:
       span_name_remappings:
@@ -58,16 +45,6 @@ exporters:
     host_metadata:
       # Suppress warning related to `exporter.datadog.hostname.preview` feature gate
       hostname_source: first_resource
-
-  datadog/hostmetadata:
-    api:
-      key: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-    # Deprecated; kept here to test rename system
-    tags: [example:one]
-    # Deprecated; kept here to test rename system
-    send_metadata: true
-    # Deprecated; kept here to test rename system
-    use_resource_metadata: false
 
 service:
   pipelines:

@@ -20,6 +20,7 @@ in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]
   - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
   - Hex String of traceid and spanid are handled using `trace_id.string`,`span_id.string` accessor.
 - Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
+- Enums: Any enum in the OTLP protobuf can be used directly. For example, you can set the span kind like `set(kind, SPAN_KIND_UNSPECIFIED) where kind != SPAN_KIND_UNSPECIFIED`.  You can also use the literal int value if you desire. In addition, the grammar recognises `METRIC_DATA_TYPE_NONE`, `METRIC_DATA_TYPE_GAUGE`, `METRIC_DATA_TYPE_SUM`, `METRIC_DATA_TYPE_HISTOGRAM`, `METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`, and `METRIC_DATA_TYPE_SUMMARY` for `metric.type`
 - Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
 - Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.
 
@@ -33,6 +34,10 @@ Supported functions:
 - `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
 e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
 it references an unset map value, there will be no action.
+
+- `delete_key(target, key)` - `target` is a path expression to a map type field. `key` is a string that is a key in the map.  The key will be deleted from the map.  e.g., `delete_key(attributes, "http.request.header.authorization")`
+
+- `delete_matching_keys(target, pattern)` - `target` is a path expression to a map type field. `pattern` is a regex string.  All keys that match the pattern will be deleted from the map.  e.g., `delete_matching_keys(attributes, ".*\.header\.authorization")`
 
 - `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
 the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`

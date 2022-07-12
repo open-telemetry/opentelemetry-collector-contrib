@@ -109,7 +109,7 @@ func (n *IsNil) Capture(_ []string) error {
 	return nil
 }
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	parsedQueries := make([]ParsedQuery, 0)
 	var errors error
 
@@ -122,7 +122,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 		}
 	}
 
-	queries, err := InterpretQueries(parsedQueries, functions, pathParser)
+	queries, err := InterpretQueries(parsedQueries, functions, pathParser, enumParser)
 	errors = multierr.Append(errors, err)
 	if errors != nil {
 		return nil, errors
@@ -130,12 +130,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 	return queries, nil
 }
 
-func InterpretQueries(parsedQueries []ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+func InterpretQueries(parsedQueries []ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 
 	for _, parsedQuery := range parsedQueries {
-		query, err := generateQuery(parsedQuery, functions, pathParser)
+		query, err := generateQuery(parsedQuery, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 		} else {
@@ -149,13 +149,13 @@ func InterpretQueries(parsedQueries []ParsedQuery, functions map[string]interfac
 	return queries, nil
 }
 
-func generateQuery(parsedQuery ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser) (Query, error) {
+func generateQuery(parsedQuery ParsedQuery, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (Query, error) {
 	var errors error
-	function, err := NewFunctionCall(parsedQuery.Invocation, functions, pathParser)
+	function, err := NewFunctionCall(parsedQuery.Invocation, functions, pathParser, enumParser)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	condition, err := newConditionEvaluator(parsedQuery.Condition, functions, pathParser)
+	condition, err := newConditionEvaluator(parsedQuery.Condition, functions, pathParser, enumParser)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
