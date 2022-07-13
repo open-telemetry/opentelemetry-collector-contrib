@@ -5,7 +5,7 @@ change_type: breaking
 component: memcachedreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Remove direction for metrics. The feature gate: receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#)"
+note: "Remove direction for metrics. The feature gate: receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#12404)"
 
 # One or more tracking issues related to the change
 issues: [12165]
