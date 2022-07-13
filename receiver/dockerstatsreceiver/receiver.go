@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
@@ -191,8 +192,6 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
-			label := label
-			v := v
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().UpsertString(label, v)
 			})
@@ -200,8 +199,6 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
-			label := label
-			v := v
 			resourceMetricsOptions = append(resourceMetricsOptions, func(rm pmetric.ResourceMetrics) {
 				rm.Resource().Attributes().UpsertString(label, v)
 			})
@@ -339,10 +336,14 @@ func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.
 		}},
 	} {
 		for _, entry := range blkioRecorder.entries {
-			if recorder, ok := blkioRecorder.opToRecorderMap[strings.ToLower(entry.Op)]; ok {
-				recorder(now, int64(entry.Value), strconv.FormatUint(entry.Major, 10), strconv.FormatUint(entry.Minor, 10))
+			recorder, ok := blkioRecorder.opToRecorderMap[strings.ToLower(entry.Op)]
+			if !ok {
+				r.settings.Logger.Debug("Unknown operation in blockIO stats.", zap.String("operation", entry.Op))
+				continue
 			}
+			recorder(now, int64(entry.Value), strconv.FormatUint(entry.Major, 10), strconv.FormatUint(entry.Minor, 10))
 		}
+
 	}
 }
 
