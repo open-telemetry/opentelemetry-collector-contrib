@@ -43,6 +43,7 @@ func TestDetect(t *testing.T) {
 			detector: &detector{detector: &fakeGCPDetector{
 				projectID:           "my-project",
 				cloudPlatform:       gcp.GKE,
+				gceHostName:         "my-gke-node-1234",
 				gkeHostID:           "1472385723456792345",
 				gkeClusterName:      "my-cluster",
 				gkeAvailabilityZone: "us-central1-c",
@@ -54,6 +55,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeK8SClusterName:        "my-cluster",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
 			}),
 		},
 		{
@@ -61,6 +63,7 @@ func TestDetect(t *testing.T) {
 			detector: &detector{detector: &fakeGCPDetector{
 				projectID:      "my-project",
 				cloudPlatform:  gcp.GKE,
+				gceHostName:    "my-gke-node-1234",
 				gkeHostID:      "1472385723456792345",
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
@@ -72,6 +75,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeK8SClusterName: "my-cluster",
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeHostID:         "1472385723456792345",
+				conventions.AttributeHostName:       "my-gke-node-1234",
 			}),
 		},
 		{
