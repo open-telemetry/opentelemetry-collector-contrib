@@ -163,6 +163,7 @@ func TestConfig_validate(t *testing.T) {
 		CredentialFile string
 		Audience       string
 		Labels         LabelsConfig
+		Tenant         *Tenant
 	}
 	tests := []struct {
 		name         string
@@ -251,6 +252,38 @@ func TestConfig_validate(t *testing.T) {
 			},
 			shouldError: true,
 		},
+		{
+			name: "with missing `tenant.source`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validAttribLabelsConfig,
+				Tenant:   &Tenant{},
+			},
+			shouldError: true,
+		},
+		{
+			name: "with invalid `tenant.source`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validAttribLabelsConfig,
+				Tenant: &Tenant{
+					Source: "invalid",
+				},
+			},
+			shouldError: true,
+		},
+		{
+			name: "with valid `tenant.source`",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validAttribLabelsConfig,
+				Tenant: &Tenant{
+					Source: "static",
+					Value:  "acme",
+				},
+			},
+			shouldError: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -260,6 +293,10 @@ func TestConfig_validate(t *testing.T) {
 			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
+
+			if tt.fields.Tenant != nil {
+				cfg.Tenant = tt.fields.Tenant
+			}
 
 			err := cfg.validate()
 			if (err != nil) != tt.shouldError {

@@ -32,8 +32,9 @@ The following settings are required:
 
 The following settings can be optionally configured:
 
-- `tenant_id` (no default): The tenant ID used to identify the tenant the logs are associated to. This will set the 
-  "X-Scope-OrgID" header used by Loki. If left unset, this header will not be added.
+- `tenant`: composed of the properties `tenant.source` and `tenant.value`.
+- `tenant.source`: one of "static", "context", or "attribute". 
+- `tenant.value`: the semantics depend on the tenant source. See the "Tenant information" section.
 
 - `tls`:
   - `insecure` (default = false): When set to true disables verifying the server's certificate chain and host name. The
@@ -81,6 +82,26 @@ loki:
 
 The full list of settings exposed for this exporter are documented [here](./config.go) with detailed sample
 configurations [here](./testdata/config.yaml).
+
+## Tenant information
+
+This processor is able to acquire the tenant ID based on different sources. At this moment, there are three possible sources:
+
+- static
+- context
+- attribute
+
+Each one has a strategy for obtaining the tenant ID, as follows:
+
+- when "static" is set, the tenant is the literal value from the "tenant.value" property. 
+- when "context" is set, the tenant is looked up from the request metadata, such as HTTP headers, using the "value" as the
+key (likely the header name).
+- when "attribute" is set, the tenant is looked up from the resource attributes in the batch: the first value found among
+the resource attributes is used. If you intend to have multiple tenants per HTTP request, make sure to use a processor
+that groups tenants in batches, such as the `groupbyattrs` processor.
+
+The value that is determined to be the tenant is then sent as the value for the HTTP header `X-Scope-OrgID`. When a tenant
+is not provided, or a tenant cannot be determined, the logs are still sent to Loki but without the HTTP header.
 
 ## Advanced Configuration
 
