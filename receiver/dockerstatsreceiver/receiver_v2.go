@@ -19,6 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
+const defaultResourcesLen = 5
+
 type resultV2 struct {
 	stats     *dtypes.StatsJSON
 	container *docker.Container
@@ -72,8 +74,8 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 
-	// Five always-present resource attrs + the user-configured resource attrs
-	resourceCapacity := 5 + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
+	// Always-present resource attrs + the user-configured resource attrs
+	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
 	resourceMetricsOptions := make([]metadata.ResourceMetricsOption, 0, resourceCapacity)
 	resourceMetricsOptions = append(resourceMetricsOptions,
 		metadata.WithContainerRuntime("docker"),
