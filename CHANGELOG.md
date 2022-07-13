@@ -43,7 +43,6 @@
 
 ### 🚀 New components 🚀
 - `sqlqueryreceiver`: Enable the component (#11848)
-- `solacereceiver`: Add Solace receiver to receive trace data from a Solace PubSub+ Event Broker. (#10572)
 
 ### 💡 Enhancements 💡
 - `cmd/chloggen`: Update CI process to validate new changelog strategy (#11841)
