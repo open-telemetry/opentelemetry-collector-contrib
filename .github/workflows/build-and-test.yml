@@ -287,15 +287,20 @@ jobs:
           - amd64
           - arm
           - arm64
+          - ppc64le
         exclude:
           - os: darwin
             arch: 386
           - os: darwin
             arch: arm
+          - os: darwin
+            arch: ppc64le
           - os: windows
             arch: arm
           - os: windows
             arch: arm64
+          - os: windows
+            arch: ppc64le
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -356,6 +361,8 @@ jobs:
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "amd64" "./dist/"
       - name: Build ${{ matrix.package_type }} arm64 package
         run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "arm64" "./dist/"
+      - name: Build ${{ matrix.package_type }} ppc64le package
+        run: ./internal/buildscripts/packaging/fpm/${{ matrix.package_type }}/build.sh "${{ steps.github_tag.outputs.tag }}" "ppc64le" "./dist/"
       - name: Test ${{ matrix.package_type }} package
         run: |
           if [[ "${{ matrix.package_type }}" = "deb" ]]; then
