@@ -425,7 +425,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 
 			require.Equal(t, 2, n)
 
-			mLabels, _, mValue, _, mIsMonotonic := getMetricProperties(ilm.Metrics().At(1))
+			mLabels, _, _, _, mIsMonotonic := getMetricProperties(ilm.Metrics().At(1))
 			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), mLabels, pcommon.NewMap())
 			m, ok := a.registeredMetrics.Load(signature)
 			require.True(t, ok)
@@ -443,7 +443,7 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 				return true
 			})
 			require.Equal(t, mLabels.Len(), vLabels.Len())
-			require.Equal(t, mValue, vValue)
+			require.Equal(t, float64(42), vValue)
 			require.Equal(t, pmetric.MetricAggregationTemporalityCumulative, vTemporality)
 			require.Equal(t, mIsMonotonic, vIsMonotonic)
 
