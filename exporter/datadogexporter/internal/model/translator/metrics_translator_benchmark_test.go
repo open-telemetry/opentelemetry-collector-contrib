@@ -20,13 +20,12 @@ import (
 	"math"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 )
 
 func newBenchmarkTranslator(b *testing.B, logger *zap.Logger, opts ...Option) *Translator {
