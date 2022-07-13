@@ -176,6 +176,7 @@ receiver/sapmreceiver/                               @open-telemetry/collector-c
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
 receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @fatsheep9146            
 receiver/skywalkingreceiver/                         @open-telemetry/collector-contrib-approvers @JaredTan95
+receiver/solacereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski @mcardy
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
 receiver/sqlqueryreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @pmcollins
 receiver/sqlserverreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
