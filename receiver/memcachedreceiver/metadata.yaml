@@ -83,6 +83,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: []
+  # produced when receiver.memcachedreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   memcached.network:
     enabled: true
     description: Bytes transferred over the network.
