@@ -13,9 +13,9 @@ require (
 	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
 	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
 	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
-	google.golang.org/api v0.86.0
+	google.golang.org/api v0.87.0
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
-	google.golang.org/grpc v1.47.0
+	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.0
 )
 
@@ -27,7 +27,7 @@ require (
 	cloud.google.com/go/trace v1.2.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.3 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.3 // indirect
-	github.com/aws/aws-sdk-go v1.44.52 // indirect
+	github.com/aws/aws-sdk-go v1.44.53 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
