@@ -5,8 +5,11 @@ change_type: bug_fix
 component: vcenterreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes calculation of vcenter.vm.disk.utilization
+note: Fixes various items with the vcenterreceiver.
 
 # One or more tracking issues related to the change
 issues: [ 12342 ]
 
+subtext: |
+  - Fixes calculation of `vcenter.vm.disk.utilization`.
+  - Includes resource attribute `vcenter.cluster.name` on `vcenter.datastore.*` metrics.
