@@ -87,8 +87,8 @@ func TestScrapes(t *testing.T) {
 		"/v1.22/containers/" + containerIDs[0] + "/json":  filepath.Join(mockFolder, "single_container", "container.json"),
 		"/v1.22/containers/" + containerIDs[0] + "/stats": filepath.Join(mockFolder, "single_container", "stats.json"),
 	})
+	assert.NoError(t, err)
 	defer singleContainerEngineMock.Close()
-	require.NoError(t, err)
 
 	twoContainerEnginerMock, err := dockerMockServer(&map[string]string{
 		"/v1.22/containers/json":                          filepath.Join(mockFolder, "two_containers", "containers.json"),
@@ -97,8 +97,8 @@ func TestScrapes(t *testing.T) {
 		"/v1.22/containers/" + containerIDs[1] + "/stats": filepath.Join(mockFolder, "two_containers", "stats1.json"),
 		"/v1.22/containers/" + containerIDs[2] + "/stats": filepath.Join(mockFolder, "two_containers", "stats2.json"),
 	})
+	assert.NoError(t, err)
 	defer twoContainerEnginerMock.Close()
-	require.NoError(t, err)
 
 	testCases := []struct {
 		desc                string
@@ -179,10 +179,11 @@ func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
 	for urlPath, filePath := range *urlToFile {
 		err := func() error {
 			f, err := os.Open(filePath)
-			defer f.Close()
 			if err != nil {
 				return err
 			}
+			defer f.Close()
+
 			fileContents, err := ioutil.ReadAll(f)
 			if err != nil {
 				return err
