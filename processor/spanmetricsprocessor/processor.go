@@ -60,7 +60,7 @@ type exemplarData struct {
 type metricKey string
 
 type processorImp struct {
-	lock   sync.RWMutex
+	lock   sync.Mutex
 	logger *zap.Logger
 	config Config
 
@@ -220,19 +220,34 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	p.aggregateMetrics(traces)
+	// Execute trace to metrics aggregation as a goroutine and only log errors instead
+	// of failing the entire pipeline to prioritize the propagation of trace data,
+	// regardless of error.
+	//
+	// This processor should be treated as a branched, out-of-band process
+	// that should not interfere with the flow of trace data because
+	// it is an orthogonal concern to the trace flow (it should not impact
+	// upstream or downstream pipeline trace components).
+	go func() {
+		// Since this is in a goroutine, the entire func can be locked without
+		// impacting trace processing performance. This also significantly
+		// reduces the number of locks/unlocks to manage, reducing the
+		// concurrency-bug surface area.
+		p.lock.Lock()
+		defer p.lock.Unlock()
 
-	m, err := p.buildMetrics()
-	if err != nil {
-		return err
-	}
+		p.aggregateMetrics(traces)
+		m, err := p.buildMetrics()
 
-	// Firstly, export metrics to avoid being impacted by downstream trace processor errors/latency.
-	if err := p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
-		return err
-	}
+		if err != nil {
+			p.logger.Error(err.Error())
+		} else if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
+			// Export metrics first before forwarding trace to avoid being impacted by downstream trace processor errors/latency.
+			p.logger.Error(err.Error())
+		}
 
-	p.resetExemplarData()
+		p.resetExemplarData()
+	}()
 
 	// Forward trace data unmodified.
 	return p.nextConsumer.ConsumeTraces(ctx, traces)
@@ -245,16 +260,11 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
-	// Obtain write lock to reset data
-	p.lock.Lock()
-
 	if err := p.collectCallMetrics(ilm); err != nil {
-		p.lock.Unlock()
 		return nil, err
 	}
 
 	if err := p.collectLatencyMetrics(ilm); err != nil {
-		p.lock.Unlock()
 		return nil, err
 	}
 
@@ -265,8 +275,6 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 		p.resetAccumulatedMetrics()
 	}
 	p.resetExemplarData()
-
-	p.lock.Unlock()
 
 	return &m, nil
 }
@@ -320,7 +328,6 @@ func (p *processorImp) collectCallMetrics(ilm pmetric.ScopeMetrics) error {
 
 		dimensions, err := p.getDimensionsByMetricKey(key)
 		if err != nil {
-			p.logger.Error(err.Error())
 			return err
 		}
 
@@ -379,12 +386,10 @@ func (p *processorImp) aggregateMetricsForSpan(serviceName string, span ptrace.S
 
 	key := buildKey(serviceName, span, p.dimensions, resourceAttr)
 
-	p.lock.Lock()
 	p.cache(serviceName, span, key, resourceAttr)
 	p.updateCallMetrics(key)
 	p.updateLatencyMetrics(key, latencyInMilliseconds, index)
 	p.updateLatencyExemplars(key, latencyInMilliseconds, span.TraceID())
-	p.lock.Unlock()
 }
 
 // updateCallMetrics increments the call count for the given metric key.
@@ -503,7 +508,10 @@ func getDimensionValue(d Dimension, spanAttr pcommon.Map, resourceAttr pcommon.M
 // This enables a lookup of the dimension key-value map when constructing the metric like so:
 //   LabelsMap().InitFromMap(p.metricKeyToDimensions[key])
 func (p *processorImp) cache(serviceName string, span ptrace.Span, k metricKey, resourceAttrs pcommon.Map) {
-	p.metricKeyToDimensions.ContainsOrAdd(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
+	// Use Get to ensure any existing key has its recent-ness updated.
+	if _, has := p.metricKeyToDimensions.Get(k); !has {
+		p.metricKeyToDimensions.Add(k, p.buildDimensionKVs(serviceName, span, p.dimensions, resourceAttrs))
+	}
 }
 
 // copied from prometheus-go-metric-exporter
