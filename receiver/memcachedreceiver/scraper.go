@@ -147,11 +147,21 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				}
 			case "bytes_read":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionReceived)
+					if r.emitMetricsWithDirectionAttribute {
+						r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionReceived)
+					}
+					if r.emitMetricsWithoutDirectionAttribute {
+						r.mb.RecordMemcachedNetworkReceivedDataPoint(now, parsedV)
+					}
 				}
 			case "bytes_written":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionSent)
+					if r.emitMetricsWithDirectionAttribute {
+						r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionSent)
+					}
+					if r.emitMetricsWithoutDirectionAttribute {
+						r.mb.RecordMemcachedNetworkSentDataPoint(now, parsedV)
+					}
 				}
 			case "get_hits":
 				if parsedV, ok := r.parseInt(k, v); ok {
