@@ -51,7 +51,7 @@ type lokiExporter struct {
 	client       *http.Client
 	wg           sync.WaitGroup
 	convert      func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
-	tenantSource tenant.TenantSource
+	tenantSource tenant.Source
 }
 
 func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
@@ -116,7 +116,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 
 	tenant, err := l.tenantSource.GetTenant(ctx, ld)
 	if err != nil {
-		return consumererror.NewPermanent(fmt.Errorf("failed to determine the tenant: %v", err))
+		return consumererror.NewPermanent(fmt.Errorf("failed to determine the tenant: %w", err))
 	}
 
 	if len(tenant) > 0 {

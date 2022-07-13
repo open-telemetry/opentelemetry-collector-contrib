@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ TenantSource = (*ContextTenantSource)(nil)
+var _ Source = (*ContextTenantSource)(nil)
 
 type ContextTenantSource struct {
 	Key string

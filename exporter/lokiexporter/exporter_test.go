@@ -262,7 +262,7 @@ func TestTenantSource(t *testing.T) {
 	testCases := []struct {
 		desc    string
 		tenant  *Tenant
-		srcType tenant.TenantSource
+		srcType tenant.Source
 	}{
 		{
 			desc: "tenant source attributes",

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ TenantSource = (*StaticTenantSource)(nil)
+var _ Source = (*StaticTenantSource)(nil)
 
 type StaticTenantSource struct {
 	Value string

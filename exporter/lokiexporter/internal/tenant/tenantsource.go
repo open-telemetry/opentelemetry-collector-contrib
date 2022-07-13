@@ -23,6 +23,6 @@ import (
 // LogsPerTenant holds a registry of plog.Logs per tenant
 type LogsPerTenant map[string]plog.Logs
 
-type TenantSource interface {
+type Source interface {
 	GetTenant(context.Context, plog.Logs) (string, error)
 }
