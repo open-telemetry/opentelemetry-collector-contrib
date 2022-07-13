@@ -26,15 +26,14 @@ const DefaultFingerprintSize = 1000 // bytes
 const MinFingerprintSize = 16       // bytes
 
 // Fingerprint is used to identify a file
-// A file's fingerprint is the first N bytes of the file,
-// where N is the fingerprintSize on the file_input operator
+// A file's fingerprint is the first N bytes of the file
 type Fingerprint struct {
 	FirstBytes []byte
 }
 
 // NewFingerprint creates a new fingerprint from an open file
-func (f *Input) NewFingerprint(file *os.File) (*Fingerprint, error) {
-	buf := make([]byte, f.fingerprintSize)
+func NewFingerprint(file *os.File, size int) (*Fingerprint, error) {
+	buf := make([]byte, size)
 
 	n, err := file.ReadAt(buf, 0)
 	if err != nil && !errors.Is(err, io.EOF) {

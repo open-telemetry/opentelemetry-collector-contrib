@@ -134,6 +134,33 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().InsertString("test", "pass")
 			},
 		},
+		{
+			query: `delete_key(attributes, "http.url") where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("http.method", "get")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("http.path", "/health")
+			},
+		},
+		{
+			query: `delete_matching_keys(attributes, "http.*t.*") where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("http.url", "http://localhost/health")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where kind == SPAN_KIND_INTERNAL`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(kind, SPAN_KIND_SERVER) where kind == 1`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetKind(2)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -273,6 +300,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
+	span.SetKind(1)
 	span.SetTraceState("new")
 	span.Attributes().InsertString("http.method", "get")
 	span.Attributes().InsertString("http.path", "/health")
