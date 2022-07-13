@@ -445,7 +445,7 @@ func testParsePath(val *Path) (GetSetter, error) {
 
 // Helper for test cases where the WHERE clause is all that matters.
 // Parse string should start with `set(name, "test") where`...
-func set_name_test(b *BooleanExpression) *ParsedQuery {
+func setNameTest(b *BooleanExpression) *ParsedQuery {
 	return &ParsedQuery{
 		Invocation: Invocation{
 			Function: "set",
@@ -475,7 +475,7 @@ func Test_parseWhere(t *testing.T) {
 	}{
 		{
 			query: `true`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
@@ -485,7 +485,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true and false`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
@@ -503,7 +503,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true and true and false`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
@@ -527,7 +527,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `true or false`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(true),
@@ -547,7 +547,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `false and true or false`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(false),
@@ -575,7 +575,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `(false and true) or false`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						SubExpr: &BooleanExpression{
@@ -609,7 +609,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `false and (true or false)`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						ConstExpr: Booleanp(false),
@@ -643,7 +643,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `name != "foo" and name != "bar"`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						Comparison: &Comparison{
@@ -689,7 +689,7 @@ func Test_parseWhere(t *testing.T) {
 		},
 		{
 			query: `name == "foo" or name == "bar"`,
-			expected: set_name_test(&BooleanExpression{
+			expected: setNameTest(&BooleanExpression{
 				Left: &Term{
 					Left: &BooleanValue{
 						Comparison: &Comparison{
