@@ -220,6 +220,7 @@ func (p *poller) poll() {
 				Payload: copybody,
 				Ctx:     ctx,
 			}
+			p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 		}
 	}
 }
