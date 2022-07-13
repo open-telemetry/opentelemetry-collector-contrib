@@ -139,6 +139,19 @@ Some host metrics reported are transitioning from being reported with a `directi
 direction included in the metric name to adhere to the OpenTelemetry specification
 (https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
 
+- `disk` scraper metrics:
+  - `system.disk.io` will become:
+    - `system.disk.io.read`
+    - `system.disk.io.write`
+  - `system.disk.operations` will become:
+    - `system.disk.operations.read`
+    - `system.disk.operations.write`
+  - `system.disk.operation_time` will become:
+    - `system.disk.operation_time.read`
+    - `system.disk.operation_time.write`
+  - `system.disk.merged` will become:
+    - `system.disk.merged.read`
+    - `system.disk.merged.write`
 - `network` scraper metrics:
   - `system.network.dropped` will become:
     - `system.network.dropped.receive`
