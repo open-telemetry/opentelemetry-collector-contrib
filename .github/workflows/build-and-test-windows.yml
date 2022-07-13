@@ -22,6 +22,14 @@ jobs:
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
+    outputs:
+      receiver-0: ${{ steps.result.outputs.receiver-0-out }}
+      receiver-1: ${{ steps.result.outputs.receiver-1-out }}
+      processor: ${{ steps.result.outputs.processor-out }}
+      exporter: ${{ steps.result.outputs.exporter-out }}
+      extension: ${{ steps.result.outputs.extension-out }}
+      internal: ${{ steps.result.outputs.internal-out }}
+      other: ${{ steps.result.outputs.other-out }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -44,9 +52,32 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
+      # By default, the output value is empty. Any failure or cancellation
+      # will trigger this step, which sets a non-empty output value.
+      - if: ${{ !success() }}
+        id: result
+        name: Denote Failure
+        run: echo "::set-output name=${{ matrix.group }}-out::1"
   windows-unittest:
+    if: ${{ always() }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:
-      - name: Unit Tests Complete
-        run: echo "Windows unit tests complete"
+      # If any job failed, echo will produce a non-empty result, triggering failure.
+      - name: Rollup result
+        shell: bash
+        run: |
+          if [[ $(echo \
+          ${{needs.windows-unittest-matrix.outputs.receiver-0}}\
+          ${{needs.windows-unittest-matrix.outputs.receiver-1}}\
+          ${{needs.windows-unittest-matrix.outputs.processor}}\
+          ${{needs.windows-unittest-matrix.outputs.exporter}}\
+          ${{needs.windows-unittest-matrix.outputs.extension}}\
+          ${{needs.windows-unittest-matrix.outputs.internal}}\
+          ${{needs.windows-unittest-matrix.outputs.other}}) ]]
+          then
+            echo "One or more matrix jobs failed."
+            false
+          else
+            echo "All matrix jobs passed!"
+          fi
