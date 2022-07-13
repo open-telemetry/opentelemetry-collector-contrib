@@ -19,8 +19,9 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 // This is not in tqltest because it depends on a type that's a member of TQL.
