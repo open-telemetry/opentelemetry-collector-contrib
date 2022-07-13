@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclusterreceiver
 
 import (
@@ -204,7 +203,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 				dataCollector: collection.NewDataCollector(zap.NewNop(), []string{}, []string{}),
 			}
 
-			rw.prepareSharedInformerFactory()
+			assert.NoError(t, rw.prepareSharedInformerFactory())
 
 			// Make sure no warning or error logs are raised
 			assert.Equal(t, 0, logs.Len())

@@ -1,5 +1,10 @@
 name: redisreceiver
 
+resource_attributes:
+  redis.version:
+    description: Redis server's version.
+    type: string
+    
 attributes:
   state:
     description: Redis CPU usage state

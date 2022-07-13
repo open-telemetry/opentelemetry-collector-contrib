@@ -407,3 +407,17 @@ func testParsePath(val *Path) (GetSetter, error) {
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
+
+var testSymbolTable = map[string]Enum{
+	"TEST_ENUM": 0,
+}
+
+func testParseEnum(val *Path) (*Enum, bool) {
+	if val != nil && len(val.Fields) > 0 {
+		if enum, ok := testSymbolTable[val.Fields[0].Name]; ok {
+			return &enum, true
+		}
+		return nil, false
+	}
+	return nil, false
+}

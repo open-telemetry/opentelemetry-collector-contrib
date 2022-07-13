@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
@@ -34,16 +33,11 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 // TODO rename this struct
 type Input struct {
 	*zap.SugaredLogger
-	finder                  Finder
-	captureFileName         bool
-	captureFilePath         bool
-	captureFileNameResolved bool
-	captureFilePathResolved bool
-	PollInterval            time.Duration
-	SplitterConfig          helper.SplitterConfig
-	MaxLogSize              int
-	MaxConcurrentFiles      int
-	SeenPaths               map[string]struct{}
+	finder       Finder
+	PollInterval time.Duration
+
+	MaxConcurrentFiles int
+	SeenPaths          map[string]struct{}
 
 	persister operator.Persister
 
@@ -54,13 +48,11 @@ type Input struct {
 
 	startAtBeginning bool
 
-	fingerprintSize int
-
 	firstCheck bool
 	wg         sync.WaitGroup
 	cancel     context.CancelFunc
 
-	emit EmitFunc
+	readerFactory readerFactory
 }
 
 func (f *Input) Start(persister operator.Persister) error {
@@ -192,7 +184,7 @@ func (f *Input) makeReaders(filesPaths []string) []*Reader {
 	// Get fingerprints for each file
 	fps := make([]*Fingerprint, 0, len(files))
 	for _, file := range files {
-		fp, err := f.NewFingerprint(file)
+		fp, err := f.readerFactory.newFingerprint(file)
 		if err != nil {
 			f.Errorw("Failed creating fingerprint", zap.Error(err))
 			continue
@@ -264,20 +256,11 @@ func (f *Input) saveCurrent(readers []*Reader) {
 func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
 	if oldReader, ok := f.findFingerprintMatch(fp); ok {
-		newReader, err := oldReader.Copy(file)
-		if err != nil {
-			return nil, err
-		}
-		newReader.fileAttributes = f.resolveFileAttributes(file.Name())
-		return newReader, nil
+		return f.readerFactory.copy(oldReader, file)
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	splitter, err := f.getMultiline()
-	if err != nil {
-		return nil, err
-	}
-	newReader, err := f.NewReader(file.Name(), file, fp, splitter, f.emit)
+	newReader, err := f.readerFactory.newReader(file, fp)
 	if err != nil {
 		return nil, err
 	}
@@ -347,24 +330,17 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 	// Decode each of the known files
 	f.knownFiles = make([]*Reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
-		splitter, err := f.getMultiline()
+		// Only the offset, fingerprint, and splitter
+		// will be used before this reader is discarded
+		unsafeReader, err := f.readerFactory.unsafeReader()
 		if err != nil {
 			return err
 		}
-		newReader, err := f.NewReader("", nil, nil, splitter, f.emit)
-		if err != nil {
+		if err = dec.Decode(unsafeReader); err != nil {
 			return err
 		}
-		if err = dec.Decode(newReader); err != nil {
-			return err
-		}
-		f.knownFiles = append(f.knownFiles, newReader)
+		f.knownFiles = append(f.knownFiles, unsafeReader)
 	}
 
 	return nil
-}
-
-// getMultiline returns helper.Splitter structure and error eventually
-func (f *Input) getMultiline() (*helper.Splitter, error) {
-	return f.SplitterConfig.Build(false, f.MaxLogSize)
 }

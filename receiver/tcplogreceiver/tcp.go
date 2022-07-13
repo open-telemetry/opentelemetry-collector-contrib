@@ -24,11 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 )
 
-const typeStr = "tcplog"
+const (
+	typeStr   = "tcplog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for tcp receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType

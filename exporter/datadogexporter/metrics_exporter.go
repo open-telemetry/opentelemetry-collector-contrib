@@ -31,9 +31,10 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
@@ -72,16 +73,8 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		options = append(options, translator.WithResourceAttributesAsTags())
 	}
 
-	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags && cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
-		return nil, fmt.Errorf("cannot use both instrumentation_library_metadata_as_tags(deprecated) and instrumentation_scope_metadata_as_tags")
-	}
-
 	if cfg.Metrics.ExporterConfig.InstrumentationScopeMetadataAsTags {
 		options = append(options, translator.WithInstrumentationScopeMetadataAsTags())
-	}
-
-	if cfg.Metrics.ExporterConfig.InstrumentationLibraryMetadataAsTags { // nolint SA1019
-		options = append(options, translator.WithInstrumentationLibraryMetadataAsTags())
 	}
 
 	options = append(options, translator.WithHistogramMode(translator.HistogramMode(cfg.Metrics.HistConfig.Mode)))
