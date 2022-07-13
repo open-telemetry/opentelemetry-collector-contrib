@@ -13,4 +13,4 @@ issues: [ 11828 ]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 subtext:  |2
-  - Non-monotonic Sum metrics will be exported as Gauges from now on. Non-monotonic Sums (usually UpDownCounters) will show the current value instead of a change rate.
+  - Non-monotonic cumulative Sum metrics will be exported as Gauges from now on. Non-monotonic cumulative Sums (usually UpDownCounters) will show the current value instead of a change rate.
