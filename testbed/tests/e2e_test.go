@@ -128,17 +128,14 @@ func TestBallastMemory(t *testing.T) {
 
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6927#issuecomment-1138624098
 			// During garbage collection, we may observe the ballast in rss.
-			// If this happens, allow a brief window for garbage collection to complete.
+			// If this happens, adjust the baseline expectation for RSS size and validate that additional memory is
+			// still within the expected limit.
 			garbageCollectionMax := lenientMax + float32(test.ballastSize)
 
 			rssTooHigh := fmt.Sprintf("The RSS memory usage (%d) is >10%% higher than the limit (%d).", rss, test.maxRSS)
 
-			if rss > test.ballastSize && float32(rss) <= garbageCollectionMax {
-				t.Log("Possible garbage collection under way. Remeasuring RSS.")
-				tc.WaitForN(func() bool {
-					rss, vms, _ = tc.AgentMemoryInfo()
-					return float32(rss) <= lenientMax
-				}, time.Second*5, rssTooHigh)
+			if rss > test.ballastSize {
+				assert.LessOrEqual(t, float32(rss), garbageCollectionMax, rssTooHigh)
 			} else {
 				assert.LessOrEqual(t, float32(rss), lenientMax, rssTooHigh)
 			}
