@@ -3107,12 +3107,6 @@
                         "value": {
                             "stringValue": "vsanDatastore"
                         }
-                    },
-                    {
-                        "key": "vcenter.cluster.name",
-                        "value": {
-                            "stringValue": "Cluster"
-                        }
                     }
                 ]
             },
