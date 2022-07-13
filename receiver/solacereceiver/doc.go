@@ -12,28 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package attributes
-
-import (
-	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-)
-
-func TestSystemExtractTags(t *testing.T) {
-	sattrs := systemAttributes{
-		OSType: "windows",
-	}
-
-	assert.Equal(t, []string{
-		fmt.Sprintf("%s:%s", conventions.AttributeOSType, "windows"),
-	}, sattrs.extractTags())
-}
-
-func TestSystemExtractTagsEmpty(t *testing.T) {
-	sattrs := systemAttributes{}
-
-	assert.Equal(t, []string{}, sattrs.extractTags())
-}
+// Package solacereceiver receives traces from Solace broker using AMQP 1.0 protocol.
+package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
