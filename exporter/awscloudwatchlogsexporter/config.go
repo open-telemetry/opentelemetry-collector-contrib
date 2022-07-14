@@ -82,5 +82,3 @@ func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 		QueueSize:    config.QueueSettings.QueueSize,
 	}
 }
-
-// TODO(jbd): Add ARN role to config.
