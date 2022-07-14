@@ -504,7 +504,9 @@ func TestMultipleEmpty(t *testing.T) {
 	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForToken(t, emitCalls, []byte(""))
 	waitForToken(t, emitCalls, []byte(""))
@@ -525,7 +527,9 @@ func TestLeadingEmpty(t *testing.T) {
 	writeString(t, temp, "\ntestlog1\ntestlog2\n")
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-	defer operator.Stop()
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
 
 	waitForToken(t, emitCalls, []byte(""))
 	waitForToken(t, emitCalls, []byte("testlog1"))
