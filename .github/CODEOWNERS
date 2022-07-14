@@ -22,8 +22,9 @@
 
 cmd/chloggen/                                        @open-telemetry/collector-contrib-approvers @djaglowski
 cmd/mdatagen/                                        @open-telemetry/collector-contrib-approvers @dmitryax
-cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
 cmd/otelcontribcol/                                  @open-telemetry/collector-contrib-approvers @codeboten
+cmd/telemetrygen/                                    @open-telemetry/collector-contrib-approvers @mx-psi @amenasria @codeboten
+cmd/tracegen/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 
 exporter/alibabacloudlogserviceexporter/             @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                  @open-telemetry/collector-contrib-approvers @boostchicken
@@ -190,4 +191,3 @@ receiver/windowsperfcountersreceiver/                @open-telemetry/collector-c
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 
-tracegen/                                            @open-telemetry/collector-contrib-approvers @jpkrohling

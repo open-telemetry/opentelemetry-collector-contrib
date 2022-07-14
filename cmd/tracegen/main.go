@@ -34,7 +34,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen/internal/tracegen"
 )
 
 func main() {
