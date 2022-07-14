@@ -111,6 +111,19 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: int64(0),
 		},
+		{
+			name: "enum",
+			val: Value{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: "TEST_ENUM_ONE",
+						},
+					},
+				},
+			},
+			want: int64(1),
+		},
 	}
 
 	functions := map[string]interface{}{"hello": hello}
