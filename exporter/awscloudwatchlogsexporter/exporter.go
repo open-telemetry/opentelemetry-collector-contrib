@@ -120,7 +120,10 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		}
 		e.logger.Debug("Log events are successfully put")
 	}
-
+	err := e.pusherCache.Flush()
+	if err != nil {
+		e.logger.Error("Failed flushing pusher cache", zap.Error(err))
+	}
 	return nil
 }
 
