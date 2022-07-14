@@ -86,7 +86,13 @@ _django_instrumentor = DjangoInstrumentor()
 class TestMiddleware(WsgiTestBase):
     @classmethod
     def setUpClass(cls):
-        conf.settings.configure(ROOT_URLCONF=modules[__name__])
+        conf.settings.configure(
+            ROOT_URLCONF=modules[__name__],
+            DATABASES={
+                "default": {},
+                "other": {},
+            },  # db.connections gets populated only at first test execution
+        )
         super().setUpClass()
 
     def setUp(self):

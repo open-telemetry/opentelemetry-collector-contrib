@@ -25,6 +25,11 @@ from opentelemetry import context, trace
 from opentelemetry.context import _SUPPRESS_INSTRUMENTATION_KEY  # noqa: F401
 from opentelemetry.propagate import extract
 from opentelemetry.trace import Span, StatusCode
+from opentelemetry.trace.propagation.tracecontext import (
+    TraceContextTextMapPropagator,
+)
+
+propagator = TraceContextTextMapPropagator()
 
 
 def extract_attributes_from_object(
@@ -119,24 +124,22 @@ def _start_internal_or_server_span(
     return span, token
 
 
-_KEY_VALUE_DELIMITER = ","
-
-
-def _generate_sql_comment(**meta):
+def _generate_sql_comment(**meta) -> str:
     """
     Return a SQL comment with comma delimited key=value pairs created from
     **meta kwargs.
     """
+    key_value_delimiter = ","
+
     if not meta:  # No entries added.
         return ""
 
     # Sort the keywords to ensure that caching works and that testing is
     # deterministic. It eases visual inspection as well.
-    # pylint: disable=consider-using-f-string
     return (
         " /*"
-        + _KEY_VALUE_DELIMITER.join(
-            "{}={!r}".format(_url_quote(key), _url_quote(value))
+        + key_value_delimiter.join(
+            f"{_url_quote(key)}={_url_quote(value)!r}"
             for key, value in sorted(meta.items())
             if value is not None
         )
@@ -153,6 +156,17 @@ def _url_quote(s):  # pylint: disable=invalid-name
     # thus in our quoting, we need to escape it too to finally give
     #      foo,bar --> foo%%2Cbar
     return quoted.replace("%", "%%")
+
+
+def _get_opentelemetry_values():
+    """
+    Return the OpenTelemetry Trace and Span IDs if Span ID is set in the
+    OpenTelemetry execution context.
+    """
+    # Insert the W3C TraceContext generated
+    _headers = {}
+    propagator.inject(_headers)
+    return _headers
 
 
 def _generate_opentelemetry_traceparent(span: Span) -> str:

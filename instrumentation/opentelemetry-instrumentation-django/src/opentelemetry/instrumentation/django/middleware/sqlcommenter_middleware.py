@@ -13,15 +13,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from contextlib import ExitStack
 from logging import getLogger
 from typing import Any, Type, TypeVar
-from urllib.parse import quote as urllib_quote
 
 # pylint: disable=no-name-in-module
 from django import conf, get_version
-from django.db import connection
+from django.db import connections
 from django.db.backends.utils import CursorDebugWrapper
 
+from opentelemetry.instrumentation.utils import (
+    _generate_sql_comment,
+    _get_opentelemetry_values,
+)
 from opentelemetry.trace.propagation.tracecontext import (
     TraceContextTextMapPropagator,
 )
@@ -44,7 +48,13 @@ class SqlCommenter:
         self.get_response = get_response
 
     def __call__(self, request) -> Any:
-        with connection.execute_wrapper(_QueryWrapper(request)):
+        with ExitStack() as stack:
+            for db_alias in connections:
+                stack.enter_context(
+                    connections[db_alias].execute_wrapper(
+                        _QueryWrapper(request)
+                    )
+                )
             return self.get_response(request)
 
 
@@ -105,49 +115,7 @@ class _QueryWrapper:
         sql += sql_comment
 
         # Add the query to the query log if debugging.
-        if context["cursor"].__class__ is CursorDebugWrapper:
+        if isinstance(context["cursor"], CursorDebugWrapper):
             context["connection"].queries_log.append(sql)
 
         return execute(sql, params, many, context)
-
-
-def _generate_sql_comment(**meta) -> str:
-    """
-    Return a SQL comment with comma delimited key=value pairs created from
-    **meta kwargs.
-    """
-    key_value_delimiter = ","
-
-    if not meta:  # No entries added.
-        return ""
-
-    # Sort the keywords to ensure that caching works and that testing is
-    # deterministic. It eases visual inspection as well.
-    return (
-        " /*"
-        + key_value_delimiter.join(
-            f"{_url_quote(key)}={_url_quote(value)!r}"
-            for key, value in sorted(meta.items())
-            if value is not None
-        )
-        + "*/"
-    )
-
-
-def _url_quote(value) -> str:
-    if not isinstance(value, (str, bytes)):
-        return value
-    _quoted = urllib_quote(value)
-    # Since SQL uses '%' as a keyword, '%' is a by-product of url quoting
-    # e.g. foo,bar --> foo%2Cbar
-    # thus in our quoting, we need to escape it too to finally give
-    #      foo,bar --> foo%%2Cbar
-    return _quoted.replace("%", "%%")
-
-
-def _get_opentelemetry_values() -> dict or None:
-    """
-    Return the OpenTelemetry Trace and Span IDs if Span ID is set in the
-    OpenTelemetry execution context.
-    """
-    return _propagator.inject({})
