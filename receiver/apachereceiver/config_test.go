@@ -16,7 +16,6 @@ package apachereceiver
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -83,14 +82,6 @@ func TestValidate(t *testing.T) {
 				return
 			}
 			require.NoError(t, err)
-
-			var failUntil int64 = 1657809900
-			now := time.Now().Unix()
-			t.Logf("Time now: %d", now)
-			t.Logf("Fail until: %d", failUntil)
-			if now < failUntil {
-				require.True(t, false)
-			}
 		})
 	}
 }
