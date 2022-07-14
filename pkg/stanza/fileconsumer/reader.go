@@ -24,47 +24,23 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+type readerConfig struct {
+	fingerprintSize int
+	maxLogSize      int
+	emit            EmitFunc
+}
+
 // Reader manages a single file
 type Reader struct {
-	Fingerprint *Fingerprint
-	Offset      int64
-
-	generation     int
-	fileInput      *Input
-	file           *os.File
-	fileAttributes *FileAttributes
-
+	*zap.SugaredLogger `json:"-"`
+	*readerConfig
 	splitter *helper.Splitter
 
-	*zap.SugaredLogger `json:"-"`
-}
-
-// NewReader creates a new file reader
-func (f *Input) NewReader(file *os.File, fp *Fingerprint, splitter *helper.Splitter) (*Reader, error) {
-	path := file.Name()
-	attrs, err := resolveFileAttributes(path)
-	if err != nil {
-		f.Errorf("resolve attributes: %w", err)
-	}
-	r := &Reader{
-		SugaredLogger:  f.SugaredLogger.With("path", path),
-		Fingerprint:    fp,
-		file:           file,
-		fileInput:      f,
-		fileAttributes: attrs,
-		splitter:       splitter,
-	}
-	return r, nil
-}
-
-// Copy creates a deep copy of a Reader
-func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(file, r.Fingerprint.Copy(), r.splitter)
-	if err != nil {
-		return nil, err
-	}
-	reader.Offset = r.Offset
-	return reader, nil
+	Fingerprint    *Fingerprint
+	Offset         int64
+	generation     int
+	file           *os.File
+	fileAttributes *FileAttributes
 }
 
 // InitializeOffset sets the starting offset
@@ -86,7 +62,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.fileInput.MaxLogSize, r.Offset, r.splitter.SplitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitter.SplitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -108,7 +84,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {
-			r.fileInput.emit(ctx, r.fileAttributes, token)
+			r.emit(ctx, r.fileAttributes, token)
 		}
 
 		r.Offset = scanner.Pos()
@@ -128,11 +104,11 @@ func (r *Reader) Close() {
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
-	appendCount := min0(n, r.fileInput.fingerprintSize-int(r.Offset))
+	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
 	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
 	if appendCount == 0 {
 		return n, err

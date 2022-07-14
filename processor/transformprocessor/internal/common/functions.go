@@ -37,14 +37,16 @@ var registry = map[string]interface{}{
 
 type PathExpressionParser func(*Path) (GetSetter, error)
 
+type EnumParser func(*Path) (*Enum, bool)
+
 func DefaultFunctions() map[string]interface{} {
 	return registry
 }
 
 // NewFunctionCall Visible for testing
-func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser) (ExprFunc, error) {
+func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
-		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser)
+		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -62,7 +64,7 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser) ([]reflect.Value, error) {
+func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]reflect.Value, error) {
 	args := make([]reflect.Value, 0)
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
@@ -78,7 +80,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 			}
 
 			argDef := inv.Arguments[i]
-			err := buildArg(argDef, argType, i, &args, functions, pathParser)
+			err := buildArg(argDef, argType, i, &args, functions, pathParser, enumParser)
 			if err != nil {
 				return nil, err
 			}
@@ -128,7 +130,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 }
 
 func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser PathExpressionParser) error {
+	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough
@@ -139,11 +141,17 @@ func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Val
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Getter":
-		arg, err := NewGetter(argDef, functions, pathParser)
+		arg, err := NewGetter(argDef, functions, pathParser, enumParser)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
+	case "Enum":
+		arg, ok := enumParser(argDef.Path)
+		if !ok {
+			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
+		}
+		*args = append(*args, reflect.ValueOf(*arg))
 	case "string":
 		if argDef.String == nil {
 			return fmt.Errorf("invalid argument at position %v, must be an string", index)

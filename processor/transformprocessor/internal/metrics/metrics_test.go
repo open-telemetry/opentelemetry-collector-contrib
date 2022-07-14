@@ -98,8 +98,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -378,8 +378,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -716,8 +716,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -1145,8 +1145,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -1518,8 +1518,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig: "Sum",
-			new:  "Sum",
+			orig: int64(pmetric.MetricDataTypeSum),
+			new:  int64(pmetric.MetricDataTypeSum),
 			modified: func(metric pmetric.Metric) {
 			},
 		},
@@ -1617,4 +1617,102 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 	newArrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{9, 6, 4})
 
 	return newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes
+}
+
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "AGGREGATION_TEMPORALITY_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "AGGREGATION_TEMPORALITY_DELTA",
+			want: 1,
+		},
+		{
+			name: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+			want: 2,
+		},
+		{
+			name: "FLAG_NONE",
+			want: 0,
+		},
+		{
+			name: "FLAG_NO_RECORDED_VALUE",
+			want: 1,
+		},
+		{
+			name: "METRIC_DATA_TYPE_NONE",
+			want: 0,
+		},
+		{
+			name: "METRIC_DATA_TYPE_GAUGE",
+			want: 1,
+		},
+		{
+			name: "METRIC_DATA_TYPE_SUM",
+			want: 2,
+		},
+		{
+			name: "METRIC_DATA_TYPE_HISTOGRAM",
+			want: 3,
+		},
+		{
+			name: "METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM",
+			want: 4,
+		},
+		{
+			name: "METRIC_DATA_TYPE_SUMMARY",
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }
