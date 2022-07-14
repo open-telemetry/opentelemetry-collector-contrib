@@ -86,6 +86,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 		config,
 		params,
 		logsExporter.ConsumeLogs,
+		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),
 	)
