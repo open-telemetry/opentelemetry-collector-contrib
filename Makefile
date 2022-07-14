@@ -331,7 +331,7 @@ build-examples:
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
 %-package:
-	$(MAKE) otelcontribcol-linux_$(ARCH)
+	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
 
@@ -377,3 +377,11 @@ multimod-prerelease: install-tools
 crosslink: install-tools
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
+
+.PHONY: clean
+clean:
+	@echo "Removing coverage files"
+	find . -type f -name 'coverage.txt' -delete
+	find . -type f -name 'coverage.html' -delete
+	find . -type f -name 'integration-coverage.txt' -delete
+	find . -type f -name 'integration-coverage.html' -delete

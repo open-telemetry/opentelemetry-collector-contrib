@@ -58,6 +58,27 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 	path.setter(ctx, val)
 }
 
+var symbolTable = map[string]common.Enum{
+	"SPAN_KIND_UNSPECIFIED": 0,
+	"SPAN_KIND_INTERNAL":    1,
+	"SPAN_KIND_SERVER":      2,
+	"SPAN_KIND_CLIENT":      3,
+	"SPAN_KIND_PRODUCER":    4,
+	"SPAN_KIND_CONSUMER":    5,
+	"STATUS_CODE_UNSET":     0,
+	"STATUS_CODE_OK":        1,
+	"STATUS_CODE_ERROR":     2,
+}
+
+func ParseEnum(val *common.Path) (*common.Enum, bool) {
+	if val != nil && len(val.Fields) > 0 {
+		if enum, ok := symbolTable[val.Fields[0].Name]; ok {
+			return &enum, true
+		}
+	}
+	return nil, false
+}
+
 func ParsePath(val *common.Path) (common.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
@@ -71,14 +92,15 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		if len(path) == 1 {
 			return accessResource(), nil
 		}
-		switch path[1].Name {
-		case "attributes":
+
+		if path[1].Name == "attributes" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {
 				return accessResourceAttributes(), nil
 			}
 			return accessResourceAttributesKey(mapKey), nil
 		}
+
 	case "instrumentation_library":
 		if len(path) == 1 {
 			return accessInstrumentationScope(), nil
@@ -90,9 +112,21 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 			return accessInstrumentationScopeVersion(), nil
 		}
 	case "trace_id":
-		return accessTraceID(), nil
+		if len(path) == 1 {
+			return accessTraceID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringTraceID(), nil
+		}
 	case "span_id":
-		return accessSpanID(), nil
+		if len(path) == 1 {
+			return accessSpanID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringSpanID(), nil
+		}
 	case "trace_state":
 		mapKey := path[0].MapKey
 		if mapKey == nil {
@@ -233,6 +267,21 @@ func accessTraceID() pathGetSetter {
 	}
 }
 
+func accessStringTraceID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
+				}
+			}
+		},
+	}
+}
+
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
@@ -241,6 +290,21 @@ func accessSpanID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
+			}
+		},
+	}
+}
+
+func accessStringSpanID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
+				}
 			}
 		},
 	}
@@ -308,7 +372,7 @@ func accessName() pathGetSetter {
 func accessKind() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Kind()
+			return int64(ctx.GetItem().(ptrace.Span).Kind())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -456,7 +520,7 @@ func accessStatus() pathGetSetter {
 func accessStatusCode() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status().Code()
+			return int64(ctx.GetItem().(ptrace.Span).Status().Code())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {

@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,6 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -136,8 +136,6 @@ func TestTracesSource(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "fallbackHostname",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
@@ -246,8 +244,6 @@ func TestTraceExporter(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
@@ -306,8 +302,6 @@ func TestPushTraceData(t *testing.T) {
 		},
 		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
 		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},

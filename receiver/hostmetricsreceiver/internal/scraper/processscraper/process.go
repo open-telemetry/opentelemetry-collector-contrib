@@ -87,6 +87,7 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
+	CreateTime() (int64, error)
 }
 
 type gopsProcessHandles struct {
