@@ -147,6 +147,7 @@ func TestScrapes(t *testing.T) {
 			cfg.Endpoint = tc.mockDockerEngine.URL
 			cfg.EnvVarsToMetricLabels = map[string]string{"ENV_VAR": "env-var-metric-label"}
 			cfg.ContainerLabelsToMetricLabels = map[string]string{"container.label": "container-metric-label"}
+			cfg.ProvidePerCoreCPUMetrics = true
 
 			receiver := newReceiver(componenttest.NewNopReceiverCreateSettings(), cfg)
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
@@ -154,6 +155,8 @@ func TestScrapes(t *testing.T) {
 
 			actualMetrics, err := tc.scrape(receiver)
 			require.NoError(t, err)
+
+			//golden.WriteMetrics(filepath.Join(mockFolder, "two_containers", "expected_metrics_1.json"), actualMetrics)
 
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
