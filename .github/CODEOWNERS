@@ -98,7 +98,7 @@ internal/splunk/                                     @open-telemetry/collector-c
 pkg/batchpersignal/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/resourcetotelemetry/                             @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                          @open-telemetry/collector-contrib-approvers @djaglowski
-pkg/telemetryquerylanguage/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth
+pkg/telemetryquerylanguage/                          @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
@@ -122,7 +122,7 @@ processor/schemaprocessor/                           @open-telemetry/collector-c
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/transformprocessor/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @bogdandrutu @TylerHelmuth
+processor/transformprocessor/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @bogdandrutu @TylerHelmuth @kentquirk
 
 receiver/activedirectorydsreceiver/                  @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/aerospikereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
@@ -174,7 +174,7 @@ receiver/riakreceiver/                               @open-telemetry/collector-c
 receiver/saphanareceiver/                            @open-telemetry/collector-contrib-approvers @pmm-sumo @dehaansa
 receiver/sapmreceiver/                               @open-telemetry/collector-contrib-approvers @owais
 receiver/signalfxreceiver/                           @open-telemetry/collector-contrib-approvers @pjanotti @dmitryax
-receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @fatsheep9146            
+receiver/simpleprometheusreceiver/                   @open-telemetry/collector-contrib-approvers @fatsheep9146
 receiver/skywalkingreceiver/                         @open-telemetry/collector-contrib-approvers @JaredTan95
 receiver/solacereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski @mcardy
 receiver/splunkhecreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @keitwb
