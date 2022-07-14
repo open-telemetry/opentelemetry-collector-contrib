@@ -276,6 +276,7 @@ func TestConsumeLogs(t *testing.T) {
 	cache := new(mockCache)
 	cache.On("GetPusher", mock.Anything, mock.Anything, mock.Anything, 0).Return(logPusher, nil).Once()
 	cache.On("Shutdown", mock.Anything).Return(nil).Once()
+	cache.On("Flush", mock.Anything).Return(nil).Once()
 	exp.(*exporter).pusherCache = cache
 
 	assert.Nil(t, err)
