@@ -63,7 +63,7 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, metadata.AttributeDiskStateUsed)
 	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, metadata.AttributeDiskStateAvailable)
 	if diskFree != 0 {
-		diskUtilization := float64(diskUsed) / float64(diskFree) * 100
+		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
 }
