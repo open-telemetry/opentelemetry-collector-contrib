@@ -554,7 +554,7 @@ func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
 
 func fillResource(resource pcommon.Resource) {
 	attrs := resource.Attributes()
-	attrs.InsertString("service.name", "signup_aggregator")
+	attrs.InsertString("service.name", "service-name-1")
 }
 
 func simpleConfig() *Config {
