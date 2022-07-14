@@ -1,10 +1,7 @@
 {
-  "read": "2022-07-12T05:34:16.328861358Z",
-  "preread": "2022-07-12T05:34:15.325458676Z",
-  "pids_stats": {
-    "current": 1
-  },
   "blkio_stats": {
+    "io_merged_recursive": [],
+    "io_queue_recursive": [],
     "io_service_bytes_recursive": [
       {
         "major": 8,
@@ -43,6 +40,7 @@
         "value": 73728
       }
     ],
+    "io_service_time_recursive": [],
     "io_serviced_recursive": [
       {
         "major": 8,
@@ -81,51 +79,30 @@
         "value": 1
       }
     ],
-    "io_queue_recursive": [],
-    "io_service_time_recursive": [],
-    "io_wait_time_recursive": [],
-    "io_merged_recursive": [],
     "io_time_recursive": [],
+    "io_wait_time_recursive": [],
     "sectors_recursive": []
   },
-  "num_procs": 0,
-  "storage_stats": {},
   "cpu_stats": {
     "cpu_usage": {
-      "total_usage": 31093384,
       "percpu_usage": [
         31093384
       ],
+      "total_usage": 31093384,
       "usage_in_kernelmode": 10000000,
       "usage_in_usermode": 10000000
     },
+    "online_cpus": 1,
     "system_cpu_usage": 14930240000000,
-    "online_cpus": 1,
     "throttling_data": {
       "periods": 0,
       "throttled_periods": 0,
       "throttled_time": 0
     }
   },
-  "precpu_stats": {
-    "cpu_usage": {
-      "total_usage": 31093384,
-      "percpu_usage": [
-        31093384
-      ],
-      "usage_in_kernelmode": 10000000,
-      "usage_in_usermode": 10000000
-    },
-    "system_cpu_usage": 14929250000000,
-    "online_cpus": 1,
-    "throttling_data": {
-      "periods": 0,
-      "throttled_periods": 0,
-      "throttled_time": 0
-    }
-  },
+  "id": "a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce",
   "memory_stats": {
-    "usage": 425984,
+    "limit": 2074079232,
     "max_usage": 6172672,
     "stats": {
       "active_anon": 4096,
@@ -161,20 +138,43 @@
       "unevictable": 0,
       "writeback": 0
     },
-    "limit": 2074079232
+    "usage": 425984
   },
   "name": "/pensive_aryabhata",
-  "id": "a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce",
   "networks": {
     "eth0": {
       "rx_bytes": 12394,
-      "rx_packets": 96,
-      "rx_errors": 0,
       "rx_dropped": 0,
+      "rx_errors": 0,
+      "rx_packets": 96,
       "tx_bytes": 0,
-      "tx_packets": 0,
+      "tx_dropped": 0,
       "tx_errors": 0,
-      "tx_dropped": 0
+      "tx_packets": 0
     }
-  }
+  },
+  "num_procs": 0,
+  "pids_stats": {
+    "current": 1
+  },
+  "precpu_stats": {
+    "cpu_usage": {
+      "percpu_usage": [
+        31093384
+      ],
+      "total_usage": 31093384,
+      "usage_in_kernelmode": 10000000,
+      "usage_in_usermode": 10000000
+    },
+    "online_cpus": 1,
+    "system_cpu_usage": 14929250000000,
+    "throttling_data": {
+      "periods": 0,
+      "throttled_periods": 0,
+      "throttled_time": 0
+    }
+  },
+  "preread": "2022-07-12T05:34:15.325458676Z",
+  "read": "2022-07-12T05:34:16.328861358Z",
+  "storage_stats": {}
 }
