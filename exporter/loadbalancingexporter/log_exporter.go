@@ -94,7 +94,8 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 		balancingKey = random()
 	}
 
-	endpoint := e.loadBalancer.Endpoint(balancingKey)
+	tid := balancingKey.Bytes()
+	endpoint := e.loadBalancer.Endpoint(tid[:])
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err

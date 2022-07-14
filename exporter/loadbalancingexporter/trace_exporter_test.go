@@ -135,6 +135,7 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, traceId)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
@@ -152,6 +153,40 @@ func TestConsumeTraces(t *testing.T) {
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
+
+	// verify
+	assert.Nil(t, res)
+}
+
+func TestConsumeTracesServiceBased(t *testing.T) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), serviceBasedRoutingConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, svcRouting)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer p.Shutdown(context.Background())
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
 
 	// verify
 	assert.Nil(t, res)
@@ -319,12 +354,14 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
-		desc  string
-		batch ptrace.Traces
+		desc       string
+		batch      ptrace.Traces
+		routingKey routingKey
 	}{
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
+			traceId,
 		},
 		{
 			"no instrumentation library spans",
@@ -333,6 +370,7 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
+			traceId,
 		},
 		{
 			"no spans",
@@ -341,11 +379,13 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
+			svcRouting,
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res := traceIDFromTraces(tt.batch)
-			assert.Equal(t, pcommon.InvalidTraceID(), res)
+			res, err := routingIdentifierFromTraces(tt.batch, tt.routingKey)
+			assert.Equal(t, err, errors.New("invalid trace id"))
+			assert.Equal(t, res, []byte(nil))
 		})
 	}
 }
@@ -493,10 +533,28 @@ func simpleTraces() ptrace.Traces {
 	return simpleTraceWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
+func simpleTracesWithServiceName() ptrace.Traces {
+	return simpleTraceWithServiceName(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+}
+
 func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
+}
+
+func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(1)
+	rspans := traces.ResourceSpans().AppendEmpty()
+	fillResource(rspans.Resource())
+	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	return traces
+}
+
+func fillResource(resource pcommon.Resource) {
+	attrs := resource.Attributes()
+	attrs.InsertString("service.name", "signup_aggregator")
 }
 
 func simpleConfig() *Config {
@@ -505,6 +563,16 @@ func simpleConfig() *Config {
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
+	}
+}
+
+func serviceBasedRoutingConfig() *Config {
+	return &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+		RoutingKey: "service",
 	}
 }
 
