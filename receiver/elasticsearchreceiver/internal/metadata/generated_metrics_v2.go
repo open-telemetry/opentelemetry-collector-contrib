@@ -252,32 +252,6 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"sent":     AttributeDirectionSent,
 }
 
-// AttributeDiskUsageState specifies the a value disk_usage_state attribute.
-type AttributeDiskUsageState int
-
-const (
-	_ AttributeDiskUsageState = iota
-	AttributeDiskUsageStateUsed
-	AttributeDiskUsageStateFree
-)
-
-// String returns the string representation of the AttributeDiskUsageState.
-func (av AttributeDiskUsageState) String() string {
-	switch av {
-	case AttributeDiskUsageStateUsed:
-		return "used"
-	case AttributeDiskUsageStateFree:
-		return "free"
-	}
-	return ""
-}
-
-// MapAttributeDiskUsageState is a helper map of string to AttributeDiskUsageState attribute value.
-var MapAttributeDiskUsageState = map[string]AttributeDiskUsageState{
-	"used": AttributeDiskUsageStateUsed,
-	"free": AttributeDiskUsageStateFree,
-}
-
 // AttributeDocumentState specifies the a value document_state attribute.
 type AttributeDocumentState int
 

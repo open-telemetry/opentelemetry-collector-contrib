@@ -77,7 +77,6 @@ metrics:
 | circuit_breaker_name (name) | The name of circuit breaker. |  |
 | collector_name (name) | The name of the garbage collector. |  |
 | direction | The direction of network data. | received, sent |
-| disk_usage_state (state) | The state of a section of space on disk. | used, free |
 | document_state (state) | The state of the document. | active, deleted |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |

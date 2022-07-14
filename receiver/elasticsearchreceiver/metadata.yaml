@@ -26,12 +26,6 @@ attributes:
   memory_pool_name:
     value: name
     description: The name of the JVM memory pool.
-  disk_usage_state:
-    value: state
-    description: The state of a section of space on disk.
-    enum:
-    - used
-    - free
   direction:
     description: The direction of network data.
     enum:
