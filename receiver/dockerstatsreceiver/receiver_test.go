@@ -156,8 +156,6 @@ func TestScrapes(t *testing.T) {
 			actualMetrics, err := tc.scrape(receiver)
 			require.NoError(t, err)
 
-			//golden.WriteMetrics(filepath.Join(mockFolder, "two_containers", "expected_metrics_1.json"), actualMetrics)
-
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
 			if !strings.HasPrefix(tc.desc, "scrapeV1") {
