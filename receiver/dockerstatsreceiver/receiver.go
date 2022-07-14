@@ -44,10 +44,6 @@ type receiver struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func altermb(mb *metadata.MetricsBuilder) {
-
-}
-
 func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
 	if config.ProvidePerCoreCPUMetrics {
 		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
