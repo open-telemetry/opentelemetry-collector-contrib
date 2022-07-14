@@ -26,6 +26,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -90,7 +91,7 @@ func TestScrapes(t *testing.T) {
 	assert.NoError(t, err)
 	defer singleContainerEngineMock.Close()
 
-	twoContainerEnginerMock, err := dockerMockServer(&map[string]string{
+	twoContainerEngineMock, err := dockerMockServer(&map[string]string{
 		"/v1.22/containers/json":                          filepath.Join(mockFolder, "two_containers", "containers.json"),
 		"/v1.22/containers/" + containerIDs[1] + "/json":  filepath.Join(mockFolder, "two_containers", "container1.json"),
 		"/v1.22/containers/" + containerIDs[2] + "/json":  filepath.Join(mockFolder, "two_containers", "container2.json"),
@@ -98,7 +99,7 @@ func TestScrapes(t *testing.T) {
 		"/v1.22/containers/" + containerIDs[2] + "/stats": filepath.Join(mockFolder, "two_containers", "stats2.json"),
 	})
 	assert.NoError(t, err)
-	defer twoContainerEnginerMock.Close()
+	defer twoContainerEngineMock.Close()
 
 	testCases := []struct {
 		desc                string
@@ -128,7 +129,7 @@ func TestScrapes(t *testing.T) {
 				return rcv.scrape(context.Background())
 			},
 			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
-			mockDockerEngine:    twoContainerEnginerMock,
+			mockDockerEngine:    twoContainerEngineMock,
 		},
 		{
 			desc: "scrapeV2_two_containers",
@@ -136,7 +137,7 @@ func TestScrapes(t *testing.T) {
 				return rcv.scrapeV2(context.Background())
 			},
 			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
-			mockDockerEngine:    twoContainerEnginerMock,
+			mockDockerEngine:    twoContainerEngineMock,
 		},
 	}
 
@@ -156,18 +157,19 @@ func TestScrapes(t *testing.T) {
 
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
-			// Unset various fields for comparison purposes (non-mdatagen implementation doesn't have these set)
-			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
-				for j := 0; j < actualMetrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
-					sm := actualMetrics.ResourceMetrics().At(i).ScopeMetrics().At(j)
-					sm.Scope().SetName("")
-					sm.Scope().SetVersion("")
-					for k := 0; k < sm.Metrics().Len(); k++ {
-						sm.Metrics().At(k).SetDescription("")
+			if !strings.HasPrefix(tc.desc, "scrapeV1") {
+				// Unset various fields for comparison purposes (non-mdatagen implementation doesn't have these set)
+				for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+					for j := 0; j < actualMetrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+						sm := actualMetrics.ResourceMetrics().At(i).ScopeMetrics().At(j)
+						sm.Scope().SetName("")
+						sm.Scope().SetVersion("")
+						for k := 0; k < sm.Metrics().Len(); k++ {
+							sm.Metrics().At(k).SetDescription("")
+						}
 					}
 				}
 			}
-
 			assert.NoError(t, err)
 			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
