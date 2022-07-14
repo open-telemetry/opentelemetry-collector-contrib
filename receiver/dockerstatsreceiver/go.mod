@@ -22,7 +22,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.0-beta.1+incompatible // indirect
-	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -66,3 +66,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrap
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
+exclude github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
