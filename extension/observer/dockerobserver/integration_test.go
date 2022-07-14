@@ -27,9 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
@@ -46,14 +44,6 @@ func (h *testHost) ReportFatalError(err error) {
 }
 
 var _ component.Host = (*testHost)(nil)
-
-func paramsAndContext(t *testing.T) (component.ExtensionCreateSettings, context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithCancel(context.Background())
-	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := componenttest.NewNopExtensionCreateSettings()
-	settings.Logger = logger
-	return settings, ctx, cancel
-}
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	c := containertest.New(t)
