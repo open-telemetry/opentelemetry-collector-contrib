@@ -5,7 +5,7 @@ on:
 
 jobs:
   ping-owner:
-    if: ${{ contains(github.event.label.name, 'exporter/') || contains(github.event.label.name, 'extension/') || contains(github.event.label.name, 'processor/') || contains(github.event.label.name, 'receiver/') }}
+    if: ${{ contains(github.event.label.name, 'cmd/') || contains(github.event.label.name, 'exporter/') || contains(github.event.label.name, 'extension/') || contains(github.event.label.name, 'pkg/') || contains(github.event.label.name, 'processor/') || contains(github.event.label.name, 'receiver/') }}
 
     runs-on: ubuntu-latest
     steps:
@@ -17,3 +17,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
           COMPONENT: ${{ github.event.label.name }}
+

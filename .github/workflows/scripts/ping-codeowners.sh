@@ -28,3 +28,4 @@ if [ -z "${OWNERS}" ]; then
 fi
 
 gh issue comment ${ISSUE} --body "Pinging code owners: ${OWNERS}"
+
