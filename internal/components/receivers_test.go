@@ -322,6 +322,10 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "vcenter",
 		},
+		{
+			receiver:     "solace",
+			skipLifecyle: true, // Requires a solace broker to connect to
+		},
 	}
 
 	assert.Len(t, tests, len(rcvrFactories), "All receivers must be added to the lifecycle suite")

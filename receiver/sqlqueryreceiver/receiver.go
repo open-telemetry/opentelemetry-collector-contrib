@@ -44,9 +44,10 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		for i, query := range sqlCfg.Queries {
 			id := config.NewComponentIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			mp := &scraper{
-				id:     id,
-				query:  query,
-				logger: settings.TelemetrySettings.Logger,
+				id:        id,
+				query:     query,
+				scrapeCfg: sqlCfg.ScraperControllerSettings,
+				logger:    settings.TelemetrySettings.Logger,
 				dbProviderFunc: func() (*sql.DB, error) {
 					return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
 				},

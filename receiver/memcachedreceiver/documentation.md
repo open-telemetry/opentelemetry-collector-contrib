@@ -16,6 +16,8 @@ These are the metrics available for this scraper.
 | **memcached.current_items** | Number of items currently stored in the cache. | {items} | Sum(Int) | <ul> </ul> |
 | **memcached.evictions** | Cache item evictions. | {evictions} | Sum(Int) | <ul> </ul> |
 | **memcached.network** | Bytes transferred over the network. | by | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **memcached.network.received** | Bytes received over the network. | by | Sum(Int) | <ul> </ul> |
+| **memcached.network.sent** | Bytes sent over the network. | by | Sum(Int) | <ul> </ul> |
 | **memcached.operation_hit_ratio** | Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0. | % | Gauge(Double) | <ul> <li>operation</li> </ul> |
 | **memcached.operations** | Operation counts. | {operations} | Sum(Int) | <ul> <li>type</li> <li>operation</li> </ul> |
 | **memcached.threads** | Number of threads used by the memcached instance. | {threads} | Sum(Int) | <ul> </ul> |

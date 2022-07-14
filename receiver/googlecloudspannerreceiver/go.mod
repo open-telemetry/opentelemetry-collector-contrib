@@ -3,18 +3,18 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.17
 
 require (
-	cloud.google.com/go/spanner v1.34.0
+	cloud.google.com/go/spanner v1.34.1
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
 	go.uber.org/zap v1.21.0
-	google.golang.org/api v0.86.0
+	google.golang.org/api v0.87.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
 
 require (
 	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
-	google.golang.org/grpc v1.47.0
+	google.golang.org/grpc v1.48.0
 )
 
 require (
@@ -24,7 +24,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.102.0 // indirect
+	cloud.google.com/go v0.102.1 // indirect
 	cloud.google.com/go/compute v1.7.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect

@@ -17,6 +17,8 @@ package tanzuobservabilityexporter
 import (
 	"context"
 	"errors"
+	"math"
+	"strconv"
 	"testing"
 	"time"
 
@@ -499,11 +501,11 @@ func TestSumConsumerMissingValue(t *testing.T) {
 // Tests that the histogramConsumer correctly delegates to its
 // histogramDataPointConsumers. This tests delta histograms
 func TestHistogramConsumerDeltaAggregation(t *testing.T) {
-	countAttributeForEachDataPoint := []uint64{2, 5, 10}
+	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	deltaMetric := newHistogramMetricWithDataPoints(
 		"delta.metric",
 		pmetric.MetricAggregationTemporalityDelta,
-		countAttributeForEachDataPoint)
+		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: deltaMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
@@ -523,7 +525,7 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 	// each data point consumed.
 	assert.Equal(
 		t, []string{"delta.metric", "delta.metric", "delta.metric"}, deltaConsumer.names)
-	assert.Equal(t, countAttributeForEachDataPoint, deltaConsumer.counts)
+	assert.Equal(t, numBucketCountsForEachDataPoint, deltaConsumer.counts)
 	assert.Empty(t, cumulativeConsumer.names)
 	assert.Empty(t, cumulativeConsumer.counts)
 }
@@ -531,11 +533,11 @@ func TestHistogramConsumerDeltaAggregation(t *testing.T) {
 // Tests that the histogramConsumer correctly delegates to its
 // histogramDataPointConsumers. This tests cumulative histograms
 func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
-	countAttributeForEachDataPoint := []uint64{2, 5, 10}
+	numBucketCountsForEachDataPoint := []int{2, 5, 10}
 	cumulativeMetric := newHistogramMetricWithDataPoints(
 		"cumulative.metric",
 		pmetric.MetricAggregationTemporalityCumulative,
-		countAttributeForEachDataPoint)
+		numBucketCountsForEachDataPoint)
 	mi := metricInfo{Metric: cumulativeMetric, Source: "test_source", SourceKey: "host.name"}
 	sender := &mockGaugeSender{}
 	cumulativeConsumer := &mockHistogramDataPointConsumer{}
@@ -558,7 +560,7 @@ func TestHistogramConsumerCumulativeAggregation(t *testing.T) {
 		t,
 		[]string{"cumulative.metric", "cumulative.metric", "cumulative.metric"},
 		cumulativeConsumer.names)
-	assert.Equal(t, countAttributeForEachDataPoint, cumulativeConsumer.counts)
+	assert.Equal(t, numBucketCountsForEachDataPoint, cumulativeConsumer.counts)
 	assert.Empty(t, deltaConsumer.names)
 	assert.Empty(t, deltaConsumer.counts)
 }
@@ -670,7 +672,7 @@ func TestCumulativeHistogramDataPointConsumer(t *testing.T) {
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 	assert.Equal(
@@ -717,7 +719,7 @@ func TestCumulativeHistogramDataPointConsumerError(t *testing.T) {
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	// We tried to send 4 metrics. We get 4 errors.
 	assert.Len(t, errs, 4)
@@ -735,7 +737,7 @@ func TestCumulativeHistogramDataPointConsumerLeInUse(t *testing.T) {
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 	assert.Equal(
@@ -767,7 +769,7 @@ func TestCumulativeHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	consumer := newCumulativeHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 	assert.Empty(t, sender.metrics)
@@ -788,7 +790,7 @@ func TestDeltaHistogramDataPointConsumer(t *testing.T) {
 	consumer := newDeltaHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 
@@ -826,7 +828,7 @@ func TestDeltaHistogramDataPointConsumer_OneBucket(t *testing.T) {
 	consumer := newDeltaHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 
@@ -858,7 +860,7 @@ func TestDeltaHistogramDataPointConsumerError(t *testing.T) {
 	consumer := newDeltaHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Len(t, errs, 1)
 }
@@ -872,7 +874,7 @@ func TestDeltaHistogramDataPointConsumerMissingBuckets(t *testing.T) {
 	consumer := newDeltaHistogramDataPointConsumer(sender)
 	var errs []error
 
-	consumer.Consume(mi, histogramDataPoint, &errs, report)
+	consumer.Consume(mi, fromOtelHistogramDataPoint(histogramDataPoint), &errs, report)
 
 	assert.Empty(t, errs)
 	assert.Empty(t, sender.distributions)
@@ -1082,12 +1084,21 @@ func TestExponentialHistogramConsumerSpec(t *testing.T) {
 	metric := newExponentialHistogramMetricWithDataPoints(
 		"a.metric", pmetric.MetricAggregationTemporalityDelta, []uint64{4, 7, 11})
 	assert.Equal(t, pmetric.MetricDataTypeExponentialHistogram, exponentialHistogram.Type())
-	aHistogram := exponentialHistogram.AsHistogram(metric)
-	assert.Equal(t, pmetric.MetricAggregationTemporalityDelta, aHistogram.AggregationTemporality())
-	assert.Equal(t, 3, aHistogram.Len())
-	assert.Equal(t, uint64(4), aHistogram.At(0).Count())
-	assert.Equal(t, uint64(7), aHistogram.At(1).Count())
-	assert.Equal(t, uint64(11), aHistogram.At(2).Count())
+	assert.Equal(
+		t,
+		pmetric.MetricAggregationTemporalityDelta,
+		exponentialHistogram.AggregationTemporality(metric))
+	points := exponentialHistogram.DataPoints(metric)
+	assert.Len(t, points, 3)
+
+	// 4 + 4 + 2
+	assert.Len(t, points[0].AsCumulative(), 10)
+
+	// 7 + 7 + 2
+	assert.Len(t, points[1].AsCumulative(), 16)
+
+	// 11 + 11 + 2
+	assert.Len(t, points[2].AsCumulative(), 24)
 }
 
 func TestExponentialHistogramDataPoint(t *testing.T) {
@@ -1101,15 +1112,36 @@ func TestExponentialHistogramDataPoint(t *testing.T) {
 	dataPoint.Attributes().UpsertString("foo", "bar")
 	dataPoint.Attributes().UpsertString("baz", "7")
 	setDataPointTimestamp(1640198765, dataPoint)
-	h := newExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{17, 16, 15, 2, 5, 6, 7, 8, 0}, h.BucketCounts().AsRaw())
-	assert.InDeltaSlice(
+	point := fromOtelExponentialHistogramDataPoint(dataPoint)
+	assertBuckets(
 		t,
-		[]float64{-16.0, -11.3137, -8.0, 2.8284, 4.0, 5.6569, 8.0, 11.3137},
-		h.ExplicitBounds().AsRaw(),
-		0.0001)
-	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(h.Attributes()))
-	assert.Equal(t, int64(1640198765), h.Timestamp().AsTime().Unix())
+		[]cumulativeBucket{
+			{Tag: "-16", Count: 17},
+			{Tag: "-11.3137", Count: 33},
+			{Tag: "-8", Count: 48},
+			{Tag: "2.8284", Count: 50},
+			{Tag: "4", Count: 55},
+			{Tag: "5.6569", Count: 61},
+			{Tag: "8", Count: 68},
+			{Tag: "11.3137", Count: 76},
+			{Tag: "+Inf", Count: 76},
+		},
+		point.AsCumulative())
+	assertCentroids(
+		t,
+		[]histogram.Centroid{
+			{Value: -19.3137, Count: 17},
+			{Value: -13.6569, Count: 16},
+			{Value: -9.6569, Count: 15},
+			{Value: -2.5858, Count: 2},
+			{Value: 3.4142, Count: 5},
+			{Value: 4.8284, Count: 6},
+			{Value: 6.8284, Count: 7},
+			{Value: 9.6569, Count: 8},
+		},
+		point.AsDelta())
+	assert.Equal(t, map[string]string{"foo": "bar", "baz": "7"}, attributesToTags(point.Attributes))
+	assert.Equal(t, int64(1640198765), point.SecondsSinceEpoch)
 }
 
 func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
@@ -1118,9 +1150,20 @@ func TestExponentialHistogramDataPoint_ZeroOnly(t *testing.T) {
 	dataPoint.Negative().SetOffset(2)
 	dataPoint.Positive().SetOffset(1)
 	dataPoint.SetZeroCount(5)
-	h := newExponentialHistogramDataPoint(dataPoint)
-	assert.Equal(t, []uint64{5, 0}, h.BucketCounts().AsRaw())
-	assert.InDeltaSlice(t, []float64{2.0}, h.ExplicitBounds().AsRaw(), 0.0001)
+	point := fromOtelExponentialHistogramDataPoint(dataPoint)
+	assertBuckets(
+		t,
+		[]cumulativeBucket{
+			{Tag: "2.0", Count: 5},
+			{Tag: "+Inf", Count: 5},
+		},
+		point.AsCumulative())
+	assertCentroids(
+		t,
+		[]histogram.Centroid{
+			{Value: -1.0, Count: 5},
+		},
+		point.AsDelta())
 }
 
 func TestAttributesToTagsForMetrics(t *testing.T) {
@@ -1149,22 +1192,24 @@ func TestAttributesToTagsForMetrics(t *testing.T) {
 	assert.Equal(t, map[string]string{"k": "v", "_source": "a_val"}, wfTags)
 }
 
-// Creates a histogram metric with len(countAttributeForEachDataPoint)
+// Creates a histogram metric with len(numBucketCountsForEachDataPoint)
 // datapoints. name is the name of the histogram metric; temporality
 // is the temporality of the histogram metric;
-// countAttributeForEachDataPoint contains the count attribute for each
+// numBucketCountsForEachDataPoint contains the number of buckets for each
 // data point.
 func newHistogramMetricWithDataPoints(
 	name string,
 	temporality pmetric.MetricAggregationTemporality,
-	countAttributeForEachDataPoint []uint64,
+	numBucketCountsForEachDataPoint []int,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricDataTypeHistogram)
 	aHistogram := result.Histogram()
 	aHistogram.SetAggregationTemporality(temporality)
-	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
-	for _, count := range countAttributeForEachDataPoint {
-		aHistogram.DataPoints().AppendEmpty().SetCount(count)
+	aHistogram.DataPoints().EnsureCapacity(len(numBucketCountsForEachDataPoint))
+	for _, count := range numBucketCountsForEachDataPoint {
+		point := aHistogram.DataPoints().AppendEmpty()
+		point.SetMBucketCounts(make([]uint64, count))
+		point.SetMExplicitBounds(make([]float64, count-1))
 	}
 	return result
 }
@@ -1173,14 +1218,16 @@ func newHistogramMetricWithDataPoints(
 func newExponentialHistogramMetricWithDataPoints(
 	name string,
 	temporality pmetric.MetricAggregationTemporality,
-	countAttributeForEachDataPoint []uint64,
+	positiveAndNegativeBucketCountsForEachDataPoint []uint64,
 ) pmetric.Metric {
 	result := newMetric(name, pmetric.MetricDataTypeExponentialHistogram)
 	aHistogram := result.ExponentialHistogram()
 	aHistogram.SetAggregationTemporality(temporality)
-	aHistogram.DataPoints().EnsureCapacity(len(countAttributeForEachDataPoint))
-	for _, count := range countAttributeForEachDataPoint {
-		aHistogram.DataPoints().AppendEmpty().SetCount(count)
+	aHistogram.DataPoints().EnsureCapacity(len(positiveAndNegativeBucketCountsForEachDataPoint))
+	for _, count := range positiveAndNegativeBucketCountsForEachDataPoint {
+		point := aHistogram.DataPoints().AppendEmpty()
+		point.Negative().SetMBucketCounts(make([]uint64, count))
+		point.Positive().SetMBucketCounts(make([]uint64, count))
 	}
 	return result
 }
@@ -1419,12 +1466,13 @@ func (m *mockFlushCloser) Close() {
 
 type mockHistogramDataPointConsumer struct {
 	names  []string
-	counts []uint64
+	counts []int
 }
 
-func (m *mockHistogramDataPointConsumer) Consume(mi metricInfo, histogram histogramDataPoint, errs *[]error, reporting *histogramReporting) {
+func (m *mockHistogramDataPointConsumer) Consume(
+	mi metricInfo, point bucketHistogramDataPoint, errs *[]error, reporting *histogramReporting) {
 	m.names = append(m.names, mi.Name())
-	m.counts = append(m.counts, histogram.Count())
+	m.counts = append(m.counts, len(point.AsCumulative()))
 }
 
 func copyTags(tags map[string]string) map[string]string {
@@ -1494,4 +1542,44 @@ func copyGranularity(
 		result[k] = v
 	}
 	return result
+}
+
+func assertBuckets(t *testing.T, expected, actual []cumulativeBucket) {
+	msgString := "Expected: %+v; Actual: %+v"
+	if len(expected) != len(actual) {
+		assert.Fail(t, "", msgString, expected, actual)
+		return
+	}
+	for i := range expected {
+		if expected[i].Count != actual[i].Count || !tagsEqual(expected[i].Tag, actual[i].Tag) {
+			assert.Fail(t, "", msgString, expected, actual)
+			return
+		}
+	}
+}
+
+func tagsEqual(expected, actual string) bool {
+	if expected == actual {
+		return true
+	}
+	expectedF, errE := strconv.ParseFloat(expected, 64)
+	actualF, errF := strconv.ParseFloat(actual, 64)
+	if errE != nil || errF != nil {
+		return false
+	}
+	return math.Abs(expectedF-actualF) < 0.0001
+}
+
+func assertCentroids(t *testing.T, expected, actual []histogram.Centroid) {
+	msgString := "Expected: %+v; Actual: %+v"
+	if len(expected) != len(actual) {
+		assert.Fail(t, "", msgString, expected, actual)
+		return
+	}
+	for i := range expected {
+		if expected[i].Count != actual[i].Count || math.Abs(expected[i].Value-actual[i].Value) > 0.0001 {
+			assert.Fail(t, "", msgString, expected, actual)
+			return
+		}
+	}
 }
