@@ -93,7 +93,7 @@ func TestLogToCWLog(t *testing.T) {
 			log:      testLogRecord(),
 			want: &cloudwatchlogs.InputLogEvent{
 				Timestamp: aws.Int64(1609719139),
-				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+				Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":255,"trace_id":"0102030405060708090a0b0c0d0e0f10\","span_id\":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"node":5,"host\":"abc123"}}`),
 			},
 		},
 		{
