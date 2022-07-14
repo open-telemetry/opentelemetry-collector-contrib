@@ -87,8 +87,42 @@ attributes:
     - green
     - yellow
     - red
+  circuit_breaker_name:
+    value: name
+    description: The name of circuit breaker.
+  memory_state:
+    value: state
+    description: State of the memory
+    enum:
+      - free
+      - used
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
+  elasticsearch.breaker.memory.estimated:
+    description: Estimated memory used for the operation.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [circuit_breaker_name]
+    enabled: true
+  elasticsearch.breaker.memory.limit:
+    description: Memory limit for the circuit breaker.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [circuit_breaker_name]
+    enabled: true
+  elasticsearch.breaker.tripped:
+    description: Total number of times the circuit breaker has been triggered and prevented an out of memory error.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [circuit_breaker_name]
+    enabled: true
   elasticsearch.node.cache.memory.usage:
     description: The size in bytes of the cache.
     unit: By
@@ -115,6 +149,24 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
+  elasticsearch.node.disk.io.read:
+    description: The total number of kilobytes read across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.disk.io.write:
+    description: The total number of kilobytes written across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: true
   elasticsearch.node.cluster.io:
     description: The number of bytes sent and received on the network for internal cluster communication.
@@ -169,6 +221,51 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: []
+    enabled: true
+  elasticsearch.node.shards.data_set.size:
+    description: Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.shards.reserved.size:
+    description: A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.translog.operations:
+    description: Number of transaction log operations.
+    unit: "{operations}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.translog.size:
+    description: Size of the transaction log.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.translog.uncommitted.size:
+    description: Size of uncommitted transaction log operations.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: true
   elasticsearch.node.thread_pool.threads:
     description: The number of threads in the thread pool.
@@ -339,4 +436,41 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [health_status]
+    enabled: true
+  elasticsearch.os.cpu.usage:
+    description: Recent CPU usage for the whole system, or -1 if not supported.
+    unit: '%'
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.os.cpu.load_avg.1m:
+    description: One-minute load average on the system (field is not present if one-minute load average is not available).
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: true
+  elasticsearch.os.cpu.load_avg.5m:
+    description: Five-minute load average on the system (field is not present if five-minute load average is not available).
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: true
+  elasticsearch.os.cpu.load_avg.15m:
+    description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: true
+  elasticsearch.os.memory:
+    description: Amount of physical memory.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [memory_state]
     enabled: true
