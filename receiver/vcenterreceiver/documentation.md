@@ -42,7 +42,6 @@ These are the metrics available for this scraper.
 | **vcenter.resource_pool.cpu.usage** | The usage of the CPU used by the resource pool. | {MHz} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.shares** | The amount of shares of memory in the resource pool. | {shares} | Sum(Int) | <ul> </ul> |
 | **vcenter.resource_pool.memory.usage** | The usage of the memory by the resource pool. | MBy | Sum(Int) | <ul> </ul> |
-| **vcenter.vm.cpu.utilization** | The CPU utilization of the virtual machine. | % | Gauge(Double) | <ul> </ul> |
 | **vcenter.vm.disk.latency.avg** | The latency of operations to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_direction</li> <li>disk_type</li> </ul> |
 | **vcenter.vm.disk.latency.avg.read** | The latency of reads to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_type</li> </ul> |
 | **vcenter.vm.disk.latency.avg.write** | The latency of writes to the virtual machine's disk. Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval. | ms | Gauge(Int) | <ul> <li>disk_type</li> </ul> |
