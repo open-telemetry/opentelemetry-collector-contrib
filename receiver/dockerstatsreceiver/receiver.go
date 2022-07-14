@@ -49,7 +49,9 @@ func altermb(mb *metadata.MetricsBuilder) {
 }
 
 func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
-	config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
+	if config.ProvidePerCoreCPUMetrics {
+		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
+	}
 	return &receiver{
 		config:   config,
 		settings: set,
