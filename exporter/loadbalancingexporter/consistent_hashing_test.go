@@ -48,7 +48,8 @@ func TestEndpointFor(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Endpoint for traceID %s", tt.traceID.HexString()), func(t *testing.T) {
 			// test
-			endpoint := ring.endpointFor(tt.traceID)
+			tid := tt.traceID.Bytes()
+			endpoint := ring.endpointFor(tid[:])
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)

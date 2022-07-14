@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
@@ -42,13 +41,14 @@ var (
 
 type traceExporterImp struct {
 	loadBalancer loadBalancer
-
-	stopped    bool
-	shutdownWg sync.WaitGroup
+	routingKey   routingKey
+	stopped      bool
+	shutdownWg   sync.WaitGroup
 }
 
 // Create new traces exporter
 func newTracesExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*traceExporterImp, error) {
+	var r routingKey
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -59,8 +59,15 @@ func newTracesExporter(params component.ExporterCreateSettings, cfg config.Expor
 		return nil, err
 	}
 
+	switch cfg.(*Config).RoutingKey {
+	case "service":
+		r = svcRouting
+	default:
+		r = traceId
+	}
 	return &traceExporterImp{
 		loadBalancer: lb,
+		routingKey:   r,
 	}, nil
 }
 
@@ -96,12 +103,12 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	traceID := traceIDFromTraces(td)
-	if traceID == pcommon.InvalidTraceID() {
-		return errNoTracesInBatch
+	routingId, err := routingIdentifierFromTraces(td, e.routingKey)
+	if err != nil {
+		return err
 	}
 
-	endpoint := e.loadBalancer.Endpoint(traceID)
+	endpoint := e.loadBalancer.Endpoint(routingId)
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
@@ -129,21 +136,31 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) e
 	return err
 }
 
-func traceIDFromTraces(td ptrace.Traces) pcommon.TraceID {
+func routingIdentifierFromTraces(td ptrace.Traces, key routingKey) ([]byte, error) {
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("invalid trace id")
 	}
 
 	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("invalid trace id")
 	}
 
 	spans := ils.At(0).Spans()
 	if spans.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return nil, errors.New("invalid trace id")
 	}
 
-	return spans.At(0).TraceID()
+	switch key {
+	case svcRouting:
+		svc, ok := rs.At(0).Resource().Attributes().Get("service.name")
+		if !ok {
+			return nil, errors.New("unable to get service name")
+		}
+		return []byte(svc.StringVal()), nil
+	default:
+		tid := spans.At(0).TraceID().Bytes()
+		return tid[:], nil
+	}
 }
