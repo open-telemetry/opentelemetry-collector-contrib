@@ -920,7 +920,7 @@
                            }
                         ]
                      },
-                     "unit": "1"
+                     "unit": "%"
                   },
                   {
                      "description": "One-minute load average on the system (field is not present if one-minute load average is not available).",
@@ -966,7 +966,7 @@
                   },
                   {
                      "description": "Amount of physical memory.",
-                     "name": "elasticsearch.os.cpu.memory",
+                     "name": "elasticsearch.os.memory",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [

@@ -32,7 +32,6 @@ attributes:
     enum:
     - used
     - free
-    - available
   direction:
     description: The direction of network data.
     enum:
@@ -440,7 +439,7 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.usage:
     description: Recent CPU usage for the whole system, or -1 if not supported.
-    unit: 1
+    unit: '%'
     gauge:
       value_type: int
     attributes: [ ]
@@ -466,7 +465,7 @@ metrics:
       value_type: double
     attributes: [ ]
     enabled: true
-  elasticsearch.os.cpu.memory:
+  elasticsearch.os.memory:
     description: Amount of physical memory.
     unit: By
     sum:

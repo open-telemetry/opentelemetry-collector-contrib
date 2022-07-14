@@ -39,8 +39,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.os.cpu.load_avg.15m** | Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
 | **elasticsearch.os.cpu.load_avg.1m** | One-minute load average on the system (field is not present if one-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
 | **elasticsearch.os.cpu.load_avg.5m** | Five-minute load average on the system (field is not present if five-minute load average is not available). | 1 | Gauge(Double) | <ul> </ul> |
-| **elasticsearch.os.cpu.memory** | Amount of physical memory. | By | Sum(Int) | <ul> <li>memory_state</li> </ul> |
-| **elasticsearch.os.cpu.usage** | Recent CPU usage for the whole system, or -1 if not supported. | 1 | Gauge(Int) | <ul> </ul> |
+| **elasticsearch.os.cpu.usage** | Recent CPU usage for the whole system, or -1 if not supported. | % | Gauge(Int) | <ul> </ul> |
+| **elasticsearch.os.memory** | Amount of physical memory. | By | Sum(Int) | <ul> <li>memory_state</li> </ul> |
 | **jvm.classes.loaded** | The number of loaded classes | 1 | Gauge(Int) | <ul> </ul> |
 | **jvm.gc.collections.count** | The total number of garbage collections that have occurred | 1 | Sum(Int) | <ul> <li>collector_name</li> </ul> |
 | **jvm.gc.collections.elapsed** | The approximate accumulated collection elapsed time | ms | Sum(Int) | <ul> <li>collector_name</li> </ul> |
@@ -77,7 +77,7 @@ metrics:
 | circuit_breaker_name (name) | The name of circuit breaker. |  |
 | collector_name (name) | The name of the garbage collector. |  |
 | direction | The direction of network data. | received, sent |
-| disk_usage_state (state) | The state of a section of space on disk. | used, free, available |
+| disk_usage_state (state) | The state of a section of space on disk. | used, free |
 | document_state (state) | The state of the document. | active, deleted |
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |

@@ -48,8 +48,8 @@ type MetricsSettings struct {
 	ElasticsearchOsCPULoadAvg15m             MetricSettings `mapstructure:"elasticsearch.os.cpu.load_avg.15m"`
 	ElasticsearchOsCPULoadAvg1m              MetricSettings `mapstructure:"elasticsearch.os.cpu.load_avg.1m"`
 	ElasticsearchOsCPULoadAvg5m              MetricSettings `mapstructure:"elasticsearch.os.cpu.load_avg.5m"`
-	ElasticsearchOsCPUMemory                 MetricSettings `mapstructure:"elasticsearch.os.cpu.memory"`
 	ElasticsearchOsCPUUsage                  MetricSettings `mapstructure:"elasticsearch.os.cpu.usage"`
+	ElasticsearchOsMemory                    MetricSettings `mapstructure:"elasticsearch.os.memory"`
 	JvmClassesLoaded                         MetricSettings `mapstructure:"jvm.classes.loaded"`
 	JvmGcCollectionsCount                    MetricSettings `mapstructure:"jvm.gc.collections.count"`
 	JvmGcCollectionsElapsed                  MetricSettings `mapstructure:"jvm.gc.collections.elapsed"`
@@ -158,10 +158,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchOsCPULoadAvg5m: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchOsCPUMemory: MetricSettings{
+		ElasticsearchOsCPUUsage: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchOsCPUUsage: MetricSettings{
+		ElasticsearchOsMemory: MetricSettings{
 			Enabled: true,
 		},
 		JvmClassesLoaded: MetricSettings{
@@ -259,7 +259,6 @@ const (
 	_ AttributeDiskUsageState = iota
 	AttributeDiskUsageStateUsed
 	AttributeDiskUsageStateFree
-	AttributeDiskUsageStateAvailable
 )
 
 // String returns the string representation of the AttributeDiskUsageState.
@@ -269,17 +268,14 @@ func (av AttributeDiskUsageState) String() string {
 		return "used"
 	case AttributeDiskUsageStateFree:
 		return "free"
-	case AttributeDiskUsageStateAvailable:
-		return "available"
 	}
 	return ""
 }
 
 // MapAttributeDiskUsageState is a helper map of string to AttributeDiskUsageState attribute value.
 var MapAttributeDiskUsageState = map[string]AttributeDiskUsageState{
-	"used":      AttributeDiskUsageStateUsed,
-	"free":      AttributeDiskUsageStateFree,
-	"available": AttributeDiskUsageStateAvailable,
+	"used": AttributeDiskUsageStateUsed,
+	"free": AttributeDiskUsageStateFree,
 }
 
 // AttributeDocumentState specifies the a value document_state attribute.
@@ -2141,59 +2137,6 @@ func newMetricElasticsearchOsCPULoadAvg5m(settings MetricSettings) metricElastic
 	return m
 }
 
-type metricElasticsearchOsCPUMemory struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.os.cpu.memory metric with initial data.
-func (m *metricElasticsearchOsCPUMemory) init() {
-	m.data.SetName("elasticsearch.os.cpu.memory")
-	m.data.SetDescription("Amount of physical memory.")
-	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchOsCPUMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryStateAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().Insert("state", pcommon.NewValueString(memoryStateAttributeValue))
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchOsCPUMemory) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchOsCPUMemory) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchOsCPUMemory(settings MetricSettings) metricElasticsearchOsCPUMemory {
-	m := metricElasticsearchOsCPUMemory{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricElasticsearchOsCPUUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -2204,7 +2147,7 @@ type metricElasticsearchOsCPUUsage struct {
 func (m *metricElasticsearchOsCPUUsage) init() {
 	m.data.SetName("elasticsearch.os.cpu.usage")
 	m.data.SetDescription("Recent CPU usage for the whole system, or -1 if not supported.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("%")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }
 
@@ -2236,6 +2179,59 @@ func (m *metricElasticsearchOsCPUUsage) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchOsCPUUsage(settings MetricSettings) metricElasticsearchOsCPUUsage {
 	m := metricElasticsearchOsCPUUsage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchOsMemory struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.os.memory metric with initial data.
+func (m *metricElasticsearchOsMemory) init() {
+	m.data.SetName("elasticsearch.os.memory")
+	m.data.SetDescription("Amount of physical memory.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchOsMemory) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryStateAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert("state", pcommon.NewValueString(memoryStateAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchOsMemory) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchOsMemory) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchOsMemory(settings MetricSettings) metricElasticsearchOsMemory {
+	m := metricElasticsearchOsMemory{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2833,8 +2829,8 @@ type MetricsBuilder struct {
 	metricElasticsearchOsCPULoadAvg15m             metricElasticsearchOsCPULoadAvg15m
 	metricElasticsearchOsCPULoadAvg1m              metricElasticsearchOsCPULoadAvg1m
 	metricElasticsearchOsCPULoadAvg5m              metricElasticsearchOsCPULoadAvg5m
-	metricElasticsearchOsCPUMemory                 metricElasticsearchOsCPUMemory
 	metricElasticsearchOsCPUUsage                  metricElasticsearchOsCPUUsage
+	metricElasticsearchOsMemory                    metricElasticsearchOsMemory
 	metricJvmClassesLoaded                         metricJvmClassesLoaded
 	metricJvmGcCollectionsCount                    metricJvmGcCollectionsCount
 	metricJvmGcCollectionsElapsed                  metricJvmGcCollectionsElapsed
@@ -2894,8 +2890,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchOsCPULoadAvg15m:             newMetricElasticsearchOsCPULoadAvg15m(settings.ElasticsearchOsCPULoadAvg15m),
 		metricElasticsearchOsCPULoadAvg1m:              newMetricElasticsearchOsCPULoadAvg1m(settings.ElasticsearchOsCPULoadAvg1m),
 		metricElasticsearchOsCPULoadAvg5m:              newMetricElasticsearchOsCPULoadAvg5m(settings.ElasticsearchOsCPULoadAvg5m),
-		metricElasticsearchOsCPUMemory:                 newMetricElasticsearchOsCPUMemory(settings.ElasticsearchOsCPUMemory),
 		metricElasticsearchOsCPUUsage:                  newMetricElasticsearchOsCPUUsage(settings.ElasticsearchOsCPUUsage),
+		metricElasticsearchOsMemory:                    newMetricElasticsearchOsMemory(settings.ElasticsearchOsMemory),
 		metricJvmClassesLoaded:                         newMetricJvmClassesLoaded(settings.JvmClassesLoaded),
 		metricJvmGcCollectionsCount:                    newMetricJvmGcCollectionsCount(settings.JvmGcCollectionsCount),
 		metricJvmGcCollectionsElapsed:                  newMetricJvmGcCollectionsElapsed(settings.JvmGcCollectionsElapsed),
@@ -3004,8 +3000,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchOsCPULoadAvg15m.emit(ils.Metrics())
 	mb.metricElasticsearchOsCPULoadAvg1m.emit(ils.Metrics())
 	mb.metricElasticsearchOsCPULoadAvg5m.emit(ils.Metrics())
-	mb.metricElasticsearchOsCPUMemory.emit(ils.Metrics())
 	mb.metricElasticsearchOsCPUUsage.emit(ils.Metrics())
+	mb.metricElasticsearchOsMemory.emit(ils.Metrics())
 	mb.metricJvmClassesLoaded.emit(ils.Metrics())
 	mb.metricJvmGcCollectionsCount.emit(ils.Metrics())
 	mb.metricJvmGcCollectionsElapsed.emit(ils.Metrics())
@@ -3191,14 +3187,14 @@ func (mb *MetricsBuilder) RecordElasticsearchOsCPULoadAvg5mDataPoint(ts pcommon.
 	mb.metricElasticsearchOsCPULoadAvg5m.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordElasticsearchOsCPUMemoryDataPoint adds a data point to elasticsearch.os.cpu.memory metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsCPUMemoryDataPoint(ts pcommon.Timestamp, val int64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricElasticsearchOsCPUMemory.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
-}
-
 // RecordElasticsearchOsCPUUsageDataPoint adds a data point to elasticsearch.os.cpu.usage metric.
 func (mb *MetricsBuilder) RecordElasticsearchOsCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchOsCPUUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchOsMemoryDataPoint adds a data point to elasticsearch.os.memory metric.
+func (mb *MetricsBuilder) RecordElasticsearchOsMemoryDataPoint(ts pcommon.Timestamp, val int64, memoryStateAttributeValue AttributeMemoryState) {
+	mb.metricElasticsearchOsMemory.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
