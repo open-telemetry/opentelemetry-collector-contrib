@@ -8,12 +8,12 @@ attributes:
     - set
     - flush
     - touch
-  direction: 
+  direction:
     description: Direction of data flow.
     enum:
     - sent
     - received
-  type: 
+  type:
     description: Result of cache request.
     enum:
     - hit
@@ -83,6 +83,7 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: []
+  # produced when receiver.memcachedreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   memcached.network:
     enabled: true
     description: Bytes transferred over the network.
@@ -92,6 +93,26 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [direction]
+  # produced when receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  memcached.network.sent:
+    enabled: true
+    description: Bytes sent over the network.
+    unit: by
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: []
+  # produced when receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  memcached.network.received:
+    enabled: true
+    description: Bytes received over the network.
+    unit: by
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: []
   memcached.operations:
     enabled: true
     description:  Operation counts.

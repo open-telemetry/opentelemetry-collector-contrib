@@ -6,7 +6,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0
-	github.com/prometheus/common v0.36.0
+	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.36.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
