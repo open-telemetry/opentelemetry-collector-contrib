@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.3
 	github.com/aws/aws-sdk-go v1.44.53
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/hashicorp/consul/api v1.12.0
+	github.com/hashicorp/consul/api v1.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.55.0
