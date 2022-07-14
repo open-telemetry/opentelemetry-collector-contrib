@@ -112,6 +112,24 @@ func Test_newConditionEvaluator(t *testing.T) {
 				Op: "==",
 			},
 		},
+		{
+			name: "compare int to Enum",
+			cond: &Condition{
+				Left: Value{
+					Int: tqltest.Intp(2),
+				},
+				Op: "==",
+				Right: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "TEST_ENUM_TWO",
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -122,17 +140,48 @@ func Test_newConditionEvaluator(t *testing.T) {
 			}))
 		})
 	}
+}
 
-	t.Run("invalid", func(t *testing.T) {
-		_, err := newConditionEvaluator(&Condition{
-			Left: Value{
-				String: tqltest.Strp("bear"),
+func Test_newConditionEvaluator_invalid(t *testing.T) {
+	tests := []struct {
+		name string
+		cond *Condition
+	}{
+		{
+			name: "unknown operation",
+			cond: &Condition{
+				Left: Value{
+					String: tqltest.Strp("bear"),
+				},
+				Op: "<>",
+				Right: Value{
+					String: tqltest.Strp("cat"),
+				},
 			},
-			Op: "<>",
-			Right: Value{
-				String: tqltest.Strp("cat"),
+		},
+		{
+			name: "unknown Path",
+			cond: &Condition{
+				Left: Value{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "Garbage",
+							},
+						},
+					},
+				},
+				Op: "==",
+				Right: Value{
+					String: tqltest.Strp("trash"),
+				},
 			},
-		}, DefaultFunctionsForTests(), testParsePath, testParseEnum)
-		assert.Error(t, err)
-	})
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newConditionEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			assert.Error(t, err)
+		})
+	}
 }

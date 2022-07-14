@@ -409,7 +409,9 @@ func testParsePath(val *Path) (GetSetter, error) {
 }
 
 var testSymbolTable = map[string]Enum{
-	"TEST_ENUM": 0,
+	"TEST_ENUM":     0,
+	"TEST_ENUM_ONE": 1,
+	"TEST_ENUM_TWO": 2,
 }
 
 func testParseEnum(val *Path) (*Enum, bool) {

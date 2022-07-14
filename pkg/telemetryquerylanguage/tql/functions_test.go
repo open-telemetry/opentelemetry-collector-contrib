@@ -31,6 +31,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_string"] = functionWithString
 	functions["testing_byte_slice"] = functionWithByteSlice
+	functions["testing_enum"] = functionWithEnum
 
 	tests := []struct {
 		name string
@@ -119,6 +120,23 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			name: "function call returns error",
 			inv: Invocation{
 				Function: "testing_error",
+			},
+		},
+		{
+			name: "Path not found",
+			inv: Invocation{
+				Function: "testing_enum",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "Garbage",
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
