@@ -242,7 +242,6 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 		if err != nil {
 			p.logger.Error(err.Error())
 		} else if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
-			// Export metrics first before forwarding trace to avoid being impacted by downstream trace processor errors/latency.
 			p.logger.Error(err.Error())
 		}
 
