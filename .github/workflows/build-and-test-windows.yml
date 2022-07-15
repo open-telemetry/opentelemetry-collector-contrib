@@ -45,8 +45,19 @@ jobs:
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
   windows-unittest:
+    if: ${{ always() }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:
-      - name: Unit Tests Complete
-        run: echo "Windows unit tests complete"
+      - name: Print result
+        run: echo ${{ needs.windows-unittest-matrix.result }}
+      - name: Interpret result
+        shell: bash
+        run: |
+          if [[ success == ${{ needs.windows-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

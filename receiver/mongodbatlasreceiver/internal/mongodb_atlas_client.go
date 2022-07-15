@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
@@ -135,8 +134,7 @@ func NewMongoDBAtlasClient(
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
-	s.roundTripper.Shutdown()
-	return nil
+	return s.roundTripper.Shutdown()
 }
 
 // Check both the returned error and the status of the HTTP response
