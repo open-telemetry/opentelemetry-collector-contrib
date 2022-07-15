@@ -152,13 +152,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 			name: "unknown Path",
 			comparison: &Comparison{
 				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "Garbage",
-							},
-						},
-					},
+					Enum: (*EnumSymbol)(tqltest.Strp("SYMBOL_NOT_FOUND")),
 				},
 				Op: "==",
 				Right: Value{

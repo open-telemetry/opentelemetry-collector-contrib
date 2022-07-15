@@ -123,18 +123,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "Path not found",
+			name: "Enum not found",
 			inv: Invocation{
 				Function: "testing_enum",
 				Arguments: []Value{
 					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "Garbage",
-								},
-							},
-						},
+						Enum: (*EnumSymbol)(tqltest.Strp("SYMBOL_NOT_FOUND")),
 					},
 				},
 			},
