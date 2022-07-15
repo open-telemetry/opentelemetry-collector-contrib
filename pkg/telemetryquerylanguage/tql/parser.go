@@ -210,7 +210,6 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z_][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z_][a-z0-9_]*`},
-		//{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
 }
