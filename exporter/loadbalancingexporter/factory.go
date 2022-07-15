@@ -39,7 +39,7 @@ func NewFactory() component.ExporterFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(createLogExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
 	)
 }
 
@@ -59,6 +59,6 @@ func createTracesExporter(_ context.Context, params component.ExporterCreateSett
 	return newTracesExporter(params, cfg)
 }
 
-func createLogExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	return newLogsExporter(params, cfg)
 }
