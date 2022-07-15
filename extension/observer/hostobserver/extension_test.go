@@ -184,12 +184,7 @@ func startAndStopObserver(
 	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
-	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: 10 * time.Second,
-			Endpointslister: ml,
-		},
-	}
+	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zap.NewNop())}
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
@@ -262,6 +257,10 @@ func openTestUDPPorts(t *testing.T) []*net.UDPConn {
 
 type mockNotifier struct {
 	endpointsMap map[observer.EndpointID]observer.Endpoint
+}
+
+func (m mockNotifier) ID() observer.NotifyID {
+	return "mockNotifier"
 }
 
 func (m mockNotifier) OnAdd(added []observer.Endpoint) {
