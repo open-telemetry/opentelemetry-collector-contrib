@@ -57,6 +57,43 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 	path.setter(ctx, val)
 }
 
+var symbolTable = map[string]common.Enum{
+	"SEVERITY_NUMBER_UNSPECIFIED": 0,
+	"SEVERITY_NUMBER_TRACE":       1,
+	"SEVERITY_NUMBER_TRACE2":      2,
+	"SEVERITY_NUMBER_TRACE3":      3,
+	"SEVERITY_NUMBER_TRACE4":      4,
+	"SEVERITY_NUMBER_DEBUG":       5,
+	"SEVERITY_NUMBER_DEBUG2":      6,
+	"SEVERITY_NUMBER_DEBUG3":      7,
+	"SEVERITY_NUMBER_DEBUG4":      8,
+	"SEVERITY_NUMBER_INFO":        9,
+	"SEVERITY_NUMBER_INFO2":       10,
+	"SEVERITY_NUMBER_INFO3":       11,
+	"SEVERITY_NUMBER_INFO4":       12,
+	"SEVERITY_NUMBER_WARN":        13,
+	"SEVERITY_NUMBER_WARN2":       14,
+	"SEVERITY_NUMBER_WARN3":       15,
+	"SEVERITY_NUMBER_WARN4":       16,
+	"SEVERITY_NUMBER_ERROR":       17,
+	"SEVERITY_NUMBER_ERROR2":      18,
+	"SEVERITY_NUMBER_ERROR3":      19,
+	"SEVERITY_NUMBER_ERROR4":      20,
+	"SEVERITY_NUMBER_FATAL":       21,
+	"SEVERITY_NUMBER_FATAL2":      22,
+	"SEVERITY_NUMBER_FATAL3":      23,
+	"SEVERITY_NUMBER_FATAL4":      24,
+}
+
+func ParseEnum(val *common.Path) (*common.Enum, bool) {
+	if val != nil && len(val.Fields) > 0 {
+		if enum, ok := symbolTable[val.Fields[0].Name]; ok {
+			return &enum, true
+		}
+	}
+	return nil, false
+}
+
 func ParsePath(val *common.Path) (common.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
@@ -109,9 +146,21 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 	case "flags":
 		return accessFlags(), nil
 	case "trace_id":
-		return accessTraceID(), nil
+		if len(path) == 1 {
+			return accessTraceID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringTraceID(), nil
+		}
 	case "span_id":
-		return accessSpanID(), nil
+		if len(path) == 1 {
+			return accessSpanID(), nil
+		}
+		switch path[1].Name {
+		case "string":
+			return accessStringSpanID(), nil
+		}
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
@@ -224,7 +273,7 @@ func accessObservedTimeUnixNano() pathGetSetter {
 func accessSeverityNumber() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.GetItem().(plog.LogRecord).SeverityNumber()
+			return int64(ctx.GetItem().(plog.LogRecord).SeverityNumber())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
@@ -322,6 +371,21 @@ func accessTraceID() pathGetSetter {
 	}
 }
 
+func accessStringTraceID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).TraceID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if traceID, err := common.ParseTraceID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
+				}
+			}
+		},
+	}
+}
+
 func accessSpanID() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
@@ -330,6 +394,21 @@ func accessSpanID() pathGetSetter {
 		setter: func(ctx common.TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
 				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
+			}
+		},
+	}
+}
+
+func accessStringSpanID() pathGetSetter {
+	return pathGetSetter{
+		getter: func(ctx common.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).SpanID().HexString()
+		},
+		setter: func(ctx common.TransformContext, val interface{}) {
+			if str, ok := val.(string); ok {
+				if spanID, err := common.ParseSpanID(str); err == nil {
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
+				}
 			}
 		},
 	}

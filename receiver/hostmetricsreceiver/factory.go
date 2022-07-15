@@ -40,6 +40,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "hostmetrics"
+	// The stability level of the host metrics receiver.
+	stability = component.StabilityLevelBeta
 )
 
 var (
@@ -61,7 +63,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {

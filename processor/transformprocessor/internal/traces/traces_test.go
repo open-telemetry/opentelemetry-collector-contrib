@@ -15,6 +15,7 @@
 package traces
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -97,6 +98,38 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "trace_id string",
+			path: []common.Field{
+				{
+					Name: "trace_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(traceID[:]),
+			new:  hex.EncodeToString(traceID2[:]),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetTraceID(pcommon.NewTraceID(traceID2))
+			},
+		},
+		{
+			name: "span_id string",
+			path: []common.Field{
+				{
+					Name: "span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(spanID[:]),
+			new:  hex.EncodeToString(spanID2[:]),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetSpanID(pcommon.NewSpanID(spanID2))
+			},
+		},
+		{
 			name: "trace_state",
 			path: []common.Field{
 				{
@@ -156,7 +189,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "kind",
 				},
 			},
-			orig: ptrace.SpanKindServer,
+			orig: int64(2),
 			new:  int64(3),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetKind(ptrace.SpanKindClient)
@@ -451,7 +484,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "code",
 				},
 			},
-			orig: ptrace.StatusCodeOk,
+			orig: int64(ptrace.StatusCodeOk),
 			new:  int64(ptrace.StatusCodeError),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Status().SetCode(ptrace.StatusCodeError)
@@ -766,4 +799,94 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().CopyTo(resource.Attributes())
 
 	return span, il, resource
+}
+
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "SPAN_KIND_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "SPAN_KIND_INTERNAL",
+			want: 1,
+		},
+		{
+			name: "SPAN_KIND_SERVER",
+			want: 2,
+		},
+		{
+			name: "SPAN_KIND_CLIENT",
+			want: 3,
+		},
+		{
+			name: "SPAN_KIND_PRODUCER",
+			want: 4,
+		},
+		{
+			name: "SPAN_KIND_CONSUMER",
+			want: 5,
+		},
+		{
+			name: "STATUS_CODE_UNSET",
+			want: 0,
+		},
+		{
+			name: "STATUS_CODE_OK",
+			want: 1,
+		},
+		{
+			name: "STATUS_CODE_ERROR",
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }

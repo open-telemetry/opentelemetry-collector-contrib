@@ -71,6 +71,7 @@ func TestMongodbIntegration(t *testing.T) {
 				Endpoint: net.JoinHostPort(hostname, "27017"),
 			},
 		}
+		cfg.Insecure = true
 
 		consumer := new(consumertest.MetricsSink)
 		settings := componenttest.NewNopReceiverCreateSettings()
@@ -108,6 +109,7 @@ func TestMongodbIntegration(t *testing.T) {
 				Endpoint: net.JoinHostPort(hostname, "27018"),
 			},
 		}
+		cfg.Insecure = true
 
 		consumer := new(consumertest.MetricsSink)
 		settings := componenttest.NewNopReceiverCreateSettings()
@@ -126,7 +128,7 @@ func TestMongodbIntegration(t *testing.T) {
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
 	})
 }
 

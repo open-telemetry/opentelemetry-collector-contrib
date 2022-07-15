@@ -24,15 +24,15 @@ var alwaysTrue = func(ctx TransformContext) bool {
 	return true
 }
 
-func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser) (condFunc, error) {
+func newConditionEvaluator(cond *Condition, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (condFunc, error) {
 	if cond == nil {
 		return alwaysTrue, nil
 	}
-	left, err := NewGetter(cond.Left, functions, pathParser)
+	left, err := NewGetter(cond.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
-	right, err := NewGetter(cond.Right, functions, pathParser)
+	right, err := NewGetter(cond.Right, functions, pathParser, enumParser)
 	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err

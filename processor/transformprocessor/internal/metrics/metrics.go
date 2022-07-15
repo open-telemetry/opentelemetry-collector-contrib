@@ -66,6 +66,29 @@ func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
 	path.setter(ctx, val)
 }
 
+var symbolTable = map[string]common.Enum{
+	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    0,
+	"AGGREGATION_TEMPORALITY_DELTA":          1,
+	"AGGREGATION_TEMPORALITY_CUMULATIVE":     2,
+	"FLAG_NONE":                              0,
+	"FLAG_NO_RECORDED_VALUE":                 1,
+	"METRIC_DATA_TYPE_NONE":                  0,
+	"METRIC_DATA_TYPE_GAUGE":                 1,
+	"METRIC_DATA_TYPE_SUM":                   2,
+	"METRIC_DATA_TYPE_HISTOGRAM":             3,
+	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": 4,
+	"METRIC_DATA_TYPE_SUMMARY":               5,
+}
+
+func ParseEnum(val *common.Path) (*common.Enum, bool) {
+	if val != nil && len(val.Fields) > 0 {
+		if enum, ok := symbolTable[val.Fields[0].Name]; ok {
+			return &enum, true
+		}
+	}
+	return nil, false
+}
+
 func ParsePath(val *common.Path) (common.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
@@ -304,7 +327,7 @@ func accessMetricUnit() pathGetSetter {
 func accessMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx common.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().DataType().String()
+			return int64(ctx.(metricTransformContext).GetMetric().DataType())
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
@@ -574,27 +597,27 @@ func accessFlags() pathGetSetter {
 		getter: func(ctx common.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return ctx.GetItem().(pmetric.NumberDataPoint).Flags()
+				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).Flags()
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags()
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
 			case pmetric.SummaryDataPoint:
-				return ctx.GetItem().(pmetric.SummaryDataPoint).Flags()
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
 			}
 			return nil
 		},
 		setter: func(ctx common.TransformContext, val interface{}) {
-			if newFlags, ok := val.(pmetric.MetricDataPointFlags); ok {
+			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(newFlags)
+					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(newFlags)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(newFlags)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(newFlags)
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				}
 			}
 		},

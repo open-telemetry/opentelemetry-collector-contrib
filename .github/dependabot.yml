@@ -139,10 +139,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/observiqexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
     schedule:
       interval: "weekly"
@@ -632,6 +628,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/simpleprometheusreceiver/examples/federation/prom-counter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/solacereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
