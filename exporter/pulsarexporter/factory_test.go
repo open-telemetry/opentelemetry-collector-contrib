@@ -42,7 +42,7 @@ func Test_createDefaultConfig(t *testing.T) {
 
 func TestCreateTracesExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "pulsar://unknown:6650"
+	cfg.Endpoint = ""
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
 	r, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
@@ -53,7 +53,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 
 func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "pulsar://unknown:6650"
+	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
 	mr, err := mf.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
@@ -63,7 +63,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 
 func TestCreateLogsExporter_err(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.Endpoint = "pulsar://unknown:6650"
+	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
 	mr, err := mf.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
