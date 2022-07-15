@@ -118,7 +118,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		expectedErr           error
 	}{
 		{
-			metrics: createTestMetrics(attrs, "test-host", "test-metrics", "v0.0.1"),
+			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -128,7 +128,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			expectedErr:   errors.New("no buckets mode and no send count sum are incompatible"),
 		},
 		{
-			metrics: createTestMetrics(attrs, "test-host", "test-metrics", "v0.0.1"),
+			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -171,7 +171,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			expectedErr:           nil,
 		},
 		{
-			metrics: createTestMetrics(attrs, "test-host", "test-metrics", "v0.0.1"),
+			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
@@ -217,7 +217,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			metrics: createTestMetrics(attrs, "test-host", "test-metrics", "v0.0.1"),
+			metrics: createTestMetrics(attrs),
 			source: source.Source{
 				Kind:       source.AWSECSFargateKind,
 				Identifier: "task_arn",
@@ -317,7 +317,12 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
-func createTestMetrics(additionalAttributes map[string]string, host, name, version string) pmetric.Metrics {
+func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
+	const (
+		host    = "test-host"
+		name    = "test-metrics"
+		version = "v0.0.1"
+	)
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics()
 	rm := rms.AppendEmpty()
