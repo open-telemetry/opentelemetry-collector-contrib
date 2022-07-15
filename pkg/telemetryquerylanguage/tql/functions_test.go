@@ -361,13 +361,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_enum",
 				Arguments: []Value{
 					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "TEST_ENUM",
-								},
-							},
-						},
+						Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
 					},
 				},
 			},

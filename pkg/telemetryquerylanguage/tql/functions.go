@@ -21,7 +21,7 @@ import (
 
 type PathExpressionParser func(*Path) (GetSetter, error)
 
-type EnumParser func(*Path) (*Enum, bool)
+type EnumParser func(*EnumSymbol) (*Enum, error)
 
 // NewFunctionCall Visible for testing
 func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
@@ -127,8 +127,8 @@ func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Val
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Enum":
-		arg, ok := enumParser(argDef.Path)
-		if !ok {
+		arg, err := enumParser(argDef.Enum)
+		if err != nil {
 			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
 		*args = append(*args, reflect.ValueOf(*arg))

@@ -80,10 +80,15 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 		return &literal{value: ([]byte)(*b)}, nil
 	}
 
-	if val.Path != nil {
-		if enum, ok := enumParser(val.Path); ok {
-			return &literal{value: int64(*enum)}, nil
+	if val.Enum != nil {
+		enum, err := enumParser(val.Enum)
+		if err != nil {
+			return nil, err
 		}
+		return &literal{value: int64(*enum)}, nil
+	}
+
+	if val.Path != nil {
 		return pathParser(val.Path)
 	}
 

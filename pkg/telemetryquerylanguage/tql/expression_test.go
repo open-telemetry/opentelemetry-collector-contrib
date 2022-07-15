@@ -101,26 +101,7 @@ func Test_newGetter(t *testing.T) {
 		{
 			name: "enum",
 			val: Value{
-				Path: &Path{
-					Fields: []Field{
-						{
-							Name: "TEST_ENUM",
-						},
-					},
-				},
-			},
-			want: int64(0),
-		},
-		{
-			name: "enum",
-			val: Value{
-				Path: &Path{
-					Fields: []Field{
-						{
-							Name: "TEST_ENUM_ONE",
-						},
-					},
-				},
+				Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_ONE")),
 			},
 			want: int64(1),
 		},

@@ -99,13 +99,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 			name: "compare Enum to int",
 			comparison: &Comparison{
 				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "TEST_ENUM",
-							},
-						},
-					},
+					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
 				},
 				Right: Value{
 					Int: tqltest.Intp(0),
@@ -121,13 +115,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 				},
 				Op: "==",
 				Right: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "TEST_ENUM_TWO",
-							},
-						},
-					},
+					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_TWO")),
 				},
 			},
 		},
