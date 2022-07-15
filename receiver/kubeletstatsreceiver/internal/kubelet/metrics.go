@@ -28,13 +28,15 @@ func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
-	mbs *metadata.MetricsBuilders) []pmetric.Metrics {
+	mbs *metadata.MetricsBuilders,
+	emitMetricsWithDirectionAttribute bool) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
-		metadata:              metadata,
-		logger:                logger,
-		metricGroupsToCollect: metricGroupsToCollect,
-		time:                  time.Now(),
-		mbs:                   mbs,
+		metadata:                          metadata,
+		logger:                            logger,
+		metricGroupsToCollect:             metricGroupsToCollect,
+		time:                              time.Now(),
+		mbs:                               mbs,
+		emitMetricsWithDirectionAttribute: emitMetricsWithDirectionAttribute,
 	}
 	acc.nodeStats(summary.Node)
 	for _, podStats := range summary.Pods {

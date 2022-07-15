@@ -21,16 +21,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+func addNetworkMetricsWithDirection(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetricsWithDirection, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	recordNetworkDataPoint(mb, networkMetrics.IO, s, currentTime)
-	recordNetworkDataPoint(mb, networkMetrics.Errors, s, currentTime)
+	recordNetworkDataPointWithDirection(mb, networkMetrics.IO, s, currentTime)
+	recordNetworkDataPointWithDirection(mb, networkMetrics.Errors, s, currentTime)
 }
 
-func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+func recordNetworkDataPointWithDirection(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s.RxBytes == nil && s.TxBytes == nil {
 		return
 	}

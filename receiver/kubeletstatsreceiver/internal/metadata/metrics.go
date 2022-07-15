@@ -109,17 +109,17 @@ var ContainerFilesystemMetrics = FilesystemMetrics{
 	Usage:     (*MetricsBuilder).RecordContainerFilesystemUsageDataPoint,
 }
 
-type NetworkMetrics struct {
+type NetworkMetricsWithDirection struct {
 	IO     RecordIntDataPointWithDirectionFunc
 	Errors RecordIntDataPointWithDirectionFunc
 }
 
-var NodeNetworkMetrics = NetworkMetrics{
+var NodeNetworkMetricsWithDirection = NetworkMetricsWithDirection{
 	IO:     (*MetricsBuilder).RecordK8sNodeNetworkIoDataPoint,
 	Errors: (*MetricsBuilder).RecordK8sNodeNetworkErrorsDataPoint,
 }
 
-var PodNetworkMetrics = NetworkMetrics{
+var PodNetworkMetricsWithDirection = NetworkMetricsWithDirection{
 	IO:     (*MetricsBuilder).RecordK8sPodNetworkIoDataPoint,
 	Errors: (*MetricsBuilder).RecordK8sPodNetworkErrorsDataPoint,
 }
