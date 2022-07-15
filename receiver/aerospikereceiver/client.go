@@ -15,6 +15,7 @@
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"sync"
@@ -52,6 +53,7 @@ type clientConfig struct {
 	timeout               time.Duration
 	logger                *zap.Logger
 	collectClusterMetrics bool
+	tls                   *tls.Config
 }
 
 type nodeGetter interface {
@@ -95,6 +97,11 @@ func newASClient(cfg *clientConfig, ngf nodeGetterFactoryFunc) (*defaultASClient
 	if authEnabled {
 		policy.User = cfg.username
 		policy.Password = cfg.password
+	}
+
+	if cfg.tls != nil {
+		// enable TLS
+		policy.TlsConfig = cfg.tls
 	}
 
 	cluster, err := ngf(cfg, policy, authEnabled)

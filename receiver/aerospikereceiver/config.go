@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -34,17 +35,19 @@ var (
 	errEmptyPassword   = errors.New("password must be set if username is set")
 	errEmptyUsername   = errors.New("username must be set if password is set")
 	errNegativeTimeout = errors.New("timeout must be non-negative")
+	errFailedTLSLoad   = errors.New("failed to load TLS config")
 )
 
 // Config is the receiver configuration
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                string                   `mapstructure:"endpoint"`
-	Username                                string                   `mapstructure:"username"`
-	Password                                string                   `mapstructure:"password"`
-	CollectClusterMetrics                   bool                     `mapstructure:"collect_cluster_metrics"`
-	Timeout                                 time.Duration            `mapstructure:"timeout"`
-	Metrics                                 metadata.MetricsSettings `mapstructure:"metrics"`
+	Endpoint                                string                      `mapstructure:"endpoint"`
+	Username                                string                      `mapstructure:"username"`
+	Password                                string                      `mapstructure:"password"`
+	CollectClusterMetrics                   bool                        `mapstructure:"collect_cluster_metrics"`
+	Timeout                                 time.Duration               `mapstructure:"timeout"`
+	Metrics                                 metadata.MetricsSettings    `mapstructure:"metrics"`
+	TLS                                     *configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 }
 
 // Validate validates the values of the given Config, and returns an error if validation fails
@@ -82,6 +85,13 @@ func (c *Config) Validate() error {
 	}
 	if c.Timeout.Milliseconds() < 0 {
 		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: must be positive", errNegativeTimeout))
+	}
+
+	if c.TLS != nil {
+		_, err := c.TLS.LoadTLSConfig()
+		if err != nil {
+			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err))
+		}
 	}
 
 	return allErrs

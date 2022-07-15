@@ -16,6 +16,7 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strconv"
@@ -60,6 +61,14 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		return nil, fmt.Errorf("%w: %s", errBadPort, err)
 	}
 
+	var tlsCfg *tls.Config
+	if cfg.TLS != nil {
+		tlsCfg, err = cfg.TLS.LoadTLSConfig()
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err)
+		}
+	}
+
 	return &aerospikeReceiver{
 		logger:   params.Logger,
 		config:   cfg,
@@ -73,6 +82,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 				timeout:               cfg.Timeout,
 				logger:                params.Logger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
+				tls:                   tlsCfg,
 			}
 			return newASClient(
 				conf,
