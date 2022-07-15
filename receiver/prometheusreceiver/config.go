@@ -55,7 +55,9 @@ type Config struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 	// DisableStartTime disables start time calculation of all metrics, which significantly reduces the memory usage of the receiver.
-	// Removing the start timestamp may limit the ability of other components and backends to offer full functionality with these metrics.
+	// Start timestamp is strongly recommended for Sum, Histogram, and ExponentialHistogram points, removing the start timestamp
+	// may limit the ability of other components and backends to offer full functionality with these metrics.
+	// Use only if you know what you are doing.
 	DisableStartTime bool `mapstructure:"disable_start_time"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
