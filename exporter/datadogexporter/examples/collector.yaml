@@ -1,16 +1,83 @@
+# Read more about receivers here:
+# https://opentelemetry.io/docs/collector/configuration/#receivers
 receivers:
-  nop:
+  # The OTLP receiver is the most common receiver. It is the default way to send data from
+  # OpenTelemetry instrumentation libraries. Documentation on this receiver is available here:
+  # https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver/otlpreceiver#readme
+  otlp:
+    # Protocols defines the protocols enabled for this receiver. At least one protocol of choice must
+    # be enabled.
+    protocols:
+      # The presence of the http section enables the HTTP server on the default port (4318)
+      http:
+      # The presence of the gRPC section enables the gRPC server on the default port (4317)
+      grpc:
 
+# Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
+#
+# Some processors are recommended in all pipelines:
+# https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor#recommended-processors
 processors:
-  nop:
+  # The batch processor batches telemetry data into larger payloads.
+  # It is necessary for the Datadog traces exporter to work optimally,
+  # and is recommended for any production pipeline.
+  batch:
 
+# Read more about exporters here:
+# https://opentelemetry.io/docs/collector/configuration/#exporters
 exporters:
+  # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
   datadog:
     ## @param hostname - string - optional
     ## A custom hostname.
     ## If unset, this will be determined automatically if possible.
     #
     # hostname: customhostname
+
+    ## @param env - string - optional
+    ## The environment for unified service tagging.
+    ## Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
+    ## This option will be removed in v0.52.0.
+    ## If unset it will be determined from the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
+    #
+    # env: prod
+
+    ## @param service - string - optional
+    ## The service for unified service tagging.
+    ## Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
+    ## This option will be removed in v0.52.0.
+    ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
+    #
+    # service: myservice
+
+    ## @param version - string - optional
+    ## The version for unified service tagging.
+    ## Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
+    ## This option will be removed in v0.52.0.
+    ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
+    #
+    # version: myversion
+
+    ## @param tags - list of strings - optional - default: []
+    ## The list of tags to send as host tags.
+    ## Deprecated: [v0.49.0] Use `host_metadata::tags` instead.
+    ## This option will be removed in v0.52.0.
+    ## If unset it will be determined from the `DD_TAGS` environment variable, specified
+    ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
+    #
+    # tags: []
+
+    ## @params send_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::enabled` instead.
+    ## This option will be removed in v0.52.0.
+    #
+    # send_metadata: true
+
+    ## @params use_resource_metadata - boolean - optional - default: true
+    ## Deprecated: [v0.49.0] Use `host_metadata::hostname_source` instead.
+    ## This option will be removed in v0.52.0.
+    #
+    # use_resource_metadata: true
 
     ## @param only_metadata - boolean - optional - default: false
     ## Whether to send only metadata. This is useful for agent-collector
@@ -26,8 +93,9 @@ exporters:
       ## @ param key - string - required
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
+      ## If unset it will be determined from the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
-      key: "<YOUR API KEY>"
+      key: ${DD_API_KEY}
 
       ## @param site - string - optional - default: datadoghq.com
       ## The site of the Datadog intake to send Agent data to.
@@ -68,6 +136,14 @@ exporters:
       ## to metric tags.
       #
       # resource_attributes_as_tags: false
+
+      ## Deprecated: [0.54.0] use instrumentation_scope_metadata_as_tags instead in favor of
+      ## https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
+      ## Both must not be enabled at the same time.
+      ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
+      ## Set to true to add metadata about the instrumentation library that created a metric.
+      #
+      # instrumentation_library_metadata_as_tags: false
 
       ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
       ## Set to true to add metadata about the instrumentation scope that created a metric.
@@ -114,11 +190,6 @@ exporters:
     ## Trace exporter specific configuration.
     #
     # traces:
-      ## @param max_events_per_second - integer - optional - default: 200
-      ## Maximum number of APM Analytics events per second to sample.
-      #
-      # max_events_per_second: 200
-
       ## @param endpoint - string - optional
       ## The host of the Datadog intake server to send traces to.
       ## If unset, the value is obtained through the `site` parameter in the `api` section.
@@ -183,10 +254,19 @@ exporters:
       #
       # tags: []
 
-
+# `service` defines the Collector pipelines, observability settings and extensions.
 service:
+  # `pipelines` defines the data pipelines. Multiple data pipelines for a type may be defined.
   pipelines:
+    # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
+    metrics:
+      # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog]
+    # Pipelines starting with `traces` or `traces/` define a traces pipeline.
     traces:
-      receivers: [nop]
-      processors: [nop]
+      # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
+      receivers: [otlp]
+      processors: [batch]
       exporters: [datadog]
