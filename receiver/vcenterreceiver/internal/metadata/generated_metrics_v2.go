@@ -51,7 +51,6 @@ type MetricsSettings struct {
 	VcenterResourcePoolCPUUsage            MetricSettings `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryShares        MetricSettings `mapstructure:"vcenter.resource_pool.memory.shares"`
 	VcenterResourcePoolMemoryUsage         MetricSettings `mapstructure:"vcenter.resource_pool.memory.usage"`
-	VcenterVMCPUUtilization                MetricSettings `mapstructure:"vcenter.vm.cpu.utilization"`
 	VcenterVMDiskLatencyAvg                MetricSettings `mapstructure:"vcenter.vm.disk.latency.avg"`
 	VcenterVMDiskLatencyAvgRead            MetricSettings `mapstructure:"vcenter.vm.disk.latency.avg.read"`
 	VcenterVMDiskLatencyAvgWrite           MetricSettings `mapstructure:"vcenter.vm.disk.latency.avg.write"`
@@ -172,9 +171,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		VcenterResourcePoolMemoryUsage: MetricSettings{
-			Enabled: true,
-		},
-		VcenterVMCPUUtilization: MetricSettings{
 			Enabled: true,
 		},
 		VcenterVMDiskLatencyAvg: MetricSettings{
@@ -2120,55 +2116,6 @@ func newMetricVcenterResourcePoolMemoryUsage(settings MetricSettings) metricVcen
 	return m
 }
 
-type metricVcenterVMCPUUtilization struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.vm.cpu.utilization metric with initial data.
-func (m *metricVcenterVMCPUUtilization) init() {
-	m.data.SetName("vcenter.vm.cpu.utilization")
-	m.data.SetDescription("The CPU utilization of the virtual machine.")
-	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-}
-
-func (m *metricVcenterVMCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterVMCPUUtilization) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterVMCPUUtilization) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterVMCPUUtilization(settings MetricSettings) metricVcenterVMCPUUtilization {
-	m := metricVcenterVMCPUUtilization{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricVcenterVMDiskLatencyAvg struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -3030,7 +2977,6 @@ type MetricsBuilder struct {
 	metricVcenterResourcePoolCPUUsage            metricVcenterResourcePoolCPUUsage
 	metricVcenterResourcePoolMemoryShares        metricVcenterResourcePoolMemoryShares
 	metricVcenterResourcePoolMemoryUsage         metricVcenterResourcePoolMemoryUsage
-	metricVcenterVMCPUUtilization                metricVcenterVMCPUUtilization
 	metricVcenterVMDiskLatencyAvg                metricVcenterVMDiskLatencyAvg
 	metricVcenterVMDiskLatencyAvgRead            metricVcenterVMDiskLatencyAvgRead
 	metricVcenterVMDiskLatencyAvgWrite           metricVcenterVMDiskLatencyAvgWrite
@@ -3098,7 +3044,6 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricVcenterResourcePoolCPUUsage:            newMetricVcenterResourcePoolCPUUsage(settings.VcenterResourcePoolCPUUsage),
 		metricVcenterResourcePoolMemoryShares:        newMetricVcenterResourcePoolMemoryShares(settings.VcenterResourcePoolMemoryShares),
 		metricVcenterResourcePoolMemoryUsage:         newMetricVcenterResourcePoolMemoryUsage(settings.VcenterResourcePoolMemoryUsage),
-		metricVcenterVMCPUUtilization:                newMetricVcenterVMCPUUtilization(settings.VcenterVMCPUUtilization),
 		metricVcenterVMDiskLatencyAvg:                newMetricVcenterVMDiskLatencyAvg(settings.VcenterVMDiskLatencyAvg),
 		metricVcenterVMDiskLatencyAvgRead:            newMetricVcenterVMDiskLatencyAvgRead(settings.VcenterVMDiskLatencyAvgRead),
 		metricVcenterVMDiskLatencyAvgWrite:           newMetricVcenterVMDiskLatencyAvgWrite(settings.VcenterVMDiskLatencyAvgWrite),
@@ -3243,7 +3188,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterResourcePoolCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryUsage.emit(ils.Metrics())
-	mb.metricVcenterVMCPUUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyAvg.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyAvgRead.emit(ils.Metrics())
 	mb.metricVcenterVMDiskLatencyAvgWrite.emit(ils.Metrics())
@@ -3447,11 +3391,6 @@ func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySharesDataPoint(ts pcom
 // RecordVcenterResourcePoolMemoryUsageDataPoint adds a data point to vcenter.resource_pool.memory.usage metric.
 func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterResourcePoolMemoryUsage.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterVMCPUUtilizationDataPoint adds a data point to vcenter.vm.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterVMCPUUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.
