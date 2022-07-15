@@ -31,7 +31,7 @@ Invocations as Values allows calling functions as parameters to other functions.
 
 #### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of string identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the TQL.**  Instead, the user must provide a `PathExpressionParser` that the TQL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
+A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the TQL.**  Instead, the user must provide a `PathExpressionParser` that the TQL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
@@ -39,6 +39,7 @@ A Path Value is a reference to a telemetry field.  Paths are made up of string i
 
 Example Paths
 - `name`
+- `value_double`
 - `resource.name`
 - `resource.attributes["key"]`
 
@@ -63,7 +64,7 @@ Example Literals
 
 #### Enums
 
-Enums are a special type of Path that gets interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by the TQL.** Instead, the user must provide a `EnumParser` that the TQL can use to interpret the Enum.  The `EnumParser` returns an `int64` instead of a function, which means that the Enum's numeric value is retrieved during parsing instead of during execution.
+Enums are uppercase identifiers that get interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by the TQL.** Instead, the user must provide a `EnumParser` that the TQL can use to interpret the Enum.  The `EnumParser` returns an `int64` instead of a function, which means that the Enum's numeric value is retrieved during parsing instead of during execution.
 
 Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.
 
