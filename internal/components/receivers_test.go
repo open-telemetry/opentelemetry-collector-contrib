@@ -206,7 +206,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "otlp",
 		},
 		{
-			receiver: "otlpjsonreceiver",
+			receiver: "otlpjsonfile",
 		},
 		{
 			receiver:     "podman_stats",
