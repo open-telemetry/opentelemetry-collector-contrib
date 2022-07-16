@@ -45,13 +45,13 @@ func NewFactory() component.ReceiverFactory {
 		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability))
 }
 
-type cfg struct {
+type Cfg struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	fileconsumer.Config     `mapstructure:",squash"`
 }
 
 func createDefaultConfig() config.Receiver {
-	return &cfg{
+	return &Cfg{
 		Config:           *fileconsumer.NewConfig(),
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 	}
@@ -81,7 +81,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := configuration.(*Cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		l, err := logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
@@ -105,7 +105,7 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := configuration.(*Cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		m, err := metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
@@ -129,7 +129,7 @@ func createTracesReceiver(ctx context.Context, settings component.ReceiverCreate
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := configuration.(*Cfg).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartTracesOp(ctx)
 		t, err := tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {

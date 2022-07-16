@@ -47,7 +47,7 @@ func TestDefaultConfig(t *testing.T) {
 func TestFileTracesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*cfg)
+	cfg := createDefaultConfig().(*Cfg)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
@@ -74,7 +74,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	tempFolder, err := os.MkdirTemp("", "file")
 	assert.NoError(t, err)
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*cfg)
+	cfg := createDefaultConfig().(*Cfg)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
@@ -101,7 +101,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	tempFolder, err := os.MkdirTemp("", "file")
 	assert.NoError(t, err)
 	factory := NewFactory()
-	cfg := createDefaultConfig().(*cfg)
+	cfg := createDefaultConfig().(*Cfg)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
@@ -124,8 +124,8 @@ func TestFileLogsReceiver(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func testdataConfigYamlAsMap() *cfg {
-	return &cfg{
+func testdataConfigYamlAsMap() *Cfg {
+	return &Cfg{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		Config: fileconsumer.Config{
 			IncludeFileName:         true,
