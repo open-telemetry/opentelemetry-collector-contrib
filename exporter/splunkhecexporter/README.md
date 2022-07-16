@@ -20,6 +20,7 @@ The following configuration options can also be configured:
 - `source` (no default): Optional Splunk source: https://docs.splunk.com/Splexicon:Source
 - `sourcetype` (no default): Optional Splunk source type: https://docs.splunk.com/Splexicon:Sourcetype
 - `index` (no default): Splunk index, optional name of the Splunk index targeted
+- `use_multi_metric_format` (default: false): Combines metrics with the same metadata to reduce ingest using the [multiple-metric JSON format](https://docs.splunk.com/Documentation/Splunk/9.0.0/Metrics/GetMetricsInOther#The_multiple-metric_JSON_format). Applicable in the `metrics` pipeline only.
 - `max_connections` (default: 100): Maximum HTTP connections to use simultaneously when sending data.
 - `disable_compression` (default: false): Whether to disable gzip compression over HTTP.
 - `timeout` (default: 10s): HTTP timeout when sending data.

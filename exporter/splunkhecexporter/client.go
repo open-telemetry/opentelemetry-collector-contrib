@@ -396,6 +396,14 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 
 		// Parsing metric record to Splunk event.
 		events := mapMetricToSplunkEvent(res.Resource(), metrics.At(k), c.config, c.logger)
+		if c.config.UseMultiMetricFormat {
+			merged, err := mergeEventsToMultiMetricFormat(events)
+			if err != nil {
+				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err)))
+			} else {
+				events = merged
+			}
+		}
 		for _, event := range events {
 			// JSON encoding event and writing to buffer.
 			b, err := jsoniter.Marshal(event)

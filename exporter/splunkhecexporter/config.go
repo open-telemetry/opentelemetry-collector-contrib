@@ -107,6 +107,8 @@ type Config struct {
 	HecToOtelAttrs splunk.HecToOtelAttrs `mapstructure:"hec_metadata_to_otel_attrs"`
 	// HecFields creates a mapping from attributes to HEC fields.
 	HecFields OtelToHecFields `mapstructure:"otel_to_hec_fields"`
+	// UseMultiMetricFormat combines metric events to save space during ingestion.
+	UseMultiMetricFormat bool `mapstructure:"use_multi_metric_format"`
 }
 
 func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {

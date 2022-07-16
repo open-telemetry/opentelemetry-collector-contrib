@@ -15,8 +15,12 @@
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
 import (
+	"hash/fnv"
 	"math"
 	"strconv"
+	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -232,7 +236,20 @@ func createEvent(timestamp pcommon.Timestamp, host string, source string, source
 		Event:      splunk.HecEventMetricType,
 		Fields:     fields,
 	}
+}
 
+func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
+	return &splunk.Event{
+		Time:       event.Time,
+		Host:       event.Host,
+		Source:     event.Source,
+		SourceType: event.SourceType,
+		Index:      event.Index,
+		Event:      event.Event,
+		Fields: cloneMapWithSelector(event.Fields, func(key string) bool {
+			return !strings.HasPrefix(key, splunkMetricValue)
+		}),
+	}
 }
 
 func populateAttributes(fields map[string]interface{}, attributeMap pcommon.Map) {
@@ -246,6 +263,16 @@ func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	newFields := make(map[string]interface{}, len(fields))
 	for k, v := range fields {
 		newFields[k] = v
+	}
+	return newFields
+}
+
+func cloneMapWithSelector(fields map[string]interface{}, selector func(string) bool) map[string]interface{} {
+	newFields := make(map[string]interface{}, len(fields))
+	for k, v := range fields {
+		if selector(k) {
+			newFields[k] = v
+		}
 	}
 	return newFields
 }
@@ -266,4 +293,64 @@ func timestampToSecondsWithMillisecondPrecision(ts pcommon.Timestamp) *float64 {
 
 func float64ToDimValue(f float64) string {
 	return strconv.FormatFloat(f, 'g', -1, 64)
+}
+
+// merge metric events to adhere to the multimetric format event.
+func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, error) {
+	merges := map[uint32][]int{}
+	hasher := fnv.New32a()
+	for i, e := range events {
+		cloned := copyEventWithoutValues(e)
+		data, err := jsoniter.Marshal(cloned)
+		if err != nil {
+			return nil, err
+		}
+		_, err = hasher.Write(data)
+		if err != nil {
+			return nil, err
+		}
+		hashed := hasher.Sum32()
+		hasher.Reset()
+		matches := merges[hashed]
+		if len(matches) == 0 {
+			merges[hashed] = []int{i}
+		} else {
+			merges[hashed] = append(merges[hashed], i)
+		}
+	}
+	var mergedEvents []*splunk.Event
+
+	for _, merge := range merges {
+		mergeDestination := events[merge[0]]
+		for j := 1; j < len(merge); j++ {
+			currentEvent := events[j]
+			// check no collision for this event values:
+			eventValues := map[string]interface{}{}
+			collisionFound := false
+			for field, value := range currentEvent.Fields {
+				if strings.HasPrefix(field, splunkMetricValue) {
+					if _, ok := mergeDestination.Fields[field]; ok {
+						// collision, same value. Stop iterating over the contents of the event.
+						collisionFound = true
+						break
+					}
+					eventValues[field] = value
+				}
+			}
+			// if we find those two events can indeed be merged as they don't have metric names in common,
+			// add the fields we collected to the merged event:
+			if !collisionFound {
+				for k, v := range eventValues {
+					mergeDestination.Fields[k] = v
+				}
+			} else {
+				// we found there was a collision, so add the event we were looking at to the list of events,
+				// and abandon merging its fields:
+				mergedEvents = append(mergedEvents, currentEvent)
+			}
+		}
+		mergedEvents = append(mergedEvents, mergeDestination)
+	}
+
+	return mergedEvents, nil
 }
