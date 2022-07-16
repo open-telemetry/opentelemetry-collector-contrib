@@ -44,13 +44,14 @@ var ValidMetricGroups = map[MetricGroup]bool{
 }
 
 type metricDataAccumulator struct {
-	m                                 []pmetric.Metrics
-	metadata                          Metadata
-	logger                            *zap.Logger
-	metricGroupsToCollect             map[MetricGroup]bool
-	time                              time.Time
-	mbs                               *metadata.MetricsBuilders
-	emitMetricsWithDirectionAttribute bool
+	m                                    []pmetric.Metrics
+	metadata                             Metadata
+	logger                               *zap.Logger
+	metricGroupsToCollect                map[MetricGroup]bool
+	time                                 time.Time
+	mbs                                  *metadata.MetricsBuilders
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
@@ -65,7 +66,9 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if a.emitMetricsWithDirectionAttribute {
 		addNetworkMetricsWithDirection(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetricsWithDirection, s.Network, currentTime)
 	}
-
+	if a.emitMetricsWithoutDirectionAttribute {
+		addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
+	}
 	// todo s.Runtime.ImageFs
 
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
@@ -85,6 +88,9 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	if a.emitMetricsWithDirectionAttribute {
 		addNetworkMetricsWithDirection(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetricsWithDirection, s.Network, currentTime)
+	}
+	if a.emitMetricsWithoutDirectionAttribute {
+		addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 	}
 
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
