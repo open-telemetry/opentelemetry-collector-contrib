@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
 import (
@@ -196,9 +195,7 @@ func populateSpan(
 	addBool(seg.Traced, awsxray.AWSXRayTracedAttribute, &attrs)
 
 	addAnnotations(seg.Annotations, &attrs)
-	addMetadata(seg.Metadata, &attrs)
-
-	return nil
+	return addMetadata(seg.Metadata, &attrs)
 }
 
 func populateResource(seg *awsxray.Segment, rs *pcommon.Resource) {

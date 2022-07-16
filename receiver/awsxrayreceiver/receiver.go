@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver"
 
 import (
@@ -95,7 +94,9 @@ func (x *xrayReceiver) Start(ctx context.Context, host component.Host) error {
 	// TODO: Might want to pass `host` into read() below to report a fatal error
 	x.poller.Start(ctx)
 	go x.start()
-	go x.server.ListenAndServe()
+	go func() {
+		_ = x.server.ListenAndServe()
+	}()
 	x.settings.Logger.Info("X-Ray TCP proxy server started")
 	return nil
 }
