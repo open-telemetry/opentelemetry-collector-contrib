@@ -5,7 +5,7 @@ change_type: enhancement
 component: splunkhecexporter
 
 # A brief description of the change
-note: Allow merging metric events.
+note: "Allow merging metric events."
 
 # One or more tracking issues related to the change
 issues: [11532]
