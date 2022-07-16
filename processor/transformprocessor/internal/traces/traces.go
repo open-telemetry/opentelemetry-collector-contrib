@@ -115,16 +115,14 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 		if len(path) == 1 {
 			return accessTraceID(), nil
 		}
-		switch path[1].Name {
-		case "string":
+		if path[1].Name == "string" {
 			return accessStringTraceID(), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
 			return accessSpanID(), nil
 		}
-		switch path[1].Name {
-		case "string":
+		if path[1].Name == "string" {
 			return accessStringSpanID(), nil
 		}
 	case "trace_state":
