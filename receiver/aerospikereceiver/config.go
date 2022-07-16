@@ -18,9 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 
+	as "github.com/aerospike/aerospike-client-go/v5"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -29,19 +29,21 @@ import (
 )
 
 var (
-	errBadEndpoint     = errors.New("endpoint must be specified as host:port")
-	errBadPort         = errors.New("invalid port in endpoint")
-	errEmptyEndpoint   = errors.New("endpoint must be specified")
-	errEmptyPassword   = errors.New("password must be set if username is set")
-	errEmptyUsername   = errors.New("username must be set if password is set")
-	errNegativeTimeout = errors.New("timeout must be non-negative")
-	errFailedTLSLoad   = errors.New("failed to load TLS config")
+	errBadEndpoint          = errors.New("endpoint must include a Host string, Port int, and TLSName string is using TLS")
+	errBadPort              = errors.New("invalid port in endpoint")
+	errEmptyEndpointHost    = errors.New("endpoint host must be specified")
+	errEmptyEndpointPort    = errors.New("endpoint port must be specified")
+	errEmptyEndpointTLSName = errors.New("endpoint TLSName must be specified")
+	errEmptyPassword        = errors.New("password must be set if username is set")
+	errEmptyUsername        = errors.New("username must be set if password is set")
+	errNegativeTimeout      = errors.New("timeout must be non-negative")
+	errFailedTLSLoad        = errors.New("failed to load TLS config")
 )
 
 // Config is the receiver configuration
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                string                      `mapstructure:"endpoint"`
+	Endpoint                                as.Host                     `mapstructure:"endpoint"`
 	Username                                string                      `mapstructure:"username"`
 	Password                                string                      `mapstructure:"password"`
 	CollectClusterMetrics                   bool                        `mapstructure:"collect_cluster_metrics"`
@@ -54,22 +56,22 @@ type Config struct {
 func (c *Config) Validate() error {
 	var allErrs error
 
-	if c.Endpoint == "" {
-		return multierr.Append(allErrs, errEmptyEndpoint)
-	}
-
-	host, portStr, err := net.SplitHostPort(c.Endpoint)
-	if err != nil {
-		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
-	}
+	host := c.Endpoint.Name
+	port := c.Endpoint.Port
+	TLSName := c.Endpoint.TLSName
+	endpointString := fmt.Sprintf("%s:%d", host, port)
 
 	if host == "" {
-		allErrs = multierr.Append(allErrs, errBadEndpoint)
+		return multierr.Append(allErrs, errEmptyEndpointHost)
 	}
 
-	port, err := strconv.ParseInt(portStr, 10, 32)
+	if port == 0 {
+		return multierr.Append(allErrs, errEmptyEndpointPort)
+	}
+
+	_, _, err := net.SplitHostPort(endpointString)
 	if err != nil {
-		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err))
+		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
 	}
 
 	if port < 0 || port > 65535 {
@@ -92,6 +94,10 @@ func (c *Config) Validate() error {
 		if err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err))
 		}
+	}
+
+	if c.TLS != nil && TLSName == "" {
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: when using TLS", errEmptyEndpointTLSName))
 	}
 
 	return allErrs

@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,42 +31,49 @@ func TestValidate(t *testing.T) {
 		{
 			name: "blank endpoint",
 			config: &Config{
-				Endpoint: "",
+				Endpoint: as.Host{},
 			},
-			expected: errEmptyEndpoint,
+			expected: errEmptyEndpointHost,
 		},
 		{
 			name: "missing port",
 			config: &Config{
-				Endpoint: "localhost",
+				Endpoint: as.Host{Name: "localhost"},
+			},
+			expected: errEmptyEndpointPort,
+		},
+		{
+			name: "bad endpoint",
+			config: &Config{
+				Endpoint: as.Host{Name: "x;;ef;s;d:::ss", Port: 23423423423423423},
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "missing host",
 			config: &Config{
-				Endpoint: ":3001",
+				Endpoint: as.Host{Port: 3001},
 			},
-			expected: errBadEndpoint,
+			expected: errEmptyEndpointHost,
 		},
 		{
 			name: "negative port",
 			config: &Config{
-				Endpoint: "localhost:-2",
+				Endpoint: as.Host{Name: "localhost", Port: -2},
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "bad port",
 			config: &Config{
-				Endpoint: "localhost:2.02",
+				Endpoint: as.Host{Name: "localhost", Port: 999999999999999},
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "negative timeout",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: as.Host{Name: "localhost", Port: 3000},
 				Timeout:  -1 * time.Second,
 			},
 			expected: errNegativeTimeout,
@@ -73,7 +81,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "password but no username",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: as.Host{Name: "localhost", Port: 3000},
 				Username: "",
 				Password: "secret",
 			},
@@ -82,7 +90,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "username but no password",
 			config: &Config{
-				Endpoint: "localhost:3001",
+				Endpoint: as.Host{Name: "localhost", Port: 3000},
 				Username: "ro_user",
 			},
 			expected: errEmptyPassword,

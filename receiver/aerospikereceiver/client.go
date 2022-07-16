@@ -46,8 +46,7 @@ type Aerospike interface {
 }
 
 type clientConfig struct {
-	host                  string
-	port                  int
+	host                  *as.Host
 	username              string
 	password              string
 	timeout               time.Duration
@@ -70,7 +69,7 @@ type defaultASClient struct {
 type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error)
 
 func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
-	hosts := []*as.Host{as.NewHost(cfg.host, cfg.port)}
+	hosts := []*as.Host{cfg.host}
 
 	if cfg.collectClusterMetrics {
 		cluster, err := cluster.NewCluster(policy, hosts)

@@ -17,55 +17,19 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
-
-func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
-	testCases := []struct {
-		name     string
-		endpoint string
-		errMsg   string
-	}{
-		{
-			name:     "no port",
-			endpoint: "localhost",
-			errMsg:   "missing port in address",
-		},
-		{
-			name:     "no address",
-			endpoint: "",
-			errMsg:   "missing port in address",
-		},
-	}
-
-	cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
-	require.NoError(t, err)
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			cfg := &Config{Endpoint: tc.endpoint}
-			receiver, err := newAerospikeReceiver(component.ReceiverCreateSettings{}, cfg, cs)
-			require.ErrorContains(t, err, tc.errMsg)
-			require.Nil(t, receiver)
-		})
-	}
-}
 
 func TestScrape_CollectClusterMetrics(t *testing.T) {
 	t.Parallel()
@@ -131,19 +95,14 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	initialClient.On("Close").Return(nil)
 
-	clientFactory := func(host string, port int) (Aerospike, error) {
-		switch fmt.Sprintf("%s:%d", host, port) {
-		case "localhost:3000":
-			return initialClient, nil
-		case "localhost:3002":
-			return nil, errors.New("connection timeout")
-		}
-
-		return nil, errors.New("unexpected endpoint")
+	clientFactory := func() (Aerospike, error) {
+		return initialClient, nil
 	}
+	clientFactoryNeg := func() (Aerospike, error) {
+		return nil, errors.New("connection timeout")
+	}
+
 	receiver := &aerospikeReceiver{
-		host:          "localhost",
-		port:          3000,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
 		logger:        logger,
@@ -165,9 +124,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	initialClient.AssertExpectations(t)
 
 	receiverConnErr := &aerospikeReceiver{
-		host:          "localhost",
-		port:          3002,
-		clientFactory: clientFactory,
+		clientFactory: clientFactoryNeg,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
 		logger:        logger,
 		config: &Config{

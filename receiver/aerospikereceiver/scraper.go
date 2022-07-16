@@ -18,8 +18,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"net"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,8 +34,6 @@ import (
 type aerospikeReceiver struct {
 	config        *Config
 	consumer      consumer.Metrics
-	host          string // host/IP of configured Aerospike node
-	port          int    // port of configured Aerospike node
 	clientFactory clientFactoryFunc
 	client        Aerospike
 	mb            *metadata.MetricsBuilder
@@ -45,22 +41,13 @@ type aerospikeReceiver struct {
 }
 
 // clientFactoryFunc creates an Aerospike connection to the given host and port
-type clientFactoryFunc func(host string, port int) (Aerospike, error)
+type clientFactoryFunc func() (Aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
 // If the host or port can't be parsed from endpoint, an error is returned.
 func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
-	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
-	}
-
-	port, err := strconv.ParseInt(portStr, 10, 32)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", errBadPort, err)
-	}
-
+	var err error
 	var tlsCfg *tls.Config
 	if cfg.TLS != nil {
 		tlsCfg, err = cfg.TLS.LoadTLSConfig()
@@ -73,10 +60,9 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		logger:   params.Logger,
 		config:   cfg,
 		consumer: consumer,
-		clientFactory: func(host string, port int) (Aerospike, error) {
+		clientFactory: func() (Aerospike, error) {
 			conf := &clientConfig{
-				host:                  host,
-				port:                  port,
+				host:                  &cfg.Endpoint,
 				username:              cfg.Username,
 				password:              cfg.Password,
 				timeout:               cfg.Timeout,
@@ -89,16 +75,14 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 				nodeGetterFactory,
 			)
 		},
-		host: host,
-		port: int(port),
-		mb:   metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
+		mb: metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
 	}, nil
 }
 
 func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 	r.logger.Debug("executing start")
 
-	client, err := r.clientFactory(r.host, r.port)
+	client, err := r.clientFactory()
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
 	}
