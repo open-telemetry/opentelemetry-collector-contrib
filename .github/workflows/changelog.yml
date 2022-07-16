@@ -53,10 +53,10 @@ jobs:
             echo "No changelog entry was added to the ./unreleased/ directory."
             echo "Please add a .yaml file to the ./unreleased/ directory."
             echo "See CONTRIBUTING.md for more details."
-            echo ""Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
+            echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
             false
           else
-            echo "A changelog entry was added to the ./unreleased/ directory!"
+            echo "A changelog entry was added to the ./unreleased/ directory."
           fi
 
       - name: Validate ./unreleased/*.yaml changes
