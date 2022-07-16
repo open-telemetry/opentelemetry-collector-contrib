@@ -21,16 +21,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -118,4 +122,41 @@ func TestFileLogsReceiver(t *testing.T) {
 	assert.EqualValues(t, ld, sink.AllLogs()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
+}
+
+func testdataConfigYamlAsMap() *cfg {
+	return &cfg{
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Config: fileconsumer.Config{
+			IncludeFileName:         true,
+			IncludeFilePath:         false,
+			IncludeFileNameResolved: false,
+			IncludeFilePathResolved: false,
+			PollInterval:            helper.Duration{Duration: 200 * time.Millisecond},
+			Splitter:                helper.NewSplitterConfig(),
+			StartAt:                 "end",
+			FingerprintSize:         1000,
+			MaxLogSize:              1024 * 1024,
+			MaxConcurrentFiles:      1024,
+			Finder: fileconsumer.Finder{
+				Include: []string{"/var/log/*.log"},
+				Exclude: []string{"/var/log/example.log"},
+			},
+		},
+	}
+}
+
+func TestLoadConfig(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	assert.Equal(t, len(cfg.Receivers), 2)
+
+	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("otlpjsonfile")])
 }

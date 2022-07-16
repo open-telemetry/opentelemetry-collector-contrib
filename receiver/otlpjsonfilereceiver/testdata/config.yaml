@@ -1,11 +1,28 @@
 receivers:
-  file:
-      # This will read pipeline data from JSON files in the folder.
-      # The data is written in Protobuf JSON encoding
-      # (https://developers.google.com/protocol-buffers/docs/proto3#json).
-      # Note that there are no compatibility guarantees for this format, since it
-      # just a dump of internal structures which can be changed over time.
-      path: /var/output/
+  otlpjsonfile:
+    include:
+      - "/var/log/*.log"
+    exclude:
+      - "/var/log/example.log"
+  otlpjsonfile/all:
+    include_file_name: true
+    include_file_path: true
+    include_file_name_resolved: true
+    include_file_path_resolved: true
+    start_at: "beginning"
+    fingerprint_size: 32768
+    max_log_size: 10000
+    max_concurrent_files: 4
+    encoding: "UTF-8"
+    multiline:
+      line_start_pattern: "<"
+      line_end_pattern: ">"
+    include:
+      - "/var/log/*.log"
+      - "/tmp/*.log"
+    exclude:
+      - "/var/log/example.log"
+
 
 processors:
   nop:
@@ -16,9 +33,9 @@ exporters:
 service:
   pipelines:
     traces:
-      receivers: [file]
+      receivers: [ otlpjsonfile ]
       processors: [nop]
       exporters: [nop]
     metrics:
-      receivers: [ file ]
+      receivers: [ otlpjsonfile ]
       exporters: [nop]

@@ -24,12 +24,15 @@ Supported pipeline types: traces, metrics, logs
 
 The following settings are required:
 
-- `path` (no default): folder to watch.
+- `include`: set a glob path of files to include in data collection
 
 Example:
 
 ```yaml
 receivers:
-  file:
-    path: /home/ubuntu/log/
+  otlpjsonfile:
+    include:
+      - "/var/log/*.log"
+    exclude:
+      - "/var/log/example.log"
 ```

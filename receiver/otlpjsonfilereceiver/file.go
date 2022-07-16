@@ -16,11 +16,11 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/obsreport"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
