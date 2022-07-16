@@ -304,7 +304,6 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
-
 	}
 	var err error
 	result.asFloat, err = strconv.ParseFloat(valueStr, 64)
