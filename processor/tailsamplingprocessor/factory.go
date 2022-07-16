@@ -29,6 +29,8 @@ import (
 const (
 	// The value of "type" Tail Sampling in configuration.
 	typeStr = "tail_sampling"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var onceMetrics sync.Once
@@ -43,7 +45,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {

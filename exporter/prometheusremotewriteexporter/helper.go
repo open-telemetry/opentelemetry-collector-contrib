@@ -17,14 +17,8 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 import (
 	"errors"
 	"sort"
-	"strings"
-	"unicode"
 
 	"github.com/prometheus/prometheus/prompb"
-)
-
-const (
-	keyStr = "key"
 )
 
 // batchTimeSeries splits series into multiple batch write requests.
@@ -80,49 +74,4 @@ func orderBySampleTimestamp(tsArray []prompb.TimeSeries) []prompb.TimeSeries {
 		})
 	}
 	return tsArray
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitize replaces non-alphanumeric characters with underscores in s.
-func sanitize(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + "_" + s
-	}
-	if s[0] == '_' {
-		s = keyStr + s
-	}
-	return s
-}
-
-func sanitizeLabels(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// labels that start with _ are not sanitized
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + "_" + s
-	}
-	return s
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitizeRune converts anything that is not a letter or digit to an underscore
-func sanitizeRune(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	// Everything else turns into an underscore
-	return '_'
 }

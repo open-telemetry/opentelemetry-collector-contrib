@@ -20,12 +20,12 @@ import (
 	"math"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 )
 
 func newBenchmarkTranslator(b *testing.B, logger *zap.Logger, opts ...Option) *Translator {
@@ -110,12 +110,13 @@ func createBenchmarkDeltaExponentialHistogramMetrics(n int, b int, additionalAtt
 		for i := 0; i < b; i++ {
 			buckets[i] = 10
 		}
+		immutableBuckets := pcommon.NewImmutableUInt64Slice(buckets)
 
 		point.Negative().SetOffset(2)
-		point.Negative().SetMBucketCounts(buckets)
+		point.Negative().SetBucketCounts(immutableBuckets)
 
 		point.Positive().SetOffset(3)
-		point.Positive().SetMBucketCounts(buckets)
+		point.Positive().SetBucketCounts(immutableBuckets)
 
 		point.SetTimestamp(seconds(0))
 	}

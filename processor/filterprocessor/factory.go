@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "filter"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -35,8 +37,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
 	)
 }
 
@@ -77,5 +80,22 @@ func createLogsProcessor(
 		cfg,
 		nextConsumer,
 		fp.ProcessLogs,
+		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createTracesProcessor(
+	_ context.Context,
+	set component.ProcessorCreateSettings,
+	cfg config.Processor,
+	nextConsumer consumer.Traces,
+) (component.TracesProcessor, error) {
+	fp, err := newFilterSpansProcessor(set.Logger, cfg.(*Config))
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTracesProcessor(
+		cfg,
+		nextConsumer,
+		fp.processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -173,6 +173,11 @@ func newLogsReceiver(
 // By convention the consumer of the received data is set when the receiver
 // instance is created.
 func (r *splunkReceiver) Start(_ context.Context, host component.Host) error {
+	// server.Handler will be nil on initial call, otherwise noop.
+	if r.server != nil && r.server.Handler != nil {
+		return nil
+	}
+
 	var ln net.Listener
 	// set up the listener
 	ln, err := r.config.HTTPServerSettings.ToListener()

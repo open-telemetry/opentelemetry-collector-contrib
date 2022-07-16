@@ -22,13 +22,14 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationscope"
 )
 
 const metricName string = "metric name"
@@ -59,6 +60,7 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 		SendMonotonic:                        true,
 		ResourceAttributesAsTags:             false,
 		InstrumentationLibraryMetadataAsTags: false,
+		InstrumentationScopeMetadataAsTags:   false,
 		sweepInterval:                        1800,
 		deltaTTL:                             3600,
 		fallbackSourceProvider:               &noSourceProvider{},
@@ -167,10 +169,10 @@ func getBounds(p pmetric.HistogramDataPoint, idx int) (lowerBound float64, upper
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
 	if idx > 0 {
-		lowerBound = p.MExplicitBounds()[idx-1]
+		lowerBound = p.ExplicitBounds().At(idx - 1)
 	}
-	if idx < len(p.MExplicitBounds()) {
-		upperBound = p.MExplicitBounds()[idx]
+	if idx < p.ExplicitBounds().Len() {
+		upperBound = p.ExplicitBounds().At(idx)
 	}
 	return
 }
@@ -195,7 +197,7 @@ func (t *Translator) getSketchBuckets(
 	startTs := uint64(p.StartTimestamp())
 	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
-	for j := range p.MBucketCounts() {
+	for j := 0; j < p.BucketCounts().Len(); j++ {
 		lowerBound, upperBound := getBounds(p, j)
 
 		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
@@ -215,7 +217,7 @@ func (t *Translator) getSketchBuckets(
 			lowerBound = upperBound
 		}
 
-		count := p.MBucketCounts()[j]
+		count := p.BucketCounts().At(j)
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
@@ -248,14 +250,14 @@ func (t *Translator) getLegacyBuckets(
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	baseBucketDims := pointDims.WithSuffix("bucket")
-	for idx, val := range p.MBucketCounts() {
+	for idx := 0; idx < p.BucketCounts().Len(); idx++ {
 		lowerBound, upperBound := getBounds(p, idx)
 		bucketDims := baseBucketDims.AddTags(
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
 		)
 
-		count := float64(val)
+		count := float64(p.BucketCounts().At(idx))
 		if delta {
 			consumer.ConsumeTimeSeries(ctx, bucketDims, Count, ts, count)
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, count); ok {
@@ -459,7 +461,9 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 			metricsArray := ilm.Metrics()
 
 			var additionalTags []string
-			if t.cfg.InstrumentationLibraryMetadataAsTags {
+			if t.cfg.InstrumentationScopeMetadataAsTags {
+				additionalTags = append(attributeTags, instrumentationscope.TagsFromInstrumentationScopeMetadata(ilm.Scope())...)
+			} else if t.cfg.InstrumentationLibraryMetadataAsTags {
 				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.Scope())...)
 			} else {
 				additionalTags = attributeTags

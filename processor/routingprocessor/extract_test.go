@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package routingprocessor
 
 import (
@@ -47,10 +46,8 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 			expectedValue: "acme",
 		},
 		{
-			name: "no values from empty context",
-			ctxFunc: func() context.Context {
-				return context.Background()
-			},
+			name:    "no values from empty context",
+			ctxFunc: context.Background,
 			tracesFunc: func() ptrace.Traces {
 				return ptrace.NewTraces()
 			},
@@ -110,10 +107,8 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 		expectedValue string
 	}{
 		{
-			name: "value from resource attribute",
-			ctxFunc: func() context.Context {
-				return context.Background()
-			},
+			name:    "value from resource attribute",
+			ctxFunc: context.Background,
 			tracesFunc: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()

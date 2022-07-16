@@ -156,7 +156,7 @@ func (r *Transformer) flushLoop() {
 			r.Lock()
 			timeNow := time.Now()
 			for source, entries := range r.batchMap {
-				lastEntryTs := entries[len(entries)-1].Timestamp
+				lastEntryTs := entries[len(entries)-1].ObservedTimestamp
 				timeSinceLastEntry := timeNow.Sub(lastEntryTs)
 				if timeSinceLastEntry < r.forceFlushTimeout {
 					continue

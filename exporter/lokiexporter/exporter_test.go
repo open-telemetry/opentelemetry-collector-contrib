@@ -298,13 +298,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr.Attributes().InsertString("severity", "info")
-		lr.Attributes().InsertString("random.attribute", "random")
+		lr.Attributes().InsertString("random.attribute", "random attribute")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		require.Equal(t, 0, numDroppedLogs)
 		require.NotNil(t, pr)
 		require.Len(t, pr.Streams, 1)
+		require.Contains(t, pr.Streams[0].Entries[0].Line, fmt.Sprintf("%q", "random attribute"))
 	})
 
 	t.Run("with multiple logs and same attributes", func(t *testing.T) {

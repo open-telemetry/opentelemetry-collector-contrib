@@ -18,12 +18,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEscapeGraphiteString(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{k8s.cluster}.%{k8s.namespace}.%{k8s.pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{k8s.cluster}.%{k8s.namespace}.%{k8s.pod}.%{_metric_}")
 
 	value := gf.escapeGraphiteString("this.is_example&metric.value")
 	expected := "this_is_example&metric_value"
@@ -32,8 +30,7 @@ func TestEscapeGraphiteString(t *testing.T) {
 }
 
 func TestGraphiteFormat(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{k8s.cluster}.%{k8s.namespace}.%{k8s.pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{k8s.cluster}.%{k8s.namespace}.%{k8s.pod}.%{_metric_}")
 
 	fs := fieldsFromMap(map[string]string{
 		"k8s.cluster":   "test_cluster",
@@ -48,8 +45,7 @@ func TestGraphiteFormat(t *testing.T) {
 }
 
 func TestGraphiteMetricDataTypeIntGauge(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntGaugeMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -63,8 +59,7 @@ my_cluster.default.some_pod.gauge_metric_name 245 1608124662`
 }
 
 func TestGraphiteMetricDataTypeDoubleGauge(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleGaugeMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -78,8 +73,7 @@ my_cluster.default.some_pod.gauge_metric_name_double_test 56.8 1608124662`
 }
 
 func TestGraphiteNoattribute(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleGaugeMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -92,8 +86,7 @@ my_cluster..some_pod.gauge_metric_name_double_test 56.8 1608124662`
 }
 
 func TestGraphiteMetricDataTypeIntSum(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleIntSumMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -107,8 +100,7 @@ my_cluster.default.some_pod.sum_metric_int_test 1238 1608124699`
 }
 
 func TestGraphiteMetricDataTypeDoubleSum(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleDoubleSumMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -122,8 +114,7 @@ my_cluster.default.some_pod.sum_metric_double_test 1238.1 1608424699`
 }
 
 func TestGraphiteMetricDataTypeSummary(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleSummaryMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")
@@ -140,8 +131,7 @@ func TestGraphiteMetricDataTypeSummary(t *testing.T) {
 }
 
 func TestGraphiteMetricDataTypeHistogram(t *testing.T) {
-	gf, err := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
-	require.NoError(t, err)
+	gf := newGraphiteFormatter("%{cluster}.%{namespace}.%{pod}.%{_metric_}")
 
 	metric := exampleHistogramMetric()
 	metric.attributes.InsertString("cluster", "my_cluster")

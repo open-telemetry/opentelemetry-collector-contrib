@@ -30,13 +30,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 )
 
-const typeStr = "dotnet_diagnostics"
+const (
+	typeStr   = "dotnet_diagnostics"
+	stability = component.StabilityLevelAlpha
+)
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

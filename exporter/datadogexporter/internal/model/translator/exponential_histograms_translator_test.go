@@ -20,13 +20,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 )
 
 const (
@@ -43,10 +42,10 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	point.SetSum(math.Pi)
 
 	point.Negative().SetOffset(2)
-	point.Negative().SetMBucketCounts([]uint64{3, 2, 5})
+	point.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3, 2, 5}))
 
 	point.Positive().SetOffset(3)
-	point.Positive().SetMBucketCounts([]uint64{1, 1, 1, 2, 2, 3})
+	point.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1, 2, 2, 3}))
 
 	point.SetTimestamp(ts)
 
@@ -56,13 +55,13 @@ func TestExponentialHistogramToDDSketch(t *testing.T) {
 	assert.NoError(t, err)
 
 	sketch.GetPositiveValueStore().ForEach(func(index int, count float64) bool {
-		expectedCount := float64(point.Positive().MBucketCounts()[index-int(point.Positive().Offset())])
+		expectedCount := float64(point.Positive().BucketCounts().At(index - int(point.Positive().Offset())))
 		assert.Equal(t, expectedCount, count)
 		return false
 	})
 
 	sketch.GetNegativeValueStore().ForEach(func(index int, count float64) bool {
-		expectedCount := float64(point.Negative().MBucketCounts()[index-int(point.Negative().Offset())])
+		expectedCount := float64(point.Negative().BucketCounts().At(index - int(point.Negative().Offset())))
 		assert.Equal(t, expectedCount, count)
 		return false
 	})
@@ -109,10 +108,10 @@ func createExponentialHistogramMetrics(additionalResourceAttributes map[string]s
 	point.SetSum(math.Pi)
 
 	point.Negative().SetOffset(2)
-	point.Negative().SetMBucketCounts([]uint64{3, 2, 5})
+	point.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3, 2, 5}))
 
 	point.Positive().SetOffset(3)
-	point.Positive().SetMBucketCounts([]uint64{1, 1, 1, 2, 2, 3})
+	point.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1, 2, 2, 3}))
 
 	point.SetTimestamp(seconds(0))
 
@@ -136,9 +135,9 @@ func TestMapDeltaExponentialHistogramMetrics(t *testing.T) {
 	sketches := []sketch{
 		newSketchWithHostname("expHist.test", summary.Summary{
 			// Expected min: lower bound of the highest negative bucket
-			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+len(point.Negative().MBucketCounts()))),
+			Min: -math.Pow(gamma, float64(int(point.Negative().Offset())+point.Negative().BucketCounts().Len())),
 			// Expected max: upper bound of the highest positive bucket
-			Max: math.Pow(gamma, float64(int(point.Positive().Offset())+len(point.Positive().MBucketCounts()))),
+			Max: math.Pow(gamma, float64(int(point.Positive().Offset())+point.Positive().BucketCounts().Len())),
 			Sum: point.Sum(),
 			Avg: point.Sum() / float64(point.Count()),
 			Cnt: int64(point.Count()),

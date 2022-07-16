@@ -19,12 +19,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/azure"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gcp"
@@ -32,7 +32,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
@@ -51,11 +50,6 @@ func init() {
 }
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	dockerProvider, err := docker.NewProvider()
-	if err != nil {
-		return nil, err
-	}
-
 	ecs, err := ecs.NewProvider(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build ECS Fargate provider: %w", err)
@@ -94,10 +88,9 @@ func buildPreviewProvider(set component.TelemetrySettings, configHostname string
 			"ec2":        ec2Provider,
 			"gcp":        gcpProvider,
 			"kubernetes": k8sProvider,
-			"docker":     dockerProvider,
 			"system":     system.NewProvider(set.Logger),
 		},
-		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "docker", "system"},
+		[]string{"config", "azure", "ecs", "ec2", "gcp", "kubernetes", "system"},
 	)
 
 	if err != nil {

@@ -1,0 +1,308 @@
+syntax = "proto3";
+
+package solace.messaging.proto.broker.trace.receive.v1;
+
+// Version 1.0
+//
+// Messages with a topic of matching the following topic contain a v1.x
+// specification of this message.
+// #telemetry/broker/trace/receive/v1[/<additional/topic/levels]
+// Note that the specification allows for additional topic levels to be added
+// in the future. Receiving clients must not assume there are no additional
+// topic levels.
+//
+// The versioning strategy follows semantic versioning such that all v1.x
+// specifications are compatible with each other.
+//
+// This message describes telemetry data that a Solace PubSub+ broker captures 
+// when a received message is identified as a message to be traced.
+//
+// Fields with names that end in "time_unix_nano" are 64-bit timestamps, in
+// nanoseconds, since midnight, Jan. 1, 1970 UTC.
+//
+// Notes on the field numbers used:
+// - Field numbers 1-15 are used for attributes that are expected to be present
+//   on the wire with every single message not containing an error_description.
+//   Special priority is given to fields that can be repeated.
+// - Field numbers 16+ are used for other attributes.
+//
+// Next available field ID: 39
+//
+message SpanData {
+
+  // 16-byte globally unique trace ID. Any two spans with the same trace ID are
+  // part of the same trace.
+  bytes trace_id = 1;
+
+  // 8-byte span ID, unique within the scope of a trace.
+  bytes span_id = 2;
+
+  // If not present, this is a root span. If present, this is an 8-byte span ID
+  // of the parent span.
+  optional bytes parent_span_id = 16;
+  optional string trace_state = 17;
+
+  // The start and end timestamps of the receive span. The start of the span is
+  // when Guaranteed Messaging processing begins in the broker.
+  sfixed64 start_time_unix_nano = 3;
+  sfixed64 end_time_unix_nano = 4;
+
+  // The broker receive timestamp is when the broker first identified the
+  // message as a message that is to be traced. This is always before the start
+  // of the span (the span starts when Guaranteed Message processing beings on the
+  // message later in the processing pipeline). However, in some broker
+  // implementations this timestamp is generated from a different clock and
+  // therefore not guaranteed to be numerically smaller than
+  // start_time_unix_nano, even though it represents an earlier time.
+  sfixed64 broker_receive_time_unix_nano = 12;
+
+  // The topic of the received message, used to determine where to enqueue the
+  // message.
+  string topic = 5;
+
+  // The reply-to topic of the received message, if present.
+  optional string reply_to_topic = 18;
+
+  // The delivery mode of the message, when it was received by the broker. Note
+  // that if the delivery mode is DIRECT, the message will be promoted to
+  // NON_PERSISTENT when it is enqueued.
+  DeliveryMode delivery_mode = 19;
+
+  // The receiving broker's router-name and message-vpn-name.
+  //
+  // These fields may be removed in the future. If they are removed, this will
+  // not result in a major version change since the initial specification makes
+  // no promise to provide them.
+  //
+  // Rather than rely on them, receiving clients should use an SMF API to
+  // extract the PEER_ROUTER_NAME and VPN_NAME_IN_USE from the API's Session
+  // object.
+  optional string router_name = 20;
+  optional string message_vpn_name = 21;
+
+  // The receiving broker's SolOS version when the message was initially
+  // received.
+  //
+  // It is possible for a consumer to determine the SolOS version of the broker
+  // it is receiving messages from by extracting the PEER_SOFTWARE_VERSION from
+  // an SMF API Session object. However, it may not match this attribute since
+  // the message may have been received when the version was different from the
+  // broker's current SolOS version.
+  string solos_version = 38;
+
+  // The client name of the publishing client, as well as the client-username
+  // they are bound to on the broker.
+  string client_name = 6;
+  string client_username = 7;
+
+  // The IP and port the broker received the message on.
+  // Note: host_ip can be either an IPv4 or IPv6 address. If it is IPv4, the
+  // length is 4; an IPv6 address is 16 bytes.
+  bytes host_ip = 8;
+  uint32 host_port = 9;
+
+  // The IP and port of the publishing client, from the broker's point of view.
+  // This may not be the client's local IP and port if there is network address
+  // translation involved between the client and the broker.
+  // Note: peer_ip can be either an IPv4 or IPv6 address. If it is IPv4, the
+  // length is 4; an IPv6 address is 16 bytes.
+  bytes peer_ip = 10;
+  uint32 peer_port = 11;
+
+  // The message's globally unique Replication Group Message ID, in binary
+  // format. This will not be present if the message is being discarded.
+  // The format of these bytes are:
+  // byte[0]: Version.
+  // byte[1:len-1]: Binary representation of a replication group message ID in
+  //   the specified version.
+  // This should only be treated as opaque data by applications. If comparing
+  // two ID's and the versions are the same, then the ID's are the same if the
+  // remaining bytes are the same. If the versions are different, no comparison
+  // can be made.
+  optional bytes replication_group_message_id = 22;
+
+  // Indicates how the message was received by the broker.
+  string protocol = 23;
+
+  // The version of the protocol used. This is only present when the protocol is
+  // MQTT.
+  optional string protocol_version = 24;
+
+  // Indicates properties of the published message, as set by the client.
+  bool dmq_eligible = 25;
+  optional uint32 priority = 26;
+  optional int64 ttl = 27;
+
+  // The sizes of various types of message payload, which are not mutually
+  // exclusive.
+  uint32 binary_attachment_size = 28;
+  uint32 xml_attachment_size = 29;
+  uint32 metadata_size = 30;
+
+  // These properties may or may not have been set on a message by the
+  // application.
+  optional string application_message_id = 31;
+  optional string correlation_id = 32;
+
+  // If the applications set user properties on the message, they are captured
+  // here. See the UserPropertyValue for restrictions on which values will be
+  // captured.
+  map<string, UserPropertyValue> user_properties = 14;
+
+  // If true, not all user properties in the original message were captured in
+  // the user_properties map because limits were exceeded. The broker supports
+  // up to a total of 8KiB of user property data.
+  bool dropped_user_properties = 37;
+
+  // If present, this indicates the message is being rejected to the publisher
+  // and matches the error string provided back to the publisher as an error.
+  //
+  // For transacted messages, the individual messages are not rejected to the
+  // publisher. However, a message with an error_description indicates that it
+  // is one of the messages that caused the operation on the transacted session
+  // to fail. See transaction_event for more information on the failed
+  // operation.
+  //
+  // This string is informational only and not intended to be parsed by
+  // applications.
+  string error_description = 33;
+
+  // If the message is part of a transaction, transaction_event provides details
+  // on the transaction.
+  optional TransactionEvent transaction_event = 34;
+
+  // Each EnqueueEvent represents an attempt to enqueue the message to the
+  // described destination.
+  repeated EnqueueEvent enqueue_events = 15;
+
+  // There is a limit to the number of enqueue events the broker will generate
+  // for a received message. The following two fields indicate the number of
+  // successful and failed enqueue events that were dropped.
+  uint32 dropped_enqueue_events_success = 35;
+  uint32 dropped_enqueue_events_failed = 36;
+
+  enum DeliveryMode {
+    PERSISTENT = 0;
+    NON_PERSISTENT = 1;
+    DIRECT = 2;
+  }
+
+  message UserPropertyValue {
+    // This expresses a mapping from a Solace SDT type to a protobuf type.
+    // The Solace SDT Types Map, Stream, and SMF are not supported. Other SDT
+    // types from other protocols, such as AMQP symbol, timestamp, UUID, and
+    // decimal types are not supported.
+    // 
+    oneof value {
+      bytes null_value = 1;
+      bool bool_value = 2;
+      uint32 uint8_value = 3;
+      uint32 uint16_value = 4;
+      uint32 uint32_value = 5;
+      uint64 uint64_value = 6;
+      sint32 int8_value = 7;
+      sint32 int16_value = 8;
+      sint32 int32_value = 9;
+      sint64 int64_value = 10;
+      uint32 character_value = 11;
+      string string_value = 12;
+      bytes byteArray_value = 13;
+      float float_value = 14;
+      double double_value = 15;
+      string destination_value = 16;
+    }
+  }
+
+  // When a message has a transaction event, it indicates the message is part of
+  // a transaction. The timestamp indicates when the *initial* decision was made
+  // for this particular message as part of the transaction operation. It
+  // doesn't indicate the final state of the transaction. This isn't known until
+  // all messages that are part of the transaction have been processed.
+  //
+  // Note it is possible that, for example, after deciding a message will be
+  // committed that a subsequent message in the transaction will cause the
+  // transaction to fail. This will result in a successful receive span with a
+  // COMMIT transaction event with no error. The fact that the message is not
+  // successfully processed will be indicated by a child span of this span. At
+  // the current time, these subsequent spans are not yet generated and will be
+  // added in a future release. In the meantime, the transaction_id can be used
+  // to find out if there were any errored messages in the transaction. A single
+  // errored message indicates the entire transaction failed.
+  //
+  // Also note that since the receive span is only generated either on commit or
+  // when the message is discarded, certain transaction operations are only
+  // observed in failed receive spans. For example, when XA End or XA Prepare
+  // operations succeed, the message is neither discarded nor committed. It is
+  // only if these operations fail that the transaction is rolled back and an
+  // errored receive span is generated.
+  message TransactionEvent {
+    sfixed64 time_unix_nano = 1;
+    enum Type {
+      COMMIT = 0;
+      ROLLBACK = 1;
+      END = 2;
+      PREPARE = 3;
+    }
+    Type type = 2;
+    
+    enum Initiator {
+      CLIENT = 0;
+      ADMIN = 1;
+      SESSION_TIMEOUT = 2;
+    }
+    Initiator initiator = 3;
+
+    message Xid {
+      int32 format_id = 1;
+      bytes branch_qualifier = 2;
+      bytes global_id = 3;
+    }
+
+    message LocalTransactionId {
+      uint32 transaction_id = 1;
+      uint32 session_id = 2;
+      string session_name = 3;
+    }
+
+    oneof transaction_id {
+      Xid xid = 4;
+      LocalTransactionId local_id = 5;
+    }
+
+    optional string error_description = 6;
+  }
+
+  // An enqueue event represents the broker's decision to enqueue a message
+  // when processing a received message. If there is no error_description,
+  // the broker has successfully processed the message and the enqueue events
+  // indicate where the message has been enqueued. The presence of an
+  // error_description indicates the message will not be enqueued to dest even
+  // though the message matched the destination. If rejects_all_enqueues is set,
+  // it means the message is not enqueued to any destinations, regardless of
+  // what other enqueue events may indicate and the message is rejected.
+  message EnqueueEvent {
+    // The timestamp when the enqueue decision was made
+    sfixed64 time_unix_nano = 1;
+
+    // Queues and Topic Endpoints with the same name can simultaneously co-exist
+    // on the broker, so there needs to be a way of disambiguating the type of
+    // the enqueue destination. The "oneof" construct here addresses this.
+    oneof dest {
+      string queue_name = 2;
+      string topic_endpoint_name = 3;
+    }
+
+    // The presence of an error_description indicates the message matched the
+    // destination, but it is not being enqueued due to the description.
+    optional string error_description = 4;
+
+    // This will never be set when there is not an error_desription present.
+    // If this is set, it indicates that all other non-errored enqueue events
+    // part of this span are rejected. In other words, regardless of what some
+    // enqueue events may indicate, the message is not enqueued to any
+    // destinations. When this is set, the span's error_description is always
+    // set and the span's error_description is always sent to the publisher in
+    // the rejection message.
+    bool rejects_all_enqueues = 5;
+  }
+}

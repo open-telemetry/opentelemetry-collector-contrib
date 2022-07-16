@@ -24,6 +24,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "alibabacloud_logservice"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AlibabaCloud LogService exporter.
@@ -31,9 +33,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

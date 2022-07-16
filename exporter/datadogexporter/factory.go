@@ -17,10 +17,10 @@ package datadogexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -31,15 +31,15 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/featuregate"
 
-	ddconfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 const (
 	// typeStr is the type of the exporter
 	typeStr = "datadog"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 type factory struct {
@@ -64,8 +64,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithTracesExporter(f.createTracesExporter),
+		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
 	)
 }
 
@@ -81,90 +81,65 @@ func defaulttimeoutSettings() exporterhelper.TimeoutSettings {
 }
 
 // createDefaultConfig creates the default exporter configuration
-// TODO (#8396): Remove `os.Getenv` everywhere.
 func (f *factory) createDefaultConfig() config.Exporter {
-	env := os.Getenv("DD_ENV")
-	if env == "" {
-		env = "none"
-	}
-
-	site := os.Getenv("DD_SITE")
-	if site == "" {
-		site = "datadoghq.com"
-	}
-
-	metricsEndpoint := os.Getenv("DD_URL")
-	if metricsEndpoint == "" {
-		metricsEndpoint = fmt.Sprintf("https://api.%s", site)
-	}
-
-	tracesEndpoint := os.Getenv("DD_APM_URL")
-	if tracesEndpoint == "" {
-		tracesEndpoint = fmt.Sprintf("https://trace.agent.%s", site)
-	}
-
-	hostnameSource := ddconfig.HostnameSourceFirstResource
+	hostnameSource := HostnameSourceFirstResource
 	if f.registry.IsEnabled(metadata.HostnamePreviewFeatureGate) {
-		hostnameSource = ddconfig.HostnameSourceConfigOrSystem
+		hostnameSource = HostnameSourceConfigOrSystem
 	}
 
-	return &ddconfig.Config{
+	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		TimeoutSettings:  defaulttimeoutSettings(),
 		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
 
-		API: ddconfig.APIConfig{
-			Key:  os.Getenv("DD_API_KEY"), // Must be set if using API
-			Site: site,
+		API: APIConfig{
+			Site: "datadoghq.com",
 		},
 
-		TagsConfig: ddconfig.TagsConfig{
-			Hostname:   os.Getenv("DD_HOST"),
-			Env:        env,
-			Service:    os.Getenv("DD_SERVICE"),
-			Version:    os.Getenv("DD_VERSION"),
-			EnvVarTags: os.Getenv("DD_TAGS"), // Only taken into account if Tags is not set
-		},
-
-		Metrics: ddconfig.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: metricsEndpoint,
+				Endpoint: "https://api.datadoghq.com",
 			},
-			SendMonotonic: true,
-			DeltaTTL:      3600,
-			Quantiles:     true,
-			ExporterConfig: ddconfig.MetricsExporterConfig{
-				ResourceAttributesAsTags:             false,
-				InstrumentationLibraryMetadataAsTags: false,
+			DeltaTTL: 3600,
+			ExporterConfig: MetricsExporterConfig{
+				ResourceAttributesAsTags:           false,
+				InstrumentationScopeMetadataAsTags: false,
 			},
-			HistConfig: ddconfig.HistogramConfig{
+			HistConfig: HistogramConfig{
 				Mode:         "distributions",
 				SendCountSum: false,
 			},
-			SumConfig: ddconfig.SumConfig{
-				CumulativeMonotonicMode: ddconfig.CumulativeMonotonicSumModeToDelta,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
-			SummaryConfig: ddconfig.SummaryConfig{
-				Mode: ddconfig.SummaryModeGauges,
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
 			},
 		},
 
-		Traces: ddconfig.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
-				Endpoint: tracesEndpoint,
+				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
 
-		HostMetadata: ddconfig.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: hostnameSource,
 		},
-
-		SendMetadata:        true,
-		UseResourceMetadata: true,
 	}
+}
+
+// checkAndCastConfig checks the configuration type and its warnings, and casts it to
+// the Datadog Config struct.
+func checkAndCastConfig(c config.Exporter) *Config {
+	cfg, ok := c.(*Config)
+	if !ok {
+		panic("programming error: config structure is not of type *datadogexporter.Config")
+	}
+	return cfg
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
@@ -173,12 +148,7 @@ func (f *factory) createMetricsExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.MetricsExporter, error) {
-
-	cfg := c.(*ddconfig.Config)
-
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	cfg := checkAndCastConfig(c)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
@@ -237,24 +207,22 @@ func (f *factory) createTracesExporter(
 	set component.ExporterCreateSettings,
 	c config.Exporter,
 ) (component.TracesExporter, error) {
+	cfg := checkAndCastConfig(c)
 
-	cfg := c.(*ddconfig.Config)
-
-	if err := cfg.Sanitize(set.Logger); err != nil {
-		return nil, err
-	}
+	var (
+		pusher consumer.ConsumeTracesFunc
+		stop   component.ShutdownFunc
+	)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	var pushTracesFn consumer.ConsumeTracesFunc
-
+	ctx, cancel := context.WithCancel(ctx) // nolint:govet
+	// cancel() runs on shutdown
 	if cfg.OnlyMetadata {
-		pushTracesFn = func(_ context.Context, td ptrace.Traces) error {
-			// only sending metadata, use only attributes
+		// only host metadata needs to be sent, once.
+		pusher = func(_ context.Context, td ptrace.Traces) error {
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
 				if td.ResourceSpans().Len() > 0 {
@@ -262,30 +230,35 @@ func (f *factory) createTracesExporter(
 				}
 				go metadata.Pusher(ctx, set, newMetadataConfigfromConfig(cfg), hostProvider, attrs)
 			})
-
+			return nil
+		}
+		stop = func(context.Context) error {
+			cancel()
 			return nil
 		}
 	} else {
-		exporter, tracesErr := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
-		if tracesErr != nil {
+		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		if err2 != nil {
 			cancel()
-			return nil, tracesErr
+			return nil, err2
 		}
-		pushTracesFn = exporter.pushTraceDataScrubbed
+		pusher = tracex.consumeTraces
+		stop = func(context.Context) error {
+			cancel()              // first cancel context
+			tracex.waitShutdown() // then wait for shutdown
+			return nil
+		}
 	}
 
 	return exporterhelper.NewTracesExporter(
 		cfg,
 		set,
-		pushTracesFn,
+		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We don't do retries on traces because of deduping concerns on APM Events.
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()
-			return nil
-		}),
+		exporterhelper.WithShutdown(stop),
 	)
 }

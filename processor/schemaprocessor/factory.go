@@ -19,11 +19,16 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 )
 
-const typeStr = "schema"
+const (
+	typeStr = "schema"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
+)
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
@@ -34,7 +39,8 @@ type factory struct{}
 // with the default values being used throughout it
 func newDefaultConfiguration() config.Processor {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 	}
 }
 
@@ -43,9 +49,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		newDefaultConfiguration,
-		component.WithLogsProcessor(f.createLogsProcessor),
-		component.WithMetricsProcessor(f.createMetricsProcessor),
-		component.WithTracesProcessor(f.createTracesProcessor),
+		component.WithLogsProcessorAndStabilityLevel(f.createLogsProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsProcessor, stability),
+		component.WithTracesProcessorAndStabilityLevel(f.createTracesProcessor, stability),
 	)
 }
 

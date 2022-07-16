@@ -15,6 +15,7 @@
 package logs
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -52,7 +53,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
 	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{9, 6, 4})
+	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -94,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "severity_number",
 				},
 			},
-			orig: plog.SeverityNumberFATAL,
+			orig: int64(plog.SeverityNumberFATAL),
 			new:  int64(3),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSeverityNumber(plog.SeverityNumberTRACE3)
@@ -161,6 +162,38 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig: pcommon.NewSpanID(spanID),
 			new:  pcommon.NewSpanID(spanID2),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetSpanID(pcommon.NewSpanID(spanID2))
+			},
+		},
+		{
+			name: "trace_id string",
+			path: []common.Field{
+				{
+					Name: "trace_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(traceID[:]),
+			new:  hex.EncodeToString(traceID2[:]),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetTraceID(pcommon.NewTraceID(traceID2))
+			},
+		},
+		{
+			name: "span_id string",
+			path: []common.Field{
+				{
+					Name: "span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(spanID[:]),
+			new:  hex.EncodeToString(spanID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -246,7 +279,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -478,7 +511,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -623,7 +656,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertBool("bool", true)
 	log.Attributes().UpsertInt("int", 10)
 	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertMBytes("bytes", []byte{1, 3, 2})
+	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
 	arrStr := pcommon.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
@@ -646,8 +679,8 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().Upsert("arr_float", arrFloat)
 
 	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{2, 3, 4})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 	log.Attributes().Upsert("arr_bytes", arrBytes)
 
 	log.SetDroppedAttributesCount(10)
@@ -665,4 +698,159 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
+}
+
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "SEVERITY_NUMBER_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE",
+			want: 1,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE2",
+			want: 2,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE3",
+			want: 3,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE4",
+			want: 4,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG",
+			want: 5,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG2",
+			want: 6,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG3",
+			want: 7,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG4",
+			want: 8,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO",
+			want: 9,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO2",
+			want: 10,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO3",
+			want: 11,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO4",
+			want: 12,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN",
+			want: 13,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN2",
+			want: 14,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN3",
+			want: 15,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN4",
+			want: 16,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR",
+			want: 17,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR2",
+			want: 18,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR3",
+			want: 19,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR4",
+			want: 20,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL",
+			want: 21,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL2",
+			want: 22,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL3",
+			want: 23,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL4",
+
+			want: 24,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }
