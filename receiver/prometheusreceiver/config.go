@@ -280,8 +280,10 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if err != nil || len(targetAllocatorHTTPSDCfg.ToStringMap()) == 0 {
 		return err
 	}
-	targetAllocatorHTTPSDCfg.Set("url", "http://placeholder") // we have to set it as else the marshal will fail
-	httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDCfg.ToStringMap())
+
+	targetAllocatorHTTPSDMap := targetAllocatorHTTPSDCfg.ToStringMap()
+	targetAllocatorHTTPSDMap["url"] = "http://placeholder" // we have to set it as else the marshal will fail
+	httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDMap)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
 	}
