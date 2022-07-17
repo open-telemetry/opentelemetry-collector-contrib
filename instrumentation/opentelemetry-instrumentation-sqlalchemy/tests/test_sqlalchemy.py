@@ -46,9 +46,13 @@ class TestSqlalchemyInstrumentation(TestBase):
         cnx.execute("SELECT	1 + 1;").fetchall()
         spans = self.memory_exporter.get_finished_spans()
 
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "SELECT :memory:")
+        self.assertEqual(len(spans), 2)
+        # first span - the connection to the db
+        self.assertEqual(spans[0].name, "connect")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+        # second span - the query itself
+        self.assertEqual(spans[1].name, "SELECT :memory:")
+        self.assertEqual(spans[1].kind, trace.SpanKind.CLIENT)
 
     def test_instrument_two_engines(self):
         engine_1 = create_engine("sqlite:///:memory:")
@@ -65,8 +69,20 @@ class TestSqlalchemyInstrumentation(TestBase):
         cnx_2.execute("SELECT	1 + 1;").fetchall()
 
         spans = self.memory_exporter.get_finished_spans()
+        # 2 queries + 2 engine connect
+        self.assertEqual(len(spans), 4)
 
-        self.assertEqual(len(spans), 2)
+    def test_instrument_engine_connect(self):
+        engine = create_engine("sqlite:///:memory:")
+
+        SQLAlchemyInstrumentor().instrument(
+            engine=engine,
+            tracer_provider=self.tracer_provider,
+        )
+
+        engine.connect()
+        spans = self.memory_exporter.get_finished_spans()
+        self.assertEqual(len(spans), 1)
 
     @pytest.mark.skipif(
         not sqlalchemy.__version__.startswith("1.4"),
@@ -85,11 +101,15 @@ class TestSqlalchemyInstrumentation(TestBase):
             async with engine.connect() as cnx:
                 await cnx.execute(sqlalchemy.text("SELECT	1 + 1;"))
             spans = self.memory_exporter.get_finished_spans()
-            self.assertEqual(len(spans), 1)
-            self.assertEqual(spans[0].name, "SELECT :memory:")
+            self.assertEqual(len(spans), 2)
+            # first span - the connection to the db
+            self.assertEqual(spans[0].name, "connect")
             self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+            # second span - the query
+            self.assertEqual(spans[1].name, "SELECT :memory:")
+            self.assertEqual(spans[1].kind, trace.SpanKind.CLIENT)
             self.assertEqual(
-                spans[0].instrumentation_scope.name,
+                spans[1].instrumentation_scope.name,
                 "opentelemetry.instrumentation.sqlalchemy",
             )
 
@@ -99,7 +119,10 @@ class TestSqlalchemyInstrumentation(TestBase):
         mock_tracer = mock.Mock()
         mock_span = mock.Mock()
         mock_span.is_recording.return_value = False
+        mock_span.__enter__ = mock.Mock(return_value=(mock.Mock(), None))
+        mock_span.__exit__ = mock.Mock(return_value=None)
         mock_tracer.start_span.return_value = mock_span
+        mock_tracer.start_as_current_span.return_value = mock_span
         with mock.patch("opentelemetry.trace.get_tracer") as tracer:
             tracer.return_value = mock_tracer
             engine = create_engine("sqlite:///:memory:")
@@ -123,11 +146,15 @@ class TestSqlalchemyInstrumentation(TestBase):
         cnx.execute("SELECT	1 + 1;").fetchall()
         spans = self.memory_exporter.get_finished_spans()
 
-        self.assertEqual(len(spans), 1)
-        self.assertEqual(spans[0].name, "SELECT :memory:")
+        self.assertEqual(len(spans), 2)
+        # first span - the connection to the db
+        self.assertEqual(spans[0].name, "connect")
         self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+        # second span - the query
+        self.assertEqual(spans[1].name, "SELECT :memory:")
+        self.assertEqual(spans[1].kind, trace.SpanKind.CLIENT)
         self.assertEqual(
-            spans[0].instrumentation_scope.name,
+            spans[1].instrumentation_scope.name,
             "opentelemetry.instrumentation.sqlalchemy",
         )
 
@@ -153,7 +180,7 @@ class TestSqlalchemyInstrumentation(TestBase):
         cnx.execute("SELECT	1 + 1;").fetchall()
         spans = self.memory_exporter.get_finished_spans()
 
-        self.assertEqual(len(spans), 1)
+        self.assertEqual(len(spans), 2)
         self.assertEqual(spans[0].resource.attributes["service.name"], "test")
         self.assertEqual(
             spans[0].resource.attributes["deployment.environment"], "env"
@@ -177,11 +204,15 @@ class TestSqlalchemyInstrumentation(TestBase):
             async with engine.connect() as cnx:
                 await cnx.execute(sqlalchemy.text("SELECT	1 + 1;"))
             spans = self.memory_exporter.get_finished_spans()
-            self.assertEqual(len(spans), 1)
-            self.assertEqual(spans[0].name, "SELECT :memory:")
+            self.assertEqual(len(spans), 2)
+            # first span - the connection to the db
+            self.assertEqual(spans[0].name, "connect")
             self.assertEqual(spans[0].kind, trace.SpanKind.CLIENT)
+            # second span - the query
+            self.assertEqual(spans[1].name, "SELECT :memory:")
+            self.assertEqual(spans[1].kind, trace.SpanKind.CLIENT)
             self.assertEqual(
-                spans[0].instrumentation_scope.name,
+                spans[1].instrumentation_scope.name,
                 "opentelemetry.instrumentation.sqlalchemy",
             )
 
@@ -199,8 +230,8 @@ class TestSqlalchemyInstrumentation(TestBase):
         cnx = engine.connect()
         cnx.execute("SELECT	1 + 1;").fetchall()
         spans = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(spans), 1)
-        span = spans[0]
+        self.assertEqual(len(spans), 2)
+        span = spans[1]
         self.assertIn(
             EngineTracer._generate_comment(span),
             self.caplog.records[-2].getMessage(),

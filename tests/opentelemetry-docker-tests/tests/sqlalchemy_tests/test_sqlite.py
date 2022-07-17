@@ -38,8 +38,9 @@ class SQLiteTestCase(SQLAlchemyTestMixin):
                 conn.execute(stmt).fetchall()
 
         spans = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(spans), 1)
-        span = spans[0]
+        # one span for the connection and one span for the query
+        self.assertEqual(len(spans), 2)
+        span = spans[1]
         # span fields
         self.assertEqual(span.name, "SELECT :memory:")
         self.assertEqual(
