@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
@@ -66,13 +65,12 @@ type routedMetrics struct {
 
 func (r *router) RouteMetrics(ctx context.Context, tm pmetric.Metrics) []routedMetrics {
 	switch r.config.AttributeSource {
+	case resourceAttributeSource:
+		return r.routeMetricsForResource(ctx, tm)
 	case contextAttributeSource:
 		fallthrough
 	default:
 		return []routedMetrics{r.routeMetricsForContext(ctx, tm)}
-
-	case resourceAttributeSource:
-		return r.routeMetricsForResource(ctx, tm)
 	}
 }
 
@@ -159,13 +157,12 @@ type routedTraces struct {
 
 func (r *router) RouteTraces(ctx context.Context, tr ptrace.Traces) []routedTraces {
 	switch r.config.AttributeSource {
+	case resourceAttributeSource:
+		return r.routeTracesForResource(ctx, tr)
 	case contextAttributeSource:
 		fallthrough
 	default:
 		return []routedTraces{r.routeTracesForContext(ctx, tr)}
-
-	case resourceAttributeSource:
-		return r.routeTracesForResource(ctx, tr)
 	}
 }
 
@@ -248,13 +245,12 @@ type routedLogs struct {
 
 func (r *router) RouteLogs(ctx context.Context, tl plog.Logs) []routedLogs {
 	switch r.config.AttributeSource {
+	case resourceAttributeSource:
+		return r.routeLogsForResource(ctx, tl)
 	case contextAttributeSource:
 		fallthrough
 	default:
 		return []routedLogs{r.routeLogsForContext(ctx, tl)}
-
-	case resourceAttributeSource:
-		return r.routeLogsForResource(ctx, tl)
 	}
 }
 

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
@@ -179,7 +178,9 @@ func (sp *groupByTraceProcessor) onTraceExpired(traceID pcommon.TraceID, worker 
 	// this might block, but we don't need to wait
 	sp.logger.Debug("marking the trace as released",
 		zap.String("traceID", traceID.HexString()))
-	go sp.markAsReleased(traceID, worker.fire)
+	go func() {
+		_ = sp.markAsReleased(traceID, worker.fire)
+	}()
 
 	return nil
 }

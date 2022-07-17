@@ -259,6 +259,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "splunk_hec",
 		},
 		{
+			receiver: "sqlquery",
+		},
+		{
 			receiver:     "sqlserver",
 			skipLifecyle: true, // Requires a running windows process
 		},
@@ -318,6 +321,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "vcenter",
+		},
+		{
+			receiver:     "solace",
+			skipLifecyle: true, // Requires a solace broker to connect to
 		},
 	}
 

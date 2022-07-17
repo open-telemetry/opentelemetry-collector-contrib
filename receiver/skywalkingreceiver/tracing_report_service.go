@@ -41,7 +41,7 @@ func (s *traceSegmentReportService) Collect(stream agent.TraceSegmentReportServi
 			return err
 		}
 
-		err = consumeTraces(context.Background(), segmentObject, s.sr.nextConsumer)
+		err = consumeTraces(stream.Context(), segmentObject, s.sr.nextConsumer)
 		if err != nil {
 			return stream.SendAndClose(&common.Commands{})
 		}

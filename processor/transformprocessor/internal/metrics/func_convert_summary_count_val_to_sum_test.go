@@ -76,7 +76,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath)
+			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath, ParseEnum)
 			assert.NoError(t, err)
 			evaluate(metricTransformContext{
 				il:       pcommon.NewInstrumentationScope(),

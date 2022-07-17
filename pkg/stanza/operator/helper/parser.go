@@ -39,7 +39,7 @@ type ParserConfig struct {
 	ParseFrom       entry.Field      `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
 	ParseTo         entry.Field      `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
 	TimeParser      *TimeParser      `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
-	Config          *Config          `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
+	Config          *SeverityConfig  `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
 	TraceParser     *TraceParser     `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
 	ScopeNameParser *ScopeNameParser `mapstructure:"scope_name,omitempty"     json:"scope_name,omitempty"     yaml:"scope_name,omitempty"`
 }

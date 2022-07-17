@@ -27,7 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 )
 
-const typeStr = "nsxt"
+const (
+	typeStr   = "nsxt"
+	stability = component.StabilityLevelAlpha
+)
 
 var errConfigNotNSX = errors.New("config was not a NSX receiver config")
 
@@ -36,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

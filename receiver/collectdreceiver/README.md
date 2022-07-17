@@ -1,5 +1,11 @@
 # CollectD `write_http` plugin JSON receiver
 
+| Status                   |            |
+| ------------------------ |------------|
+| Stability                | [alpha]    |
+| Supported pipeline types | metrics    |
+| Distributions            | [contrib]  |
+
 This receiver can receive data exported by the CollectD's `write_http`
 plugin. Only JSON format is supported. Authentication is not supported at
 this time.
@@ -12,8 +18,6 @@ practice such incompatibilities should never surface. For example, this
 receiver supports extracting labels from different fields. Given a field
 value `field[a=b, k=v]`, this receiver will extract `a` and `b` as label keys
 and, `k` and `v` as the respective label values.
-
-Supported pipeline types: metrics
 
 ## Configuration
 
@@ -39,3 +43,6 @@ receivers:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
