@@ -389,30 +389,33 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 	metrics := res.ScopeMetrics().At(state.library).Metrics()
 	bufCap := int(c.config.MaxContentLengthMetrics)
 
+	var events []*splunk.Event
 	for k := 0; k < metrics.Len(); k++ {
+		// Parsing metric record to Splunk event.
+		events = append(events, mapMetricToSplunkEvent(res.Resource(), metrics.At(k), c.config, c.logger)...)
+	}
+
+	if c.config.UseMultiMetricFormat {
+		merged, err := mergeEventsToMultiMetricFormat(events)
+		if err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err)))
+		} else {
+			events = merged
+		}
+	}
+
+	for k := 0; k < len(events); k++ {
 		if state.bufFront == nil {
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		}
-
-		// Parsing metric record to Splunk event.
-		events := mapMetricToSplunkEvent(res.Resource(), metrics.At(k), c.config, c.logger)
-		if c.config.UseMultiMetricFormat {
-			merged, err := mergeEventsToMultiMetricFormat(events)
-			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("error merging events: %w", err)))
-			} else {
-				events = merged
-			}
+		event := events[k]
+		// JSON encoding event and writing to buffer.
+		b, err := jsoniter.Marshal(event)
+		if err != nil {
+			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric events: %v, error: %w", events, err)))
+			continue
 		}
-		for _, event := range events {
-			// JSON encoding event and writing to buffer.
-			b, err := jsoniter.Marshal(event)
-			if err != nil {
-				permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric events: %v, error: %w", events, err)))
-				continue
-			}
-			state.buf.Write(b)
-		}
+		state.buf.Write(b)
 
 		// Continue adding events to buffer up to capacity.
 		// 0 capacity is interpreted as unknown/unbound consistent with ContentLength in http.Request.
