@@ -51,7 +51,7 @@ type emfExporter struct {
 
 	retryCnt    int
 	collectorID string
-	pusherCache cwlogs.PusherCache
+	pusherCache cwlogs.DefaultPusherCache
 }
 
 // newEmfPusher func creates an EMF Exporter instance with data push callback func

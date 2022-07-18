@@ -41,7 +41,7 @@ type exporter struct {
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	pusherCache      cwlogs.PusherCache
+	pusherCache      cwlogs.DefaultPusherCache
 }
 
 func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings) (component.LogsExporter, error) {
