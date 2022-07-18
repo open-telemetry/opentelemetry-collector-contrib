@@ -8,6 +8,10 @@ on:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-unittest-matrix:
     strategy:

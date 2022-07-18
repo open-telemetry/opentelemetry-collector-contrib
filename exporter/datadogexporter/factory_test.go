@@ -74,7 +74,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
+			HostnameSource: HostnameSourceConfigOrSystem,
 		},
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -174,7 +174,7 @@ func TestLoadConfig(t *testing.T) {
 
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
+			HostnameSource: HostnameSourceConfigOrSystem,
 		},
 
 		OnlyMetadata: false,
@@ -224,7 +224,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
+			HostnameSource: HostnameSourceConfigOrSystem,
 			Tags:           []string{"example:tag"},
 		},
 	}, api2Config)

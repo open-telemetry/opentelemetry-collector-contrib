@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
@@ -311,7 +310,7 @@ func DatapointToString(dp *sfxpb.DataPoint) string {
 
 	var dimsStr string
 	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
+		dimsStr += dim.String()
 	}
 
 	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)

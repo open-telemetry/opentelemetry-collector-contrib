@@ -17,7 +17,6 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/component"
@@ -36,17 +35,19 @@ import (
 )
 
 const (
-	HostnamePreviewFeatureGate      = "exporter.datadog.hostname.preview"
-	defaultHostnameChangeLogMessage = "The default hostname on this host will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424"
-	previewHostnameFailedLogMessage = "failed to get preview hostname. Please report this to Datadog."
+	HostnamePreviewFeatureGate = "exporter.datadog.hostname.preview"
+)
+
+var (
+	hostnamePreviewGate = featuregate.Gate{
+		ID:          HostnamePreviewFeatureGate,
+		Description: "Use the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and set 'host_metadata::hostname_source' to 'config_or_system' by default.",
+		Enabled:     true,
+	}
 )
 
 func init() {
-	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          HostnamePreviewFeatureGate,
-		Description: "When enabled, the Datadog exporter uses the 'preview' hostname resolution rules, which are consistent with Datadog cloud integration hostname resolution rules, and sets 'host_metadata::hostname_source: config_or_system' by default.",
-		Enabled:     false,
-	})
+	featuregate.GetRegistry().MustRegister(hostnamePreviewGate)
 }
 
 func buildPreviewProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -115,23 +116,11 @@ func buildCurrentProvider(set component.TelemetrySettings, configHostname string
 }
 
 func GetSourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
-	previewProvider, err := buildPreviewProvider(set, configHostname)
-	if err != nil {
-		return nil, err
-	} else if featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate) {
-		return previewProvider, err
+	if featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate) {
+		return buildPreviewProvider(set, configHostname)
 	}
 
-	currentProvider, err := buildCurrentProvider(set, configHostname)
-	if err != nil {
-		return nil, err
-	}
-
-	return &warnProvider{
-		logger:          set.Logger,
-		curProvider:     currentProvider,
-		previewProvider: previewProvider,
-	}, nil
+	return buildCurrentProvider(set, configHostname)
 }
 
 var _ source.Provider = (*currentProvider)(nil)
@@ -184,38 +173,4 @@ func (c *currentProvider) hostname(ctx context.Context) string {
 
 func (c *currentProvider) Source(ctx context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: c.hostname(ctx)}, nil
-}
-
-var _ source.Provider = (*warnProvider)(nil)
-
-type warnProvider struct {
-	onceDefaultChanged        sync.Once
-	oncePreviewHostnameFailed sync.Once
-
-	logger          *zap.Logger
-	curProvider     source.Provider
-	previewProvider source.Provider
-}
-
-func (p *warnProvider) Source(ctx context.Context) (source.Source, error) {
-	curSrc, err := p.curProvider.Source(ctx)
-	if err != nil {
-		return source.Source{}, err
-	}
-
-	previewSrc, err := p.previewProvider.Source(ctx)
-	if err != nil {
-		p.oncePreviewHostnameFailed.Do(func() {
-			p.logger.Warn(previewHostnameFailedLogMessage, zap.Error(err))
-		})
-	} else if curSrc != previewSrc {
-		p.onceDefaultChanged.Do(func() {
-			p.logger.Warn(defaultHostnameChangeLogMessage,
-				zap.Any("current default source", curSrc),
-				zap.Any("future default source", previewSrc),
-			)
-		})
-	}
-
-	return curSrc, nil
 }

@@ -438,9 +438,10 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, func(cfg *Config) {
+		cfg.StartAt = "beginning"
+	})
 	operator.persister = testutil.NewMockPersister("test")
-	operator.startAtBeginning = false
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()

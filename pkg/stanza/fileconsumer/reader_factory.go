@@ -25,6 +25,7 @@ import (
 type readerFactory struct {
 	*zap.SugaredLogger
 	readerConfig   *readerConfig
+	fromBeginning  bool
 	splitterConfig helper.SplitterConfig
 }
 
@@ -113,6 +114,12 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 
 	if b.fp != nil {
 		r.Fingerprint = b.fp
+	}
+
+	if !b.fromBeginning {
+		if err := r.offsetToEnd(); err != nil {
+			return nil, err
+		}
 	}
 
 	return r, nil
