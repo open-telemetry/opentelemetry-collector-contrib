@@ -87,7 +87,7 @@ func (pc *DefaultPusherCache) Flush() (errs error) {
 	return errs
 }
 
-func NewDefaultPusherCache(logger *zap.Logger) PusherCache {
+func NewDefaultPusherCache(logger *zap.Logger) *DefaultPusherCache {
 	return &DefaultPusherCache{
 		logger:                 logger,
 		groupStreamToPusherMap: map[string]map[string]Pusher{},
