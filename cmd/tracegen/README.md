@@ -7,7 +7,7 @@ This utility simulates a client generating traces, useful for testing and demons
 To install the latest version run the following command:
 
 ```console
-$ go install github.com/open-telemetry/opentelemetry-collector-contrib/tracegen@latest
+$ go install github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen@latest
 ```
 
 Check the [`go install` reference](https://go.dev/ref/mod#go-install) to install specific versions.

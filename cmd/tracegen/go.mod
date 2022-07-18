@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/tracegen
+module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
 
 go 1.17
 
