@@ -9,7 +9,7 @@
 
 ## Description
 
-The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum metrics to monotonic, delta sum metrics. Non-monotonic sums are excluded.
+The cumulative to delta processor (`cumulativetodeltaprocessor`) converts monotonic, cumulative sum and histogram metrics to monotonic, delta metrics. Non-monotonic sums are excluded.
 
 ## Configuration
 
@@ -31,7 +31,7 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # list the exact cumulative sum metrics to convert to delta
+        # list the exact cumulative sum or histogram metrics to convert to delta
         include:
             metrics:
                 - <metric_1_name>
@@ -47,8 +47,8 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # Convert cumulative sum metrics to delta 
-        # if and only if 'metric' is in the name 
+        # Convert cumulative sum or histogram metrics to delta
+        # if and only if 'metric' is in the name
         include:
             metrics:
                 - "*metric*"
@@ -60,8 +60,8 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
 
-        # Convert cumulative sum metrics to delta 
-        # if and only if 'metric' is not in the name 
+        # Convert cumulative sum or histogram metrics to delta
+        # if and only if 'metric' is not in the name
         exclude:
             metrics:
                 - "*metric*"
@@ -73,7 +73,7 @@ processors:
     # processor name: cumulativetodelta
     cumulativetodelta:
         # If include/exclude are not specified
-        # convert all cumulative sum metrics to delta
+        # convert all cumulative sum or histogram metrics to delta
 ```
 
 ## Warnings
