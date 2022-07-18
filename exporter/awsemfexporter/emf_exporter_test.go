@@ -47,7 +47,6 @@ func init() {
 }
 
 type mockCache struct {
-	cwlogs.PusherCache
 	mock.Mock
 }
 
@@ -496,8 +495,8 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 
 	cache := new(mockCache)
 	cache.On("GetPusher", expCfg.LogGroupName, expCfg.LogStreamName, mock.Anything, 0).Return(logPusher, nil).Times(3)
-	cache.On("ListPushers", nil).Return(logPusher).Twice()
-	cache.On("Flush", nil).Return(logPusher).Twice()
+	cache.On("ListPushers", nil).Return([]cwlogs.Pusher{logPusher}).Twice()
+	cache.On("Flush", nil).Return(nil).Twice()
 	cache.On("Shutdown", nil).Return(nil).Twice()
 
 	exp.(*emfExporter).pusherCache = cache
