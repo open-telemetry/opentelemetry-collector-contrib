@@ -82,6 +82,19 @@ receivers:
               action: keep
 ```
 
+## OpenTelemetry Operator 
+Additional to this static job definitions this receiver allows to query a list of jobs from the 
+OpenTelemetryOperators TargetAllocator or a compatible endpoint. 
+
+```yaml
+receivers:
+  prometheus:
+    target_allocator:
+      endpoint: http://my-targetallocator-service
+      interval: 30s
+      collector_id: collector-1
+```
+
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
