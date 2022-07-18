@@ -43,6 +43,8 @@ type propertiesMatcher struct {
 
 	// Span names to compare to.
 	nameFilters filterset.FilterSet
+
+	durationFilter *SpanDurationMatcher
 }
 
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
@@ -76,10 +78,19 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
+	var spanMatcher SpanDurationMatcher
+	if mp.SpanDuration != nil {
+		spanMatcher, err = NewDurationMatcher(*mp.SpanDuration)
+		if err != nil {
+            return nil, fmt.Errorf("error creating span duration matcher: %w", err)
+        }
+	}
+
 	return &propertiesMatcher{
 		PropertiesMatcher: rm,
 		serviceFilters:    serviceFS,
 		nameFilters:       nameFS,
+		durationFilter:    &spanMatcher,
 	}, nil
 }
 
@@ -110,6 +121,10 @@ func SkipSpan(include Matcher, exclude Matcher, span ptrace.Span, resource pcomm
 // MatchSpan matches a span and service to a set of properties.
 // see filterconfig.MatchProperties for more details
 func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
+	if mp.durationFilter != nil && !mp.durationFilter.Match(span) {
+		return false
+	}
+
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
 		// Check resource and spans for service.name

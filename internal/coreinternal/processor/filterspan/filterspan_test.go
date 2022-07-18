@@ -16,6 +16,7 @@ package filterspan
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,6 +132,14 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
+		{
+			name: "span_duration",
+			properties: &filterconfig.MatchProperties{
+				SpanDuration: &filterconfig.DurationProperties{
+					Operator: ">",
+					Duration: 1000},
+			},
+		},
 
 		{
 			name: "span_name_doesnt_match_any",
@@ -147,6 +156,8 @@ func TestSpan_Matching_False(t *testing.T) {
 	}
 
 	span := ptrace.NewSpan()
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().AddDate(0, 0, -1)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	span.SetName("spanName")
 	library := pcommon.NewInstrumentationScope()
 	resource := pcommon.NewResource()

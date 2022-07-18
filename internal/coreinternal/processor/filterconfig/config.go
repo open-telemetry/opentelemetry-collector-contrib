@@ -90,6 +90,7 @@ type MatchProperties struct {
 	// This is an optional field.
 	SpanNames []string `mapstructure:"span_names"`
 
+	SpanDuration *DurationProperties `mapstructure:"span_duration"`
 	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
 	LogBodies []string `mapstructure:"log_bodies"`
@@ -120,6 +121,11 @@ type MatchProperties struct {
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
 }
 
+type DurationProperties struct {
+	Operator string `mapstructure:"operator"`
+	Duration int64  `mapstructure:"duration"`
+}
+
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
 	if len(mp.LogBodies) > 0 {
@@ -130,8 +136,13 @@ func (mp *MatchProperties) ValidateForSpans() error {
 		return errors.New("log_severity_texts should not be specified for trace spans")
 	}
 
+	if mp.SpanDuration != nil {
+		if mp.SpanDuration.Operator != ">" && mp.SpanDuration.Operator != "<" {
+			return errors.New("span_duration operator should be >, <, or =")
+		}
+	}
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
-		len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
+		len(mp.Libraries) == 0 && len(mp.Resources) == 0 && mp.SpanDuration == nil {
 		return errors.New(`at least one of "services", "span_names", "attributes", "libraries" or "resources" field must be specified`)
 	}
 
