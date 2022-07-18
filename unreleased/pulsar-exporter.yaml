@@ -5,7 +5,7 @@ change_type: new_component
 component: pulsarexporter
 
 # A brief description of the change
-note: Add Apache Pulsar exporter doc
+note: Add Apache Pulsar exporter
 
 # One or more tracking issues related to the change
-issues: [ 9795 ]
+issues: [9795]
