@@ -20,9 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
 
-type durationMatcher interface {
-	Match(span ptrace.Span) bool
-}
 type SpanDurationMatcher struct {
 	Operation string
 	Value     int64

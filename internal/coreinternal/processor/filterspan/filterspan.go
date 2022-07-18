@@ -78,7 +78,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
-	var spanMatcher *SpanDurationMatcher = nil
+	var spanMatcher *SpanDurationMatcher
 	if mp.SpanDuration != nil {
 		spanMatcher, err = NewDurationMatcher(*mp.SpanDuration)
 		if err != nil {
