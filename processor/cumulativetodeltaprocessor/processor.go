@@ -15,7 +15,6 @@
 package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"math"
@@ -250,9 +249,6 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 				bucketId := (*baseIdentities)[firstBucketIndex+index]
 				bucketId.StartTimestamp = dp.StartTimestamp()
 				bucketId.Attributes = dp.Attributes()
-				testBytes := &bytes.Buffer{}
-				bucketId.Write(testBytes)
-				fmt.Println(testBytes.String())
 				bucketPoint := tracking.MetricPoint{
 					Identity: bucketId,
 					Value: tracking.ValuePoint{
