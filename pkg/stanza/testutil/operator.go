@@ -5,8 +5,9 @@ package testutil
 import (
 	context "context"
 
-	entry "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	mock "github.com/stretchr/testify/mock"
+
+	entry "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 
 	operator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 

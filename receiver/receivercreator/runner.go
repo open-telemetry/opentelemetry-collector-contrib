@@ -21,7 +21,9 @@ import (
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 )
 
 // runner starts and stops receiver instances.
@@ -65,7 +67,7 @@ func (run *receiverRunner) start(
 	}
 
 	if err := recvr.Start(context.Background(), run.host); err != nil {
-		return nil, fmt.Errorf("failed starting receiver %v: %v", cfg.ID(), err)
+		return nil, fmt.Errorf("failed starting receiver %v: %w", cfg.ID(), err)
 	}
 
 	return recvr, nil
@@ -84,18 +86,18 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	discoveredConfig userConfigMap,
 ) (config.Receiver, error) {
 	// Merge in the config values specified in the config file.
-	mergedConfig := config.NewMapFromStringMap(receiver.config)
+	mergedConfig := confmap.NewFromStringMap(receiver.config)
 
 	// Merge in discoveredConfig containing values discovered at runtime.
-	if err := mergedConfig.Merge(config.NewMapFromStringMap(discoveredConfig)); err != nil {
-		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %v", err)
+	if err := mergedConfig.Merge(confmap.NewFromStringMap(discoveredConfig)); err != nil {
+		return nil, fmt.Errorf("failed to merge template config from discovered runtime values: %w", err)
 	}
 
 	receiverCfg := factory.CreateDefaultConfig()
 	receiverCfg.SetIDName(receiver.id.Name())
 
 	if err := config.UnmarshalReceiver(mergedConfig, receiverCfg); err != nil {
-		return nil, fmt.Errorf("failed to load template config: %v", err)
+		return nil, fmt.Errorf("failed to load template config: %w", err)
 	}
 	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
 	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
@@ -109,5 +111,7 @@ func (run *receiverRunner) createRuntimeReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", cfg.ID().String()))
+	return factory.CreateMetricsReceiver(context.Background(), runParams, cfg, nextConsumer)
 }

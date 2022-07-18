@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sattributesprocessor
 
 import (
-	"os"
 	"reflect"
 	"regexp"
 	"testing"
@@ -57,12 +55,10 @@ func TestWithFilterNode(t *testing.T) {
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "")
 
-	os.Setenv("NODE_NAME", "nodefromenv")
+	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
 	assert.Equal(t, p.filters.Node, "nodefromenv")
-
-	os.Unsetenv("NODE_NAME")
 }
 
 func TestWithPassthrough(t *testing.T) {
@@ -720,14 +716,81 @@ func TestWithExtractPodAssociation(t *testing.T) {
 			"basic",
 			[]PodAssociationConfig{
 				{
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+		},
+		{
+			"deprecated",
+			[]PodAssociationConfig{
+				{
 					From: "label",
 					Name: "ip",
 				},
 			},
 			[]kube.Association{
 				{
-					From: "label",
+					Sources: []kube.AssociationSource{
+						{
+							From: "label",
+							Name: "ip",
+						},
+					},
+				},
+			},
+		},
+		{
+			"connection deprecated",
+			[]PodAssociationConfig{
+				{
+					From: "connection",
 					Name: "ip",
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "connection",
+						},
+					},
+				},
+			},
+		},
+		{
+			"connection",
+			[]PodAssociationConfig{
+				{
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "connection",
+							Name: "ip",
+						},
+					},
+				},
+			},
+			[]kube.Association{
+				{
+					Sources: []kube.AssociationSource{
+						{
+							From: "connection",
+						},
+					},
 				},
 			},
 		},
@@ -736,7 +799,7 @@ func TestWithExtractPodAssociation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExtractPodAssociations(tt.args...)
-			opt(p)
+			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podAssociations)
 		})
 	}
@@ -778,7 +841,7 @@ func TestWithExcludes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &kubernetesprocessor{}
 			opt := withExcludes(tt.args)
-			opt(p)
+			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podIgnore)
 		})
 	}

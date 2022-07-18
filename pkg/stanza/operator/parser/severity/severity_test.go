@@ -222,17 +222,17 @@ func TestSeverityParser(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			rootCfg := parseSeverityTestConfig(rootField, tc.mappingSet, tc.mapping)
-			rootEntry := makeTestEntry(rootField, tc.sample)
+			rootEntry := makeTestEntry(t, rootField, tc.sample)
 			t.Run("root", runSeverityParseTest(rootCfg, rootEntry, tc.buildErr, tc.parseErr, tc.expected))
 
 			nonRootCfg := parseSeverityTestConfig(someField, tc.mappingSet, tc.mapping)
-			nonRootEntry := makeTestEntry(someField, tc.sample)
+			nonRootEntry := makeTestEntry(t, someField, tc.sample)
 			t.Run("non-root", runSeverityParseTest(nonRootCfg, nonRootEntry, tc.buildErr, tc.parseErr, tc.expected))
 		})
 	}
 }
 
-func runSeverityParseTest(cfg *SeverityParserConfig, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
+func runSeverityParseTest(cfg *Config, ent *entry.Entry, buildErr bool, parseErr bool, expected entry.Severity) func(*testing.T) {
 	return func(t *testing.T) {
 		op, err := cfg.Build(testutil.Logger(t))
 		if buildErr {
@@ -247,7 +247,7 @@ func runSeverityParseTest(cfg *SeverityParserConfig, ent *entry.Entry, buildErr 
 			resultChan <- args.Get(1).(*entry.Entry)
 		}).Return(nil)
 
-		severityParser := op.(*SeverityParserOperator)
+		severityParser := op.(*Parser)
 		severityParser.OutputOperators = []operator.Operator{mockOutput}
 
 		err = severityParser.Parse(ent)
@@ -261,10 +261,10 @@ func runSeverityParseTest(cfg *SeverityParserConfig, ent *entry.Entry, buildErr 
 	}
 }
 
-func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[interface{}]interface{}) *SeverityParserConfig {
-	cfg := NewSeverityParserConfig("test_operator_id")
+func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[interface{}]interface{}) *Config {
+	cfg := NewConfig("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
-	cfg.SeverityParserConfig = helper.SeverityParserConfig{
+	cfg.SeverityConfig = helper.SeverityConfig{
 		ParseFrom: &parseFrom,
 		Preset:    preset,
 		Mapping:   mapping,
@@ -272,14 +272,14 @@ func parseSeverityTestConfig(parseFrom entry.Field, preset string, mapping map[i
 	return cfg
 }
 
-func makeTestEntry(field entry.Field, value interface{}) *entry.Entry {
+func makeTestEntry(t *testing.T, field entry.Field, value interface{}) *entry.Entry {
 	e := entry.New()
-	e.Set(field, value)
+	require.NoError(t, e.Set(field, value))
 	return e
 }
 
-func TestSeverityParserConfig(t *testing.T) {
-	expect := NewSeverityParserConfig("test")
+func TestConfig(t *testing.T) {
+	expect := NewConfig("test")
 	parseFrom := entry.NewBodyField("from")
 	expect.ParseFrom = &parseFrom
 	expect.Preset = "test"
@@ -292,7 +292,7 @@ func TestSeverityParserConfig(t *testing.T) {
 			"on_error":   "send",
 			"preset":     "test",
 		}
-		var actual SeverityParserConfig
+		var actual Config
 		err := helper.UnmarshalMapstructure(input, &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)
@@ -306,7 +306,7 @@ on_error: "send"
 parse_from: body.from
 preset: test
 `
-		var actual SeverityParserConfig
+		var actual Config
 		err := yaml.Unmarshal([]byte(input), &actual)
 		require.NoError(t, err)
 		require.Equal(t, expect, &actual)

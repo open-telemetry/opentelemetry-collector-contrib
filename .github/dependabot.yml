@@ -139,10 +139,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/observiqexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/opencensusexporter"
     schedule:
       interval: "weekly"
@@ -343,10 +339,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/internal/stanza"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/internal/tools"
     schedule:
       interval: "weekly"
@@ -367,11 +359,19 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/pkg/stanza"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/pkg/translator/jaeger"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/pkg/translator/opencensus"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/pkg/translator/prometheus"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -488,10 +488,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/collectdreceiver"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/couchbasereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -632,6 +628,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/simpleprometheusreceiver/examples/federation/prom-counter"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/solacereceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"

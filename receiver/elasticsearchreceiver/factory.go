@@ -30,6 +30,7 @@ import (
 
 const (
 	typeStr                   = "elasticsearch"
+	stability                 = component.StabilityLevelBeta
 	defaultCollectionInterval = 10 * time.Second
 	defaultHTTPClientTimeout  = 10 * time.Second
 )
@@ -39,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
@@ -71,7 +72,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotES
 	}
-	es := newElasticSearchScraper(params.TelemetrySettings, c)
+	es := newElasticSearchScraper(params, c)
 	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err

@@ -27,6 +27,8 @@ import (
 const (
 	// Value of "type" key in configuration.
 	typeStr = "k8s_events"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for k8s_cluster receiver.
@@ -34,7 +36,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

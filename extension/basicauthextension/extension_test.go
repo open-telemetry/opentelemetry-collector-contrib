@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
@@ -165,7 +164,8 @@ func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
-	f.WriteString("username:fromfile")
+	_, err = f.WriteString("username:fromfile")
+	require.NoError(t, err)
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{

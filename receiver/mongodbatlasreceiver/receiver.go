@@ -16,11 +16,12 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -43,12 +44,12 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasScraper(log *zap.Logger, cfg *Config) (scraperhelper.Scraper, error) {
-	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, log)
+func newMongoDBAtlasScraper(settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
+	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
-	recv := &receiver{log: log, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics)}
+	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
 	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
@@ -82,17 +83,17 @@ func (s *receiver) shutdown(context.Context) error {
 func (s *receiver) poll(ctx context.Context, time timeconstraints) error {
 	orgs, err := s.client.Organizations(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error retrieving organizations")
+		return fmt.Errorf("error retrieving organizations: %w", err)
 	}
 	for _, org := range orgs {
 		projects, err := s.client.Projects(ctx, org.ID)
 		if err != nil {
-			return errors.Wrap(err, "error retrieving projects")
+			return fmt.Errorf("error retrieving projects: %w", err)
 		}
 		for _, project := range projects {
 			processes, err := s.client.Processes(ctx, project.ID)
 			if err != nil {
-				return errors.Wrap(err, "error retrieving MongoDB Atlas processes")
+				return fmt.Errorf("error retrieving MongoDB Atlas processes: %w", err)
 			}
 			for _, process := range processes {
 				if err := s.extractProcessMetrics(
@@ -128,35 +129,25 @@ func (s *receiver) extractProcessMetrics(
 ) error {
 	// This receiver will support both logs and metrics- if one pipeline
 	//  or the other is not configured, it will be nil.
-	if err :=
-		s.client.ProcessMetrics(
-			ctx,
-			s.mb,
-			project.ID,
-			process.Hostname,
-			process.Port,
-			time.start,
-			time.end,
-			time.resolution,
-		); err != nil {
-		return errors.Wrap(
-			err,
-			"error when polling process metrics from MongoDB Atlas",
-		)
+	if err := s.client.ProcessMetrics(
+		ctx,
+		s.mb,
+		project.ID,
+		process.Hostname,
+		process.Port,
+		time.start,
+		time.end,
+		time.resolution,
+	); err != nil {
+		return fmt.Errorf("error when polling process metrics from MongoDB Atlas: %w", err)
 	}
 
 	if err := s.extractProcessDatabaseMetrics(ctx, time, orgName, project, process); err != nil {
-		return errors.Wrap(
-			err,
-			"error when polling process database metrics from MongoDB Atlas",
-		)
+		return fmt.Errorf("error when polling process database metrics from MongoDB Atlas: %w", err)
 	}
 
 	if err := s.extractProcessDiskMetrics(ctx, time, orgName, project, process); err != nil {
-		return errors.Wrap(
-			err,
-			"error when polling process disk metrics from MongoDB Atlas",
-		)
+		return fmt.Errorf("error when polling process disk metrics from MongoDB Atlas: %w", err)
 	}
 	return nil
 }
@@ -175,7 +166,7 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		process.Port,
 	)
 	if err != nil {
-		return errors.Wrap(err, "error retrieving process databases")
+		return fmt.Errorf("error retrieving process databases: %w", err)
 	}
 
 	for _, db := range processDatabases {
@@ -190,10 +181,7 @@ func (s *receiver) extractProcessDatabaseMetrics(
 			time.end,
 			time.resolution,
 		); err != nil {
-			return errors.Wrap(
-				err,
-				"error when polling database metrics from MongoDB Atlas",
-			)
+			return fmt.Errorf("error when polling database metrics from MongoDB Atlas: %w", err)
 		}
 		s.mb.EmitForResource(
 			metadata.WithMongodbAtlasOrgName(orgName),
@@ -228,10 +216,7 @@ func (s *receiver) extractProcessDiskMetrics(
 			time.end,
 			time.resolution,
 		); err != nil {
-			return errors.Wrap(
-				err,
-				"error when polling from MongoDB Atlas",
-			)
+			return fmt.Errorf("error when polling from MongoDB Atlas: %w", err)
 		}
 		s.mb.EmitForResource(
 			metadata.WithMongodbAtlasOrgName(orgName),

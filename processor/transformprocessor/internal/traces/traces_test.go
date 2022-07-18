@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 var (
@@ -61,7 +62,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
 
 	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{9, 6, 4})
+	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -78,7 +79,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewTraceID(traceID),
-			new:  hex.EncodeToString(traceID2[:]),
+			new:  pcommon.NewTraceID(traceID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -91,6 +92,38 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID),
+			new:  pcommon.NewSpanID(spanID2),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetSpanID(pcommon.NewSpanID(spanID2))
+			},
+		},
+		{
+			name: "trace_id string",
+			path: []common.Field{
+				{
+					Name: "trace_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(traceID[:]),
+			new:  hex.EncodeToString(traceID2[:]),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetTraceID(pcommon.NewTraceID(traceID2))
+			},
+		},
+		{
+			name: "span_id string",
+			path: []common.Field{
+				{
+					Name: "span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(spanID[:]),
 			new:  hex.EncodeToString(spanID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
@@ -103,10 +136,24 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_state",
 				},
 			},
-			orig: ptrace.TraceState("state"),
-			new:  "newstate",
+			orig: "key1=val1,key2=val2",
+			new:  "key=newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceState("newstate")
+				span.SetTraceState("key=newVal")
+			},
+		},
+		{
+			name: "trace_state key",
+			path: []common.Field{
+				{
+					Name:   "trace_state",
+					MapKey: testhelper.Strp("key1"),
+				},
+			},
+			orig: "val1",
+			new:  "newVal",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				span.SetTraceState("key1=newVal,key2=val2")
 			},
 		},
 		{
@@ -117,7 +164,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 			},
 			orig: pcommon.NewSpanID(spanID2),
-			new:  hex.EncodeToString(spanID[:]),
+			new:  pcommon.NewSpanID(spanID),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetParentSpanID(pcommon.NewSpanID(spanID))
 			},
@@ -142,7 +189,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "kind",
 				},
 			},
-			orig: ptrace.SpanKindServer,
+			orig: int64(2),
 			new:  int64(3),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetKind(ptrace.SpanKindClient)
@@ -193,7 +240,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -207,7 +254,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -221,7 +268,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -235,7 +282,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -249,13 +296,13 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -263,7 +310,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -280,7 +327,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -297,7 +344,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -314,7 +361,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -331,7 +378,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -350,7 +397,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: uint32(10),
+			orig: int64(10),
 			new:  int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedAttributesCount(20)
@@ -379,7 +426,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_events_count",
 				},
 			},
-			orig: uint32(20),
+			orig: int64(20),
 			new:  int64(30),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedEventsCount(30)
@@ -408,7 +455,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_links_count",
 				},
 			},
-			orig: uint32(30),
+			orig: int64(30),
 			new:  int64(40),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedLinksCount(40)
@@ -437,7 +484,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "code",
 				},
 			},
-			orig: ptrace.StatusCodeOk,
+			orig: int64(ptrace.StatusCodeOk),
 			new:  int64(ptrace.StatusCodeError),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Status().SetCode(ptrace.StatusCodeError)
@@ -484,7 +531,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -501,7 +548,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -518,7 +565,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -535,7 +582,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -552,13 +599,13 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -569,7 +616,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -589,7 +636,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -609,7 +656,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -629,7 +676,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -649,7 +696,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				},
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -696,7 +743,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span := ptrace.NewSpan()
 	span.SetTraceID(pcommon.NewTraceID(traceID))
 	span.SetSpanID(pcommon.NewSpanID(spanID))
-	span.SetTraceState("state")
+	span.SetTraceState("key1=val1,key2=val2")
 	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
@@ -706,7 +753,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().UpsertBool("bool", true)
 	span.Attributes().UpsertInt("int", 10)
 	span.Attributes().UpsertDouble("double", 1.2)
-	span.Attributes().UpsertMBytes("bytes", []byte{1, 3, 2})
+	span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
 	arrStr := pcommon.NewValueSlice()
 	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
@@ -729,8 +776,8 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().Upsert("arr_float", arrFloat)
 
 	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{1, 2, 3})
-	arrBytes.SliceVal().AppendEmpty().SetMBytesVal([]byte{2, 3, 4})
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 	span.Attributes().Upsert("arr_bytes", arrBytes)
 
 	span.SetDroppedAttributesCount(10)
@@ -754,10 +801,92 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	return span, il, resource
 }
 
-func strp(s string) *string {
-	return &s
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "SPAN_KIND_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "SPAN_KIND_INTERNAL",
+			want: 1,
+		},
+		{
+			name: "SPAN_KIND_SERVER",
+			want: 2,
+		},
+		{
+			name: "SPAN_KIND_CLIENT",
+			want: 3,
+		},
+		{
+			name: "SPAN_KIND_PRODUCER",
+			want: 4,
+		},
+		{
+			name: "SPAN_KIND_CONSUMER",
+			want: 5,
+		},
+		{
+			name: "STATUS_CODE_UNSET",
+			want: 0,
+		},
+		{
+			name: "STATUS_CODE_OK",
+			want: 1,
+		},
+		{
+			name: "STATUS_CODE_ERROR",
+			want: 2,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
 }
 
-func intp(i int64) *int64 {
-	return &i
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }

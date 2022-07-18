@@ -17,6 +17,7 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -102,13 +103,14 @@ func (t *tcpServer) ListenAndServe(
 			continue
 		}
 
-		if netErr, ok := acceptErr.(net.Error); ok {
+		var netErr net.Error
+		if errors.As(acceptErr, &netErr) {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - Accept (temporary=%v) net.Error: %v",
 				t.ln.Addr().String(),
-				netErr.Temporary(), // nolint SA1019
+				netErr.Timeout(),
 				netErr)
-			if netErr.Temporary() { // nolint SA1019
+			if netErr.Timeout() {
 				continue
 			}
 		}
@@ -196,19 +198,17 @@ func (t *tcpServer) handleConnection(
 			}
 		}
 
-		if netErr, ok := err.(*net.OpError); ok {
-			t.reporter.OnDebugf(
-				"TCP Transport (%s) - net.OpError: %v",
-				t.ln.Addr(),
-				netErr)
-			if !netErr.Temporary() || netErr.Timeout() {
+		netErr := &net.OpError{}
+		if errors.As(err, &netErr) {
+			t.reporter.OnDebugf("TCP Transport (%s) - net.OpError: %v", t.ln.Addr(), netErr)
+			if netErr.Timeout() {
 				// We want to end on timeout so idle connections are purged.
 				span.End()
 				return
 			}
 		}
 
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			t.reporter.OnDebugf(
 				"TCP Transport (%s) - error: %v",
 				t.ln.Addr(),

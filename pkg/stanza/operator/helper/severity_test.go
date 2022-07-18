@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -454,7 +454,7 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 
-		cfg := &SeverityParserConfig{
+		cfg := &SeverityConfig{
 			ParseFrom: &parseFrom,
 			Preset:    tc.mappingSet,
 			Mapping:   tc.mapping,
@@ -483,7 +483,7 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 type severityConfigTestCase struct {
 	name      string
 	expectErr bool
-	expect    *SeverityParserConfig
+	expect    *SeverityConfig
 }
 
 func TestGoldenSeverityParserConfig(t *testing.T) {
@@ -496,7 +496,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"parse_from_simple",
 			false,
-			func() *SeverityParserConfig {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				newParse := entry.NewBodyField("from")
 				cfg.ParseFrom = &newParse
@@ -506,7 +506,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"mapping",
 			false,
-			func() *SeverityParserConfig {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				cfg.Mapping = map[interface{}]interface{}{
 					"critical": "5xx",
@@ -520,7 +520,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"preset",
 			false,
-			func() *SeverityParserConfig {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				cfg.Preset = "default"
 				return cfg
@@ -554,37 +554,37 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 	}
 }
 
-func severityConfigFromFileViaYaml(file string) (*SeverityParserConfig, error) {
+func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, fmt.Errorf("could not find config file: %s", err)
+		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
 
 	config := defaultSeverityCfg()
 	if err := yaml.Unmarshal(bytes, config); err != nil {
-		return nil, fmt.Errorf("failed to read config file as yaml: %s", err)
+		return nil, fmt.Errorf("failed to read config file as yaml: %w", err)
 	}
 
 	return config, nil
 }
 
-func severityConfigFromFileViaMapstructure(file string, result *SeverityParserConfig) error {
+func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) error {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
-		return fmt.Errorf("could not find config file: %s", err)
+		return fmt.Errorf("could not find config file: %w", err)
 	}
 
 	raw := map[string]interface{}{}
 
-	if err := yaml.Unmarshal(bytes, raw); err != nil {
-		return fmt.Errorf("failed to read data from yaml: %s", err)
+	if err = yaml.Unmarshal(bytes, raw); err != nil {
+		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
 	err = UnmarshalMapstructure(raw, result)
 	return err
 }
 
-func defaultSeverityCfg() *SeverityParserConfig {
-	newCfg := NewSeverityParserConfig()
+func defaultSeverityCfg() *SeverityConfig {
+	newCfg := NewSeverityConfig()
 	return &newCfg
 }

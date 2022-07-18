@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package googlecloudexporter
 
 import (
@@ -86,8 +85,11 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 	lis, err := net.Listen("tcp", "localhost:8080")
 	require.NoError(t, err)
 	defer lis.Close()
+	defer srv.Stop()
 
-	go srv.Serve(lis)
+	go func() {
+		require.NoError(t, srv.Serve(lis))
+	}()
 
 	// Example with overridden client options
 	clientOptions := []option.ClientOption{

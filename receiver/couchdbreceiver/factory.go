@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	typeStr = "couchdb"
+	typeStr   = "couchdb"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates the couchdbreceiver factory
@@ -37,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -62,7 +63,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ns := newCouchdbScraper(params.TelemetrySettings, cfg)
+	ns := newCouchdbScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

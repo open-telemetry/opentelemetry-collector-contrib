@@ -189,8 +189,7 @@ func (c *couchdbScraper) parseInt(value interface{}) (int64, error) {
 }
 
 func (c *couchdbScraper) parseFloat(value interface{}) (float64, error) {
-	switch f := value.(type) {
-	case float64:
+	if f, ok := value.(float64); ok {
 		return f, nil
 	}
 	return 0, fmt.Errorf("could not parse value as float")

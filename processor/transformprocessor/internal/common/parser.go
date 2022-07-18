@@ -15,8 +15,12 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"encoding/hex"
+	"errors"
+
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/multierr"
 )
 
@@ -47,9 +51,12 @@ type Invocation struct {
 // nolint:govet
 type Value struct {
 	Invocation *Invocation `( @@`
+	Bytes      *Bytes      `| @Bytes`
 	String     *string     `| @String`
 	Float      *float64    `| @Float`
 	Int        *int64      `| @Int`
+	Bool       *Boolean    `| @("true" | "false")`
+	IsNil      *IsNil      `| @"nil"`
 	Path       *Path       `| @@ )`
 }
 
@@ -73,7 +80,36 @@ type Query struct {
 	Condition condFunc
 }
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+// Bytes type for capturing byte arrays
+type Bytes []byte
+
+func (b *Bytes) Capture(values []string) error {
+	rawStr := values[0][2:]
+	bytes, err := hex.DecodeString(rawStr)
+	if err != nil {
+		return err
+	}
+	*b = bytes
+	return nil
+}
+
+// Boolean Type for capturing booleans, see:
+// https://github.com/alecthomas/participle#capturing-boolean-value
+type Boolean bool
+
+func (b *Boolean) Capture(values []string) error {
+	*b = values[0] == "true"
+	return nil
+}
+
+type IsNil bool
+
+func (n *IsNil) Capture(_ []string) error {
+	*n = true
+	return nil
+}
+
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 
@@ -83,12 +119,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
+		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -121,6 +157,7 @@ func parseQuery(raw string) (*ParsedQuery, error) {
 func newParser() *participle.Parser {
 	lex := lexer.MustSimple([]lexer.SimpleRule{
 		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
@@ -136,4 +173,30 @@ func newParser() *participle.Parser {
 		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
 	}
 	return parser
+}
+
+func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
+	id, err := hex.DecodeString(spanIDStr)
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+	if len(id) != 8 {
+		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
+	}
+	var idArr [8]byte
+	copy(idArr[:8], id)
+	return pcommon.NewSpanID(idArr), nil
+}
+
+func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
+	id, err := hex.DecodeString(traceIDStr)
+	if err != nil {
+		return pcommon.TraceID{}, err
+	}
+	if len(id) != 16 {
+		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
+	}
+	var idArr [16]byte
+	copy(idArr[:16], id)
+	return pcommon.NewTraceID(idArr), nil
 }

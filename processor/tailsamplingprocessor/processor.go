@@ -24,7 +24,6 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -71,7 +70,7 @@ const (
 // configuration.
 func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Config) (component.TracesProcessor, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
@@ -145,6 +144,12 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case And:
 		andCfg := cfg.AndCfg
 		return getNewAndPolicy(logger, andCfg)
+	case SpanCount:
+		spCfg := cfg.SpanCountCfg
+		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil
+	case TraceState:
+		tsfCfg := cfg.TraceStateCfg
+		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}
@@ -253,11 +258,12 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 	}
 
 	// InvertNotSampled takes precedence over any other decision
-	if samplingDecision[sampling.InvertNotSampled] {
+	switch {
+	case samplingDecision[sampling.InvertNotSampled]:
 		finalDecision = sampling.NotSampled
-	} else if samplingDecision[sampling.Sampled] {
+	case samplingDecision[sampling.Sampled]:
 		finalDecision = sampling.Sampled
-	} else if samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled] {
+	case samplingDecision[sampling.InvertSampled] && !samplingDecision[sampling.NotSampled]:
 		finalDecision = sampling.Sampled
 	}
 

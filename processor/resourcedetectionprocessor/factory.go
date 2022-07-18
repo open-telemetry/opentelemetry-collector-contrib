@@ -36,14 +36,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gce"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/gke"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
 )
 
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resourcedetection"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -69,8 +70,10 @@ func NewFactory() component.ProcessorFactory {
 		eks.TypeStr:              eks.NewDetector,
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
 		env.TypeStr:              env.NewDetector,
-		gce.TypeStr:              gce.NewDetector,
-		gke.TypeStr:              gke.NewDetector,
+		gcp.TypeStr:              gcp.NewDetector,
+		// TODO(#10348): Remove GKE and GCE after the v0.54.0 release.
+		gcp.DeprecatedGKETypeStr: gcp.NewDetector,
+		gcp.DeprecatedGCETypeStr: gcp.NewDetector,
 		system.TypeStr:           system.NewDetector,
 	})
 
@@ -82,9 +85,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor),
-		component.WithMetricsProcessor(f.createMetricsProcessor),
-		component.WithLogsProcessor(f.createLogsProcessor))
+		component.WithTracesProcessorAndStabilityLevel(f.createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -200,6 +203,9 @@ func (f *factory) getResourceProvider(
 	if provider, ok := f.providers[processorName]; ok {
 		return provider, nil
 	}
+
+	// TODO(#10348): Remove this after the v0.54.0 release.
+	configuredDetectors = gcp.DeduplicateDetectors(params, configuredDetectors)
 
 	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
 	for _, key := range configuredDetectors {

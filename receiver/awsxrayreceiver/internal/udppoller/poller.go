@@ -153,14 +153,13 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	if err == nil {
 		return rlen, nil
 	}
-	switch err := err.(type) {
-	case net.Error:
-		if !err.Temporary() { // nolint SA1019
-			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: err})
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if !netErr.Timeout() {
+			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: netErr})
 		}
-	default:
-		return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 	}
+
 	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
 }
 
@@ -221,6 +220,7 @@ func (p *poller) poll() {
 				Payload: copybody,
 				Ctx:     ctx,
 			}
+			p.obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
 		}
 	}
 }

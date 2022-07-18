@@ -14,8 +14,6 @@
 
 package pipeline // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 
-//go:generate mockery --name=^(Pipeline)$ --output=../testutil --outpkg=testutil --case=snake
-
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )

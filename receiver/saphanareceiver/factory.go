@@ -31,6 +31,7 @@ import (
 
 const (
 	typeStr         = "saphana"
+	stability       = component.StabilityLevelInDevelopment
 	defaultEndpoint = "localhost:33015"
 )
 
@@ -39,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -69,7 +70,7 @@ func createMetricsReceiver(
 	if !ok {
 		return nil, errConfigNotSAPHANA
 	}
-	scraper, err := newSapHanaScraper(set.TelemetrySettings, c, &defaultConnectionFactory{})
+	scraper, err := newSapHanaScraper(set, c, &defaultConnectionFactory{})
 	if err != nil {
 		return nil, err
 	}

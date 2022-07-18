@@ -102,10 +102,15 @@ linters-settings:
     packages-with-error-message:
       # See https://github.com/open-telemetry/opentelemetry-collector/issues/5200 for rationale
       - sync/atomic: "Use go.uber.org/atomic instead of sync/atomic"
+      - github.com/pkg/errors: "Use 'errors' or 'fmt' instead of github.com/pkg/errors"
 
 linters:
   enable:
+    - depguard
+    - errcheck
+    - errorlint
     - exportloopref
+    - gocritic
     - gofmt
     - goimports
     - gosec
@@ -113,9 +118,9 @@ linters:
     - misspell
     - revive
     - staticcheck
+    - tenv
     - unconvert
     - unparam
-    - errcheck
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source

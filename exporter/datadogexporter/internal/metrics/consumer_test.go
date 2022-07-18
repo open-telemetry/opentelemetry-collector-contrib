@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -26,22 +28,21 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
 type testProvider string
 
-func (t testProvider) Hostname(context.Context) (string, error) {
-	return string(t), nil
+func (t testProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{Kind: source.HostnameKind, Identifier: string(t)}, nil
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger) *translator.Translator {
 	tr, err := translator.New(logger,
 		translator.WithHistogramMode(translator.HistogramModeDistributions),
 		translator.WithNumberMode(translator.NumberModeCumulativeToDelta),
-		translator.WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+		translator.WithFallbackSourceProvider(testProvider("fallbackHostname")),
 	)
 	require.NoError(t, err)
 	return tr

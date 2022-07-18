@@ -264,7 +264,6 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	}
 	jsonStr := w.String()
 	testWriters.release(w)
-	fmt.Println(jsonStr)
 	assert.True(t, strings.Contains(jsonStr, spanName))
 	assert.True(t, strings.Contains(jsonStr, enterpriseAppID))
 }

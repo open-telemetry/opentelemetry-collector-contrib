@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translator
 
 import (
@@ -21,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/DataDog/datadog-agent/pkg/quantile/summary"
 	gocache "github.com/patrickmn/go-cache"
@@ -32,8 +35,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 )
 
 func TestIsCumulativeMonotonic(t *testing.T) {
@@ -90,15 +91,20 @@ func TestIsCumulativeMonotonic(t *testing.T) {
 	}
 }
 
+var _ source.Provider = (*testProvider)(nil)
+
 type testProvider string
 
-func (t testProvider) Hostname(context.Context) (string, error) {
-	return string(t), nil
+func (t testProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{
+		Kind:       source.HostnameKind,
+		Identifier: string(t),
+	}, nil
 }
 
 func newTranslator(t *testing.T, logger *zap.Logger, opts ...Option) *Translator {
 	options := append([]Option{
-		WithFallbackHostnameProvider(testProvider("fallbackHostname")),
+		WithFallbackSourceProvider(testProvider("fallbackHostname")),
 		WithHistogramMode(HistogramModeDistributions),
 		WithNumberMode(NumberModeCumulativeToDelta),
 	}, opts...)
@@ -557,8 +563,8 @@ func TestMapDeltaHistogramMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetCount(20)
 	point.SetSum(math.Pi)
-	point.SetMBucketCounts([]uint64{2, 18})
-	point.SetMExplicitBounds([]float64{0})
+	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	point.SetTimestamp(ts)
 
 	dims := newDims("doubleHist.test")
@@ -714,15 +720,15 @@ func TestMapCumulativeHistogramMetrics(t *testing.T) {
 	point := slice.AppendEmpty()
 	point.SetCount(20)
 	point.SetSum(math.Pi)
-	point.SetMBucketCounts([]uint64{2, 18})
-	point.SetMExplicitBounds([]float64{0})
+	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	point.SetTimestamp(seconds(0))
 
 	point = slice.AppendEmpty()
 	point.SetCount(20 + 30)
 	point.SetSum(math.Pi + 20)
-	point.SetMBucketCounts([]uint64{2 + 11, 18 + 19})
-	point.SetMExplicitBounds([]float64{0})
+	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2 + 11, 18 + 19}))
+	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	point.SetTimestamp(seconds(2))
 
 	dims := newDims("doubleHist.test")
@@ -815,8 +821,8 @@ func TestLegacyBucketsTags(t *testing.T) {
 	tags := make([]string, 0, 10)
 
 	pointOne := pmetric.NewHistogramDataPoint()
-	pointOne.SetMBucketCounts([]uint64{2, 18})
-	pointOne.SetMExplicitBounds([]float64{0})
+	pointOne.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	pointOne.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	pointOne.SetTimestamp(seconds(0))
 	consumer := &mockTimeSeriesConsumer{}
 	dims := &Dimensions{name: "test.histogram.one", tags: tags}
@@ -824,8 +830,8 @@ func TestLegacyBucketsTags(t *testing.T) {
 	seriesOne := consumer.metrics
 
 	pointTwo := pmetric.NewHistogramDataPoint()
-	pointTwo.SetMBucketCounts([]uint64{2, 18})
-	pointTwo.SetMExplicitBounds([]float64{1})
+	pointTwo.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	pointTwo.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
 	pointTwo.SetTimestamp(seconds(0))
 	consumer = &mockTimeSeriesConsumer{}
 	dims = &Dimensions{name: "test.histogram.two", tags: tags}
@@ -894,7 +900,7 @@ func TestMapSummaryMetrics(t *testing.T) {
 		c := newTestCache()
 		c.cache.Set((&Dimensions{name: "summary.example.count", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
 		c.cache.Set((&Dimensions{name: "summary.example.sum", tags: tags}).String(), numberCounter{0, 0, 1}, gocache.NoExpiration)
-		options := []Option{WithFallbackHostnameProvider(testProvider("fallbackHostname"))}
+		options := []Option{WithFallbackSourceProvider(testProvider("fallbackHostname"))}
 		if quantiles {
 			options = append(options, WithQuantiles())
 		}
@@ -1062,8 +1068,8 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(math.Phi)
-	dpDoubleHist.SetMBucketCounts([]uint64{2, 18})
-	dpDoubleHist.SetMExplicitBounds([]float64{0})
+	dpDoubleHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	dpDoubleHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	// Exponential Histogram (delta)
@@ -1078,9 +1084,9 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	dpDoubleExpHist.SetZeroCount(5)
 	dpDoubleExpHist.SetSum(math.Phi)
 	dpDoubleExpHist.Negative().SetOffset(4)
-	dpDoubleExpHist.Negative().SetMBucketCounts([]uint64{3, 2, 5})
+	dpDoubleExpHist.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3, 2, 5}))
 	dpDoubleExpHist.Positive().SetOffset(1)
-	dpDoubleExpHist.Positive().SetMBucketCounts([]uint64{7, 1, 1, 1})
+	dpDoubleExpHist.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{7, 1, 1, 1}))
 	dpDoubleExpHist.SetTimestamp(seconds(0))
 
 	// Exponential Histogram (cumulative)
@@ -1095,9 +1101,9 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	dpDoubleExpHist.SetZeroCount(5)
 	dpDoubleExpHist.SetSum(math.Phi)
 	dpDoubleExpHist.Negative().SetOffset(4)
-	dpDoubleExpHist.Negative().SetMBucketCounts([]uint64{3, 2, 5})
+	dpDoubleExpHist.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3, 2, 5}))
 	dpDoubleExpHist.Positive().SetOffset(1)
-	dpDoubleExpHist.Positive().SetMBucketCounts([]uint64{7, 1, 1, 1})
+	dpDoubleExpHist.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{7, 1, 1, 1}))
 	dpDoubleExpHist.SetTimestamp(seconds(0))
 
 	dpDoubleExpHist = dpsDoubleExpHist.AppendEmpty()
@@ -1106,9 +1112,9 @@ func createTestMetrics(additionalAttributes map[string]string, name, version str
 	dpDoubleExpHist.SetZeroCount(10)
 	dpDoubleExpHist.SetSum(math.Pi + math.Phi)
 	dpDoubleExpHist.Negative().SetOffset(3)
-	dpDoubleExpHist.Negative().SetMBucketCounts([]uint64{2, 3, 5, 6})
+	dpDoubleExpHist.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 3, 5, 6}))
 	dpDoubleExpHist.Positive().SetOffset(1)
-	dpDoubleExpHist.Positive().SetMBucketCounts([]uint64{7, 2, 2, 3, 4})
+	dpDoubleExpHist.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{7, 2, 2, 3, 4}))
 	dpDoubleExpHist.SetTimestamp(seconds(2))
 
 	// Int Sum (cumulative)
@@ -1214,26 +1220,30 @@ func TestMapMetrics(t *testing.T) {
 		"env:dev",
 	}
 
-	ilName := "instrumentation_library"
-	ilVersion := "1.0.0"
+	instructionName := "foo"
+	instructionVersion := "1.0.0"
 	ilTags := []string{
-		fmt.Sprintf("instrumentation_library:%s", ilName),
-		fmt.Sprintf("instrumentation_library_version:%s", ilVersion),
+		fmt.Sprintf("instrumentation_library:%s", instructionName),
+		fmt.Sprintf("instrumentation_library_version:%s", instructionVersion),
+	}
+	isTags := []string{
+		fmt.Sprintf("instrumentation_scope:%s", instructionName),
+		fmt.Sprintf("instrumentation_scope_version:%s", instructionVersion),
 	}
 
 	tests := []struct {
-		name                                      string
 		resourceAttributesAsTags                  bool
 		instrumentationLibraryMetadataAsTags      bool
+		instrumentationScopeMetadataAsTags        bool
 		expectedMetrics                           []metric
 		expectedSketches                          []sketch
 		expectedUnknownMetricType                 int
 		expectedUnsupportedAggregationTemporality int
 	}{
 		{
-			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: false",
 			resourceAttributesAsTags:             false,
 			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, attrTags),
 				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
@@ -1270,9 +1280,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: false",
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, attrTags),
 				newGaugeWithHostname("double.gauge", math.Pi, attrTags),
@@ -1309,9 +1319,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: false, InstrumentationLibraryMetadataAsTags: true",
 			resourceAttributesAsTags:             false,
 			instrumentationLibraryMetadataAsTags: true,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
 				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
@@ -1348,9 +1358,9 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnsupportedAggregationTemporality: 3,
 		},
 		{
-			name:                                 "ResourceAttributesAsTags: true, InstrumentationLibraryMetadataAsTags: true",
 			resourceAttributesAsTags:             true,
 			instrumentationLibraryMetadataAsTags: true,
+			instrumentationScopeMetadataAsTags:   false,
 			expectedMetrics: []metric{
 				newGaugeWithHostname("int.gauge", 1, append(attrTags, ilTags...)),
 				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, ilTags...)),
@@ -1386,11 +1396,56 @@ func TestMapMetrics(t *testing.T) {
 			expectedUnknownMetricType:                 1,
 			expectedUnsupportedAggregationTemporality: 3,
 		},
+		{
+			resourceAttributesAsTags:             true,
+			instrumentationLibraryMetadataAsTags: false,
+			instrumentationScopeMetadataAsTags:   true,
+			expectedMetrics: []metric{
+				newGaugeWithHostname("int.gauge", 1, append(attrTags, isTags...)),
+				newGaugeWithHostname("double.gauge", math.Pi, append(attrTags, isTags...)),
+				newCountWithHostname("int.delta.sum", 2, 0, append(attrTags, isTags...)),
+				newCountWithHostname("double.delta.sum", math.E, 0, append(attrTags, isTags...)),
+				newCountWithHostname("int.delta.monotonic.sum", 2, 0, append(attrTags, isTags...)),
+				newCountWithHostname("double.delta.monotonic.sum", math.E, 0, append(attrTags, isTags...)),
+				newCountWithHostname("summary.sum", 10_000, 2, append(attrTags, isTags...)),
+				newCountWithHostname("summary.count", 100, 2, append(attrTags, isTags...)),
+				newGaugeWithHostname("int.cumulative.sum", 4, append(attrTags, isTags...)),
+				newGaugeWithHostname("double.cumulative.sum", 4, append(attrTags, isTags...)),
+				newCountWithHostname("int.cumulative.monotonic.sum", 3, 2, append(attrTags, isTags...)),
+				newCountWithHostname("double.cumulative.monotonic.sum", math.Pi, 2, append(attrTags, isTags...)),
+			},
+			expectedSketches: []sketch{
+				newSketchWithHostname("double.histogram", summary.Summary{
+					Min: 0,
+					Max: 0,
+					Sum: math.Phi,
+					Avg: math.Phi / 20,
+					Cnt: 20,
+				}, append(attrTags, isTags...)),
+				newSketchWithHostname("double.exponentialHistogram", summary.Summary{
+					// Expected min: lower bound of the highest negative bucket
+					Min: -math.Pow(math.Pow(2, math.Pow(2, -6)), 7),
+					// Expected max: upper bound of the highest positive bucket
+					Max: math.Pow(math.Pow(2, math.Pow(2, -6)), 5),
+					Sum: math.Phi,
+					Avg: math.Phi / 25,
+					Cnt: 25,
+				}, append(attrTags, isTags...)),
+			},
+			expectedUnknownMetricType:                 1,
+			expectedUnsupportedAggregationTemporality: 3,
+		},
 	}
 
 	for _, testInstance := range tests {
-		t.Run(testInstance.name, func(t *testing.T) {
-			md := createTestMetrics(attrs, ilName, ilVersion)
+		name := fmt.Sprintf(
+			"ResourceAttributesAsTags: %t, InstrumentationScopeMetadataAsTags: %t, InstrumentationLibraryName: %t",
+			testInstance.resourceAttributesAsTags,
+			testInstance.instrumentationScopeMetadataAsTags,
+			testInstance.instrumentationLibraryMetadataAsTags,
+		)
+		t.Run(name, func(t *testing.T) {
+			md := createTestMetrics(attrs, instructionName, instructionVersion)
 
 			core, observed := observer.New(zapcore.DebugLevel)
 			testLogger := zap.New(core)
@@ -1400,6 +1455,9 @@ func TestMapMetrics(t *testing.T) {
 			options := []Option{}
 			if testInstance.resourceAttributesAsTags {
 				options = append(options, WithResourceAttributesAsTags())
+			}
+			if testInstance.instrumentationScopeMetadataAsTags {
+				options = append(options, WithInstrumentationScopeMetadataAsTags())
 			}
 			if testInstance.instrumentationLibraryMetadataAsTags {
 				options = append(options, WithInstrumentationLibraryMetadataAsTags())
@@ -1468,8 +1526,8 @@ func createNaNMetrics() pmetric.Metrics {
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(math.NaN())
-	dpDoubleHist.SetMBucketCounts([]uint64{2, 18})
-	dpDoubleHist.SetMExplicitBounds([]float64{0})
+	dpDoubleHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
+	dpDoubleHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	// Exponential Histogram (delta)
@@ -1484,9 +1542,9 @@ func createNaNMetrics() pmetric.Metrics {
 	dpDoubleExpHist.SetZeroCount(5)
 	dpDoubleExpHist.SetSum(math.NaN())
 	dpDoubleExpHist.Negative().SetOffset(0)
-	dpDoubleExpHist.Negative().SetMBucketCounts([]uint64{5})
+	dpDoubleExpHist.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5}))
 	dpDoubleExpHist.Positive().SetOffset(0)
-	dpDoubleExpHist.Positive().SetMBucketCounts([]uint64{2, 8})
+	dpDoubleExpHist.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 8}))
 	dpDoubleExpHist.SetTimestamp(seconds(0))
 
 	// Double Sum (cumulative)

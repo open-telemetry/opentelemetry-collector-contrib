@@ -29,14 +29,15 @@ import (
 )
 
 const (
-	typeStr = "postgresql"
+	typeStr   = "postgresql"
+	stability = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -66,7 +67,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ns := newPostgreSQLScraper(params.Logger, cfg, &defaultClientFactory{})
+	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
 	if err != nil {
 		return nil, err

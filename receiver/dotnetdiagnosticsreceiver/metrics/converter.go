@@ -69,8 +69,7 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pmetric.Metric, startTime, now time.
 // conforming so are left unchanged.
 func mapUnits(units string) string {
 	// do we want to make this mapping configurable?
-	switch units {
-	case "B":
+	if units == "B" {
 		return "By"
 	}
 	return units

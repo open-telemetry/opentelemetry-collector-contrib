@@ -48,7 +48,7 @@ type DiskStats struct {
 	IoServiceBytesRecursives []IoServiceBytesRecursive `json:"io_service_bytes_recursive,omitempty"`
 }
 
-//IoServiceBytesRecursive defines the IO device stats
+// IoServiceBytesRecursive defines the IO device stats
 type IoServiceBytesRecursive struct {
 	Major *uint64 `json:"major,omitempty"`
 	Minor *uint64 `json:"minor,omitempty"`

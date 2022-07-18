@@ -64,11 +64,12 @@ func (t *deltaTranslator) deltaPt(deltaMetricName string, currPt *sfxpb.DataPoin
 	}
 	prevPt := v.(*sfxpb.DataPoint)
 	var deltaPt *sfxpb.DataPoint
-	if currPt.Value.DoubleValue != nil && prevPt.Value.DoubleValue != nil {
+	switch {
+	case currPt.Value.DoubleValue != nil && prevPt.Value.DoubleValue != nil:
 		deltaPt = doubleDeltaPt(currPt, prevPt, deltaMetricName)
-	} else if currPt.Value.IntValue != nil && prevPt.Value.IntValue != nil {
+	case currPt.Value.IntValue != nil && prevPt.Value.IntValue != nil:
 		deltaPt = intDeltaPt(currPt, prevPt, deltaMetricName)
-	} else {
+	default:
 		return nil
 	}
 	return deltaPt

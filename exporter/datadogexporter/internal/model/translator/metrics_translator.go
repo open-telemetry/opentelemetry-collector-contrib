@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 
 import (
@@ -19,22 +20,35 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"sync"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/attributes"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationlibrary"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/internal/instrumentationscope"
 )
 
 const metricName string = "metric name"
+
+var _ source.Provider = (*noSourceProvider)(nil)
+
+type noSourceProvider struct{}
+
+func (*noSourceProvider) Source(context.Context) (source.Source, error) {
+	return source.Source{Kind: source.HostnameKind, Identifier: ""}, nil
+}
 
 // Translator is a metrics translator.
 type Translator struct {
 	prevPts *ttlCache
 	logger  *zap.Logger
 	cfg     translatorConfig
+
+	onceHostnameChanged sync.Once
 }
 
 // New creates a new translator with given options.
@@ -46,9 +60,10 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 		SendMonotonic:                        true,
 		ResourceAttributesAsTags:             false,
 		InstrumentationLibraryMetadataAsTags: false,
+		InstrumentationScopeMetadataAsTags:   false,
 		sweepInterval:                        1800,
 		deltaTTL:                             3600,
-		fallbackHostnameProvider:             &noHostProvider{},
+		fallbackSourceProvider:               &noSourceProvider{},
 	}
 
 	for _, opt := range options {
@@ -63,7 +78,11 @@ func New(logger *zap.Logger, options ...Option) (*Translator, error) {
 	}
 
 	cache := newTTLCache(cfg.sweepInterval, cfg.deltaTTL)
-	return &Translator{cache, logger, cfg}, nil
+	return &Translator{
+		prevPts: cache,
+		logger:  logger,
+		cfg:     cfg,
+	}, nil
 }
 
 // isCumulativeMonotonic checks if a metric is a cumulative monotonic metric
@@ -150,10 +169,10 @@ func getBounds(p pmetric.HistogramDataPoint, idx int) (lowerBound float64, upper
 	lowerBound = math.Inf(-1)
 	upperBound = math.Inf(1)
 	if idx > 0 {
-		lowerBound = p.MExplicitBounds()[idx-1]
+		lowerBound = p.ExplicitBounds().At(idx - 1)
 	}
-	if idx < len(p.MExplicitBounds()) {
-		upperBound = p.MExplicitBounds()[idx]
+	if idx < p.ExplicitBounds().Len() {
+		upperBound = p.ExplicitBounds().At(idx)
 	}
 	return
 }
@@ -178,7 +197,7 @@ func (t *Translator) getSketchBuckets(
 	startTs := uint64(p.StartTimestamp())
 	ts := uint64(p.Timestamp())
 	as := &quantile.Agent{}
-	for j := range p.MBucketCounts() {
+	for j := 0; j < p.BucketCounts().Len(); j++ {
 		lowerBound, upperBound := getBounds(p, j)
 
 		// Compute temporary bucketTags to have unique keys in the t.prevPts cache for each bucket
@@ -198,7 +217,7 @@ func (t *Translator) getSketchBuckets(
 			lowerBound = upperBound
 		}
 
-		count := p.MBucketCounts()[j]
+		count := p.BucketCounts().At(j)
 		if delta {
 			as.InsertInterpolate(lowerBound, upperBound, uint(count))
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, float64(count)); ok {
@@ -231,14 +250,14 @@ func (t *Translator) getLegacyBuckets(
 	// We have a single metric, 'bucket', which is tagged with the bucket bounds. See:
 	// https://github.com/DataDog/integrations-core/blob/7.30.1/datadog_checks_base/datadog_checks/base/checks/openmetrics/v2/transformers/histogram.py
 	baseBucketDims := pointDims.WithSuffix("bucket")
-	for idx, val := range p.MBucketCounts() {
+	for idx := 0; idx < p.BucketCounts().Len(); idx++ {
 		lowerBound, upperBound := getBounds(p, idx)
 		bucketDims := baseBucketDims.AddTags(
 			fmt.Sprintf("lower_bound:%s", formatFloat(lowerBound)),
 			fmt.Sprintf("upper_bound:%s", formatFloat(upperBound)),
 		)
 
-		count := float64(val)
+		count := float64(p.BucketCounts().At(idx))
 		if delta {
 			consumer.ConsumeTimeSeries(ctx, bucketDims, Count, ts, count)
 		} else if dx, ok := t.prevPts.Diff(bucketDims, startTs, ts, count); ok {
@@ -395,28 +414,44 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 
 		// Fetch tags from attributes.
 		attributeTags := attributes.TagsFromAttributes(rm.Resource().Attributes())
-
-		host, ok := attributes.HostnameFromAttributes(rm.Resource().Attributes())
+		src, ok := attributes.SourceFromAttributes(rm.Resource().Attributes(), t.cfg.previewHostnameFromAttributes)
 		if !ok {
 			var err error
-			host, err = t.cfg.fallbackHostnameProvider.Hostname(context.Background())
+			src, err = t.cfg.fallbackSourceProvider.Source(context.Background())
 			if err != nil {
-				return fmt.Errorf("failed to get fallback host: %w", err)
+				return fmt.Errorf("failed to get fallback source: %w", err)
 			}
 		}
 
-		if host != "" {
-			// Track hosts if the consumer is a HostConsumer.
+		// Log related to the preview hostname feature flag.
+		// TODO (#10424): Remove this once the feature flag is enabled by default.
+		if !t.cfg.previewHostnameFromAttributes {
+			previewSrc, previewOk := attributes.SourceFromAttributes(rm.Resource().Attributes(), true)
+			if !previewOk {
+				previewSrc, _ = t.cfg.fallbackSourceProvider.Source(context.Background())
+			}
+
+			if previewSrc != src {
+				t.onceHostnameChanged.Do(func() {
+					t.logger.Warn(
+						"The source resolved from attributes on one of your metrics will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424",
+						zap.Any("current source", src),
+						zap.Any("future hostname", previewSrc),
+					)
+				})
+			}
+		}
+
+		var host string
+		switch src.Kind {
+		case source.HostnameKind:
+			host = src.Identifier
 			if c, ok := consumer.(HostConsumer); ok {
 				c.ConsumeHost(host)
 			}
-		} else {
-			// Track task ARN if the consumer is a TagsConsumer.
+		case source.AWSECSFargateKind:
 			if c, ok := consumer.(TagsConsumer); ok {
-				tags := attributes.RunningTagsFromAttributes(rm.Resource().Attributes())
-				for _, tag := range tags {
-					c.ConsumeTag(tag)
-				}
+				c.ConsumeTag(src.Tag())
 			}
 		}
 
@@ -426,7 +461,9 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 			metricsArray := ilm.Metrics()
 
 			var additionalTags []string
-			if t.cfg.InstrumentationLibraryMetadataAsTags {
+			if t.cfg.InstrumentationScopeMetadataAsTags {
+				additionalTags = append(attributeTags, instrumentationscope.TagsFromInstrumentationScopeMetadata(ilm.Scope())...)
+			} else if t.cfg.InstrumentationLibraryMetadataAsTags {
 				additionalTags = append(attributeTags, instrumentationlibrary.TagsFromInstrumentationLibraryMetadata(ilm.Scope())...)
 			} else {
 				additionalTags = attributeTags

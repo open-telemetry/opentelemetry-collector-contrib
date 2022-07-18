@@ -18,9 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
-	"os"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -182,7 +180,7 @@ func TestForwardEvent(t *testing.T) {
 
 func TestEventAcknowledgment(t *testing.T) {
 	connect, _, logs, cancel := setupServer(t)
-	defer func() { fmt.Printf("%v", logs.All()) }()
+	defer func() { fmt.Printf("%v\n", logs.All()) }()
 	defer cancel()
 
 	const chunkValue = "abcdef01234576789"
@@ -349,10 +347,7 @@ func TestUnixEndpoint(t *testing.T) {
 
 	next := new(consumertest.LogsSink)
 
-	tmpdir, err := ioutil.TempDir("", "fluent-socket")
-	require.NoError(t, err)
-
-	defer os.RemoveAll(tmpdir)
+	tmpdir := t.TempDir()
 
 	conf := &Config{
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),

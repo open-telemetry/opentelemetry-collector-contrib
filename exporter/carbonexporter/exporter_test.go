@@ -17,9 +17,11 @@ package carbonexporter
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"runtime"
 	"strconv"
 	"sync"
 	"testing"
@@ -183,11 +185,11 @@ func TestConsumeMetricsData(t *testing.T) {
 					// Actual metric validation is done by other tests, here it
 					// is just flow.
 					_, err := reader.ReadBytes(byte('\n'))
-					if err != nil && err != io.EOF {
+					if err != nil && !errors.Is(err, io.EOF) {
 						assert.NoError(t, err) // Just to print any error
 					}
 
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						break
 					}
 					wg.Done()
@@ -207,6 +209,9 @@ func TestConsumeMetricsData(t *testing.T) {
 // Other tests didn't for the concurrency aspect of connPool, this test
 // is designed to force that.
 func Test_connPool_Concurrency(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10147")
+	}
 	addr := testutil.GetAvailableLocalAddress(t)
 	laddr, err := net.ResolveTCPAddr("tcp", addr)
 	require.NoError(t, err)
@@ -246,11 +251,11 @@ func Test_connPool_Concurrency(t *testing.T) {
 					// Actual metric validation is done by other tests, here it
 					// is just flow.
 					_, err := reader.ReadBytes(byte('\n'))
-					if err != nil && err != io.EOF {
+					if err != nil && !errors.Is(err, io.EOF) {
 						assert.NoError(t, err) // Just to print any error
 					}
 
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						break
 					}
 					recvWG.Done()

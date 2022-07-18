@@ -102,9 +102,9 @@ func getResourceFromARN(arn string) (string, string, string) {
 	return region, accountID, taskID
 }
 
-//The Amazon Resource Name (ARN) that identifies the cluster. The ARN contains the arn:aws:ecs namespace,
-//followed by the Region of the cluster, the AWS account ID of the cluster owner, the cluster namespace,
-//and then the cluster name. For example, arn:aws:ecs:region:012345678910:cluster/test.
+// The Amazon Resource Name (ARN) that identifies the cluster. The ARN contains the arn:aws:ecs namespace,
+// followed by the Region of the cluster, the AWS account ID of the cluster owner, the cluster namespace,
+// and then the cluster name. For example, arn:aws:ecs:region:012345678910:cluster/test.
 func getNameFromCluster(cluster string) string {
 	if cluster == "" || !strings.HasPrefix(cluster, "arn:aws") {
 		return cluster

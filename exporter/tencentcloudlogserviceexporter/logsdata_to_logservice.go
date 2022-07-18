@@ -111,15 +111,15 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	}
 }
 
-func instrumentationLibraryToLogContents(instrumentationLibrary pcommon.InstrumentationScope) []*cls.Log_Content {
+func instrumentationLibraryToLogContents(scope pcommon.InstrumentationScope) []*cls.Log_Content {
 	return []*cls.Log_Content{
 		{
 			Key:   proto.String(clsLogInstrumentationName),
-			Value: proto.String(instrumentationLibrary.Name()),
+			Value: proto.String(scope.Name()),
 		},
 		{
 			Key:   proto.String(clsLogInstrumentationVersion),
-			Value: proto.String(instrumentationLibrary.Version()),
+			Value: proto.String(scope.Version()),
 		},
 	}
 }

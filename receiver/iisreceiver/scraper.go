@@ -34,7 +34,7 @@ import (
 )
 
 type iisReceiver struct {
-	params           component.ReceiverCreateSettings
+	params           component.TelemetrySettings
 	config           *Config
 	consumer         consumer.Metrics
 	watcherRecorders []watcherRecorder
@@ -51,12 +51,12 @@ type watcherRecorder struct {
 }
 
 // newIisReceiver returns an iisReceiver
-func newIisReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
+func newIisReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) *iisReceiver {
 	return &iisReceiver{
-		params:        params,
+		params:        settings.TelemetrySettings,
 		config:        cfg,
 		consumer:      consumer,
-		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics),
+		metricBuilder: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 		newWatcher:    winperfcounters.NewWatcher,
 	}
 }

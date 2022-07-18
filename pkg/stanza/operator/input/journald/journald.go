@@ -37,19 +37,19 @@ import (
 )
 
 func init() {
-	operator.Register("journald_input", func() operator.Builder { return NewJournaldInputConfig("") })
+	operator.Register("journald_input", func() operator.Builder { return NewConfig("") })
 }
 
-func NewJournaldInputConfig(operatorID string) *JournaldInputConfig {
-	return &JournaldInputConfig{
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, "journald_input"),
 		StartAt:     "end",
 		Priority:    "info",
 	}
 }
 
-// JournaldInputConfig is the configuration of a journald input operator
-type JournaldInputConfig struct {
+// Config is the configuration of a journald input operator
+type Config struct {
 	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
 
 	Directory *string  `mapstructure:"directory,omitempty" json:"directory,omitempty" yaml:"directory,omitempty"`
@@ -60,7 +60,7 @@ type JournaldInputConfig struct {
 }
 
 // Build will build a journald input operator from the supplied configuration
-func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator
 		}
 	}
 
-	return &JournaldInput{
+	return &Input{
 		InputOperator: inputOperator,
 		newCmd: func(ctx context.Context, cursor []byte) cmd {
 			if cursor != nil {
@@ -113,8 +113,8 @@ func (c JournaldInputConfig) Build(logger *zap.SugaredLogger) (operator.Operator
 	}, nil
 }
 
-// JournaldInput is an operator that process logs using journald
-type JournaldInput struct {
+// Input is an operator that process logs using journald
+type Input struct {
 	helper.InputOperator
 
 	newCmd func(ctx context.Context, cursor []byte) cmd
@@ -133,27 +133,27 @@ type cmd interface {
 var lastReadCursorKey = "lastReadCursor"
 
 // Start will start generating log entries.
-func (operator *JournaldInput) Start(persister operator.Persister) error {
+func (operator *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	operator.cancel = cancel
 
 	// Start from a cursor if there is a saved offset
 	cursor, err := persister.Get(ctx, lastReadCursorKey)
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl state: %s", err)
+		return fmt.Errorf("failed to get journalctl state: %w", err)
 	}
 
 	operator.persister = persister
 
 	// Start journalctl
-	cmd := operator.newCmd(ctx, cursor)
-	stdout, err := cmd.StdoutPipe()
+	journal := operator.newCmd(ctx, cursor)
+	stdout, err := journal.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("failed to get journalctl stdout: %s", err)
+		return fmt.Errorf("failed to get journalctl stdout: %w", err)
 	}
-	err = cmd.Start()
+	err = journal.Start()
 	if err != nil {
-		return fmt.Errorf("start journalctl: %s", err)
+		return fmt.Errorf("start journalctl: %w", err)
 	}
 
 	// Start the reader goroutine
@@ -166,7 +166,7 @@ func (operator *JournaldInput) Start(persister operator.Persister) error {
 		for {
 			line, err := stdoutBuf.ReadBytes('\n')
 			if err != nil {
-				if err != io.EOF {
+				if !errors.Is(err, io.EOF) {
 					operator.Errorw("Received error reading from journalctl stdout", zap.Error(err))
 				}
 				return
@@ -187,7 +187,7 @@ func (operator *JournaldInput) Start(persister operator.Persister) error {
 	return nil
 }
 
-func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
+func (operator *Input) parseJournalEntry(line []byte) (*entry.Entry, string, error) {
 	var body map[string]interface{}
 	err := operator.json.Unmarshal(line, &body)
 	if err != nil {
@@ -206,7 +206,7 @@ func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, str
 
 	timestampInt, err := strconv.ParseInt(timestampString, 10, 64)
 	if err != nil {
-		return nil, "", fmt.Errorf("parse timestamp: %s", err)
+		return nil, "", fmt.Errorf("parse timestamp: %w", err)
 	}
 
 	delete(body, "__REALTIME_TIMESTAMP")
@@ -223,7 +223,7 @@ func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, str
 
 	entry, err := operator.NewEntry(body)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to create entry: %s", err)
+		return nil, "", fmt.Errorf("failed to create entry: %w", err)
 	}
 
 	entry.Timestamp = time.Unix(0, timestampInt*1000) // in microseconds
@@ -231,7 +231,7 @@ func (operator *JournaldInput) parseJournalEntry(line []byte) (*entry.Entry, str
 }
 
 // Stop will stop generating logs.
-func (operator *JournaldInput) Stop() error {
+func (operator *Input) Stop() error {
 	operator.cancel()
 	operator.wg.Wait()
 	return nil

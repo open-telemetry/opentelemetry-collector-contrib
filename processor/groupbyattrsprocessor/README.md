@@ -1,6 +1,10 @@
 # Group by Attributes processor
 
-Supported pipeline types: **traces**, **logs**, **metrics**
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [contrib]             |
 
 ## Description
 
@@ -11,7 +15,7 @@ Typical use cases:
 * extract resources from "flat" data formats, such as Fluentbit logs or Prometheus metrics
 * associate Prometheus metrics to a *Resource* that describes the relevant host, based on label present on all metrics
 * optimize data packaging by extracting common attributes
-* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided). This might happen e.g. when [groupbytrace](../groupbytraceprocessor) processor is being used or data comes in multiple requests. By compacting data, it takes less memory, is more efficiently processed, serialized and the number of export requests is reduced (e.g. in case of [jaeger](../../exporters/jaegerexporter) exporter).
+* [compacting](#compaction) multiple records that share the same Resource and InstrumentationLibrary attributes but are under multiple ResourceSpans/ResourceMetrics/ResourceLogs, into a single ResourceSpans/ResourceMetrics/ResourceLogs (when empty list of keys is being provided). This might happen e.g. when [groupbytrace](../groupbytraceprocessor) processor is being used or data comes in multiple requests. By compacting data, it takes less memory, is more efficiently processed, serialized and the number of export requests is reduced (e.g. in case of [jaeger](../../exporter/jaegerexporter) exporter).
 
 It is recommended to use the `groupbyattrs` processor together with [batch](https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor) processor, as a consecutive step, as this will reduce the fragmentation of data (by grouping records together under matching Resource/Instrumentation Library)
 
@@ -178,7 +182,7 @@ Please refer to:
 The following internal metrics are recorded by this processor:
 
 | Metric                    | Description                                              |
-|---------------------------|----------------------------------------------------------|
+| ------------------------- | -------------------------------------------------------- |
 | `num_grouped_spans`       | the number of spans that had attributes grouped          |
 | `num_non_grouped_spans`   | the number of spans that did not have attributes grouped |
 | `span_groups`             | distribution of groups extracted for spans               |
@@ -188,3 +192,6 @@ The following internal metrics are recorded by this processor:
 | `num_grouped_metrics`     | number of metrics that had attributes grouped            |
 | `num_non_grouped_metrics` | number of metrics that did not have attributes grouped   |
 | `metric_groups`           | distribution of groups extracted for metrics             |
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

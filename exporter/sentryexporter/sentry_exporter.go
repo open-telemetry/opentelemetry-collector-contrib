@@ -112,9 +112,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	events := append(transactions, exceptionEvents...)
+	transactions = append(transactions, exceptionEvents...)
 
-	s.transport.SendEvents(events)
+	s.transport.SendEvents(transactions)
 
 	return nil
 }

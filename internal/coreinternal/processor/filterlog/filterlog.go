@@ -63,14 +63,14 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.LogBodies) > 0 {
 		bodyFS, err = filterset.CreateFilterSet(mp.LogBodies, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record body filters: %v", err)
+			return nil, fmt.Errorf("error creating log record body filters: %w", err)
 		}
 	}
 	var severitytextFS filterset.FilterSet
 	if len(mp.LogSeverityTexts) > 0 {
 		severitytextFS, err = filterset.CreateFilterSet(mp.LogSeverityTexts, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record severity text filters: %v", err)
+			return nil, fmt.Errorf("error creating log record severity text filters: %w", err)
 		}
 	}
 
@@ -90,11 +90,11 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
-		return true
+	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().StringVal()) {
+		return false
 	}
-	if mp.severityTextFilters != nil && mp.severityTextFilters.Matches(lr.SeverityText()) {
-		return true
+	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
+		return false
 	}
 
 	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)

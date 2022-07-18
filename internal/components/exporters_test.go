@@ -12,18 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package components
 
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -40,7 +44,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
-	ddconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
@@ -87,9 +91,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "file",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				f := testutil.NewTemporaryFile(t)
-				assert.NoError(t, f.Close())
-				cfg.Path = f.Name()
+				cfg.Path = filepath.Join(t.TempDir(), "random.file")
 				return cfg
 			},
 		},
@@ -155,7 +157,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "parquet",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["parquet"].CreateDefaultConfig().(*parquetexporter.Config)
-				cfg.Path = testutil.NewTemporaryDirectory(t)
+				cfg.Path = t.TempDir()
 				return cfg
 			},
 		},
@@ -294,7 +296,7 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter: "datadog",
 			getConfigFn: func() config.Exporter {
-				cfg := expFactories["datadog"].CreateDefaultConfig().(*ddconf.Config)
+				cfg := expFactories["datadog"].CreateDefaultConfig().(*datadogexporter.Config)
 				cfg.API.Key = "cutedogsgotoheaven"
 				return cfg
 			},
@@ -327,12 +329,10 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter: "f5cloud",
 			getConfigFn: func() config.Exporter {
-				f := testutil.NewTemporaryFile(t)
-
 				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Source = "magic-source"
-				cfg.AuthConfig.CredentialFile = f.Name()
+				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "random.file")
 
 				return cfg
 			},
@@ -340,6 +340,13 @@ func TestDefaultExporters(t *testing.T) {
 		{
 			exporter:      "googlecloud",
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter:      "googlemanagedprometheus",
+			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
+		},
+		{
+			exporter: "googlecloudpubsub",
 		},
 		{
 			exporter: "honeycomb",
@@ -377,7 +384,7 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "logzio",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["logzio"].CreateDefaultConfig().(*logzioexporter.Config)
-				cfg.CustomEndpoint = "http://" + endpoint
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
@@ -486,7 +493,7 @@ func verifyExporterLifecycle(t *testing.T, factory component.ExporterFactory, ge
 		var exps []component.Exporter
 		for _, createFn := range createFns {
 			exp, err := createFn(ctx, expCreateSettings, cfg)
-			if errors.Is(err, componenterror.ErrDataTypeIsNotSupported) {
+			if errors.Is(err, component.ErrDataTypeIsNotSupported) {
 				continue
 			}
 			require.NoError(t, err)

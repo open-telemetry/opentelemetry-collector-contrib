@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -151,7 +152,7 @@ type metricApacheCurrentConnections struct {
 func (m *metricApacheCurrentConnections) init() {
 	m.data.SetName("apache.current_connections")
 	m.data.SetDescription("The number of active connections currently attached to the HTTP server.")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{connections}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -204,7 +205,7 @@ type metricApacheRequests struct {
 func (m *metricApacheRequests) init() {
 	m.data.SetName("apache.requests")
 	m.data.SetDescription("The number of requests serviced by the HTTP server per second.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{requests}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -256,8 +257,8 @@ type metricApacheScoreboard struct {
 // init fills apache.scoreboard metric with initial data.
 func (m *metricApacheScoreboard) init() {
 	m.data.SetName("apache.scoreboard")
-	m.data.SetDescription("The number of connections in each state.")
-	m.data.SetUnit("scoreboard")
+	m.data.SetDescription("The number of workers in each state.")
+	m.data.SetUnit("{workers}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -417,7 +418,7 @@ type metricApacheWorkers struct {
 func (m *metricApacheWorkers) init() {
 	m.data.SetName("apache.workers")
 	m.data.SetDescription("The number of workers currently attached to the HTTP server.")
-	m.data.SetUnit("connections")
+	m.data.SetUnit("{workers}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -464,10 +465,11 @@ func newMetricApacheWorkers(settings MetricSettings) metricApacheWorkers {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                      pcommon.Timestamp // start time that will be applied to all recorded data points.
-	metricsCapacity                int               // maximum observed number of metrics per resource.
-	resourceCapacity               int               // maximum observed number of resource attributes.
-	metricsBuffer                  pmetric.Metrics   // accumulates metrics data before emitting.
+	startTime                      pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                int                 // maximum observed number of metrics per resource.
+	resourceCapacity               int                 // maximum observed number of resource attributes.
+	metricsBuffer                  pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo // contains version information
 	metricApacheCurrentConnections metricApacheCurrentConnections
 	metricApacheRequests           metricApacheRequests
 	metricApacheScoreboard         metricApacheScoreboard
@@ -486,10 +488,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      buildInfo,
 		metricApacheCurrentConnections: newMetricApacheCurrentConnections(settings.ApacheCurrentConnections),
 		metricApacheRequests:           newMetricApacheRequests(settings.ApacheRequests),
 		metricApacheScoreboard:         newMetricApacheScoreboard(settings.ApacheScoreboard),
@@ -546,6 +549,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/apachereceiver")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricApacheCurrentConnections.emit(ils.Metrics())
 	mb.metricApacheRequests.emit(ils.Metrics())

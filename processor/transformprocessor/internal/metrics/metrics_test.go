@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
 )
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
@@ -97,8 +98,8 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.NumberDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -135,7 +136,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -149,7 +150,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -163,7 +164,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -177,7 +178,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -191,13 +192,13 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -205,7 +206,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -222,7 +223,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -239,7 +240,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -256,7 +257,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -273,7 +274,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -377,8 +378,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -390,8 +391,8 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -467,7 +468,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -481,7 +482,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -495,7 +496,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -509,7 +510,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -523,13 +524,13 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -537,7 +538,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -554,7 +555,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -571,7 +572,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -588,7 +589,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -605,7 +606,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -715,8 +716,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -728,8 +729,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -754,8 +755,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "scale",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetScale(2)
 			},
@@ -767,8 +768,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "zero_count",
 				},
 			},
-			orig: uint64(1),
-			new:  uint64(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.SetZeroCount(2)
 			},
@@ -796,8 +797,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "offset",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Positive().SetOffset(2)
 			},
@@ -841,8 +842,8 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "offset",
 				},
 			},
-			orig: int32(1),
-			new:  int32(2),
+			orig: int64(1),
+			new:  int64(2),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
 				datapoint.Negative().SetOffset(2)
 			},
@@ -895,7 +896,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -909,7 +910,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -923,7 +924,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -937,7 +938,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: 1.2,
@@ -951,13 +952,13 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
 			new:  []byte{2, 3, 4},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().UpsertMBytes("bytes", []byte{2, 3, 4})
+				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
 		},
 		{
@@ -965,7 +966,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -982,7 +983,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -999,7 +1000,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1016,7 +1017,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1033,7 +1034,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1144,8 +1145,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig: pmetric.NewMetricDataPointFlags(),
-			new:  pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue),
+			orig: int64(pmetric.NewMetricDataPointFlags()),
+			new:  int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
 			},
@@ -1157,8 +1158,8 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "count",
 				},
 			},
-			orig: uint64(2),
-			new:  uint64(3),
+			orig: int64(2),
+			new:  int64(3),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				datapoint.SetCount(3)
 			},
@@ -1208,7 +1209,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("str"),
+					MapKey: testhelper.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -1222,7 +1223,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bool"),
+					MapKey: testhelper.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -1236,7 +1237,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("int"),
+					MapKey: testhelper.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -1250,7 +1251,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("double"),
+					MapKey: testhelper.Strp("double"),
 				},
 			},
 			orig: 1.2,
@@ -1264,7 +1265,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("bytes"),
+					MapKey: testhelper.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -1278,7 +1279,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_str"),
+					MapKey: testhelper.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1295,7 +1296,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bool"),
+					MapKey: testhelper.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1312,7 +1313,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_int"),
+					MapKey: testhelper.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1329,7 +1330,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_float"),
+					MapKey: testhelper.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1346,7 +1347,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			path: []common.Field{
 				{
 					Name:   "attributes",
-					MapKey: strp("arr_bytes"),
+					MapKey: testhelper.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1517,10 +1518,9 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "type",
 				},
 			},
-			orig: pmetric.MetricDataTypeSum,
-			new:  pmetric.MetricDataTypeGauge,
+			orig: int64(pmetric.MetricDataTypeSum),
+			new:  int64(pmetric.MetricDataTypeSum),
 			modified: func(metric pmetric.Metric) {
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 			},
 		},
 		{
@@ -1533,8 +1533,8 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 					Name: "aggregation_temporality",
 				},
 			},
-			orig: pmetric.MetricAggregationTemporalityCumulative,
-			new:  pmetric.MetricAggregationTemporalityDelta,
+			orig: int64(2),
+			new:  int64(1),
 			modified: func(metric pmetric.Metric) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 			},
@@ -1619,6 +1619,100 @@ func createNewTelemetry() (pmetric.ExemplarSlice, pcommon.Map, pcommon.Value, pc
 	return newExemplars, newAttrs, newArrStr, newArrBool, newArrInt, newArrFloat, newArrBytes
 }
 
-func strp(s string) *string {
-	return &s
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "AGGREGATION_TEMPORALITY_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "AGGREGATION_TEMPORALITY_DELTA",
+			want: 1,
+		},
+		{
+			name: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+			want: 2,
+		},
+		{
+			name: "FLAG_NONE",
+			want: 0,
+		},
+		{
+			name: "FLAG_NO_RECORDED_VALUE",
+			want: 1,
+		},
+		{
+			name: "METRIC_DATA_TYPE_NONE",
+			want: 0,
+		},
+		{
+			name: "METRIC_DATA_TYPE_GAUGE",
+			want: 1,
+		},
+		{
+			name: "METRIC_DATA_TYPE_SUM",
+			want: 2,
+		},
+		{
+			name: "METRIC_DATA_TYPE_HISTOGRAM",
+			want: 3,
+		},
+		{
+			name: "METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM",
+			want: 4,
+		},
+		{
+			name: "METRIC_DATA_TYPE_SUMMARY",
+			want: 5,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }

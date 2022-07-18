@@ -62,7 +62,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), &Config{})
+			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}
@@ -79,7 +79,9 @@ func TestScrape_Errors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				assert.Equal(t, test.expectedErrCount, err.(scrapererror.PartialScrapeError).Failed)
+				var scraperErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &scraperErr)
+				assert.Equal(t, test.expectedErrCount, scraperErr.Failed)
 			}
 		})
 	}

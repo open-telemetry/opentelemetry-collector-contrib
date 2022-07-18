@@ -28,6 +28,8 @@ type TransformContext interface {
 
 type ExprFunc func(ctx TransformContext) interface{}
 
+type Enum int64
+
 type Getter interface {
 	Get(ctx TransformContext) interface{}
 }
@@ -57,7 +59,11 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser) (Getter, error) {
+func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (Getter, error) {
+	if val.IsNil != nil && *val.IsNil {
+		return &literal{value: nil}, nil
+	}
+
 	if s := val.String; s != nil {
 		return &literal{value: *s}, nil
 	}
@@ -67,8 +73,17 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	if i := val.Int; i != nil {
 		return &literal{value: *i}, nil
 	}
+	if b := val.Bool; b != nil {
+		return &literal{value: bool(*b)}, nil
+	}
+	if b := val.Bytes; b != nil {
+		return &literal{value: ([]byte)(*b)}, nil
+	}
 
 	if val.Path != nil {
+		if enum, ok := enumParser(val.Path); ok {
+			return &literal{value: int64(*enum)}, nil
+		}
 		return pathParser(val.Path)
 	}
 
@@ -76,7 +91,7 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the transformprocessor")
 	}
-	call, err := NewFunctionCall(*val.Invocation, functions, pathParser)
+	call, err := NewFunctionCall(*val.Invocation, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
