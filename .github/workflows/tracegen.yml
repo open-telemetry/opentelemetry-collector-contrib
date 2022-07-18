@@ -37,7 +37,7 @@ jobs:
       - name: Push tracegen to Github packages
         uses: docker/build-push-action@v3
         with:
-          context: tracegen
+          context: cmd/tracegen
           push: true
           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:latest
 
