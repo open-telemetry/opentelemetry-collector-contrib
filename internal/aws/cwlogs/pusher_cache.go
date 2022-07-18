@@ -81,8 +81,16 @@ func (pc *DefaultPusherCache) Shutdown(_ context.Context) (errs error) {
 }
 
 func (pc *DefaultPusherCache) Flush() (errs error) {
-	for _, pusher := range pc.ListPushers() {
-		errs = multierr.Append(errs, pusher.ForceFlush())
+	pc.pusherMapLock.Lock()
+	defer pc.pusherMapLock.Unlock()
+
+	for _, pusherMap := range pc.groupStreamToPusherMap {
+		for _, pusher := range pusherMap {
+			err := pusher.ForceFlush()
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
+		}
 	}
 	return errs
 }
