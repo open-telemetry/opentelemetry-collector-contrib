@@ -27,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awskinesis"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 
 	defaultEncoding    = "otlp"
 	defaultCompression = "none"
@@ -37,9 +39,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(NewTracesExporter),
-		component.WithMetricsExporter(NewMetricsExporter),
-		component.WithLogsExporter(NewLogsExporter),
+		component.WithTracesExporterAndStabilityLevel(NewTracesExporter, stability),
+		component.WithMetricsExporterAndStabilityLevel(NewMetricsExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(NewLogsExporter, stability),
 	)
 }
 

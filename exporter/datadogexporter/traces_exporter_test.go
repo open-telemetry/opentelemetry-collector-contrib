@@ -15,151 +15,273 @@
 package datadogexporter
 
 import (
-	"compress/gzip"
+	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/pb"
-	"github.com/DataDog/datadog-agent/pkg/trace/exportable/stats"
-	"github.com/gogo/protobuf/proto"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
+	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	otelconfig "go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/service/featuregate"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
-func testTracesExporterHelper(td ptrace.Traces, t *testing.T) []string {
+func TestMain(m *testing.M) {
+	tracelog.SetLogger(&testlogger{})
+	os.Exit(m.Run())
+}
+
+type testlogger struct{}
+
+// Trace implements Logger.
+func (testlogger) Trace(v ...interface{}) {}
+
+// Tracef implements Logger.
+func (testlogger) Tracef(format string, params ...interface{}) {}
+
+// Debug implements Logger.
+func (testlogger) Debug(v ...interface{}) { fmt.Println("DEBUG", fmt.Sprint(v...)) }
+
+// Debugf implements Logger.
+func (testlogger) Debugf(format string, params ...interface{}) {
+	fmt.Println("DEBUG", fmt.Sprintf(format, params...))
+}
+
+// Info implements Logger.
+func (testlogger) Info(v ...interface{}) { fmt.Println("INFO", fmt.Sprint(v...)) }
+
+// Infof implements Logger.
+func (testlogger) Infof(format string, params ...interface{}) {
+	fmt.Println("INFO", fmt.Sprintf(format, params...))
+}
+
+// Warn implements Logger.
+func (testlogger) Warn(v ...interface{}) error {
+	fmt.Println("WARN", fmt.Sprint(v...))
+	return nil
+}
+
+// Warnf implements Logger.
+func (testlogger) Warnf(format string, params ...interface{}) error {
+	fmt.Println("WARN", fmt.Sprintf(format, params...))
+	return nil
+}
+
+// Error implements Logger.
+func (testlogger) Error(v ...interface{}) error {
+	fmt.Println("ERROR", fmt.Sprint(v...))
+	return nil
+}
+
+// Errorf implements Logger.
+func (testlogger) Errorf(format string, params ...interface{}) error {
+	fmt.Println("ERROR", fmt.Sprintf(format, params...))
+	return nil
+}
+
+// Critical implements Logger.
+func (testlogger) Critical(v ...interface{}) error {
+	fmt.Println("CRITICAL", fmt.Sprint(v...))
+	return nil
+}
+
+// Criticalf implements Logger.
+func (testlogger) Criticalf(format string, params ...interface{}) error {
+	fmt.Println("CRITICAL", fmt.Sprintf(format, params...))
+	return nil
+}
+
+// Flush implements Logger.
+func (testlogger) Flush() {}
+
+func TestTracesSource(t *testing.T) {
+	reqs := make(chan []byte, 1)
+	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/series" {
+			// we only want to capture series payloads
+			return
+		}
+		buf := new(bytes.Buffer)
+		if _, err := buf.ReadFrom(r.Body); err != nil {
+			t.Fatalf("Metrics server handler error: %v", err)
+		}
+		reqs <- buf.Bytes()
+		w.Write([]byte("{\"status\": \"ok\"}")) // nolint:errcheck
+	}))
+	defer metricsServer.Close()
+	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusAccepted)
+	}))
+	defer tracesServer.Close()
+
+	cfg := Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "fallbackHostname",
+		},
+		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
+		},
+		Traces: TracesConfig{
+			TCPAddr:         confignet.TCPAddr{Endpoint: tracesServer.URL},
+			IgnoreResources: []string{},
+		},
+	}
+
+	assert := assert.New(t)
+	params := componenttest.NewNopExporterCreateSettings()
+	reg := featuregate.NewRegistry()
+	reg.Apply(map[string]bool{
+		metadata.HostnamePreviewFeatureGate: true,
+	})
+	f := newFactoryWithRegistry(reg)
+	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
+	assert.NoError(err)
+
+	// Payload specifies a sub-set of a metrics series payload.
+	type Payload struct {
+		Series []struct {
+			Host string   `json:"host,omitempty"`
+			Tags []string `json:"tags,omitempty"`
+		} `json:"series"`
+	}
+	// getHostTags extracts the host and tags from the metrics series payload
+	// body found in data.
+	getHostTags := func(data []byte) (host string, tags []string) {
+		var p Payload
+		assert.NoError(json.Unmarshal(data, &p))
+		assert.Len(p.Series, 1)
+		return p.Series[0].Host, p.Series[0].Tags
+	}
+	for _, tt := range []struct {
+		attrs map[string]interface{}
+		host  string
+		tags  []string
+	}{
+		{
+			attrs: map[string]interface{}{},
+			host:  "fallbackHostname",
+			tags:  []string{"version:latest", "command:otelcol"},
+		},
+		{
+			attrs: map[string]interface{}{
+				attributes.AttributeDatadogHostname: "customName",
+			},
+			host: "customName",
+			tags: []string{"version:latest", "command:otelcol"},
+		},
+		{
+			attrs: map[string]interface{}{
+				semconv.AttributeContainerID: "containerID",
+			},
+			host: "containerID",
+			tags: []string{"version:latest", "command:otelcol"},
+		},
+		{
+			attrs: map[string]interface{}{
+				semconv.AttributeCloudProvider:      semconv.AttributeCloudProviderAWS,
+				semconv.AttributeCloudPlatform:      semconv.AttributeCloudPlatformAWSECS,
+				semconv.AttributeAWSECSTaskARN:      "example-task-ARN",
+				semconv.AttributeAWSECSTaskFamily:   "example-task-family",
+				semconv.AttributeAWSECSTaskRevision: "example-task-revision",
+				semconv.AttributeAWSECSLaunchtype:   semconv.AttributeAWSECSLaunchtypeFargate,
+			},
+			host: "",
+			tags: []string{"version:latest", "command:otelcol", "task_arn:example-task-ARN"},
+		},
+	} {
+		t.Run("", func(t *testing.T) {
+			ctx := context.Background()
+			err = exporter.ConsumeTraces(ctx, simpleTracesWithAttributes(tt.attrs))
+			assert.NoError(err)
+			timeout := time.After(time.Second)
+			select {
+			case data := <-reqs:
+				host, tags := getHostTags(data)
+				assert.Equal(host, tt.host)
+				assert.EqualValues(tags, tt.tags)
+			case <-timeout:
+				t.Fatal("timeout")
+			}
+		})
+	}
+}
+
+func TestTraceExporter(t *testing.T) {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
-	var got []string
+	got := make(chan string, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		assert.Equal(t, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", req.Header.Get("DD-Api-Key"))
-
-		contentType := req.Header.Get("Content-Type")
-
-		data := []string{contentType}
-		got = append(got, data...)
-
-		if contentType == "application/x-protobuf" {
-			testProtobufTracePayload(t, rw, req)
-		} else if contentType == "application/json" {
-			testJSONTraceStatsPayload(t, rw, req)
-		}
+		got <- req.Header.Get("Content-Type")
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 
 	defer server.Close()
-	cfg := config.Config{
-		ExporterSettings: otelconfig.NewExporterSettings(otelconfig.NewComponentID(typeStr)),
-		API: config.APIConfig{
+	cfg := Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: config.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: metricsServer.URL,
 			},
 		},
-		Traces: config.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
 			IgnoreResources: []string{},
+			flushInterval:   0.1,
 		},
 	}
 
 	params := componenttest.NewNopExporterCreateSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
-
 	assert.NoError(t, err)
 
-	defer func() {
-		assert.NoError(t, exporter.Shutdown(context.Background()))
-	}()
-
 	ctx := context.Background()
-	errConsume := exporter.ConsumeTraces(ctx, td)
-	assert.NoError(t, errConsume)
-
-	return got
-}
-
-func testProtobufTracePayload(t *testing.T, rw http.ResponseWriter, req *http.Request) {
-	var traceData pb.TracePayload
-	b, err := ioutil.ReadAll(req.Body)
-
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		assert.NoError(t, err, "http server received malformed trace payload")
-		return
+	err = exporter.ConsumeTraces(ctx, simpleTraces())
+	assert.NoError(t, err)
+	timeout := time.After(2 * time.Second)
+	select {
+	case out := <-got:
+		require.Equal(t, "application/x-protobuf", out)
+	case <-timeout:
+		t.Fatal("Timed out")
 	}
-
-	defer req.Body.Close()
-
-	if marshallErr := proto.Unmarshal(b, &traceData); marshallErr != nil {
-		http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
-		assert.NoError(t, marshallErr, "http server received malformed trace payload")
-		return
-	}
-
-	assert.NotNil(t, traceData.Env)
-	assert.NotNil(t, traceData.HostName)
-	assert.NotNil(t, traceData.Traces)
-}
-
-func testJSONTraceStatsPayload(t *testing.T, rw http.ResponseWriter, req *http.Request) {
-	var statsData stats.Payload
-
-	gz, err := gzip.NewReader(req.Body)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		require.NoError(t, err, "http server received malformed stats payload")
-		return
-	}
-
-	defer req.Body.Close()
-	defer gz.Close()
-
-	statsBytes, err := ioutil.ReadAll(gz)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		require.NoError(t, err, "http server received malformed stats payload")
-		return
-	}
-
-	if marshallErr := json.Unmarshal(statsBytes, &statsData); marshallErr != nil {
-		http.Error(rw, marshallErr.Error(), http.StatusInternalServerError)
-		require.NoError(t, marshallErr, "http server received malformed stats payload")
-		return
-	}
-
-	assert.NotNil(t, statsData.Env)
-	assert.NotNil(t, statsData.HostName)
-	assert.NotNil(t, statsData.Stats)
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutils.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &config.Config{}
+	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
 	params := componenttest.NewNopExporterCreateSettings()
@@ -174,25 +296,23 @@ func TestNewTracesExporter(t *testing.T) {
 func TestPushTraceData(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
-	cfg := &config.Config{
-		API: config.APIConfig{
+	cfg := &Config{
+		API: APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: config.TagsConfig{
+		TagsConfig: TagsConfig{
 			Hostname: "test-host",
-			Env:      "test_env",
-			Tags:     []string{"key:val"},
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
-		Traces: config.TracesConfig{
+		Traces: TracesConfig{
 			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
 		},
 
-		HostMetadata: config.HostMetadataConfig{
+		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: config.HostnameSourceFirstResource,
+			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 
@@ -211,23 +331,26 @@ func TestPushTraceData(t *testing.T) {
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
 
-func TestTraceAndStatsExporter(t *testing.T) {
-	// ensure that the protobuf serialized traces payload contains HostName Env and Traces
-	// ensure that the json gzipped stats payload contains HostName Env and Stats
-	got := testTracesExporterHelper(simpleTraces(), t)
-
-	// ensure a protobuf and json payload are sent
-	assert.Equal(t, 2, len(got))
-	assert.Equal(t, "application/json", got[1])
-	assert.Equal(t, "application/x-protobuf", got[0])
-}
-
 func simpleTraces() ptrace.Traces {
-	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
 }
 
-func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
+func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
+	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), attrs)
+}
+
+func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
 	traces := ptrace.NewTraces()
-	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(traceID)
+	rspans := traces.ResourceSpans().AppendEmpty()
+	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(traceID)
+	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	if attrs == nil {
+		return traces
+	}
+	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
+		rspans.Resource().Attributes().Insert(k, v)
+		return true
+	})
 	return traces
 }

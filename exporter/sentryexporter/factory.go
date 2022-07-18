@@ -24,6 +24,8 @@ import (
 
 const (
 	typeStr = "sentry"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Sentry exporter.
@@ -31,7 +33,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
 	)
 }
 

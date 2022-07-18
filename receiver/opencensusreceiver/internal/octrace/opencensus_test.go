@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package octrace
 
 import (
@@ -48,7 +47,9 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -79,7 +80,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -213,7 +216,9 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 
@@ -285,7 +290,9 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	spanSink := new(consumertest.TracesSink)
 

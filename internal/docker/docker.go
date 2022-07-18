@@ -216,6 +216,7 @@ func (dc *Client) ContainerEventLoop(ctx context.Context) {
 		{Key: "event", Value: "destroy"},
 		{Key: "event", Value: "die"},
 		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "rename"},
 		{Key: "event", Value: "stop"},
 		{Key: "event", Value: "start"},
 		{Key: "event", Value: "unpause"},

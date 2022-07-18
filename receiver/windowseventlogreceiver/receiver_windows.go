@@ -27,11 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 )
 
-const typeStr = "windowseventlog"
+const (
+	typeStr   = "windowseventlog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for windowseventlog receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType

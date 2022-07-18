@@ -29,7 +29,8 @@ import (
 )
 
 const (
-	typeStr = "mongodb"
+	typeStr   = "mongodb"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for mongodb receiver.
@@ -37,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

@@ -1,0 +1,4 @@
+include:
+  - "*.log"
+exclude:
+  - one.log
