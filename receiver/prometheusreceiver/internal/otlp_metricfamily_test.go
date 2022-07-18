@@ -71,6 +71,12 @@ var mc = byLookupMetadataCache{
 		Help:   "This is some help for a histogram",
 		Unit:   "ms",
 	},
+	"histogram_inconsistent_ts": scrape.MetricMetadata{
+		Metric: "hg",
+		Type:   textparse.MetricTypeHistogram,
+		Help:   "This is some help for a histogram",
+		Unit:   "ms",
+	},
 	"summary": scrape.MetricMetadata{
 		Metric: "s",
 		Type:   textparse.MetricTypeSummary,
@@ -79,6 +85,12 @@ var mc = byLookupMetadataCache{
 	},
 	"summary_stale": scrape.MetricMetadata{
 		Metric: "s_stale",
+		Type:   textparse.MetricTypeSummary,
+		Help:   "This is some help for a summary",
+		Unit:   "ms",
+	},
+	"summary_with_inconsistent_timestamps": scrape.MetricMetadata{
+		Metric: "s",
 		Type:   textparse.MetricTypeSummary,
 		Help:   "This is some help for a summary",
 		Unit:   "ms",
@@ -398,7 +410,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			},
 		},
 		{
-			name: "summary with inconsistent timestamps",
+			name: "summary_with_inconsistent_timestamps",
 			labelsScrapes: []*labelsScrapes{
 				{
 					labels: labels.Labels{
