@@ -15,9 +15,12 @@
 package cumulativetodeltaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor"
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"math"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -91,6 +94,47 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					ctdp.convertDataPoints(ms.DataPoints(), baseIdentity)
 					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
+				case pmetric.MetricDataTypeHistogram:
+					ms := m.Histogram()
+					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
+						return false
+					}
+
+					histogramIdentities := make([]tracking.MetricIdentity, 0, 16)
+
+					countIdentity := tracking.MetricIdentity{
+						Resource:               rm.Resource(),
+						InstrumentationLibrary: ilm.Scope(),
+						MetricDataType:         m.DataType(),
+						MetricName:             m.Name(),
+						MetricUnit:             m.Unit(),
+						MetricIsMonotonic:      true,
+						MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+						MetricField:            "count",
+					}
+
+					sumIdentity := countIdentity
+					sumIdentity.MetricField = "sum"
+					sumIdentity.MetricValueType = pmetric.NumberDataPointValueTypeDouble
+
+					histogramIdentities = append(histogramIdentities, countIdentity, sumIdentity)
+
+					if ms.DataPoints().Len() == 0 {
+						return false
+					}
+
+					firstDataPoint := ms.DataPoints().At(0)
+					for index := 0; index < firstDataPoint.BucketCounts().Len(); index++ {
+						metricField := fmt.Sprintf("bucket_%d", index)
+						bucketIdentity := countIdentity
+						bucketIdentity.MetricField = metricField
+						histogramIdentities = append(histogramIdentities, bucketIdentity)
+					}
+
+					ctdp.convertHistogramDataPoints(ms.DataPoints(), &histogramIdentities)
+
+					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+					return ms.DataPoints().Len() == 0
 				default:
 					return false
 				}
@@ -155,6 +199,78 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 			} else {
 				dp.SetIntVal(delta.IntValue)
 			}
+			return false
+		})
+	}
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentities *[]tracking.MetricIdentity) {
+
+	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
+		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
+			countId := (*baseIdentities)[0]
+			countId.StartTimestamp = dp.StartTimestamp()
+			countId.Attributes = dp.Attributes()
+			countPoint := tracking.MetricPoint{
+				Identity: countId,
+				Value: tracking.ValuePoint{
+					ObservedTimestamp: dp.Timestamp(),
+					IntValue:          int64(dp.Count()),
+				},
+			}
+			countDelta, countValid := ctdp.deltaCalculator.Convert(countPoint)
+			if !countValid {
+				return true
+			}
+
+			dp.SetCount(uint64(countDelta.IntValue))
+
+			if dp.HasSum() {
+				sumId := (*baseIdentities)[1]
+				sumId.StartTimestamp = dp.StartTimestamp()
+				sumId.Attributes = dp.Attributes()
+				sumPoint := tracking.MetricPoint{
+					Identity: sumId,
+					Value: tracking.ValuePoint{
+						ObservedTimestamp: dp.Timestamp(),
+						FloatValue:        dp.Sum(),
+					},
+				}
+				sumDelta, sumValid := ctdp.deltaCalculator.Convert(sumPoint)
+				if !sumValid {
+					return true
+				}
+
+				dp.SetSum(sumDelta.FloatValue)
+			}
+
+			firstBucketIndex := 2
+			rawCounts := dp.BucketCounts().AsRaw()
+			for index := 0; index < len(rawCounts); index++ {
+				bucketId := (*baseIdentities)[firstBucketIndex+index]
+				bucketId.StartTimestamp = dp.StartTimestamp()
+				bucketId.Attributes = dp.Attributes()
+				testBytes := &bytes.Buffer{}
+				bucketId.Write(testBytes)
+				fmt.Println(testBytes.String())
+				bucketPoint := tracking.MetricPoint{
+					Identity: bucketId,
+					Value: tracking.ValuePoint{
+						ObservedTimestamp: dp.Timestamp(),
+						IntValue:          int64(rawCounts[index]),
+					},
+				}
+				bucketDelta, bucketValid := ctdp.deltaCalculator.Convert(bucketPoint)
+				if !bucketValid {
+					return true
+				}
+
+				rawCounts[index] = uint64(bucketDelta.IntValue)
+			}
+			dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawCounts))
+
+			dp.SetStartTimestamp(countDelta.StartTimestamp)
+
 			return false
 		})
 	}
