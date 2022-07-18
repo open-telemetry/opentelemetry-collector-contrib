@@ -65,6 +65,10 @@ func (c *Config) validate() error {
 		if c.Tenant.Source != "attributes" && c.Tenant.Source != "context" && c.Tenant.Source != "static" {
 			return fmt.Errorf("invalid tenant source, must be one of 'attributes', 'context', 'static', but is %s", c.Tenant.Source)
 		}
+
+		if len(c.TenantID) > 0 {
+			return fmt.Errorf("both tenant_id and tenant were specified, use only 'tenant' instead")
+		}
 	}
 
 	return c.Labels.validate()

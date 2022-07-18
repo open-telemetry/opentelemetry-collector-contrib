@@ -163,6 +163,7 @@ func TestConfig_validate(t *testing.T) {
 		CredentialFile string
 		Audience       string
 		Labels         LabelsConfig
+		TenantID       string
 		Tenant         *Tenant
 	}
 	tests := []struct {
@@ -284,6 +285,19 @@ func TestConfig_validate(t *testing.T) {
 			},
 			shouldError: false,
 		},
+		{
+			name: "with both tenantID and tenant",
+			fields: fields{
+				Endpoint: validEndpoint,
+				Labels:   validAttribLabelsConfig,
+				Tenant: &Tenant{
+					Source: "static",
+					Value:  "acme",
+				},
+				TenantID: "globex",
+			},
+			shouldError: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -293,6 +307,10 @@ func TestConfig_validate(t *testing.T) {
 			cfg.ExporterSettings = config.NewExporterSettings(config.NewComponentID(typeStr))
 			cfg.Endpoint = tt.fields.Endpoint
 			cfg.Labels = tt.fields.Labels
+
+			if len(tt.fields.TenantID) > 0 {
+				cfg.TenantID = tt.fields.TenantID
+			}
 
 			if tt.fields.Tenant != nil {
 				cfg.Tenant = tt.fields.Tenant
