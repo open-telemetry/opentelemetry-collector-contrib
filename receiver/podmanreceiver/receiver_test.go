@@ -15,7 +15,6 @@
 //go:build !windows
 // +build !windows
 
-// nolint:errcheck
 package podmanreceiver
 
 import (
@@ -81,12 +80,12 @@ func TestScraperLoop(t *testing.T) {
 		}
 	}()
 
-	r.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
 	md := <-consumer
 	assert.Equal(t, md.ResourceMetrics().Len(), 1)
 
-	r.Shutdown(context.Background())
+	assert.NoError(t, r.Shutdown(context.Background()))
 }
 
 type mockClient chan containerStatsReport
