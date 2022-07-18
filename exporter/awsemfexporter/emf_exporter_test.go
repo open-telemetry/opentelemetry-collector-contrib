@@ -62,12 +62,16 @@ func (p *mockCache) ListPushers() []cwlogs.Pusher {
 
 func (p *mockCache) Flush() error {
 	args := p.Called(nil)
-	return args.Error(0)
+	errorStr := args.String(0)
+	if errorStr != "" {
+		return errors.New(errorStr)
+	}
+	return nil
 }
 
 func (p *mockCache) Shutdown(ctx context.Context) error {
-	args := p.Called(nil)
-	return args.Error(0)
+	p.Called(nil)
+	return nil
 }
 
 type mockPusher struct {
@@ -495,10 +499,10 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 
 	cache := new(mockCache)
 	cache.On("GetPusher", expCfg.LogGroupName, expCfg.LogStreamName, mock.Anything, 0).Return(logPusher, nil).Times(3)
-	cache.On("ListPushers", nil).Return([]cwlogs.Pusher{logPusher}).Twice()
-	cache.On("Flush", nil).Return(nil).Twice()
+	cache.On("ListPushers", nil).Return(logPusher).Twice()
+	cache.On("Flush", nil).Return("Error").Once()
+	cache.On("Flush", nil).Return("").Once()
 	cache.On("Shutdown", nil).Return(nil).Twice()
-
 	exp.(*emfExporter).pusherCache = cache
 
 	mdata := agentmetricspb.ExportMetricsServiceRequest{

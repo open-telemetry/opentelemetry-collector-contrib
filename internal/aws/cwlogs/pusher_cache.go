@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type pusherCache interface {
+type PusherCache interface {
 	// GetPusher will check to see if there already exists a pusher configured to write to
 	// the given stream and group, and that pusher will be returned.
 	// If no pusher exists for a given stream and group, a new one is created, stored and returned
@@ -81,16 +81,8 @@ func (pc *DefaultPusherCache) Shutdown(_ context.Context) (errs error) {
 }
 
 func (pc *DefaultPusherCache) Flush() (errs error) {
-	pc.pusherMapLock.Lock()
-	defer pc.pusherMapLock.Unlock()
-
-	for _, pusherMap := range pc.groupStreamToPusherMap {
-		for _, pusher := range pusherMap {
-			err := pusher.ForceFlush()
-			if err != nil {
-				errs = multierr.Append(errs, err)
-			}
-		}
+	for _, pusher := range pc.ListPushers() {
+		errs = multierr.Append(errs, pusher.ForceFlush())
 	}
 	return errs
 }
