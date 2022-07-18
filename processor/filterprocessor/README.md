@@ -104,7 +104,7 @@ Made available to the expression environment are the following:
 * `MetricName`
     a variable containing the current Metric's name
 * `Label(name)`
-    a function that takes a label name string as an argument and returns a string: the value of a label with that
+    a function that takes a label name string as an argument and returns a the result as it's native datatype (string,int,bool): the value of a label with that
     name if one exists, or ""
 * `HasLabel(name)`
     a function that takes a label name string as an argument and returns a boolean: true if the datapoint has a label
