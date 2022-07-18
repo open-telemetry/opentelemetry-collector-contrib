@@ -33,6 +33,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.55.0
@@ -556,7 +557,7 @@ require (
 	gonum.org/v1/gonum v0.11.0 // indirect
 	google.golang.org/api v0.87.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f // indirect
+	google.golang.org/genproto v0.0.0-20220718134204-073382fd740c // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0 // indirect
@@ -705,6 +706,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elast
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ./exporter/elasticsearchexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ./exporter/zipkinexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter => ./exporter/opsrampotlpexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension => ./extension/asapauthextension
 
