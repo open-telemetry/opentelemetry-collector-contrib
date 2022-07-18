@@ -24,7 +24,6 @@ type durationMatcher interface {
 	Match(span ptrace.Span) bool
 }
 type SpanDurationMatcher struct {
-	durationMatcher
 	Operation string
 	Value     int64
 }
@@ -45,10 +44,10 @@ func (ma SpanDurationMatcher) Match(span ptrace.Span) bool {
 	return false
 }
 
-func NewDurationMatcher(config filterconfig.DurationProperties) (SpanDurationMatcher, error) {
+func NewDurationMatcher(config filterconfig.DurationProperties) (*SpanDurationMatcher, error) {
 	entry := SpanDurationMatcher{
 		Operation: config.Operator,
 		Value:     config.Duration,
 	}
-	return entry, nil
+	return &entry, nil
 }

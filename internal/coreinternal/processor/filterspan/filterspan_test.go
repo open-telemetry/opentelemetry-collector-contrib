@@ -136,7 +136,7 @@ func TestSpan_Matching_False(t *testing.T) {
 			name: "span_duration",
 			properties: &filterconfig.MatchProperties{
 				SpanDuration: &filterconfig.DurationProperties{
-					Operator: ">",
+					Operator: "<",
 					Duration: 1000},
 			},
 		},

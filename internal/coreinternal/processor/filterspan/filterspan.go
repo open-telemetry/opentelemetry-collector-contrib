@@ -78,7 +78,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
-	var spanMatcher SpanDurationMatcher
+	var spanMatcher *SpanDurationMatcher = nil
 	if mp.SpanDuration != nil {
 		spanMatcher, err = NewDurationMatcher(*mp.SpanDuration)
 		if err != nil {
@@ -90,7 +90,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		PropertiesMatcher: rm,
 		serviceFilters:    serviceFS,
 		nameFilters:       nameFS,
-		durationFilter:    &spanMatcher,
+		durationFilter:    spanMatcher,
 	}, nil
 }
 
