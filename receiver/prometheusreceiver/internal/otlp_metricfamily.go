@@ -287,12 +287,12 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey string, ls labels.Label
 func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v float64) error {
 	groupKey := mf.getGroupKey(ls)
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
-	if mg.ts != t {
-		mf.droppedTimeseries++
-		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
-	}
 	switch mf.mtype {
 	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
+		if mg.ts != t {
+			mf.droppedTimeseries++
+			return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
+		}
 		switch {
 		case strings.HasSuffix(metricName, metricsSuffixSum):
 			// always use the timestamp from sum (count is ok too), because the startTs from quantiles won't be reliable
