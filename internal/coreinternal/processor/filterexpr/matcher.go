@@ -36,9 +36,29 @@ func (e *env) HasLabel(key string) bool {
 	return ok
 }
 
-func (e *env) Label(key string) string {
-	v, _ := e.attributes.Get(key)
-	return v.StringVal()
+func (e *env) Label(key string) interface{} {
+	v, ok := e.attributes.Get(key)
+	if ok {
+		switch v.Type() {
+		case pcommon.ValueTypeEmpty:
+			return nil
+		case pcommon.ValueTypeString:
+			return v.StringVal()
+		case pcommon.ValueTypeBool:
+			return v.BoolVal()
+		case pcommon.ValueTypeDouble:
+			return v.DoubleVal()
+		case pcommon.ValueTypeInt:
+			return v.IntVal()
+		case pcommon.ValueTypeBytes:
+			return v.BytesVal().AsRaw()
+		case pcommon.ValueTypeMap:
+			return v.MapVal().AsRaw()
+		case pcommon.ValueTypeSlice:
+			return v.SliceVal().AsRaw()
+		}
+	}
+	return ""
 }
 
 func NewMatcher(expression string) (*Matcher, error) {

@@ -123,6 +123,23 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 	assert.True(t, matched)
 }
 
+func TestMatchIntGaugeDataPointByMetricAndSecondPointLBoolabelValue(t *testing.T) {
+	matcher, err := NewMatcher(
+		`MetricName == 'my.metric' && Label("baz") == true`,
+	)
+	require.NoError(t, err)
+	m := pmetric.NewMetric()
+	m.SetName("my.metric")
+	m.SetDataType(pmetric.MetricDataTypeGauge)
+	dps := m.Gauge().DataPoints()
+
+	dps.AppendEmpty().Attributes().InsertString("foo", "bar")
+	dps.AppendEmpty().Attributes().InsertBool("baz", true)
+
+	matched, err := matcher.MatchMetric(m)
+	assert.NoError(t, err)
+	assert.True(t, matched)
+}
 func TestMatchGaugeByMetricName(t *testing.T) {
 	expression := `MetricName == 'my.metric'`
 	assert.True(t, testMatchGauge(t, "my.metric", expression, nil))
