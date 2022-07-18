@@ -476,8 +476,8 @@ func TestNoNewline(t *testing.T) {
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
-// SkipEmpty tests that the any empty lines are skipped
-func TestSkipEmpty(t *testing.T) {
+// TestEmptyLine tests that the any empty lines are consumed
+func TestEmptyLine(t *testing.T) {
 	t.Parallel()
 	operator, emitCalls, tempDir := newTestScenario(t, nil)
 
@@ -490,7 +490,51 @@ func TestSkipEmpty(t *testing.T) {
 	}()
 
 	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte(""))
 	waitForToken(t, emitCalls, []byte("testlog2"))
+}
+
+// TestMultipleEmpty tests that multiple empty lines
+// can be consumed without the operator becoming stuck
+func TestMultipleEmpty(t *testing.T) {
+	t.Parallel()
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog2"))
+	expectNoTokensUntil(t, emitCalls, time.Second)
+}
+
+// TestLeadingEmpty tests that the the operator handles a leading
+// newline, and does not read the file multiple times
+func TestLeadingEmpty(t *testing.T) {
+	t.Parallel()
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "\ntestlog1\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
+	expectNoTokensUntil(t, emitCalls, time.Second)
 }
 
 // SplitWrite tests a line written in two writes
