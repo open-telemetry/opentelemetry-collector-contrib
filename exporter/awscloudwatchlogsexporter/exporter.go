@@ -16,13 +16,13 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/google/uuid"
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -106,7 +106,7 @@ func (e *exporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			GeneratedTime: time.Now(),
 		}
 		body := &cwLogBody{}
-		err := jsoniter.Unmarshal([]byte(*logEvent.InputLogEvent.Message), body)
+		err := json.Unmarshal([]byte(*logEvent.InputLogEvent.Message), body)
 		if err != nil {
 			e.logger.Error("Unable to unmarshal log message", zap.Error(err))
 			continue
@@ -205,7 +205,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 	body.Attributes = attrsValue(log.Attributes())
 	body.Resource = resourceAttrs
 
-	bodyJSON, err := jsoniter.Marshal(body)
+	bodyJSON, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
