@@ -109,7 +109,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-//syncTargetAllocator request jobs from TargetAllocator and update underlying receiver, if the response does not match the provided compareHash.
+// syncTargetAllocator request jobs from TargetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
 func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseCfg *config.Config) (uint64, error) {
 	r.settings.Logger.Debug("Syncing target allocator jobs")

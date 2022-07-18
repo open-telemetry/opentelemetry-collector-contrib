@@ -233,7 +233,7 @@ func (cfg *Config) Validate() error {
 	}
 	// ensure valid endpoint
 	if _, err := url.ParseRequestURI(targetAllocatorConfig.Endpoint); err != nil {
-		return fmt.Errorf("TargetAllocator endpoint is not valid: \"%s\"", targetAllocatorConfig.Endpoint)
+		return fmt.Errorf("TargetAllocator endpoint is not valid: %s", targetAllocatorConfig.Endpoint)
 	}
 	// ensure valid collectorID without variables
 	if targetAllocatorConfig.CollectorID == "" || strings.Contains(targetAllocatorConfig.CollectorID, "${") {
@@ -286,11 +286,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		targetAllocatorHTTPSDMap["url"] = "http://placeholder" // we have to set it as else the marshal will fail
 		httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDMap)
 		if err != nil {
-			return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+			return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %w", err)
 		}
 		err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HTTPSDConfig)
 		if err != nil {
-			return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+			return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %w", err)
 		}
 	}
 

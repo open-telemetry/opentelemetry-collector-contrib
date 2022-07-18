@@ -19,6 +19,13 @@ package prometheusreceiver
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+
 	commonconfig "github.com/prometheus/common/config"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
@@ -27,13 +34,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"testing"
-	"time"
+	"go.uber.org/atomic"
 
 	"github.com/prometheus/common/model"
 )
@@ -41,7 +42,7 @@ import (
 type MockTargetAllocator struct {
 	mu          sync.Mutex // mu protects the fields below.
 	endpoints   map[string][]mockTargetAllocatorResponse
-	accessIndex map[string]*int32
+	accessIndex map[string]*atomic.Int32
 	wg          *sync.WaitGroup
 	srv         *httptest.Server
 	waitIndex   map[string]int
@@ -65,7 +66,6 @@ type HTTPSDResponse struct {
 type ExpectedTestResultJobMap struct {
 	Targets []string
 	Labels  model.LabelSet
-	empty   bool
 }
 
 type ExpectedTestResult struct {
@@ -82,8 +82,8 @@ func (mta *MockTargetAllocator) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 		rw.WriteHeader(404)
 		return
 	}
-	index := int(*iptr)
-	atomic.AddInt32(iptr, 1)
+	iptr.Add(1)
+	index := int(iptr.Load())
 	pages := mta.endpoints[req.URL.Path]
 	if index >= len(pages) {
 		rw.WriteHeader(404)
@@ -108,9 +108,9 @@ func (mta *MockTargetAllocator) Stop() {
 	mta.srv.Close()
 }
 
-func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorResponseRaw) (map[string][]mockTargetAllocatorResponse, map[string]*int32, error) {
+func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorResponseRaw) (map[string][]mockTargetAllocatorResponse, map[string]*atomic.Int32, error) {
 	responsesMap := make(map[string][]mockTargetAllocatorResponse)
-	responsesIndexMap := make(map[string]*int32)
+	responsesIndexMap := make(map[string]*atomic.Int32)
 	for path, responsesRaw := range rawResponses {
 		var responses []mockTargetAllocatorResponse
 		for _, responseRaw := range responsesRaw {
@@ -125,8 +125,8 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 		}
 		responsesMap[path] = responses
 
-		v := int32(0)
-		responsesIndexMap[path] = &v
+		v := atomic.NewInt32(0)
+		responsesIndexMap[path] = v
 	}
 	return responsesMap, responsesIndexMap, nil
 }
