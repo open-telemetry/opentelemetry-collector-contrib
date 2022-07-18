@@ -703,7 +703,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 func Test_ParseEnum(t *testing.T) {
 	tests := []struct {
 		name string
-		want common.Enum
+		want tql.Enum
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
@@ -809,14 +809,8 @@ func Test_ParseEnum(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, ok := ParseEnum(&common.Path{
-				Fields: []common.Field{
-					{
-						Name: tt.name,
-					},
-				},
-			})
-			assert.True(t, ok)
+			actual, err := ParseEnum((*tql.EnumSymbol)(tqltest.Strp(tt.name)))
+			assert.NoError(t, err)
 			assert.Equal(t, *actual, tt.want)
 		})
 	}
@@ -824,32 +818,22 @@ func Test_ParseEnum(t *testing.T) {
 
 func Test_ParseEnum_False(t *testing.T) {
 	tests := []struct {
-		name string
-		path *common.Path
+		name       string
+		enumSymbol *tql.EnumSymbol
 	}{
 		{
-			name: "not an enum",
-			path: &common.Path{
-				Fields: []common.Field{
-					{
-						Name: "not an enum",
-					},
-				},
-			},
+			name:       "unknown enum symbol",
+			enumSymbol: (*tql.EnumSymbol)(tqltest.Strp("not an enum")),
 		},
 		{
-			name: "bad path",
-			path: &common.Path{},
-		},
-		{
-			name: "nil path",
-			path: nil,
+			name:       "nil enum symbol",
+			enumSymbol: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, ok := ParseEnum(tt.path)
-			assert.False(t, ok)
+			actual, err := ParseEnum(tt.enumSymbol)
+			assert.Error(t, err)
 			assert.Nil(t, actual)
 		})
 	}
