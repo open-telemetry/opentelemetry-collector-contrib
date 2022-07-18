@@ -32,7 +32,7 @@ func TestTokenization(t *testing.T) {
 	}{
 		{
 			"simple",
-			[]byte("testlog1\ntestlog2"),
+			[]byte("testlog1\ntestlog2\n"),
 			[][]byte{
 				[]byte("testlog1"),
 				[]byte("testlog2"),
@@ -49,8 +49,8 @@ func TestTokenization(t *testing.T) {
 			"empty_first",
 			[]byte("\ntestlog1\ntestlog2\n"),
 			[][]byte{
-				[]byte("testlog1"),
 				[]byte(""),
+				[]byte("testlog1"),
 				[]byte("testlog2"),
 			},
 		},
@@ -79,8 +79,6 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			t.Parallel()
-
 			f, emitChan := testReaderFactory(t)
 
 			temp := openTemp(t, t.TempDir())
