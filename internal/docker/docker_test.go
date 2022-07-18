@@ -16,6 +16,7 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
+
 package docker
 
 import (
@@ -65,7 +66,7 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 		t.Fatal(err)
 	}
 	addr := f.Name()
-	os.Remove(addr)
+	assert.NoError(t, os.Remove(addr))
 
 	listener, err := net.Listen("unix", addr)
 	if err != nil {
@@ -77,8 +78,13 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 
 func TestWatchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -96,7 +102,6 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
-
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
@@ -118,8 +123,13 @@ func TestWatchingTimeouts(t *testing.T) {
 
 func TestFetchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -169,8 +179,13 @@ func TestFetchingTimeouts(t *testing.T) {
 
 func TestToStatsJSONErrorHandling(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -214,7 +229,7 @@ func TestEventLoopHandlesError(t *testing.T) {
 			wg.Done()
 		}
 		_, err := w.Write([]byte{})
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	}))
 	defer srv.Close()
 
