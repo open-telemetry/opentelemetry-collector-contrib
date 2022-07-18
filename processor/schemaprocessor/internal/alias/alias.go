@@ -14,7 +14,7 @@
 
 // Package Alias is a subset of the interfaces defined by pdata and family
 // package to allow for higher code reuse without using generics.
-package alias
+package alias // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
