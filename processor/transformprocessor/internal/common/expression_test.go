@@ -98,13 +98,26 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: "world",
 		},
+		{
+			name: "enum",
+			val: Value{
+				Path: &Path{
+					Fields: []Field{
+						{
+							Name: "TEST_ENUM",
+						},
+					},
+				},
+			},
+			want: int64(0),
+		},
 	}
 
 	functions := map[string]interface{}{"hello": hello}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := NewGetter(tt.val, functions, testParsePath)
+			reader, err := NewGetter(tt.val, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			val := reader.Get(testhelper.TestTransformContext{
 				Item: tt.want,
@@ -114,7 +127,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := NewGetter(Value{}, functions, testParsePath)
+		_, err := NewGetter(Value{}, functions, testParsePath, testParseEnum)
 		assert.Error(t, err)
 	})
 }

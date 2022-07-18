@@ -44,15 +44,15 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath)
+	_, err := common.ParseQueries(c.Traces.Queries, c.Traces.functions, traces.ParsePath, traces.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath)
+	_, err = common.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath, metrics.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath)
+	_, err = common.ParseQueries(c.Logs.Queries, c.Logs.functions, logs.ParsePath, logs.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

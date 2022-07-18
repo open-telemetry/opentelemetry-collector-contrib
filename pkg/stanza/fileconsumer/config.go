@@ -121,16 +121,21 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		finder:             c.Finder,
 		PollInterval:       c.PollInterval.Raw(),
 		startAtBeginning:   startAtBeginning,
-		SplitterConfig:     c.Splitter,
 		queuedMatches:      make([]string, 0),
 		firstCheck:         true,
 		cancel:             func() {},
 		knownFiles:         make([]*Reader, 0, 10),
 		roller:             newRoller(),
-		fingerprintSize:    int(c.FingerprintSize),
-		MaxLogSize:         int(c.MaxLogSize),
 		MaxConcurrentFiles: c.MaxConcurrentFiles,
 		SeenPaths:          make(map[string]struct{}, 100),
-		emit:               emit,
+		readerFactory: readerFactory{
+			SugaredLogger: logger.With("component", "fileconsumer"),
+			readerConfig: &readerConfig{
+				fingerprintSize: int(c.FingerprintSize),
+				maxLogSize:      int(c.MaxLogSize),
+				emit:            emit,
+			},
+			splitterConfig: c.Splitter,
+		},
 	}, nil
 }
