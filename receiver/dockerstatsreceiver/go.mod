@@ -66,6 +66,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrap
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
-exclude github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
