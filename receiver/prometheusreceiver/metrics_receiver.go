@@ -73,22 +73,16 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	logger := internal.NewZapToGokitLogAdapter(r.settings.Logger)
 
+	// add scrape configs defined by the collector configs
+	baseCfg := r.cfg.PrometheusConfig
+
 	err := r.initPrometheusComponents(discoveryCtx, host, logger)
 	if err != nil {
 		r.settings.Logger.Error("Failed to initPrometheusComponents Prometheus components", zap.Error(err))
 		return err
 	}
 
-	baseDiscoveryCfg := make(map[string]discovery.Configs)
-
-	// add scrape configs defined by the collector configs
-	if r.cfg.PrometheusConfig != nil && r.cfg.PrometheusConfig.ScrapeConfigs != nil {
-		for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
-			baseDiscoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
-		}
-	}
-
-	err = r.applyCfg(baseDiscoveryCfg)
+	err = r.applyCfg(baseCfg)
 	if err != nil {
 		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return err
@@ -98,12 +92,13 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	if allocConf != nil {
 		go func() {
 			// immediately sync jobs and not wait for the first tick
-			savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseDiscoveryCfg)
+			savedHash, _ := r.syncTargetAllocator(uint64(0), allocConf, baseCfg)
 			r.targetAllocatorIntervalTicker = time.NewTicker(allocConf.Interval)
 			for {
 				<-r.targetAllocatorIntervalTicker.C
-				hash, err := r.syncTargetAllocator(savedHash, allocConf, baseDiscoveryCfg)
+				hash, err := r.syncTargetAllocator(savedHash, allocConf, baseCfg)
 				if err != nil {
+					r.settings.Logger.Error(err.Error())
 					continue
 				}
 				savedHash = hash
@@ -116,7 +111,8 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 //syncTargetAllocator request jobs from TargetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
-func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseDiscoveryCfg map[string]discovery.Configs) (uint64, error) {
+func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseCfg *config.Config) (uint64, error) {
+	r.settings.Logger.Debug("Syncing target allocator jobs")
 	jobObject, err := getJobResponse(allocConf.Endpoint)
 	if err != nil {
 		r.settings.Logger.Error("Failed to retrieve job list", zap.Error(err))
@@ -133,17 +129,23 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 		return hash, nil
 	}
 
-	discoveryCfg := baseDiscoveryCfg
+	cfg := baseCfg
 
-	configs := discovery.Configs{}
 	for _, linkJSON := range *jobObject {
 		httpSD := *allocConf.HTTPSDConfig
 		httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
-		configs = append(configs, &httpSD)
-	}
-	discoveryCfg["target_allocator"] = configs
 
-	err = r.applyCfg(discoveryCfg)
+		scrapeCfg := &config.ScrapeConfig{
+			JobName: linkJSON.Link,
+			ServiceDiscoveryConfigs: discovery.Configs{
+				&httpSD,
+			},
+		}
+
+		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, scrapeCfg)
+	}
+
+	err = r.applyCfg(cfg)
 	if err != nil {
 		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return 0, err
@@ -174,7 +176,15 @@ func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
 	return jobObject, nil
 }
 
-func (r *pReceiver) applyCfg(discoveryCfg map[string]discovery.Configs) error {
+func (r *pReceiver) applyCfg(cfg *config.Config) error {
+	if err := r.scrapeManager.ApplyConfig(cfg); err != nil {
+		return err
+	}
+
+	discoveryCfg := make(map[string]discovery.Configs)
+	for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
+		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
+	}
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
 		return err
 	}
@@ -207,9 +217,6 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, host component
 			host.ReportFatalError(err)
 		}
 	}()
-	if err := r.scrapeManager.ApplyConfig(r.cfg.PrometheusConfig); err != nil {
-		return err
-	}
 	return nil
 }
 
