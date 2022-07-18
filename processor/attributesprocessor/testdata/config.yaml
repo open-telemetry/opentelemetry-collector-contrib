@@ -27,17 +27,17 @@ processors:
       # to the target keys specified in the `rule`.
       # (Insert attributes for target keys that do not exist and update keys
       # that exist.)
-      # Given http.url = http://example.com/path?queryParam1=value1,queryParam2=value2
+      # Given http.url = http://example.com/path?queryParam1=value1,queryParam2=value2&order=asc
       # then the following attributes will be inserted:
       # http_protocol: http
       # http_domain: example.com
       # http_path: path
-      # http_query_params=queryParam1=value1,queryParam2=value2
+      # http_query_params=queryParam1=value1,queryParam2=value2&order=asc
       # http.url value does NOT change.
       # Note: Similar to the Span Procesor, if a target key already exists,
       # it will be updated.
       - key: "http.url"
-        pattern: ^(?P<http_protocol>.*):\/\/(?P<http_domain>.*)\/(?P<http_path>.*)(\?|\&)(?P<http_query_params>.*)
+        pattern: ^(?P<http_protocol>.*):\/\/(?P<http_domain>.*)\/(?P<http_path>.*)\?(?P<http_query_params>.*)
         action: extract
 
   # The following demonstrates configuring the processor to only update existing
@@ -348,10 +348,10 @@ processors:
       from_context: metadata.origin
       action: insert
     - key: enduser.id
-      # The following uses `subject` attribute produced 
+      # The following uses `subject` attribute produced
       # by the server authenticator from `oidc` extension
       # to set the identity of an exporter on spans.
-      # Refer to the server authenticator's documentation part of your pipeline 
+      # Refer to the server authenticator's documentation part of your pipeline
       # for more information about which attributes are available.
       from_context: auth.subject
       action: insert
