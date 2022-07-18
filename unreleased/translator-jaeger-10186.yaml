@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/translator/jaeger
+note: Handle spans with own process
+issues: [10186]

@@ -499,6 +499,72 @@ func TestJSpanKindToInternal(t *testing.T) {
 	}
 }
 
+func TestRegroup(t *testing.T) {
+	// prepare
+	process := &model.Process{
+		ServiceName: "batch-process",
+	}
+	spanWithoutProcess := &model.Span{
+		OperationName: "span-without-process",
+	}
+	spanWithProcess := &model.Span{
+		Process: &model.Process{
+			ServiceName: "custom-service-name",
+		},
+	}
+
+	originalBatches := []*model.Batch{
+		{
+			Process: process,
+			Spans:   []*model.Span{spanWithProcess, spanWithoutProcess},
+		},
+	}
+
+	expected := []*model.Batch{
+		{
+			Process: process,
+			Spans:   []*model.Span{spanWithoutProcess},
+		},
+		{
+			Process: spanWithProcess.Process,
+			Spans:   []*model.Span{spanWithProcess},
+		},
+	}
+
+	// test
+	result := regroup(originalBatches)
+
+	// verify
+	assert.ElementsMatch(t, expected, result)
+}
+
+func TestChecksum(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		input    *model.Process
+		expected uint64
+	}{
+		{
+			desc: "valid process",
+			input: &model.Process{
+				ServiceName: "some-service-name",
+			},
+			expected: 0x974574e8529af5dd, // acquired by running it once
+		},
+		{
+			desc:     "nil process",
+			input:    nil,
+			expected: 0xcbf29ce484222325, // acquired by running it once
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			out := checksum(tC.input)
+			assert.Equal(t, tC.expected, out)
+		})
+	}
+}
+
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
