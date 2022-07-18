@@ -31,10 +31,12 @@ func Booleanp(b Boolean) *Boolean {
 
 func Test_parse(t *testing.T) {
 	tests := []struct {
+		name     string
 		query    string
 		expected *ParsedQuery
 	}{
 		{
+			name:  "invocation with string",
 			query: `set("foo")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -49,6 +51,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "invocation with float",
 			query: `met(1.2)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -63,6 +66,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "invocation with int",
 			query: `fff(12)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -77,7 +81,8 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			query: `set("foo", get(bear.honey))`,
+			name:  "complex invocation",
+			query: `set("foo", getSomething(bear.honey))`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
@@ -87,7 +92,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Invocation: &Invocation{
-								Function: "get",
+								Function: "getSomething",
 								Arguments: []Value{
 									{
 										Path: &Path{
@@ -110,6 +115,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "complex path",
 			query: `set(foo.attributes["bar"].cat, "dog")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -140,6 +146,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "where == clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -190,6 +197,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "where != clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -240,6 +248,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "ignore extra spaces",
 			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -290,6 +299,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "handle quotes",
 			query: `set("fo\"o")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -304,6 +314,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "Invocation with boolean false",
 			query: `convert_gauge_to_sum("cumulative", false)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -321,6 +332,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "Invocation with boolean true",
 			query: `convert_gauge_to_sum("cumulative", true)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -338,6 +350,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "Invocation with bytes",
 			query: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -362,6 +375,7 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:  "Invocation with nil",
 			query: `set(attributes["test"], nil)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -385,13 +399,35 @@ func Test_parse(t *testing.T) {
 				WhereClause: nil,
 			},
 		},
+		{
+			name:  "Invocation with Enum",
+			query: `set(attributes["test"], TEST_ENUM)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: tqltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
 	}
 
-	// create a test name that doesn't confuse vscode so we can rerun tests with one click
-	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {
-		name := pat.ReplaceAllString(tt.query, "_")
-		t.Run(name, func(t *testing.T) {
+		t.Run(tt.query, func(t *testing.T) {
 			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
 			assert.EqualValues(t, tt.expected, parsed)
@@ -749,4 +785,20 @@ func Test_parseWhere(t *testing.T) {
 			assert.Equal(t, tt.expected, parsed)
 		})
 	}
+}
+
+var testSymbolTable = map[EnumSymbol]Enum{
+	"TEST_ENUM":     0,
+	"TEST_ENUM_ONE": 1,
+	"TEST_ENUM_TWO": 2,
+}
+
+func testParseEnum(val *EnumSymbol) (*Enum, error) {
+	if val != nil {
+		if enum, ok := testSymbolTable[*val]; ok {
+			return &enum, nil
+		}
+		return nil, fmt.Errorf("enum symbol not found")
+	}
+	return nil, fmt.Errorf("enum symbol not provided")
 }

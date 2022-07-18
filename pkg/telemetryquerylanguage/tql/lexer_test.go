@@ -41,8 +41,11 @@ func Test_lexer(t *testing.T) {
 		expectErr bool
 		output    []result
 	}{
-		{"basic_ident", "abc", false, []result{
-			{"Ident", "abc"},
+		{"basic_lowercase", "abc", false, []result{
+			{"Lowercase", "abc"},
+		}},
+		{"basic_uppercase", "ABC", false, []result{
+			{"Uppercase", "ABC"},
 		}},
 		{"basic_equality", "3==4.9", false, []result{
 			{"Int", "3"},
@@ -54,45 +57,50 @@ func Test_lexer(t *testing.T) {
 			{"OpComparison", "!="},
 			{"Float", "4.9"},
 		}},
-		{"unambiguous_names", "foo bar bazz", false, []result{
-			{"Ident", "foo"},
-			{"Ident", "bar"},
-			{"Ident", "bazz"},
+		{"unambiguous_names", "foo bar BAZZ", false, []result{
+			{"Lowercase", "foo"},
+			{"Lowercase", "bar"},
+			{"Uppercase", "BAZZ"},
 		}},
 		{"name_containing_and", "iphone android", false, []result{
-			{"Ident", "iphone"},
-			{"Ident", "android"}, // should not parse "and" as an operator
+			{"Lowercase", "iphone"},
+			{"Lowercase", "android"}, // should not parse "and" as an operator
 		}},
 		{"parse_and", "iphone and roid", false, []result{
-			{"Ident", "iphone"},
+			{"Lowercase", "iphone"},
 			{"OpAnd", "and"}, // should parse "and" as an operator
-			{"Ident", "roid"},
+			{"Lowercase", "roid"},
 		}},
 		{"name_containing_or", "oreo corn", false, []result{
-			{"Ident", "oreo"},
-			{"Ident", "corn"}, // should not parse "or" as an operator
+			{"Lowercase", "oreo"},
+			{"Lowercase", "corn"}, // should not parse "or" as an operator
 		}},
 		{"parse_and_or", "if, and, or but", false, []result{
-			{"Ident", "if"},
+			{"Lowercase", "if"},
 			{"Punct", ","},
 			{"OpAnd", "and"},
 			{"Punct", ","},
 			{"OpOr", "or"},
-			{"Ident", "but"},
+			{"Lowercase", "but"},
 		}},
 		{"nothing_recognizable", "{}", true, []result{
 			{"", ""},
 		}},
 		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{
-			{"Ident", "set"},
+			{"Lowercase", "set"},
 			{"LParen", "("},
-			{"Ident", "attributes"},
+			{"Lowercase", "attributes"},
 			{"Punct", "["},
 			{"String", `"bytes"`},
 			{"Punct", "]"},
 			{"Punct", ","},
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
+		}},
+		{"Mixing case", `aBCd`, false, []result{
+			{"Lowercase", "a"},
+			{"Uppercase", "BC"},
+			{"Lowercase", "d"},
 		}},
 	}
 
