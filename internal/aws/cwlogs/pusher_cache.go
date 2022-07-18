@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type PusherCache interface {
+type pusherCache interface {
 	// GetPusher will check to see if there already exists a pusher configured to write to
 	// the given stream and group, and that pusher will be returned.
 	// If no pusher exists for a given stream and group, a new one is created, stored and returned
