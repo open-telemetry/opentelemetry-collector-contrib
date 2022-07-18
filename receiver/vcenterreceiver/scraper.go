@@ -187,7 +187,7 @@ func (v *vcenterMetricScraper) collectDatastores(
 	}
 
 	for _, ds := range datastores {
-		v.collectDatastore(ctx, colTime, ds, errs)
+		v.collectDatastore(ctx, colTime, ds, cluster, errs)
 	}
 }
 
@@ -195,6 +195,7 @@ func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	ds *object.Datastore,
+	cluster *object.ClusterComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	var moDS mo.Datastore
@@ -206,6 +207,7 @@ func (v *vcenterMetricScraper) collectDatastore(
 
 	v.recordDatastoreProperties(now, moDS)
 	v.mb.EmitForResource(
+		metadata.WithVcenterClusterName(cluster.Name()),
 		metadata.WithVcenterDatastoreName(moDS.Name),
 	)
 }

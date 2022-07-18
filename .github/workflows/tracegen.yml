@@ -16,7 +16,7 @@ jobs:
       - name: Build tracegen
         uses: docker/build-push-action@v3
         with:
-          context: tracegen
+          context: cmd/tracegen
           push: false
           tags: ghcr.io/open-telemetry/opentelemetry-collector-contrib/tracegen:dev
 

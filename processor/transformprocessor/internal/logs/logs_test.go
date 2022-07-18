@@ -95,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "severity_number",
 				},
 			},
-			orig: plog.SeverityNumberFATAL,
+			orig: int64(plog.SeverityNumberFATAL),
 			new:  int64(3),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSeverityNumber(plog.SeverityNumberTRACE3)
@@ -698,4 +698,159 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
+}
+
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want common.Enum
+	}{
+		{
+			name: "SEVERITY_NUMBER_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE",
+			want: 1,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE2",
+			want: 2,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE3",
+			want: 3,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE4",
+			want: 4,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG",
+			want: 5,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG2",
+			want: 6,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG3",
+			want: 7,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG4",
+			want: 8,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO",
+			want: 9,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO2",
+			want: 10,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO3",
+			want: 11,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO4",
+			want: 12,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN",
+			want: 13,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN2",
+			want: 14,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN3",
+			want: 15,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN4",
+			want: 16,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR",
+			want: 17,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR2",
+			want: 18,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR3",
+			want: 19,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR4",
+			want: 20,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL",
+			want: 21,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL2",
+			want: 22,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL3",
+			want: 23,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL4",
+
+			want: 24,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(&common.Path{
+				Fields: []common.Field{
+					{
+						Name: tt.name,
+					},
+				},
+			})
+			assert.True(t, ok)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name string
+		path *common.Path
+	}{
+		{
+			name: "not an enum",
+			path: &common.Path{
+				Fields: []common.Field{
+					{
+						Name: "not an enum",
+					},
+				},
+			},
+		},
+		{
+			name: "bad path",
+			path: &common.Path{},
+		},
+		{
+			name: "nil path",
+			path: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, ok := ParseEnum(tt.path)
+			assert.False(t, ok)
+			assert.Nil(t, actual)
+		})
+	}
 }
