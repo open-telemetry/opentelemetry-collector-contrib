@@ -151,8 +151,8 @@ func (cfg *Config) Validate() error {
 	if promConfig == nil {
 		return nil // noop receiver
 	}
-	if len(promConfig.ScrapeConfigs) == 0 {
-		return errors.New("no Prometheus scrape_configs")
+	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
+		return errors.New("no Prometheus scrape_configs and no target_allocator config")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
@@ -258,7 +258,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
 	promCfg, err := componentParser.Sub(prometheusConfigKey)
-	if err != nil || len(promCfg.ToStringMap()) == 0 {
+	if err != nil {
 		return err
 	}
 	out, err := yaml.Marshal(promCfg.ToStringMap())
@@ -273,23 +273,25 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// Unmarshal TargetAllocator configs
 	targetAllocatorCfg, err := componentParser.Sub(targetAllocatorConfigKey)
-	if err != nil || len(targetAllocatorCfg.ToStringMap()) == 0 {
+	if err != nil {
 		return err
 	}
 	targetAllocatorHTTPSDCfg, err := targetAllocatorCfg.Sub(targetAllocatorHTTPSDConfigKey)
-	if err != nil || len(targetAllocatorHTTPSDCfg.ToStringMap()) == 0 {
+	if err != nil {
 		return err
 	}
 
 	targetAllocatorHTTPSDMap := targetAllocatorHTTPSDCfg.ToStringMap()
-	targetAllocatorHTTPSDMap["url"] = "http://placeholder" // we have to set it as else the marshal will fail
-	httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDMap)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
-	}
-	err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HTTPSDConfig)
-	if err != nil {
-		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+	if len(targetAllocatorHTTPSDMap) != 0 {
+		targetAllocatorHTTPSDMap["url"] = "http://placeholder" // we have to set it as else the marshal will fail
+		httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDMap)
+		if err != nil {
+			return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %s", err)
+		}
+		err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HTTPSDConfig)
+		if err != nil {
+			return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %s", err)
+		}
 	}
 
 	return nil
