@@ -130,6 +130,7 @@ processors:
         action: update
       - key: account_id
         value: 2245
+        action: insert
       - key: account_password
         action: delete
       - key: account_email
