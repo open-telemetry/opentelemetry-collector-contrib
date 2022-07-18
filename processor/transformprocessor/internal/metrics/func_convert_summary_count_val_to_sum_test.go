@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func getTestSummaryMetric() pmetric.Metric {
@@ -76,7 +76,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := common.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath, ParseEnum)
+			evaluate, err := tql.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath, ParseEnum)
 			assert.NoError(t, err)
 			evaluate(metricTransformContext{
 				il:       pcommon.NewInstrumentationScope(),
@@ -95,7 +95,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 type summaryTestCase struct {
 	name  string
 	input pmetric.Metric
-	inv   common.Invocation
+	inv   tql.Invocation
 	want  func(pmetric.MetricSlice)
 }
 
@@ -104,14 +104,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum",
 			input: getTestSummaryMetric(),
-			inv: common.Invocation{
+			inv: tql.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []common.Value{
+				Arguments: []tql.Value{
 					{
-						String: testhelper.Strp("delta"),
+						String: tqltest.Strp("delta"),
 					},
 					{
-						Bool: (*common.Boolean)(testhelper.Boolp(false)),
+						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
 					},
 				},
 			},
@@ -134,14 +134,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (monotonic)",
 			input: getTestSummaryMetric(),
-			inv: common.Invocation{
+			inv: tql.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []common.Value{
+				Arguments: []tql.Value{
 					{
-						String: testhelper.Strp("delta"),
+						String: tqltest.Strp("delta"),
 					},
 					{
-						Bool: (*common.Boolean)(testhelper.Boolp(true)),
+						Bool: (*tql.Boolean)(tqltest.Boolp(true)),
 					},
 				},
 			},
@@ -164,14 +164,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (cumulative)",
 			input: getTestSummaryMetric(),
-			inv: common.Invocation{
+			inv: tql.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []common.Value{
+				Arguments: []tql.Value{
 					{
-						String: testhelper.Strp("cumulative"),
+						String: tqltest.Strp("cumulative"),
 					},
 					{
-						Bool: (*common.Boolean)(testhelper.Boolp(false)),
+						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
 					},
 				},
 			},
@@ -194,14 +194,14 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 		{
 			name:  "convert_summary_sum_val_to_sum (no op)",
 			input: getTestGaugeMetric(),
-			inv: common.Invocation{
+			inv: tql.Invocation{
 				Function: "convert_summary_sum_val_to_sum",
-				Arguments: []common.Value{
+				Arguments: []tql.Value{
 					{
-						String: testhelper.Strp("delta"),
+						String: tqltest.Strp("delta"),
 					},
 					{
-						Bool: (*common.Boolean)(testhelper.Boolp(false)),
+						Bool: (*tql.Boolean)(tqltest.Boolp(false)),
 					},
 				},
 			},

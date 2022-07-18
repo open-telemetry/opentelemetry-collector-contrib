@@ -14,9 +14,4 @@ All new functions should have integration tests added to any usable pipeline's `
 
 ## New Values
 
-When adding new values to the grammar you must:
-
-1. Update the `Value` struct with the new value.  This may also mean adding new token(s) to the lexer.
-2. Update `NewFunctionCall` to be able to handle calling functions with this new value.
-3. Update `NewGetter` to be able to handle the new value.
-4. Add new unit tests.
+When adding new values to the grammar you must update the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/telemetryquerylanguage/tql/CONTRIBUTING.md)
