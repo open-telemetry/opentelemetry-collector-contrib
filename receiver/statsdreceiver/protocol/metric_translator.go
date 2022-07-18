@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
@@ -111,7 +110,7 @@ func (s statsDMetric) counterValue() int64 {
 	// rates that are not integer reciprocals.  Recommendation:
 	// use integer reciprocal sampling rates.
 	if 0 < s.sampleRate && s.sampleRate < 1 {
-		x = x / s.sampleRate
+		x /= s.sampleRate
 	}
 	return int64(x)
 }

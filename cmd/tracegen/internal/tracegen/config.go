@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/tracegen/internal/tracegen"
+package tracegen // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen/internal/tracegen"
 
 import (
 	"flag"
