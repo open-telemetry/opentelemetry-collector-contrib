@@ -82,8 +82,8 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if mp.SpanDuration != nil {
 		spanMatcher, err = NewDurationMatcher(*mp.SpanDuration)
 		if err != nil {
-            return nil, fmt.Errorf("error creating span duration matcher: %w", err)
-        }
+			return nil, fmt.Errorf("error creating span duration matcher: %w", err)
+		}
 	}
 
 	return &propertiesMatcher{
