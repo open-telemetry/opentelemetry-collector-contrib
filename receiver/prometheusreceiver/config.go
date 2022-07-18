@@ -258,7 +258,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// Unmarshal prometheus's config values. Since prometheus uses `yaml` tags, so use `yaml`.
 	promCfg, err := componentParser.Sub(prometheusConfigKey)
-	if err != nil {
+	if err != nil || len(promCfg.ToStringMap()) == 0 {
 		return err
 	}
 	out, err := yaml.Marshal(promCfg.ToStringMap())
