@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import (
@@ -124,7 +123,7 @@ func extractStorageUsage(stats *DiskStats) (uint64, uint64) {
 		case "Write":
 			writeBytes = *blockStat.Value
 		default:
-			//ignoring "Async", "Total", "Sum", etc
+			// ignoring "Async", "Total", "Sum", etc
 			continue
 		}
 	}
