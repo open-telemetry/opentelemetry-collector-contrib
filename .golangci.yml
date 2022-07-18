@@ -132,3 +132,7 @@ issues:
     - text: "G402:"
       linters:
         - gosec
+    # https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12566
+    - text: "G112:"
+      linters:
+        - gosec
