@@ -508,8 +508,7 @@ class TestWsgiMiddlewareWrappedWithAnotherFramework(WsgiTestBase):
 class TestAdditionOfCustomRequestResponseHeaders(WsgiTestBase):
     def setUp(self):
         super().setUp()
-        tracer_provider, _ = TestBase.create_tracer_provider()
-        self.tracer = tracer_provider.get_tracer(__name__)
+        self.tracer = self.tracer_provider.get_tracer(__name__)
 
     def iterate_response(self, response):
         while True:

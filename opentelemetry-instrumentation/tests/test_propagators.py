@@ -14,6 +14,8 @@
 
 # pylint: disable=protected-access
 
+import unittest
+
 from opentelemetry import trace
 from opentelemetry.instrumentation import propagators
 from opentelemetry.instrumentation.propagators import (
@@ -39,7 +41,7 @@ class TestGlobals(TestBase):
         propagators._RESPONSE_PROPAGATOR = original
 
 
-class TestDictHeaderSetter(TestBase):
+class TestDictHeaderSetter(unittest.TestCase):
     def test_simple(self):
         setter = DictHeaderSetter()
         carrier = {}

@@ -35,6 +35,10 @@ class TestRemouladeInstrumentation(TestBase):
 
         broker.declare_actor(actor_div)
 
+    def tearDown(self):
+        RemouladeInstrumentor().uninstrument()
+        super().tearDown()
+
     def test_message(self):
         actor_div.send(2, 3)
 

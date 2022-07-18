@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 from unittest.mock import patch
 
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.util.http import (
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
@@ -24,7 +24,7 @@ from opentelemetry.util.http import (
 )
 
 
-class TestCaptureCustomHeaders(TestBase):
+class TestCaptureCustomHeaders(unittest.TestCase):
     @patch.dict(
         "os.environ",
         {

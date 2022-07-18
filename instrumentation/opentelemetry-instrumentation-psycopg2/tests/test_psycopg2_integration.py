@@ -68,6 +68,7 @@ class MockConnection:
 
 class TestPostgresqlIntegration(TestBase):
     def setUp(self):
+        super().setUp()
         self.cursor_mock = mock.patch(
             "opentelemetry.instrumentation.psycopg2.pg_cursor", MockCursor
         )

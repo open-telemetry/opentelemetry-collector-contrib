@@ -36,14 +36,11 @@ def async_call(coro):
 
 
 class TestFunctionalAiopgConnect(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._connection = None
-        cls._cursor = None
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
-        AiopgInstrumentor().instrument(tracer_provider=cls.tracer_provider)
-        cls._connection = async_call(
+    def setUp(self):
+        super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
+        AiopgInstrumentor().instrument(tracer_provider=self.tracer_provider)
+        self._connection = async_call(
             aiopg.connect(
                 dbname=POSTGRES_DB_NAME,
                 user=POSTGRES_USER,
@@ -52,15 +49,13 @@ class TestFunctionalAiopgConnect(TestBase):
                 port=POSTGRES_PORT,
             )
         )
-        cls._cursor = async_call(cls._connection.cursor())
+        self._cursor = async_call(self._connection.cursor())
 
-    @classmethod
-    def tearDownClass(cls):
-        if cls._cursor:
-            cls._cursor.close()
-        if cls._connection:
-            cls._connection.close()
+    def tearDown(self):
+        self._cursor.close()
+        self._connection.close()
         AiopgInstrumentor().uninstrument()
+        super().tearDown()
 
     def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()
@@ -121,18 +116,15 @@ class TestFunctionalAiopgConnect(TestBase):
 
 
 class TestFunctionalAiopgCreatePool(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._connection = None
-        cls._cursor = None
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
-        AiopgInstrumentor().instrument(tracer_provider=cls.tracer_provider)
-        cls._dsn = (
+    def setUp(self):
+        super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
+        AiopgInstrumentor().instrument(tracer_provider=self.tracer_provider)
+        self._dsn = (
             f"dbname='{POSTGRES_DB_NAME}' user='{POSTGRES_USER}' password='{POSTGRES_PASSWORD}'"
             f" host='{POSTGRES_HOST}' port='{POSTGRES_PORT}'"
         )
-        cls._pool = async_call(
+        self._pool = async_call(
             aiopg.create_pool(
                 dbname=POSTGRES_DB_NAME,
                 user=POSTGRES_USER,
@@ -141,18 +133,15 @@ class TestFunctionalAiopgCreatePool(TestBase):
                 port=POSTGRES_PORT,
             )
         )
-        cls._connection = async_call(cls._pool.acquire())
-        cls._cursor = async_call(cls._connection.cursor())
+        self._connection = async_call(self._pool.acquire())
+        self._cursor = async_call(self._connection.cursor())
 
-    @classmethod
-    def tearDownClass(cls):
-        if cls._cursor:
-            cls._cursor.close()
-        if cls._connection:
-            cls._connection.close()
-        if cls._pool:
-            cls._pool.close()
+    def tearDown(self):
+        self._cursor.close()
+        self._connection.close()
+        self._pool.close()
         AiopgInstrumentor().uninstrument()
+        super().tearDown()
 
     def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()

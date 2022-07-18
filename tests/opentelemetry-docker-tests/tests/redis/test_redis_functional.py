@@ -31,8 +31,8 @@ class TestRedisInstrument(TestBase):
         RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
 
     def tearDown(self):
-        super().tearDown()
         RedisInstrumentor().uninstrument()
+        super().tearDown()
 
     def _check_span(self, span, name):
         self.assertEqual(span.name, name)
@@ -203,8 +203,8 @@ class TestAsyncRedisInstrument(TestBase):
         RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
 
     def tearDown(self):
-        super().tearDown()
         RedisInstrumentor().uninstrument()
+        super().tearDown()
 
     def _check_span(self, span, name):
         self.assertEqual(span.name, name)
@@ -383,8 +383,8 @@ class TestRedisDBIndexInstrument(TestBase):
         RedisInstrumentor().instrument(tracer_provider=self.tracer_provider)
 
     def tearDown(self):
-        super().tearDown()
         RedisInstrumentor().uninstrument()
+        super().tearDown()
 
     def _check_span(self, span, name):
         self.assertEqual(span.name, name)

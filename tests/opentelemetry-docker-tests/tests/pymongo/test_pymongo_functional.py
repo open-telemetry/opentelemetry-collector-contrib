@@ -28,16 +28,21 @@ MONGODB_COLLECTION_NAME = "test"
 
 
 class TestFunctionalPymongo(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
-        PymongoInstrumentor().instrument()
+    def setUp(self):
+        super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
+        self.instrumentor = PymongoInstrumentor()
+        self.instrumentor.instrument()
+        self.instrumentor._commandtracer_instance._tracer = self._tracer
         client = MongoClient(
             MONGODB_HOST, MONGODB_PORT, serverSelectionTimeoutMS=2000
         )
         db = client[MONGODB_DB_NAME]
-        cls._collection = db[MONGODB_COLLECTION_NAME]
+        self._collection = db[MONGODB_COLLECTION_NAME]
+
+    def tearDown(self):
+        self.instrumentor.uninstrument()
+        super().tearDown()
 
     def validate_spans(self):
         spans = self.memory_exporter.get_finished_spans()

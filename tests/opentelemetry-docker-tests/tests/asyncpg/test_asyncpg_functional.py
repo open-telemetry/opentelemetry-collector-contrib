@@ -21,14 +21,11 @@ def async_call(coro):
 
 
 class TestFunctionalAsyncPG(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._connection = None
-        cls._cursor = None
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
-        AsyncPGInstrumentor().instrument(tracer_provider=cls.tracer_provider)
-        cls._connection = async_call(
+    def setUp(self):
+        super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
+        AsyncPGInstrumentor().instrument(tracer_provider=self.tracer_provider)
+        self._connection = async_call(
             asyncpg.connect(
                 database=POSTGRES_DB_NAME,
                 user=POSTGRES_USER,
@@ -38,9 +35,9 @@ class TestFunctionalAsyncPG(TestBase):
             )
         )
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         AsyncPGInstrumentor().uninstrument()
+        super().tearDown()
 
     def check_span(self, span):
         self.assertEqual(
@@ -148,16 +145,13 @@ class TestFunctionalAsyncPG(TestBase):
 
 
 class TestFunctionalAsyncPG_CaptureParameters(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._connection = None
-        cls._cursor = None
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
+    def setUp(self):
+        super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
         AsyncPGInstrumentor(capture_parameters=True).instrument(
-            tracer_provider=cls.tracer_provider
+            tracer_provider=self.tracer_provider
         )
-        cls._connection = async_call(
+        self._connection = async_call(
             asyncpg.connect(
                 database=POSTGRES_DB_NAME,
                 user=POSTGRES_USER,
@@ -167,9 +161,9 @@ class TestFunctionalAsyncPG_CaptureParameters(TestBase):
             )
         )
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         AsyncPGInstrumentor().uninstrument()
+        super().tearDown()
 
     def check_span(self, span):
         self.assertEqual(

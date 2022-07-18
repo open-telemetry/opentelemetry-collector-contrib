@@ -29,22 +29,10 @@ MYSQL_DB_NAME = os.getenv("MYSQL_DB_NAME", "opentelemetry-tests")
 
 
 class TestFunctionalMysql(TestBase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls._connection = None
-        cls._cursor = None
-        cls._tracer = cls.tracer_provider.get_tracer(__name__)
-        MySQLInstrumentor().instrument()
-
-    @classmethod
-    def tearDownClass(cls):
-        if cls._connection:
-            cls._connection.close()
-        MySQLInstrumentor().uninstrument()
-
     def setUp(self):
         super().setUp()
+        self._tracer = self.tracer_provider.get_tracer(__name__)
+        MySQLInstrumentor().instrument()
         self._connection = mysql.connector.connect(
             user=MYSQL_USER,
             password=MYSQL_PASSWORD,
@@ -53,6 +41,12 @@ class TestFunctionalMysql(TestBase):
             database=MYSQL_DB_NAME,
         )
         self._cursor = self._connection.cursor()
+
+    def tearDown(self):
+        self._cursor.close()
+        self._connection.close()
+        MySQLInstrumentor().uninstrument()
+        super().tearDown()
 
     def validate_spans(self, span_name):
         spans = self.memory_exporter.get_finished_spans()

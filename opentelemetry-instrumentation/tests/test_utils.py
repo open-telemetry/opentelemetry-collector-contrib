@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
 from http import HTTPStatus
 
 from opentelemetry.instrumentation.utils import (
     _python_path_without_directory,
     http_status_to_status_code,
 )
-from opentelemetry.test.test_base import TestBase
 from opentelemetry.trace import StatusCode
 
 
-class TestUtils(TestBase):
+class TestUtils(unittest.TestCase):
     # See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#status
     def test_http_status_to_status_code(self):
         for status_code, expected in (
