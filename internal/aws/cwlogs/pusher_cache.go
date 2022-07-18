@@ -23,7 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type pusherCache interface {
+type PusherCache interface {
 	// GetPusher will check to see if there already exists a pusher configured to write to
 	// the given stream and group, and that pusher will be returned.
 	// If no pusher exists for a given stream and group, a new one is created, stored and returned
@@ -95,8 +95,8 @@ func (pc *DefaultPusherCache) Flush() (errs error) {
 	return errs
 }
 
-func NewDefaultPusherCache(logger *zap.Logger) DefaultPusherCache {
-	return DefaultPusherCache{
+func NewDefaultPusherCache(logger *zap.Logger) PusherCache {
+	return &DefaultPusherCache{
 		logger:                 logger,
 		groupStreamToPusherMap: map[string]map[string]Pusher{},
 	}
