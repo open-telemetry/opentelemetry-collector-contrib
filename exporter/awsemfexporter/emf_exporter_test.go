@@ -47,6 +47,7 @@ func init() {
 }
 
 type mockCache struct {
+	cwlogs.PusherCache
 	mock.Mock
 }
 
