@@ -1,5 +1,11 @@
 # Azure Blob Exporter
 
+| Status                   |             |
+| ------------------------ | ----------- |
+| Stability                |[development]|
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
+
 This exporter saves logs and trace data to [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/).
 
 ## Configuration
