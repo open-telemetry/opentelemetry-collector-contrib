@@ -90,6 +90,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, errors)
 	p.collectDatabaseSize(ctx, now, listClient, databases, errors)
 	p.collectBackends(ctx, now, listClient, databases, errors)
+	p.collectBackgroundWriterStats(ctx, now, listClient, databases, errors)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -168,7 +169,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, state)
+			p.mb.RecordPostgresqlRowsDataPoint(now, i, state, table.database, table.table)
 		}
 
 		for opKey, op := range metadata.MapAttributeOperation {
@@ -277,6 +278,58 @@ func (p *postgreSQLScraper) collectBackends(
 				continue
 			}
 			p.mb.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
+		}
+	}
+}
+
+func (p *postgreSQLScraper) collectBackgroundWriterStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	databases []string,
+	errors scrapererror.ScrapeErrors,
+) {
+	bgStats, err := client.getBackgroundWriterStats(ctx)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching backends", zap.Error(err))
+		errors.AddPartial(0, err)
+	}
+
+	// Metrics can be partially collected (non-nil) even if there were partial errors reported
+	if bgStats == nil {
+		return
+	}
+
+	for _, metric := range bgStats {
+		for k, v := range metric.stats {
+			i, err := p.parseInt(k, v)
+			if err != nil {
+				errors.AddPartial(1, err)
+				continue
+			}
+
+			switch k {
+			case "buffers_allocated":
+				p.mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(now, i)
+			case "checkpoint_req":
+				p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, i, metadata.AttributeBgCheckpointTypeRequested)
+			case "checkpoint_scheduled":
+				p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, i, metadata.AttributeBgCheckpointTypeScheduled)
+			case "checkpoint_duration_write":
+				p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, i, metadata.AttributeBgDurationTypeWrite)
+			case "checkpoint_duration_sync":
+				p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, i, metadata.AttributeBgDurationTypeSync)
+			case "bg_writes":
+				p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, i, metadata.AttributeBgBufferSourceBgwriter)
+			case "backend_writes":
+				p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, i, metadata.AttributeBgBufferSourceBackend)
+			case "buffers_written_fsync":
+				p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, i, metadata.AttributeBgBufferSourceBackendFsync)
+			case "buffers_checkpoints":
+				p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, i, metadata.AttributeBgBufferSourceCheckpoints)
+			case "maxwritten_count":
+				p.mb.RecordPostgresqlBgwriterMaxwrittenCountDataPoint(now, i)
+			}
 		}
 	}
 }

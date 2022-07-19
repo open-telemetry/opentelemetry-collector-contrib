@@ -2,81 +2,197 @@ name: postgresqlreceiver
 
 attributes:
   database:
-    description: The name of the database.
+    description: The name of the database being monitored
+    type: string
   table:
     description: The schema name followed by the table name.
-  source:
-    description: The block read source type.
-    enum: [ heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit ]  
+    type: string
+  bg_checkpoint_type:
+    value: type
+    description: The type of checkpoint state
+    enum:
+      - requested
+      - scheduled
+  bg_duration_type:
+    value: type
+    description: The type of time spent during the checkpoint.
+    enum:
+      - sync
+      - write
+  bg_buffer_source:
+    value: source
+    description: The source of a buffer write.
+    enum:
+      - backend
+      - backend_fsync
+      - checkpoints
+      - bgwriter
   operation:
     description: The database operation.
-    enum: [ ins, upd, del, hot_upd ]
+    enum:
+      - ins
+      - upd
+      - del
+      - hot_upd
+  source:
+    description: The block read source type.
+    enum:
+      - heap_read
+      - heap_hit
+      - idx_read
+      - idx_hit
+      - toast_read
+      - toast_hit
+      - tidx_read
+      - tidx_hit
   state:
     description: The tuple (row) state.
-    enum: [ dead, live ]
-
+    enum:
+      - dead
+      - live
 
 metrics:
-  postgresql.blocks_read:
-    enabled: true
-    description: The number of blocks read.
-    unit: 1
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-    attributes: [ database, table, source ]
-  postgresql.commits:
-    enabled: true
-    description: The number of commits.
-    unit: 1
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-    attributes: [ database ]
-  postgresql.db_size:
-    enabled: true
-    description: The database disk usage.
-    unit: By
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation: cumulative
-    attributes: [ database ]
   postgresql.backends:
-    enabled: true
+    attributes: [database]
     description: The number of backends.
-    unit: 1
-    sum:
-      value_type: int
-      monotonic: false
-      aggregation: cumulative
-    attributes: [ database ]
-  postgresql.rows:
     enabled: true
-    description: The number of rows in the database.
-    unit: 1
     sum:
-      value_type: int
-      monotonic: false
       aggregation: cumulative
-    attributes: [ database, table, state ]
+      monotonic: false
+      value_type: int
+    unit: 1
+  postgresql.bgwriter.buffers.allocated:
+    description: Number of buffers allocated
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{buffers}"
+  postgresql.bgwriter.buffers.writes:
+    attributes: [bg_buffer_source]
+    description: Number of buffers written
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{buffers}"
+  postgresql.bgwriter.checkpoint.count:
+    attributes: [bg_checkpoint_type]
+    description: The number of checkpoints performed
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{checkpoints}"
+  postgresql.bgwriter.duration:
+    attributes: [bg_duration_type]
+    description: Total time spent writing and syncing files to disk by checkpoints.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+  postgresql.bgwriter.maxwritten.count:
+    description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+  postgresql.block.count:
+    description: Total number of blocks
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{blocks}"
+  postgresql.blocks_read:
+    attributes:
+      - database
+      - table
+      - source
+    description: The number of blocks read.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  postgresql.commits:
+    attributes: [database]
+    description: The number of commits.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  postgresql.database.table.index.scans:
+    description: The number of index scans on a table.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{scans}"
+  postgresql.database.table.index.size:
+    description: Size of the index on disk.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
+  postgresql.database.transactions:
+    description: Number of transactions rolled back or committed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{transactions}"
+  postgresql.db_size:
+    attributes: [database]
+    description: The database disk usage.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: By
   postgresql.operations:
-    enabled: true
+    attributes:
+      - database
+      - table
+      - operation
     description: The number of db row operations.
-    unit: 1
-    sum:
-      value_type: int
-      monotonic: true
-      aggregation: cumulative
-    attributes: [ database, table, operation ]
-  postgresql.rollbacks:
     enabled: true
-    description: The number of rollbacks.
-    unit: 1
     sum:
-      value_type: int
-      monotonic: true
       aggregation: cumulative
-    attributes: [ database ]
+      monotonic: true
+      value_type: int
+    unit: 1
+  postgresql.rollbacks:
+    attributes: [database]
+    description: The number of rollbacks.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: 1
+  postgresql.rows:
+    attributes:
+      - state
+      - database
+      - table
+    description: The number of rows in the database.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: 1

@@ -35,6 +35,7 @@ type client interface {
 	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
 	getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error)
 	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
+	getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -166,6 +167,35 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricSt
 	FROM pg_statio_user_tables;`
 
 	return c.collectStatsFromQuery(ctx, query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
+}
+
+func (c *postgreSQLClient) getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error) {
+	// the pg_stat_bgwriter will have a single row containing global stats for the cluster
+	query := `SELECT 
+	coalesce(checkpoints_req, 0) AS checkpoint_req,
+	coalesce(checkpoints_timed, 0) AS checkpoint_scheduled,
+	coalesce(checkpoint_write_time, 0) AS checkpoint_duration_write,
+	coalesce(checkpoint_sync_time, 0) AS checkpoint_duration_sync,
+	coalesce(buffers_clean, 0) AS bg_writes,
+	coalesce(buffers_backend, 0) AS backend_writes,
+	coalesce(buffers_backend_fsync, 0) AS buffers_written_fsync,
+	coalesce(buffers_checkpoint, 0) AS buffers_checkpoints,
+	coalesce(buffers_alloc, 0) AS buffers_allocated,
+	coalesce(maxwritten_clean, 0) AS maxwritten_count
+	FROM pg_stat_bgwriter;`
+
+	return c.collectStatsFromQuery(ctx, query, false, false,
+		"checkpoint_req",
+		"checkpoint_scheduled",
+		"checkpoint_duration_write",
+		"checkpoint_duration_sync",
+		"bg_writes",
+		"backend_writes",
+		"buffers_written_fsync",
+		"buffers_checkpoints",
+		"buffers_allocated",
+		"maxwritten_count",
+	)
 }
 
 func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query string, includeDatabase bool, includeTable bool, orderedFields ...string) ([]MetricStat, error) {

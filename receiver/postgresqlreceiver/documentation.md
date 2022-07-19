@@ -9,12 +9,21 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **postgresql.backends** | The number of backends. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.bgwriter.buffers.allocated** | Number of buffers allocated | {buffers} | Sum(Int) | <ul> </ul> |
+| **postgresql.bgwriter.buffers.writes** | Number of buffers written | {buffers} | Sum(Int) | <ul> <li>bg_buffer_source</li> </ul> |
+| **postgresql.bgwriter.checkpoint.count** | The number of checkpoints performed | {checkpoints} | Sum(Int) | <ul> <li>bg_checkpoint_type</li> </ul> |
+| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Int) | <ul> <li>bg_duration_type</li> </ul> |
+| **postgresql.bgwriter.maxwritten.count** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
+| **postgresql.block.count** | Total number of blocks | {blocks} | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.database.table.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
+| **postgresql.database.table.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
+| **postgresql.database.transactions** | Number of transactions rolled back or committed. | {transactions} | Sum(Int) | <ul> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
+| **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>state</li> <li>database</li> <li>table</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -29,7 +38,10 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of the database. |  |
+| bg_buffer_source (source) | The source of a buffer write. | backend, backend_fsync, checkpoints, bgwriter |
+| bg_checkpoint_type (type) | The type of checkpoint state | requested, scheduled |
+| bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
+| database | The name of the database being monitored |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
 | state | The tuple (row) state. | dead, live |
