@@ -123,7 +123,7 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 	assert.True(t, matched)
 }
 
-func TestMatchIntGaugeDataPointByMetricAndSecondPointLBoolabelValue(t *testing.T) {
+func TestMatchIntGaugeDataPointByMetricAndSecondPointBoolLabelValue(t *testing.T) {
 	matcher, err := NewMatcher(
 		`MetricName == 'my.metric' && Label("baz") == true`,
 	)
