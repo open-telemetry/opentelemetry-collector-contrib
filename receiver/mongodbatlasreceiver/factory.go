@@ -34,6 +34,9 @@ const (
 	defaultAlertsEnabled = false
 )
 
+// mongoDBReciever is a handle to the receiver as it is shared between metrics and logging
+var mongoDBReciever *receiver
+
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
@@ -50,15 +53,20 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	ms, err := newMongoDBAtlasScraper(params, cfg)
+	recv, err := getReceiver(params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+	}
+
+	ms, err := newMongoDBAtlasScraper(recv)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(ms))
 }
 
-func createLogsReceiver(
+func createAlertsLogReceiver(
 	_ context.Context,
 	params component.ReceiverCreateSettings,
 	rConf config.Receiver,
@@ -73,6 +81,37 @@ func createLogsReceiver(
 	return recv, nil
 }
 
+func createCombinedLogReceiver(
+	_ context.Context,
+	params component.ReceiverCreateSettings,
+	rConf config.Receiver,
+	consumer consumer.Logs,
+) (component.LogsReceiver, error) {
+	cfg := rConf.(*Config)
+
+	var err error
+	recv := &combindedLogsReceiver{}
+
+	// If alerts is enabled create alerts reciever
+	if cfg.Alerts.Enabled {
+		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+		}
+	}
+
+	// If logs is enabled create logs receiver
+	if cfg.Logs.Enabled {
+		recv.logs, err = getReceiver(params, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+		}
+		recv.logs.consumer = consumer
+	}
+
+	return recv, nil
+}
+
 func createDefaultConfig() config.Receiver {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
@@ -82,5 +121,21 @@ func createDefaultConfig() config.Receiver {
 		Alerts: AlertConfig{
 			Enabled: defaultAlertsEnabled,
 		},
+		Logs: LogConfig{
+			Enabled:  true,
+			Projects: []*Project{},
+		},
 	}
+}
+
+// getReceiver ensures we only create a single receiver because it is shared between logs and metrics
+func getReceiver(params component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
+	var err error
+
+	// If we don't have one yet create it
+	if mongoDBReciever == nil {
+		mongoDBReciever, err = newMongoDBAtlasReciever(params, cfg)
+	}
+
+	return mongoDBReciever, err
 }

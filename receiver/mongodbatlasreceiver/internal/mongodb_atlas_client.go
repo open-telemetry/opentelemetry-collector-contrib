@@ -15,6 +15,7 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
@@ -552,4 +553,58 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 		return nil, false, err
 	}
 	return measurements.Measurements, hasNext(measurements.Links), nil
+}
+
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string) (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer([]byte{})
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("received status code: %d", resp.StatusCode)
+	}
+
+	return buf, nil
+}
+
+func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string, include, exclude []string) ([]mongodbatlas.Cluster, error) {
+	options := mongodbatlas.ListOptions{}
+
+	clusters, _, err := s.client.Clusters.List(ctx, groupID, &options)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case len(include) == 0 && len(exclude) == 0:
+		return clusters, nil
+	case len(include) > 0:
+		return filterClusters(clusters, createStringMap(include), true)
+	case len(exclude) > 0:
+		return filterClusters(clusters, createStringMap(exclude), false)
+	default:
+		return nil, fmt.Errorf("Error can not have both include and exclude parameters initialized")
+	}
+
+}
+
+func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]string, include bool) ([]mongodbatlas.Cluster, error) {
+	var filtered []mongodbatlas.Cluster
+	for _, cluster := range clusters {
+		if _, ok := keys[cluster.ID]; (!ok && !include) || (ok && include) {
+			filtered = append(filtered, cluster)
+		}
+	}
+	return filtered, nil
+}
+
+func createStringMap(in []string) map[string]string {
+	list := make(map[string]string)
+	for i := range in {
+		list[in[i]] = in[i]
+	}
+
+	return list
 }

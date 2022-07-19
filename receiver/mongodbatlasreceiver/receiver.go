@@ -15,27 +15,34 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
+	"compress/gzip"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 type receiver struct {
-	log     *zap.Logger
-	cfg     *Config
-	client  *internal.MongoDBAtlasClient
-	lastRun time.Time
-	mb      *metadata.MetricsBuilder
+	log      *zap.Logger
+	cfg      *Config
+	client   *internal.MongoDBAtlasClient
+	lastRun  time.Time
+	mb       *metadata.MetricsBuilder
+	consumer consumer.Logs
 }
 
 type timeconstraints struct {
@@ -44,12 +51,16 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasScraper(settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
+func newMongoDBAtlasReciever(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
 	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
 	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
+	return recv, nil
+}
+
+func newMongoDBAtlasScraper(recv *receiver) (scraperhelper.Scraper, error) {
 	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
@@ -230,4 +241,102 @@ func (s *receiver) extractProcessDiskMetrics(
 		)
 	}
 	return nil
+}
+
+// Log receiver logic
+func (s *receiver) Start(ctx context.Context, host component.Host) error {
+	go func() error {
+		cfgProjects, err := s.createProjectMap()
+		if err != nil {
+			return fmt.Errorf("error ")
+		}
+
+		for {
+			orgs, err := s.client.Organizations(ctx)
+			if err != nil {
+				return fmt.Errorf("error retrieving organizations: %w", err)
+			}
+			for _, org := range orgs {
+				projects, err := s.client.Projects(ctx, org.ID)
+				if err != nil {
+					return fmt.Errorf("error retrieving projects: %w", err)
+				}
+
+				var filteredProjects map[string]*mongodbatlas.Project
+				for _, project := range projects {
+					if _, ok := cfgProjects[project.Name]; ok {
+						filteredProjects[project.Name] = project
+					}
+				}
+
+				for _, project := range filteredProjects {
+					include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
+					clusters, err := s.client.GetClusters(ctx, project.ID, include, exclude)
+					if err != nil {
+						s.log.Debug("error retreiving clusters from project")
+					}
+
+					for _, cluster := range clusters {
+						hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
+						for _, hostname := range hostnames {
+							var logs []model.LogEntry
+							logs = s.appendLogs(logs, project.ID, hostname, "monogodb.gz")
+							logs = s.appendLogs(logs, project.ID, hostname, "monogos.gz")
+
+							if cfgProjects[project.Name].EnableAuditLogs {
+								s.appendLogs(logs, project.ID, hostname, "mongodb-audit-log.gz")
+								s.appendLogs(logs, project.ID, hostname, "mongos-audit-log.gz")
+							}
+
+						}
+					}
+
+				}
+
+			}
+		}
+	}()
+	return nil
+}
+
+func (s *receiver) Shutdown(ctx context.Context) error {
+
+	return nil
+}
+
+func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
+	// Get gzip bytes buffer from API
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+
+	// Pass this into a gzip reader for decoding
+	reader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Logs are in JSON format so create a JSON decoder to process them
+	dec := json.NewDecoder(reader)
+
+	entries := make([]model.LogEntry, 0)
+	for {
+		var entry model.LogEntry
+		err := dec.Decode(&entry)
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+}
+
+func (s *receiver) appendLogs(logs []model.LogEntry, projectID, hostname, logName string) []model.LogEntry {
+	tmp, err := s.getHostLogs(projectID, hostname, logName)
+	if err != nil {
+		fmt.Errorf("Failed to retreive logs: %w", err)
+	}
+	logs = append(logs, tmp...)
+	return logs
 }

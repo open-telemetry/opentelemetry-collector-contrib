@@ -37,6 +37,7 @@ type Config struct {
 	Granularity                             string                       `mapstructure:"granularity"`
 	Metrics                                 metadata.MetricsSettings     `mapstructure:"metrics"`
 	Alerts                                  AlertConfig                  `mapstructure:"alerts"`
+	Logs                                    LogConfig                    `mapstructure:"logs"`
 	RetrySettings                           exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
 }
 
@@ -45,6 +46,18 @@ type AlertConfig struct {
 	Endpoint string                      `mapstructure:"endpoint"`
 	Secret   string                      `mapstructure:"secret"`
 	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
+}
+
+type LogConfig struct {
+	Enabled  bool       `mapstructure:"enabled"`
+	Projects []*Project `mapstructure:"projects"`
+}
+
+type Project struct {
+	Name            string   `mapstructure:"name"`
+	ExcludeClusters []string `mapstructure:"exclude_clusters"`
+	IncludeClusters []string `mapstructure:"include_clusters"`
+	EnableAuditLogs bool     `mapstructure:"collect_audit_logs"`
 }
 
 var (
