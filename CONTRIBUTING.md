@@ -166,6 +166,6 @@ If you would like to help and become a Code Owner you must meet the following re
 2. Have attended the Collector SIG meeting.
 3. (Optional) Be a member of the OpenTelemetry organization.
 
-Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers.  Meeting the above requirements is not a guarantee to be granted Code Ownership.
+Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
 To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row.  Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
