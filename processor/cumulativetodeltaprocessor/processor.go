@@ -99,8 +99,6 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						return false
 					}
 
-					histogramIdentities := make([]tracking.MetricIdentity, 0, 16)
-
 					countIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
@@ -116,7 +114,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					sumIdentity.MetricField = "sum"
 					sumIdentity.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
-					histogramIdentities = append(histogramIdentities, countIdentity, sumIdentity)
+					bucketIdentities := make([]tracking.MetricIdentity, 0, 16)
 
 					if ms.DataPoints().Len() == 0 {
 						return false
@@ -127,7 +125,13 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						metricField := fmt.Sprintf("bucket_%d", index)
 						bucketIdentity := countIdentity
 						bucketIdentity.MetricField = metricField
-						histogramIdentities = append(histogramIdentities, bucketIdentity)
+						bucketIdentities = append(bucketIdentities, bucketIdentity)
+					}
+
+					histogramIdentities := tracking.HistogramIdentities{
+						CountIdentity:    countIdentity,
+						SumIdentity:      sumIdentity,
+						BucketIdentities: bucketIdentities,
 					}
 
 					ctdp.convertHistogramDataPoints(ms.DataPoints(), &histogramIdentities)
@@ -203,11 +207,11 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 	}
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentities *[]tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentities *tracking.HistogramIdentities) {
 
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
-			countId := (*baseIdentities)[0]
+			countId := baseIdentities.CountIdentity
 			countId.StartTimestamp = dp.StartTimestamp()
 			countId.Attributes = dp.Attributes()
 			countPoint := tracking.MetricPoint{
@@ -225,7 +229,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 			dp.SetCount(uint64(countDelta.IntValue))
 
 			if dp.HasSum() {
-				sumId := (*baseIdentities)[1]
+				sumId := baseIdentities.SumIdentity
 				sumId.StartTimestamp = dp.StartTimestamp()
 				sumId.Attributes = dp.Attributes()
 				sumPoint := tracking.MetricPoint{
@@ -243,10 +247,9 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 				dp.SetSum(sumDelta.FloatValue)
 			}
 
-			firstBucketIndex := 2
 			rawCounts := dp.BucketCounts().AsRaw()
 			for index := 0; index < len(rawCounts); index++ {
-				bucketId := (*baseIdentities)[firstBucketIndex+index]
+				bucketId := baseIdentities.BucketIdentities[index]
 				bucketId.StartTimestamp = dp.StartTimestamp()
 				bucketId.Attributes = dp.Attributes()
 				bucketPoint := tracking.MetricPoint{

@@ -35,6 +35,12 @@ type MetricIdentity struct {
 	MetricField            string
 }
 
+type HistogramIdentities struct {
+	CountIdentity  	 MetricIdentity
+	SumIdentity   	 MetricIdentity
+	BucketIdentities []MetricIdentity
+}
+
 const A = int32('A')
 const SEP = byte(0x1E)
 const SEPSTR = string(SEP)
