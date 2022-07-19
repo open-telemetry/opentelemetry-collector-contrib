@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package transport
 
 import (
@@ -40,10 +39,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		buildClientFn func(host string, port int) (*client.StatsD, error)
 	}{
 		{
-			name: "udp",
-			buildServerFn: func(addr string) (Server, error) {
-				return NewUDPServer(addr)
-			},
+			name:          "udp",
+			buildServerFn: NewUDPServer,
 			buildClientFn: func(host string, port int) (*client.StatsD, error) {
 				return client.NewStatsD(client.UDP, host, port)
 			},

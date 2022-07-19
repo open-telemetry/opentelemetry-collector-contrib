@@ -63,6 +63,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parquetexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -171,6 +172,14 @@ func TestDefaultExporters(t *testing.T) {
 		},
 		{
 			exporter: "prometheusremotewrite",
+		},
+		{
+			exporter: "pulsar",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
+				cfg.Endpoint = "unknown:6650"
+				return cfg
+			},
 		},
 		{
 			exporter: "sapm",

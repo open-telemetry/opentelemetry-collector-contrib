@@ -32,17 +32,43 @@ type Config struct {
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
 	// TenantID defines the tenant ID to associate log streams with.
+	// Deprecated: use Tenant instead, with Source set to "static" and
+	// Value set to the value you'd set in this field.
 	TenantID string `mapstructure:"tenant_id"`
 
 	// Labels defines how labels should be applied to log streams sent to Loki.
 	Labels LabelsConfig `mapstructure:"labels"`
+
 	// Allows you to choose the entry format in the exporter
 	Format string `mapstructure:"format"`
+
+	// Tenant defines how to obtain the tenant ID
+	Tenant *Tenant `mapstructure:"tenant"`
+}
+
+type Tenant struct {
+	// Source defines where to obtain the tenant ID. Possible values: static, context, attribute.
+	Source string `mapstruct:"source"`
+
+	// Value will be used by the tenant source provider to lookup the value. For instance,
+	// when the source=static, the value is a static value. When the source=context, value
+	// should be the context key that holds the tenant information.
+	Value string `mapstruct:"value"`
 }
 
 func (c *Config) validate() error {
 	if _, err := url.Parse(c.Endpoint); c.Endpoint == "" || err != nil {
 		return fmt.Errorf("\"endpoint\" must be a valid URL")
+	}
+
+	if c.Tenant != nil {
+		if c.Tenant.Source != "attributes" && c.Tenant.Source != "context" && c.Tenant.Source != "static" {
+			return fmt.Errorf("invalid tenant source, must be one of 'attributes', 'context', 'static', but is %s", c.Tenant.Source)
+		}
+
+		if len(c.TenantID) > 0 {
+			return fmt.Errorf("both tenant_id and tenant were specified, use only 'tenant' instead")
+		}
 	}
 
 	return c.Labels.validate()
