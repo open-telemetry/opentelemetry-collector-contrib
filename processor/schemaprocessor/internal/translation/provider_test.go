@@ -33,7 +33,8 @@ func TestInvalidHTTPProviderTests(t *testing.T) {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		io.Copy(w, LoadTranslationVersion(t, "complex_changeset.yml"))
+		_, err := io.Copy(w, LoadTranslationVersion(t, "complex_changeset.yml"))
+		assert.NoError(t, err, "Must not error when trying load dataset")
 	}))
 	t.Cleanup(s.Close)
 

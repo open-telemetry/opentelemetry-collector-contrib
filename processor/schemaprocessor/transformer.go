@@ -37,7 +37,7 @@ type transformer struct {
 	manager translation.Manager
 }
 
-func newTransformer(ctx context.Context, conf config.Processor, set component.ProcessorCreateSettings) (*transformer, error) {
+func newTransformer(_ context.Context, conf config.Processor, set component.ProcessorCreateSettings) (*transformer, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration provided")
@@ -120,7 +120,9 @@ func (t *transformer) start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	t.manager.SetProviders(append(providers, translation.NewHTTPProvider(client))...)
+	if err := t.manager.SetProviders(append(providers, translation.NewHTTPProvider(client))...); err != nil {
+		return err
+	}
 	go func(ctx context.Context) {
 		for _, schemaURL := range t.config.Prefetch {
 			_ = t.manager.RequestTranslation(ctx, schemaURL)
