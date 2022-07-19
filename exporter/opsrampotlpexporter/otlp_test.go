@@ -17,7 +17,6 @@ package opsrampotlpexporter
 import (
 	"context"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"net"
 	"path/filepath"
 	"regexp"
@@ -25,6 +24,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -726,4 +728,60 @@ func TestGetAuthToken(t *testing.T) {
 	token, err := getAuthToken(cfg)
 	assert.Nil(t, err)
 	fmt.Println(token)
+}
+
+func TestSkipExpiredLogs(t *testing.T) {
+
+	half := 30 * time.Minute
+	tests := []struct {
+		name       string
+		expiration time.Duration
+		expected   int
+	}{
+		{
+			expiration: 1*time.Hour + half,
+			expected:   2,
+		},
+		{
+			expiration: 2*time.Hour + half,
+			expected:   3,
+		},
+		{
+			expiration: 3*time.Hour + half,
+			expected:   4,
+		},
+		{
+			expiration: 5*time.Hour + half,
+			expected:   6,
+		},
+		{
+			expiration: 9*time.Hour + half,
+			expected:   10,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ld := generateTestEntries()
+			e := exporter{config: &Config{ExpirationSkip: tt.expiration}}
+			e.skipExpired(ld)
+			assert.Equal(t, ld.LogRecordCount(), tt.expected)
+		})
+	}
+
+}
+
+func generateTestEntries() plog.Logs {
+	ld := plog.NewLogs()
+	rl0 := ld.ResourceLogs().AppendEmpty()
+	sc := rl0.ScopeLogs().AppendEmpty()
+	for i := 0; i < 10; i++ {
+		el := sc.LogRecords().AppendEmpty()
+		duration := time.Hour * time.Duration(i)
+		el.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-duration)))
+		el.Body().SetStringVal(fmt.Sprintf("This is entry # %q", i))
+	}
+
+	return ld
+
 }

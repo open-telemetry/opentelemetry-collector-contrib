@@ -174,6 +174,9 @@ func (e *exporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	if e.config.Masking != nil {
 		e.applyMasking(ld)
 	}
+	if e.config.ExpirationSkip != 0 {
+		e.skipExpired(ld)
+	}
 
 	req := plogotlp.NewRequestFromLogs(ld)
 
@@ -305,4 +308,21 @@ func (e *exporter) applyMasking(ld plog.Logs) {
 		}
 	}
 
+}
+
+func (e *exporter) skipExpired(ld plog.Logs) {
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		resLogs := ld.ResourceLogs().At(i)
+
+		for k := 0; k < resLogs.ScopeLogs().Len(); k++ {
+			resLogs.ScopeLogs().At(k).LogRecords().RemoveIf(func(el plog.LogRecord) bool {
+				fmt.Println(el.Timestamp().AsTime().String(), time.Now().Add(-e.config.ExpirationSkip).String())
+				if el.Timestamp().AsTime().Before(time.Now().Add(-e.config.ExpirationSkip)) {
+					return true
+				}
+				return false
+			})
+
+		}
+	}
 }

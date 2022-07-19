@@ -17,6 +17,7 @@ package opsrampotlpexporter // import "go.opentelemetry.io/collector/exporter/ot
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -69,6 +70,7 @@ type Config struct {
 	Security                      SecuritySettings         `mapstructure:"security"`
 	configgrpc.GRPCClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	Masking                       []MaskingSettings        `mapstructure:"masking"`
+	ExpirationSkip                time.Duration            `mapstructure"expiration_skip"`
 }
 
 var _ config.Exporter = (*Config)(nil)
