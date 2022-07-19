@@ -27,11 +27,11 @@ import (
 func Test_replaceMatch(t *testing.T) {
 	input := pcommon.NewValueString("hello world")
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(pcommon.Value).StringVal()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
@@ -87,11 +87,11 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		Item: input,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
@@ -107,11 +107,11 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		Item: nil,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
