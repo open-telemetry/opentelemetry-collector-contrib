@@ -164,6 +164,32 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
 
+func (ctdp *cumulativeToDeltaProcessor) convertFloatValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value float64) (tracking.DeltaValue, bool) {
+	id.StartTimestamp = dp.StartTimestamp()
+	id.Attributes = dp.Attributes()
+	trackingPoint := tracking.MetricPoint{
+		Identity: id,
+		Value: tracking.ValuePoint{
+			ObservedTimestamp: dp.Timestamp(),
+			FloatValue:        value,
+		},
+	}
+	return ctdp.deltaCalculator.Convert(trackingPoint)
+}
+
+func (ctdp *cumulativeToDeltaProcessor) convertIntValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value int64) (tracking.DeltaValue, bool) {
+	id.StartTimestamp = dp.StartTimestamp()
+	id.Attributes = dp.Attributes()
+	trackingPoint := tracking.MetricPoint{
+		Identity: id,
+		Value: tracking.ValuePoint{
+			ObservedTimestamp: dp.Timestamp(),
+			IntValue:          value,
+		},
+	}
+	return ctdp.deltaCalculator.Convert(trackingPoint)
+}
+
 func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
 
 	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
@@ -212,65 +238,36 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			countId := baseIdentities.CountIdentity
-			countId.StartTimestamp = dp.StartTimestamp()
-			countId.Attributes = dp.Attributes()
-			countPoint := tracking.MetricPoint{
-				Identity: countId,
-				Value: tracking.ValuePoint{
-					ObservedTimestamp: dp.Timestamp(),
-					IntValue:          int64(dp.Count()),
-				},
-			}
-			countDelta, countValid := ctdp.deltaCalculator.Convert(countPoint)
-			if !countValid {
-				return true
-			}
+			countDelta, countValid := ctdp.convertIntValue(countId, dp, int64(dp.Count()))
 
-			dp.SetCount(uint64(countDelta.IntValue))
+			hasSum := dp.HasSum() && !math.IsNaN(dp.Sum())
+			sumDelta, sumValid := tracking.DeltaValue{}, true
 
-			if dp.HasSum() {
+			if hasSum {
 				sumId := baseIdentities.SumIdentity
-				sumId.StartTimestamp = dp.StartTimestamp()
-				sumId.Attributes = dp.Attributes()
-				sumPoint := tracking.MetricPoint{
-					Identity: sumId,
-					Value: tracking.ValuePoint{
-						ObservedTimestamp: dp.Timestamp(),
-						FloatValue:        dp.Sum(),
-					},
-				}
-				sumDelta, sumValid := ctdp.deltaCalculator.Convert(sumPoint)
-				if !sumValid {
-					return true
-				}
-
-				dp.SetSum(sumDelta.FloatValue)
+				sumDelta, sumValid = ctdp.convertFloatValue(sumId, dp, dp.Sum())
 			}
 
-			rawCounts := dp.BucketCounts().AsRaw()
-			for index := 0; index < len(rawCounts); index++ {
+			bucketsValid := true
+			rawBucketCounts := dp.BucketCounts().AsRaw()
+			for index := 0; index < len(rawBucketCounts); index++ {
 				bucketId := baseIdentities.BucketIdentities[index]
-				bucketId.StartTimestamp = dp.StartTimestamp()
-				bucketId.Attributes = dp.Attributes()
-				bucketPoint := tracking.MetricPoint{
-					Identity: bucketId,
-					Value: tracking.ValuePoint{
-						ObservedTimestamp: dp.Timestamp(),
-						IntValue:          int64(rawCounts[index]),
-					},
-				}
-				bucketDelta, bucketValid := ctdp.deltaCalculator.Convert(bucketPoint)
-				if !bucketValid {
-					return true
-				}
-
-				rawCounts[index] = uint64(bucketDelta.IntValue)
+				bucketDelta, bucketValid := ctdp.convertIntValue(bucketId, dp, int64(rawBucketCounts[index]))
+				rawBucketCounts[index] = uint64(bucketDelta.IntValue)
+				bucketsValid = bucketsValid && bucketValid
 			}
-			dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawCounts))
 
-			dp.SetStartTimestamp(countDelta.StartTimestamp)
+			if countValid && sumValid && bucketsValid {
+				dp.SetStartTimestamp(countDelta.StartTimestamp)
+				dp.SetCount(uint64(countDelta.IntValue))
+				if hasSum {
+					dp.SetSum(sumDelta.FloatValue)
+				}
+				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawBucketCounts))
+				return false
+			}
 
-			return false
+			return true
 		})
 	}
 }
