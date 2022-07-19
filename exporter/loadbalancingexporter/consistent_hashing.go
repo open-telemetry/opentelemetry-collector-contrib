@@ -50,6 +50,10 @@ func newHashRing(endpoints []string) *hashRing {
 
 // endpointFor calculates which backend is responsible for the given traceID
 func (h *hashRing) endpointFor(traceID pcommon.TraceID) string {
+	if h == nil {
+		// perhaps the ring itself couldn't get initialized yet?
+		return ""
+	}
 	b := traceID.Bytes()
 	hasher := crc32.NewIEEE()
 	hasher.Write(b[:])

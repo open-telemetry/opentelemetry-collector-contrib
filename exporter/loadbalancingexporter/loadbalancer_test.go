@@ -112,6 +112,7 @@ func TestWithDNSResolver(t *testing.T) {
 }
 
 func TestWithDNSResolverNoEndpoints(t *testing.T) {
+	// prepare
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{
@@ -123,16 +124,14 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
 	// test
-	res, ok := p.res.(*dnsResolver)
+	e := p.Endpoint(pcommon.NewTraceID([16]byte{128, 128, 0, 0}))
 
 	// verify
-	assert.NotNil(t, res)
-	assert.True(t, ok)
-
-	// lookup endpoint before resolver had a chance to find endpoints
-	e := p.Endpoint(pcommon.NewTraceID([16]byte{128, 128, 0, 0}))
-	require.Equal(t, "", e)
+	assert.Equal(t, "", e)
 }
 
 func TestMultipleResolvers(t *testing.T) {
