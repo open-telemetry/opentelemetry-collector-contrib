@@ -3,7 +3,7 @@
 The Traces Context is a Context implementation for [pdata Traces](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata/ptrace), the collector's internal representation for OTLP trace data.  This Context should be used when interacted with OTLP traces.
 
 ## Paths
-In general, the Traces Context supports accessing pdata using the field names from the [traces proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/traces/v1/traces.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
+In general, the Traces Context supports accessing pdata using the field names from the [traces proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/trace/v1/trace.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
 
 The following fields are the exception.
 
