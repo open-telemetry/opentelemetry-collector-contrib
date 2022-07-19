@@ -257,7 +257,7 @@ require (
 	github.com/digitalocean/godo v1.80.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.5.0 // indirect
@@ -923,6 +923,9 @@ replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0
 // see https://github.com/DataDog/dd-trace-go/issues/1220
 replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
+replace github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 => github.com/docker/go-connections v0.4.0
+
 // see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4433
 exclude github.com/StackExchange/wmi v1.2.0
 
@@ -930,6 +933,3 @@ retract v0.37.0 // Contains dependencies on v0.36.0 components, which should hav
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
-
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/12322#issuecomment-1185029670
-exclude github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11
