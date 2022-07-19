@@ -20,24 +20,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func Test_replaceMatch(t *testing.T) {
 	input := pcommon.NewValueString("hello world")
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(pcommon.Value).StringVal()
 		},
-		setter: func(ctx TransformContext, val interface{}) {
+		setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
 
 	tests := []struct {
 		name        string
-		target      GetSetter
+		target      tql.GetSetter
 		pattern     string
 		replacement string
 		want        func(pcommon.Value)
@@ -65,7 +66,7 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueString(input.StringVal())
 
-			ctx := testhelper.TestTransformContext{
+			ctx := tqltest.TestTransformContext{
 				Item: scenarioValue,
 			}
 
@@ -82,15 +83,15 @@ func Test_replaceMatch(t *testing.T) {
 
 func Test_replaceMatch_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	ctx := testhelper.TestTransformContext{
+	ctx := tqltest.TestTransformContext{
 		Item: input,
 	}
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx TransformContext, val interface{}) {
+		setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
@@ -102,15 +103,15 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 }
 
 func Test_replaceMatch_get_nil(t *testing.T) {
-	ctx := testhelper.TestTransformContext{
+	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx TransformContext, val interface{}) {
+		setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}

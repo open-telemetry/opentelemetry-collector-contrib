@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/attributes"
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
@@ -47,8 +46,6 @@ type Translator struct {
 	prevPts *ttlCache
 	logger  *zap.Logger
 	cfg     translatorConfig
-
-	onceHostnameChanged sync.Once
 }
 
 // New creates a new translator with given options.
@@ -420,25 +417,6 @@ func (t *Translator) MapMetrics(ctx context.Context, md pmetric.Metrics, consume
 			src, err = t.cfg.fallbackSourceProvider.Source(context.Background())
 			if err != nil {
 				return fmt.Errorf("failed to get fallback source: %w", err)
-			}
-		}
-
-		// Log related to the preview hostname feature flag.
-		// TODO (#10424): Remove this once the feature flag is enabled by default.
-		if !t.cfg.previewHostnameFromAttributes {
-			previewSrc, previewOk := attributes.SourceFromAttributes(rm.Resource().Attributes(), true)
-			if !previewOk {
-				previewSrc, _ = t.cfg.fallbackSourceProvider.Source(context.Background())
-			}
-
-			if previewSrc != src {
-				t.onceHostnameChanged.Do(func() {
-					t.logger.Warn(
-						"The source resolved from attributes on one of your metrics will change on a future minor version. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10424",
-						zap.Any("current source", src),
-						zap.Any("future hostname", previewSrc),
-					)
-				})
 			}
 		}
 

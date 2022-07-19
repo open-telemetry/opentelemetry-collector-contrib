@@ -22,9 +22,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/schema"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,7 +42,8 @@ func TestLoadConfig(t *testing.T) {
 
 	pcfg := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-all-options")]
 	assert.Equal(t, pcfg, &Config{
-		ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-all-options")),
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-all-options")),
+		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
 		},
@@ -64,12 +66,12 @@ func TestConfigurationValidation(t *testing.T) {
 		{
 			scenario:    "One target of incomplete schema family",
 			target:      []string{"opentelemetry.io/schemas/1.0.0"},
-			expectError: schema.ErrInvalidFamily,
+			expectError: translation.ErrInvalidFamily,
 		},
 		{
 			scenario:    "One target of incomplete schema identifier",
 			target:      []string{"https://opentelemetry.io/schemas/1"},
-			expectError: schema.ErrInvalidIdentifier,
+			expectError: translation.ErrInvalidVersion,
 		},
 		{
 			scenario: "Valid target(s)",

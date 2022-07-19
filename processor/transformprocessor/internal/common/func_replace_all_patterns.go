@@ -19,14 +19,16 @@ import (
 	"regexp"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func replaceAllPatterns(target GetSetter, regexPattern string, replacement string) (ExprFunc, error) {
+func replaceAllPatterns(target tql.GetSetter, regexPattern string, replacement string) (tql.ExprFunc, error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
 	}
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
 			return nil

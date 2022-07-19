@@ -46,8 +46,6 @@ type Input struct {
 	maxBatchFiles int
 	roller        roller
 
-	startAtBeginning bool
-
 	firstCheck bool
 	wg         sync.WaitGroup
 	cancel     context.CancelFunc
@@ -138,6 +136,9 @@ func (f *Input) poll(ctx context.Context) {
 	readers := f.makeReaders(matches)
 	f.firstCheck = false
 
+	// Any new files that appear should be consumed entirely
+	f.readerFactory.fromBeginning = true
+
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
@@ -166,7 +167,7 @@ func (f *Input) makeReaders(filesPaths []string) []*Reader {
 	files := make([]*os.File, 0, len(filesPaths))
 	for _, path := range filesPaths {
 		if _, ok := f.SeenPaths[path]; !ok {
-			if f.startAtBeginning {
+			if f.readerFactory.fromBeginning {
 				f.Infow("Started watching file", "path", path)
 			} else {
 				f.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
@@ -223,7 +224,7 @@ OUTER:
 
 	readers := make([]*Reader, 0, len(fps))
 	for i := 0; i < len(fps); i++ {
-		reader, err := f.newReader(files[i], fps[i], f.firstCheck)
+		reader, err := f.newReader(files[i], fps[i])
 		if err != nil {
 			f.Errorw("Failed to create reader", zap.Error(err))
 			continue
@@ -253,22 +254,14 @@ func (f *Input) saveCurrent(readers []*Reader) {
 	}
 }
 
-func (f *Input) newReader(file *os.File, fp *Fingerprint, firstCheck bool) (*Reader, error) {
+func (f *Input) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
 	if oldReader, ok := f.findFingerprintMatch(fp); ok {
 		return f.readerFactory.copy(oldReader, file)
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	newReader, err := f.readerFactory.newReader(file, fp)
-	if err != nil {
-		return nil, err
-	}
-	startAtBeginning := !firstCheck || f.startAtBeginning
-	if err := newReader.InitializeOffset(startAtBeginning); err != nil {
-		return nil, fmt.Errorf("initialize offset: %w", err)
-	}
-	return newReader, nil
+	return f.readerFactory.newReader(file, fp)
 }
 
 func (f *Input) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {

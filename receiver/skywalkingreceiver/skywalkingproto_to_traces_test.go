@@ -160,6 +160,154 @@ func TestSwLogsToSpanEvents(t *testing.T) {
 		})
 	}
 }
+
+func Test_stringToTraceID(t *testing.T) {
+	type args struct {
+		traceID string
+	}
+	tests := []struct {
+		name          string
+		segmentObject args
+		want          [16]byte
+	}{
+		{
+			name:          "mock-sw-normal-trace-id-rfc4122v4",
+			segmentObject: args{traceID: "de5980b8-fce3-4a37-aab9-b4ac3af7eedd"},
+			want:          [16]byte{222, 89, 128, 184, 252, 227, 74, 55, 170, 185, 180, 172, 58, 247, 238, 221},
+		},
+		{
+			name:          "mock-sw-normal-trace-id-rfc4122",
+			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eedd"},
+			want:          [16]byte{222, 89, 128, 184, 252, 227, 74, 55, 170, 185, 180, 172, 58, 247, 238, 221},
+		},
+		{
+			name:          "mock-sw-trace-id-length-shorter",
+			segmentObject: args{traceID: "de59"},
+			want:          [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			name:          "mock-sw-trace-id-length-java-agent",
+			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eedd.1.16563474296430001"},
+			want:          [16]byte{222, 89, 128, 184, 253, 227, 74, 55, 27, 228, 27, 205, 94, 47, 212, 221},
+		},
+		{
+			name:          "mock-sw-trace-id-illegal",
+			segmentObject: args{traceID: ".,<>?/-=+MNop"},
+			want:          [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := swTraceIDToTraceID(tt.segmentObject.traceID)
+			assert.Equal(t, tt.want, got.Bytes())
+		})
+	}
+}
+
+func Test_stringToTraceID_Unique(t *testing.T) {
+	type args struct {
+		traceID string
+	}
+	tests := []struct {
+		name          string
+		segmentObject args
+	}{
+		{
+			name:          "mock-sw-trace-id-unique-1",
+			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eedd.133.16563474296430001"},
+		},
+		{
+			name:          "mock-sw-trace-id-unique-2",
+			segmentObject: args{traceID: "de5980b8fce34a37aab9b4ac3af7eedd.133.16534574123430001"},
+		},
+	}
+
+	var results [2][16]byte
+	for i := 0; i < 2; i++ {
+		tt := tests[i]
+		t.Run(tt.name, func(t *testing.T) {
+			got := swTraceIDToTraceID(tt.segmentObject.traceID)
+			results[i] = got.Bytes()
+		})
+	}
+	assert.NotEqual(t, tests[0].segmentObject.traceID, t, tests[1].segmentObject.traceID)
+	assert.NotEqual(t, results[0], results[1])
+}
+
+func Test_segmentIdToSpanId(t *testing.T) {
+	type args struct {
+		segmentID string
+		spanID    uint32
+	}
+	tests := []struct {
+		name string
+		args args
+		want [8]byte
+	}{
+		{
+			name: "mock-sw-span-id-normal",
+			args: args{segmentID: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066", spanID: 123},
+			want: [8]byte{233, 196, 85, 168, 37, 66, 48, 106},
+		},
+		{
+			name: "mock-sw-span-id-python-agent",
+			args: args{segmentID: "4f2f27748b8e44ecaf18fe0347194e86", spanID: 123},
+			want: [8]byte{155, 55, 217, 119, 204, 151, 10, 106},
+		},
+		{
+			name: "mock-sw-span-id-short",
+			args: args{segmentID: "16560607369950066", spanID: 12},
+			want: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			name: "mock-sw-span-id-illegal-1",
+			args: args{segmentID: "1", spanID: 2},
+			want: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			name: "mock-sw-span-id-illegal-char",
+			args: args{segmentID: ".,<>?/-=+MNop", spanID: 2},
+			want: [8]byte{0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
+			assert.Equal(t, tt.want, got.Bytes())
+		})
+	}
+}
+
+func Test_segmentIdToSpanId_Unique(t *testing.T) {
+	type args struct {
+		segmentID string
+		spanID    uint32
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "mock-sw-span-id-unique-1",
+			args: args{segmentID: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066", spanID: 123},
+		},
+		{
+			name: "mock-sw-span-id-unique-2",
+			args: args{segmentID: "4f2f27748b8e44ecaf18fe0347194e86.33.16560607369950066", spanID: 1},
+		},
+	}
+	var results [2][8]byte
+	for i := 0; i < 2; i++ {
+		tt := tests[i]
+		t.Run(tt.name, func(t *testing.T) {
+			got := segmentIDToSpanID(tt.args.segmentID, tt.args.spanID)
+			results[i] = got.Bytes()
+		})
+	}
+
+	assert.NotEqual(t, results[0], results[1])
+}
+
 func generateTracesOneEmptyResourceSpans() ptrace.Span {
 	td := ptrace.NewTraces()
 	resourceSpan := td.ResourceSpans().AppendEmpty()

@@ -23,15 +23,49 @@ type NodeStats struct {
 }
 
 type NodeStatsNodesInfo struct {
-	TimestampMsSinceEpoch int64                      `json:"timestamp"`
-	Name                  string                     `json:"name"`
-	Indices               NodeStatsNodesInfoIndices  `json:"indices"`
-	ProcessStats          ProcessStats               `json:"process"`
-	JVMInfo               JVMInfo                    `json:"jvm"`
-	ThreadPoolInfo        map[string]ThreadPoolStats `json:"thread_pool"`
-	TransportStats        TransportStats             `json:"transport"`
-	HTTPStats             HTTPStats                  `json:"http"`
-	FS                    FSStats                    `json:"fs"`
+	TimestampMsSinceEpoch int64                          `json:"timestamp"`
+	Name                  string                         `json:"name"`
+	Indices               NodeStatsNodesInfoIndices      `json:"indices"`
+	ProcessStats          ProcessStats                   `json:"process"`
+	JVMInfo               JVMInfo                        `json:"jvm"`
+	ThreadPoolInfo        map[string]ThreadPoolStats     `json:"thread_pool"`
+	TransportStats        TransportStats                 `json:"transport"`
+	HTTPStats             HTTPStats                      `json:"http"`
+	CircuitBreakerInfo    map[string]CircuitBreakerStats `json:"breakers"`
+	FS                    FSStats                        `json:"fs"`
+	OS                    OSStats                        `json:"os"`
+}
+
+type OSStats struct {
+	Timestamp int64          `json:"timestamp"`
+	CPU       OSCPUStats     `json:"cpu"`
+	Memory    OSCMemoryStats `json:"mem"`
+}
+
+type OSCPUStats struct {
+	Usage   int64             `json:"percent"`
+	LoadAvg OSCpuLoadAvgStats `json:"load_average"`
+}
+
+type OSCMemoryStats struct {
+	TotalInBy int64 `json:"total_in_bytes"`
+	FreeInBy  int64 `json:"free_in_bytes"`
+	UsedInBy  int64 `json:"used_in_bytes"`
+}
+
+type OSCpuLoadAvgStats struct {
+	OneMinute      float64 `json:"1m"`
+	FiveMinutes    float64 `json:"5m"`
+	FifteenMinutes float64 `json:"15m"`
+}
+
+type CircuitBreakerStats struct {
+	LimitSizeInBytes     int64   `json:"limit_size_in_bytes"`
+	LimitSize            string  `json:"limit_size"`
+	EstimatedSizeInBytes int64   `json:"estimated_size_in_bytes"`
+	EstimatedSize        string  `json:"estimated_size"`
+	Overhead             float64 `json:"overhead"`
+	Tripped              int64   `json:"tripped"`
 }
 
 type NodeStatsNodesInfoIndices struct {
@@ -46,10 +80,19 @@ type NodeStatsNodesInfoIndices struct {
 	WarmerOperations   BasicIndexOperation `json:"warmer"`
 	QueryCache         BasicCacheInfo      `json:"query_cache"`
 	FieldDataCache     BasicCacheInfo      `json:"fielddata"`
+	TranslogStats      TranslogStats       `json:"translog"`
+}
+
+type TranslogStats struct {
+	Operations                int64 `json:"operations"`
+	SizeInBy                  int64 `json:"size_in_bytes"`
+	UncommittedOperationsInBy int64 `json:"uncommitted_size_in_bytes"`
 }
 
 type StoreInfo struct {
-	SizeInBy int64 `json:"size_in_bytes"`
+	SizeInBy        int64 `json:"size_in_bytes"`
+	DataSetSizeInBy int64 `json:"total_data_set_size_in_bytes"`
+	ReservedInBy    int64 `json:"reserved_in_bytes"`
 }
 
 type BasicIndexOperation struct {
@@ -88,6 +131,7 @@ type DocumentStats struct {
 type BasicCacheInfo struct {
 	Evictions      int64 `json:"evictions"`
 	MemorySizeInBy int64 `json:"memory_size_in_bytes"`
+	MemorySize     int64 `json:"memory_size"`
 }
 
 type JVMInfo struct {
@@ -171,6 +215,7 @@ type FSStats struct {
 type FSTotalStats struct {
 	AvailableBytes int64 `json:"available_in_bytes"`
 	TotalBytes     int64 `json:"total_in_bytes"`
+	FreeBytes      int64 `json:"free_in_bytes"`
 }
 
 type IOStats struct {
@@ -178,6 +223,9 @@ type IOStats struct {
 }
 
 type IOStatsTotal struct {
+	Operations      int64 `json:"operations"`
 	ReadOperations  int64 `json:"read_operations"`
 	WriteOperations int64 `json:"write_operations"`
+	ReadBytes       int64 `json:"read_kilobytes"`
+	WriteBytes      int64 `json:"write_kilobytes"`
 }
