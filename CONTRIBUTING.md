@@ -160,11 +160,11 @@ Sometimes a component may be in need of a new or additional Code Owner.  A few r
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
 - The existing Code Owners are actively looking for new Code Owners to help.
 
-If you would to help and become a Code Owner you must meet the following requirements:
+If you would like to help and become a Code Owner you must meet the following requirements:
 
 1. Have contributed to the OpenTelemetry Project, preferably either Collector Core or Collector Contrib.  Best case scenario would be contributing to the component directly.
 2. Have attended the Collector SIG meeting.
-3. (Optional) Be a member of the OpenTelemetry organization
+3. (Optional) Be a member of the OpenTelemetry organization.
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers.  Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
