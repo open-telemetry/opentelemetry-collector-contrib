@@ -237,21 +237,21 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
-			countId := baseIdentities.CountIdentity
+			countID := baseIdentities.CountIdentity
 			countDelta, countValid := ctdp.convertIntValue(countId, dp, int64(dp.Count()))
 
 			hasSum := dp.HasSum() && !math.IsNaN(dp.Sum())
 			sumDelta, sumValid := tracking.DeltaValue{}, true
 
 			if hasSum {
-				sumId := baseIdentities.SumIdentity
+				sumID := baseIdentities.SumIdentity
 				sumDelta, sumValid = ctdp.convertFloatValue(sumId, dp, dp.Sum())
 			}
 
 			bucketsValid := true
 			rawBucketCounts := dp.BucketCounts().AsRaw()
 			for index := 0; index < len(rawBucketCounts); index++ {
-				bucketId := baseIdentities.BucketIdentities[index]
+				bucketID := baseIdentities.BucketIdentities[index]
 				bucketDelta, bucketValid := ctdp.convertIntValue(bucketId, dp, int64(rawBucketCounts[index]))
 				rawBucketCounts[index] = uint64(bucketDelta.IntValue)
 				bucketsValid = bucketsValid && bucketValid
