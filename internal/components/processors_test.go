@@ -35,6 +35,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 )
 
@@ -127,6 +128,16 @@ func TestDefaultProcessors(t *testing.T) {
 		},
 		{
 			processor: "cumulativetodelta",
+		},
+		{
+			processor: "schema",
+			getConfigFn: func() config.Processor {
+				cfg := procFactories["schema"].CreateDefaultConfig().(*schemaproccessor.Config)
+				cfg.Targets = []string{
+					"https://opentelemetry.io/schemas/1.10.0",
+				}
+				return cfg
+			},
 		},
 		{
 			processor: "tail_sampling",

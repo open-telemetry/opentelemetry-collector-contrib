@@ -82,6 +82,15 @@ func GetFamilyAndVersion(schemaURL string) (family string, version *Version, err
 	return u.String(), version, err
 }
 
+func joinSchemaFamilyAndVersion(family string, version *Version) string {
+	u, err := url.Parse(family)
+	if err != nil {
+		return ""
+	}
+	u.Path = path.Join(u.Path, version.String())
+	return u.String()
+}
+
 // NewVersion converts a near semver like string (ie 1.4.0) into
 // a schema identifier that is comparable for a machine.
 // The expected string format can be matched by the following regex:
