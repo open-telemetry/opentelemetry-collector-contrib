@@ -128,66 +128,6 @@ var (
 			}),
 		},
 		{
-			name: "cumulative_to_delta_histogram_one_positive",
-			include: MatchMetrics{
-				Metrics: []string{"metric_1"},
-				Config: filterset.Config{
-					MatchType:    "strict",
-					RegexpConfig: nil,
-				},
-			},
-			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{100, 200, 500}, {4}},
-				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
-					{{4, 4, 4}},
-				},
-				isCumulative: []bool{true, true},
-			}),
-			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 100, 300}, {4}},
-				metricSums:   [][]float64{{100, 100, 300}, {4}},
-				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
-					{{4, 4, 4}},
-				},
-				isCumulative: []bool{false, true},
-			}),
-		},
-		{
-			name: "cumulative_to_delta_histogram_one_positive_without_sums",
-			include: MatchMetrics{
-				Metrics: []string{"metric_1"},
-				Config: filterset.Config{
-					MatchType:    "strict",
-					RegexpConfig: nil,
-				},
-			},
-			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 200, 500}, {4}},
-				metricSums:   [][]float64{{}, {4}},
-				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
-					{{4, 4, 4}},
-				},
-				isCumulative: []bool{true, true},
-			}),
-			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricCounts: [][]uint64{{100, 100, 300}, {4}},
-				metricSums:   [][]float64{{}, {4}},
-				metricBuckets: [][][]uint64{
-					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
-					{{4, 4, 4}},
-				},
-				isCumulative: []bool{false, true},
-			}),
-		},
-		{
 			name: "cumulative_to_delta_nan_value",
 			include: MatchMetrics{
 				Metrics: []string{"_1"},
@@ -233,6 +173,96 @@ var (
 				metricNames:  []string{"metric_1", "metric_2"},
 				metricValues: [][]float64{{100}, {4}},
 				isCumulative: []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_one_positive",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, 200, 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{100, 100, 300}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_nan_sum",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{100, math.NaN(), 500}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{100, math.NaN(), 400}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_histogram_one_positive_without_sums",
+			include: MatchMetrics{
+				Metrics: []string{"metric_1"},
+				Config: filterset.Config{
+					MatchType:    "strict",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 200, 500}, {4}},
+				metricSums:   [][]float64{{}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {100, 50, 50}, {250, 125, 125}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{true, true},
+			}),
+			outMetrics: generateTestHistogramMetrics(testHistogramMetric{
+				metricNames:  []string{"metric_1", "metric_2"},
+				metricCounts: [][]uint64{{100, 100, 300}, {4}},
+				metricSums:   [][]float64{{}, {4}},
+				metricBuckets: [][][]uint64{
+					{{50, 25, 25}, {50, 25, 25}, {150, 75, 75}},
+					{{4, 4, 4}},
+				},
+				isCumulative: []bool{false, true},
 			}),
 		},
 	}
@@ -318,7 +348,11 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 					for j := 0; j < eDataPoints.Len(); j++ {
 						require.Equal(t, eDataPoints.At(j).Count(), aDataPoints.At(j).Count())
 						require.Equal(t, eDataPoints.At(j).HasSum(), aDataPoints.At(j).HasSum())
-						require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
+						if math.IsNaN(eDataPoints.At(j).Sum()) {
+							require.True(t, math.IsNaN(aDataPoints.At(j).Sum()))
+						} else {
+							require.Equal(t, eDataPoints.At(j).Sum(), aDataPoints.At(j).Sum())
+						}
 						require.Equal(t, eDataPoints.At(j).BucketCounts().AsRaw(), aDataPoints.At(j).BucketCounts().AsRaw())
 					}
 				}
