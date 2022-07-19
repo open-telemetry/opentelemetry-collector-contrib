@@ -17,8 +17,8 @@ package cpuscraper // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -32,8 +32,7 @@ const (
 )
 
 // Factory is the Factory for scraper.
-type Factory struct {
-}
+type Factory struct{}
 
 // CreateDefaultConfig creates the default configuration for the Scraper.
 func (f *Factory) CreateDefaultConfig() internal.Config {
@@ -45,11 +44,11 @@ func (f *Factory) CreateDefaultConfig() internal.Config {
 // CreateMetricsScraper creates a scraper based on provided config.
 func (f *Factory) CreateMetricsScraper(
 	ctx context.Context,
-	_ *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config internal.Config,
 ) (scraperhelper.Scraper, error) {
 	cfg := config.(*Config)
-	s := newCPUScraper(ctx, cfg)
+	s := newCPUScraper(ctx, settings, cfg)
 
 	return scraperhelper.NewScraper(
 		TypeStr,

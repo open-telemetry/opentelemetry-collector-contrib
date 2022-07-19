@@ -31,6 +31,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "carbon"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelStable
 )
 
 // NewFactory creates a factory for Carbon receiver.
@@ -38,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

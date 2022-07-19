@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
@@ -48,7 +48,7 @@ func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *Match
 
 func TestConfig(t *testing.T) {
 	testFile := filepath.Join("testdata", "config.yaml")
-	v, err := configtest.LoadConfigMap(testFile)
+	v, err := confmaptest.LoadConf(testFile)
 	require.NoError(t, err)
 	testYamls := map[string]MatchProperties{}
 	require.NoErrorf(t, v.UnmarshalExact(&testYamls), "unable to unmarshal yaml from file %v", testFile)

@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
 type Config struct {
@@ -27,4 +29,7 @@ type Config struct {
 
 	// Timeout for the memcache stats request
 	Timeout time.Duration `mapstructure:"timeout"`
+
+	// Metrics allows customizing scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }

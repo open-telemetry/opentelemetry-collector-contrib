@@ -10,8 +10,7 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 {{- range $metricName, $metricInfo := .Metrics }}
 | {{ if $metricInfo.IsEnabled }}**{{ end }}{{ $metricName }}{{ if $metricInfo.IsEnabled }}**
-{{- end }} | {{ $metricInfo.Description }}{{ if $metricInfo.ExtendedDocumentation }} {{ $metricInfo.ExtendedDocumentation }}{{ end }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }}
-{{- if $metricInfo.Data.HasMetricValueType }}({{ $metricInfo.Data.MetricValueType }}){{- end }} | <ul>
+{{- end }} | {{ $metricInfo.Description }}{{ if $metricInfo.ExtendedDocumentation }} {{ $metricInfo.ExtendedDocumentation }}{{ end }} | {{ $metricInfo.Unit }} | {{ $metricInfo.Data.Type }}({{ $metricInfo.Data.MetricValueType }}) | <ul>
 {{- range $index, $attributeName := $metricInfo.Attributes }} <li>{{ $attributeName }}</li> {{- end }} </ul> |
 {{- end }}
 
@@ -38,8 +37,8 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
 {{- range $attributeName, $attributeInfo := .Attributes }}
-| {{ $attributeName }} | {{ $attributeInfo.Description }} |
+| {{ $attributeName }}{{- if $attributeInfo.Value }} ({{ $attributeInfo.Value }}){{- end}} | {{ $attributeInfo.Description }} | {{ stringsJoin $attributeInfo.Enum ", " }} |
 {{- end }}

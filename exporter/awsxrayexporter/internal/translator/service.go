@@ -15,13 +15,13 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeService(resource pdata.Resource) *awsxray.ServiceData {
+func makeService(resource pcommon.Resource) *awsxray.ServiceData {
 	var service *awsxray.ServiceData
 
 	verStr, ok := resource.Attributes().Get(conventions.AttributeServiceVersion)

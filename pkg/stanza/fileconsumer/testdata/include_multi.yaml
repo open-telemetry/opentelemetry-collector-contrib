@@ -1,0 +1,4 @@
+include:
+  - one.log
+  - two.log
+  - three.log

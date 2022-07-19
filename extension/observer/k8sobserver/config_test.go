@@ -72,7 +72,7 @@ func TestInvalidAuth(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata/invalid_auth.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_auth.yaml"), factories)
 	require.NotNil(t, cfg)
 	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: invalid authType for kubernetes: not a real auth type`)
 }
@@ -83,7 +83,7 @@ func TestInvalidNoObserving(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata/invalid_no_observing.yaml"), factories)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid_no_observing.yaml"), factories)
 	require.NotNil(t, cfg)
 	require.EqualError(t, err, `extension "k8s_observer" has invalid configuration: one of observe_pods and observe_nodes must be true`)
 }

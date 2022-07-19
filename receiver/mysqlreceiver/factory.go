@@ -28,14 +28,15 @@ import (
 )
 
 const (
-	typeStr = "mysql"
+	typeStr   = "mysql"
+	stability = component.StabilityLevelBeta
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -62,7 +63,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ns := newMySQLScraper(params.Logger, cfg)
+	ns := newMySQLScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start),
 		scraperhelper.WithShutdown(ns.shutdown))
 

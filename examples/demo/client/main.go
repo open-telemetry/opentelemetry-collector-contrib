@@ -101,7 +101,7 @@ func initProvider() func() {
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
@@ -128,7 +128,7 @@ func main() {
 	defer shutdown()
 
 	tracer := otel.Tracer("demo-client-tracer")
-	meter := global.MeterProvider().Meter("demo-client-meter")
+	meter := global.Meter("demo-client-meter")
 
 	method, _ := baggage.NewMember("method", "repl")
 	client, _ := baggage.NewMember("client", "cli")

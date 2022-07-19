@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -66,7 +67,7 @@ func TestFactory(t *testing.T) {
 
 	// Override for tests.
 	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return nil, nil
+		return fake.NewSimpleClientset(), nil
 	}
 	r, err = f.CreateMetricsReceiver(
 		context.Background(), componenttest.NewNopReceiverCreateSettings(),
@@ -92,7 +93,7 @@ func TestFactoryDistributions(t *testing.T) {
 	require.True(t, ok)
 
 	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (kubernetes.Interface, error) {
-		return nil, nil
+		return fake.NewSimpleClientset(), nil
 	}
 	rCfg.makeOpenShiftQuotaClient = func(apiConf k8sconfig.APIConfig) (quotaclientset.Interface, error) {
 		return fakeQuota.NewSimpleClientset(), nil

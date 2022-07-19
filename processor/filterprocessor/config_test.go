@@ -15,6 +15,7 @@
 package filterprocessor
 
 import (
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -26,6 +27,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	fsregexp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset/regexp"
 )
 
@@ -258,6 +260,52 @@ func TestLoadingConfigRegexp(t *testing.T) {
 							CacheMaxNumEntries: 10,
 						},
 						MetricNames: testDataFilters,
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.expCfg.ID()]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+func TestLoadingSpans(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.NoError(t, err)
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_traces.yaml"), factories)
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		expCfg config.Processor
+	}{
+		{
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "spans")),
+				Spans: SpanFilters{
+					Include: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Strict,
+						},
+						Services: []string{"test", "test2"},
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_include", Value: "(true|probably_true)"},
+						},
+					},
+					Exclude: &filterconfig.MatchProperties{
+						Config: filterset.Config{
+							MatchType: filterset.Regexp,
+						},
+						Attributes: []filterconfig.Attribute{
+							{Key: "should_exclude", Value: "(probably_false|false)"},
+						},
 					},
 				},
 			},

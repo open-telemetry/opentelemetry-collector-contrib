@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package prometheusremotewriteexporter
 
 import (
@@ -20,6 +21,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -35,7 +37,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -49,7 +51,6 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
-		sanitizeLabel:      true,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -226,7 +227,7 @@ func Test_Shutdown(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			errChan <- prwe.PushMetrics(context.Background(), pdata.NewMetrics())
+			errChan <- prwe.PushMetrics(context.Background(), pmetric.NewMetrics())
 		}()
 	}
 	wg.Wait()
@@ -421,192 +422,162 @@ func Test_PushMetrics(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		md                 *pdata.Metrics
+		metrics            *pmetric.Metrics
 		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
 		expectedTimeSeries int
 		httpResponseCode   int
 		returnErr          bool
 		isStaleMarker      bool
+		skipForWAL         bool
 	}{
 		{
-			"invalid_type_case",
-			&invalidTypeBatch,
-			nil,
-			0,
-			http.StatusAccepted,
-			true,
-			false,
+			name:             "invalid_type_case",
+			metrics:          &invalidTypeBatch,
+			httpResponseCode: http.StatusAccepted,
+			returnErr:        true,
 		},
 		{
-			"intSum_case",
-			&intSumBatch,
-			checkFunc,
-			3,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "intSum_case",
+			metrics:            &intSumBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 3,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"doubleSum_case",
-			&sumBatch,
-			checkFunc,
-			2,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "doubleSum_case",
+			metrics:            &sumBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"doubleGauge_case",
-			&doubleGaugeBatch,
-			checkFunc,
-			2,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "doubleGauge_case",
+			metrics:            &doubleGaugeBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"intGauge_case",
-			&intGaugeBatch,
-			checkFunc,
-			2,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "intGauge_case",
+			metrics:            &intGaugeBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 2,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"histogram_case",
-			&histogramBatch,
-			checkFunc,
-			12,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "histogram_case",
+			metrics:            &histogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 12,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"summary_case",
-			&summaryBatch,
-			checkFunc,
-			10,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "summary_case",
+			metrics:            &summaryBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 10,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"unmatchedBoundBucketHist_case",
-			&unmatchedBoundBucketHistBatch,
-			checkFunc,
-			5,
-			http.StatusAccepted,
-			false,
-			false,
+			name:               "unmatchedBoundBucketHist_case",
+			metrics:            &unmatchedBoundBucketHistBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 5,
+			httpResponseCode:   http.StatusAccepted,
 		},
 		{
-			"5xx_case",
-			&unmatchedBoundBucketHistBatch,
-			checkFunc,
-			5,
-			http.StatusServiceUnavailable,
-			true,
-			false,
+			name:               "5xx_case",
+			metrics:            &unmatchedBoundBucketHistBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 5,
+			httpResponseCode:   http.StatusServiceUnavailable,
+			returnErr:          true,
+			// When using the WAL, it returns success once the data is persisted to the WAL
+			skipForWAL: true,
 		},
 		{
-			"emptyGauge_case",
-			&emptyDoubleGaugeBatch,
-			checkFunc,
-			0,
-			http.StatusAccepted,
-			true,
-			false,
+			name:             "emptyGauge_case",
+			metrics:          &emptyDoubleGaugeBatch,
+			reqTestFunc:      checkFunc,
+			httpResponseCode: http.StatusAccepted,
+			returnErr:        true,
 		},
 		{
-			"emptyCumulativeSum_case",
-			&emptyCumulativeSumBatch,
-			checkFunc,
-			0,
-			http.StatusAccepted,
-			true,
-			false,
+			name:             "emptyCumulativeSum_case",
+			metrics:          &emptyCumulativeSumBatch,
+			reqTestFunc:      checkFunc,
+			httpResponseCode: http.StatusAccepted,
+			returnErr:        true,
 		},
 		{
-			"emptyCumulativeHistogram_case",
-			&emptyCumulativeHistogramBatch,
-			checkFunc,
-			0,
-			http.StatusAccepted,
-			true,
-			false,
+			name:             "emptyCumulativeHistogram_case",
+			metrics:          &emptyCumulativeHistogramBatch,
+			reqTestFunc:      checkFunc,
+			httpResponseCode: http.StatusAccepted,
+			returnErr:        true,
 		},
 		{
-			"emptySummary_case",
-			&emptySummaryBatch,
-			checkFunc,
-			0,
-			http.StatusAccepted,
-			true,
-			false,
+			name:             "emptySummary_case",
+			metrics:          &emptySummaryBatch,
+			reqTestFunc:      checkFunc,
+			httpResponseCode: http.StatusAccepted,
+			returnErr:        true,
 		},
 		{
-			"staleNaNIntGauge_case",
-			&staleNaNIntGaugeBatch,
-			checkFunc,
-			1,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNIntGauge_case",
+			metrics:            &staleNaNIntGaugeBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 1,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNDoubleGauge_case",
-			&staleNaNDoubleGaugeBatch,
-			checkFunc,
-			1,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNDoubleGauge_case",
+			metrics:            &staleNaNDoubleGaugeBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 1,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNIntSum_case",
-			&staleNaNIntSumBatch,
-			checkFunc,
-			1,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNIntSum_case",
+			metrics:            &staleNaNIntSumBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 1,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNSum_case",
-			&staleNaNSumBatch,
-			checkFunc,
-			1,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNSum_case",
+			metrics:            &staleNaNSumBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 1,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNHistogram_case",
-			&staleNaNHistogramBatch,
-			checkFunc,
-			6,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNHistogram_case",
+			metrics:            &staleNaNHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 6,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNEmptyHistogram_case",
-			&staleNaNEmptyHistogramBatch,
-			checkFunc,
-			3,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNEmptyHistogram_case",
+			metrics:            &staleNaNEmptyHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 3,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 		{
-			"staleNaNSummary_case",
-			&staleNaNSummaryBatch,
-			checkFunc,
-			5,
-			http.StatusAccepted,
-			false,
-			true,
+			name:               "staleNaNSummary_case",
+			metrics:            &staleNaNSummaryBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 5,
+			httpResponseCode:   http.StatusAccepted,
+			isStaleMarker:      true,
 		},
 	}
 
@@ -616,7 +587,14 @@ func Test_PushMetrics(t *testing.T) {
 			name = "WAL"
 		}
 		t.Run(name, func(t *testing.T) {
-			for _, tt := range tests {
+			if useWAL {
+				t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9124")
+			}
+			for _, ttt := range tests {
+				tt := ttt
+				if useWAL && tt.skipForWAL {
+					t.Skip("test not supported when using WAL")
+				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -661,7 +639,7 @@ func Test_PushMetrics(t *testing.T) {
 					defer func() {
 						require.NoError(t, prwe.Shutdown(ctx))
 					}()
-					err := prwe.PushMetrics(ctx, *tt.md)
+					err := prwe.PushMetrics(ctx, *tt.metrics)
 					if tt.returnErr {
 						assert.Error(t, err)
 						return
@@ -698,11 +676,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 		{"success_case_with_sanitized_labels",
 			map[string]string{"__key1.key__": "val1"},
 			map[string]string{"__key1_key__": "val1"},
-			false,
-		},
-		{"labels_that_start_with_underscore",
-			map[string]string{"_key_": "val1"},
-			map[string]string{"_key_": "val1"},
 			false,
 		},
 		{"labels_that_start_with_digit",
@@ -742,11 +715,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 			map[string]string{"__key1_key__": "val1"},
 			false,
 		},
-		{"labels_that_start_with_underscore",
-			map[string]string{"_key_": "val1"},
-			map[string]string{"key_key_": "val1"},
-			false,
-		},
 		{"labels_that_start_with_digit",
 			map[string]string{"6key_": "val1"},
 			map[string]string{"key_6key_": "val1"},
@@ -761,7 +729,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	// run tests
 	for _, tt := range tests {
 		cfg := createDefaultConfig().(*Config)
-		cfg.sanitizeLabel = true
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -777,7 +744,6 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
 		//disable sanitizeLabel flag
-		cfg.sanitizeLabel = false
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -796,6 +762,9 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 // and that we can retrieve those exact requests back from the WAL, when the
 // exporter starts up once again, that it picks up where it left off.
 func TestWALOnExporterRoundTrip(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10142")
+	}
 	if testing.Short() {
 		t.Skip("This test could run for long")
 	}

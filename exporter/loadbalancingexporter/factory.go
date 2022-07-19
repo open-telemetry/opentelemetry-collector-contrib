@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -26,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "loadbalancing"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the exporter.
@@ -35,8 +38,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithLogsExporter(createLogExporter),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
 	)
 }
 
@@ -56,6 +59,6 @@ func createTracesExporter(_ context.Context, params component.ExporterCreateSett
 	return newTracesExporter(params, cfg)
 }
 
-func createLogExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	return newLogsExporter(params, cfg)
 }

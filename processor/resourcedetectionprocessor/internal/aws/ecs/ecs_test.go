@@ -16,12 +16,11 @@ package ecs
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -60,8 +59,7 @@ func (md *mockMetaDataProvider) FetchContainerMetadata() (*ecsutil.ContainerMeta
 }
 
 func Test_ecsNewDetector(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 
 	assert.NoError(t, err)
@@ -69,7 +67,6 @@ func Test_ecsNewDetector(t *testing.T) {
 }
 
 func Test_detectorReturnsIfNoEnvVars(t *testing.T) {
-	os.Clearenv()
 	d, _ := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
 	res, _, err := d.Detect(context.TODO())
 
@@ -102,10 +99,9 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 }
 
 func Test_ecsDetectV4(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV4EnvVar, "endpoint")
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_ecs")
@@ -122,10 +118,10 @@ func Test_ecsDetectV4(t *testing.T) {
 	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
 
 	for i, field := range attribFields {
-		ava := pdata.NewValueSlice()
+		ava := pcommon.NewValueSlice()
 		av := ava.SliceVal()
 		avs := av.AppendEmpty()
-		pdata.NewValueString(attribVals[i]).CopyTo(avs)
+		pcommon.NewValueString(attribVals[i]).CopyTo(avs)
 		attr.Insert(field, ava)
 	}
 
@@ -138,10 +134,9 @@ func Test_ecsDetectV4(t *testing.T) {
 }
 
 func Test_ecsDetectV3(t *testing.T) {
-	os.Clearenv()
-	os.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
+	t.Setenv(endpoints.TaskMetadataEndpointV3EnvVar, "endpoint")
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_ecs")

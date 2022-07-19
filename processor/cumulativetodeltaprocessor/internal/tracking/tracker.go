@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +41,7 @@ type State struct {
 }
 
 type DeltaValue struct {
-	StartTimestamp pdata.Timestamp
+	StartTimestamp pcommon.Timestamp
 	FloatValue     float64
 	IntValue       int64
 }
@@ -136,7 +136,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 	return
 }
 
-func (t *MetricTracker) removeStale(staleBefore pdata.Timestamp) {
+func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
 	t.states.Range(func(key, value interface{}) bool {
 		s := value.(*State)
 
@@ -164,12 +164,12 @@ func (t *MetricTracker) removeStale(staleBefore pdata.Timestamp) {
 	})
 }
 
-func (t *MetricTracker) sweeper(ctx context.Context, remove func(pdata.Timestamp)) {
+func (t *MetricTracker) sweeper(ctx context.Context, remove func(pcommon.Timestamp)) {
 	ticker := time.NewTicker(t.maxStaleness)
 	for {
 		select {
 		case currentTime := <-ticker.C:
-			staleBefore := pdata.NewTimestampFromTime(currentTime.Add(-t.maxStaleness))
+			staleBefore := pcommon.NewTimestampFromTime(currentTime.Add(-t.maxStaleness))
 			remove(staleBefore)
 		case <-ctx.Done():
 			ticker.Stop()

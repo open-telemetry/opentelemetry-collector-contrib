@@ -18,13 +18,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestSanitizeKey(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	key := "&^*123-abc-ABC!?"
 	expected := "___123_abc_ABC__"
@@ -32,8 +30,7 @@ func TestSanitizeKey(t *testing.T) {
 }
 
 func TestSanitizeValue(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	value := `&^*123-abc-ABC!?"\\n`
 	expected := `&^*123-abc-ABC!?\"\\\n`
@@ -41,38 +38,34 @@ func TestSanitizeValue(t *testing.T) {
 }
 
 func TestTags2StringNoLabels(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.Clear()
-	assert.Equal(t, prometheusTags(""), f.tags2String(mp.attributes, pdata.NewMap()))
+	assert.Equal(t, prometheusTags(""), f.tags2String(mp.attributes, pcommon.NewMap()))
 }
 
 func TestTags2String(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	assert.Equal(
 		t,
 		prometheusTags(`{test="test_value",test2="second_value"}`),
-		f.tags2String(mp.attributes, pdata.NewMap()),
+		f.tags2String(mp.attributes, pcommon.NewMap()),
 	)
 }
 
 func TestTags2StringNoAttributes(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 
 	mp := exampleIntMetric()
 	mp.attributes.Clear()
-	assert.Equal(t, prometheusTags(""), f.tags2String(pdata.NewMap(), pdata.NewMap()))
+	assert.Equal(t, prometheusTags(""), f.tags2String(pcommon.NewMap(), pcommon.NewMap()))
 }
 
 func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleIntGaugeMetric()
 
 	result := f.metric2String(metric)
@@ -87,8 +80,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 }
 
 func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleGaugeMetric()
 
 	result := f.metric2String(metric)
@@ -103,8 +95,7 @@ gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://ano
 }
 
 func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleIntSumMetric()
 
 	result := f.metric2String(metric)
@@ -119,8 +110,7 @@ sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1
 }
 
 func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleDoubleSumMetric()
 
 	result := f.metric2String(metric)
@@ -135,8 +125,7 @@ sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.
 }
 
 func TestPrometheusMetricDataTypeSummary(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleSummaryMetric()
 
 	result := f.metric2String(metric)
@@ -155,8 +144,7 @@ summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 16
 }
 
 func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
-	f, err := newPrometheusFormatter()
-	require.NoError(t, err)
+	f := newPrometheusFormatter()
 	metric := exampleHistogramMetric()
 
 	result := f.metric2String(metric)

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package k8sclient
 
 import (
@@ -173,7 +174,13 @@ var podArray = []interface{}{
 	},
 }
 
+// workaround to avoid "unused" lint errors which test is skipped
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
+	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	fakeClientSet := fake.NewSimpleClientset()

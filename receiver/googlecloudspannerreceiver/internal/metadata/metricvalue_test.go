@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestInt64MetricValueMetadata(t *testing.T) {
@@ -71,7 +71,7 @@ func TestInt64MetricValue(t *testing.T) {
 	assert.Equal(t, int64Value, metricValue.Value())
 	assert.Equal(t, IntValueType, metadata.ValueType())
 
-	dataPoint := pdata.NewNumberDataPoint()
+	dataPoint := pmetric.NewNumberDataPoint()
 
 	metricValue.SetValueTo(dataPoint)
 
@@ -89,7 +89,7 @@ func TestFloat64MetricValue(t *testing.T) {
 	assert.Equal(t, float64Value, metricValue.Value())
 	assert.Equal(t, FloatValueType, metadata.ValueType())
 
-	dataPoint := pdata.NewNumberDataPoint()
+	dataPoint := pmetric.NewNumberDataPoint()
 
 	metricValue.SetValueTo(dataPoint)
 

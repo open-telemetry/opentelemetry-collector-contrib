@@ -30,6 +30,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
@@ -38,7 +39,7 @@ func TestScraper(t *testing.T) {
 	cfg.Endpoint = fmt.Sprintf("%s%s", apacheMock.URL, "/server-status?auto")
 	require.NoError(t, cfg.Validate())
 
-	scraper := newApacheScraper(componenttest.NewNopTelemetrySettings(), cfg)
+	scraper := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -54,7 +55,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{
+	sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.TLSClientSetting{
@@ -74,52 +75,52 @@ func TestParseScoreboard(t *testing.T) {
 		scoreboard := `S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................`
 		results := parseScoreboard(scoreboard)
 
-		require.EqualValues(t, int64(150), results["open"])
-		require.EqualValues(t, int64(217), results["waiting"])
-		require.EqualValues(t, int64(1), results["starting"])
-		require.EqualValues(t, int64(4), results["reading"])
-		require.EqualValues(t, int64(12), results["sending"])
-		require.EqualValues(t, int64(2), results["keepalive"])
-		require.EqualValues(t, int64(2), results["dnslookup"])
-		require.EqualValues(t, int64(4), results["closing"])
-		require.EqualValues(t, int64(1), results["logging"])
-		require.EqualValues(t, int64(3), results["finishing"])
-		require.EqualValues(t, int64(4), results["idle_cleanup"])
+		require.EqualValues(t, int64(150), results[metadata.AttributeScoreboardStateOpen])
+		require.EqualValues(t, int64(217), results[metadata.AttributeScoreboardStateWaiting])
+		require.EqualValues(t, int64(1), results[metadata.AttributeScoreboardStateStarting])
+		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateReading])
+		require.EqualValues(t, int64(12), results[metadata.AttributeScoreboardStateSending])
+		require.EqualValues(t, int64(2), results[metadata.AttributeScoreboardStateKeepalive])
+		require.EqualValues(t, int64(2), results[metadata.AttributeScoreboardStateDnslookup])
+		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateClosing])
+		require.EqualValues(t, int64(1), results[metadata.AttributeScoreboardStateLogging])
+		require.EqualValues(t, int64(3), results[metadata.AttributeScoreboardStateFinishing])
+		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateIdleCleanup])
 	})
 
 	t.Run("test unknown", func(t *testing.T) {
 		scoreboard := `qwertyuiopasdfghjklzxcvbnm`
 		results := parseScoreboard(scoreboard)
 
-		require.EqualValues(t, int64(0), results["open"])
-		require.EqualValues(t, int64(0), results["waiting"])
-		require.EqualValues(t, int64(0), results["starting"])
-		require.EqualValues(t, int64(0), results["reading"])
-		require.EqualValues(t, int64(0), results["sending"])
-		require.EqualValues(t, int64(0), results["keepalive"])
-		require.EqualValues(t, int64(0), results["dnslookup"])
-		require.EqualValues(t, int64(0), results["closing"])
-		require.EqualValues(t, int64(0), results["logging"])
-		require.EqualValues(t, int64(0), results["finishing"])
-		require.EqualValues(t, int64(0), results["idle_cleanup"])
-		require.EqualValues(t, int64(26), results["unknown"])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateReading])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateSending])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.EqualValues(t, int64(26), results[metadata.AttributeScoreboardStateUnknown])
 	})
 
 	t.Run("test empty defaults", func(t *testing.T) {
 		emptyString := ""
 		results := parseScoreboard(emptyString)
 
-		require.EqualValues(t, int64(0), results["open"])
-		require.EqualValues(t, int64(0), results["waiting"])
-		require.EqualValues(t, int64(0), results["starting"])
-		require.EqualValues(t, int64(0), results["reading"])
-		require.EqualValues(t, int64(0), results["sending"])
-		require.EqualValues(t, int64(0), results["keepalive"])
-		require.EqualValues(t, int64(0), results["dnslookup"])
-		require.EqualValues(t, int64(0), results["closing"])
-		require.EqualValues(t, int64(0), results["logging"])
-		require.EqualValues(t, int64(0), results["finishing"])
-		require.EqualValues(t, int64(0), results["idle_cleanup"])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateReading])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateSending])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
+		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
 	})
 }
 
@@ -152,7 +153,7 @@ ConnsTotal: 110
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(componenttest.NewNopTelemetrySettings(), &Config{})
+		sc := newApacheScraper(componenttest.NewNopReceiverCreateSettings(), &Config{})
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())

@@ -1,11 +1,13 @@
 # Kubelet Stats Receiver
 
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 The Kubelet Stats Receiver pulls pod metrics from the API server on a kubelet
 and sends it down the metric pipeline for further processing.
-
-Supported pipeline types: metrics
-
-> :construction: This receiver is in beta and configuration fields are subject to change.
 
 ## Configuration
 
@@ -184,3 +186,6 @@ The following parameters can also be specified:
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

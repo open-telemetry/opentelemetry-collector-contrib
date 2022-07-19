@@ -24,9 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -34,21 +32,21 @@ func TestNewExporter(t *testing.T) {
 	server := testutils.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &config.Config{
-		API: config.APIConfig{
+	cfg := &Config{
+		API: APIConfig{
 			Key: "ddog_32_characters_long_api_key1",
 		},
-		Metrics: config.MetricsConfig{
+		Metrics: MetricsConfig{
 			TCPAddr: confignet.TCPAddr{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
-			HistConfig: config.HistogramConfig{
-				Mode:         string(translator.HistogramModeDistributions),
+			HistConfig: HistogramConfig{
+				Mode:         HistogramModeDistributions,
 				SendCountSum: false,
 			},
-			SumConfig: config.SumConfig{
-				CumulativeMonotonicMode: config.CumulativeMonotonicSumModeToDelta,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
 	}
@@ -63,8 +61,8 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, len(server.MetadataChan), 0)
 
-	cfg.SendMetadata = true
-	cfg.UseResourceMetadata = true
+	cfg.HostMetadata.Enabled = true
+	cfg.HostMetadata.HostnameSource = HostnameSourceFirstResource
 	err = exp.ConsumeMetrics(context.Background(), testutils.TestMetrics.Clone())
 	require.NoError(t, err)
 	body := <-server.MetadataChan

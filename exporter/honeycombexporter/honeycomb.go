@@ -20,7 +20,7 @@ import (
 
 	"github.com/honeycombio/libhoney-go"
 	"github.com/honeycombio/libhoney-go/transmission"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -101,7 +101,7 @@ func newHoneycombTracesExporter(cfg *Config, logger *zap.Logger) (*honeycombExpo
 
 // pushTraceData is the method called when trace data is available. It will be
 // responsible for sending a batch of events.
-func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) error {
+func (e *honeycombExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	var errs error
 
 	// Run the error logger. This just listens for messages in the error
@@ -149,13 +149,16 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 				startTime := timestampToTime(span.StartTimestamp())
 				endTime := timestampToTime(span.EndTimestamp())
 
-				ev.Add(event{
+				err := ev.Add(event{
 					ID:            getHoneycombSpanID(span.SpanID()),
 					TraceID:       getHoneycombTraceID(span.TraceID()),
 					ParentID:      getHoneycombSpanID(span.ParentSpanID()),
 					Name:          span.Name(),
 					DurationMilli: float64(endTime.Sub(startTime)) / float64(time.Millisecond),
 				})
+				if err != nil {
+					errs = multierr.Append(errs, err)
+				}
 
 				e.sendMessageEvents(span, resourceAttrs)
 				e.sendSpanLinks(span)
@@ -172,19 +175,19 @@ func (e *honeycombExporter) pushTraceData(ctx context.Context, td pdata.Traces) 
 	return errs
 }
 
-func getSpanKind(kind pdata.SpanKind) string {
+func getSpanKind(kind ptrace.SpanKind) string {
 	switch kind {
-	case pdata.SpanKindClient:
+	case ptrace.SpanKindClient:
 		return "client"
-	case pdata.SpanKindServer:
+	case ptrace.SpanKindServer:
 		return "server"
-	case pdata.SpanKindProducer:
+	case ptrace.SpanKindProducer:
 		return "producer"
-	case pdata.SpanKindConsumer:
+	case ptrace.SpanKindConsumer:
 		return "consumer"
-	case pdata.SpanKindInternal:
+	case ptrace.SpanKindInternal:
 		return "internal"
-	case pdata.SpanKindUnspecified:
+	case ptrace.SpanKindUnspecified:
 		fallthrough
 	default:
 		return "unspecified"
@@ -193,20 +196,23 @@ func getSpanKind(kind pdata.SpanKind) string {
 
 // sendSpanLinks gets the list of links associated with this span and sends them as
 // separate events to Honeycomb, with a span type "link".
-func (e *honeycombExporter) sendSpanLinks(span pdata.Span) {
+func (e *honeycombExporter) sendSpanLinks(span ptrace.Span) {
 	links := span.Links()
 
 	for i := 0; i < links.Len(); i++ {
 		l := links.At(i)
 
 		ev := e.builder.NewEvent()
-		ev.Add(link{
+		if err := ev.Add(link{
 			TraceID:        getHoneycombTraceID(span.TraceID()),
 			ParentID:       getHoneycombSpanID(span.SpanID()),
 			LinkTraceID:    getHoneycombTraceID(l.TraceID()),
 			LinkSpanID:     getHoneycombSpanID(l.SpanID()),
 			AnnotationType: "link",
-		})
+		}); err != nil {
+			e.onError(err)
+		}
+
 		attrs := spanAttributesToMap(l.Attributes())
 		for k, v := range attrs {
 			ev.AddField(k, v)
@@ -221,7 +227,7 @@ func (e *honeycombExporter) sendSpanLinks(span pdata.Span) {
 
 // sendMessageEvents gets the list of timeevents from the span and sends them as
 // separate events to Honeycomb, with a span type "span_event".
-func (e *honeycombExporter) sendMessageEvents(span pdata.Span, resourceAttrs map[string]interface{}) {
+func (e *honeycombExporter) sendMessageEvents(span ptrace.Span, resourceAttrs map[string]interface{}) {
 	timeEvents := span.Events()
 
 	for i := 0; i < timeEvents.Len(); i++ {
@@ -243,13 +249,15 @@ func (e *honeycombExporter) sendMessageEvents(span pdata.Span, resourceAttrs map
 		e.addSampleRate(ev, attrs)
 
 		ev.Timestamp = ts
-		ev.Add(spanEvent{
+		if err := ev.Add(spanEvent{
 			Name:           name,
 			TraceID:        getHoneycombTraceID(span.TraceID()),
 			ParentID:       getHoneycombSpanID(span.SpanID()),
 			ParentName:     span.Name(),
 			AnnotationType: "span_event",
-		})
+		}); err != nil {
+			e.onError(err)
+		}
 		if err := ev.SendPresampled(); err != nil {
 			e.onError(err)
 		}

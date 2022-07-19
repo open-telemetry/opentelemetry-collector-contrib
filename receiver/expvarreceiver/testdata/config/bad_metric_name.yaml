@@ -1,0 +1,18 @@
+receivers:
+  expvar:
+    metrics:
+      bad_metric.name:
+        enabled: true
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [expvar]
+      processors: [nop]
+      exporters: [nop]

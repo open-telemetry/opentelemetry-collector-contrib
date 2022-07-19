@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package splunkhecreceiver
 
 import (
@@ -37,7 +38,8 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -388,12 +390,13 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start log reception")
+	require.NoError(t, r.Start(context.Background(), mh), "should not fail to start log on second Start call")
 
 	// If there are errors reported through host.ReportFatalError() this will retrieve it.
 	<-time.After(500 * time.Millisecond)
 	t.Log("Event Reception Started")
 
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
@@ -401,7 +404,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
 	sec := float64(msecInt64) / 1e3
-	lr.SetTimestamp(pdata.Timestamp(int64(sec * 1e9)))
+	lr.SetTimestamp(pcommon.Timestamp(int64(sec * 1e9)))
 
 	lr.Body().SetStringVal("foo")
 	lr.Attributes().InsertString("com.splunk.sourcetype", "custom:sourcetype")

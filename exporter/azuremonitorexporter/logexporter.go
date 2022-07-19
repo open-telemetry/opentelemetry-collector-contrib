@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +29,7 @@ type logExporter struct {
 	logger           *zap.Logger
 }
 
-func (exporter *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
+func (exporter *logExporter) onLogData(context context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	logPacker := newLogPacker(exporter.logger)
 

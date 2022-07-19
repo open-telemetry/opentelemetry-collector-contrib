@@ -1,0 +1,2 @@
+include: [ "*.log" ]
+exclude: [ "a.log", "b.log" ]

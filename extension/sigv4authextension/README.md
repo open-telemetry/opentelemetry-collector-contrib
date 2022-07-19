@@ -1,5 +1,10 @@
 # Authenticator - Sigv4
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Distributions            | [contrib]            |
+
 This extension provides Sigv4 authentication for making requests to AWS services. For more information on the Sigv4 process, please look [here](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
 ## Configuration
@@ -10,7 +15,8 @@ The configuration fields are as follows:
   * `arn`: **Optional**. The Amazon Resource Name (ARN) of a role to assume
   * `session_name`: **Optional**. The name of a role session
 * `region`: **Optional**. The AWS region for AWS Sigv4
-    * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
+    * Note that this is **required** when a role to assume is also provided
+    * Also note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to
@@ -45,3 +51,6 @@ service:
 ## Notes
 
 * The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

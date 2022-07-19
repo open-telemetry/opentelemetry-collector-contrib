@@ -1,0 +1,7 @@
+change_type: bug_fix
+
+component: filterlog
+
+note: change OR to AND logic for filtering logs - as desribed, and as is done for span filtering
+
+issues: [11439]

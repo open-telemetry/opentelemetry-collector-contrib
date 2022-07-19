@@ -72,12 +72,10 @@ func (ew *EndpointsWatcher) refreshEndpoints(listener Notify) {
 		if existingEndpoint, ok := ew.existingEndpoints[e.ID]; !ok {
 			ew.existingEndpoints[e.ID] = e
 			addedEndpoints = append(addedEndpoints, e)
-		} else {
+		} else if !reflect.DeepEqual(existingEndpoint, e) {
 			// Collect updated endpoints.
-			if !reflect.DeepEqual(existingEndpoint, e) {
-				ew.existingEndpoints[e.ID] = e
-				updatedEndpoints = append(updatedEndpoints, e)
-			}
+			ew.existingEndpoints[e.ID] = e
+			updatedEndpoints = append(updatedEndpoints, e)
 		}
 	}
 

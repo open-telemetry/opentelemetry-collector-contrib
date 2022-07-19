@@ -17,13 +17,16 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
-	typestr = "coralogix"
+	typeStr = "coralogix"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // Config defines by Coralogix.
@@ -35,6 +38,9 @@ type Config struct {
 
 	// The Coralogix logs ingress endpoint
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+
+	// The Coralogix metrics ingress endpoint
+	Metrics configgrpc.GRPCClientSettings `mapstructure:"metrics"`
 
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
@@ -51,8 +57,9 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	// validate each parameter and return specific error
-	if c.GRPCClientSettings.Endpoint == "" || c.GRPCClientSettings.Endpoint == "https://" || c.GRPCClientSettings.Endpoint == "http://" {
-		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
+	if (c.GRPCClientSettings.Endpoint == "" || c.GRPCClientSettings.Endpoint == "https://" || c.GRPCClientSettings.Endpoint == "http://") &&
+		(c.Metrics.Endpoint == "" || c.Metrics.Endpoint == "https://" || c.Metrics.Endpoint == "http://") {
+		return fmt.Errorf("`endpoint` or `metrics.endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
@@ -67,5 +74,6 @@ func (c *Config) Validate() error {
 	}
 	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
 	c.GRPCClientSettings.Headers["appName"] = c.AppName
+
 	return nil
 }

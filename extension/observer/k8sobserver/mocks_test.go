@@ -46,7 +46,8 @@ func (e *endpointSink) OnRemove(removed []observer.Endpoint) {
 func (e *endpointSink) OnChange(changed []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()
-	e.changed = append(e.removed, changed...)
+	e.changed = e.removed
+	e.changed = append(e.changed, changed...)
 }
 
 var _ observer.Notify = (*endpointSink)(nil)
@@ -56,5 +57,5 @@ func requireSink(t *testing.T, sink *endpointSink, f func() bool) {
 		sink.Lock()
 		defer sink.Unlock()
 		return f()
-	}, 1*time.Second, 100*time.Millisecond)
+	}, 2*time.Second, 100*time.Millisecond)
 }

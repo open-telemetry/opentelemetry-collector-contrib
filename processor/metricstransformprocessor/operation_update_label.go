@@ -16,6 +16,8 @@ package metricstransformprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // updateLabelOp updates labels and label values in metric based on given operation
@@ -38,4 +40,31 @@ func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mt
 			}
 		}
 	}
+}
+
+// updateLabelOp updates labels and label values in metric based on given operation
+func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFilter) {
+	op := mtpOp.configOperation
+	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+		if !f.matchAttrs(attrs) {
+			return true
+		}
+
+		attrKey := op.Label
+		attrVal, ok := attrs.Get(attrKey)
+		if !ok {
+			return true
+		}
+
+		if op.NewLabel != "" {
+			attrs.Upsert(op.NewLabel, attrVal)
+			attrs.Remove(attrKey)
+			attrKey = op.NewLabel
+		}
+
+		if newValue, ok := mtpOp.valueActionsMapping[attrVal.StringVal()]; ok {
+			attrs.UpsertString(attrKey, newValue)
+		}
+		return true
+	})
 }

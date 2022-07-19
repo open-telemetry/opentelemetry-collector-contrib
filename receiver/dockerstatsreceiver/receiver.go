@@ -21,7 +21,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -78,11 +79,11 @@ func (r *receiver) start(ctx context.Context, _ component.Host) error {
 }
 
 type result struct {
-	md  pdata.Metrics
+	md  pmetric.Metrics
 	err error
 }
 
-func (r *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	containers := r.client.Containers()
 	results := make(chan result, len(containers))
 
@@ -93,12 +94,12 @@ func (r *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 			defer wg.Done()
 			statsJSON, err := r.client.FetchContainerStatsAsJSON(ctx, c)
 			if err != nil {
-				results <- result{md: pdata.Metrics{}, err: err}
+				results <- result{md: pmetric.Metrics{}, err: err}
 				return
 			}
 
 			results <- result{
-				md:  ContainerStatsToMetrics(pdata.NewTimestampFromTime(time.Now()), statsJSON, c, r.config),
+				md:  ContainerStatsToMetrics(pcommon.NewTimestampFromTime(time.Now()), statsJSON, c, r.config),
 				err: nil}
 		}(container)
 	}
@@ -107,7 +108,7 @@ func (r *receiver) scrape(ctx context.Context) (pdata.Metrics, error) {
 	close(results)
 
 	var errs error
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed metrics, but one container fetch is a partial error.

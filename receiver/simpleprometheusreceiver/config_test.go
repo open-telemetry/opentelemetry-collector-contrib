@@ -24,7 +24,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -48,15 +49,14 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r2,
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
-			TCPAddr: confignet.TCPAddr{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:1234",
-			},
-			httpConfig: httpConfig{
-				TLSEnabled: true,
-				TLSConfig: tlsConfig{
-					CAFile:             "path",
-					CertFile:           "path",
-					KeyFile:            "path",
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "path",
+						CertFile: "path",
+						KeyFile:  "path",
+					},
 					InsecureSkipVerify: true,
 				},
 			},
@@ -70,8 +70,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r3,
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_settings")),
-			TCPAddr: confignet.TCPAddr{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:1234",
+				TLSSetting: configtls.TLSClientSetting{
+					Insecure: true,
+				},
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/metrics",
@@ -81,11 +84,8 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r4,
 		&Config{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "partial_tls_settings")),
-			TCPAddr: confignet.TCPAddr{
+			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "localhost:1234",
-			},
-			httpConfig: httpConfig{
-				TLSEnabled: true,
 			},
 			CollectionInterval: 30 * time.Second,
 			MetricsPath:        "/metrics",

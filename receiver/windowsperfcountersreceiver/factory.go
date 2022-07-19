@@ -24,15 +24,19 @@ import (
 
 // This file implements Factory for WindowsPerfCounters receiver.
 
-// The value of "type" key in configuration.
-const typeStr = "windowsperfcounters"
+const (
+	// The value of "type" key in configuration.
+	typeStr = "windowsperfcounters"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a new factory for windows perf counters receiver.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates the default configuration for receiver.

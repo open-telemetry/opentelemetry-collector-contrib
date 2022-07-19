@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
@@ -31,7 +31,7 @@ func TestK8sEventToLogData(t *testing.T) {
 	lr := rl.ScopeLogs().At(0)
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
-	assert.Equal(t, resourceAttrs.Len(), 8)
+	assert.Equal(t, resourceAttrs.Len(), 7)
 	assert.Equal(t, attrs.Len(), 7)
 
 	// Count attribute will not be present in the LogData
@@ -70,6 +70,6 @@ func TestUnknownSeverity(t *testing.T) {
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
-	assert.Equal(t, logEntry.SeverityNumber(), pdata.SeverityNumberUNDEFINED)
+	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUNDEFINED)
 	assert.Equal(t, logEntry.SeverityText(), "")
 }

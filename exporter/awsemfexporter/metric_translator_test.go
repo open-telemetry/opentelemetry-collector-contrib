@@ -28,8 +28,9 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -412,8 +413,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	ilm.Scope().SetName("cloudwatch-lib")
 
 	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceNamespace)
-	noNamespaceMetric.Resource().Attributes().Delete(conventions.AttributeServiceName)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
+	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
 	counterMetrics := map[string]*metricInfo{
 		"spanCounter": {
@@ -445,7 +446,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	testCases := []struct {
 		testName          string
-		metric            *pdata.ResourceMetrics
+		metric            *pmetric.ResourceMetrics
 		counterLabels     map[string]string
 		timerLabels       map[string]string
 		expectedNamespace string
@@ -495,7 +496,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			setupDataPointCache()
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
-			translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
+			assert.Nil(t, err)
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 2, len(groupedMetrics))
 
@@ -527,7 +529,8 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
 }
@@ -546,12 +549,12 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 	fields[oTellibDimensionKey] = "cloudwatch-otel"
 	fields["spanName"] = "test"
 	fields["spanCounter"] = 0
-	//add stringified json as attribute values
+	// add stringified json as attribute values
 	fields["kubernetes"] = "{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]}"
 	fields["Sources"] = "[\"cadvisor\",\"pod\",\"calculated\"]"
 
 	config := &Config{
-		//include valid json string, a non-existing key, and keys whose value are not json/string
+		// include valid json string, a non-existing key, and keys whose value are not json/string
 		ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
 		logger:                          zap.NewNop(),
 	}
@@ -844,7 +847,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 						timestampMs: timestamp,
 					},
 					receiver:       prometheusReceiver,
-					metricDataType: pdata.MetricDataTypeGauge,
+					metricDataType: pmetric.MetricDataTypeGauge,
 				},
 			},
 			nil,
@@ -881,7 +884,8 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				logger:                logger,
 			}
 			for _, decl := range tc.metricDeclarations {
-				decl.init(logger)
+				err := decl.init(logger)
+				assert.Nil(t, err)
 			}
 			cWMetric := translateGroupedMetricToCWMetric(tc.groupedMetric, config)
 			assert.NotNil(t, cWMetric)
@@ -2068,7 +2072,8 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2090,7 +2095,8 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2112,7 +2118,8 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2134,7 +2141,8 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2151,7 +2159,8 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		assert.Nil(b, err)
 	}
 }
 
@@ -2219,7 +2228,8 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 		MetricNameSelectors: []string{"metric1", "metric2"},
 	}
 	logger := zap.NewNop()
-	m.init(logger)
+	err := m.init(logger)
+	assert.Nil(b, err)
 	config := &Config{
 		MetricDeclarations:    []*MetricDeclaration{m},
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
@@ -2267,7 +2277,7 @@ type testMetric struct {
 
 type logGroupStreamTest struct {
 	name             string
-	inputMetrics     pdata.Metrics
+	inputMetrics     pmetric.Metrics
 	inLogGroupName   string
 	inLogStreamName  string
 	outLogGroupName  string
@@ -2408,7 +2418,8 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
-			translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			assert.Nil(t, err)
 
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 1, len(groupedMetrics))
@@ -2421,23 +2432,23 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 	}
 }
 
-func generateTestMetrics(tm testMetric) pdata.Metrics {
-	md := pdata.NewMetrics()
+func generateTestMetrics(tm testMetric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	pdata.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
+	pcommon.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pdata.MetricDataTypeGauge)
+		m.SetDataType(pmetric.MetricDataTypeGauge)
 		for _, value := range tm.metricValues[i] {
 			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			pdata.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
+			pcommon.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
 		}
 	}
 	return md

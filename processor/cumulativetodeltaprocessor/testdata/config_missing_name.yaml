@@ -3,7 +3,12 @@ receivers:
 
 processors:
   cumulativetodelta:
-    metrics:
+    include:
+      match_type: strict
+      metrics:
+    exclude:
+      match_type: strict
+      metrics:
 
 exporters:
   nop:

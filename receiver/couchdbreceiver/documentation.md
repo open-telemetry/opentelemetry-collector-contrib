@@ -34,9 +34,9 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| http.method | An HTTP request method. |
-| http.status_code | An HTTP status code. |
-| operation | The operation type. |
-| view | The view type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.method | An HTTP request method. | COPY, DELETE, GET, HEAD, OPTIONS, POST, PUT |
+| http.status_code | An HTTP status code. |  |
+| operation | The operation type. | writes, reads |
+| view | The view type. | temporary_view_reads, view_reads |

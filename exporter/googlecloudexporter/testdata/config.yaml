@@ -24,6 +24,7 @@ exporters:
       skip_create_descriptor: true
       endpoint: test-metric-endpoint
       use_insecure: true
+      cumulative_normalization: false
     trace:
       endpoint: test-trace-endpoint
       use_insecure: true

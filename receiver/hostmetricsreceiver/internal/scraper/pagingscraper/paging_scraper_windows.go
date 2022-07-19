@@ -24,9 +24,12 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -43,19 +46,30 @@ const (
 
 // scraper for Paging Metrics
 type scraper struct {
-	config *Config
-	mb     *metadata.MetricsBuilder
+	settings component.ReceiverCreateSettings
+	config   *Config
+	mb       *metadata.MetricsBuilder
 
 	perfCounterScraper perfcounters.PerfCounterScraper
 
 	// for mocking
-	bootTime      func() (uint64, error)
-	pageFileStats func() ([]*pageFileStats, error)
+	bootTime                             func() (uint64, error)
+	pageFileStats                        func() ([]*pageFileStats, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime, pageFileStats: getPageFileStats}
+func newPagingScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+	return &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		perfCounterScraper:                   &perfcounters.PerfLibScraper{},
+		bootTime:                             host.BootTime,
+		pageFileStats:                        getPageFileStats,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -64,12 +78,12 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pdata.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 
 	return s.perfCounterScraper.Initialize(memory)
 }
 
-func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
+func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 	var errors scrapererror.ScrapeErrors
 
 	err := s.scrapePagingUsageMetric()
@@ -86,7 +100,7 @@ func (s *scraper) scrape(context.Context) (pdata.Metrics, error) {
 }
 
 func (s *scraper) scrapePagingUsageMetric() error {
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	pageFiles, err := s.pageFileStats()
 	if err != nil {
 		return fmt.Errorf("failed to read page file stats: %w", err)
@@ -98,22 +112,22 @@ func (s *scraper) scrapePagingUsageMetric() error {
 	return nil
 }
 
-func (s *scraper) recordPagingUsageDataPoints(now pdata.Timestamp, pageFiles []*pageFileStats) {
+func (s *scraper) recordPagingUsageDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
 	for _, pageFile := range pageFiles {
-		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.usedBytes), pageFile.deviceName, metadata.AttributeState.Used)
-		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.freeBytes), pageFile.deviceName, metadata.AttributeState.Free)
+		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.usedBytes), pageFile.deviceName, metadata.AttributeStateUsed)
+		s.mb.RecordSystemPagingUsageDataPoint(now, int64(pageFile.freeBytes), pageFile.deviceName, metadata.AttributeStateFree)
 	}
 }
 
-func (s *scraper) recordPagingUtilizationDataPoints(now pdata.Timestamp, pageFiles []*pageFileStats) {
+func (s *scraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageFiles []*pageFileStats) {
 	for _, pageFile := range pageFiles {
-		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Used)
-		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeState.Free)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.usedBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeStateUsed)
+		s.mb.RecordSystemPagingUtilizationDataPoint(now, float64(pageFile.freeBytes)/float64(pageFile.totalBytes), pageFile.deviceName, metadata.AttributeStateFree)
 	}
 }
 
 func (s *scraper) scrapePagingOperationsMetric() error {
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
@@ -136,7 +150,13 @@ func (s *scraper) scrapePagingOperationsMetric() error {
 	return nil
 }
 
-func (s *scraper) recordPagingOperationsDataPoints(now pdata.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirection.PageIn, metadata.AttributeType.Major)
-	s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirection.PageOut, metadata.AttributeType.Major)
+func (s *scraper) recordPagingOperationsDataPoints(now pcommon.Timestamp, memoryCounterValues *perfcounters.CounterValues) {
+	if s.emitMetricsWithoutDirectionAttribute {
+		s.mb.RecordSystemPagingOperationsPageInDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsPageOutDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeTypeMajor)
+	}
+	if s.emitMetricsWithDirectionAttribute {
+		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageReadsPerSec], metadata.AttributeDirectionPageIn, metadata.AttributeTypeMajor)
+		s.mb.RecordSystemPagingOperationsDataPoint(now, memoryCounterValues.Values[pageWritesPerSec], metadata.AttributeDirectionPageOut, metadata.AttributeTypeMajor)
+	}
 }

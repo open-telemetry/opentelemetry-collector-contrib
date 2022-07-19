@@ -38,7 +38,6 @@ func TestNamespaceMetrics(t *testing.T) {
 		map[string]string{
 			"k8s.namespace.uid":  "test-namespace-1-uid",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
@@ -49,10 +48,9 @@ func TestNamespaceMetrics(t *testing.T) {
 func newNamespace(id string) *corev1.Namespace {
 	return &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-namespace-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-namespace-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-namespace-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-namespace-" + id + "-uid"),
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

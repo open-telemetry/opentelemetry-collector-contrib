@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -53,7 +54,7 @@ func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Ex
 	return mh.extensions
 }
 
-func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *service.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 
@@ -104,6 +105,7 @@ type nopWithEndpointFactory struct {
 type nopWithEndpointReceiver struct {
 	component.Component
 	consumer.Metrics
+	component.ReceiverCreateSettings
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
@@ -119,11 +121,12 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateSettings,
+	rcs component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component: mockComponent{},
-		Metrics:   nextConsumer,
+		Component:              mockComponent{},
+		Metrics:                nextConsumer,
+		ReceiverCreateSettings: rcs,
 	}, nil
 }

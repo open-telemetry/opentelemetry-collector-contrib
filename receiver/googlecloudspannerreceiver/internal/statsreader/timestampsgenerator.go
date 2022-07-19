@@ -52,7 +52,7 @@ func pullTimestampsWithDifference(lowerBound time.Time, upperBound time.Time, di
 	}
 
 	// To ensure that we did not miss upper bound and timestamps slice will contain at least one value
-	if len(timestamps) <= 0 || timestamps[len(timestamps)-1] != upperBound {
+	if len(timestamps) == 0 || timestamps[len(timestamps)-1] != upperBound {
 		timestamps = append(timestamps, upperBound)
 	}
 

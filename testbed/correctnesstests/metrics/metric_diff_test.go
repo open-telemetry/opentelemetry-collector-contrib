@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 )
@@ -30,13 +30,13 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected pdata.Metrics, actual pdata.Metrics) []*MetricDiff {
+func diffMetricData(expected pmetric.Metrics, actual pmetric.Metrics) []*MetricDiff {
 	expectedRMSlice := expected.ResourceMetrics()
 	actualRMSlice := actual.ResourceMetrics()
 	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
 }
 
-func toSlice(s pdata.ResourceMetricsSlice) (out []pdata.ResourceMetrics) {
+func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
 	for i := 0; i < s.Len(); i++ {
 		out = append(out, s.At(i))
 	}
@@ -64,7 +64,7 @@ func TestDifferentNumPts(t *testing.T) {
 func TestDifferentPtValueTypes(t *testing.T) {
 	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
-	cfg.MetricValueType = pdata.MetricValueTypeDouble
+	cfg.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 	actual := goldendataset.MetricsFromCfg(cfg)
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 1)
@@ -72,10 +72,10 @@ func TestDifferentPtValueTypes(t *testing.T) {
 
 func TestHistogram(t *testing.T) {
 	cfg1 := goldendataset.DefaultCfg()
-	cfg1.MetricDescriptorType = pdata.MetricDataTypeHistogram
+	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
 	expected := goldendataset.MetricsFromCfg(cfg1)
 	cfg2 := goldendataset.DefaultCfg()
-	cfg2.MetricDescriptorType = pdata.MetricDataTypeHistogram
+	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)

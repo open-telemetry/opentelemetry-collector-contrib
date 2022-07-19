@@ -15,6 +15,7 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filter"
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -127,7 +128,7 @@ func (f *itemCardinalityFilter) filterItems(items []*Item) ([]*Item, error) {
 func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTimestamp) (bool, error) {
 	if _, err := f.cache.Get(item.SeriesKey); err == nil {
 		return true, nil
-	} else if err != ttlcache.ErrNotFound {
+	} else if !errors.Is(err, ttlcache.ErrNotFound) {
 		return false, err
 	}
 
@@ -137,7 +138,7 @@ func (f *itemCardinalityFilter) includeItem(item *Item, limit *currentLimitByTim
 	}
 
 	if err := f.cache.SetWithTTL(item.SeriesKey, struct{}{}, f.itemActivityPeriod); err != nil {
-		if err == ttlcache.ErrClosed {
+		if errors.Is(err, ttlcache.ErrClosed) {
 			err = fmt.Errorf("set item from cache failed for metric %q because cache has been already closed: %w", f.metricName, err)
 		}
 		return false, err

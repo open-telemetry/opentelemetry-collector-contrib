@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "spanmetrics"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 // NewFactory creates a factory for the spanmetrics processor.
@@ -33,7 +35,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
 	)
 }
 
@@ -42,7 +44,7 @@ func createDefaultConfig() config.Processor {
 		ProcessorSettings:      config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
 		DimensionsCacheSize:    defaultDimensionsCacheSize,
-		skipSanitizeLabel:      featuregate.IsEnabled(dropSanitizationGate.ID),
+		skipSanitizeLabel:      featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID),
 	}
 }
 

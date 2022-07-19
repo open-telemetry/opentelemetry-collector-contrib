@@ -19,6 +19,7 @@ package opencensusreceiver
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -44,8 +45,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -402,7 +404,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -430,7 +432,9 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
@@ -551,7 +555,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 		if err == nil {
 			for {
 				if _, err = stream.Recv(); err != nil {
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						err = nil
 					}
 					break
@@ -579,7 +583,9 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 			t.Run(tt.name+"/"+exporter.receiverID.String(), func(t *testing.T) {
 				testTel, err := obsreporttest.SetupTelemetry()
 				require.NoError(t, err)
-				defer testTel.Shutdown(context.Background())
+				defer func() {
+					require.NoError(t, testTel.Shutdown(context.Background()))
+				}()
 
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
@@ -662,7 +668,7 @@ func (esc *errOrSinkConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeTraces stores traces to this sink.
-func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces) error {
+func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 
@@ -674,7 +680,7 @@ func (esc *errOrSinkConsumer) ConsumeTraces(ctx context.Context, td pdata.Traces
 }
 
 // ConsumeMetrics stores metrics to this sink.
-func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pdata.Metrics) error {
+func (esc *errOrSinkConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	esc.mu.Lock()
 	defer esc.mu.Unlock()
 

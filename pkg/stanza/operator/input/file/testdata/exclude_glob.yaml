@@ -1,0 +1,5 @@
+type: file_input
+include:
+  - "*.log"
+exclude:
+  - "not*.log"

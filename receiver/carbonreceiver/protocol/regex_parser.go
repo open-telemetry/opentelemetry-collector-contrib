@@ -123,7 +123,7 @@ func compileRegexRules(rules []*RegexRule) error {
 	for i, r := range rules {
 		regex, err := regexp.Compile(r.Regexp)
 		if err != nil {
-			return fmt.Errorf("error compiling %d-th rule: %v", i, err)
+			return fmt.Errorf("error compiling %d-th rule: %w", i, err)
 		}
 
 		switch TargetMetricType(r.MetricType) {

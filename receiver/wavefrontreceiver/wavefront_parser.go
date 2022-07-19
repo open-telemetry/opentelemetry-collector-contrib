@@ -79,7 +79,7 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 	} else {
 		dblVal, err := strconv.ParseFloat(valueStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid wavefront metric value [%s]: %w", line, err)
 		}
 		metricType = metricspb.MetricDescriptor_GAUGE_DOUBLE
 		point.Value = &metricspb.Point_DoubleValue{DoubleValue: dblVal}
@@ -114,7 +114,7 @@ func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {
 		var err error
 		labelKeys, labelValues, err = buildLabels(tags)
 		if err != nil {
-			return nil, fmt.Errorf("invalid wavefront metric [%s]: %v", line, err)
+			return nil, fmt.Errorf("invalid wavefront metric [%s]: %w", line, err)
 		}
 	}
 
@@ -151,7 +151,7 @@ func (wp *WavefrontParser) injectCollectDLabels(
 		metricName, toAddDims = collectdreceiver.LabelsFromName(&metricName)
 		if len(toAddDims) == 0 {
 			if index == -1 {
-				metricName = strings.Replace(metricName, "..", ".", -1)
+				metricName = strings.ReplaceAll(metricName, "..", ".")
 			}
 
 			break

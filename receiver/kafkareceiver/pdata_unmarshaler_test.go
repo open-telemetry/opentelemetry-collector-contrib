@@ -18,20 +18,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestNewPdataTracesUnmarshaler(t *testing.T) {
-	um := newPdataTracesUnmarshaler(otlp.NewProtobufTracesUnmarshaler(), "test")
+	um := newPdataTracesUnmarshaler(ptrace.NewProtoUnmarshaler(), "test")
 	assert.Equal(t, "test", um.Encoding())
 }
 
 func TestNewPdataMetricsUnmarshaler(t *testing.T) {
-	um := newPdataMetricsUnmarshaler(otlp.NewProtobufMetricsUnmarshaler(), "test")
+	um := newPdataMetricsUnmarshaler(pmetric.NewProtoUnmarshaler(), "test")
 	assert.Equal(t, "test", um.Encoding())
 }
 
 func TestNewPdataLogsUnmarshaler(t *testing.T) {
-	um := newPdataLogsUnmarshaler(otlp.NewProtobufLogsUnmarshaler(), "test")
+	um := newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), "test")
 	assert.Equal(t, "test", um.Encoding())
 }

@@ -20,12 +20,14 @@ import (
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 var _ config.Receiver = (*Config)(nil)
@@ -48,6 +50,9 @@ type Config struct {
 
 	// Configuration of the Kubernetes API client.
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
+
+	// Metrics allows customizing scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }
 
 func (cfg *Config) Validate() error {
@@ -106,7 +111,7 @@ func getMapFromSlice(collect []kubelet.MetricGroup) (map[kubelet.MetricGroup]boo
 	return out, nil
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil

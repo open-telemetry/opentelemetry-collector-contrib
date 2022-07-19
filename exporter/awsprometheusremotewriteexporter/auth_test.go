@@ -71,6 +71,39 @@ func TestRequestSignature(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRequestSignatureEmptyBody(t *testing.T) {
+	// Some form of AWS credentials must be set up for tests to succeed
+	awsCreds := fetchMockCredentials()
+	authConfig := AuthConfig{Region: "region", Service: "service"}
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := v4.GetSignedRequestSignature(r)
+		assert.NoError(t, err)
+		assert.Equal(t, sdkInformation, r.Header.Get("User-Agent"))
+		w.WriteHeader(200)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	setting := confighttp.HTTPClientSettings{
+		Endpoint:        serverURL.String(),
+		TLSSetting:      configtls.TLSClientSetting{},
+		ReadBufferSize:  0,
+		WriteBufferSize: 0,
+		Timeout:         0,
+		CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			return newSigningRoundTripperWithCredentials(authConfig, awsCreds, next, sdkInformation)
+		},
+	}
+	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions(), componenttest.NewNopTelemetrySettings())
+	req, err := http.NewRequest("GET", setting.Endpoint, nil)
+	assert.NoError(t, err)
+	_, err = client.Do(req)
+	assert.NoError(t, err)
+}
+
 type checkCloser struct {
 	io.Reader
 	mu     sync.Mutex
