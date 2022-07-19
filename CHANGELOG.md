@@ -537,7 +537,6 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ### 🚀 New components 🚀
 
-- `azureblobexporter`: exports logs and traces to Azure Blob Storage
 
 ## v0.45.1
 
