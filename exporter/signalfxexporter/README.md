@@ -156,6 +156,7 @@ The `translation_rules` metrics configuration field accepts a list of metric-tra
 help ensure compatibility with custom charts and dashboards when using the OpenTelemetry Collector. It also provides the ability to produce custom metrics by copying, calculating new, or aggregating other metric values without requiring an additional processor.
 The rule language is expressed in yaml mappings and is [documented here](./internal/translation/translator.go).  Translation rules currently allow the following actions:
 
+* `add_dimensions` - Adds dimensions for specified metrics, or globally
 * `aggregate_metric` - Aggregates a metric through removal of specified dimensions
 * `calculate_new_metric` - Creates a new metric via operating on two consistuent ones
 * `convert_values` - Convert float values to int or int to float for specified metric names

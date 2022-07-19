@@ -288,21 +288,32 @@ translation_rules:
   scale_factors_float:
     sf_temp.disk.summary_utilization: 100
 
-
 # Translations to derive disk I/O metrics.
 
 ## Calculate extra system.disk.operations.total and system.disk.io.total metrics summing up read/write ops/IO across all devices.
 - action: copy_metrics
   mapping:
-    system.disk.operations: sf_temp.system.disk.operations.total
-    system.disk.io: sf_temp.system.disk.io.total
+    system.disk.operations.read: sf_temp.system.disk.operations.read
+    system.disk.operations.write: sf_temp.system.disk.operations.write
+
+- action: add_dimensions
+  metric_name: sf_temp.system.disk.operations.read
+  dimension_pairs:
+    direction:
+      read: true
+- action: add_dimensions
+  metric_name: sf_temp.system.disk.operations.write
+  dimension_pairs:
+    direction:
+      write: true
+
+- action: copy_metrics
+  mapping:
+    sf_temp.system.disk.operations.read: sf_temp.system.disk.operations.total
+    sf_temp.system.disk.operations.write: sf_temp.system.disk.operations.total
+
 - action: aggregate_metric
   metric_name: sf_temp.system.disk.operations.total
-  aggregation_method: sum
-  without_dimensions:
-    - device
-- action: aggregate_metric
-  metric_name: sf_temp.system.disk.io.total
   aggregation_method: sum
   without_dimensions:
     - device
@@ -310,16 +321,42 @@ translation_rules:
 ## Calculate an extra disk_ops.total metric as number all all read and write operations happened since the last report.
 - action: copy_metrics
   mapping:
-    system.disk.operations: sf_temp.disk.ops
+    sf_temp.system.disk.operations.total: sf_temp.disk.ops
 - action: aggregate_metric
   metric_name: sf_temp.disk.ops
   aggregation_method: sum
   without_dimensions:
     - direction
-    - device
 - action: delta_metric
   mapping:
     sf_temp.disk.ops: disk_ops.total
+
+- action: copy_metrics
+  mapping:
+    system.disk.io.read: sf_temp.system.disk.io.read
+    system.disk.io.write: sf_temp.system.disk.io.write
+
+- action: add_dimensions
+  metric_name: sf_temp.system.disk.io.read
+  dimension_pairs:
+    direction:
+      read: true
+- action: add_dimensions
+  metric_name: sf_temp.system.disk.io.write
+  dimension_pairs:
+      direction:
+        write: true
+
+- action: copy_metrics
+  mapping:
+    sf_temp.system.disk.io.read: sf_temp.system.disk.io.total
+    sf_temp.system.disk.io.write: sf_temp.system.disk.io.total
+
+- action: aggregate_metric
+  metric_name: sf_temp.system.disk.io.total
+  aggregation_method: sum
+  without_dimensions:
+    - device
 
 - action: delta_metric
   mapping:
@@ -330,33 +367,65 @@ translation_rules:
 ## Calculate extra network I/O metrics system.network.packets.total and system.network.io.total.
 - action: copy_metrics
   mapping:
-    system.network.packets: sf_temp.system.network.packets.total
-    system.network.io: sf_temp.system.network.io.total
+    system.network.packets.receive: sf_temp.system.network.packets.receive
+    system.network.packets.transmit: sf_temp.system.network.packets.transmit
+    system.network.io.receive: sf_temp.system.network.io.receive
+    system.network.io.transmit: sf_temp.system.network.io.transmit
+
+- action: add_dimensions
+  metric_name: sf_temp.system.network.packets.receive
+  dimension_pairs:
+    direction:
+      receive: true
+- action: add_dimensions
+  metric_name: sf_temp.system.network.packets.transmit
+  dimension_pairs:
+    direction:
+      transmit: true
+- action: copy_metrics
+  mapping:
+    sf_temp.system.network.packets.receive: sf_temp.system.network.packets.total
+    sf_temp.system.network.packets.transmit: sf_temp.system.network.packets.total
+
 - action: aggregate_metric
   metric_name: sf_temp.system.network.packets.total
   aggregation_method: sum
   without_dimensions:
   - device
+
+- action: add_dimensions
+  metric_name: sf_temp.system.network.io.receive
+  dimension_pairs:
+    direction:
+      receive: true
+- action: add_dimensions
+  metric_name: sf_temp.system.network.io.transmit
+  dimension_pairs:
+    direction:
+      transmit: true
+
+# Need two copies of metrics, one for aggregating with directions, one for total aggregation.
+- action: copy_metrics
+  mapping:
+    sf_temp.system.network.io.receive: sf_temp.system.network.io.total
+    sf_temp.system.network.io.transmit: sf_temp.system.network.io.total
+
 - action: aggregate_metric
   metric_name: sf_temp.system.network.io.total
   aggregation_method: sum
   without_dimensions:
   - device
 
-## Calculate extra network.total metric.
 - action: copy_metrics
   mapping:
-    system.network.io: sf_temp.network.total
-  dimension_key: direction
-  dimension_values:
-    receive: true
-    transmit: true
+    sf_temp.system.network.io.total: sf_temp.network.total
+
+## Calculate extra network.total metric.
 - action: aggregate_metric
   metric_name: sf_temp.network.total
   aggregation_method: sum
   without_dimensions:
   - direction
-  - device
 
 # memory utilization
 - action: calculate_new_metric
@@ -370,22 +439,20 @@ translation_rules:
     sf_temp.memory.utilization: 100
 
 # Virtual memory metrics
-- action: split_metric
-  metric_name: system.paging.operations
-  dimension_key: direction
+- action: copy_metrics
   mapping:
-    page_in: sf_temp.system.paging.operations.page_in
-    page_out: sf_temp.system.paging.operations.page_out
+    system.paging.operations.in: sf_temp.system.paging.operations.in
+    system.paging.operations.out: sf_temp.system.paging.operations.out
 
 - action: split_metric
-  metric_name: sf_temp.system.paging.operations.page_in
+  metric_name: sf_temp.system.paging.operations.in
   dimension_key: type
   mapping:
     major: vmpage_io.swap.in
     minor: vmpage_io.memory.in
 
 - action: split_metric
-  metric_name: sf_temp.system.paging.operations.page_out
+  metric_name: sf_temp.system.paging.operations.out
   dimension_key: type
   mapping:
     major: vmpage_io.swap.out
@@ -450,9 +517,17 @@ translation_rules:
     sf_temp.system.cpu.delta: true
     sf_temp.system.cpu.total: true
     sf_temp.system.cpu.usage: true
+    sf_temp.system.disk.io.read: true
+    sf_temp.system.disk.io.write: true
+    sf_temp.system.disk.operations.read: true
+    sf_temp.system.disk.operations.write: true
     sf_temp.system.filesystem.usage: true
     sf_temp.system.memory.usage: true
-    sf_temp.system.paging.operations.page_in: true
-    sf_temp.system.paging.operations.page_out: true
+    sf_temp.system.network.packets.receive: true
+    sf_temp.system.network.packets.transmit: true
+    sf_temp.system.network.io.receive: true
+    sf_temp.system.network.io.transmit: true
+    sf_temp.system.paging.operations.in: true
+    sf_temp.system.paging.operations.out: true
 `
 )

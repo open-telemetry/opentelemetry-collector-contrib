@@ -2959,6 +2959,382 @@ func TestDropDimensionsErrorCases(t *testing.T) {
 	}
 }
 
+func TestAddDimensions(t *testing.T) {
+	tests := []struct {
+		name        string
+		rules       []Rule
+		inputDps    []*sfxpb.DataPoint
+		expectedDps []*sfxpb.DataPoint
+	}{
+		{
+			name: "Add dimensions to metrics that match specified metric names",
+			rules: []Rule{
+				{
+					Action:     ActionAddDimensions,
+					MetricName: "/metric.*/",
+					MetricNames: map[string]bool{
+						"testmetric": true,
+					},
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "metrik1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "testmetric",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+				{
+					Metric:     "metrik1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric: "testmetric",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Add dimensions to all metrics without filtering by metric name",
+			rules: []Rule{
+				{
+					Action: ActionAddDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric:     "metric1",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "metric2",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+				{
+					Metric:     "testmetric",
+					Dimensions: []*sfxpb.Dimension{},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+				{
+					Metric: "testmetric",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Ensure metrics are unchanged if given names don't matches",
+			rules: []Rule{
+				{
+					Action:     ActionAddDimensions,
+					MetricName: "foo",
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Ensure dimensions are added even if dimension key:value already exists",
+			rules: []Rule{
+				{
+					Action: ActionAddDimensions,
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			inputDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+			expectedDps: []*sfxpb.DataPoint{
+				{
+					Metric: "metric1",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+					},
+				},
+				{
+					Metric: "metric2",
+					Dimensions: []*sfxpb.Dimension{
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key2",
+							Value: "dim_val2",
+						},
+						{
+							Key:   "dim_key1",
+							Value: "dim_val1",
+						},
+						{
+							Key:   "dim_key1",
+							Value: "dim_val2",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mt, err := NewMetricTranslator(test.rules, 1)
+			require.NoError(t, err)
+			outputSFxDps := mt.TranslateDataPoints(zap.NewNop(), test.inputDps)
+			require.Equal(t, len(test.expectedDps), len(outputSFxDps))
+
+			for _, outputDp := range outputSFxDps {
+				for _, expectedDp := range test.expectedDps {
+					// Need to make sure dimensions match for right metrics.
+					if outputDp.Metric == expectedDp.Metric {
+						// Input dimension format is a map, so we can't guarantee order. This
+						// check doesn't assume order.
+						require.True(t, dimensionsEqual(outputDp.Dimensions, expectedDp.Dimensions))
+					}
+				}
+			}
+		})
+	}
+}
+
+func TestAddDimensionsErrorCases(t *testing.T) {
+	tests := []struct {
+		name          string
+		rules         []Rule
+		expectedError string
+	}{
+		{
+			name: "Test with invalid metric name pattern",
+			rules: []Rule{
+				{
+					Action:     ActionAddDimensions,
+					MetricName: "/metric.*(/",
+					DimensionPairs: map[string]map[string]bool{
+						"dim_key1": nil,
+						"dim_key2": {
+							"dim_val1": true,
+							"dim_val2": true,
+						},
+					},
+				},
+			},
+			expectedError: "failed creating metric matcher: error parsing regexp: missing closing ): `metric.*(`",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mt, err := NewMetricTranslator(test.rules, 1)
+			require.EqualError(t, err, test.expectedError)
+			require.Nil(t, mt)
+		})
+	}
+}
+
 func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {
 	rules := []Rule{{
 		Action:  ActionDeltaMetric,

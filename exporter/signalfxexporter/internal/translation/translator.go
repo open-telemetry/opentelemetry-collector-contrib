@@ -136,6 +136,20 @@ const (
 	//   dimension_pairs:
 	//     dim_key1:
 	ActionDropDimensions Action = "drop_dimensions"
+
+	// ActionAddDimensions will add specified dimensions. If no corresponding metric is provided, the
+	// dimensions will be added globally to all datapoints. If no value is provided with dimension, an empty
+	// string will be the default value.
+	// - action: add_dimensions
+	//   metric_names:
+	//     system.disk.io
+	//   dimension_pairs:
+	//     dim_key1: value1
+	//     dim_key2:
+	// - action: add_dimensions
+	//   dimension_pairs:
+	//     dim_key1:
+	ActionAddDimensions Action = "add_dimensions"
 )
 
 type MetricOperator string
@@ -221,8 +235,8 @@ type Rule struct {
 	Operand2Metric string         `mapstructure:"operand2_metric"`
 	Operator       MetricOperator `mapstructure:"operator"`
 
-	// DimensionPairs used by "drop_dimensions" translation rule to specify dimension pairs that
-	// should be dropped.
+	// DimensionPairs used by the "drop_dimensions" and "add_dimensions" translation rules to specify dimension pairs
+	// that should be dropped or added, respectively.
 	DimensionPairs map[string]map[string]bool `mapstructure:"dimension_pairs"`
 
 	metricMatcher *dpfilters.StringFilter
@@ -352,6 +366,10 @@ func validateTranslationRules(rules []Rule) error {
 			if len(tr.DimensionPairs) == 0 {
 				return fmt.Errorf(`field "dimension_pairs" is required for %q translation rule`, tr.Action)
 			}
+		case ActionAddDimensions:
+			if len(tr.DimensionPairs) == 0 {
+				return fmt.Errorf(`field "dimension_pairs" is required for %q translation rule`, tr.Action)
+			}
 		default:
 			return fmt.Errorf("unknown \"action\" value: %q", tr.Action)
 		}
@@ -372,7 +390,7 @@ func createDimensionsMap(rules []Rule) map[string]string {
 
 func processRules(rules []Rule) error {
 	for i, tr := range rules {
-		if tr.Action == ActionDropDimensions {
+		if tr.Action == ActionDropDimensions || tr.Action == ActionAddDimensions {
 			// Set metric name filter, if metric name(s) are specified on the rule.
 			// When "drop_dimensions" actions is not scoped to a metric name, the
 			// specified dimensions will be globally dropped from all datapoints
@@ -544,6 +562,11 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 		case ActionDropDimensions:
 			for _, dp := range processedDataPoints {
 				dropDimensions(dp, tr)
+			}
+
+		case ActionAddDimensions:
+			for _, dp := range processedDataPoints {
+				addDimensions(dp, tr)
 			}
 		}
 	}
@@ -862,6 +885,23 @@ func dropDimensions(dp *sfxpb.DataPoint, rule Rule) {
 		return
 	}
 	dp.Dimensions = processedDimensions
+}
+
+func addDimensions(dp *sfxpb.DataPoint, rule Rule) {
+	if rule.metricMatcher != nil && !rule.metricMatcher.Matches(dp.Metric) {
+		return
+	}
+
+	for dimName, dimValueMap := range rule.DimensionPairs {
+		if len(dimValueMap) == 0 {
+			dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: dimName, Value: ""})
+		} else {
+			for dimVal := range dimValueMap {
+				dp.Dimensions = append(dp.Dimensions, &sfxpb.Dimension{Key: dimName, Value: dimVal})
+			}
+		}
+
+	}
 }
 
 func filterDimensionsByValues(
