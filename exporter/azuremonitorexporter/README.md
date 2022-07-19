@@ -1,6 +1,6 @@
 # Azure Monitor Exporter
 
-This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/en-us/azure/azure-monitor/).
+This exporter sends logs and trace data to [Azure Monitor](https://docs.microsoft.com/azure/azure-monitor/).
 
 ## Configuration
 
