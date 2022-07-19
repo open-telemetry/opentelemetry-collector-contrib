@@ -16,6 +16,7 @@ package oauth2clientauthextension
 
 import (
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -40,20 +41,20 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	expected := factory.CreateDefaultConfig().(*Config)
-	expected.ClientSecret = "someclientsecret"
-	expected.ClientID = "someclientid"
+	expected.ClientSecret = ValueValueFrom{Value: "someclientsecret"}
+	expected.ClientID = ValueValueFrom{Value: "someclientid"}
 	expected.Scopes = []string{"api.metrics"}
-	expected.TokenURL = "https://example.com/oauth2/default/v1/token"
+	expected.TokenURL = ValueValueFrom{Value: "https://example.com/oauth2/default/v1/token"}
 
 	ext := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			ClientSecret:      "someclientsecret",
-			ClientID:          "someclientid",
+			ClientSecret:      ValueValueFrom{Value: "someclientsecret"},
+			ClientID:          ValueValueFrom{Value: "someclientid"},
 			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
 			Scopes:            []string{"api.metrics"},
-			TokenURL:          "https://example.com/oauth2/default/v1/token",
+			TokenURL:          ValueValueFrom{Value: "https://example.com/oauth2/default/v1/token"},
 			Timeout:           time.Second,
 		},
 		ext)
@@ -116,5 +117,107 @@ func TestLoadConfigError(t *testing.T) {
 		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
 		verr := extension.Validate()
 		require.ErrorIs(t, verr, tt.expectedErr)
+	}
+}
+
+func TestEnv(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_env.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.ClientSecret = ValueValueFrom{ValueFrom: ValueFrom{Env: "someclientsecret"}}
+	expected.ClientID = ValueValueFrom{ValueFrom: ValueFrom{Env: "someclientid"}}
+	expected.Scopes = []string{"api.metrics"}
+	expected.TokenURL = ValueValueFrom{ValueFrom: ValueFrom{Env: "https://example.com/oauth2/default/v1/token"}}
+
+	ext := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
+	assert.Equal(t,
+		&Config{
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			ClientSecret:      ValueValueFrom{ValueFrom: ValueFrom{Env: "someclientsecret"}},
+			ClientID:          ValueValueFrom{ValueFrom: ValueFrom{Env: "someclientid"}},
+			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
+			Scopes:            []string{"api.metrics"},
+			TokenURL:          ValueValueFrom{ValueFrom: ValueFrom{Env: "https://example.com/oauth2/default/v1/token"}},
+			Timeout:           time.Second,
+		},
+		ext)
+
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestFile(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Extensions[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_file.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.ClientSecret = ValueValueFrom{ValueFrom: ValueFrom{File: "someclientsecret"}}
+	expected.ClientID = ValueValueFrom{ValueFrom: ValueFrom{File: "someclientid"}}
+	expected.Scopes = []string{"api.metrics"}
+	expected.TokenURL = ValueValueFrom{ValueFrom: ValueFrom{File: "https://example.com/oauth2/default/v1/token"}}
+
+	ext := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
+	assert.Equal(t,
+		&Config{
+			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
+			ClientSecret:      ValueValueFrom{ValueFrom: ValueFrom{File: "someclientsecret"}},
+			ClientID:          ValueValueFrom{ValueFrom: ValueFrom{File: "someclientid"}},
+			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
+			Scopes:            []string{"api.metrics"},
+			TokenURL:          ValueValueFrom{ValueFrom: ValueFrom{File: "https://example.com/oauth2/default/v1/token"}},
+			Timeout:           time.Second,
+		},
+		ext)
+
+	assert.Equal(t, 2, len(cfg.Service.Extensions))
+	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
+}
+
+func TestParse(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	os.Setenv("TEST", "someclientid")
+	defer os.Unsetenv("TEST")
+
+	tests := []struct {
+		entry    ValueValueFrom
+		expected string
+	}{
+		{
+			entry:    ValueValueFrom{ValueFrom: ValueFrom{Env: "TEST"}},
+			expected: "someclientid",
+		},
+		{
+			entry:    ValueValueFrom{Value: "someclientid2"},
+			expected: "someclientid2",
+		},
+		{
+			entry:    ValueValueFrom{ValueFrom: ValueFrom{File: filepath.Join("testdata", "testfile")}},
+			expected: "someclientid3",
+		},
+	}
+	for _, tt := range tests {
+		factory := NewFactory()
+		factories.Extensions[typeStr] = factory
+		cfg := factory.CreateDefaultConfig().(*Config)
+		actual, err := cfg.Parse(tt.entry)
+		assert.Equal(t, tt.expected, actual)
+		assert.Equal(t, nil, err)
 	}
 }

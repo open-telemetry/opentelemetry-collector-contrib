@@ -47,14 +47,29 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 var errFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == (ValueValueFrom{}) {
 		return nil, errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == (ValueValueFrom{}) {
 		return nil, errNoClientSecretProvided
 	}
-	if cfg.TokenURL == "" {
+	if cfg.TokenURL == (ValueValueFrom{}) {
 		return nil, errNoTokenURLProvided
+	}
+
+	clientId, err := cfg.Parse(cfg.ClientID)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSecret, err := cfg.Parse(cfg.ClientSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenURL, err := cfg.Parse(cfg.TokenURL)
+	if err != nil {
+		return nil, err
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
@@ -67,9 +82,9 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 
 	return &clientAuthenticator{
 		clientCredentials: &clientcredentials.Config{
-			ClientID:       cfg.ClientID,
-			ClientSecret:   cfg.ClientSecret,
-			TokenURL:       cfg.TokenURL,
+			ClientID:       clientId,
+			ClientSecret:   clientSecret,
+			TokenURL:       tokenURL,
 			Scopes:         cfg.Scopes,
 			EndpointParams: cfg.EndpointParams,
 		},

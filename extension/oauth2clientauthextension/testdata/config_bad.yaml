@@ -1,17 +1,23 @@
 extensions:
   oauth2client/missingid:
-    client_secret: someclientsecret
-    token_url: https://example.com/oauth2/default/v1/token
+    client_secret: 
+      value: someclientsecret
+    token_url: 
+      value: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
   oauth2client/missingsecret:
-    client_id: someclientid
-    token_url: https://example.com/oauth2/default/v1/token
+    client_id: 
+      value: someclientid
+    token_url: 
+      value: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
 
   oauth2client/missingurl:
-    client_id: someclientid
-    client_secret: someclientsecret
+    client_id: 
+      value: someclientid
+    client_secret: 
+      value: someclientsecret
     scopes: ["api.metrics"]
 
 # Data pipeline is required to load the config.

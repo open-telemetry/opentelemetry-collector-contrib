@@ -50,9 +50,9 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "valid_settings",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
+				ClientID:     ValueValueFrom{Value: "testclientid"},
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
+				TokenURL:     ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError: false,
@@ -60,8 +60,8 @@ func TestCreateExtension(t *testing.T) {
 		{
 			name: "invalid_client_settings_should_error",
 			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
+				ClientID: ValueValueFrom{Value: "testclientid"},
+				TokenURL: ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError: true,

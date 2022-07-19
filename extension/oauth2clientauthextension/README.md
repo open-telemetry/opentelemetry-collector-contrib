@@ -17,11 +17,17 @@ The authenticator type has to be set to `oauth2client`.
 ```yaml
 extensions:
   oauth2client:
-    client_id: someclientid
-    client_secret: someclientsecret
+  # 'client_id','client_secret' and 'token_url' values can be given directly using 'value' or loaded from environment variables\files using 'value_from'. examples for all 3 given below
+    client_id: 
+      value_from: 
+        env: someenvvar
+    client_secret: 
+      value_from:
+        file: somefs\somefile\someclientsecret
     endpoint_params:
       audience: someaudience
-    token_url: https://example.com/oauth2/default/v1/token
+    token_url: # can either be value or value_from
+      value: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     # tls settings for the token client
     tls:

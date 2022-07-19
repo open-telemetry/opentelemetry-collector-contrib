@@ -1,11 +1,14 @@
 extensions:
   oauth2client/1:
     client_id: 
-      value: someclientid
+      valueFrom: 
+        file: someclientid
     client_secret: 
-      value: someclientsecret
+      valueFrom: 
+        file: someclientsecret
     token_url: 
-      value: https://example.com/oauth2/default/v1/token
+      valueFrom: 
+        file: https://example.com/oauth2/default/v1/token
     endpoint_params:
       audience: someaudience
     scopes: ["api.metrics"]
@@ -13,11 +16,14 @@ extensions:
 
   oauth2client/withtls:
     client_id: 
-      value: someclientid2
+      valueFrom: 
+        file: someclientid
     client_secret: 
-      value: someclientsecret2
-    token_url:
-      value: https://example2.com/oauth2/default/v1/token
+      valueFrom: 
+        file: someclientsecret
+    token_url: 
+      valueFrom: 
+        file: https://example.com/oauth2/default/v1/token
     scopes: ["api.metrics"]
     timeout: 1s
     # tls settings for the token client

@@ -16,7 +16,9 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"os"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -35,11 +37,11 @@ type Config struct {
 
 	// ClientID is the application's ID.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
-	ClientID string `mapstructure:"client_id"`
+	ClientID ValueValueFrom `mapstructure:"client_id"`
 
 	// ClientSecret is the application's secret.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientSecret ValueValueFrom `mapstructure:"client_secret"`
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
 	EndpointParams url.Values `mapstructure:"endpoint_params"`
@@ -47,7 +49,7 @@ type Config struct {
 	// TokenURL is the resource server's token endpoint
 	// URL. This is a constant specific to each server.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-3.2
-	TokenURL string `mapstructure:"token_url"`
+	TokenURL ValueValueFrom `mapstructure:"token_url"`
 
 	// Scope specifies optional requested permissions.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-3.3
@@ -61,18 +63,55 @@ type Config struct {
 	Timeout time.Duration `mapstructure:"timeout,omitempty"`
 }
 
+type ValueValueFrom struct {
+	Value     string    `mapstructure:"value,omitempty"`
+	ValueFrom ValueFrom `mapstructure:"value_from,omitempty"`
+}
+
+type ValueFrom struct {
+	File string `mapstructure:"file,omitempty"`
+	Env  string `mapstructure:"env,omitempty"`
+}
+
 var _ config.Extension = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == (ValueValueFrom{}) {
 		return errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == (ValueValueFrom{}) {
 		return errNoClientSecretProvided
 	}
-	if cfg.TokenURL == "" {
+	if cfg.TokenURL == (ValueValueFrom{}) {
 		return errNoTokenURLProvided
 	}
 	return nil
+}
+
+func (cfg *Config) Parse(entry ValueValueFrom) (string, error) {
+	value := ""
+
+	if entry.Value != "" {
+		value = entry.Value
+	}
+
+	if entry.ValueFrom != (ValueFrom{}) {
+		if entry.ValueFrom.Env != "" {
+			val, ok := os.LookupEnv(entry.ValueFrom.Env)
+			if !ok {
+				return val, fmt.Errorf("environment variable %s does not exist", entry.ValueFrom.Env)
+			}
+			value = val
+		}
+		if entry.ValueFrom.File != "" {
+			content, err := os.ReadFile(entry.ValueFrom.File)
+			if err != nil {
+				return value, err
+			}
+			value = string(content)
+		}
+	}
+
+	return value, nil
 }
