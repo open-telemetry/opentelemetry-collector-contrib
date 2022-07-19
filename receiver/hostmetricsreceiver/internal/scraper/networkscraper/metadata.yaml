@@ -177,4 +177,3 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
-  
