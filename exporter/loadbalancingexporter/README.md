@@ -24,7 +24,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `resolver` accepts either a `static` node, or a `dns`. If both are specified, `dns` takes precedence.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts an optional property `port` to specify the port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
-
+* The `routing_key` can be used to configure different kinds of routing mechanisms. This functionality is available for `trace_exporter`. You can either route your signals based on service name based routing or trace id based routing. For service based routing the configuration is `routing_key: "service"` and for trace id based routing the configuration is `routing_key:"traceID"`. If you don't specify any value, the default is `traceID`  
 
 Simple example
 ```yaml

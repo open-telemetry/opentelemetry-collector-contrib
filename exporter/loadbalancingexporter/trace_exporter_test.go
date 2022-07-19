@@ -136,7 +136,7 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceId)
+	assert.Equal(t, p.routingKey, traceIdRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
@@ -370,7 +370,7 @@ func TestNoTracesInBatch(t *testing.T) {
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
-			traceId,
+			traceIdRouting,
 		},
 		{
 			"no instrumentation library spans",
@@ -379,7 +379,7 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
-			traceId,
+			traceIdRouting,
 		},
 		{
 			"no spans",
@@ -394,7 +394,7 @@ func TestNoTracesInBatch(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			res, err := routingIdentifierFromTraces(tt.batch, tt.routingKey)
 			assert.Equal(t, err, errors.New("invalid trace id"))
-			assert.Equal(t, res, []byte(nil))
+			assert.Equal(t, res, map[string]bool(nil))
 		})
 	}
 }

@@ -42,8 +42,9 @@ var (
 type traceExporterImp struct {
 	loadBalancer loadBalancer
 	routingKey   routingKey
-	stopped      bool
-	shutdownWg   sync.WaitGroup
+
+	stopped    bool
+	shutdownWg sync.WaitGroup
 }
 
 // Create new traces exporter
@@ -62,8 +63,10 @@ func newTracesExporter(params component.ExporterCreateSettings, cfg config.Expor
 	switch cfg.(*Config).RoutingKey {
 	case "service":
 		r = svcRouting
-	default:
-		r = traceId
+	case "traceID":
+		r = traceIdRouting
+	case "":
+		r = traceIdRouting
 	}
 	return &traceExporterImp{
 		loadBalancer: lb,
@@ -103,40 +106,41 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	routingId, err := routingIdentifierFromTraces(td, e.routingKey)
+	routingIds, err := routingIdentifierFromTraces(td, e.routingKey)
 	if err != nil {
 		return err
 	}
+	for rid := range routingIds {
+		endpoint := e.loadBalancer.Endpoint([]byte(rid))
+		exp, err := e.loadBalancer.Exporter(endpoint)
+		if err != nil {
+			return err
+		}
 
-	endpoint := e.loadBalancer.Endpoint(routingId)
-	exp, err := e.loadBalancer.Exporter(endpoint)
-	if err != nil {
-		return err
+		te, ok := exp.(component.TracesExporter)
+		if !ok {
+			expectType := (*component.TracesExporter)(nil)
+			return fmt.Errorf("expected %T but got %T", expectType, exp)
+		}
+
+		start := time.Now()
+		err = te.ConsumeTraces(ctx, td)
+		duration := time.Since(start)
+		ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
+
+		if err == nil {
+			sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
+			stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
+		} else {
+			fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
+			stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
+		}
 	}
-
-	te, ok := exp.(component.TracesExporter)
-	if !ok {
-		expectType := (*component.TracesExporter)(nil)
-		return fmt.Errorf("expected %T but got %T", expectType, exp)
-	}
-
-	start := time.Now()
-	err = te.ConsumeTraces(ctx, td)
-	duration := time.Since(start)
-	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
-
-	if err == nil {
-		sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
-		stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
-	} else {
-		fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
-		stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
-	}
-
 	return err
 }
 
-func routingIdentifierFromTraces(td ptrace.Traces, key routingKey) ([]byte, error) {
+func routingIdentifierFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
+	ids := make(map[string]bool)
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
 		return nil, errors.New("invalid trace id")
@@ -154,13 +158,18 @@ func routingIdentifierFromTraces(td ptrace.Traces, key routingKey) ([]byte, erro
 
 	switch key {
 	case svcRouting:
-		svc, ok := rs.At(0).Resource().Attributes().Get("service.name")
-		if !ok {
-			return nil, errors.New("unable to get service name")
+		for i := 0; i < rs.Len(); i++ {
+			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
+			if !ok {
+				return nil, errors.New(fmt.Sprintf("unable to get service name"))
+			}
+			ids[svc.StringVal()] = true
 		}
-		return []byte(svc.StringVal()), nil
-	default:
+		return ids, nil
+	case traceIdRouting:
 		tid := spans.At(0).TraceID().Bytes()
-		return tid[:], nil
+		ids[string(tid[:])] = true
+		return ids, nil
 	}
+	return nil, nil
 }
