@@ -16,6 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sync"
@@ -168,7 +169,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 	timer := time.NewTimer(handler.ackBatchWait)
 	for {
 		if err := handler.acknowledgeMessages(); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				handler.logger.Warn("EOF reached")
 				break
 			}
@@ -181,7 +182,7 @@ func (handler *StreamHandler) requestStream(ctx context.Context, cancel context.
 		case <-timer.C:
 			timer.Reset(handler.ackBatchWait)
 		}
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			_ = handler.acknowledgeMessages()
 			timer.Stop()
 			break
@@ -211,7 +212,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 		} else {
 			var s, grpcStatus = status.FromError(err)
 			switch {
-			case err == io.EOF:
+			case errors.Is(err, io.EOF):
 				activeStreaming = false
 			case !grpcStatus:
 				handler.logger.Warn("response stream breaking on error",
@@ -231,7 +232,7 @@ func (handler *StreamHandler) responseStream(ctx context.Context, cancel context
 				activeStreaming = false
 			}
 		}
-		if ctx.Err() == context.Canceled {
+		if errors.Is(ctx.Err(), context.Canceled) {
 			// Canceling the loop, collector is probably stopping
 			handler.logger.Warn("response stream ctx.Err() == context.Canceled")
 			break

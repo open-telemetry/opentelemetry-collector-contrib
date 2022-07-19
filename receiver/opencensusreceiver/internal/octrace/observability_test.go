@@ -42,7 +42,9 @@ import (
 func TestEnsureRecordedMetrics(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), tt.ToReceiverCreateSettings())
 	defer doneReceiverFn()
@@ -64,7 +66,9 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), tt.ToReceiverCreateSettings())
 	defer doneFn()
@@ -85,7 +89,9 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	otel.SetTracerProvider(tt.TracerProvider)
 	defer otel.SetTracerProvider(trace.NewNoopTracerProvider())

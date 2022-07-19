@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -55,7 +55,7 @@ func TestIntegration(t *testing.T) {
 
 	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
+	unmarshaller := pmetric.NewJSONUnmarshaler()
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)
 	require.NoError(t, err)
 

@@ -21,7 +21,7 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -83,11 +83,11 @@ func (ms *metricsStore) remove(obj runtime.Object) error {
 }
 
 // getMetricData returns metricsCache stored in the cache at a given point in time.
-func (ms *metricsStore) getMetricData(currentTime time.Time) pdata.Metrics {
+func (ms *metricsStore) getMetricData(currentTime time.Time) pmetric.Metrics {
 	ms.RLock()
 	defer ms.RUnlock()
 
-	out := pdata.NewMetrics()
+	out := pmetric.NewMetrics()
 	for _, mds := range ms.metricsCache {
 		for i := range mds {
 			// Set datapoint timestamp to be time of retrieval from cache.

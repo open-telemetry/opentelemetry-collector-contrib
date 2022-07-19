@@ -29,6 +29,8 @@ import (
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
 	typeStr config.Type = "groupbyattrs"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var (
@@ -47,9 +49,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

@@ -151,12 +151,14 @@ func TestGetNodeStats(t *testing.T) {
 
 		if strings.Contains(r.URL.Path, "/invalid_json") {
 			w.WriteHeader(200)
-			w.Write([]byte(`{"}`))
+			_, err := w.Write([]byte(`{"}`))
+			require.NoError(t, err)
 			return
 		}
 		if strings.Contains(r.URL.Path, "/_stats/couchdb") {
 			w.WriteHeader(200)
-			w.Write([]byte(`{"key":["value"]}`))
+			_, err := w.Write([]byte(`{"key":["value"]}`))
+			require.NoError(t, err)
 			return
 		}
 		w.WriteHeader(404)

@@ -27,6 +27,8 @@ import (
 const (
 	// typeStr is the value of "type" Span processor in the configuration.
 	typeStr = "span"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 const (
@@ -53,7 +55,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {

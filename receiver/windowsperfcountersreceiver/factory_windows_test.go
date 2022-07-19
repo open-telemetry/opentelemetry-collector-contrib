@@ -28,10 +28,10 @@ import (
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []PerfCounterConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []CounterConfig{{Name: "counter", Metric: "metric"}},
+			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 

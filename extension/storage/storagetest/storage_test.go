@@ -15,24 +15,15 @@
 package storagetest
 
 import (
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewStorageHost(t *testing.T) {
-	host := NewStorageHost(t, newTempDir(t), "test")
+	host := NewStorageHost(t, t.TempDir(), "test")
 	require.Equal(t, 1, len(host.GetExtensions()))
 
-	hostWithTwo := NewStorageHost(t, newTempDir(t), "one", "two")
+	hostWithTwo := NewStorageHost(t, t.TempDir(), "one", "two")
 	require.Equal(t, 2, len(hostWithTwo.GetExtensions()))
-}
-
-func newTempDir(tb testing.TB) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(tb, err)
-	tb.Cleanup(func() { os.RemoveAll(tempDir) })
-	return tempDir
 }

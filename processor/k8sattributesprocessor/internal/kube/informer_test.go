@@ -127,7 +127,7 @@ func Test_fakeInformer(t *testing.T) {
 	i.HasSynced()
 	i.LastSyncResourceVersion()
 	store := i.GetStore()
-	store.Add(api_v1.Pod{})
+	assert.NoError(t, store.Add(api_v1.Pod{}))
 }
 
 func Test_fakeNamespaceInformer(t *testing.T) {
@@ -139,5 +139,5 @@ func Test_fakeNamespaceInformer(t *testing.T) {
 	i.HasSynced()
 	i.LastSyncResourceVersion()
 	store := i.GetStore()
-	store.Add(api_v1.Namespace{})
+	assert.NoError(t, store.Add(api_v1.Namespace{}))
 }

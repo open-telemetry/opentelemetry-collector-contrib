@@ -58,7 +58,7 @@ func (obs *observerHandler) shutdown() error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("shutdown on %d receivers failed: %v", len(errs), multierr.Combine(errs...))
+		return fmt.Errorf("shutdown on %d receivers failed: %w", len(errs), multierr.Combine(errs...))
 	}
 
 	return nil

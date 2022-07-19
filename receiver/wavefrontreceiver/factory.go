@@ -32,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "wavefront"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for WaveFront receiver.
@@ -39,7 +41,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

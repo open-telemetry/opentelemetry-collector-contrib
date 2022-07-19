@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeKubeConfig},
 			Passthrough:       false,
 			Extract: ExtractConfig{
-				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.cluster.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
+				Metadata: []string{"k8s.pod.name", "k8s.pod.uid", "k8s.deployment.name", "k8s.namespace.name", "k8s.node.name", "k8s.pod.start_time"},
 				Annotations: []FieldExtractConfig{
 					{TagName: "a1", Key: "annotation-one", From: "pod"},
 					{TagName: "a2", Key: "annotation-two", Regex: "field=(?P<value>.+)", From: kube.MetadataFromPod},
@@ -84,21 +84,38 @@ func TestLoadConfig(t *testing.T) {
 			},
 			Association: []PodAssociationConfig{
 				{
-					From: "resource_attribute",
-					Name: "ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "ip",
+						},
+					},
 				},
 				{
-					From: "resource_attribute",
-					Name: "k8s.pod.ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "k8s.pod.ip",
+						},
+					},
 				},
 				{
-					From: "resource_attribute",
-					Name: "host.name",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "resource_attribute",
+							Name: "host.name",
+						},
+					},
 				},
 				{
-					From: "connection",
-					Name: "ip",
+					Sources: []PodAssociationSourceConfig{
+						{
+							From: "connection",
+							Name: "ip",
+						},
+					},
 				},
+				// Deprecated way
 				{
 					From: "resource_attribute",
 					Name: "k8s.pod.uid",

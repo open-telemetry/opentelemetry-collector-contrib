@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	typeStr = "zookeeper"
+	typeStr   = "zookeeper"
+	stability = component.StabilityLevelInDevelopment
 
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 
@@ -64,7 +65,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
-	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
+	zms, err := newZookeeperMetricsScraper(params, rConfig)
 	if err != nil {
 		return nil, err
 	}

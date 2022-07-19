@@ -1,0 +1,3 @@
+type: file_input
+multiline:
+  line_start_pattern: 'Start'

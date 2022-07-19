@@ -22,7 +22,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -178,7 +180,7 @@ type customLogsUnmarshaler struct {
 
 var _ TracesUnmarshaler = (*customTracesUnmarshaler)(nil)
 
-func (c customTracesUnmarshaler) Unmarshal([]byte) (pdata.Traces, error) {
+func (c customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
 	panic("implement me")
 }
 
@@ -186,7 +188,7 @@ func (c customTracesUnmarshaler) Encoding() string {
 	return "custom"
 }
 
-func (c customMetricsUnmarshaler) Unmarshal([]byte) (pdata.Metrics, error) {
+func (c customMetricsUnmarshaler) Unmarshal([]byte) (pmetric.Metrics, error) {
 	panic("implement me")
 }
 
@@ -194,7 +196,7 @@ func (c customMetricsUnmarshaler) Encoding() string {
 	return "custom"
 }
 
-func (c customLogsUnmarshaler) Unmarshal([]byte) (pdata.Logs, error) {
+func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
 	panic("implement me")
 }
 

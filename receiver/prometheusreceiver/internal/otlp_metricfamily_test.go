@@ -24,7 +24,8 @@ import (
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -92,36 +93,40 @@ var mc = byLookupMetadataCache{
 
 func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 	type scrape struct {
-		at     int64
-		value  float64
-		metric string
+		at         int64
+		value      float64
+		metric     string
+		extraLabel labels.Label
 	}
 	tests := []struct {
 		name                string
 		metricName          string
 		labels              labels.Labels
 		scrapes             []*scrape
-		want                func() pdata.HistogramDataPoint
+		want                func() pmetric.HistogramDataPoint
+		wantErr             bool
 		intervalStartTimeMs int64
 	}{
 		{
-			name:                "histogram with startTimestamp of 11",
+			name:                "histogram with startTimestamp",
 			metricName:          "histogram",
 			intervalStartTimeMs: 11,
-			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
 			scrapes: []*scrape{
-				{at: 11, value: 10, metric: "histogram_count"},
+				{at: 11, value: 66, metric: "histogram_count"},
 				{at: 11, value: 1004.78, metric: "histogram_sum"},
-				{at: 13, value: 33.7, metric: "value"},
+				{at: 11, value: 33, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
+				{at: 11, value: 55, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
+				{at: 11, value: 66, metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
 			},
-			want: func() pdata.HistogramDataPoint {
-				point := pdata.NewHistogramDataPoint()
-				point.SetCount(10)
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetCount(66)
 				point.SetSum(1004.78)
-				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetBucketCounts([]uint64{33})
-				point.SetExplicitBounds([]float64{})
-				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
+				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{33, 22, 11}))
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -132,41 +137,72 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			name:                "histogram that is stale",
 			metricName:          "histogram_stale",
 			intervalStartTimeMs: 11,
-			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
 			scrapes: []*scrape{
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
-				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "0.75"}},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "2.75"}},
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_bucket", extraLabel: labels.Label{Name: "le", Value: "+Inf"}},
 			},
-			want: func() pdata.HistogramDataPoint {
-				point := pdata.NewHistogramDataPoint()
-				point.SetTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+			want: func() pmetric.HistogramDataPoint {
+				point := pmetric.NewHistogramDataPoint()
+				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				point.SetFlags(pdataStaleFlags)
-				point.SetBucketCounts([]uint64{0})
-				point.SetExplicitBounds([]float64{})
-				point.SetStartTimestamp(pdata.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
+				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0}))
+				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
 				return point
 			},
 		},
+		{
+			name:                "histogram with inconsistent timestamps",
+			metricName:          "histogram_inconsistent_ts",
+			intervalStartTimeMs: 11,
+			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			scrapes: []*scrape{
+				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
+				{at: 12, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
+				{at: 13, value: math.Float64frombits(value.StaleNaN), metric: "value"},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricName, mc, zap.NewNop())
-			for _, tv := range tt.scrapes {
-				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
+			mp := newMetricFamily(tt.metricName, mc, zap.NewNop())
+			for i, tv := range tt.scrapes {
+				var lbls labels.Labels
+				if tv.extraLabel.Name != "" {
+					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels()
+				} else {
+					lbls = tt.labels.Copy()
+				}
+				err := mp.Add(tv.metric, lbls, tv.at, tv.value)
+				if tt.wantErr {
+					if i != 0 {
+						require.Error(t, err)
+					}
+				} else {
+					require.NoError(t, err)
+				}
+			}
+			if tt.wantErr {
+				// Don't check the result if we got an error
+				return
 			}
 
 			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			sl := pdata.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			sl := pmetric.NewMetricSlice()
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -196,19 +232,27 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 	tests := []struct {
 		name          string
 		labelsScrapes []*labelsScrapes
-		want          func() pdata.SummaryDataPoint
+		want          func() pmetric.SummaryDataPoint
+		wantErr       bool
 	}{
 		{
 			name: "summary",
 			labelsScrapes: []*labelsScrapes{
 				{
 					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 14, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
+					},
+				},
+				{
+					labels: labels.Labels{
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "summary_count"},
-						{at: 10, value: 12, metric: "summary_sum"},
-						{at: 10, value: 8, metric: "value"},
+						{at: 14, value: 8, metric: "value"},
 					},
 				},
 				{
@@ -216,9 +260,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "summary_count"},
-						{at: 11, value: 1004.78, metric: "summary_sum"},
-						{at: 11, value: 33.7, metric: "value"},
+						{at: 14, value: 33.7, metric: "value"},
 					},
 				},
 				{
@@ -226,9 +268,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "summary_count"},
-						{at: 12, value: 13, metric: "summary_sum"},
-						{at: 12, value: 27, metric: "value"},
+						{at: 14, value: 27, metric: "value"},
 					},
 				},
 				{
@@ -236,9 +276,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "summary_count"},
-						{at: 13, value: 14, metric: "summary_sum"},
-						{at: 13, value: 56, metric: "value"},
+						{at: 14, value: 56, metric: "value"},
 					},
 				},
 				{
@@ -246,14 +284,12 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 14, value: 10, metric: "summary_count"},
-						{at: 14, value: 15, metric: "summary_sum"},
 						{at: 14, value: 82, metric: "value"},
 					},
 				},
 			},
-			want: func() pdata.SummaryDataPoint {
-				point := pdata.NewSummaryDataPoint()
+			want: func() pmetric.SummaryDataPoint {
+				point := pmetric.NewSummaryDataPoint()
 				point.SetCount(10)
 				point.SetSum(15)
 				qtL := point.QuantileValues()
@@ -272,8 +308,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(82)
-				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -288,9 +324,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 10, value: 10, metric: "summary_stale_count"},
-						{at: 10, value: 12, metric: "summary_stale_sum"},
-						{at: 10, value: 8, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 12, metric: "summary_stale_sum"},
+						{at: 14, value: 8, metric: "value"},
 					},
 				},
 				{
@@ -298,9 +334,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 11, value: 10, metric: "summary_stale_count"},
-						{at: 11, value: 1004.78, metric: "summary_stale_sum"},
-						{at: 11, value: 33.7, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 1004.78, metric: "summary_stale_sum"},
+						{at: 14, value: 33.7, metric: "value"},
 					},
 				},
 				{
@@ -308,9 +344,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 12, value: 10, metric: "summary_stale_count"},
-						{at: 12, value: 13, metric: "summary_stale_sum"},
-						{at: 12, value: 27, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 13, metric: "summary_stale_sum"},
+						{at: 14, value: 27, metric: "value"},
 					},
 				},
 				{
@@ -318,9 +354,9 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
 					},
 					scrapes: []*scrape{
-						{at: 13, value: 10, metric: "summary_stale_count"},
-						{at: 13, value: 14, metric: "summary_stale_sum"},
-						{at: 13, value: 56, metric: "value"},
+						{at: 14, value: 10, metric: "summary_stale_count"},
+						{at: 14, value: 14, metric: "summary_stale_sum"},
+						{at: 14, value: 56, metric: "value"},
 					},
 				},
 				{
@@ -334,8 +370,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 					},
 				},
 			},
-			want: func() pdata.SummaryDataPoint {
-				point := pdata.NewSummaryDataPoint()
+			want: func() pmetric.SummaryDataPoint {
+				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
 				point.SetFlags(pdataStaleFlags)
@@ -353,24 +389,51 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				qn99 := qtL.AppendEmpty()
 				qn99.SetQuantile(.99)
 				qn99.SetValue(0)
-				point.SetTimestamp(pdata.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pdata.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
+				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
 				return point
 			},
 		},
+		{
+			name: "summary with inconsistent timestamps",
+			labelsScrapes: []*labelsScrapes{
+				{
+					labels: labels.Labels{
+						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
+					},
+					scrapes: []*scrape{
+						{at: 11, value: 10, metric: "summary_count"},
+						{at: 14, value: 15, metric: "summary_sum"},
+					},
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.name, mc, zap.NewNop())
+			mp := newMetricFamily(tt.name, mc, zap.NewNop())
 			for _, lbs := range tt.labelsScrapes {
-				for _, scrape := range lbs.scrapes {
-					require.NoError(t, mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value))
+				for i, scrape := range lbs.scrapes {
+					err := mp.Add(scrape.metric, lbs.labels.Copy(), scrape.at, scrape.value)
+					if tt.wantErr {
+						// The first scrape won't have an error
+						if i != 0 {
+							require.Error(t, err)
+						}
+					} else {
+						require.NoError(t, err)
+					}
 				}
+			}
+			if tt.wantErr {
+				// Don't check the result if we got an error
+				return
 			}
 
 			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
@@ -381,8 +444,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			}
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			sl := pdata.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			sl := pmetric.NewMetricSlice()
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -410,7 +473,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 		labels                   labels.Labels
 		scrapes                  []*scrape
 		intervalStartTimestampMs int64
-		want                     func() pdata.NumberDataPoint
+		want                     func() pmetric.NumberDataPoint
 	}{
 		{
 			metricKind:               "counter",
@@ -420,11 +483,11 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 			},
-			want: func() pdata.NumberDataPoint {
-				point := pdata.NewNumberDataPoint()
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
 				point.SetDoubleVal(33.7)
-				point.SetTimestamp(pdata.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pdata.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -439,11 +502,11 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			scrapes: []*scrape{
 				{at: 28, value: 99.9, metric: "value"},
 			},
-			want: func() pdata.NumberDataPoint {
-				point := pdata.NewNumberDataPoint()
+			want: func() pmetric.NumberDataPoint {
+				point := pmetric.NewNumberDataPoint()
 				point.SetDoubleVal(99.9)
-				point.SetTimestamp(pdata.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
-				point.SetStartTimestamp(pdata.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
+				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
+				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
 				attributes.InsertString("a", "A")
 				attributes.InsertString("b", "B")
@@ -455,7 +518,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			mp := newMetricFamilyPdata(tt.metricKind, mc, zap.NewNop())
+			mp := newMetricFamily(tt.metricKind, mc, zap.NewNop())
 			for _, tv := range tt.scrapes {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
@@ -464,8 +527,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			groupKey := mp.getGroupKey(tt.labels.Copy())
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
-			sl := pdata.NewMetricSlice()
-			mp.ToMetricPdata(&sl)
+			sl := pmetric.NewMetricSlice()
+			mp.ToMetric(&sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)

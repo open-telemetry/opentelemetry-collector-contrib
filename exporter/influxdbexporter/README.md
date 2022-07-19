@@ -1,8 +1,12 @@
 # InfluxDB Exporter
 
-This exporter supports sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/).
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | [contrib]             |
 
-Supported pipeline types: traces, metrics, logs
+This exporter supports sending tracing, metrics, and logging data to [InfluxDB](https://www.influxdata.com/products/).
 
 ## Configuration
 
@@ -115,3 +119,6 @@ logs fluent.tag="fluent.info",pid=18i,ppid=9i,worker=0i 1613769568895331700
 logs fluent.tag="fluent.debug",instance=1720i,queue_size=0i,stage_size=0i 1613769568895697200
 logs fluent.tag="fluent.info",worker=0i 1613769568896515100
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

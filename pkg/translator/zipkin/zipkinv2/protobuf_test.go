@@ -19,7 +19,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestProtobufMarshalUnmarshal(t *testing.T) {
@@ -39,7 +39,7 @@ func TestProtobuf_UnmarshalTracesError(t *testing.T) {
 }
 
 func TestProtobuf_MarshalTracesError(t *testing.T) {
-	invalidTD := pdata.NewTraces()
+	invalidTD := ptrace.NewTraces()
 	// Add one span with empty trace ID.
 	invalidTD.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	marshaler := NewProtobufTracesMarshaler()

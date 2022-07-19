@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
@@ -50,7 +50,7 @@ func (mgp *metricsGenerationProcessor) Start(context.Context, component.Host) er
 }
 
 // processMetrics implements the ProcessMetricsFunc type.
-func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (mgp *metricsGenerationProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {

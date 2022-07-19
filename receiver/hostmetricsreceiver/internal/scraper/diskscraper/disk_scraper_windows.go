@@ -21,10 +21,13 @@ import (
 
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
@@ -50,8 +53,9 @@ const (
 
 // scraper for Disk Metrics
 type scraper struct {
+	settings  component.ReceiverCreateSettings
 	config    *Config
-	startTime pdata.Timestamp
+	startTime pcommon.Timestamp
 	mb        *metadata.MetricsBuilder
 	includeFS filterset.FilterSet
 	excludeFS filterset.FilterSet
@@ -59,12 +63,16 @@ type scraper struct {
 	perfCounterScraper perfcounters.PerfCounterScraper
 
 	// for mocking
-	bootTime func() (uint64, error)
+	bootTime                             func() (uint64, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newDiskScraper creates a Disk Scraper
-func newDiskScraper(_ context.Context, cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime}
+func newDiskScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime}
+	scraper.emitMetricsWithDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID)
+	scraper.emitMetricsWithoutDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
 
 	var err error
 
@@ -91,23 +99,23 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.startTime = pdata.Timestamp(bootTime * 1e9)
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(s.startTime))
+	s.startTime = pcommon.Timestamp(bootTime * 1e9)
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(s.startTime))
 
 	return s.perfCounterScraper.Initialize(logicalDisk)
 }
 
-func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
-	now := pdata.NewTimestampFromTime(time.Now())
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	counters, err := s.perfCounterScraper.Scrape()
 	if err != nil {
-		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	logicalDiskObject, err := counters.GetObject(logicalDisk)
 	if err != nil {
-		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	// filter devices by name
@@ -115,7 +123,7 @@ func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 	logicalDiskCounterValues, err := logicalDiskObject.GetValues(readsPerSec, writesPerSec, readBytesPerSec, writeBytesPerSec, idleTime, avgDiskSecsPerRead, avgDiskSecsPerWrite, queueLength)
 	if err != nil {
-		return pdata.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
+		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
 	if len(logicalDiskCounterValues) > 0 {
@@ -129,35 +137,53 @@ func (s *scraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func (s *scraper) recordDiskIOMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func (s *scraper) recordDiskIOMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
-		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+			s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		}
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemDiskIoReadDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName)
+			s.mb.RecordSystemDiskIoWriteDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName)
+		}
 	}
 }
 
-func (s *scraper) recordDiskOperationsMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func (s *scraper) recordDiskOperationsMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
-		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+			s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		}
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemDiskOperationsReadDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName)
+			s.mb.RecordSystemDiskOperationsWriteDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName)
+		}
 	}
 }
 
-func (s *scraper) recordDiskIOTimeMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func (s *scraper) recordDiskIOTimeMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
 		// disk active time = system boot time - disk idle time
 		s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7, logicalDiskCounter.InstanceName)
 	}
 }
 
-func (s *scraper) recordDiskOperationTimeMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func (s *scraper) recordDiskOperationTimeMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirection.Read)
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirection.Write)
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+			s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		}
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemDiskOperationTimeReadDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName)
+			s.mb.RecordSystemDiskOperationTimeWriteDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName)
+		}
 	}
 }
 
-func (s *scraper) recordDiskPendingOperationsMetric(now pdata.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+func (s *scraper) recordDiskPendingOperationsMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
 		s.mb.RecordSystemDiskPendingOperationsDataPoint(now, logicalDiskCounter.Values[queueLength], logicalDiskCounter.InstanceName)
 	}

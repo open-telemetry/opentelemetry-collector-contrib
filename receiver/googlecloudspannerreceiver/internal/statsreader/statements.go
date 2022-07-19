@@ -60,7 +60,7 @@ func currentStatsStatement(args statementArgs) statsStatement {
 func intervalStatsStatement(args statementArgs) statsStatement {
 	stmt := currentStatsStatement(args)
 
-	if len(stmt.statement.Params) <= 0 {
+	if len(stmt.statement.Params) == 0 {
 		stmt.statement.Params = map[string]interface{}{}
 	}
 

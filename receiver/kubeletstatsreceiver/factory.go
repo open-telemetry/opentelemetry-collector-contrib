@@ -27,10 +27,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	kube "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
 const (
 	typeStr            = "kubeletstats"
+	stability          = component.StabilityLevelBeta
 	metricGroupsConfig = "metric_groups"
 )
 
@@ -45,7 +47,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -59,6 +61,7 @@ func createDefaultConfig() config.Receiver {
 				AuthType: k8sconfig.AuthTypeTLS,
 			},
 		},
+		Metrics: metadata.DefaultMetricsSettings(),
 	}
 }
 
@@ -78,7 +81,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scrp, err := newKubletScraper(rest, set, rOptions)
+	scrp, err := newKubletScraper(rest, set, rOptions, cfg.Metrics)
 	if err != nil {
 		return nil, err
 	}

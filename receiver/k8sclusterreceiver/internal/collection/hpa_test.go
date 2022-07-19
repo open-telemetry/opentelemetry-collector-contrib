@@ -40,7 +40,6 @@ func TestHPAMetrics(t *testing.T) {
 			"k8s.hpa.uid":        "test-hpa-1-uid",
 			"k8s.hpa.name":       "test-hpa-1",
 			"k8s.namespace.name": "test-namespace",
-			"k8s.cluster.name":   "test-cluster",
 		},
 	)
 
@@ -61,10 +60,9 @@ func newHPA(id string) *autoscalingv2beta2.HorizontalPodAutoscaler {
 	minReplicas := int32(2)
 	return &autoscalingv2beta2.HorizontalPodAutoscaler{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-hpa-" + id,
-			Namespace:   "test-namespace",
-			UID:         types.UID("test-hpa-" + id + "-uid"),
-			ClusterName: "test-cluster",
+			Name:      "test-hpa-" + id,
+			Namespace: "test-namespace",
+			UID:       types.UID("test-hpa-" + id + "-uid"),
 		},
 		Status: autoscalingv2beta2.HorizontalPodAutoscalerStatus{
 			CurrentReplicas: 5,

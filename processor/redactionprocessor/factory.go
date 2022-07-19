@@ -27,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "redaction"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the redaction processor.
@@ -34,7 +36,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
 	)
 }
 

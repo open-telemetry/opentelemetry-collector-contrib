@@ -22,7 +22,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/dotnet"
 )
@@ -36,7 +37,7 @@ func TestMeanMetricToPdata(t *testing.T) {
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
 	assert.EqualValues(t, 0, pt.StartTimestamp())
-	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
 	assert.Equal(t, 0.5, pt.DoubleVal())
 }
 
@@ -50,12 +51,12 @@ func TestSumMetricToPdata(t *testing.T) {
 	pts := sum.DataPoints()
 	assert.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
-	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(42, 0)), pt.StartTimestamp())
-	assert.Equal(t, pdata.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(42, 0)), pt.StartTimestamp())
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.Unix(111, 0)), pt.Timestamp())
 	assert.Equal(t, 262672.0, pt.DoubleVal())
 }
 
-func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pdata.Metric {
+func testMetricConversion(t *testing.T, metricFile int, expectedName string, expectedUnits string) pmetric.Metric {
 	rm := readTestdataMetric(metricFile)
 	pdms := rawMetricsToPdata([]dotnet.Metric{rm}, time.Unix(42, 0), time.Unix(111, 0))
 	rms := pdms.ResourceMetrics()

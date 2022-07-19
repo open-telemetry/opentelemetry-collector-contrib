@@ -40,7 +40,6 @@ func TestRequestQuotaMetrics(t *testing.T) {
 			"k8s.resourcequota.uid":  "test-resourcequota-1-uid",
 			"k8s.resourcequota.name": "test-resourcequota-1",
 			"k8s.namespace.name":     "test-namespace",
-			"k8s.cluster.name":       "test-cluster",
 		},
 	)
 
@@ -54,10 +53,9 @@ func TestRequestQuotaMetrics(t *testing.T) {
 func newResourceQuota(id string) *corev1.ResourceQuota {
 	return &corev1.ResourceQuota{
 		ObjectMeta: v1.ObjectMeta{
-			Name:        "test-resourcequota-" + id,
-			UID:         types.UID("test-resourcequota-" + id + "-uid"),
-			ClusterName: "test-cluster",
-			Namespace:   "test-namespace",
+			Name:      "test-resourcequota-" + id,
+			UID:       types.UID("test-resourcequota-" + id + "-uid"),
+			Namespace: "test-namespace",
 			Labels: map[string]string{
 				"foo":  "bar",
 				"foo1": "",

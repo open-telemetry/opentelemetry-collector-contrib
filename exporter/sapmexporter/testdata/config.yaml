@@ -24,6 +24,8 @@ exporters:
 
     access_token_passthrough: false
 
+    log_detailed_response: true
+
     timeout: 10s
     sending_queue:
       enabled: true

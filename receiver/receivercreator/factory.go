@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -28,7 +28,8 @@ import (
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.
 
 const (
-	typeStr = "receiver_creator"
+	typeStr   = "receiver_creator"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for receiver creator.
@@ -36,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

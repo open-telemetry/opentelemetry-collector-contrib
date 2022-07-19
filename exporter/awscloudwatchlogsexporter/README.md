@@ -1,5 +1,11 @@
 # AWS CloudWatch Logs Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 AWS CloudWatch Logs Exporter sends logs data to AWS [CloudWatch Logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/WhatIsCloudWatchLogs.html).
 AWS credentials are retrieved from the [default credential chain](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html#specifying-credentials).
 Region must be configured in the configuration if not set in the default credential chain.
@@ -44,3 +50,6 @@ exporters:
       enabled: true
       initial_interval: 10ms
 ```
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

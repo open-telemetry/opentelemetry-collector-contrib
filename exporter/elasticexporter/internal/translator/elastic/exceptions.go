@@ -72,8 +72,7 @@ func encodeExceptionSpanEvent(
 }
 
 func setExceptionStacktrace(s, language string, out *model.Exception) error {
-	switch language {
-	case "java":
+	if language == "java" {
 		return setJavaExceptionStacktrace(s, out)
 	}
 	return fmt.Errorf("parsing %q stacktraces not implemented", language)

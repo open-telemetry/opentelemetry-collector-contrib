@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -36,7 +36,7 @@ func TestScrape(t *testing.T) {
 	cfg.Password = "otel"
 	cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
 
-	scraper := newMySQLScraper(zap.NewNop(), cfg)
+	scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	scraper.sqlclient = &mockClient{}
 
 	actualMetrics, err := scraper.scrape(context.Background())

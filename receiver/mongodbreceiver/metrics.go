@@ -21,7 +21,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -29,7 +29,7 @@ import (
 )
 
 // DBStats
-func (s *mongodbScraper) recordCollections(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	collectionsPath := []string{"collections"}
 	collections, err := dig(doc, collectionsPath)
 	if err != nil {
@@ -44,7 +44,7 @@ func (s *mongodbScraper) recordCollections(now pdata.Timestamp, doc bson.M, dbNa
 	s.mb.RecordMongodbCollectionCountDataPoint(now, collectionsVal, dbName)
 }
 
-func (s *mongodbScraper) recordDataSize(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	dataSizePath := []string{"dataSize"}
 	dataSize, err := dig(doc, dataSizePath)
 	if err != nil {
@@ -59,7 +59,7 @@ func (s *mongodbScraper) recordDataSize(now pdata.Timestamp, doc bson.M, dbName 
 	s.mb.RecordMongodbDataSizeDataPoint(now, dataSizeVal, dbName)
 }
 
-func (s *mongodbScraper) recordStorageSize(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	storageSizePath := []string{"storageSize"}
 	storageSize, err := dig(doc, storageSizePath)
 	if err != nil {
@@ -74,7 +74,7 @@ func (s *mongodbScraper) recordStorageSize(now pdata.Timestamp, doc bson.M, dbNa
 	s.mb.RecordMongodbStorageSizeDataPoint(now, storageSizeValue, dbName)
 }
 
-func (s *mongodbScraper) recordObjectCount(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	objectsPath := []string{"objects"}
 	objects, err := dig(doc, objectsPath)
 	if err != nil {
@@ -89,7 +89,7 @@ func (s *mongodbScraper) recordObjectCount(now pdata.Timestamp, doc bson.M, dbNa
 	s.mb.RecordMongodbObjectCountDataPoint(now, objectsVal, dbName)
 }
 
-func (s *mongodbScraper) recordIndexCount(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	indexesPath := []string{"indexes"}
 	indexes, err := dig(doc, indexesPath)
 	if err != nil {
@@ -104,7 +104,7 @@ func (s *mongodbScraper) recordIndexCount(now pdata.Timestamp, doc bson.M, dbNam
 	s.mb.RecordMongodbIndexCountDataPoint(now, indexesVal, dbName)
 }
 
-func (s *mongodbScraper) recordIndexSize(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	indexSizePath := []string{"indexSize"}
 	indexSize, err := dig(doc, indexSizePath)
 	if err != nil {
@@ -119,7 +119,7 @@ func (s *mongodbScraper) recordIndexSize(now pdata.Timestamp, doc bson.M, dbName
 	s.mb.RecordMongodbIndexSizeDataPoint(now, indexSizeVal, dbName)
 }
 
-func (s *mongodbScraper) recordExtentCount(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	extentsPath := []string{"numExtents"}
 	extents, err := dig(doc, extentsPath)
 	if err != nil {
@@ -135,14 +135,9 @@ func (s *mongodbScraper) recordExtentCount(now pdata.Timestamp, doc bson.M, dbNa
 }
 
 // ServerStatus
-func (s *mongodbScraper) recordConnections(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	types := []string{
-		metadata.AttributeConnectionType.Active,
-		metadata.AttributeConnectionType.Available,
-		metadata.AttributeConnectionType.Current,
-	}
-	for _, ct := range types {
-		connKey := []string{"connections", ct}
+func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+	for ctVal, ct := range metadata.MapAttributeConnectionType {
+		connKey := []string{"connections", ctVal}
 		conn, err := dig(doc, connKey)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -158,13 +153,9 @@ func (s *mongodbScraper) recordConnections(now pdata.Timestamp, doc bson.M, dbNa
 	}
 }
 
-func (s *mongodbScraper) recordMemoryUsage(now pdata.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	types := []string{
-		metadata.AttributeMemoryType.Resident,
-		metadata.AttributeMemoryType.Virtual,
-	}
-	for _, mt := range types {
-		memKey := []string{"mem", mt}
+func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+	for mtVal, mt := range metadata.MapAttributeMemoryType {
+		memKey := []string{"mem", mtVal}
 		mem, err := dig(doc, memKey)
 		if err != nil {
 			errors.AddPartial(1, err)
@@ -183,20 +174,13 @@ func (s *mongodbScraper) recordMemoryUsage(now pdata.Timestamp, doc bson.M, dbNa
 }
 
 // Admin Stats
-func (s *mongodbScraper) recordOperations(now pdata.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
 	// Collect Operations
-	for _, operation := range []string{
-		metadata.AttributeOperation.Insert,
-		metadata.AttributeOperation.Query,
-		metadata.AttributeOperation.Update,
-		metadata.AttributeOperation.Delete,
-		metadata.AttributeOperation.Getmore,
-		metadata.AttributeOperation.Command,
-	} {
-		count, err := dig(doc, []string{"opcounters", operation})
+	for operationVal, operation := range metadata.MapAttributeOperation {
+		count, err := dig(doc, []string{"opcounters", operationVal})
 		if err != nil {
 			errors.AddPartial(1, err)
-			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operation))
+			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operationVal))
 			continue
 		}
 		countVal, err := parseInt(count)
@@ -209,7 +193,7 @@ func (s *mongodbScraper) recordOperations(now pdata.Timestamp, doc bson.M, error
 	}
 }
 
-func (s *mongodbScraper) recordCacheOperations(now pdata.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
 	// Collect Cache Hits & Misses
 	canCalculateCacheHits := true
 
@@ -224,7 +208,7 @@ func (s *mongodbScraper) recordCacheOperations(now pdata.Timestamp, doc bson.M, 
 	if err != nil {
 		errors.AddPartial(1, err)
 	} else {
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissesValue, metadata.AttributeType.Miss)
+		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissesValue, metadata.AttributeTypeMiss)
 	}
 
 	tcr, err := dig(doc, []string{"wiredTiger", "cache", "pages requested from the cache"})
@@ -242,11 +226,11 @@ func (s *mongodbScraper) recordCacheOperations(now pdata.Timestamp, doc bson.M, 
 
 	if canCalculateCacheHits && totalCacheReqs > cacheMissesValue {
 		cacheHits := totalCacheReqs - cacheMissesValue
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeType.Hit)
+		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
 	}
 }
 
-func (s *mongodbScraper) recordGlobalLockTime(now pdata.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
 	var heldTimeUs int64
 
 	// Mongo version greater than or equal to 4.0 have it in the serverStats at "globalLock", "totalTime"

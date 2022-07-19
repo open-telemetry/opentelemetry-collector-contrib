@@ -15,6 +15,7 @@
 // This file includes software developed at Datadog (https://www.datadoghq.com/)
 // for the Datadog Agent (https://github.com/DataDog/datadog-agent)
 
+// nolint:gocritic
 package valid // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/valid"
 
 import (

@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -168,14 +168,14 @@ func Test_resourceEnhancer_ConsumeMetrics(t *testing.T) {
 	}
 	type args struct {
 		ctx context.Context
-		md  pdata.Metrics
+		md  pmetric.Metrics
 	}
 	tests := []struct {
 		name    string
 		fields  fields
 		args    args
 		wantErr bool
-		want    pdata.Metrics
+		want    pmetric.Metrics
 	}{
 		{
 			name: "insert",
@@ -188,14 +188,14 @@ func Test_resourceEnhancer_ConsumeMetrics(t *testing.T) {
 			},
 			args: args{
 				ctx: context.Background(),
-				md: func() pdata.Metrics {
-					md := pdata.NewMetrics()
+				md: func() pmetric.Metrics {
+					md := pmetric.NewMetrics()
 					md.ResourceMetrics().AppendEmpty()
 					return md
 				}(),
 			},
-			want: func() pdata.Metrics {
-				md := pdata.NewMetrics()
+			want: func() pmetric.Metrics {
+				md := pmetric.NewMetrics()
 				attr := md.ResourceMetrics().AppendEmpty().Resource().Attributes()
 				attr.InsertString("key1", "value1")
 				attr.InsertString("key2", "value2")

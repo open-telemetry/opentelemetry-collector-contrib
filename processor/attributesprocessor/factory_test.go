@@ -67,7 +67,7 @@ func TestFactoryCreateTracesProcessor_InvalidActions(t *testing.T) {
 	}
 	ap2, err2 := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
 	assert.Error(t, err2)
-	assert.Equal(t, "error creating \"attributes\" processor: error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action of processor attributes", err2.Error())
+	assert.Equal(t, "error creating \"attributes\" processor attributes: error creating AttrProc due to invalid value \"array\" in field \"converted_type\" for action \"convert\" at the 0-th action", err2.Error())
 	assert.Nil(t, ap2)
 }
 

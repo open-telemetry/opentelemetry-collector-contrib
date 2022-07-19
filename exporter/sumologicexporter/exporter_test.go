@@ -27,11 +27,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func LogRecordsToLogs(records []pdata.LogRecord) pdata.Logs {
-	logs := pdata.NewLogs()
+func LogRecordsToLogs(records []plog.LogRecord) plog.Logs {
+	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
 		tgt := logsSlice.AppendEmpty()

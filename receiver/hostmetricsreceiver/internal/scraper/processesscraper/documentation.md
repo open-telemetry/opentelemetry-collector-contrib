@@ -22,6 +22,6 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| status | Breakdown status of the processes. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | Breakdown status of the processes. | blocked, daemon, detached, idle, locked, orphan, paging, running, sleeping, stopped, system, unknown, zombies |

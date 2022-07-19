@@ -85,7 +85,7 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 	go func() {
 		defer h.shutdownWG.Done()
 
-		if err := h.srv.Serve(hln); err != http.ErrServerClosed && err != nil {
+		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			host.ReportFatalError(err)
 		}
 	}()
@@ -109,21 +109,21 @@ func (h *SamplingHTTPServer) samplingStrategyHandler(rw http.ResponseWriter, r *
 
 	resp, err := h.strategyStore.GetSamplingStrategy(r.Context(), svc)
 	if err != nil {
-		err = fmt.Errorf("failed to get sampling strategy for service %q: %v", svc, err)
+		err = fmt.Errorf("failed to get sampling strategy for service %q: %w", svc, err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	jsonBytes, err := json.Marshal(resp)
 	if err != nil {
-		err = fmt.Errorf("cannot convert sampling strategy to JSON: %v", err)
+		err = fmt.Errorf("cannot convert sampling strategy to JSON: %w", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	rw.Header().Add("Content-Type", "application/json")
 	if _, err := rw.Write(jsonBytes); err != nil {
-		err = fmt.Errorf("cannot write response to client: %v", err)
+		err = fmt.Errorf("cannot write response to client: %w", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}

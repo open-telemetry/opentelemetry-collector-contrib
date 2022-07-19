@@ -14,6 +14,7 @@
 
 // Package elasticsearchexporter contains an opentelemetry-collector exporter
 // for Elasticsearch.
+// nolint:errcheck
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -28,7 +29,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	esutil7 "github.com/elastic/go-elasticsearch/v7/esutil"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -94,7 +96,7 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs) error {
+func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	var errs []error
 
 	rls := ld.ResourceLogs()
@@ -119,7 +121,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld pdata.Logs)
 	return multierr.Combine(errs...)
 }
 
-func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pdata.Resource, record pdata.LogRecord) error {
+func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord) error {
 	document, err := e.model.encodeLog(resource, record)
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)

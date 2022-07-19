@@ -34,7 +34,7 @@ Currently, metrics from the OpenTelemetry SDKs cannot be exported to Prometheus 
 
 To overcome this gap in the Collector pipeline, we had proposed 2 different solutions:
 
-1. Add a [metric aggregation processor](https://github.com/open-telemetry/opentelemetry-collector/issues/1422) to the collector pipeline to aggregate delta values into cumulative values for cumulative backends. This solution requires users to set up a collector agent next to each SDK to make sure delta values are aggregated correctly.
+1. Add a [metric aggregation processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4968) to the collector pipeline to aggregate delta values into cumulative values for cumulative backends. This solution requires users to set up a collector agent next to each SDK to make sure delta values are aggregated correctly.
 2. Require the OTLP exporters in SDKs to [send cumulative values for cumulative metric types to the Collector by default](https://github.com/open-telemetry/opentelemetry-specification/issues/731). Therefore, no aggregation of delta metric values is required in the Collector pipeline for Prometheus/storage backends to properly process the data. 
 
 **Gap 2:**
@@ -280,7 +280,7 @@ We will follow test-driven development practices while completing this project. 
 
 
 ## **Request for Feedback**
-We'd like to get some feedback on whether we made the appropriate assumptions in [this](#1.2-gaps-and-assumptions) section, and appreciate more comments, updates , and suggestions on the topic.
+We'd like to get some feedback on whether we made the appropriate assumptions in [this](#12-gaps-and-assumptions) section, and appreciate more comments, updates , and suggestions on the topic.
 
 Please let us know if there are any revisions, technical or informational, necessary for this document. Thank you!
 

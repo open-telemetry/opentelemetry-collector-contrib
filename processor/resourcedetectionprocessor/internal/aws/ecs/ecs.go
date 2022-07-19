@@ -17,12 +17,13 @@ package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil/endpoints"
@@ -44,7 +45,8 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
-		if _, ok := err.(endpoints.ErrNoTaskMetadataEndpointDetected); ok {
+		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
+		if errors.As(err, &errNTMED) {
 			return &Detector{provider: nil}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
@@ -54,8 +56,8 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
 // TODO(willarmiros): Replace all attribute fields and enums with values defined in "conventions" once they exist
-func (d *Detector) Detect(context.Context) (resource pdata.Resource, schemaURL string, err error) {
-	res := pdata.NewResource()
+func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+	res := pcommon.NewResource()
 
 	// don't attempt to fetch metadata if there's no provider (incompatible env)
 	if d.provider == nil {
@@ -147,11 +149,11 @@ func parseRegionAndAccount(taskARN string) (region string, account string) {
 // "init" containers which only run at startup then shutdown (as indicated by the "KnownStatus" attribute),
 // containers not using AWS Logs, and those without log group metadata to get the final lists of valid log data
 // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint-v4.html#task-metadata-endpoint-v4-response
-func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string) [4]pdata.Value {
-	logGroupNames := pdata.NewValueSlice()
-	logGroupArns := pdata.NewValueSlice()
-	logStreamNames := pdata.NewValueSlice()
-	logStreamArns := pdata.NewValueSlice()
+func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.ContainerMetadata, account string) [4]pcommon.Value {
+	logGroupNames := pcommon.NewValueSlice()
+	logGroupArns := pcommon.NewValueSlice()
+	logStreamNames := pcommon.NewValueSlice()
+	logStreamArns := pcommon.NewValueSlice()
 
 	for _, container := range containers {
 		logData := container.LogOptions
@@ -168,7 +170,7 @@ func getValidLogData(containers []ecsutil.ContainerMetadata, self *ecsutil.Conta
 		}
 	}
 
-	return [4]pdata.Value{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
+	return [4]pcommon.Value{logGroupNames, logGroupArns, logStreamNames, logStreamArns}
 }
 
 func constructLogGroupArn(region, account, group string) string {

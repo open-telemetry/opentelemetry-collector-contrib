@@ -1,0 +1,7 @@
+type: file_input
+include:
+  - "*.log"
+exclude:
+  - one.log
+  - two.log
+  - three.log

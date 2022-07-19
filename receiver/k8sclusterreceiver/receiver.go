@@ -16,6 +16,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -68,7 +69,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 			// If the context times out, set initialSyncTimedOut and report a fatal error. Currently
 			// this timeout is 10 minutes, which appears to be long enough.
-			if timedContextForInitialSync.Err() == context.DeadlineExceeded {
+			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
 				host.ReportFatalError(fmt.Errorf("failed to start receiver: %v", kr.config.ID()))
@@ -114,8 +115,13 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
 	set component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
-	resourceWatcher := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport, config.AllocatableTypesToReport, defaultInitialSyncTimeout)
+	client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
+) (component.MetricsReceiver, error) {
+	resourceWatcher, err := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport,
+		config.AllocatableTypesToReport, defaultInitialSyncTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to setup the receiver: %w", err)
+	}
 
 	return &kubernetesReceiver{
 		resourceWatcher: resourceWatcher,

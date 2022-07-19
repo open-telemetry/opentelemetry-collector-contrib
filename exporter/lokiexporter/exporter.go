@@ -32,10 +32,12 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
@@ -44,11 +46,12 @@ const (
 )
 
 type lokiExporter struct {
-	config   *Config
-	settings component.TelemetrySettings
-	client   *http.Client
-	wg       sync.WaitGroup
-	convert  func(pdata.LogRecord, pdata.Resource) (*logproto.Entry, error)
+	config       *Config
+	settings     component.TelemetrySettings
+	client       *http.Client
+	wg           sync.WaitGroup
+	convert      func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
+	tenantSource tenant.Source
 }
 
 func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
@@ -56,18 +59,41 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 		config:   config,
 		settings: settings,
 	}
+
 	if config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 	} else {
 		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
 	}
+
+	if config.Tenant == nil {
+		config.Tenant = &Tenant{
+			Source: "static",
+
+			// this might be empty, which is fine, we handle empty later
+			Value: config.TenantID,
+		}
+	}
+
+	switch config.Tenant.Source {
+	case "static":
+		lokiexporter.tenantSource = &tenant.StaticTenantSource{
+			Value: config.Tenant.Value,
+		}
+	case "context":
+		lokiexporter.tenantSource = &tenant.ContextTenantSource{
+			Key: config.Tenant.Value,
+		}
+	case "attributes":
+		lokiexporter.tenantSource = &tenant.AttributeTenantSource{
+			Value: config.Tenant.Value,
+		}
+	}
+
 	return lokiexporter
 }
 
-func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
-	l.wg.Add(1)
-	defer l.wg.Done()
-
+func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	pushReq, _ := l.logDataToLoki(ld)
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
@@ -88,8 +114,13 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld pdata.Logs) error {
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
-	if len(l.config.TenantID) > 0 {
-		req.Header.Set("X-Scope-OrgID", l.config.TenantID)
+	tenant, err := l.tenantSource.GetTenant(ctx, ld)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to determine the tenant: %w", err))
+	}
+
+	if len(tenant) > 0 {
+		req.Header.Set("X-Scope-OrgID", tenant)
 	}
 
 	resp, err := l.client.Do(req)
@@ -140,7 +171,7 @@ func (l *lokiExporter) stop(context.Context) (err error) {
 	return nil
 }
 
-func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
 	var errs error
 
 	streams := make(map[string]*logproto.Stream)
@@ -213,7 +244,7 @@ func (l *lokiExporter) logDataToLoki(ld pdata.Logs) (pr *logproto.PushRequest, n
 	return pr, numDroppedLogs
 }
 
-func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.Map, resourceAttrs pdata.Map) (mergedAttributes model.LabelSet, dropped bool) {
+func (l *lokiExporter) convertAttributesAndMerge(logAttrs pcommon.Map, resourceAttrs pcommon.Map) (mergedAttributes model.LabelSet, dropped bool) {
 	logRecordAttributes := l.convertAttributesToLabels(logAttrs, l.config.Labels.Attributes)
 	resourceAttributes := l.convertAttributesToLabels(resourceAttrs, l.config.Labels.ResourceAttributes)
 
@@ -226,7 +257,7 @@ func (l *lokiExporter) convertAttributesAndMerge(logAttrs pdata.Map, resourceAtt
 	return mergedAttributes, false
 }
 
-func (l *lokiExporter) convertAttributesToLabels(attributes pdata.Map, allowedAttributes map[string]string) model.LabelSet {
+func (l *lokiExporter) convertAttributesToLabels(attributes pcommon.Map, allowedAttributes map[string]string) model.LabelSet {
 	ls := model.LabelSet{}
 
 	allowedLabels := l.config.Labels.getAttributes(allowedAttributes)
@@ -234,7 +265,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.Map, allowedAt
 	for attr, attrLabelName := range allowedLabels {
 		av, ok := attributes.Get(attr)
 		if ok {
-			if av.Type() != pdata.ValueTypeString {
+			if av.Type() != pcommon.ValueTypeString {
 				l.settings.Logger.Debug("Failed to convert attribute value to Loki label value, value is not a string", zap.String("attribute", attr))
 				continue
 			}
@@ -245,7 +276,7 @@ func (l *lokiExporter) convertAttributesToLabels(attributes pdata.Map, allowedAt
 	return ls
 }
 
-func (l *lokiExporter) convertRecordAttributesToLabels(log pdata.LogRecord) model.LabelSet {
+func (l *lokiExporter) convertRecordAttributesToLabels(log plog.LogRecord) model.LabelSet {
 	ls := model.LabelSet{}
 
 	if val, ok := l.config.Labels.RecordAttributes["traceID"]; ok {
@@ -267,7 +298,7 @@ func (l *lokiExporter) convertRecordAttributesToLabels(log pdata.LogRecord) mode
 	return ls
 }
 
-func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogBodyToEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
 	var b strings.Builder
 
 	if _, ok := l.config.Labels.RecordAttributes["severity"]; !ok && len(lr.SeverityText()) > 0 {
@@ -293,11 +324,12 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 
 	// fields not added to the accept-list as part of the component's config
 	// are added to the body, so that they can still be seen under "detected fields"
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if _, found := l.config.Labels.Attributes[k]; !found {
 			b.WriteString(k)
 			b.WriteString("=")
-			b.WriteString(v.AsString())
+			// encapsulate with double quotes. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11827
+			b.WriteString(strconv.Quote(v.AsString()))
 			b.WriteRune(' ')
 		}
 		return true
@@ -305,7 +337,7 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 
 	// same for resources: include all, except the ones that are explicitly added
 	// as part of the config, which are showing up at the top-level already
-	res.Attributes().Range(func(k string, v pdata.Value) bool {
+	res.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if _, found := l.config.Labels.ResourceAttributes[k]; !found {
 			b.WriteString(k)
 			b.WriteString("=")
@@ -318,18 +350,30 @@ func (l *lokiExporter) convertLogBodyToEntry(lr pdata.LogRecord, res pdata.Resou
 	b.WriteString(lr.Body().StringVal())
 
 	return &logproto.Entry{
-		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Timestamp: timestampFromLogRecord(lr),
 		Line:      b.String(),
 	}, nil
 }
 
-func (l *lokiExporter) convertLogToJSONEntry(lr pdata.LogRecord, res pdata.Resource) (*logproto.Entry, error) {
+func (l *lokiExporter) convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
 	line, err := encodeJSON(lr, res)
 	if err != nil {
 		return nil, err
 	}
 	return &logproto.Entry{
-		Timestamp: time.Unix(0, int64(lr.Timestamp())),
+		Timestamp: timestampFromLogRecord(lr),
 		Line:      line,
 	}, nil
+}
+
+func timestampFromLogRecord(lr plog.LogRecord) time.Time {
+	if lr.Timestamp() != 0 {
+		return time.Unix(0, int64(lr.Timestamp()))
+	}
+
+	if lr.ObservedTimestamp() != 0 {
+		return time.Unix(0, int64(lr.ObservedTimestamp()))
+	}
+
+	return time.Unix(0, int64(pcommon.NewTimestampFromTime(timeNow())))
 }

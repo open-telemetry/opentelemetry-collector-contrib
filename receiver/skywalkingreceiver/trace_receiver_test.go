@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package skywalkingreceiver
 
 import (
@@ -86,7 +87,7 @@ func TestGRPCReception(t *testing.T) {
 		},
 	}
 
-	//skywalking agent client send trace data to otel/skywalkingreceiver
+	// skywalking agent client send trace data to otel/skywalkingreceiver
 	client := agent.NewTraceSegmentReportServiceClient(conn)
 	commands, err := client.CollectInSync(context.Background(), segmentCollection)
 	if err != nil {

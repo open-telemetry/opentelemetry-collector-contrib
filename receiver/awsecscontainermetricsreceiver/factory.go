@@ -33,6 +33,9 @@ const (
 	// Key to invoke this receiver (awsecscontainermetrics)
 	typeStr = "awsecscontainermetrics"
 
+	// Stability level of the receiver
+	stability = component.StabilityLevelBeta
+
 	// Default collection interval. Every 20s the receiver will collect metrics from Amazon ECS Task Metadata Endpoint
 	defaultCollectionInterval = 20 * time.Second
 )
@@ -42,7 +45,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig returns a default config for the receiver.

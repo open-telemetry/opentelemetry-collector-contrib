@@ -18,28 +18,29 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-// ReadMetrics reads a pdata.Metrics from the specified file
-func ReadMetrics(filePath string) (pdata.Metrics, error) {
+// ReadMetrics reads a pmetric.Metrics from the specified file
+func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 	expectedFileBytes, err := ioutil.ReadFile(filePath)
 	if err != nil {
-		return pdata.Metrics{}, err
+		return pmetric.Metrics{}, err
 	}
-	unmarshaller := otlp.NewJSONMetricsUnmarshaler()
+	unmarshaller := pmetric.NewJSONUnmarshaler()
 	return unmarshaller.UnmarshalMetrics(expectedFileBytes)
 }
 
-// WriteMetrics writes a pdata.Metrics to the specified file
-func WriteMetrics(filePath string, metrics pdata.Metrics) error {
-	bytes, err := otlp.NewJSONMetricsMarshaler().MarshalMetrics(metrics)
+// WriteMetrics writes a pmetric.Metrics to the specified file
+func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
+	fileBytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(metrics)
 	if err != nil {
 		return err
 	}
 	var jsonVal map[string]interface{}
-	json.Unmarshal(bytes, &jsonVal)
+	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+		return err
+	}
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
 	if err != nil {
 		return err

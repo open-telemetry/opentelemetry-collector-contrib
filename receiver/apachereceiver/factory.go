@@ -27,14 +27,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
 
-const typeStr = "apache"
+const (
+	typeStr   = "apache"
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a factory for apache receiver.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -59,7 +62,7 @@ func createMetricsReceiver(
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	ns := newApacheScraper(params.TelemetrySettings, cfg)
+	ns := newApacheScraper(params, cfg)
 	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

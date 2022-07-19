@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestGenDefault(t *testing.T) {
@@ -42,7 +42,7 @@ func TestGenDefault(t *testing.T) {
 	require.Equal(t, "my-md-description", pdm.Description())
 	require.Equal(t, "my-md-units", pdm.Unit())
 
-	require.Equal(t, pdata.MetricDataTypeGauge, pdm.DataType())
+	require.Equal(t, pmetric.MetricDataTypeGauge, pdm.DataType())
 	pts := pdm.Gauge().DataPoints()
 	require.Equal(t, 1, pts.Len())
 	pt := pts.At(0)
@@ -57,42 +57,42 @@ func TestGenDefault(t *testing.T) {
 }
 
 func TestDoubleHistogramFunctions(t *testing.T) {
-	pt := pdata.NewHistogramDataPoint()
+	pt := pmetric.NewHistogramDataPoint()
 	setDoubleHistogramBounds(pt, 1, 2, 3, 4, 5)
-	require.Equal(t, 5, len(pt.ExplicitBounds()))
-	require.Equal(t, 5, len(pt.BucketCounts()))
+	require.Equal(t, 5, pt.ExplicitBounds().Len())
+	require.Equal(t, 5, pt.BucketCounts().Len())
 
 	addDoubleHistogramVal(pt, 1)
 	require.EqualValues(t, 1, pt.Count())
 	require.EqualValues(t, 1, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[0])
+	require.EqualValues(t, 1, pt.BucketCounts().At(0))
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 2, pt.Count())
 	require.EqualValues(t, 3, pt.Sum())
-	require.EqualValues(t, 1, pt.BucketCounts()[1])
+	require.EqualValues(t, 1, pt.BucketCounts().At(1))
 
 	addDoubleHistogramVal(pt, 2)
 	require.EqualValues(t, 3, pt.Count())
 	require.EqualValues(t, 5, pt.Sum())
-	require.EqualValues(t, 2, pt.BucketCounts()[1])
+	require.EqualValues(t, 2, pt.BucketCounts().At(1))
 }
 
 func TestGenDoubleHistogram(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeHistogram
+	cfg.MetricDescriptorType = pmetric.MetricDataTypeHistogram
 	cfg.PtVal = 2
 	md := MetricsFromCfg(cfg)
 	pts := getMetric(md).Histogram().DataPoints()
 	pt := pts.At(0)
 	buckets := pt.BucketCounts()
-	require.Equal(t, 5, len(buckets))
-	require.EqualValues(t, 2, buckets[2])
+	require.Equal(t, 5, buckets.Len())
+	require.EqualValues(t, 2, buckets.At(2))
 }
 
 func TestGenDoubleGauge(t *testing.T) {
 	cfg := DefaultCfg()
-	cfg.MetricDescriptorType = pdata.MetricDataTypeGauge
+	cfg.MetricDescriptorType = pmetric.MetricDataTypeGauge
 	md := MetricsFromCfg(cfg)
 	metric := getMetric(md)
 	pts := metric.Gauge().DataPoints()
@@ -101,6 +101,6 @@ func TestGenDoubleGauge(t *testing.T) {
 	require.EqualValues(t, float64(1), pt.IntVal())
 }
 
-func getMetric(md pdata.Metrics) pdata.Metric {
+func getMetric(md pmetric.Metrics) pmetric.Metric {
 	return md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 }

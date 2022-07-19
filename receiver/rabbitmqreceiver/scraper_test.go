@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -89,7 +89,7 @@ func TestScaperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
 		setupMockClient   func(t *testing.T) client
-		expectedMetricGen func(t *testing.T) pdata.Metrics
+		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 	}{
 		{
@@ -97,8 +97,8 @@ func TestScaperScrape(t *testing.T) {
 			setupMockClient: func(t *testing.T) client {
 				return nil
 			},
-			expectedMetricGen: func(t *testing.T) pdata.Metrics {
-				return pdata.NewMetrics()
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				return pmetric.NewMetrics()
 			},
 			expectedErr: errClientNotInit,
 		},
@@ -109,9 +109,9 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pdata.Metrics {
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 
-				return pdata.NewMetrics()
+				return pmetric.NewMetrics()
 			},
 			expectedErr: errors.New("some api error"),
 		},
@@ -128,7 +128,7 @@ func TestScaperScrape(t *testing.T) {
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
 				return &mockClient
 			},
-			expectedMetricGen: func(t *testing.T) pdata.Metrics {
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
 				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
@@ -140,7 +140,7 @@ func TestScaperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopTelemetrySettings())
+			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -152,7 +152,7 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
 	}
 }

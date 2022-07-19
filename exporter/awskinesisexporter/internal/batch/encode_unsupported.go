@@ -14,24 +14,28 @@
 
 package batch // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+)
 
 type unsupported struct{}
 
 var (
-	_ pdata.TracesMarshaler  = (*unsupported)(nil)
-	_ pdata.MetricsMarshaler = (*unsupported)(nil)
-	_ pdata.LogsMarshaler    = (*unsupported)(nil)
+	_ ptrace.Marshaler  = (*unsupported)(nil)
+	_ pmetric.Marshaler = (*unsupported)(nil)
+	_ plog.Marshaler    = (*unsupported)(nil)
 )
 
-func (unsupported) MarshalTraces(_ pdata.Traces) ([]byte, error) {
+func (unsupported) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
 	return nil, ErrUnsupportedEncoding
 }
 
-func (unsupported) MarshalMetrics(_ pdata.Metrics) ([]byte, error) {
+func (unsupported) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
 	return nil, ErrUnsupportedEncoding
 }
 
-func (unsupported) MarshalLogs(_ pdata.Logs) ([]byte, error) {
+func (unsupported) MarshalLogs(_ plog.Logs) ([]byte, error) {
 	return nil, ErrUnsupportedEncoding
 }

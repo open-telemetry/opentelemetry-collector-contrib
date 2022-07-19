@@ -70,3 +70,23 @@ func TestCreateProcessor(t *testing.T) {
 	// Switch it back so other tests run afterwards will not fail on unexpected state
 	kubeClientProvider = realClient
 }
+
+func TestCreateProcessorWithDeprecatedSettings(t *testing.T) {
+	factory := NewFactory()
+
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Extract.Metadata = []string{"k8s.cluster.name"}
+
+	params := componenttest.NewNopProcessorCreateSettings()
+
+	realClient := kubeClientProvider
+	kubeClientProvider = newFakeClient
+
+	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NotNil(t, tp)
+	assert.NoError(t, err)
+
+	// Switch it back so other tests run afterwards will not fail on unexpected state
+	kubeClientProvider = realClient
+}

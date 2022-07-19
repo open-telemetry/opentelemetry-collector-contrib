@@ -23,10 +23,9 @@ import (
 
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -55,7 +54,7 @@ func newCloudFoundryReceiver(
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	return &cloudFoundryReceiver{
@@ -74,7 +73,7 @@ func newCloudFoundryReceiver(
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
 	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedHTTPClientSettings, cfr.config.UAA.Username, cfr.config.UAA.Password)
 	if tokenErr != nil {
-		return fmt.Errorf("create cloud foundry UAA token provider: %v", tokenErr)
+		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
 	}
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
@@ -84,7 +83,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		host,
 	)
 	if streamErr != nil {
-		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %v", streamErr)
+		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %w", streamErr)
 	}
 
 	innerCtx, cancel := context.WithCancel(context.Background())
@@ -98,13 +97,13 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			host.ReportFatalError(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %v", tokenErr))
+			host.ReportFatalError(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr))
 			return
 		}
 
 		envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID)
 		if err != nil {
-			host.ReportFatalError(fmt.Errorf("creating RLP gateway envelope stream: %v", err))
+			host.ReportFatalError(fmt.Errorf("creating RLP gateway envelope stream: %w", err))
 			return
 		}
 
@@ -138,7 +137,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 			break
 		}
 
-		metrics := pdata.NewMetrics()
+		metrics := pmetric.NewMetrics()
 		libraryMetrics := createLibraryMetricsSlice(metrics)
 
 		for _, envelope := range envelopes {
@@ -157,7 +156,7 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 	}
 }
 
-func createLibraryMetricsSlice(metrics pdata.Metrics) pdata.MetricSlice {
+func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetric := resourceMetrics.AppendEmpty()
 	resourceMetric.Resource().Attributes()

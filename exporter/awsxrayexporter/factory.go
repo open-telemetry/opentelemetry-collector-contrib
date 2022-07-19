@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "awsxray"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for AWS-Xray exporter.
@@ -33,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {

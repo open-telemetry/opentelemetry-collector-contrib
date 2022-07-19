@@ -1,11 +1,14 @@
 # Podman Stats Receiver
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [unmaintained]    |
+| Supported pipeline types | metrics           |
+| Distributions            | [contrib]         |
 
 The Podman Stats receiver queries the Podman service API to fetch stats for all running containers 
 on a configured interval.  These stats are for container
 resource usage of cpu, memory, network, and the
 [blkio controller](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt).
-
-Supported pipeline types: metrics
 
 > :information_source: Requires Podman API version 3.3.1+ and Windows is not supported.
 
@@ -84,3 +87,6 @@ Recommended build tags to use when including this receiver in your build:
 - `containers_image_openpgp`
 - `exclude_graphdriver_btrfs`
 - `exclude_graphdriver_devicemapper`
+
+[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

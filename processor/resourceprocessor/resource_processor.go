@@ -17,7 +17,9 @@ package resourceprocessor // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -28,7 +30,7 @@ type resourceProcessor struct {
 	attrProc *attraction.AttrProc
 }
 
-func (rp *resourceProcessor) processTraces(ctx context.Context, td pdata.Traces) (pdata.Traces, error) {
+func (rp *resourceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	rss := td.ResourceSpans()
 	for i := 0; i < rss.Len(); i++ {
 		rp.attrProc.Process(ctx, rp.logger, rss.At(i).Resource().Attributes())
@@ -36,7 +38,7 @@ func (rp *resourceProcessor) processTraces(ctx context.Context, td pdata.Traces)
 	return td, nil
 }
 
-func (rp *resourceProcessor) processMetrics(ctx context.Context, md pdata.Metrics) (pdata.Metrics, error) {
+func (rp *resourceProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rp.attrProc.Process(ctx, rp.logger, rms.At(i).Resource().Attributes())
@@ -44,7 +46,7 @@ func (rp *resourceProcessor) processMetrics(ctx context.Context, md pdata.Metric
 	return md, nil
 }
 
-func (rp *resourceProcessor) processLogs(ctx context.Context, ld pdata.Logs) (pdata.Logs, error) {
+func (rp *resourceProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rp.attrProc.Process(ctx, rp.logger, rls.At(i).Resource().Attributes())

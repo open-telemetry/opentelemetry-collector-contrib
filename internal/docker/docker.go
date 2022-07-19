@@ -17,6 +17,7 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -188,7 +189,7 @@ func (dc *Client) toStatsJSON(
 	containerStats.Body.Close()
 	if err != nil {
 		// EOF means there aren't any containerStats, perhaps because the container has been removed.
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			// It isn't indicative of actual error.
 			return nil, err
 		}
@@ -215,6 +216,7 @@ func (dc *Client) ContainerEventLoop(ctx context.Context) {
 		{Key: "event", Value: "destroy"},
 		{Key: "event", Value: "die"},
 		{Key: "event", Value: "pause"},
+		{Key: "event", Value: "rename"},
 		{Key: "event", Value: "stop"},
 		{Key: "event", Value: "start"},
 		{Key: "event", Value: "unpause"},

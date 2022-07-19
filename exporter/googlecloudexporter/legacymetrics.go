@@ -19,6 +19,7 @@ package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
@@ -29,8 +30,8 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -87,8 +88,12 @@ var once sync.Once
 func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	// register view for self-observability
 	once.Do(func() {
-		view.Register(viewPointCount)
-		view.Register(ocgrpc.DefaultClientViews...)
+		if err := view.Register(viewPointCount); err != nil {
+			log.Fatalln(err)
+		}
+		if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
+			log.Fatalln(err)
+		}
 	})
 	setVersionInUserAgent(cfg, set.BuildInfo.Version)
 
@@ -148,7 +153,7 @@ func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.Export
 }
 
 // pushMetrics calls StackdriverExporter.PushMetricsProto on each element of the given metrics
-func (me *metricsExporter) pushMetrics(ctx context.Context, m pdata.Metrics) error {
+func (me *metricsExporter) pushMetrics(ctx context.Context, m pmetric.Metrics) error {
 	rms := m.ResourceMetrics()
 	mds := make([]*agentmetricspb.ExportMetricsServiceRequest, 0, rms.Len())
 	for i := 0; i < rms.Len(); i++ {
