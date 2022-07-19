@@ -149,3 +149,23 @@ in general try to follow them.
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
   on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
+
+## Becoming a Code Owner
+
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS).  That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+
+Sometimes a component may be in need of a new or additional Code Owner.  A few reasons this situation may arise would be:
+- The component was never assigned a Code Owner.
+- A previous Code Owner stepped down.
+- An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
+- The existing Code Owners are actively looking for new Code Owners to help.
+
+If you would to help and become a Code Owner you must meet the following requirements:
+
+1. Have contributed to the OpenTelemetry Project, preferably either Collector Core or Collector Contrib.  Best case scenario would be contributing to the component directly.
+2. Have attended the Collector SIG meeting.
+3. (Optional) Be a member of the OpenTelemetry organization
+
+Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers.  Meeting the above requirements is not a guarantee to be granted Code Ownership.
+
+To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row.  Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
