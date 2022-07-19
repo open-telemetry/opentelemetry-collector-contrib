@@ -46,11 +46,11 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.5.4 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.23 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
+	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
+	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.0 // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
@@ -120,7 +120,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisenkom/go-mssqldb v0.12.2 // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
-	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/digitalocean/godo v1.81.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
@@ -455,6 +454,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.0 // indirect
+	github.com/outcaste-io/ristretto v0.2.0 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
