@@ -15,7 +15,7 @@
 package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 
 import (
-	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"time"
@@ -69,9 +69,12 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 
 	for i := 0; i < v.NumField(); i++ {
 		structField := v.Type().Field(i)
+		if !structField.IsExported() {
+			continue
+		}
 		tagName, options, err := mapstructure(structField.Tag)
 		if err != nil {
-			fmt.Printf("error parsing mapstructure tag for field %v: %q", structField, err.Error())
+			log.Printf("error parsing mapstructure tag for type: %s: %s: %v", f.Type, structField.Tag, err)
 			// not fatal, can keep going
 		}
 		if tagName == "-" {

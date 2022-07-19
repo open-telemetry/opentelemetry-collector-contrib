@@ -28,7 +28,7 @@ func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, erro
 	if v.Kind() == reflect.Ptr {
 		elem = v.Elem()
 	}
-	dir, err := dr.PackageDir(elem.Type())
+	dir, err := dr.TypeToPackagePath(elem.Type())
 	if err != nil {
 		return nil, err
 	}

@@ -18,7 +18,10 @@
 
 package configschema
 
-import "time"
+import (
+	"path/filepath"
+	"time"
+)
 
 type testPerson struct {
 	Name string
@@ -40,9 +43,9 @@ type testStruct struct {
 	Ignored       string        `mapstructure:"-"`
 }
 
-func testDR(root string) DirResolver {
+func testDR() DirResolver {
 	return DirResolver{
-		SrcRoot:    root,
+		SrcRoot:    filepath.Join("..", ".."),
 		ModuleName: DefaultModule,
 	}
 }
