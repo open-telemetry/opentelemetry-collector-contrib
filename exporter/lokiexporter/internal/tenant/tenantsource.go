@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,25 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package utils
+package tenant // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 
 import (
-	"testing"
+	"context"
 
-	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestFormatKeyValueTag(t *testing.T) {
-	tests := []struct {
-		key         string
-		value       string
-		expectedTag string
-	}{
-		{"a.test.tag", "a.test.value", "a.test.tag:a.test.value"},
-		{"a.test.tag", "", "a.test.tag:n/a"},
-	}
+// LogsPerTenant holds a registry of plog.Logs per tenant
+type LogsPerTenant map[string]plog.Logs
 
-	for _, testInstance := range tests {
-		assert.Equal(t, testInstance.expectedTag, FormatKeyValueTag(testInstance.key, testInstance.value))
-	}
+type Source interface {
+	GetTenant(context.Context, plog.Logs) (string, error)
 }
