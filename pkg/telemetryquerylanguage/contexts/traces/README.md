@@ -22,3 +22,6 @@ The following fields are the exception.
 | trace_state\[""\]             | an individual entry in the trace state                                 | string                                                                  |
 | status.code                   | the status code of the span being processed                            | int64                                                                   |
 | status.message                | the status message of the span being processed                         | string                                                                  |
+## Enums
+
+The Traces Context supports the enum names from the traces proto.

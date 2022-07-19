@@ -19,3 +19,7 @@ The following fields are the exception.
 | attributes\[""\]              | the value of the attribute of the log being processed           | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
 | trace_id.string               | a string representation of the trace id                         | string                                                                  |
 | span_id.string                | a string representation of the span id                          | string                                                                  |
+
+## Enums
+
+The Logs Context supports the enum names from the logs proto.
