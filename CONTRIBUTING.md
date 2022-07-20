@@ -152,9 +152,9 @@ in general try to follow them.
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS).  That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
 
-Sometimes a component may be in need of a new or additional Code Owner.  A few reasons this situation may arise would be:
+Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
 - The component was never assigned a Code Owner.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
@@ -163,8 +163,8 @@ Sometimes a component may be in need of a new or additional Code Owner.  A few r
 If you would like to help and become a Code Owner you must meet the following requirements:
 
 1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
-2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs.  How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners. 
+2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs. How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners. 
 
-Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers.  Meeting the above requirements is not a guarantee to be granted Code Ownership.
+Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
-To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row.  Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
+To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.
