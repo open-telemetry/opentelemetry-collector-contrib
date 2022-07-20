@@ -1386,7 +1386,7 @@ The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-co
 
 ### 🚀 New components 🚀
 
-- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://docs.humio.com/reference/api/ingest/)
+- `humio` exporter to export data to Humio using JSON over the HTTP [Ingest API](https://library.humio.com/humio-server/api-ingest.html)
 - `udplog` receiver to receives logs from udp using the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library
 - `tanzuobservability` exporter to send traces to [Tanzu Observability](https://tanzu.vmware.com/observability)
 
