@@ -507,17 +507,17 @@ func WithProcessOwner(val string) ResourceMetricsOption {
 	}
 }
 
+// WithProcessParentPid sets provided value as "process.parent_pid" attribute for current resource.
+func WithProcessParentPid(val int64) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertInt("process.parent_pid", val)
+	}
+}
+
 // WithProcessPid sets provided value as "process.pid" attribute for current resource.
 func WithProcessPid(val int64) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertInt("process.pid", val)
-	}
-}
-
-// WithProcessPpid sets provided value as "process.parent_pid" attribute for current resource.
-func WithProcessPpid(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertInt("process.parent_pid", val)
 	}
 }
 
