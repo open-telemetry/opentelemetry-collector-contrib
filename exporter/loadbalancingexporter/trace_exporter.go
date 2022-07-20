@@ -139,7 +139,7 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) e
 	return err
 }
 
-func routingIdentifierFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
+func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]bool, error) {
 	ids := make(map[string]bool)
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
