@@ -24,24 +24,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-func TestCreateTracesExporterUsingDefaultConfig(t *testing.T) {
-	ctx := context.Background()
-	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := createTracesExporter(ctx, params, createDefaultConfig())
-
-	require.Nil(t, err)
-	assert.NotNil(t, exporter)
-}
-
-func TestCreateLogsExporterUsingDefaultConfig(t *testing.T) {
-	ctx := context.Background()
-	params := componenttest.NewNopExporterCreateSettings()
-	exporter, err := createLogsExporter(ctx, params, createDefaultConfig())
-
-	require.Nil(t, err)
-	assert.NotNil(t, exporter)
-}
-
 func TestCreateTracesExporterUsingSpecificConfig(t *testing.T) {
 	ctx := context.Background()
 	params := componenttest.NewNopExporterCreateSettings()
