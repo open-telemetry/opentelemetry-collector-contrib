@@ -176,9 +176,30 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "none",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeNone,
+			},
+			want: false,
+		},
+		{
 			name: "gauge",
 			fields: fields{
 				MetricDataType: pmetric.MetricDataTypeGauge,
+			},
+			want: false,
+		},
+		{
+			name: "exponential_histogram",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeExponentialHistogram,
+			},
+			want: false,
+		},
+		{
+			name: "summary",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeSummary,
 			},
 			want: false,
 		},

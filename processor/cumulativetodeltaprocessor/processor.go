@@ -99,6 +99,10 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 						return false
 					}
 
+					if ms.DataPoints().Len() == 0 {
+						return false
+					}
+
 					countIdentity := tracking.MetricIdentity{
 						Resource:               rm.Resource(),
 						InstrumentationLibrary: ilm.Scope(),
@@ -114,19 +118,7 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					sumIdentity.MetricField = "sum"
 					sumIdentity.MetricValueType = pmetric.NumberDataPointValueTypeDouble
 
-					bucketIdentities := make([]tracking.MetricIdentity, 0, 16)
-
-					if ms.DataPoints().Len() == 0 {
-						return false
-					}
-
-					firstDataPoint := ms.DataPoints().At(0)
-					for index := 0; index < firstDataPoint.BucketCounts().Len(); index++ {
-						metricField := fmt.Sprintf("bucket_%d", index)
-						bucketIdentity := countIdentity
-						bucketIdentity.MetricField = metricField
-						bucketIdentities = append(bucketIdentities, bucketIdentity)
-					}
+					bucketIdentities := makeBucketIdentities(countIdentity, ms.DataPoints().At(0))
 
 					histogramIdentities := tracking.HistogramIdentities{
 						CountIdentity:    countIdentity,
@@ -149,6 +141,19 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 	return md, nil
 }
 
+func makeBucketIdentities(baseIdentity tracking.MetricIdentity, dp pmetric.HistogramDataPoint) []tracking.MetricIdentity {
+	numBuckets := dp.BucketCounts().Len()
+	bucketIdentities := make([]tracking.MetricIdentity, numBuckets)
+
+	for index := 0; index < numBuckets; index++ {
+		bucketIdentity := baseIdentity
+		bucketIdentity.MetricField = fmt.Sprintf("bucket_%d", index)
+		bucketIdentities[index] = bucketIdentity
+	}
+
+	return bucketIdentities
+}
+
 func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 	ctdp.cancelFunc()
 	return nil
@@ -164,7 +169,7 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertFloatValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value float64) (tracking.DeltaValue, bool) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramFloatValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value float64) (tracking.DeltaValue, bool) {
 	id.StartTimestamp = dp.StartTimestamp()
 	id.Attributes = dp.Attributes()
 	trackingPoint := tracking.MetricPoint{
@@ -177,7 +182,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertFloatValue(id tracking.MetricIden
 	return ctdp.deltaCalculator.Convert(trackingPoint)
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertIntValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value int64) (tracking.DeltaValue, bool) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramIntValue(id tracking.MetricIdentity, dp pmetric.HistogramDataPoint, value int64) (tracking.DeltaValue, bool) {
 	id.StartTimestamp = dp.StartTimestamp()
 	id.Attributes = dp.Attributes()
 	trackingPoint := tracking.MetricPoint{
@@ -238,21 +243,21 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			countID := baseIdentities.CountIdentity
-			countDelta, countValid := ctdp.convertIntValue(countId, dp, int64(dp.Count()))
+			countDelta, countValid := ctdp.convertHistogramIntValue(countID, dp, int64(dp.Count()))
 
 			hasSum := dp.HasSum() && !math.IsNaN(dp.Sum())
 			sumDelta, sumValid := tracking.DeltaValue{}, true
 
 			if hasSum {
 				sumID := baseIdentities.SumIdentity
-				sumDelta, sumValid = ctdp.convertFloatValue(sumId, dp, dp.Sum())
+				sumDelta, sumValid = ctdp.convertHistogramFloatValue(sumID, dp, dp.Sum())
 			}
 
 			bucketsValid := true
 			rawBucketCounts := dp.BucketCounts().AsRaw()
 			for index := 0; index < len(rawBucketCounts); index++ {
 				bucketID := baseIdentities.BucketIdentities[index]
-				bucketDelta, bucketValid := ctdp.convertIntValue(bucketId, dp, int64(rawBucketCounts[index]))
+				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp, int64(rawBucketCounts[index]))
 				rawBucketCounts[index] = uint64(bucketDelta.IntValue)
 				bucketsValid = bucketsValid && bucketValid
 			}
