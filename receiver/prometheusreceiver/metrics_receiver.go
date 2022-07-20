@@ -130,7 +130,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 		return hash, nil
 	}
 
-	cfg := baseCfg
+	cfg := *baseCfg
 
 	for _, linkJSON := range *jobObject {
 		var httpSD promHTTP.SDConfig
@@ -152,7 +152,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 		cfg.ScrapeConfigs = append(cfg.ScrapeConfigs, scrapeCfg)
 	}
 
-	err = r.applyCfg(cfg)
+	err = r.applyCfg(&cfg)
 	if err != nil {
 		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return 0, err
