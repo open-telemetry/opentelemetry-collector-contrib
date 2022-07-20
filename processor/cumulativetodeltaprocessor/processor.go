@@ -21,27 +21,42 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/tracking"
 )
 
+const enableHistogramSupportGateID = "processor.cumulativetodeltaprocessor.EnableHistogramSupport"
+
+var enableHistogramSupportGate = featuregate.Gate{
+	ID:          enableHistogramSupportGateID,
+	Enabled:     false,
+	Description: "wip",
+}
+
+func init() {
+	featuregate.GetRegistry().MustRegister(enableHistogramSupportGate)
+}
+
 type cumulativeToDeltaProcessor struct {
-	metrics         map[string]struct{}
-	includeFS       filterset.FilterSet
-	excludeFS       filterset.FilterSet
-	logger          *zap.Logger
-	deltaCalculator *tracking.MetricTracker
-	cancelFunc      context.CancelFunc
+	metrics                 map[string]struct{}
+	includeFS               filterset.FilterSet
+	excludeFS               filterset.FilterSet
+	logger                  *zap.Logger
+	deltaCalculator         *tracking.MetricTracker
+	cancelFunc              context.CancelFunc
+	histogramSupportEnabled bool
 }
 
 func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulativeToDeltaProcessor {
 	ctx, cancel := context.WithCancel(context.Background())
 	p := &cumulativeToDeltaProcessor{
-		logger:          logger,
-		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
-		cancelFunc:      cancel,
+		logger:                  logger,
+		deltaCalculator:         tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
+		cancelFunc:              cancel,
+		histogramSupportEnabled: featuregate.GetRegistry().IsEnabled(enableHistogramSupportGateID),
 	}
 	if len(config.Metrics) > 0 {
 		p.logger.Warn("The 'metrics' configuration is deprecated. Use 'include'/'exclude' instead.")
@@ -94,6 +109,10 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 					ms.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
 				case pmetric.MetricDataTypeHistogram:
+					if !ctdp.histogramSupportEnabled {
+						return false
+					}
+
 					ms := m.Histogram()
 					if ms.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 						return false
