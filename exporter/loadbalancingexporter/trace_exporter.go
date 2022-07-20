@@ -35,10 +35,6 @@ import (
 
 var _ component.TracesExporter = (*traceExporterImp)(nil)
 
-var (
-	errNoTracesInBatch = errors.New("no traces were found in the batch")
-)
-
 type traceExporterImp struct {
 	loadBalancer loadBalancer
 	routingKey   routingKey
@@ -49,7 +45,6 @@ type traceExporterImp struct {
 
 // Create new traces exporter
 func newTracesExporter(params component.ExporterCreateSettings, cfg config.Exporter) (*traceExporterImp, error) {
-	var r routingKey
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Exporter, error) {
@@ -60,18 +55,16 @@ func newTracesExporter(params component.ExporterCreateSettings, cfg config.Expor
 		return nil, err
 	}
 
+	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+
 	switch cfg.(*Config).RoutingKey {
 	case "service":
-		r = svcRouting
-	case "traceID":
-		r = traceIdRouting
-	case "":
-		r = traceIdRouting
+		traceExporter.routingKey = svcRouting
+	case "traceID", "":
+	default:
+		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
-	return &traceExporterImp{
-		loadBalancer: lb,
-		routingKey:   r,
-	}, nil
+	return &traceExporter, nil
 }
 
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
@@ -106,7 +99,7 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
-	routingIds, err := routingIdentifierFromTraces(td, e.routingKey)
+	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
 	if err != nil {
 		return err
 	}
@@ -143,33 +136,30 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 	ids := make(map[string]bool)
 	rs := td.ResourceSpans()
 	if rs.Len() == 0 {
-		return nil, errors.New("invalid trace id")
+		return nil, errors.New("empty resource spans")
 	}
 
 	ils := rs.At(0).ScopeSpans()
 	if ils.Len() == 0 {
-		return nil, errors.New("invalid trace id")
+		return nil, errors.New("empty scope spans")
 	}
 
 	spans := ils.At(0).Spans()
 	if spans.Len() == 0 {
-		return nil, errors.New("invalid trace id")
+		return nil, errors.New("empty spans")
 	}
 
-	switch key {
-	case svcRouting:
+	if key == svcRouting {
 		for i := 0; i < rs.Len(); i++ {
 			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
 			if !ok {
-				return nil, errors.New(fmt.Sprintf("unable to get service name"))
+				return nil, errors.New("unable to get service name")
 			}
 			ids[svc.StringVal()] = true
 		}
 		return ids, nil
-	case traceIdRouting:
-		tid := spans.At(0).TraceID().Bytes()
-		ids[string(tid[:])] = true
-		return ids, nil
 	}
-	return nil, nil
+	tid := spans.At(0).TraceID().Bytes()
+	ids[string(tid[:])] = true
+	return ids, nil
 }

@@ -10,7 +10,7 @@ This is an exporter that will consistently export spans and logs belonging to th
 
 It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use. The DNS resolver will periodically check for updates.
 
-Note that only the Trace ID is used for the decision on which backend to use: the actual backend load isn't taken into consideration. Even though this load-balancer won't do round-robin balancing of the batches, the load distribution should be very similar among backends with a standard deviation under 5% at the current configuration.
+Note that either the Trace ID or Service name is used for the decision on which backend to use: the actual backend load isn't taken into consideration. Even though this load-balancer won't do round-robin balancing of the batches, the load distribution should be very similar among backends with a standard deviation under 5% at the current configuration.
 
 This load balancer is especially useful for backends configured with tail-based samplers, which make a decision based on the view of the full trace.
 
@@ -24,7 +24,9 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `resolver` accepts either a `static` node, or a `dns`. If both are specified, `dns` takes precedence.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts an optional property `port` to specify the port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
-* The `routing_key` can be used to configure different kinds of routing mechanisms. This functionality is available for `trace_exporter`. You can either route your signals based on service name based routing or trace id based routing. For service based routing the configuration is `routing_key: "service"` and for trace id based routing the configuration is `routing_key:"traceID"`. If you don't specify any value, the default is `traceID`  
+* The `routing_key`, which only applies to `trace` pipeline types, supports one of the following values:
+    * `service`: routes spans based on its service name.
+    * `traceID` (default): routes spans based on its `traceID`.
 
 Simple example
 ```yaml
@@ -39,6 +41,7 @@ processors:
 exporters:
   logging:
   loadbalancing:
+    routing_key: "service"
     protocol:
       otlp:
         # all options from the OTLP exporter are supported
