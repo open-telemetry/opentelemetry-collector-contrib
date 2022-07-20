@@ -514,10 +514,10 @@ func WithProcessPid(val int64) ResourceMetricsOption {
 	}
 }
 
-// WithProcessPpid sets provided value as "process.ppid" attribute for current resource.
+// WithProcessPpid sets provided value as "process.parent_pid" attribute for current resource.
 func WithProcessPpid(val int64) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertInt("process.ppid", val)
+		rm.Resource().Attributes().UpsertInt("process.parent_pid", val)
 	}
 }
 

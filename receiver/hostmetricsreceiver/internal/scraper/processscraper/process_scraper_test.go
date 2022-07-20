@@ -133,7 +133,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
-		internal.AssertContainsAttribute(t, attr, "process.ppid")
+		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
 	}
 }
 
@@ -467,7 +467,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		memoryInfoError error
 		ioCountersError error
 		createTimeError error
-		ppidError       error
+		parentPidError  error
 		expectedError   string
 	}
 
@@ -514,9 +514,9 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
-			name:          "Parent PID Error",
-			ppidError:     errors.New("err8"),
-			expectedError: `error reading parent pid for process "test" (pid 1): err8`,
+			name:           "Parent PID Error",
+			parentPidError: errors.New("err8"),
+			expectedError:  `error reading parent pid for process "test" (pid 1): err8`,
 		},
 		{
 			name:            "Multiple Errors",
@@ -561,7 +561,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
-			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.ppidError)
+			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.parentPidError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil

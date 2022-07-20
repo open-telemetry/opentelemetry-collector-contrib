@@ -29,7 +29,7 @@ import (
 
 type processMetadata struct {
 	pid        int32
-	ppid       int32
+	parentPid  int32
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
@@ -51,7 +51,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
 	opts := make([]metadata.ResourceMetricsOption, 0, 6)
 	opts = append(opts,
 		metadata.WithProcessPid(int64(m.pid)),
-		metadata.WithProcessPpid(int64(m.ppid)),
+		metadata.WithProcessPpid(int64(m.parentPid)),
 		metadata.WithProcessExecutableName(m.executable.name),
 		metadata.WithProcessExecutablePath(m.executable.path),
 	)

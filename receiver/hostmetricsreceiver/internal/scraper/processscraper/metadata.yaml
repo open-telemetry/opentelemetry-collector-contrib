@@ -6,7 +6,7 @@ resource_attributes:
   process.pid:
     description: Process identifier (PID).
     type: int
-  process.ppid:
+  process.parent_pid:
     description: Parent Process identifier (PPID).
     type: int
   process.executable.name:
