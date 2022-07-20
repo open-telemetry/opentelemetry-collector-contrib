@@ -51,7 +51,7 @@ type pReceiver struct {
 	targetAllocatorIntervalTicker *time.Ticker
 }
 
-type LinkJSON struct {
+type linkJSON struct {
 	Link string `json:"_link"`
 }
 
@@ -109,9 +109,9 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-// syncTargetAllocator request jobs from TargetAllocator and update underlying receiver, if the response does not match the provided compareHash.
+// syncTargetAllocator request jobs from targetAllocator and update underlying receiver, if the response does not match the provided compareHash.
 // baseDiscoveryCfg can be used to provide additional ScrapeConfigs which will be added to the retrieved jobs.
-func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAllocator, baseCfg *config.Config) (uint64, error) {
+func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAllocator, baseCfg *config.Config) (uint64, error) {
 	r.settings.Logger.Debug("Syncing target allocator jobs")
 	jobObject, err := getJobResponse(allocConf.Endpoint)
 	if err != nil {
@@ -154,7 +154,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 	return hash, nil
 }
 
-func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
+func getJobResponse(baseURL string) (*map[string]linkJSON, error) {
 	jobURLString := fmt.Sprintf("%s/jobs", baseURL)
 	_, err := url.Parse(jobURLString) // check if valid
 	if err != nil {
@@ -168,7 +168,7 @@ func getJobResponse(baseURL string) (*map[string]LinkJSON, error) {
 
 	defer resp.Body.Close()
 
-	jobObject := &map[string]LinkJSON{}
+	jobObject := &map[string]linkJSON{}
 	err = json.NewDecoder(resp.Body).Decode(jobObject)
 	if err != nil {
 		return nil, err

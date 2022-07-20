@@ -61,7 +61,7 @@ type Config struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
-	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
+	TargetAllocator *targetAllocator `mapstructure:"target_allocator"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
@@ -69,7 +69,7 @@ type Config struct {
 	ConfigPlaceholder interface{} `mapstructure:"config"`
 }
 
-type TargetAllocator struct {
+type targetAllocator struct {
 	Endpoint    string
 	Interval    time.Duration
 	CollectorID string `mapstructure:"collector_id"`
@@ -226,7 +226,7 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	// validate TargetAllocator
+	// validate targetAllocator
 	targetAllocatorConfig := cfg.TargetAllocator
 	if targetAllocatorConfig == nil {
 		return nil
@@ -271,7 +271,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %w", err)
 	}
 
-	// Unmarshal TargetAllocator configs
+	// Unmarshal targetAllocator configs
 	targetAllocatorCfg, err := componentParser.Sub(targetAllocatorConfigKey)
 	if err != nil {
 		return err
