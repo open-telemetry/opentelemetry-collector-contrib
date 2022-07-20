@@ -214,7 +214,10 @@ func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWrite
 	}
 
 	resp.WriteHeader(http.StatusOK)
-	_, _ = resp.Write(okRespBody)
+	_, err = resp.Write(okRespBody)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
+	}
 }
 
 func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Request) {
