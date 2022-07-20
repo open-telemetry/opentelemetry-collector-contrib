@@ -5,11 +5,11 @@ go 1.17
 require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.55.1-0.20220720181512-3a7a76335c30
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220720181512-3a7a76335c30
+	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector/pdata v0.56.0
 	go.uber.org/zap v1.21.0
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 

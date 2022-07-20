@@ -4,6 +4,141 @@
 
 <!-- next version -->
 
+# v0.56.0
+
+## 🛑 Breaking changes 🛑
+- `datadogexporter`: Change default value of `host_metadata::hostname_source` to `config_or_system` (#10424)
+   - This behavior can be reverted by disabling the `exporter.datadog.hostname.preview` feature gate.
+  
+- `datadogexporter`: Make automatically detected hostname match the one reported by other Datadog products. (#10424)
+   - This behavior can be reverted by disabling the `exporter.datadog.hostname.preview` feature gate.
+  
+- `dynatraceexporter`: Improve serialization of certain Instrument/Temporality pairings (#11828)
+  - Non-monotonic cumulative Sum metrics will be exported as Gauges from now on. Non-monotonic cumulative Sums (usually UpDownCounters) will show the current value instead of a change rate.
+  
+- `transformprocessor`: Field `metric.type` is now accessed as an enum/int64 instead of a string. (#10349)
+- `memcachedreceiver`: Remove direction for metrics. The feature gate: receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#12404) (#12165)
+  - `memcached` metrics:
+    - `memcached.network` will become:
+      - `memcached.network.sent`
+      - `memcached.network.received`
+- `tracegen`: Moving component under `cmd` for consistency (#12474)
+- `datadogexporter`: Remove deprecated configuration features. (#9099, #9016, #8845, #8783, #8781, #8489, #8396)
+    - [Remove `env` in favor of `deployment.environment` semantic convention](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016)
+    - [Remove `version` in favor of `service.version` semantic convention](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783)
+    - [Remove `service` in favor of `service.name` semantic convention](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781)
+    - [Remove `tags`, `send_metadata` and `use_resource_metadata` in favor of `host_metadata` section](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099)
+    - [Remove `metrics::report_quantiles` in favor of `metrics::summaries::mode`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845)
+    - [Remove `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489)
+    - [Remove automatic support for environment variable detection in favor of Collector's `${}` syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396)
+    - [Remove `metrics::instrumentation_library_metadata_as_tags` in favor of `metrics::instrumentation_scope_as_tags`](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/11135)
+  
+- `datadogexporter`: Remove deprecated `config` package. (#8373)
+- `observiqexporter`: Remove the observiq exporter (#12406)
+- `vcenterreceiver`: Adds the `vcenter.cluster.name` resource attribute to `vcenter.datastore` metrics (#12357)
+- `vcenterreceiver`: remove metadata declaration and references to uncollected metric `vcenter.vm.cpu.utilization` (#12358)
+- `vcenterreceiver`: Remove direction for metrics. The feature gate: receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#11849) (#12185)
+  - `vcenter.host.disk.throughput` will become:
+    - `vcenter.host.disk.throughput.read`
+    - `vcenter.host.disk.throughput.write`
+  - `vcenter.host.disk.latency.avg` will become:
+    - `vcenter.host.disk.latency.avg.read`
+    - `vcenter.host.disk.latency.avg.write`
+  - `vcenter.host.network.throughput` will become:
+    - `vcenter.host.network.throughputt.receive`
+    - `vcenter.host.network.throughput.transmit`
+  - `vcenter.host.network.packet.errors` will become:
+    - `vcenter.host.network.packet.errors.receive`
+    - `vcenter.host.network.packet.errors.transmit`
+  - `vcenter.host.network.packet.count` will become:
+    - `vcenter.host.network.packet.count.receive`
+    - `vcenter.host.network.packet.count.transmit`
+  - `vcenter.vm.disk.latency.avg.read` will become:
+    - `vcenter.vm.disk.latency.avg.read`
+    - `vcenter.vm.disk.latency.avg.write`
+  - `vcenter.vm.network.throughput` will become:
+    - `vcenter.vm.network.throughput.receive`
+    - `vcenter.vm.network.throughput.transmit`
+  - `vcenter.vm.network.packet.count` will become:
+    - `vcenter.vm.network.packet.count.receive`
+    - `vcenter.vm.network.packet.count.transmit`
+
+### 🚩 Deprecations 🚩
+- `hostmetricsreceiver`: Remove direction for disk metrics. The feature gate: receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#11849) (#11816)
+  - `disk` scraper metrics:
+    - `system.disk.io` will become:
+      - `system.disk.io.read`
+      - `system.disk.io.write`
+    - `system.disk.operations` will become:
+      - `system.disk.operations.read`
+      - `system.disk.operations.write`
+    - `system.disk.operation_time` will become:
+      - `system.disk.operation_time.read`
+      - `system.disk.operation_time.write`
+    - `system.disk.merged` will become:
+      - `system.disk.merged.read`
+      - `system.disk.merged.write`
+
+### 🚀 New components 🚀
+- `telemetryquerylanguage`: Expose the telemetry query language as a package. (#11751)
+- `chronyreceiver`: -| This component is a pure go implementation for capturing data from [chrony](https://chrony.tuxfamily.org/) (#11789)
+- `otlpjsonfilereceiver`: Add a new file receiver reading JSON-encoded OTLP data, after [serialization specification](https://github.com/open-telemetry/opentelemetry-specification/blob/main/experimental/serialization/json.md) (#10836)
+- `pulsarexporter`: Add Apache Pulsar exporter (#9795)
+- `solacereceiver`: Add Solace receiver to receive trace data from a Solace PubSub+ Event Broker. (#10572)
+
+### 💡 Enhancements 💡
+- `tanzuobservabilityexporter`: Improve algorithm to translate OTEL delta exponential histograms into tanzu observability histograms (#12173)
+- `internal/scrapertest`: Add sortation functions for scrapertest (#10837)
+- `elasticsearchreceiver`: Add additional metrics (#12176)
+  Add additional metrics for circuit breakers, disk IO r/w, translog, and CPU load.
+  
+- `supported platforms`: Add `linux-ppc64le` architecture to cross build tests in CI (#12350)
+- `dockerobserver`: incorporate observer.EndpointsWatcher in preparation of multiple event subscribers and use existing internal event loop watcher (#10830, #11541)
+- `hostmetrics`: Adding connection tracking count and max metrics for linux (#11769)
+- `hostmetricsreceiver`: New config setting scrape_process_delay is used to indicate the minimum amount of time a process must be running before process metrics can be scraped for it. The default value is 0 seconds ("0s"). (#8976)
+- `transformprocessor`: Add ability to interact with enums via sybmols. (#10349)
+- `telemetryquerylanguage`: Adds to the grammar the ability to interpret Enums. (#11751)
+- `transformprocessor`: Update the transform processor to use the Telemetry Query Language package (#11751)
+- `transformprocessor`: Add `delete_key` and `delete_matching_keys` which allow deleting keys from maps. (#11823)
+- `receiver/jaeger`: Handle spans with own process (#10186)
+- `k8sobserver`: incorporate observer.EndpointsWatcher in preparation for multiple event subscribers (#10830, #11544)
+- `exporter/loki`: Handle multi-tenant use-cases (#3121)
+- `metricstransformprocessor`: Do not produce empty metrics (#12210)
+- `schemaprocessor`: renaming some internal packages to help improve maintainability (#8495)
+- `groupbytrace`: Promote groupbytrace to beta (#12169)
+- `redisreceiver`: Add redis.version resource attribute. (#12139)
+- `podmanreceiver`: Fetch containers stats one by one and add container image as metric attribute (#9013)
+- `all`: Components now report their stability level. (#12104)
+- `sqlqueryreceiver`: Add Oracle DB Support (#12137)
+- `sqlserverreceiver`: Added tests to validate counter names and a scraper test. (#9374)
+- `templatequerylanguage`: TQL grammar now supports complex `where` expressions with `and`, `or` and parentheses (#10195)
+- `transformprocessor`: Add .string accessor to get hex string for trace_id and span_id (#11555)
+- `pkg/translator/jaeger`: Handle spans with own process (#10186)
+
+### 🧰 Bug fixes 🧰
+- `cmd/chloggen`: Compare changelog to common ancestor with main (#12149)
+- `logstransformprocessor`: Remove support for storage (#12424)
+- `elasticsearchreceiver`: Remove unused `disk_usage_state` attribute from documentation (#12429)
+- `filterlog`: change OR to AND logic for filtering logs - as desribed, and as is done for span filtering (#11439)
+- `lokiexporter`: Wrap quotes around log message (#11827)
+- `tooling`: Fix a bug in the makefile causing `make rpm-package` to fail (#12162)
+- `prometheusexporter`: Fix cumulative condition for the delta-to-cumulative (#4153)
+- `xrayreceiver`: Ensure that the UDP Poller ends the obsreport span it creates with every loop. (#12299)
+  This avoids a memory leak that can happen when spans are created to track received
+  segments but never ended.
+- `googlecloudexporter`: Various bug fixes in parsing OTel logs to GCP LogEntries (#12157)
+- `datadogexporter`: Fix logs related to the source provider. (#12160)
+- `pkg/stanza/fileconsumer`: Fix issue where reader could become stuck on newlines (#10125, #10127, #10128)
+- `receivercreator`: dynamically created receivers log with their `name` field (#16481)
+- `skywalkingreceiver`: Fix skywalking traceid and spanid convertion (#11562)
+- `spanmetricsprocessor`: Fixes the number of explicit bucket counts by removing the manually added "catch-all" bucket. (#11784)
+- `spanmetricsprocessor`: Fix concurrency bug causing premature key eviction. (#9018)
+- `spanmetricsprocessor`: Removes a comment that is no longer relevant due to a fix. (#12427)
+- `sqlqueryreceiver`: Metrics did not contain a timestamp. Timestamps are required for a variety of backends, especially prometheus. In order to work with prometheus we must set the metrics timestamp because metrics with the default timestamp (year 1970) will be dropped by prometheus backends. (#12088)
+- `statsdreceiver`: Fixing parsing issue for values on statsd receiver (#12120)
+- `vcenterreceiver`: Fixes calculation of `vcenter.vm.disk.utilization`. (#12342)
+
+
 # v0.55.0
 
 ## 🛑 Breaking changes 🛑
