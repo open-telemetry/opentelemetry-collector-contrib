@@ -4,12 +4,12 @@ go 1.17
 
 require (
 	github.com/aws/aws-sdk-go v1.44.57
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.56.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.55.1-0.20220720181512-3a7a76335c30
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220720181512-3a7a76335c30
-	go.opentelemetry.io/collector/semconv v0.55.1-0.20220720181512-3a7a76335c30
+	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/semconv v0.56.0
 	go.uber.org/zap v1.21.0
 )
 

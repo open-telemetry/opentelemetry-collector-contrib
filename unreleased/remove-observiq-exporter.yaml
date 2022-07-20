@@ -1,4 +1,0 @@
-change_type: breaking
-component: observiqexporter
-note: "Remove the observiq exporter"
-issues: [12406]
