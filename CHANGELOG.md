@@ -537,7 +537,6 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ### 🚀 New components 🚀
 
-
 ## v0.45.1
 
 ### 💡 Enhancements 💡
@@ -616,7 +615,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 - `clickhouse` exporter: Add ClickHouse Exporter (#6907)
 - `pkg/translator/signalfx`: Extract signalfx to metrics conversion in a separate package (#7778)
-  - Extract FromMetrics to SignalFx translator package (#7823)  
+  - Extract FromMetrics to SignalFx translator package (#7823)
 
 ## v0.44.0
 
