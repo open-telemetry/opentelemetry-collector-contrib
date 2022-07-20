@@ -50,9 +50,9 @@ func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
 	b.blobEventHandler.SetLogsDataConsumer(b)
 	b.blobEventHandler.SetTracesDataConsumer(b)
 
-	b.blobEventHandler.Run(ctx)
+	err := b.blobEventHandler.Run(ctx)
 
-	return nil
+	return err
 }
 
 func (b *blobReceiver) Shutdown(ctx context.Context) error {

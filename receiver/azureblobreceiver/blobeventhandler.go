@@ -78,12 +78,17 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 	p.logger.Debug(fmt.Sprintf("New event: %s", string(event.Data)))
 
 	var eventDataSlice []map[string]interface{}
-	json.Unmarshal(event.Data, &eventDataSlice)
+	_, marshalErr := json.Unmarshal(event.Data, &eventDataSlice)
+	if marshalErr != nil {
+		p.logger.Error(marshalErr.Error())
+		return marshalErr
+	}
+
 
 	subject := eventDataSlice[0]["subject"].(string)
-	containerName := strings.SplitN(strings.SplitN(subject, "containers/", -1)[1], "/", -1)[0]
+	containerName := strings.Split(strings.SplitN(subject, "containers/", -1)[1], "/", -1)[0]
 	eventType := eventDataSlice[0]["eventType"].(string)
-	blobName := strings.SplitN(subject, "blobs/", -1)[1]
+	blobName := strings.Split(subject, "blobs/", -1)[1]
 
 	p.logger.Debug(fmt.Sprintf("containerName: %s", containerName))
 	p.logger.Debug(fmt.Sprintf("blobName: %s", blobName))
@@ -95,11 +100,20 @@ func (p *AzureBlobEventHandler) newMessageHangdler(ctx context.Context, event *e
 			p.logger.Error(err.Error())
 			return err
 		}
-		if containerName == p.logsContainerName {
-			p.logsDataConsumer.ConsumeLogsJSON(ctx, blobData.Bytes())
-		} else if containerName == p.tracesContainerName {
-			p.tracesDataConsumer.ConsumeTracesJSON(ctx, blobData.Bytes())
-		} else {
+		switch {
+		case containerName == p.logsContainerName:
+			err = p.logsDataConsumer.ConsumeLogsJSON(ctx, blobData.Bytes())
+			if err != nil {
+				p.logger.Error(err.Error())
+				return err
+			}	
+		case containerName == p.tracesContainerName:
+			err = p.tracesDataConsumer.ConsumeTracesJSON(ctx, blobData.Bytes())
+			if err != nil {
+				p.logger.Error(err.Error())
+				return err
+			}	
+		default:
 			p.logger.Debug(fmt.Sprintf("Unknown container name %s", containerName))
 		}
 	}

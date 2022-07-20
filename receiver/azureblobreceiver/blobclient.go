@@ -38,7 +38,12 @@ func (bc *AzureBlobClient) getBlockBlob(containerName string, blobName string) a
 
 func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
 	blockBlob := bc.getBlockBlob(containerName, blobName)
-	defer blockBlob.Delete(ctx, nil)
+	defer func() {
+		_, err := blockBlob.Delete(ctx, nil)
+		if err != nil {
+			p.logger.Error(err.Error())
+		}
+	}()
 
 	get, err := blockBlob.Download(ctx, nil)
 	if err != nil {
