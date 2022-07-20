@@ -50,8 +50,9 @@ type metricsExporter struct {
 	retrier        *utils.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
-	// pushTimestamp is a Unix time in nanoseconds, representing the time pushing metrics.
-	pushTimestamp uint64
+	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
+	// It will be overwritten in tests.
+	getPushTime func() uint64
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
@@ -122,6 +123,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 		onceMetadata:   onceMetadata,
 		sourceProvider: sourceProvider,
+		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 	}, nil
 }
 
@@ -184,8 +186,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	if src.Kind == source.AWSECSFargateKind {
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
 	}
-	exp.pushTimestamp = uint64(time.Now().UTC().UnixNano())
-	ms, sl := consumer.All(exp.pushTimestamp, exp.params.BuildInfo, tags)
+	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
 	metrics.ProcessMetrics(ms)
 
 	err = nil

@@ -277,13 +277,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				&once,
 				&testutils.MockSourceProvider{Src: tt.source},
 			)
-			exp.pushTimestamp = 0
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
 			} else {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
