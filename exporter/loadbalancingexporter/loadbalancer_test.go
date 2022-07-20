@@ -345,6 +345,13 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// verify
 	assert.Error(t, err)
+
+	// test
+	// this service name will reach the endpoint-2 -- see the consistent hashing tests for more info
+	_, err = p.Exporter(p.Endpoint([]byte("get-recommendations-1")))
+
+	// verify
+	assert.Error(t, err)
 }
 
 func newNopMockExporter() component.Exporter {

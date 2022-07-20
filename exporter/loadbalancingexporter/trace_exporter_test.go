@@ -195,6 +195,35 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.Nil(t, res)
 }
 
+func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
+	b := pcommon.NewTraceID([16]byte{1, 2, 3, 4}).Bytes()
+	for _, tt := range []struct {
+		desc       string
+		batch      ptrace.Traces
+		routingKey routingKey
+		res        map[string]bool
+	}{
+		{
+			"same trace id and different services - service based routing",
+			twoServicesWithSameTraceID(),
+			svcRouting,
+			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
+		},
+		{
+			"same trace id and different services - trace id routing",
+			twoServicesWithSameTraceID(),
+			traceIDRouting,
+			map[string]bool{string(b[:]): true},
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			assert.Equal(t, err, nil)
+			assert.Equal(t, res, tt.res)
+		})
+	}
+}
+
 func TestConsumeTracesExporterNotFound(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockTracesExporter(), nil
@@ -554,9 +583,25 @@ func simpleTracesWithServiceName() ptrace.Traces {
 	return simpleTraceWithServiceName(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
+func twoServicesWithSameTraceID() ptrace.Traces {
+	return servicesWithSameTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+}
+
 func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	return traces
+}
+
+func servicesWithSameTraceID(id pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(2)
+	traces.ResourceSpans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty()
+	fillResource(traces.ResourceSpans().At(0).Resource(), "ad-service-1")
+	fillResource(traces.ResourceSpans().At(1).Resource(), "get-recommendations-7")
+	traces.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	traces.ResourceSpans().At(1).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
 }
 
@@ -564,14 +609,14 @@ func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().EnsureCapacity(1)
 	rspans := traces.ResourceSpans().AppendEmpty()
-	fillResource(rspans.Resource())
+	fillResource(rspans.Resource(), "service-name-1")
 	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
 }
 
-func fillResource(resource pcommon.Resource) {
+func fillResource(resource pcommon.Resource, svc string) {
 	attrs := resource.Attributes()
-	attrs.InsertString("service.name", "service-name-1")
+	attrs.InsertString("service.name", svc)
 }
 
 func simpleConfig() *Config {
