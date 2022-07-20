@@ -209,7 +209,7 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver: "otlpjsonfile",
 			getConfigFn: func() config.Receiver {
-				cfg := rcvrFactories["otlpjsonfile"].CreateDefaultConfig().(*otlpjsonfilereceiver.Cfg)
+				cfg := rcvrFactories["otlpjsonfile"].CreateDefaultConfig().(*otlpjsonfilereceiver.Config)
 				cfg.Include = []string{"/tmp/*.log"}
 				return cfg
 			},
