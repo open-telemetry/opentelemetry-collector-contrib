@@ -114,6 +114,12 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 
 	if b.fp != nil {
 		r.Fingerprint = b.fp
+	} else if b.file != nil {
+		fp, err := b.readerFactory.newFingerprint(r.file)
+		if err != nil {
+			return nil, err
+		}
+		r.Fingerprint = fp
 	}
 
 	if !b.fromBeginning {

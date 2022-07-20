@@ -20,28 +20,29 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func Test_set(t *testing.T) {
 	input := pcommon.NewValueString("original name")
 
 	target := &testGetSetter{
-		setter: func(ctx TransformContext, val interface{}) {
+		setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
 
 	tests := []struct {
 		name   string
-		setter Setter
-		getter Getter
+		setter tql.Setter
+		getter tql.Getter
 		want   func(pcommon.Value)
 	}{
 		{
 			name:   "set name",
 			setter: target,
-			getter: literal{value: "new name"},
+			getter: testLiteral{value: "new name"},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("new name")
 			},
@@ -49,7 +50,7 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: literal{value: nil},
+			getter: testLiteral{value: nil},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("original name")
 			},
@@ -59,7 +60,7 @@ func Test_set(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueString(input.StringVal())
 
-			ctx := testhelper.TestTransformContext{
+			ctx := tqltest.TestTransformContext{
 				Item: scenarioValue,
 			}
 
@@ -75,18 +76,18 @@ func Test_set(t *testing.T) {
 }
 
 func Test_set_get_nil(t *testing.T) {
-	ctx := testhelper.TestTransformContext{
+	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
 
 	setter := &testGetSetter{
-		setter: func(ctx TransformContext, val interface{}) {
+		setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
 	getter := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}

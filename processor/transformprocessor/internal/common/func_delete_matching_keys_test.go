@@ -20,7 +20,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func Test_deleteMatchingKeys(t *testing.T) {
@@ -30,14 +31,14 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.InsertBool("test3", true)
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
 
 	tests := []struct {
 		name    string
-		target  Getter
+		target  tql.Getter
 		pattern string
 		want    func(pcommon.Map)
 	}{
@@ -76,7 +77,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			ctx := testhelper.TestTransformContext{
+			ctx := tqltest.TestTransformContext{
 				Item: scenarioMap,
 			}
 
@@ -93,12 +94,12 @@ func Test_deleteMatchingKeys(t *testing.T) {
 
 func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	ctx := testhelper.TestTransformContext{
+	ctx := tqltest.TestTransformContext{
 		Item: input,
 	}
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -111,12 +112,12 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 }
 
 func Test_deleteMatchingKeys_get_nil(t *testing.T) {
-	ctx := testhelper.TestTransformContext{
+	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
 
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -127,7 +128,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	target := &testGetSetter{
-		getter: func(ctx TransformContext) interface{} {
+		getter: func(ctx tql.TransformContext) interface{} {
 			t.Errorf("nothing should be received in this scenario")
 			return nil
 		},
