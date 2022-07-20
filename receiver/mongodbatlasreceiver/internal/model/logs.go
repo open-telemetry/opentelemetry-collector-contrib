@@ -19,7 +19,7 @@ type LogEntry struct {
 	Timestamp  logTimestamp           `json:"t"`
 	Severity   string                 `json:"s"`
 	Component  string                 `json:"c"`
-	ID         int                    `json:"id"`
+	ID         int64                  `json:"id"`
 	Context    string                 `json:"ctx"`
 	Message    string                 `json:"msg"`
 	Attributes map[string]interface{} `json:"attr"`

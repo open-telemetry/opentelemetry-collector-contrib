@@ -20,9 +20,9 @@ import (
 	"net"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 )
@@ -32,6 +32,16 @@ type combindedLogsReceiver struct {
 	alerts *alertsReceiver
 	logs   *receiver
 }
+
+type resourceInfo struct {
+	Org      *mongodbatlas.Organization
+	Project  *mongodbatlas.Project
+	Cluster  *mongodbatlas.Cluster
+	Hostname string
+	LogName  string
+}
+
+const collection_interval = time.Minute * 5
 
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 
@@ -117,23 +127,28 @@ func FilterHostName(s string) []string {
 	return hostnames
 }
 
-func (s *receiver) GetProjectInfo(ctx context.Context) {
+func (s *receiver) KickoffReceiver(ctx context.Context) {
+	stopper := make(chan struct{})
+	s.stopperChanList = append(s.stopperChanList, stopper)
 	cfgProjects, err := s.createProjectMap()
 	if err != nil {
 		s.log.Debug("error ")
 	}
 
 	for {
+		// reterive all organizations listed in the MongoDB client
 		orgs, err := s.client.Organizations(ctx)
 		if err != nil {
 			s.log.Debug("error retrieving organizations: %w")
 		}
+		// get all projects listed for each of the organizations
 		for _, org := range orgs {
 			projects, err := s.client.Projects(ctx, org.ID)
 			if err != nil {
 				s.log.Debug("error retrieving projects: %w")
 			}
 
+			// filter out any projects not specified in the config
 			var filteredProjects map[string]*mongodbatlas.Project
 			for _, project := range projects {
 				if _, ok := cfgProjects[project.Name]; ok {
@@ -141,32 +156,81 @@ func (s *receiver) GetProjectInfo(ctx context.Context) {
 				}
 			}
 
+			// get clusters for each of the projects
 			for _, project := range filteredProjects {
+				resource := resourceInfo{Org: org, Project: project}
 				include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
 				clusters, err := s.client.GetClusters(ctx, project.ID, include, exclude)
+
+				// check to include or exclude clusters
+				switch {
+				//keep all clusters if include and exclude are not specified
+				case len(include) == 0 && len(exclude) == 0:
+					break
+				// include is initialized
+				case len(include) > 0 && len(exclude) == 0:
+					clusters, err = filterClusters(clusters, createStringMap(include), true)
+					break
+				// exclude is initialized
+				case len(exclude) > 0 && len(include) == 0:
+					clusters, err = filterClusters(clusters, createStringMap(exclude), false)
+					break
+				// both are initialized
+				default:
+					clusters = nil
+					s.log.Debug("Error can not have both include and exclude parameters initialized")
+				}
+
 				if err != nil {
 					s.log.Debug("error retreiving clusters from project")
 				}
 
-				s.collectClusterLogs(clusters, cfgProjects, *project)
+				// collection interval loop,
+				select {
+				case <-ctx.Done():
+					return
+				case <-stopper:
+					return
+				case <-time.After(collection_interval):
+					s.collectClusterLogs(clusters, cfgProjects, resource)
+				}
 			}
 		}
 	}
 }
 
-func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, project mongodbatlas.Project) {
+func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
 	for _, cluster := range clusters {
 		hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
 		for _, hostname := range hostnames {
-			var logs []model.LogEntry
-			logs = s.appendLogs(logs, project.ID, hostname, "monogodb.gz")
-			logs = s.appendLogs(logs, project.ID, hostname, "monogos.gz")
+			r.Cluster = &cluster
+			r.Hostname = hostname
+			s.sendLogs(r, "monogodb.gz")
+			s.sendLogs(r, "monogos.gz")
 
-			if cfgProjects[project.Name].EnableAuditLogs {
-				s.appendLogs(logs, project.ID, hostname, "mongodb-audit-log.gz")
-				s.appendLogs(logs, project.ID, hostname, "mongos-audit-log.gz")
+			if cfgProjects[r.Project.Name].EnableAuditLogs {
+				s.sendLogs(r, "mongodb-audit-log.gz")
+				s.sendLogs(r, "mongos-audit-log.gz")
 			}
-
 		}
 	}
+}
+
+func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]string, include bool) ([]mongodbatlas.Cluster, error) {
+	var filtered []mongodbatlas.Cluster
+	for _, cluster := range clusters {
+		if _, ok := keys[cluster.ID]; (!ok && !include) || (ok && include) {
+			filtered = append(filtered, cluster)
+		}
+	}
+	return filtered, nil
+}
+
+func createStringMap(in []string) map[string]string {
+	list := make(map[string]string)
+	for i := range in {
+		list[in[i]] = in[i]
+	}
+
+	return list
 }

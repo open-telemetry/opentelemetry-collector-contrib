@@ -577,34 +577,5 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string, in
 		return nil, err
 	}
 
-	switch {
-	case len(include) == 0 && len(exclude) == 0:
-		return clusters, nil
-	case len(include) > 0:
-		return filterClusters(clusters, createStringMap(include), true)
-	case len(exclude) > 0:
-		return filterClusters(clusters, createStringMap(exclude), false)
-	default:
-		return nil, fmt.Errorf("Error can not have both include and exclude parameters initialized")
-	}
-
-}
-
-func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]string, include bool) ([]mongodbatlas.Cluster, error) {
-	var filtered []mongodbatlas.Cluster
-	for _, cluster := range clusters {
-		if _, ok := keys[cluster.ID]; (!ok && !include) || (ok && include) {
-			filtered = append(filtered, cluster)
-		}
-	}
-	return filtered, nil
-}
-
-func createStringMap(in []string) map[string]string {
-	list := make(map[string]string)
-	for i := range in {
-		list[in[i]] = in[i]
-	}
-
-	return list
+	return clusters, nil
 }

@@ -37,12 +37,13 @@ import (
 )
 
 type receiver struct {
-	log      *zap.Logger
-	cfg      *Config
-	client   *internal.MongoDBAtlasClient
-	lastRun  time.Time
-	mb       *metadata.MetricsBuilder
-	consumer consumer.Logs
+	log             *zap.Logger
+	cfg             *Config
+	client          *internal.MongoDBAtlasClient
+	lastRun         time.Time
+	mb              *metadata.MetricsBuilder
+	consumer        consumer.Logs
+	stopperChanList []chan struct{}
 }
 
 type timeconstraints struct {
@@ -245,62 +246,17 @@ func (s *receiver) extractProcessDiskMetrics(
 
 // Log receiver logic
 func (s *receiver) Start(ctx context.Context, host component.Host) error {
-	go func() error {
-		cfgProjects, err := s.createProjectMap()
-		if err != nil {
-			return fmt.Errorf("error ")
-		}
-
-		for {
-			orgs, err := s.client.Organizations(ctx)
-			if err != nil {
-				return fmt.Errorf("error retrieving organizations: %w", err)
-			}
-			for _, org := range orgs {
-				projects, err := s.client.Projects(ctx, org.ID)
-				if err != nil {
-					return fmt.Errorf("error retrieving projects: %w", err)
-				}
-
-				var filteredProjects map[string]*mongodbatlas.Project
-				for _, project := range projects {
-					if _, ok := cfgProjects[project.Name]; ok {
-						filteredProjects[project.Name] = project
-					}
-				}
-
-				for _, project := range filteredProjects {
-					include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
-					clusters, err := s.client.GetClusters(ctx, project.ID, include, exclude)
-					if err != nil {
-						s.log.Debug("error retreiving clusters from project")
-					}
-
-					for _, cluster := range clusters {
-						hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
-						for _, hostname := range hostnames {
-							var logs []model.LogEntry
-							logs = s.appendLogs(logs, project.ID, hostname, "monogodb.gz")
-							logs = s.appendLogs(logs, project.ID, hostname, "monogos.gz")
-
-							if cfgProjects[project.Name].EnableAuditLogs {
-								s.appendLogs(logs, project.ID, hostname, "mongodb-audit-log.gz")
-								s.appendLogs(logs, project.ID, hostname, "mongos-audit-log.gz")
-							}
-
-						}
-					}
-
-				}
-
-			}
-		}
+	go func() {
+		s.KickoffReceiver(ctx)
 	}()
 	return nil
 }
 
 func (s *receiver) Shutdown(ctx context.Context) error {
-
+	for _, stopperChan := range s.stopperChanList {
+		close(stopperChan)
+	}
+	ctx.Done()
 	return nil
 }
 
@@ -332,11 +288,14 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 	}
 }
 
-func (s *receiver) appendLogs(logs []model.LogEntry, projectID, hostname, logName string) []model.LogEntry {
-	tmp, err := s.getHostLogs(projectID, hostname, logName)
+func (s *receiver) sendLogs(r resourceInfo, logName string) {
+	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, r.LogName)
 	if err != nil {
-		fmt.Errorf("Failed to retreive logs: %w", err)
+		s.log.Debug("Failed to retreive logs")
 	}
-	logs = append(logs, tmp...)
-	return logs
+
+	for _, log := range logs {
+		plog := mongodbEventToLogData(s.log, &log, r)
+		s.consumer.ConsumeLogs(context.Background(), plog)
+	}
 }
