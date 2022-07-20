@@ -182,7 +182,7 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	defer func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	}()
-	defer require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
 
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
