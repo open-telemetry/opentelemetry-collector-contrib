@@ -26,6 +26,7 @@ import (
 	"github.com/mitchellh/hashstructure/v2"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -132,7 +133,13 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *targetAll
 	cfg := baseCfg
 
 	for _, linkJSON := range *jobObject {
-		httpSD := *allocConf.HTTPSDConfig
+		var httpSD promHTTP.SDConfig
+		if allocConf.HTTPSDConfig == nil {
+			httpSD = promHTTP.SDConfig{}
+		} else {
+			httpSD = *allocConf.HTTPSDConfig
+		}
+
 		httpSD.URL = fmt.Sprintf("%s%s?collector_id=%s", allocConf.Endpoint, linkJSON.Link, allocConf.CollectorID)
 
 		scrapeCfg := &config.ScrapeConfig{

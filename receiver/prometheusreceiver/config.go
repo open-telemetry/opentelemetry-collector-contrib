@@ -148,11 +148,25 @@ func checkSDFile(filename string) error {
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	promConfig := cfg.PrometheusConfig
-	if promConfig == nil {
-		return nil // noop receiver
+	if promConfig != nil {
+		err := cfg.validatePromConfig(promConfig)
+		if err != nil {
+			return err
+		}
 	}
-	if len(promConfig.ScrapeConfigs) == 0 && cfg.TargetAllocator == nil {
-		return errors.New("no Prometheus scrape_configs and no target_allocator config")
+
+	if cfg.TargetAllocator != nil {
+		err := cfg.validateTargetAllocatorConfig()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
+	if len(promConfig.ScrapeConfigs) == 0 {
+		return errors.New("no Prometheus scrape_configs")
 	}
 
 	// Reject features that Prometheus supports but that the receiver doesn't support:
@@ -225,7 +239,10 @@ func (cfg *Config) Validate() error {
 			}
 		}
 	}
+	return nil
+}
 
+func (cfg *Config) validateTargetAllocatorConfig() error {
 	// validate targetAllocator
 	targetAllocatorConfig := cfg.TargetAllocator
 	if targetAllocatorConfig == nil {
