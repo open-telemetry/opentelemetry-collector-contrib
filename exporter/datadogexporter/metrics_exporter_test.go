@@ -19,8 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"sync"
 	"testing"
 	"time"
@@ -263,39 +261,23 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("kind=%s,histgramMode=%s", tt.source.Kind, tt.histogramMode), func(t *testing.T) {
-			getPushTime = func() uint64 { return 0 }
+			seriesRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/v1/series"}
+			sketchRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/beta/sketches"}
+			server := testutils.DatadogServerMock(
+				seriesRecorder.HandlerFunc,
+				sketchRecorder.HandlerFunc,
+			)
+			defer server.Close()
+
 			var once sync.Once
-			testServerURL, testServer := newTestServer(t)
-			handleSeries, handleSketches := false, false
-			testServer.HandleFunc("/api/v1/series", func(_ http.ResponseWriter, r *http.Request) {
-				handleSeries = true
-				assert.Equal(t, "gzip", r.Header.Get("Accept-Encoding"))
-				assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
-				assert.Equal(t, "otelcol/latest", r.Header.Get("User-Agent"))
-				b, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				var actual map[string]interface{}
-				assert.NoError(t, json.Unmarshal(b, &actual))
-				assert.Equal(t, tt.expectedSeries, actual)
-			})
-			testServer.HandleFunc("/api/beta/sketches", func(_ http.ResponseWriter, r *http.Request) {
-				handleSketches = true
-				assert.Equal(t, "gzip", r.Header.Get("Accept-Encoding"))
-				assert.Equal(t, "application/x-protobuf", r.Header.Get("Content-Type"))
-				assert.Equal(t, "otelcol/latest", r.Header.Get("User-Agent"))
-				actual, err := io.ReadAll(r.Body)
-				assert.NoError(t, err)
-				expected, err := tt.expectedSketchPayload.Marshal()
-				assert.NoError(t, err)
-				assert.Equal(t, expected, actual)
-			})
 			exp, err := newMetricsExporter(
 				context.Background(),
 				componenttest.NewNopExporterCreateSettings(),
-				newConfig(t, testServerURL.String(), tt.hostTags, tt.histogramMode),
+				newConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
-				&mockSourceProvider{source: tt.source},
+				&testutils.MockSourceProvider{Src: tt.source},
 			)
+			exp.pushTimestamp = 0
 			if tt.expectedErr == nil {
 				assert.NoError(t, err, "unexpected error")
 			} else {
@@ -307,12 +289,28 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				assert.NoError(t, err, "unexpected error")
 			} else {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
+				return
 			}
-			if !handleSeries && len(tt.expectedSeries) > 0 {
-				t.Errorf("%d series must be handled in the test server", len(tt.expectedSeries))
+			if len(tt.expectedSeries) == 0 {
+				assert.Nil(t, seriesRecorder.ByteBody)
+			} else {
+				assert.Equal(t, "gzip", seriesRecorder.Header.Get("Accept-Encoding"))
+				assert.Equal(t, "application/json", seriesRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "otelcol/latest", seriesRecorder.Header.Get("User-Agent"))
+				assert.NoError(t, err)
+				var actual map[string]interface{}
+				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
-			if !handleSketches && tt.expectedSketchPayload != nil {
-				t.Error("sketch payload must be handled in the test server")
+			if tt.expectedSketchPayload == nil {
+				assert.Nil(t, sketchRecorder.ByteBody)
+			} else {
+				assert.Equal(t, "gzip", sketchRecorder.Header.Get("Accept-Encoding"))
+				assert.Equal(t, "application/x-protobuf", sketchRecorder.Header.Get("Content-Type"))
+				assert.Equal(t, "otelcol/latest", sketchRecorder.Header.Get("User-Agent"))
+				expected, err := tt.expectedSketchPayload.Marshal()
+				assert.NoError(t, err)
+				assert.Equal(t, expected, sketchRecorder.ByteBody)
 			}
 		})
 	}
