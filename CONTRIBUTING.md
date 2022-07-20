@@ -162,9 +162,8 @@ Sometimes a component may be in need of a new or additional Code Owner.  A few r
 
 If you would like to help and become a Code Owner you must meet the following requirements:
 
-1. Have contributed to the OpenTelemetry Project, preferably either Collector Core or Collector Contrib.  Best case scenario would be contributing to the component directly.
-2. Have attended the Collector SIG meeting.
-3. (Optional) Be a member of the OpenTelemetry organization.
+1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
+2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs.  How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners. 
 
 Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers.  Meeting the above requirements is not a guarantee to be granted Code Ownership.
 
