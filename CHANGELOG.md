@@ -436,9 +436,7 @@ https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9278.
 
 ### 🚀 New components 🚀
 
-- `azureblobreceiver`: reads logs and traces from Azure Blob Storage
 - `sigv4authextension`: Enable component (#8518)
-
 
 ## v0.47.0
 
