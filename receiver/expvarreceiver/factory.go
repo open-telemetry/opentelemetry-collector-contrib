@@ -29,6 +29,7 @@ import (
 
 const (
 	typeStr         = "expvar"
+	stability       = component.StabilityLevelBeta
 	defaultPath     = "/debug/vars"
 	defaultEndpoint = "http://localhost:8000" + defaultPath
 	defaultTimeout  = 3 * time.Second
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		newDefaultConfig,
-		component.WithMetricsReceiver(newMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(newMetricsReceiver, stability))
 }
 
 func newMetricsReceiver(

@@ -25,6 +25,8 @@ import (
 const (
 	// The value of "type" trace-samplers in configuration.
 	typeStr = "probabilistic_sampler"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory returns a new factory for the Probabilistic sampler processor.
@@ -32,7 +34,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {

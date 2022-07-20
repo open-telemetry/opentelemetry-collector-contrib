@@ -17,7 +17,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 )
 
 type translatorConfig struct {

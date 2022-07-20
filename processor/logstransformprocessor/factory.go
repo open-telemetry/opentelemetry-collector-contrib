@@ -30,6 +30,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "logstransform"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -39,7 +41,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor))
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

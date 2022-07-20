@@ -24,11 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
-const typeStr = "udplog"
+const (
+	typeStr   = "udplog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for udp receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType

@@ -61,22 +61,26 @@ For the actions `insert`, `update` and `upsert`,
 ```
 
 For the `delete` action,
- - `key` is required
+ - `key` and/or `pattern` is required
  - `action: delete` is required.
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
   action: delete
+  # Rule specifies the regex pattern for attribute names to act upon.
+  pattern: <regular pattern>
 ```
 
 
 For the `hash` action,
- - `key` is required
+ - `key` and/or `pattern` is required
  - `action: hash` is required.
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
   action: hash
+  # Rule specifies the regex pattern for attribute names to act upon.
+  pattern: <regular pattern>
 ```
 
 

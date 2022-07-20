@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -35,18 +34,20 @@ import (
 
 func TestScrape(t *testing.T) {
 	type testCase struct {
-		name                                       string
-		config                                     Config
-		bootTimeFunc                               func() (uint64, error)
-		ioCountersFunc                             func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc                            func(string) ([]net.ConnectionStat, error)
-		expectNetworkMetrics                       bool
-		expectedStartTime                          pcommon.Timestamp
-		newErrRegex                                string
-		initializationErr                          string
-		expectedErr                                string
-		expectedErrCount                           int
-		removeDirectionAttributeFeatureGateEnabled bool
+		name                                   string
+		config                                 Config
+		bootTimeFunc                           func() (uint64, error)
+		ioCountersFunc                         func(bool) ([]net.IOCountersStat, error)
+		connectionsFunc                        func(string) ([]net.ConnectionStat, error)
+		expectNetworkMetrics                   bool
+		expectedStartTime                      pcommon.Timestamp
+		newErrRegex                            string
+		initializationErr                      string
+		expectedErr                            string
+		expectedErrCount                       int
+		expectMetricsWithDirectionAttribute    bool
+		expectMetricsWithoutDirectionAttribute bool
+		mutateScraper                          func(*scraper)
 	}
 
 	testCases := []testCase{
@@ -55,24 +56,31 @@ func TestScrape(t *testing.T) {
 			config: Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
-			expectNetworkMetrics: true,
+			expectNetworkMetrics:                true,
+			expectMetricsWithDirectionAttribute: true,
 		},
 		{
 			name: "Standard with direction removed",
 			config: Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
-			expectNetworkMetrics:                       true,
-			removeDirectionAttributeFeatureGateEnabled: true,
+			expectNetworkMetrics:                   true,
+			expectMetricsWithDirectionAttribute:    false,
+			expectMetricsWithoutDirectionAttribute: true,
+			mutateScraper: func(s *scraper) {
+				s.emitMetricsWithDirectionAttribute = false
+				s.emitMetricsWithoutDirectionAttribute = true
+			},
 		},
 		{
 			name: "Validate Start Time",
 			config: Config{
 				Metrics: metadata.DefaultMetricsSettings(),
 			},
-			bootTimeFunc:         func() (uint64, error) { return 100, nil },
-			expectNetworkMetrics: true,
-			expectedStartTime:    100 * 1e9,
+			bootTimeFunc:                        func() (uint64, error) { return 100, nil },
+			expectNetworkMetrics:                true,
+			expectMetricsWithDirectionAttribute: true,
+			expectedStartTime:                   100 * 1e9,
 		},
 		{
 			name: "Include Filter that matches nothing",
@@ -119,8 +127,10 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			featuregate.GetRegistry().Apply(map[string]bool{removeDirectionAttributeFeatureGateID: test.removeDirectionAttributeFeatureGateEnabled})
 			scraper, err := newNetworkScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &test.config)
+			if test.mutateScraper != nil {
+				test.mutateScraper(scraper)
+			}
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)
@@ -163,9 +173,10 @@ func TestScrape(t *testing.T) {
 
 			expectedMetricCount := 1
 			if test.expectNetworkMetrics {
-				if test.removeDirectionAttributeFeatureGateEnabled {
+				if test.expectMetricsWithoutDirectionAttribute {
 					expectedMetricCount += 8
-				} else {
+				}
+				if test.expectMetricsWithDirectionAttribute {
 					expectedMetricCount += 4
 				}
 			}
@@ -175,20 +186,32 @@ func TestScrape(t *testing.T) {
 			idx := 0
 			assertNetworkConnectionsMetricValid(t, metrics.At(idx))
 			if test.expectNetworkMetrics {
-				if test.removeDirectionAttributeFeatureGateEnabled {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped.receive", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.dropped.transmit", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.errors.receive", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.errors.transmit", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+5), "system.network.io.receive", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+6), "system.network.io.transmit", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+7), "system.network.packets.receive", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+8), "system.network.packets.transmit", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-				} else {
-					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
-					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets", test.expectedStartTime, test.removeDirectionAttributeFeatureGateEnabled)
+				if test.expectMetricsWithoutDirectionAttribute {
+					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped.receive",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.dropped.transmit",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.errors.receive",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.errors.transmit",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+5), "system.network.io.receive",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+6), "system.network.io.transmit",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+7), "system.network.packets.receive",
+						test.expectedStartTime, true)
+					assertNetworkIOMetricValid(t, metrics.At(idx+8), "system.network.packets.transmit",
+						test.expectedStartTime, true)
+				}
+				if test.expectMetricsWithDirectionAttribute {
+					assertNetworkIOMetricValid(t, metrics.At(idx+1), "system.network.dropped",
+						test.expectedStartTime, false)
+					assertNetworkIOMetricValid(t, metrics.At(idx+2), "system.network.errors", test.expectedStartTime,
+						false)
+					assertNetworkIOMetricValid(t, metrics.At(idx+3), "system.network.io", test.expectedStartTime, false)
+					assertNetworkIOMetricValid(t, metrics.At(idx+4), "system.network.packets",
+						test.expectedStartTime, false)
 				}
 				internal.AssertSameTimeStampForMetrics(t, metrics, 1, 5)
 				idx += 4

@@ -32,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelStable
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
@@ -42,8 +44,8 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

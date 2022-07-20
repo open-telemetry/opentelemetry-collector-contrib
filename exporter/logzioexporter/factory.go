@@ -30,15 +30,19 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-const typeStr = "logzio"
+const (
+	typeStr = "logzio"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a factory for Logz.io exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelBeta))
 
 }
 

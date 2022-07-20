@@ -16,7 +16,6 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
-// nolint:errcheck
 package docker
 
 import (
@@ -214,7 +213,8 @@ func TestEventLoopHandlesError(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/events") {
 			wg.Done()
 		}
-		w.Write([]byte{})
+		_, err := w.Write([]byte{})
+		assert.NoError(t, err)
 	}))
 	defer srv.Close()
 

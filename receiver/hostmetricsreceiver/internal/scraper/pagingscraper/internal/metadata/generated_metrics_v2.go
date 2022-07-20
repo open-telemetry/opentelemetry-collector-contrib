@@ -18,10 +18,12 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for hostmetricsreceiver/paging metrics.
 type MetricsSettings struct {
-	SystemPagingFaults      MetricSettings `mapstructure:"system.paging.faults"`
-	SystemPagingOperations  MetricSettings `mapstructure:"system.paging.operations"`
-	SystemPagingUsage       MetricSettings `mapstructure:"system.paging.usage"`
-	SystemPagingUtilization MetricSettings `mapstructure:"system.paging.utilization"`
+	SystemPagingFaults            MetricSettings `mapstructure:"system.paging.faults"`
+	SystemPagingOperations        MetricSettings `mapstructure:"system.paging.operations"`
+	SystemPagingOperationsPageIn  MetricSettings `mapstructure:"system.paging.operations.page_in"`
+	SystemPagingOperationsPageOut MetricSettings `mapstructure:"system.paging.operations.page_out"`
+	SystemPagingUsage             MetricSettings `mapstructure:"system.paging.usage"`
+	SystemPagingUtilization       MetricSettings `mapstructure:"system.paging.utilization"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -30,6 +32,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		SystemPagingOperations: MetricSettings{
+			Enabled: true,
+		},
+		SystemPagingOperationsPageIn: MetricSettings{
+			Enabled: true,
+		},
+		SystemPagingOperationsPageOut: MetricSettings{
 			Enabled: true,
 		},
 		SystemPagingUsage: MetricSettings{
@@ -230,6 +238,112 @@ func newMetricSystemPagingOperations(settings MetricSettings) metricSystemPaging
 	return m
 }
 
+type metricSystemPagingOperationsPageIn struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.paging.operations.page_in metric with initial data.
+func (m *metricSystemPagingOperationsPageIn) init() {
+	m.data.SetName("system.paging.operations.page_in")
+	m.data.SetDescription("The number of page_in operations.")
+	m.data.SetUnit("{operations}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemPagingOperationsPageIn) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemPagingOperationsPageIn) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemPagingOperationsPageIn) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemPagingOperationsPageIn(settings MetricSettings) metricSystemPagingOperationsPageIn {
+	m := metricSystemPagingOperationsPageIn{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemPagingOperationsPageOut struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.paging.operations.page_out metric with initial data.
+func (m *metricSystemPagingOperationsPageOut) init() {
+	m.data.SetName("system.paging.operations.page_out")
+	m.data.SetDescription("The number of page_out operations.")
+	m.data.SetUnit("{operations}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSystemPagingOperationsPageOut) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, typeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert("type", pcommon.NewValueString(typeAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemPagingOperationsPageOut) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemPagingOperationsPageOut) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemPagingOperationsPageOut(settings MetricSettings) metricSystemPagingOperationsPageOut {
+	m := metricSystemPagingOperationsPageOut{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemPagingUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -339,15 +453,17 @@ func newMetricSystemPagingUtilization(settings MetricSettings) metricSystemPagin
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity               int                 // maximum observed number of metrics per resource.
-	resourceCapacity              int                 // maximum observed number of resource attributes.
-	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                     component.BuildInfo // contains version information
-	metricSystemPagingFaults      metricSystemPagingFaults
-	metricSystemPagingOperations  metricSystemPagingOperations
-	metricSystemPagingUsage       metricSystemPagingUsage
-	metricSystemPagingUtilization metricSystemPagingUtilization
+	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                     int                 // maximum observed number of metrics per resource.
+	resourceCapacity                    int                 // maximum observed number of resource attributes.
+	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                           component.BuildInfo // contains version information
+	metricSystemPagingFaults            metricSystemPagingFaults
+	metricSystemPagingOperations        metricSystemPagingOperations
+	metricSystemPagingOperationsPageIn  metricSystemPagingOperationsPageIn
+	metricSystemPagingOperationsPageOut metricSystemPagingOperationsPageOut
+	metricSystemPagingUsage             metricSystemPagingUsage
+	metricSystemPagingUtilization       metricSystemPagingUtilization
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -362,13 +478,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     buildInfo,
-		metricSystemPagingFaults:      newMetricSystemPagingFaults(settings.SystemPagingFaults),
-		metricSystemPagingOperations:  newMetricSystemPagingOperations(settings.SystemPagingOperations),
-		metricSystemPagingUsage:       newMetricSystemPagingUsage(settings.SystemPagingUsage),
-		metricSystemPagingUtilization: newMetricSystemPagingUtilization(settings.SystemPagingUtilization),
+		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                       pmetric.NewMetrics(),
+		buildInfo:                           buildInfo,
+		metricSystemPagingFaults:            newMetricSystemPagingFaults(settings.SystemPagingFaults),
+		metricSystemPagingOperations:        newMetricSystemPagingOperations(settings.SystemPagingOperations),
+		metricSystemPagingOperationsPageIn:  newMetricSystemPagingOperationsPageIn(settings.SystemPagingOperationsPageIn),
+		metricSystemPagingOperationsPageOut: newMetricSystemPagingOperationsPageOut(settings.SystemPagingOperationsPageOut),
+		metricSystemPagingUsage:             newMetricSystemPagingUsage(settings.SystemPagingUsage),
+		metricSystemPagingUtilization:       newMetricSystemPagingUtilization(settings.SystemPagingUtilization),
 	}
 	for _, op := range options {
 		op(mb)
@@ -424,6 +542,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemPagingFaults.emit(ils.Metrics())
 	mb.metricSystemPagingOperations.emit(ils.Metrics())
+	mb.metricSystemPagingOperationsPageIn.emit(ils.Metrics())
+	mb.metricSystemPagingOperationsPageOut.emit(ils.Metrics())
 	mb.metricSystemPagingUsage.emit(ils.Metrics())
 	mb.metricSystemPagingUtilization.emit(ils.Metrics())
 	for _, op := range rmo {
@@ -453,6 +573,16 @@ func (mb *MetricsBuilder) RecordSystemPagingFaultsDataPoint(ts pcommon.Timestamp
 // RecordSystemPagingOperationsDataPoint adds a data point to system.paging.operations metric.
 func (mb *MetricsBuilder) RecordSystemPagingOperationsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection, typeAttributeValue AttributeType) {
 	mb.metricSystemPagingOperations.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String(), typeAttributeValue.String())
+}
+
+// RecordSystemPagingOperationsPageInDataPoint adds a data point to system.paging.operations.page_in metric.
+func (mb *MetricsBuilder) RecordSystemPagingOperationsPageInDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingOperationsPageIn.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
+}
+
+// RecordSystemPagingOperationsPageOutDataPoint adds a data point to system.paging.operations.page_out metric.
+func (mb *MetricsBuilder) RecordSystemPagingOperationsPageOutDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	mb.metricSystemPagingOperationsPageOut.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordSystemPagingUsageDataPoint adds a data point to system.paging.usage metric.

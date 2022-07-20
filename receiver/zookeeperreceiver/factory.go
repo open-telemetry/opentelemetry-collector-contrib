@@ -28,7 +28,8 @@ import (
 )
 
 const (
-	typeStr = "zookeeper"
+	typeStr   = "zookeeper"
+	stability = component.StabilityLevelInDevelopment
 
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

@@ -32,6 +32,7 @@ import (
 
 const (
 	typeStr            = "kubeletstats"
+	stability          = component.StabilityLevelBeta
 	metricGroupsConfig = "metric_groups"
 )
 
@@ -46,7 +47,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

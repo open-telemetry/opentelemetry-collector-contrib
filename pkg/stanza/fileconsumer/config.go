@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
+package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
 	"fmt"
@@ -117,24 +117,20 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 	}
 
 	return &Input{
-		SugaredLogger:           logger.With("component", "fileconsumer"),
-		finder:                  c.Finder,
-		PollInterval:            c.PollInterval.Raw(),
-		captureFileName:         c.IncludeFileName,
-		captureFilePath:         c.IncludeFilePath,
-		captureFileNameResolved: c.IncludeFileNameResolved,
-		captureFilePathResolved: c.IncludeFilePathResolved,
-		startAtBeginning:        startAtBeginning,
-		SplitterConfig:          c.Splitter,
-		queuedMatches:           make([]string, 0),
-		firstCheck:              true,
-		cancel:                  func() {},
-		knownFiles:              make([]*Reader, 0, 10),
-		roller:                  newRoller(),
-		fingerprintSize:         int(c.FingerprintSize),
-		MaxLogSize:              int(c.MaxLogSize),
-		MaxConcurrentFiles:      c.MaxConcurrentFiles,
-		SeenPaths:               make(map[string]struct{}, 100),
-		emit:                    emit,
+		SugaredLogger:      logger.With("component", "fileconsumer"),
+		finder:             c.Finder,
+		PollInterval:       c.PollInterval.Raw(),
+		startAtBeginning:   startAtBeginning,
+		SplitterConfig:     c.Splitter,
+		queuedMatches:      make([]string, 0),
+		firstCheck:         true,
+		cancel:             func() {},
+		knownFiles:         make([]*Reader, 0, 10),
+		roller:             newRoller(),
+		fingerprintSize:    int(c.FingerprintSize),
+		MaxLogSize:         int(c.MaxLogSize),
+		MaxConcurrentFiles: c.MaxConcurrentFiles,
+		SeenPaths:          make(map[string]struct{}, 100),
+		emit:               emit,
 	}, nil
 }

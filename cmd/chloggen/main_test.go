@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,6 +43,10 @@ func TestNew(t *testing.T) {
 		{
 			name:     "yml_extension",
 			filename: "some-change.yml",
+		},
+		{
+			name:     "replace_forward_slash",
+			filename: "replace/forward/slash",
 		},
 		{
 			name:     "bad_extension",
@@ -148,6 +154,9 @@ func TestValidateE2E(t *testing.T) {
 }
 
 func TestUpdateE2E(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows line breaks cause comparison failures w/ golden files.")
+	}
 	tests := []struct {
 		name    string
 		entries []*Entry
@@ -195,6 +204,11 @@ func TestUpdateE2E(t *testing.T) {
 			entries: []*Entry{breakingEntry()},
 			version: "v0.45.0",
 		},
+		{
+			name:    "subtext",
+			entries: []*Entry{entryWithSubtext()},
+			version: "v0.45.0",
+		},
 	}
 
 	for _, tc := range tests {
@@ -231,6 +245,7 @@ func getSampleEntries() []*Entry {
 		deprecationEntry(),
 		newComponentEntry(),
 		breakingEntry(),
+		entryWithSubtext(),
 	}
 }
 
@@ -279,6 +294,18 @@ func breakingEntry() *Entry {
 	}
 }
 
+func entryWithSubtext() *Entry {
+	lines := []string{"- foo\n  - bar\n- blah\n  - 1234567"}
+
+	return &Entry{
+		ChangeType: breaking,
+		Component:  "processor/oops",
+		Note:       "Change behavior when ...",
+		Issues:     []int{12350},
+		SubText:    strings.Join(lines, "\n"),
+	}
+}
+
 func setupTestDir(t *testing.T, entries []*Entry) chlogContext {
 	ctx := newChlogContext(t.TempDir())
 
@@ -309,4 +336,9 @@ func writeEntryYAML(ctx chlogContext, filename string, entry *Entry) error {
 	}
 	path := filepath.Join(ctx.unreleasedDir, filename)
 	return os.WriteFile(path, entryBytes, os.FileMode(0755))
+}
+
+func TestCleanFilename(t *testing.T) {
+	require.Equal(t, "fix_some_bug", cleanFileName("fix/some_bug"))
+	require.Equal(t, "fix_some_bug", cleanFileName("fix\\some_bug"))
 }

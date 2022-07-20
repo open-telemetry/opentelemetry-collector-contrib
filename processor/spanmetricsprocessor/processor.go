@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 
 import (
@@ -530,11 +529,11 @@ func sanitize(s string, skipSanitizeLabel bool) string {
 	if unicode.IsDigit(rune(s[0])) {
 		s = "key_" + s
 	}
-	//replace labels starting with _ only when skipSanitizeLabel is disabled
+	// replace labels starting with _ only when skipSanitizeLabel is disabled
 	if !skipSanitizeLabel && strings.HasPrefix(s, "_") {
 		s = "key" + s
 	}
-	//labels starting with __ are reserved in prometheus
+	// labels starting with __ are reserved in prometheus
 	if strings.HasPrefix(s, "__") {
 		s = "key" + s
 	}

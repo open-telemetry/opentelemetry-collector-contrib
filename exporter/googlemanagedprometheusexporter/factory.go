@@ -26,7 +26,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "googlemanagedprometheus"
+	typeStr = "googlemanagedprometheus"
+	// The stability level of the exporter.
+	stability      = component.StabilityLevelAlpha
 	defaultTimeout = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 )
 
@@ -35,7 +37,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter),
+		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
 	)
 }
 

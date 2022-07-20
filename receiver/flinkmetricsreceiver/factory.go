@@ -28,7 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 )
 
-const typeStr = "flinkmetrics"
+const (
+	typeStr   = "flinkmetrics"
+	stability = component.StabilityLevelAlpha
+)
 
 var errConfigNotflinkmetrics = errors.New("config was not a flinkmetrics receiver config")
 
@@ -37,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

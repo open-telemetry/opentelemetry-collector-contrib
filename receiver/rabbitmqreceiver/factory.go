@@ -28,7 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
 
-const typeStr = "rabbitmq"
+const (
+	typeStr   = "rabbitmq"
+	stability = component.StabilityLevelBeta
+)
 
 var errConfigNotRabbit = errors.New("config was not a RabbitMQ receiver config")
 
@@ -37,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/config"
+package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
 	"encoding"
@@ -266,6 +266,10 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// flushInterval defines the interval in seconds at which the writer flushes traces
+	// to the intake; used in tests.
+	flushInterval float64
 }
 
 // TagsConfig defines the tag-related configuration
@@ -443,16 +447,16 @@ type Config struct {
 	warnings []error
 }
 
-// Sanitize tries to sanitize a given configuration
-// Deprecated: [v0.54.0] Will be unexported in a future minor version.
-func (c *Config) Sanitize(logger *zap.Logger) error {
+// logWarnings logs warning messages that were generated on unmarshaling.
+func (c *Config) logWarnings(logger *zap.Logger) {
 	for _, err := range c.warnings {
 		logger.Warn(fmt.Sprintf("%v", err))
 	}
-
-	return nil
 }
 
+var _ config.Exporter = (*Config)(nil)
+
+// Validate the configuration for errors. This is required by config.Exporter.
 func (c *Config) Validate() error {
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
@@ -494,6 +498,9 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+var _ config.Unmarshallable = (*Config)(nil)
+
+// Unmarshal a configuration map into the configuration struct.
 func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if err := handleRemovedSettings(configMap); err != nil {
 		return err

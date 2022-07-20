@@ -20,8 +20,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 )
 
@@ -111,7 +113,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -140,7 +142,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -186,7 +188,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -242,7 +244,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes())
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
 		if ip.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
 			a.registeredMetrics.Delete(signature)
 			return 0
@@ -296,7 +298,7 @@ func (a *lastValueAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 	return metrics, resourceAttrs
 }
 
-func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map) string {
+func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) string {
 	var b strings.Builder
 	b.WriteString(metric.DataType().String())
 	b.WriteString("*" + ilmName)
@@ -305,6 +307,19 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 		b.WriteString("*" + k + "*" + v.AsString())
 		return true
 	})
+
+	// We only include the job and instance labels in the final output. So we should only construct the signature based on those.
+	if serviceName, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
+		val := serviceName.AsString()
+		if serviceNamespace, ok := resourceAttrs.Get(conventions.AttributeServiceNamespace); ok {
+			val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+		}
+		b.WriteString("*" + model.JobLabel + "*" + val)
+	}
+	if instance, ok := resourceAttrs.Get(conventions.AttributeServiceInstanceID); ok {
+		b.WriteString("*" + model.InstanceLabel + "*" + instance.AsString())
+	}
+
 	return b.String()
 }
 

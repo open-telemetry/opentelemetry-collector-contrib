@@ -295,11 +295,13 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
-				tagParts := strings.Split(tagSet, ":")
+				tagParts := strings.SplitN(tagSet, ":", 2)
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
+				k := tagParts[0]
+				v := tagParts[1]
+				kvs = append(kvs, attribute.String(k, v))
 			}
 
 		} else {
