@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
@@ -304,6 +305,11 @@ func (p *processHandleMock) IOCounters() (*process.IOCountersStat, error) {
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
 }
 
+func (p *processHandleMock) CreateTime() (int64, error) {
+	args := p.MethodCalled("CreateTime")
+	return args.Get(0).(int64), args.Error(1)
+}
+
 func newDefaultHandleMock() *processHandleMock {
 	handleMock := &processHandleMock{}
 	handleMock.On("Username").Return("username", nil)
@@ -319,51 +325,81 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
 	type testCase struct {
-		name          string
-		names         []string
-		include       []string
-		exclude       []string
-		expectedNames []string
+		name               string
+		names              []string
+		include            []string
+		exclude            []string
+		upTimeMs           []int64
+		scrapeProcessDelay string
+		expectedNames      []string
 	}
 
 	testCases := []testCase{
 		{
-			name:          "No Filter",
-			names:         []string{"test1", "test2"},
-			include:       []string{"test*"},
-			expectedNames: []string{"test1", "test2"},
+			name:               "No Filter",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test*"},
+			upTimeMs:           []int64{5000, 5000},
+			scrapeProcessDelay: "0s",
+			expectedNames:      []string{"test1", "test2"},
 		},
 		{
-			name:          "Include All",
-			names:         []string{"test1", "test2"},
-			include:       []string{"test*"},
-			expectedNames: []string{"test1", "test2"},
+			name:               "Include All",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test*"},
+			upTimeMs:           []int64{5000, 5000},
+			scrapeProcessDelay: "0s",
+			expectedNames:      []string{"test1", "test2"},
 		},
 		{
-			name:          "Include One",
-			names:         []string{"test1", "test2"},
-			include:       []string{"test1"},
-			expectedNames: []string{"test1"},
+			name:               "Include One",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test1"},
+			upTimeMs:           []int64{5000, 5000},
+			scrapeProcessDelay: "0s",
+			expectedNames:      []string{"test1"},
 		},
 		{
-			name:          "Exclude All",
-			names:         []string{"test1", "test2"},
-			exclude:       []string{"test*"},
-			expectedNames: []string{},
+			name:               "Exclude All",
+			names:              []string{"test1", "test2"},
+			exclude:            []string{"test*"},
+			upTimeMs:           []int64{5000, 5000},
+			scrapeProcessDelay: "0s",
+			expectedNames:      []string{},
 		},
 		{
-			name:          "Include & Exclude",
-			names:         []string{"test1", "test2"},
-			include:       []string{"test*"},
-			exclude:       []string{"test2"},
-			expectedNames: []string{"test1"},
+			name:               "Include & Exclude",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test*"},
+			exclude:            []string{"test2"},
+			upTimeMs:           []int64{5000, 5000},
+			scrapeProcessDelay: "0s",
+			expectedNames:      []string{"test1"},
+		},
+		{
+			name:               "Scrape Process Delay Keep One",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test*"},
+			upTimeMs:           []int64{5000, 50000},
+			scrapeProcessDelay: "10s",
+			expectedNames:      []string{"test2"},
+		},
+		{
+			name:               "Scrape Process Delay Keep Both",
+			names:              []string{"test1", "test2"},
+			include:            []string{"test*"},
+			upTimeMs:           []int64{50000, 50000},
+			scrapeProcessDelay: "10s",
+			expectedNames:      []string{"test1", "test2"},
 		},
 	}
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
+			scrapeProcessDelay, _ := time.ParseDuration(test.scrapeProcessDelay)
 			config := &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				Metrics:            metadata.DefaultMetricsSettings(),
+				ScrapeProcessDelay: scrapeProcessDelay,
 			}
 
 			if len(test.include) > 0 {
@@ -385,10 +421,11 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
 
 			handles := make([]*processHandleMock, 0, len(test.names))
-			for _, name := range test.names {
+			for i, name := range test.names {
 				handleMock := newDefaultHandleMock()
 				handleMock.On("Name").Return(name, nil)
 				handleMock.On("Exe").Return(name, nil)
+				handleMock.On("CreateTime").Return(time.Now().UnixMilli()-test.upTimeMs[i], nil)
 				handles = append(handles, handleMock)
 			}
 
@@ -422,6 +459,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		timesError      error
 		memoryInfoError error
 		ioCountersError error
+		createTimeError error
 		expectedError   string
 	}
 
@@ -448,32 +486,39 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading username for process "test" (pid 1): err3`,
 		},
 		{
+			name:            "Create Time Error",
+			createTimeError: errors.New("err4"),
+			expectedError:   `error reading create time for process "test" (pid 1): err4`,
+		},
+		{
 			name:          "Times Error",
-			timesError:    errors.New("err4"),
-			expectedError: `error reading cpu times for process "test" (pid 1): err4`,
+			timesError:    errors.New("err5"),
+			expectedError: `error reading cpu times for process "test" (pid 1): err5`,
 		},
 		{
 			name:            "Memory Info Error",
-			memoryInfoError: errors.New("err5"),
-			expectedError:   `error reading memory info for process "test" (pid 1): err5`,
+			memoryInfoError: errors.New("err6"),
+			expectedError:   `error reading memory info for process "test" (pid 1): err6`,
 		},
 		{
 			name:            "IO Counters Error",
-			ioCountersError: errors.New("err6"),
-			expectedError:   `error reading disk usage for process "test" (pid 1): err6`,
+			ioCountersError: errors.New("err7"),
+			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
 			name:            "Multiple Errors",
 			cmdlineError:    errors.New("err2"),
 			usernameError:   errors.New("err3"),
-			timesError:      errors.New("err4"),
-			memoryInfoError: errors.New("err5"),
-			ioCountersError: errors.New("err6"),
+			createTimeError: errors.New("err4"),
+			timesError:      errors.New("err5"),
+			memoryInfoError: errors.New("err6"),
+			ioCountersError: errors.New("err7"),
 			expectedError: `error reading command for process "test" (pid 1): err2; ` +
 				`error reading username for process "test" (pid 1): err3; ` +
-				`error reading cpu times for process "test" (pid 1): err4; ` +
-				`error reading memory info for process "test" (pid 1): err5; ` +
-				`error reading disk usage for process "test" (pid 1): err6`,
+				`error reading create time for process "test" (pid 1): err4; ` +
+				`error reading cpu times for process "test" (pid 1): err5; ` +
+				`error reading memory info for process "test" (pid 1): err6; ` +
+				`error reading disk usage for process "test" (pid 1): err7`,
 		},
 	}
 
@@ -502,6 +547,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("Times").Return(&cpu.TimesStat{}, test.timesError)
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
+			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil

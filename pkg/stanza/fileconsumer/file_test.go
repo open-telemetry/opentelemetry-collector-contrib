@@ -438,9 +438,10 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+	operator, emitCalls, tempDir := newTestScenario(t, func(cfg *Config) {
+		cfg.StartAt = "beginning"
+	})
 	operator.persister = testutil.NewMockPersister("test")
-	operator.startAtBeginning = false
 	defer func() {
 		require.NoError(t, operator.Stop())
 	}()
@@ -475,8 +476,8 @@ func TestNoNewline(t *testing.T) {
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }
 
-// SkipEmpty tests that the any empty lines are skipped
-func TestSkipEmpty(t *testing.T) {
+// TestEmptyLine tests that the any empty lines are consumed
+func TestEmptyLine(t *testing.T) {
 	t.Parallel()
 	operator, emitCalls, tempDir := newTestScenario(t, nil)
 
@@ -489,7 +490,51 @@ func TestSkipEmpty(t *testing.T) {
 	}()
 
 	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte(""))
 	waitForToken(t, emitCalls, []byte("testlog2"))
+}
+
+// TestMultipleEmpty tests that multiple empty lines
+// can be consumed without the operator becoming stuck
+func TestMultipleEmpty(t *testing.T) {
+	t.Parallel()
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog2"))
+	expectNoTokensUntil(t, emitCalls, time.Second)
+}
+
+// TestLeadingEmpty tests that the the operator handles a leading
+// newline, and does not read the file multiple times
+func TestLeadingEmpty(t *testing.T) {
+	t.Parallel()
+	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	temp := openTemp(t, tempDir)
+	writeString(t, temp, "\ntestlog1\ntestlog2\n")
+
+	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	waitForToken(t, emitCalls, []byte(""))
+	waitForToken(t, emitCalls, []byte("testlog1"))
+	waitForToken(t, emitCalls, []byte("testlog2"))
+	expectNoTokensUntil(t, emitCalls, time.Second)
 }
 
 // SplitWrite tests a line written in two writes
@@ -840,13 +885,10 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
-	fp, err := operator.NewFingerprint(temp)
+	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
-	splitter, err := operator.getMultiline()
-	require.NoError(t, err)
-
-	reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter, operator.emit)
+	reader, err := operator.readerFactory.newReader(tempCopy, fp)
 	require.NoError(t, err)
 	defer reader.Close()
 
@@ -885,14 +927,11 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
-			fp, err := operator.NewFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			splitter, err := operator.getMultiline()
-			require.NoError(t, err)
-
-			reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter, operator.emit)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -951,14 +990,11 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
-			fp, err := operator.NewFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 			require.Equal(t, []byte(""), fp.FirstBytes)
 
-			splitter, err := operator.getMultiline()
-			require.NoError(t, err)
-
-			reader, err := operator.NewReader(temp.Name(), tempCopy, fp, splitter, operator.emit)
+			reader, err := operator.readerFactory.newReader(tempCopy, fp)
 			require.NoError(t, err)
 			defer reader.Close()
 
@@ -987,7 +1023,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			// Change fingerprint and try to read file again
 			// We do not expect fingerprint change
 			// We test both increasing and decreasing fingerprint size
-			reader.fileInput.fingerprintSize = maxFP * (lineLen / 3)
+			reader.readerConfig.fingerprintSize = maxFP * (lineLen / 3)
 			line := string(tokenWithLength(lineLen-1)) + "\n"
 			fileContent = append(fileContent, []byte(line)...)
 
@@ -995,7 +1031,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			reader.ReadToEnd(context.Background())
 			require.Equal(t, fileContent[:expectedFP], reader.Fingerprint.FirstBytes)
 
-			reader.fileInput.fingerprintSize = maxFP / 2
+			reader.readerConfig.fingerprintSize = maxFP / 2
 			line = string(tokenWithLength(lineLen-1)) + "\n"
 			fileContent = append(fileContent, []byte(line)...)
 

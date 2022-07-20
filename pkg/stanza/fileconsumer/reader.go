@@ -18,88 +18,38 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-type FileAttributes struct {
-	Name         string
-	Path         string
-	NameResolved string
-	PathResolved string
-}
-
-// resolveFileAttributes resolves file attributes
-// and sets it to empty string in case of error
-func (f *Input) resolveFileAttributes(path string) *FileAttributes {
-	resolved, err := filepath.EvalSymlinks(path)
-	if err != nil {
-		f.Error(err)
-	}
-
-	abs, err := filepath.Abs(resolved)
-	if err != nil {
-		f.Error(err)
-	}
-
-	return &FileAttributes{
-		Path:         path,
-		Name:         filepath.Base(path),
-		PathResolved: abs,
-		NameResolved: filepath.Base(abs),
-	}
+type readerConfig struct {
+	fingerprintSize int
+	maxLogSize      int
+	emit            EmitFunc
 }
 
 // Reader manages a single file
 type Reader struct {
-	Fingerprint *Fingerprint
-	Offset      int64
-
-	generation     int
-	fileInput      *Input
-	file           *os.File
-	fileAttributes *FileAttributes
-
+	*zap.SugaredLogger `json:"-"`
+	*readerConfig
 	splitter *helper.Splitter
 
-	*zap.SugaredLogger `json:"-"`
+	Fingerprint    *Fingerprint
+	Offset         int64
+	generation     int
+	file           *os.File
+	fileAttributes *FileAttributes
 }
 
-// NewReader creates a new file reader
-func (f *Input) NewReader(path string, file *os.File, fp *Fingerprint, splitter *helper.Splitter, emit EmitFunc) (*Reader, error) {
-	r := &Reader{
-		SugaredLogger:  f.SugaredLogger.With("path", path),
-		Fingerprint:    fp,
-		file:           file,
-		fileInput:      f,
-		fileAttributes: f.resolveFileAttributes(path),
-		splitter:       splitter,
-	}
-	return r, nil
-}
-
-// Copy creates a deep copy of a Reader
-func (r *Reader) Copy(file *os.File) (*Reader, error) {
-	reader, err := r.fileInput.NewReader(r.fileAttributes.Path, file, r.Fingerprint.Copy(), r.splitter, r.fileInput.emit)
+// offsetToEnd sets the starting offset
+func (r *Reader) offsetToEnd() error {
+	info, err := r.file.Stat()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("stat: %w", err)
 	}
-	reader.Offset = r.Offset
-	return reader, nil
-}
-
-// InitializeOffset sets the starting offset
-func (r *Reader) InitializeOffset(startAtBeginning bool) error {
-	if !startAtBeginning {
-		info, err := r.file.Stat()
-		if err != nil {
-			return fmt.Errorf("stat: %w", err)
-		}
-		r.Offset = info.Size()
-	}
+	r.Offset = info.Size()
 	return nil
 }
 
@@ -110,7 +60,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.fileInput.MaxLogSize, r.Offset, r.splitter.SplitFunc)
+	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitter.SplitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -132,7 +82,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else {
-			r.fileInput.emit(ctx, r.fileAttributes, token)
+			r.emit(ctx, r.fileAttributes, token)
 		}
 
 		r.Offset = scanner.Pos()
@@ -152,11 +102,11 @@ func (r *Reader) Close() {
 func (r *Reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
-	if len(r.Fingerprint.FirstBytes) == r.fileInput.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
+	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
 		return r.file.Read(dst)
 	}
 	n, err := r.file.Read(dst)
-	appendCount := min0(n, r.fileInput.fingerprintSize-int(r.Offset))
+	appendCount := min0(n, r.fingerprintSize-int(r.Offset))
 	// return for n == 0 or r.Offset >= r.fileInput.fingerprintSize
 	if appendCount == 0 {
 		return n, err

@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 )
 
 // runner starts and stops receiver instances.
@@ -110,5 +111,7 @@ func (run *receiverRunner) createRuntimeReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", cfg.ID().String()))
+	return factory.CreateMetricsReceiver(context.Background(), runParams, cfg, nextConsumer)
 }

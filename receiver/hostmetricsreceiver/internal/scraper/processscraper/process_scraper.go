@@ -42,12 +42,12 @@ const (
 
 // scraper for Process Metrics
 type scraper struct {
-	settings  component.ReceiverCreateSettings
-	config    *Config
-	mb        *metadata.MetricsBuilder
-	includeFS filterset.FilterSet
-	excludeFS filterset.FilterSet
-
+	settings           component.ReceiverCreateSettings
+	config             *Config
+	mb                 *metadata.MetricsBuilder
+	includeFS          filterset.FilterSet
+	excludeFS          filterset.FilterSet
+	scrapeProcessDelay time.Duration
 	// for mocking
 	bootTime                             func() (uint64, error)
 	getProcessHandles                    func() (processHandles, error)
@@ -64,6 +64,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 		getProcessHandles:                    getProcessHandlesInternal,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+		scrapeProcessDelay:                   cfg.ScrapeProcessDelay,
 	}
 
 	var err error
@@ -168,6 +169,16 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		username, err := handle.Username()
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
+		}
+
+		createTime, err := handle.CreateTime()
+		if err != nil {
+			errs.AddPartial(0, fmt.Errorf("error reading create time for process %q (pid %v): %w", executable.name, pid, err))
+			// set the start time to now to avoid including this when a scrape_process_delay is set
+			createTime = time.Now().UnixMilli()
+		}
+		if s.scrapeProcessDelay.Milliseconds() > (time.Now().UnixMilli() - createTime) {
+			continue
 		}
 
 		md := &processMetadata{

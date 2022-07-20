@@ -1,0 +1,11 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: bug_fix
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: sqlqueryreceiver
+
+# A brief description of the change
+note: Metrics did not contain a timestamp. Timestamps are required for a variety of backends, especially prometheus. In order to work with prometheus we must set the metrics timestamp because metrics with the default timestamp (year 1970) will be dropped by prometheus backends. 
+
+# One or more tracking issues related to the change
+issues: [12088]

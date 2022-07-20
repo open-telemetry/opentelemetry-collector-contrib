@@ -21,63 +21,6 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
-func TestHostTagsTagsConfig(t *testing.T) {
-	tc := TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service: "customservice",
-		Version: "customversion",
-		Tags:    []string{"key1:val1", "key2:val2"},
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key1:val1",
-			"key2:val2",
-		},
-		tc.getHostTags(),
-	)
-
-	tc = TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		Tags:       []string{"key1:val1", "key2:val2"},
-		EnvVarTags: "key3:val3 key4:val4",
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key1:val1",
-			"key2:val2",
-		},
-		tc.getHostTags(),
-	)
-
-	tc = TagsConfig{
-		Hostname: "customhost",
-		Env:      "customenv",
-		// Service and version should be only used for traces
-		Service:    "customservice",
-		Version:    "customversion",
-		EnvVarTags: "key3:val3 key4:val4",
-	}
-
-	assert.ElementsMatch(t,
-		[]string{
-			"env:customenv",
-			"key3:val3",
-			"key4:val4",
-		},
-		tc.getHostTags(),
-	)
-}
-
 func TestValidate(t *testing.T) {
 
 	tests := []struct {
@@ -103,7 +46,7 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API:          APIConfig{Key: "notnull"},
 				OnlyMetadata: true,
-				SendMetadata: false,
+				HostMetadata: HostMetadataConfig{Enabled: false},
 			},
 			err: errNoMetadata.Error(),
 		},
@@ -220,11 +163,60 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
 		},
+		{
+			name: "metrics::send_monotonic_counter custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"send_monotonic_counter": true,
+				},
+			}),
+			err: "\"metrics::send_monotonic_counter\" was removed in favor of \"metrics::sums::cumulative_monotonic_mode\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489",
+		},
+		{
+			name: "tags custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"tags": []string{},
+			}),
+			err: "\"tags\" was removed in favor of \"host_metadata::tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "send_metadata custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"send_metadata": false,
+			}),
+			err: "\"send_metadata\" was removed in favor of \"host_metadata::enabled\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "use_resource_metadata custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"use_resource_metadata": false,
+			}),
+			err: "\"use_resource_metadata\" was removed in favor of \"host_metadata::hostname_source\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9099",
+		},
+		{
+			name: "metrics::report_quantiles custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"report_quantiles": true,
+				},
+			}),
+			err: "\"metrics::report_quantiles\" was removed in favor of \"metrics::summaries::mode\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8845",
+		},
+		{
+			name: "instrumentation_library_metadata_as_tags custom error",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"instrumentation_library_metadata_as_tags": true,
+				},
+			}),
+			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
+		},
 	}
 
+	f := NewFactory()
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			cfg := futureDefaultConfig()
+			cfg := f.CreateDefaultConfig().(*Config)
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)

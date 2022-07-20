@@ -15,32 +15,14 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
-
-// getHostTags gets the host tags extracted from the configuration.
-func getHostTags(c *Config) []string {
-	tags := c.HostMetadata.Tags
-
-	if len(tags) == 0 {
-		//lint:ignore SA1019 Will be removed when environment variable detection is removed
-		tags = strings.Split(c.EnvVarTags, " ") //nolint
-	}
-
-	if c.Env != "none" {
-		tags = append(tags, fmt.Sprintf("env:%s", c.Env))
-	}
-	return tags
-}
 
 // newMetadataConfigfromConfig creates a new metadata pusher config from the main
 func newMetadataConfigfromConfig(cfg *Config) metadata.PusherConfig {
 	return metadata.PusherConfig{
 		ConfigHostname:      cfg.Hostname,
-		ConfigTags:          getHostTags(cfg),
+		ConfigTags:          cfg.HostMetadata.Tags,
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
 		APIKey:              cfg.API.Key,
 		UseResourceMetadata: cfg.HostMetadata.HostnameSource == HostnameSourceFirstResource,

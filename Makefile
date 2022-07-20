@@ -331,7 +331,7 @@ build-examples:
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
 %-package:
-	$(MAKE) otelcontribcol-linux_$(ARCH)
+	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
 

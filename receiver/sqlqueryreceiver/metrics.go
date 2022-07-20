@@ -18,15 +18,18 @@ import (
 	"fmt"
 	"strconv"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
+func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
 	dataPointSlice := setMetricFields(cfg, dest)
 	dataPoint := dataPointSlice.AppendEmpty()
+	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)
 	value, found := row[cfg.ValueColumn]
 	if !found {
 		return fmt.Errorf("rowToMetric: value_column '%s' not found in result set", cfg.ValueColumn)
@@ -44,6 +47,20 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric) error {
 		}
 	}
 	return nil
+}
+
+func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
+	dp.SetTimestamp(ts)
+
+	// Cumulative sum should have a start time set to the beginning of the data points cumulation
+	if cfg.Aggregation == MetricAggregationCumulative && cfg.DataType != MetricDataTypeGauge {
+		dp.SetStartTimestamp(startTime)
+	}
+
+	// Non-cumulative sum should have a start time set to the previous endpoint
+	if cfg.Aggregation == MetricAggregationDelta && cfg.DataType != MetricDataTypeGauge {
+		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(ts.AsTime().Add(-scrapeCfg.CollectionInterval)))
+	}
 }
 
 func setMetricFields(cfg MetricCfg, dest pmetric.Metric) pmetric.NumberDataPointSlice {

@@ -1,0 +1,4 @@
+change_type: enhancement
+component: k8sobserver
+note: incorporate observer.EndpointsWatcher in preparation for multiple event subscribers
+issues: [10830, 11544]
