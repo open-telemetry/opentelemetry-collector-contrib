@@ -23,7 +23,7 @@ import (
 
 // Duration is the representation of a length of time
 type Duration struct {
-	time.Duration
+	time.Duration `mapstructure:"duration"`
 }
 
 // NewDuration creates a new duration from a time
