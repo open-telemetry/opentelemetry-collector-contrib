@@ -46,6 +46,11 @@ type Config struct {
 	PrometheusConfig        *promconfig.Config       `mapstructure:"-"`
 	BufferPeriod            time.Duration            `mapstructure:"buffer_period"`
 	BufferCount             int                      `mapstructure:"buffer_count"`
+	// DisableStartTime disables start time calculation of all metrics, which significantly reduces the memory usage of the receiver.
+	// Start timestamp is strongly recommended for Sum, Histogram, and ExponentialHistogram points, removing the start timestamp
+	// may limit the ability of other components and backends to offer full functionality with these metrics.
+	// Use only if you know what you are doing.
+	DisableStartTime bool `mapstructure:"disable_start_time"`
 	// UseStartTimeMetric enables retrieving the start time of all counter metrics
 	// from the process_start_time_seconds metric. This is only correct if all counters on that endpoint
 	// started after the process start time, and the process is the only actor exporting the metric after
@@ -54,11 +59,6 @@ type Config struct {
 	// in incorrect rate calculations.
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
-	// DisableStartTime disables start time calculation of all metrics, which significantly reduces the memory usage of the receiver.
-	// Start timestamp is strongly recommended for Sum, Histogram, and ExponentialHistogram points, removing the start timestamp
-	// may limit the ability of other components and backends to offer full functionality with these metrics.
-	// Use only if you know what you are doing.
-	DisableStartTime bool `mapstructure:"disable_start_time"`
 
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
