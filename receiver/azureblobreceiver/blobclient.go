@@ -27,21 +27,28 @@ type BlobClient interface {
 }
 
 type AzureBlobClient struct {
-	serviceClient azblob.ServiceClient
+	serviceClient *azblob.ServiceClient
 	logger        *zap.Logger
 }
 
-func (bc *AzureBlobClient) getBlockBlob(containerName string, blobName string) azblob.BlockBlobClient {
-	containerClient := bc.serviceClient.NewContainerClient(containerName)
+func (bc *AzureBlobClient) getBlockBlob(containerName string, blobName string) (*azblob.BlockBlobClient, error) {
+	containerClient, err := bc.serviceClient.NewContainerClient(containerName)
+	if err != nil {
+		return nil, err
+	}
+
 	return containerClient.NewBlockBlobClient(blobName)
 }
 
 func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, blobName string) (*bytes.Buffer, error) {
-	blockBlob := bc.getBlockBlob(containerName, blobName)
+	blockBlob, err := bc.getBlockBlob(containerName, blobName)
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
-		_, err := blockBlob.Delete(ctx, nil)
-		if err != nil {
-			p.logger.Error(err.Error())
+		_, blobDeleteErr := blockBlob.Delete(ctx, nil)
+		if blobDeleteErr != nil {
+			bc.logger.Error(blobDeleteErr.Error())
 		}
 	}()
 

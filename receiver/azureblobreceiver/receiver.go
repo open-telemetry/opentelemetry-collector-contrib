@@ -19,9 +19,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -38,8 +38,8 @@ type TracesDataConsumer interface {
 type blobReceiver struct {
 	blobEventHandler   BlobEventHandler
 	logger             *zap.Logger
-	logsUnmarshaler    pdata.LogsUnmarshaler
-	tracesUnmarshaler  pdata.TracesUnmarshaler
+	logsUnmarshaler    plog.Unmarshaler
+	tracesUnmarshaler  ptrace.Unmarshaler
 	nextLogsConsumer   consumer.Logs
 	nextTracesConsumer consumer.Traces
 	obsrecv            *obsreport.Receiver
@@ -112,8 +112,8 @@ func NewReceiver(config Config, set component.ReceiverCreateSettings, blobEventH
 	blobReceiver := &blobReceiver{
 		blobEventHandler:  blobEventHandler,
 		logger:            set.Logger,
-		logsUnmarshaler:   otlp.NewJSONLogsUnmarshaler(),
-		tracesUnmarshaler: otlp.NewJSONTracesUnmarshaler(),
+		logsUnmarshaler:   plog.NewJSONUnmarshaler(),
+		tracesUnmarshaler: ptrace.NewJSONUnmarshaler(),
 		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             config.ID(),
 			Transport:              "event",

@@ -3,20 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureb
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
-	github.com/stretchr/testify v1.7.0
-	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/model v0.45.1-0.20220222185228-27f7607ca13a
+	github.com/Azure/azure-event-hubs-go/v3 v3.3.18
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.4.1
+	github.com/stretchr/testify v1.8.0
+	go.opentelemetry.io/collector v0.55.0
+	go.opentelemetry.io/collector/model v0.50.0
 	go.uber.org/zap v1.21.0
 )
-
-require github.com/Azure/azure-event-hubs-go/v3 v3.3.17
 
 require (
 	github.com/Azure/azure-amqp-common-go/v3 v3.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v51.1.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.0.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 // indirect
 	github.com/Azure/go-amqp v0.17.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
@@ -30,29 +29,31 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/devigned/tab v0.1.1 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
-	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/jpillora/backoff v1.0.0 // indirect
-	github.com/knadh/koanf v1.4.0 // indirect
-	github.com/kr/pretty v0.3.0 // indirect
-	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/jpillora/backoff v0.0.0-20180909062703-3050d21c67d7 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/mapstructure v1.4.3 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/pelletier/go-toml v1.9.4 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.6.0 // indirect
-	github.com/spf13/cast v1.4.1 // indirect
-	github.com/stretchr/objx v0.1.1 // indirect
+	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.4.1 // indirect
-	go.opentelemetry.io/otel/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
+	go.opentelemetry.io/collector/pdata v0.54.0 // indirect
+	go.opentelemetry.io/otel v1.7.0 // indirect
+	go.opentelemetry.io/otel/metric v0.30.0 // indirect
+	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
-	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d // indirect
+	go.uber.org/multierr v1.8.0 // indirect
+	golang.org/x/crypto v0.0.0-20220511200225-c6db032c6c88 // indirect
+	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
+	google.golang.org/grpc v1.47.0 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

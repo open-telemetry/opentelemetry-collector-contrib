@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+
 	"go.uber.org/zap"
 )
 
@@ -43,11 +43,11 @@ type blobReceiverFactory struct {
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
 	f := &blobReceiverFactory{}
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		f.createDefaultConfig,
-		receiverhelper.WithTraces(f.createTracesReceiver),
-		receiverhelper.WithLogs(f.createLogsReceiver))
+		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, component.StabilityLevelBeta),
+		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
