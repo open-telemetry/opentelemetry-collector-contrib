@@ -22,7 +22,7 @@ import (
 type routingKey int
 
 const (
-	traceIdRouting routingKey = iota
+	traceIDRouting routingKey = iota
 	svcRouting
 )
 
