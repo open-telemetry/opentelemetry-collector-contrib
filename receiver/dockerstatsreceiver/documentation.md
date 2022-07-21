@@ -136,6 +136,6 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | core | The CPU core number when utilising per-CPU metrics. |  |
-| device_major | Device major number. |  |
-| device_minor | Device minor number. |  |
+| device_major | Device major number for block IO operations. |  |
+| device_minor | Device minor number for block IO operations. |  |
 | interface | Network interface. |  |
