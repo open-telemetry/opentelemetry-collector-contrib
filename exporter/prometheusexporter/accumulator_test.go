@@ -69,7 +69,7 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pcommon.NewMap())
+			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pcommon.NewMap(), pcommon.NewMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)
@@ -315,7 +315,7 @@ func TestAccumulateMetrics(t *testing.T) {
 
 			m2Labels, _, m2Value, m2Temporality, m2IsMonotonic := getMetricProperties(ilm2.Metrics().At(0))
 
-			signature := timeseriesSignature(ilm2.Scope().Name(), ilm2.Metrics().At(0), m2Labels)
+			signature := timeseriesSignature(ilm2.Scope().Name(), ilm2.Metrics().At(0), m2Labels, pcommon.NewMap())
 			m, ok := a.registeredMetrics.Load(signature)
 			require.True(t, ok)
 
@@ -413,20 +413,23 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			ilm.Scope().SetName("test")
 			a := newAccumulator(zap.NewNop(), 1*time.Hour).(*lastValueAccumulator)
 
+			dataPointValue1 := float64(11)
+			dataPointValue2 := float64(32)
+
 			// The first point arrived
-			tt.metric(ts1, ts2, 11, ilm.Metrics())
+			tt.metric(ts1, ts2, dataPointValue1, ilm.Metrics())
 			n := a.Accumulate(resourceMetrics)
 
 			require.Equal(t, 1, n)
 
 			// The next point arrived
-			tt.metric(ts2, ts3, 31, ilm.Metrics())
+			tt.metric(ts2, ts3, dataPointValue2, ilm.Metrics())
 			n = a.Accumulate(resourceMetrics)
 
 			require.Equal(t, 2, n)
 
-			mLabels, _, mValue, _, mIsMonotonic := getMetricProperties(ilm.Metrics().At(1))
-			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), mLabels)
+			mLabels, _, mValue, _, _ := getMetricProperties(ilm.Metrics().At(1))
+			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), mLabels, pcommon.NewMap())
 			m, ok := a.registeredMetrics.Load(signature)
 			require.True(t, ok)
 
@@ -444,8 +447,9 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			})
 			require.Equal(t, mLabels.Len(), vLabels.Len())
 			require.Equal(t, mValue, vValue)
+			require.Equal(t, dataPointValue1+dataPointValue2, vValue)
 			require.Equal(t, pmetric.MetricAggregationTemporalityCumulative, vTemporality)
-			require.Equal(t, mIsMonotonic, vIsMonotonic)
+			require.Equal(t, true, vIsMonotonic)
 
 			require.Equal(t, ts3.Unix(), vTS.Unix())
 		})
@@ -524,7 +528,7 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 			n := a.Accumulate(resourceMetrics)
 			require.Equal(t, 0, n)
 
-			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pcommon.NewMap())
+			signature := timeseriesSignature(ilm.Scope().Name(), ilm.Metrics().At(0), pcommon.NewMap(), pcommon.NewMap())
 			v, ok := a.registeredMetrics.Load(signature)
 			require.False(t, ok)
 			require.Nil(t, v)

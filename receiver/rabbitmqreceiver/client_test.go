@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
@@ -128,7 +127,8 @@ func TestGetQueuesDetails(t *testing.T) {
 			testFunc: func(t *testing.T) {
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write([]byte("{}"))
+					_, err := w.Write([]byte("{}"))
+					require.NoError(t, err)
 				}))
 				defer ts.Close()
 
@@ -146,7 +146,8 @@ func TestGetQueuesDetails(t *testing.T) {
 
 				// Setup test server
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Write(data)
+					_, err := w.Write(data)
+					require.NoError(t, err)
 				}))
 				defer ts.Close()
 

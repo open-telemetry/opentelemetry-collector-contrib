@@ -32,14 +32,14 @@ func init() {
 func NewConfig(operatorID string) *Config {
 	return &Config{
 		TransformerConfig: helper.NewTransformerConfig(operatorID, "severity_parser"),
-		Config:            helper.NewConfig(),
+		SeverityConfig:    helper.NewSeverityConfig(),
 	}
 }
 
 // Config is the configuration of a severity parser operator.
 type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
-	helper.Config            `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
+	helper.SeverityConfig    `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a severity parser operator.
@@ -49,7 +49,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	severityParser, err := c.Config.Build(logger)
+	severityParser, err := c.SeverityConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}

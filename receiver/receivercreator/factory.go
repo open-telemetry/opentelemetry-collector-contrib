@@ -28,7 +28,8 @@ import (
 // This file implements factory for receiver_creator. A receiver_creator can create other receivers at runtime.
 
 const (
-	typeStr = "receiver_creator"
+	typeStr   = "receiver_creator"
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for receiver creator.
@@ -36,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

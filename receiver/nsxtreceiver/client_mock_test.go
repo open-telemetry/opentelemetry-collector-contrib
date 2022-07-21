@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 import (
 	context "context"
@@ -45,10 +44,8 @@ func (m *MockClient) ClusterNodes(ctx context.Context) ([]model.ClusterNode, err
 	var r0 []model.ClusterNode
 	if rf, ok := ret.Get(0).(func(context.Context) []model.ClusterNode); ok {
 		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.ClusterNode)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]model.ClusterNode)
 	}
 
 	var r1 error
@@ -68,10 +65,8 @@ func (m *MockClient) InterfaceStatus(ctx context.Context, nodeID string, interfa
 	var r0 *model.NetworkInterfaceStats
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, nodeClass) *model.NetworkInterfaceStats); ok {
 		r0 = rf(ctx, nodeID, interfaceID, class)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.NetworkInterfaceStats)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*model.NetworkInterfaceStats)
 	}
 
 	var r1 error
@@ -91,10 +86,8 @@ func (m *MockClient) Interfaces(ctx context.Context, nodeID string, class nodeCl
 	var r0 []model.NetworkInterface
 	if rf, ok := ret.Get(0).(func(context.Context, string, nodeClass) []model.NetworkInterface); ok {
 		r0 = rf(ctx, nodeID, class)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.NetworkInterface)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]model.NetworkInterface)
 	}
 
 	var r1 error
@@ -114,10 +107,8 @@ func (m *MockClient) NodeStatus(ctx context.Context, nodeID string, class nodeCl
 	var r0 *model.NodeStatus
 	if rf, ok := ret.Get(0).(func(context.Context, string, nodeClass) *model.NodeStatus); ok {
 		r0 = rf(ctx, nodeID, class)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*model.NodeStatus)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*model.NodeStatus)
 	}
 
 	var r1 error
@@ -137,10 +128,8 @@ func (m *MockClient) TransportNodes(ctx context.Context) ([]model.TransportNode,
 	var r0 []model.TransportNode
 	if rf, ok := ret.Get(0).(func(context.Context) []model.TransportNode); ok {
 		r0 = rf(ctx)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]model.TransportNode)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]model.TransportNode)
 	}
 
 	var r1 error

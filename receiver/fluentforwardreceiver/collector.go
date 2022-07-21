@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
 import (
@@ -60,7 +59,7 @@ func (c *Collector) processEvents(ctx context.Context) {
 			buffered = fillBufferUntilChanEmpty(c.eventCh, buffered)
 
 			logs := collectLogRecords(buffered)
-			c.nextConsumer.ConsumeLogs(ctx, logs)
+			_ = c.nextConsumer.ConsumeLogs(ctx, logs)
 		}
 	}
 }

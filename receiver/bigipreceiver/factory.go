@@ -28,7 +28,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver/internal/metadata"
 )
 
-const typeStr = "bigip"
+const (
+	typeStr   = "bigip"
+	stability = component.StabilityLevelBeta
+)
 
 var errConfigNotBigip = errors.New("config was not a Big-IP receiver config")
 
@@ -37,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig creates a config for Big-IP with as many default values as possible

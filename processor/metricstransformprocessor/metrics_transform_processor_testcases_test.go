@@ -23,6 +23,7 @@ import (
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []internalTransform
+	spipOCTest bool // skip test on the deprecated OpenCensus data model
 	in         []*metricspb.Metric
 	out        []*metricspb.Metric
 }
@@ -2077,6 +2078,33 @@ var (
 					addInt64Point(0, 4, 2).
 					build(),
 			},
+		},
+		{
+			name:       "delete_all_metric_datapoints",
+			spipOCTest: true,
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:     DeleteLabelValue,
+								Label:      "label1",
+								LabelValue: "label1value1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"label1value1", "label2value"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{},
 		},
 	}
 )

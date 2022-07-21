@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
 import (
@@ -172,9 +171,7 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 	return metrics
 }
 
-var timeNowFunc = func() time.Time {
-	return time.Now()
-}
+var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerTypeFor(t MetricType) ObserverType {
 	switch t {
@@ -280,7 +277,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	var kvs []attribute.KeyValue
 
 	for _, part := range additionalParts {
-		if strings.HasPrefix(part, "@") {
+		switch {
+		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
 
 			f, err := strconv.ParseFloat(sampleRateStr, 64)
@@ -289,20 +287,21 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			}
 
 			result.sampleRate = f
-		} else if strings.HasPrefix(part, "#") {
+		case strings.HasPrefix(part, "#"):
 			tagsStr := strings.TrimPrefix(part, "#")
 
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
-				tagParts := strings.Split(tagSet, ":")
+				tagParts := strings.SplitN(tagSet, ":", 2)
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
+				k := tagParts[0]
+				v := tagParts[1]
+				kvs = append(kvs, attribute.String(k, v))
 			}
-
-		} else {
+		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}

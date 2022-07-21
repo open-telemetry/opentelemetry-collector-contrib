@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package carbonreceiver
 
 import (
@@ -208,7 +207,9 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			runtime.Gosched()
-			defer r.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, r.Shutdown(context.Background()))
+			}()
 
 			snd := tt.clientFn(t)
 

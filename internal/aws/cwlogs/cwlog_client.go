@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cwlogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 
 import (
@@ -47,7 +46,7 @@ type Client struct {
 	logger *zap.Logger
 }
 
-//Create a log client based on the actual cloudwatch logs client.
+// Create a log client based on the actual cloudwatch logs client.
 func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logger *zap.Logger) *Client {
 	logClient := &Client{svc: svc,
 		logger: logger}
@@ -62,8 +61,8 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 	return newCloudWatchLogClient(client, logger)
 }
 
-//PutLogEvents mainly handles different possible error could be returned from server side, and retries them
-//if necessary.
+// PutLogEvents mainly handles different possible error could be returned from server side, and retries them
+// if necessary.
 func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
@@ -82,18 +81,18 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 			case *cloudwatchlogs.InvalidParameterException:
 				client.logger.Error("cwlog_client: Error occurs in PutLogEvents, will not retry the request", zap.Error(e), zap.String("LogGroupName", *input.LogGroupName), zap.String("LogStreamName", *input.LogStreamName))
 				return token, err
-			case *cloudwatchlogs.InvalidSequenceTokenException: //Resend log events with new sequence token when InvalidSequenceTokenException happens
+			case *cloudwatchlogs.InvalidSequenceTokenException: // Resend log events with new sequence token when InvalidSequenceTokenException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will search the next token and retry the request", zap.Error(e))
 				token = e.ExpectedSequenceToken
 				continue
-			case *cloudwatchlogs.DataAlreadyAcceptedException: //Skip batch if DataAlreadyAcceptedException happens
+			case *cloudwatchlogs.DataAlreadyAcceptedException: // Skip batch if DataAlreadyAcceptedException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, drop this request and continue to the next request", zap.Error(e))
 				token = e.ExpectedSequenceToken
 				return token, err
-			case *cloudwatchlogs.OperationAbortedException: //Retry request if OperationAbortedException happens
+			case *cloudwatchlogs.OperationAbortedException: // Retry request if OperationAbortedException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will retry the request", zap.Error(e))
 				return token, err
-			case *cloudwatchlogs.ServiceUnavailableException: //Retry request if ServiceUnavailableException happens
+			case *cloudwatchlogs.ServiceUnavailableException: // Retry request if ServiceUnavailableException happens
 				client.logger.Warn("cwlog_client: Error occurs in PutLogEvents, will retry the request", zap.Error(e))
 				return token, err
 			case *cloudwatchlogs.ResourceNotFoundException:
@@ -144,9 +143,9 @@ func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retr
 	return token, err
 }
 
-//Prepare the readiness for the log group and log stream.
+// Prepare the readiness for the log group and log stream.
 func (client *Client) CreateStream(logGroup, streamName *string) (token string, e error) {
-	//CreateLogStream / CreateLogGroup
+	// CreateLogStream / CreateLogGroup
 	_, err := client.svc.CreateLogStream(&cloudwatchlogs.CreateLogStreamInput{
 		LogGroupName:  logGroup,
 		LogStreamName: streamName,
@@ -176,7 +175,7 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 		return token, err
 	}
 
-	//After a log stream is created the token is always empty.
+	// After a log stream is created the token is always empty.
 	return "", nil
 }
 

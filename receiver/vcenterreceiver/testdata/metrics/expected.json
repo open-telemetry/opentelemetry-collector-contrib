@@ -228,7 +228,7 @@
                         },
                         {
                             "name": "vcenter.host.disk.throughput",
-                            "description": "Average number of kilobytes read from the disk each second.",
+                            "description": "Average number of kilobytes read from or written to the disk each second.",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
@@ -982,7 +982,7 @@
                         },
                         {
                             "name": "vcenter.host.network.packet.count",
-                            "description": "The number of packets sent and received, as measured over the most recent 20s interval.",
+                            "description": "The number of packets transmitted and received, as measured over the most recent 20s interval.",
                             "unit": "{packets/sec}",
                             "sum": {
                                 "dataPoints": [
@@ -2302,7 +2302,7 @@
                         },
                         {
                             "name": "vcenter.host.network.throughput",
-                            "description": "The amount of data that was sent or received over the network by the host.",
+                            "description": "The amount of data that was transmitted or received over the network by the host.",
                             "unit": "{KBy/s}",
                             "sum": {
                                 "dataPoints": [
@@ -3107,6 +3107,12 @@
                         "value": {
                             "stringValue": "vsanDatastore"
                         }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "Cluster"
+                        }
                     }
                 ]
             },
@@ -3313,7 +3319,7 @@
                                     {
                                         "startTimeUnixNano": "1653335619966318000",
                                         "timeUnixNano": "1653335619974183000",
-                                        "asDouble": 6.301649544673818
+                                        "asDouble": 5.9280825572001286
                                     }
                                 ]
                             }
@@ -3516,7 +3522,7 @@
                         },
                         {
                             "name": "vcenter.vm.network.throughput",
-                            "description": "The amount of data that was received or sent over the network of the virtual machine.",
+                            "description": "The amount of data that was transmitted or received over the network of the virtual machine.",
                             "unit": "By/sec",
                             "sum": {
                                 "dataPoints": [

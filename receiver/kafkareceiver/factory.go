@@ -27,7 +27,8 @@ import (
 )
 
 const (
-	typeStr = "kafka"
+	typeStr   = "kafka"
+	stability = component.StabilityLevelBeta
 
 	defaultTopic    = "otlp_spans"
 	defaultEncoding = "otlp_proto"
@@ -93,9 +94,9 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver),
-		component.WithMetricsReceiver(f.createMetricsReceiver),
-		component.WithLogsReceiver(f.createLogsReceiver),
+		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, stability),
+		component.WithMetricsReceiverAndStabilityLevel(f.createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, stability),
 	)
 }
 

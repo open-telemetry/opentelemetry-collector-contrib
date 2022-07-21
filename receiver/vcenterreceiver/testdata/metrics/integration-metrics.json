@@ -266,6 +266,12 @@
                         "value": {
                             "stringValue": "LocalDS_0"
                         }
+                    },
+                    {
+                        "key": "vcenter.cluster.name",
+                        "value": {
+                            "stringValue": "DC0_C0"
+                        }
                     }
                 ]
             },

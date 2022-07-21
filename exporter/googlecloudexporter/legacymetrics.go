@@ -14,12 +14,12 @@
 
 // Package googlecloudexporter contains the wrapper for OpenTelemetry-GoogleCloud
 // exporter to be used in opentelemetry-collector.
-// nolint:errcheck
 package googlecloudexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter"
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 
@@ -88,8 +88,12 @@ var once sync.Once
 func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.ExporterCreateSettings) (component.MetricsExporter, error) {
 	// register view for self-observability
 	once.Do(func() {
-		view.Register(viewPointCount)
-		view.Register(ocgrpc.DefaultClientViews...)
+		if err := view.Register(viewPointCount); err != nil {
+			log.Fatalln(err)
+		}
+		if err := view.Register(ocgrpc.DefaultClientViews...); err != nil {
+			log.Fatalln(err)
+		}
 	})
 	setVersionInUserAgent(cfg, set.BuildInfo.Version)
 

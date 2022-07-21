@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package subprocess // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver/internal/subprocess"
 
 import (
@@ -258,7 +257,7 @@ func (subprocess *Subprocess) run(ctx context.Context) {
 			}
 		case shuttingDown:
 			if cmd.Process != nil {
-				cmd.Process.Signal(syscall.SIGTERM)
+				_ = cmd.Process.Signal(syscall.SIGTERM)
 			}
 			<-processReturned.ReturnedChan
 			stdout.Close()
@@ -305,7 +304,8 @@ func createCommand(execPath string, args, envVars []string) (*exec.Cmd, io.Write
 
 	var env []string
 	env = append(env, os.Environ()...)
-	cmd.Env = append(env, envVars...)
+	env = append(env, envVars...)
+	cmd.Env = env
 
 	inReader, inWriter, err := os.Pipe()
 	if err != nil {

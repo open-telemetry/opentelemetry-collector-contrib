@@ -454,7 +454,7 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Parallel()
 
-		cfg := &Config{
+		cfg := &SeverityConfig{
 			ParseFrom: &parseFrom,
 			Preset:    tc.mappingSet,
 			Mapping:   tc.mapping,
@@ -483,7 +483,7 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 type severityConfigTestCase struct {
 	name      string
 	expectErr bool
-	expect    *Config
+	expect    *SeverityConfig
 }
 
 func TestGoldenSeverityParserConfig(t *testing.T) {
@@ -496,7 +496,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"parse_from_simple",
 			false,
-			func() *Config {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				newParse := entry.NewBodyField("from")
 				cfg.ParseFrom = &newParse
@@ -506,7 +506,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"mapping",
 			false,
-			func() *Config {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				cfg.Mapping = map[interface{}]interface{}{
 					"critical": "5xx",
@@ -520,7 +520,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 		{
 			"preset",
 			false,
-			func() *Config {
+			func() *SeverityConfig {
 				cfg := defaultSeverityCfg()
 				cfg.Preset = "default"
 				return cfg
@@ -554,7 +554,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 	}
 }
 
-func severityConfigFromFileViaYaml(file string) (*Config, error) {
+func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
@@ -568,7 +568,7 @@ func severityConfigFromFileViaYaml(file string) (*Config, error) {
 	return config, nil
 }
 
-func severityConfigFromFileViaMapstructure(file string, result *Config) error {
+func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) error {
 	bytes, err := ioutil.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
@@ -584,7 +584,7 @@ func severityConfigFromFileViaMapstructure(file string, result *Config) error {
 	return err
 }
 
-func defaultSeverityCfg() *Config {
-	newCfg := NewConfig()
+func defaultSeverityCfg() *SeverityConfig {
+	newCfg := NewSeverityConfig()
 	return &newCfg
 }

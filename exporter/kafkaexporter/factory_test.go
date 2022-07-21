@@ -16,6 +16,7 @@ package kafkaexporter
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -32,6 +33,43 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
 	assert.Equal(t, "", cfg.Topic)
+}
+
+func TestCreateAllExporter(t *testing.T) {
+	cfg0 := createDefaultConfig().(*Config)
+	cfg1 := createDefaultConfig().(*Config)
+	cfg2 := createDefaultConfig().(*Config)
+
+	cfg0.Brokers = []string{"invalid:9092"}
+	cfg1.Brokers = []string{"invalid:9092"}
+	cfg2.Brokers = []string{"invalid:9092"}
+
+	cfg0.ProtocolVersion = "2.0.0"
+	cfg1.ProtocolVersion = "2.0.0"
+	cfg2.ProtocolVersion = "2.0.0"
+
+	// this disables contacting the broker so we can successfully create the exporter
+	cfg0.Metadata.Full = false
+	cfg1.Metadata.Full = false
+	cfg2.Metadata.Full = false
+
+	cfgClone := *cfg0 // Clone the config
+
+	f := kafkaExporterFactory{tracesMarshalers: tracesMarshalers(), metricsMarshalers: metricsMarshalers(), logsMarshalers: logsMarshalers()}
+	r0, err := f.createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg0)
+	require.NoError(t, err)
+	r1, err := f.createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg1)
+	require.NoError(t, err)
+	r2, err := f.createLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg2)
+	require.NoError(t, err)
+
+	// createTracesExporter should not mutate values
+	assert.True(t, reflect.DeepEqual(*cfg0, cfgClone), "config should not mutate")
+	assert.True(t, reflect.DeepEqual(*cfg1, cfgClone), "config should not mutate")
+	assert.True(t, reflect.DeepEqual(*cfg2, cfgClone), "config should not mutate")
+	assert.NotNil(t, r0)
+	assert.NotNil(t, r1)
+	assert.NotNil(t, r2)
 }
 
 func TestCreateTracesExporter(t *testing.T) {

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
 import (
@@ -251,7 +250,7 @@ func workerIndexForTraceID(traceID pcommon.TraceID, numWorkers int) uint64 {
 	}()
 
 	bytes := traceID.Bytes()
-	hash.Write(bytes[:])
+	_, _ = hash.Write(bytes[:])
 	return hash.Sum64() % uint64(numWorkers)
 }
 

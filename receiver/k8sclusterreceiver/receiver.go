@@ -16,11 +16,11 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -115,11 +115,12 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 // newReceiver creates the Kubernetes cluster receiver with the given configuration.
 func newReceiver(
 	set component.ReceiverCreateSettings, config *Config, consumer consumer.Metrics,
-	client kubernetes.Interface, osQuotaClient quotaclientset.Interface) (component.MetricsReceiver, error) {
+	client kubernetes.Interface, osQuotaClient quotaclientset.Interface,
+) (component.MetricsReceiver, error) {
 	resourceWatcher, err := newResourceWatcher(set.Logger, client, osQuotaClient, config.NodeConditionTypesToReport,
 		config.AllocatableTypesToReport, defaultInitialSyncTimeout)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to setup the receiver")
+		return nil, fmt.Errorf("failed to setup the receiver: %w", err)
 	}
 
 	return &kubernetesReceiver{

@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receivercreator
+note: dynamically created receivers log with their `name` field
+issues: [16481]

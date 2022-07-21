@@ -25,11 +25,14 @@ import (
 	syslogparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 )
 
-const typeStr = "syslog"
+const (
+	typeStr   = "syslog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for syslog receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType

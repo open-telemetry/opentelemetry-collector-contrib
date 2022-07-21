@@ -1,8 +1,10 @@
 # Schema Transformer Processor
 
-🚧 _Currently under development, subject to change_ 🚧
-
-Supported Pipelines: traces, metrics, logs
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [in development]      |
+| Supported pipeline types | metrics, traces, logs |
+| Distributions            | none                  |
 
 The _Schema Processor_ is used to convert existing telemetry data or signals to a version of the semantic convention defined as part of the configuration.
 The processor works by using a set of target schema URLs that are used to match incoming signals.
@@ -52,3 +54,5 @@ processors:
 ```
 
 For more complete examples, please refer to [config.yml](./testdata/config.yml).
+
+[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package metricstransformprocessor
 
 import (
@@ -38,6 +37,10 @@ func TestMetricsTransformProcessor(t *testing.T) {
 	for _, useOTLP := range []bool{false, true} {
 		for _, test := range standardTests {
 			t.Run(test.name, func(t *testing.T) {
+				if !useOTLP && test.spipOCTest {
+					return
+				}
+
 				next := new(consumertest.MetricsSink)
 
 				p := &metricsTransformProcessor{
@@ -66,7 +69,10 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				// get and check results
 				got := next.AllMetrics()
 				require.Equal(t, 1, len(got))
-				_, _, actualOutMetrics := internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
+				actualOutMetrics := []*metricspb.Metric{}
+				if got[0].ResourceMetrics().Len() > 0 {
+					_, _, actualOutMetrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
+				}
 				require.Equal(t, len(test.out), len(actualOutMetrics))
 
 				for idx, out := range test.out {
@@ -119,6 +125,6 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, in))
+		assert.NoError(b, mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, in)))
 	}
 }

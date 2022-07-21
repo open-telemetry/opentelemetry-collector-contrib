@@ -63,7 +63,7 @@ func TestParserConfigBuildValid(t *testing.T) {
 	}
 
 	sevField := entry.NewBodyField("timestamp")
-	cfg.Config = &Config{
+	cfg.Config = &SeverityConfig{
 		ParseFrom: &sevField,
 	}
 
@@ -624,7 +624,7 @@ func NewTestParserConfig() ParserConfig {
 	tp := NewTimeParser()
 	expect.TimeParser = &tp
 
-	sp := NewConfig()
+	sp := NewSeverityConfig()
 	sp.Mapping = map[interface{}]interface{}{
 		"info": "3xx",
 		"warn": "4xx",

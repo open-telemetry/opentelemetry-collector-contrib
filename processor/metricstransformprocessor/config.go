@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
@@ -75,7 +74,7 @@ type Transform struct {
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
 
 	// MetricName is used to select the metric to operate on.
-	// DEPRECATED. Use MetricIncludeFilter instead.
+	// Deprecated: Use MetricIncludeFilter instead.
 	MetricName string `mapstructure:"metric_name"`
 
 	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---

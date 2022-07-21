@@ -154,7 +154,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		}
 	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, Transport, 1, 0))
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, Transport, 2, 0))
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {

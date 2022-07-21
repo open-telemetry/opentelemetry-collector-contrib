@@ -18,7 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 
 	"github.com/stretchr/testify/assert"

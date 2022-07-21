@@ -32,7 +32,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		awsxray.TypeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver))
+		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, component.StabilityLevelBeta))
 }
 
 func createDefaultConfig() config.Receiver {
