@@ -18,11 +18,12 @@ import (
 	"testing"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster"
 	cm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestAerospike_Info(t *testing.T) {

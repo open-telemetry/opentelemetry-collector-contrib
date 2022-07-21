@@ -107,7 +107,7 @@ func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	r.logger.Sugar().Debug("begining scrape")
+	r.logger.Sugar().Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 	client := r.client
