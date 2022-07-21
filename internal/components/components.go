@@ -16,6 +16,7 @@ package components // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opsrampotlpexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/loggingexporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -347,6 +348,7 @@ func Components() (component.Factories, error) {
 		cumulativetodeltaprocessor.NewFactory(),
 		deltatorateprocessor.NewFactory(),
 		transformprocessor.NewFactory(),
+		scrubbingprocessor.NewFactory(),
 	}
 	factories.Processors, err = component.MakeProcessorFactoryMap(processors...)
 	if err != nil {

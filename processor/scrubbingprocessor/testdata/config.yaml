@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+
+processors:
+  scrubbing:
+    masking:
+      - regexp: \d+
+        placeholder: hidden
+      - regexp: TEST
+        placeholder: UNKNOWN
+
+
+exporters:
+  nop:
+
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [scrubbing]
+      exporters: [nop]

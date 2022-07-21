@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/stretchr/testify/assert"
