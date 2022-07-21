@@ -67,5 +67,5 @@ func NewAppendable(
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.sink, o.externalLabels, o.settings)
+	return newTransaction(ctx, o.jobsMap, o.disableStartTime, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.sink, o.externalLabels, o.settings)
 }

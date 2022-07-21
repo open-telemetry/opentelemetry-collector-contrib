@@ -38,6 +38,7 @@ const (
 type transaction struct {
 	isNew                bool
 	ctx                  context.Context
+	disableStartTime     bool
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
 	sink                 consumer.Metrics
@@ -54,6 +55,7 @@ type transaction struct {
 func newTransaction(
 	ctx context.Context,
 	jobsMap *JobsMap,
+	disableStartTime bool,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
 	receiverID config.ComponentID,
@@ -65,6 +67,7 @@ func newTransaction(
 		isNew:                true,
 		sink:                 sink,
 		jobsMap:              jobsMap,
+		disableStartTime:     disableStartTime,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
@@ -139,7 +142,9 @@ func (t *transaction) Commit() error {
 		return err
 	}
 
-	if t.useStartTimeMetric {
+	if t.disableStartTime {
+		// adjust startTimestamp is disabled
+	} else if t.useStartTimeMetric {
 		if t.metricBuilder.startTime == 0.0 {
 			err = errNoStartTimeMetrics
 			t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
@@ -147,7 +152,7 @@ func (t *transaction) Commit() error {
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
 		t.adjustStartTimestamp(metricsL)
-	} else if t.jobsMap != nil {
+	} else {
 		// TODO: Derive numPoints in this case.
 		_ = NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
 	}
