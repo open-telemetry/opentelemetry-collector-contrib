@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pulsarreceiver
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
-//copy from kafka receiver
+// copy from kafka receiver
 
 // TracesUnmarshaler deserializes the message body.
 type TracesUnmarshaler interface {

@@ -1,5 +1,11 @@
 # Pulsar Receiver
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [in-development]      |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | none                  |
+
 Pulsar receiver receives logs, metrics, and traces from Pulsar.
 
 Supported pipeline types: logs, metrics, traces

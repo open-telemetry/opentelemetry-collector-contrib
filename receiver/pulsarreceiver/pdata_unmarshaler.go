@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pulsarreceiver
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-//copy from kafka receiver
+// copy from kafka receiver
 type pdataLogsUnmarshaler struct {
 	plog.Unmarshaler
 	encoding string

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pulsarreceiver
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
 	"context"
@@ -100,7 +100,7 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 
 	c.consumer = _consumer
 
-	for true {
+	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
@@ -124,8 +124,6 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 		}
 		c.consumer.Ack(message)
 	}
-
-	return nil
 }
 
 func (c *PulsarTracesConsumer) Shutdown(context.Context) error {
@@ -206,7 +204,7 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 
 	c.consumer = _consumer
 
-	for true {
+	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
@@ -232,8 +230,6 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 
 		c.consumer.Ack(message)
 	}
-
-	return nil
 }
 
 func (c *PulsarMetricsConsumer) Shutdown(context.Context) error {
@@ -316,7 +312,7 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 
 	c.consumer = _consumer
 
-	for true {
+	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
 			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
@@ -341,8 +337,6 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 
 		c.consumer.Ack(message)
 	}
-
-	return nil
 }
 
 func (c *PulsarLogsConsumer) Shutdown(context.Context) error {

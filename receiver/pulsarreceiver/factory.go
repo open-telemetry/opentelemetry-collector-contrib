@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pulsarreceiver
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
 	"context"
@@ -30,7 +30,7 @@ const (
 	defaultLogsTopic    = "otlp_logs"
 	defaultConsumerName = ""
 	defaultSubscription = "otlp_subscription"
-	defaultServiceUrl   = "pulsar://localhost:6650"
+	defaultServiceURL   = "pulsar://localhost:6650"
 )
 
 // FactoryOption applies changes to PulsarExporterFactory.
@@ -95,11 +95,11 @@ func (f *PulsarReceiverFactory) createTracesReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
-	c := cfg.(*Config)
-	if len(c.Topic) <= 0 {
+	c := *(cfg.(*Config))
+	if len(c.Topic) == 0 {
 		c.Topic = defaultTraceTopic
 	}
-	r, err := newTracesReceiver(*c, set, f.tracesUnmarshalers, nextConsumer)
+	r, err := newTracesReceiver(c, set, f.tracesUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +112,11 @@ func (f *PulsarReceiverFactory) createMetricsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	c := cfg.(*Config)
-	if len(c.Topic) <= 0 {
+	c := *(cfg.(*Config))
+	if len(c.Topic) == 0 {
 		c.Topic = defaultMeticsTopic
 	}
-	r, err := newMetricsReceiver(*c, set, f.metricsUnmarshalers, nextConsumer)
+	r, err := newMetricsReceiver(c, set, f.metricsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +129,11 @@ func (f *PulsarReceiverFactory) createLogsReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-	c := cfg.(*Config)
-	if len(c.Topic) <= 0 {
+	c := *(cfg.(*Config))
+	if len(c.Topic) == 0 {
 		c.Topic = defaultLogsTopic
 	}
-	r, err := newLogsReceiver(*c, set, f.logsUnmarshalers, nextConsumer)
+	r, err := newLogsReceiver(c, set, f.logsUnmarshalers, nextConsumer)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func createDefaultConfig() config.Receiver {
 		Encoding:         defaultEncoding,
 		ConsumerName:     defaultConsumerName,
 		Subscription:     defaultSubscription,
-		Endpoint:         defaultServiceUrl,
+		Endpoint:         defaultServiceURL,
 		Authentication:   Authentication{},
 	}
 }
