@@ -20,6 +20,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	metricsproto "go.opentelemetry.io/proto/otlp/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
@@ -67,17 +68,17 @@ func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    0,
-	"AGGREGATION_TEMPORALITY_DELTA":          1,
-	"AGGREGATION_TEMPORALITY_CUMULATIVE":     2,
+	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED),
+	"AGGREGATION_TEMPORALITY_DELTA":          tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
+	"AGGREGATION_TEMPORALITY_CUMULATIVE":     tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
 	"FLAG_NONE":                              0,
 	"FLAG_NO_RECORDED_VALUE":                 1,
-	"METRIC_DATA_TYPE_NONE":                  0,
-	"METRIC_DATA_TYPE_GAUGE":                 1,
-	"METRIC_DATA_TYPE_SUM":                   2,
-	"METRIC_DATA_TYPE_HISTOGRAM":             3,
-	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": 4,
-	"METRIC_DATA_TYPE_SUMMARY":               5,
+	"METRIC_DATA_TYPE_NONE":                  tql.Enum(pmetric.MetricDataTypeNone),
+	"METRIC_DATA_TYPE_GAUGE":                 tql.Enum(pmetric.MetricDataTypeGauge),
+	"METRIC_DATA_TYPE_SUM":                   tql.Enum(pmetric.MetricDataTypeSum),
+	"METRIC_DATA_TYPE_HISTOGRAM":             tql.Enum(pmetric.MetricDataTypeHistogram),
+	"METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM": tql.Enum(pmetric.MetricDataTypeExponentialHistogram),
+	"METRIC_DATA_TYPE_SUMMARY":               tql.Enum(pmetric.MetricDataTypeSummary),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {

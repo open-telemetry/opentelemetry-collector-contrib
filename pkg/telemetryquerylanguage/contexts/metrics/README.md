@@ -33,7 +33,7 @@ The following fields are the exception.
 
 ## Enums
 
-The Metrics Context supports the enum names from the metrics proto.  In addition, it also supports an enum for metrics data type.
+The Metrics Context supports the enum names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto).  In addition, it also supports an enum for metrics data type, with the numeric value being [defined by pdata](https://github.com/open-telemetry/opentelemetry-collector/blob/61c6989f8498ec2938416c66d8a46286f255c21b/pdata/internal/metrics.go#L123).
 
 | Enum Symbol                            | Value |
 |----------------------------------------|-------|

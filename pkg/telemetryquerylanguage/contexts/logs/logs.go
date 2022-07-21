@@ -23,6 +23,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	logsproto "go.opentelemetry.io/proto/otlp/logs/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
@@ -60,31 +61,31 @@ func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": 0,
-	"SEVERITY_NUMBER_TRACE":       1,
-	"SEVERITY_NUMBER_TRACE2":      2,
-	"SEVERITY_NUMBER_TRACE3":      3,
-	"SEVERITY_NUMBER_TRACE4":      4,
-	"SEVERITY_NUMBER_DEBUG":       5,
-	"SEVERITY_NUMBER_DEBUG2":      6,
-	"SEVERITY_NUMBER_DEBUG3":      7,
-	"SEVERITY_NUMBER_DEBUG4":      8,
-	"SEVERITY_NUMBER_INFO":        9,
-	"SEVERITY_NUMBER_INFO2":       10,
-	"SEVERITY_NUMBER_INFO3":       11,
-	"SEVERITY_NUMBER_INFO4":       12,
-	"SEVERITY_NUMBER_WARN":        13,
-	"SEVERITY_NUMBER_WARN2":       14,
-	"SEVERITY_NUMBER_WARN3":       15,
-	"SEVERITY_NUMBER_WARN4":       16,
-	"SEVERITY_NUMBER_ERROR":       17,
-	"SEVERITY_NUMBER_ERROR2":      18,
-	"SEVERITY_NUMBER_ERROR3":      19,
-	"SEVERITY_NUMBER_ERROR4":      20,
-	"SEVERITY_NUMBER_FATAL":       21,
-	"SEVERITY_NUMBER_FATAL2":      22,
-	"SEVERITY_NUMBER_FATAL3":      23,
-	"SEVERITY_NUMBER_FATAL4":      24,
+	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED),
+	"SEVERITY_NUMBER_TRACE":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE),
+	"SEVERITY_NUMBER_TRACE2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE2),
+	"SEVERITY_NUMBER_TRACE3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE3),
+	"SEVERITY_NUMBER_TRACE4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE4),
+	"SEVERITY_NUMBER_DEBUG":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG),
+	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG2),
+	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG3),
+	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG4),
+	"SEVERITY_NUMBER_INFO":        tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO),
+	"SEVERITY_NUMBER_INFO2":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO2),
+	"SEVERITY_NUMBER_INFO3":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO3),
+	"SEVERITY_NUMBER_INFO4":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO4),
+	"SEVERITY_NUMBER_WARN":        tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN),
+	"SEVERITY_NUMBER_WARN2":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN2),
+	"SEVERITY_NUMBER_WARN3":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN3),
+	"SEVERITY_NUMBER_WARN4":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN4),
+	"SEVERITY_NUMBER_ERROR":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR),
+	"SEVERITY_NUMBER_ERROR2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR2),
+	"SEVERITY_NUMBER_ERROR3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR3),
+	"SEVERITY_NUMBER_ERROR4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR4),
+	"SEVERITY_NUMBER_FATAL":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL),
+	"SEVERITY_NUMBER_FATAL2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL2),
+	"SEVERITY_NUMBER_FATAL3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL3),
+	"SEVERITY_NUMBER_FATAL4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL4),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {

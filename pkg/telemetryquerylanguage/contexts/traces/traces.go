@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/trace"
+	tracesproto "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
@@ -61,15 +62,15 @@ func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"SPAN_KIND_UNSPECIFIED": 0,
-	"SPAN_KIND_INTERNAL":    1,
-	"SPAN_KIND_SERVER":      2,
-	"SPAN_KIND_CLIENT":      3,
-	"SPAN_KIND_PRODUCER":    4,
-	"SPAN_KIND_CONSUMER":    5,
-	"STATUS_CODE_UNSET":     0,
-	"STATUS_CODE_OK":        1,
-	"STATUS_CODE_ERROR":     2,
+	"SPAN_KIND_UNSPECIFIED": tql.Enum(tracesproto.Span_SPAN_KIND_UNSPECIFIED),
+	"SPAN_KIND_INTERNAL":    tql.Enum(tracesproto.Span_SPAN_KIND_INTERNAL),
+	"SPAN_KIND_SERVER":      tql.Enum(tracesproto.Span_SPAN_KIND_SERVER),
+	"SPAN_KIND_CLIENT":      tql.Enum(tracesproto.Span_SPAN_KIND_CLIENT),
+	"SPAN_KIND_PRODUCER":    tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
+	"SPAN_KIND_CONSUMER":    tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
+	"STATUS_CODE_UNSET":     tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
+	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
+	"STATUS_CODE_ERROR":     tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {

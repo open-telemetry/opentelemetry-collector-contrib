@@ -22,4 +22,4 @@ The following fields are the exception.
 
 ## Enums
 
-The Logs Context supports the enum names from the logs proto.
+The Logs Context supports the enum names from the [logs proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/logs/v1/logs.proto).

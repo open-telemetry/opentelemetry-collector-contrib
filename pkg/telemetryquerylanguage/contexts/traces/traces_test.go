@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	tracesproto "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
@@ -68,7 +69,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		name     string
 		path     []tql.Field
 		orig     interface{}
-		new      interface{}
+		newVal   interface{}
 		modified func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource)
 	}{
 		{
@@ -78,8 +79,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig: pcommon.NewTraceID(traceID),
-			new:  pcommon.NewTraceID(traceID2),
+			orig:   pcommon.NewTraceID(traceID),
+			newVal: pcommon.NewTraceID(traceID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -91,8 +92,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig: pcommon.NewSpanID(spanID),
-			new:  pcommon.NewSpanID(spanID2),
+			orig:   pcommon.NewSpanID(spanID),
+			newVal: pcommon.NewSpanID(spanID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -107,8 +108,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "string",
 				},
 			},
-			orig: hex.EncodeToString(traceID[:]),
-			new:  hex.EncodeToString(traceID2[:]),
+			orig:   hex.EncodeToString(traceID[:]),
+			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceID(pcommon.NewTraceID(traceID2))
 			},
@@ -123,8 +124,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "string",
 				},
 			},
-			orig: hex.EncodeToString(spanID[:]),
-			new:  hex.EncodeToString(spanID2[:]),
+			orig:   hex.EncodeToString(spanID[:]),
+			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetSpanID(pcommon.NewSpanID(spanID2))
 			},
@@ -136,8 +137,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_state",
 				},
 			},
-			orig: "key1=val1,key2=val2",
-			new:  "key=newVal",
+			orig:   "key1=val1,key2=val2",
+			newVal: "key=newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceState("key=newVal")
 			},
@@ -150,8 +151,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("key1"),
 				},
 			},
-			orig: "val1",
-			new:  "newVal",
+			orig:   "val1",
+			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetTraceState("key1=newVal,key2=val2")
 			},
@@ -163,8 +164,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "parent_span_id",
 				},
 			},
-			orig: pcommon.NewSpanID(spanID2),
-			new:  pcommon.NewSpanID(spanID),
+			orig:   pcommon.NewSpanID(spanID2),
+			newVal: pcommon.NewSpanID(spanID),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetParentSpanID(pcommon.NewSpanID(spanID))
 			},
@@ -176,8 +177,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "name",
 				},
 			},
-			orig: "bear",
-			new:  "cat",
+			orig:   "bear",
+			newVal: "cat",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetName("cat")
 			},
@@ -189,8 +190,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "kind",
 				},
 			},
-			orig: int64(2),
-			new:  int64(3),
+			orig:   int64(2),
+			newVal: int64(3),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetKind(ptrace.SpanKindClient)
 			},
@@ -202,8 +203,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "start_time_unix_nano",
 				},
 			},
-			orig: int64(100_000_000),
-			new:  int64(200_000_000),
+			orig:   int64(100_000_000),
+			newVal: int64(200_000_000),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
@@ -215,8 +216,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "end_time_unix_nano",
 				},
 			},
-			orig: int64(500_000_000),
-			new:  int64(200_000_000),
+			orig:   int64(500_000_000),
+			newVal: int64(200_000_000),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
@@ -228,8 +229,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refSpan.Attributes(),
-			new:  newAttrs,
+			orig:   refSpan.Attributes(),
+			newVal: newAttrs,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Clear()
 				newAttrs.CopyTo(span.Attributes())
@@ -243,8 +244,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("str"),
 				},
 			},
-			orig: "val",
-			new:  "newVal",
+			orig:   "val",
+			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().UpsertString("str", "newVal")
 			},
@@ -257,8 +258,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("bool"),
 				},
 			},
-			orig: true,
-			new:  false,
+			orig:   true,
+			newVal: false,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().UpsertBool("bool", false)
 			},
@@ -271,8 +272,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("int"),
 				},
 			},
-			orig: int64(10),
-			new:  int64(20),
+			orig:   int64(10),
+			newVal: int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().UpsertInt("int", 20)
 			},
@@ -285,8 +286,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("double"),
 				},
 			},
-			orig: float64(1.2),
-			new:  float64(2.4),
+			orig:   float64(1.2),
+			newVal: float64(2.4),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().UpsertDouble("double", 2.4)
 			},
@@ -299,8 +300,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("bytes"),
 				},
 			},
-			orig: []byte{1, 3, 2},
-			new:  []byte{2, 3, 4},
+			orig:   []byte{1, 3, 2},
+			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
@@ -317,7 +318,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
-			new: []string{"new"},
+			newVal: []string{"new"},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Upsert("arr_str", newArrStr)
 			},
@@ -334,7 +335,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
-			new: []bool{false},
+			newVal: []bool{false},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Upsert("arr_bool", newArrBool)
 			},
@@ -351,7 +352,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
-			new: []int64{20},
+			newVal: []int64{20},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Upsert("arr_int", newArrInt)
 			},
@@ -368,7 +369,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
-			new: []float64{2.0},
+			newVal: []float64{2.0},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Upsert("arr_float", newArrFloat)
 			},
@@ -385,7 +386,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
-			new: [][]byte{{9, 6, 4}},
+			newVal: [][]byte{{9, 6, 4}},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
@@ -397,8 +398,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_attributes_count",
 				},
 			},
-			orig: int64(10),
-			new:  int64(20),
+			orig:   int64(10),
+			newVal: int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedAttributesCount(20)
 			},
@@ -410,8 +411,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "events",
 				},
 			},
-			orig: refSpan.Events(),
-			new:  newEvents,
+			orig:   refSpan.Events(),
+			newVal: newEvents,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Events().RemoveIf(func(_ ptrace.SpanEvent) bool {
 					return true
@@ -426,8 +427,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_events_count",
 				},
 			},
-			orig: int64(20),
-			new:  int64(30),
+			orig:   int64(20),
+			newVal: int64(30),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedEventsCount(30)
 			},
@@ -439,8 +440,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "links",
 				},
 			},
-			orig: refSpan.Links(),
-			new:  newLinks,
+			orig:   refSpan.Links(),
+			newVal: newLinks,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Links().RemoveIf(func(_ ptrace.SpanLink) bool {
 					return true
@@ -455,8 +456,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "dropped_links_count",
 				},
 			},
-			orig: int64(30),
-			new:  int64(40),
+			orig:   int64(30),
+			newVal: int64(40),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.SetDroppedLinksCount(40)
 			},
@@ -468,8 +469,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "status",
 				},
 			},
-			orig: refSpan.Status(),
-			new:  newStatus,
+			orig:   refSpan.Status(),
+			newVal: newStatus,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				newStatus.CopyTo(span.Status())
 			},
@@ -484,8 +485,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "code",
 				},
 			},
-			orig: int64(ptrace.StatusCodeOk),
-			new:  int64(ptrace.StatusCodeError),
+			orig:   int64(ptrace.StatusCodeOk),
+			newVal: int64(ptrace.StatusCodeError),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Status().SetCode(ptrace.StatusCodeError)
 			},
@@ -500,8 +501,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "message",
 				},
 			},
-			orig: "good span",
-			new:  "bad span",
+			orig:   "good span",
+			newVal: "bad span",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				span.Status().SetMessage("bad span")
 			},
@@ -516,8 +517,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "attributes",
 				},
 			},
-			orig: refSpan.Attributes(),
-			new:  newAttrs,
+			orig:   refSpan.Attributes(),
+			newVal: newAttrs,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Clear()
 				newAttrs.CopyTo(resource.Attributes())
@@ -534,8 +535,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("str"),
 				},
 			},
-			orig: "val",
-			new:  "newVal",
+			orig:   "val",
+			newVal: "newVal",
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().UpsertString("str", "newVal")
 			},
@@ -551,8 +552,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("bool"),
 				},
 			},
-			orig: true,
-			new:  false,
+			orig:   true,
+			newVal: false,
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().UpsertBool("bool", false)
 			},
@@ -568,8 +569,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("int"),
 				},
 			},
-			orig: int64(10),
-			new:  int64(20),
+			orig:   int64(10),
+			newVal: int64(20),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().UpsertInt("int", 20)
 			},
@@ -585,8 +586,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("double"),
 				},
 			},
-			orig: float64(1.2),
-			new:  float64(2.4),
+			orig:   float64(1.2),
+			newVal: float64(2.4),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().UpsertDouble("double", 2.4)
 			},
@@ -602,8 +603,8 @@ func Test_newPathGetSetter(t *testing.T) {
 					MapKey: tqltest.Strp("bytes"),
 				},
 			},
-			orig: []byte{1, 3, 2},
-			new:  []byte{2, 3, 4},
+			orig:   []byte{1, 3, 2},
+			newVal: []byte{2, 3, 4},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 			},
@@ -623,7 +624,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_str")
 				return val.SliceVal()
 			}(),
-			new: []string{"new"},
+			newVal: []string{"new"},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Upsert("arr_str", newArrStr)
 			},
@@ -643,7 +644,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_bool")
 				return val.SliceVal()
 			}(),
-			new: []bool{false},
+			newVal: []bool{false},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Upsert("arr_bool", newArrBool)
 			},
@@ -663,7 +664,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_int")
 				return val.SliceVal()
 			}(),
-			new: []int64{20},
+			newVal: []int64{20},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Upsert("arr_int", newArrInt)
 			},
@@ -683,7 +684,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_float")
 				return val.SliceVal()
 			}(),
-			new: []float64{2.0},
+			newVal: []float64{2.0},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Upsert("arr_float", newArrFloat)
 			},
@@ -703,7 +704,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				val, _ := refSpan.Attributes().Get("arr_bytes")
 				return val.SliceVal()
 			}(),
-			new: [][]byte{{9, 6, 4}},
+			newVal: [][]byte{{9, 6, 4}},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				resource.Attributes().Upsert("arr_bytes", newArrBytes)
 			},
@@ -727,7 +728,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				span:     span,
 				il:       il,
 				resource: resource,
-			}, tt.new)
+			}, tt.newVal)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)
@@ -808,39 +809,39 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SPAN_KIND_UNSPECIFIED",
-			want: 0,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_UNSPECIFIED),
 		},
 		{
 			name: "SPAN_KIND_INTERNAL",
-			want: 1,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_INTERNAL),
 		},
 		{
 			name: "SPAN_KIND_SERVER",
-			want: 2,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_SERVER),
 		},
 		{
 			name: "SPAN_KIND_CLIENT",
-			want: 3,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_CLIENT),
 		},
 		{
 			name: "SPAN_KIND_PRODUCER",
-			want: 4,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
 		},
 		{
 			name: "SPAN_KIND_CONSUMER",
-			want: 5,
+			want: tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
 		},
 		{
 			name: "STATUS_CODE_UNSET",
-			want: 0,
+			want: tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
 		},
 		{
 			name: "STATUS_CODE_OK",
-			want: 1,
+			want: tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
 		},
 		{
 			name: "STATUS_CODE_ERROR",
-			want: 2,
+			want: tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
 		},
 	}
 	for _, tt := range tests {
