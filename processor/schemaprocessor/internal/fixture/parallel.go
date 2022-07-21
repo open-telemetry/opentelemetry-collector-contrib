@@ -24,9 +24,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/race"
 )
 
-// ParallelRaceCompute checks to see if the race detector is running before
-// testing the function concurrently
-func ParallelRaceCompute(tb testing.TB, concurrency int, fn func() error) {
+// ParallelRaceCompute starts `count` number of go routines that calls the provided function `fn`
+// at the same to allow the race detector greater oppotunity to capture known race conditions.
+// This method blocks until each count number of fn has completed, any returned errors is considered
+// a failing test method.
+// If the race detector is not enabled, the function then skips with an notice.
+// This is intended to show that a test was intentionally skipped instead of just missing.
+func ParallelRaceCompute(tb testing.TB, count int, fn func() error) {
 	tb.Helper()
 	if !race.Enabled {
 		tb.Skip(
@@ -41,7 +45,7 @@ func ParallelRaceCompute(tb testing.TB, concurrency int, fn func() error) {
 		start = make(chan struct{})
 		wg    sync.WaitGroup
 	)
-	for i := 0; i < concurrency; i++ {
+	for i := 0; i < count; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
