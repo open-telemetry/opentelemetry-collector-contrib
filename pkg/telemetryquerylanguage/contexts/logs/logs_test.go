@@ -804,7 +804,6 @@ func Test_ParseEnum(t *testing.T) {
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL4",
-
 			want: tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL4),
 		},
 	}
