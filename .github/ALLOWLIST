@@ -35,4 +35,3 @@ processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/podmanreceiver
 testbed
-testbed/mockdatareceivers/mockawsxrayreceiver
