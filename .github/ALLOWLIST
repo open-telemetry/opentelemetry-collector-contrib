@@ -29,7 +29,6 @@ pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
 pkg/translator/prometheusremotewrite
 pkg/translator/signalfx
-pkg/winperfcounters
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 testbed
