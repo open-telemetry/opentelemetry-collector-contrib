@@ -23,6 +23,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -30,10 +32,6 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
-
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
@@ -52,6 +50,9 @@ type metricsExporter struct {
 	retrier        *utils.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
+	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
+	// It will be overwritten in tests.
+	getPushTime func() uint64
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
@@ -122,6 +123,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 		onceMetadata:   onceMetadata,
 		sourceProvider: sourceProvider,
+		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 	}, nil
 }
 
@@ -160,7 +162,6 @@ func (exp *metricsExporter) PushMetricsDataScrubbed(ctx context.Context, md pmet
 }
 
 func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-
 	// Start host metadata with resource attributes from
 	// the first payload.
 	if exp.cfg.HostMetadata.Enabled {
@@ -172,14 +173,20 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
 	}
-
 	consumer := metrics.NewConsumer()
-	pushTime := uint64(time.Now().UTC().UnixNano())
 	err := exp.tr.MapMetrics(ctx, md, consumer)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}
-	ms, sl := consumer.All(pushTime, exp.params.BuildInfo)
+	src, err := exp.sourceProvider.Source(ctx)
+	if err != nil {
+		return err
+	}
+	var tags []string
+	if src.Kind == source.AWSECSFargateKind {
+		tags = append(tags, exp.cfg.HostMetadata.Tags...)
+	}
+	ms, sl := consumer.All(exp.getPushTime(), exp.params.BuildInfo, tags)
 	metrics.ProcessMetrics(ms)
 
 	err = nil
