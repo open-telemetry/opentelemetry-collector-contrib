@@ -120,7 +120,6 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		SugaredLogger:      logger.With("component", "fileconsumer"),
 		finder:             c.Finder,
 		PollInterval:       c.PollInterval.Raw(),
-		startAtBeginning:   startAtBeginning,
 		queuedMatches:      make([]string, 0),
 		firstCheck:         true,
 		cancel:             func() {},
@@ -135,6 +134,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 				maxLogSize:      int(c.MaxLogSize),
 				emit:            emit,
 			},
+			fromBeginning:  startAtBeginning,
 			splitterConfig: c.Splitter,
 		},
 	}, nil

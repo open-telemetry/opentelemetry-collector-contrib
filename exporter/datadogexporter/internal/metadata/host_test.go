@@ -16,19 +16,13 @@ package metadata
 
 import (
 	"context"
-	"errors"
 	"os"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils/cache"
 )
 
@@ -61,106 +55,4 @@ func TestHost(t *testing.T) {
 	osHostname, err := os.Hostname()
 	require.NoError(t, err)
 	assert.Contains(t, src.Identifier, osHostname)
-}
-
-var _ source.Provider = (*ErrorSourceProvider)(nil)
-
-type ErrorSourceProvider string
-
-func (p ErrorSourceProvider) Source(context.Context) (source.Source, error) {
-	return source.Source{}, errors.New(string(p))
-}
-
-func TestWarnProvider(t *testing.T) {
-	tests := []struct {
-		name            string
-		curProvider     source.Provider
-		previewProvider source.Provider
-
-		expectedLogs []observer.LoggedEntry
-		src          source.Source
-		err          string
-	}{
-		{
-			name:            "current provider fails",
-			curProvider:     ErrorSourceProvider("errorCurrentHostname"),
-			previewProvider: provider.Config("previewHostname"),
-			err:             "errorCurrentHostname",
-		},
-		{
-			name:            "preview provider fails",
-			curProvider:     provider.Config("currentHostname"),
-			previewProvider: ErrorSourceProvider("errorPreviewHostname"),
-			src:             source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
-			expectedLogs: []observer.LoggedEntry{
-				{
-					Entry: zapcore.Entry{
-						Level:   zap.WarnLevel,
-						Message: previewHostnameFailedLogMessage,
-					},
-					Context: []zapcore.Field{
-						{
-							Key:       "error",
-							Type:      zapcore.ErrorType,
-							Interface: errors.New("errorPreviewHostname"),
-						},
-					},
-				},
-			},
-		},
-		{
-			name:            "preview provider and current provider match",
-			curProvider:     provider.Config("hostname"),
-			previewProvider: provider.Config("hostname"),
-			src:             source.Source{Kind: source.HostnameKind, Identifier: "hostname"},
-		},
-		{
-			name:            "preview provider and current provider don't match",
-			curProvider:     provider.Config("currentHostname"),
-			previewProvider: provider.Config("previewHostname"),
-			src:             source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
-			expectedLogs: []observer.LoggedEntry{
-				{
-					Entry: zapcore.Entry{
-						Level:   zap.WarnLevel,
-						Message: defaultHostnameChangeLogMessage,
-					},
-					Context: []zapcore.Field{
-						{
-							Key:       "current default source",
-							Type:      zapcore.ReflectType,
-							Interface: source.Source{Kind: source.HostnameKind, Identifier: "currentHostname"},
-						},
-						{
-							Key:       "future default source",
-							Type:      zapcore.ReflectType,
-							Interface: source.Source{Kind: source.HostnameKind, Identifier: "previewHostname"},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	for _, testInstance := range tests {
-		t.Run(testInstance.name, func(t *testing.T) {
-			core, observed := observer.New(zapcore.DebugLevel)
-			provider := &warnProvider{
-				logger:          zap.New(core),
-				curProvider:     testInstance.curProvider,
-				previewProvider: testInstance.previewProvider,
-			}
-
-			src, err := provider.Source(context.Background())
-			if err != nil || testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
-			} else {
-				assert.Equal(t, testInstance.src, src)
-			}
-			assert.ElementsMatch(t,
-				testInstance.expectedLogs,
-				observed.AllUntimed(),
-			)
-		})
-	}
 }

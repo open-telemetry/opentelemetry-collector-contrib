@@ -21,16 +21,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 type Processor struct {
-	queries []common.Query
+	queries []tql.Query
 	logger  *zap.Logger
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := common.ParseQueries(statements, functions, ParsePath, ParseEnum)
+	queries, err := tql.ParseQueries(statements, functions, ParsePath, ParseEnum)
 	if err != nil {
 		return nil, err
 	}

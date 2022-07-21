@@ -98,13 +98,20 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: "world",
 		},
+		{
+			name: "enum",
+			val: Value{
+				Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_ONE")),
+			},
+			want: int64(1),
+		},
 	}
 
 	functions := map[string]interface{}{"hello": hello}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := NewGetter(tt.val, functions, testParsePath)
+			reader, err := NewGetter(tt.val, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			val := reader.Get(tqltest.TestTransformContext{
 				Item: tt.want,
@@ -114,7 +121,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := NewGetter(Value{}, functions, testParsePath)
+		_, err := NewGetter(Value{}, functions, testParsePath, testParseEnum)
 		assert.Error(t, err)
 	})
 }
