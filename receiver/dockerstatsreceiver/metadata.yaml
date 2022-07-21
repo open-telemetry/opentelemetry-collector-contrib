@@ -25,10 +25,10 @@ attributes:
     description: "The CPU core number when utilising per-CPU metrics."
     type: string
   device_major:
-    description: "Device major number."
+    description: "Device major number for block IO operations."
     type: string
   device_minor:
-    description: "Device minor number."
+    description: "Device minor number for block IO operations."
     type: string
   interface:
     description: "Network interface."
