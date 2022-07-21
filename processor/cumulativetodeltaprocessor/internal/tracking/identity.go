@@ -36,8 +36,8 @@ type MetricIdentity struct {
 }
 
 type HistogramIdentities struct {
-	CountIdentity  	 MetricIdentity
-	SumIdentity   	 MetricIdentity
+	CountIdentity    MetricIdentity
+	SumIdentity      MetricIdentity
 	BucketIdentities []MetricIdentity
 }
 
