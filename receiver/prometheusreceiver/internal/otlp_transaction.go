@@ -232,10 +232,12 @@ func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetr
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()
-	if t.jobsMap != nil {
-		metricsL.CopyTo(ilm.Metrics())
-	} else {
+	if t.disableStartTime {
+		// adjust startTimestamp is disabled, metricsL will not be cached, and
+		// it's safe to move it to metrics and change it by its consumer
 		metricsL.MoveAndAppendTo(ilm.Metrics())
+	} else {
+		metricsL.CopyTo(ilm.Metrics())
 	}
 	t.nodeResource.CopyTo(rms.Resource())
 	return &metrics
