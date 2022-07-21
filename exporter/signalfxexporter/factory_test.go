@@ -188,7 +188,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	rules, err := loadDefaultTranslationRules()
 	require.NoError(t, err)
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 600)
+	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
 	data := testMetricsData()
 
