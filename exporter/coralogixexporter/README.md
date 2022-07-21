@@ -2,7 +2,8 @@
 
 | Status                   |                        |
 | ------------------------ |----------------------- |
-| Stability                | [beta, alpha for logs] |
+| Stability                | traces, metrics [beta] |
+|                          | logs [alpha]           |
 | Supported pipeline types | traces, metrics, logs  |
 | Distributions            | [contrib]              |
 
@@ -81,5 +82,6 @@ exporters:
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
 and we will walk you through setting up this exporter, step by step.
 
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
