@@ -80,7 +80,7 @@ processors:
 
 ## Feature gate configurations
 
-The **processor.cumulativetodeltaprocessor.EnableHistogramSupport** feature flag controls whether cumulative histograms will be converted to delta temporality or not. It is disabled by default, meaning histograms will not be modified by the processor.
+The **processor.cumulativetodeltaprocessor.EnableHistogramSupport** feature flag controls whether cumulative histograms delta conversion is supported or not. It is disabled by default, meaning histograms will not be modified by the processor.  If enabled, which histograms are converted is still subjected to the processor's include/exclude filtering.
 
 Pass `--feature-gates processor.cumulativetodeltaprocessor.EnableHistogramSupport` to enable this feature.
 
