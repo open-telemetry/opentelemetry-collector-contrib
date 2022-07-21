@@ -58,7 +58,8 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires a running windows service
 		},
 		{
-			receiver: "aerospike",
+			receiver:     "aerospike",
+			skipLifecyle: true, // Requires a running Aerospike node
 		},
 		{
 			receiver: "apache",
