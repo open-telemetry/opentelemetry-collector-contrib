@@ -105,6 +105,7 @@ pkg/translator/jaeger/                               @open-telemetry/collector-c
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/winperfcounters/                                 @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -195,3 +196,4 @@ receiver/windowsperfcountersreceiver/                @open-telemetry/collector-c
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 
+testbed/mockdatareceivers/mockawsxrayreceiver/       @open-telemetry/collector-contrib-approvers @willarmiros

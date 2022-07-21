@@ -1,13 +1,13 @@
 # Coralogix Exporter
 
-| Status                   |                 |
-| ------------------------ |-----------------|
-| Stability                | [beta]          |
-| Supported pipeline types | traces, metrics |
-| Distributions            | [contrib]       |
+| Status                   |                        |
+| ------------------------ |----------------------- |
+| Stability                | traces, metrics [beta] |
+|                          | logs [alpha]           |
+| Supported pipeline types | traces, metrics, logs  |
+| Distributions            | [contrib]              |
 
-The Coralogix exporter sends traces to [Coralogix](https://coralogix.com/) as
-Coralogix logs.
+The Coralogix exporter sends traces, metrics and logs to [Coralogix](https://coralogix.com/).
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
@@ -24,6 +24,8 @@ exporters:
     endpoint: "tracing-ingress.coralogix.com:9443"
     metrics:
       endpoint: "otel-metrics.coralogix.com"
+    logs:
+      endpoint: "otel-logs.coralogix.com"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
@@ -54,13 +56,14 @@ receivers that are producing the traces being exported by the Coralogix
 exporter. Coralogix can only accept events which are not older than 24 hours.
 
 ## Metrics
+
 Prometheus is currently the leading tool for metric collection, it’s easy to integrate and easy to use.
 
 ```yaml
 exporters:
   prometheusremotewrite:
     # The Coralogix metrics ingress endpoint
-    endpoint: "https://metrics-api.coralogix.com"
+    endpoint: "https://prometheus-gateway.coralogix.com"
 
     # Your Coralogix private key (sensitive)
     # This token identifies you into your Coralogix account. 
@@ -79,5 +82,6 @@ exporters:
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
 and we will walk you through setting up this exporter, step by step.
 
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
