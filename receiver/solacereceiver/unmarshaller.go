@@ -200,7 +200,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		messageIDAttrKey                   = "messaging.message_id"
 		conversationIDAttrKey              = "messaging.conversation_id"
 		payloadSizeBytesAttrKey            = "messaging.message_payload_size_bytes"
-		destinationAttrKey                = "messaging.destination"
+		destinationAttrKey                 = "messaging.destination"
 		clientUsernameAttrKey              = "messaging.solace.client_username"
 		clientNameAttrKey                  = "messaging.solace.client_name"
 		replicationGroupMessageIDAttrKey   = "messaging.solace.replication_group_message_id"
