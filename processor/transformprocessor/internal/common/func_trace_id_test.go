@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func Test_traceID(t *testing.T) {
@@ -38,7 +38,7 @@ func Test_traceID(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			ctx := testhelper.TestTransformContext{}
+			ctx := tqltest.TestTransformContext{}
 
 			exprFunc, _ := traceID(tt.bytes)
 			actual := exprFunc(ctx)

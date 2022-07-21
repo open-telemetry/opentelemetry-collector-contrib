@@ -44,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 		typeStr,
 		createDefaultConfig,
 		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
-		component.WithLogsProcessorAndStabilityLevel(createLogProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
 		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
 }
 
@@ -85,7 +85,7 @@ func createTracesProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogProcessor(
+func createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,

@@ -87,7 +87,7 @@ func TestGRPCReception(t *testing.T) {
 		},
 	}
 
-	//skywalking agent client send trace data to otel/skywalkingreceiver
+	// skywalking agent client send trace data to otel/skywalkingreceiver
 	client := agent.NewTraceSegmentReportServiceClient(conn)
 	commands, err := client.CollectInSync(context.Background(), segmentCollection)
 	if err != nil {

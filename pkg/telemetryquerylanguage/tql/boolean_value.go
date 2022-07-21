@@ -55,15 +55,15 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser) (BoolExpressionEvaluator, error) {
+func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
-	left, err := NewGetter(comparison.Left, functions, pathParser)
+	left, err := NewGetter(comparison.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
-	right, err := NewGetter(comparison.Right, functions, pathParser)
+	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
 	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
@@ -87,17 +87,17 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
-func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser) (BoolExpressionEvaluator, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
-	f, err := newBooleanTermEvaluator(expr.Left, functions, pathParser)
+	f, err := newBooleanTermEvaluator(expr.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
-		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser)
+		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -107,17 +107,17 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	return orFuncs(funcs), nil
 }
 
-func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser) (BoolExpressionEvaluator, error) {
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
-	f, err := newBooleanValueEvaluator(term.Left, functions, pathParser)
+	f, err := newBooleanValueEvaluator(term.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range term.Right {
-		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser)
+		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -127,13 +127,13 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	return andFuncs(funcs), nil
 }
 
-func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser) (BoolExpressionEvaluator, error) {
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}
 	switch {
 	case value.Comparison != nil:
-		comparison, err := newComparisonEvaluator(value.Comparison, functions, pathParser)
+		comparison, err := newComparisonEvaluator(value.Comparison, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -144,7 +144,7 @@ func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interfac
 		}
 		return alwaysFalse, nil
 	case value.SubExpr != nil:
-		return newBooleanExpressionEvaluator(value.SubExpr, functions, pathParser)
+		return newBooleanExpressionEvaluator(value.SubExpr, functions, pathParser, enumParser)
 	}
 
 	return nil, fmt.Errorf("unhandled boolean operation %v", value)

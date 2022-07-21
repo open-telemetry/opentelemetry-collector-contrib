@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import "time"
@@ -53,7 +52,7 @@ func pullTimestampsWithDifference(lowerBound time.Time, upperBound time.Time, di
 	}
 
 	// To ensure that we did not miss upper bound and timestamps slice will contain at least one value
-	if len(timestamps) <= 0 || timestamps[len(timestamps)-1] != upperBound {
+	if len(timestamps) == 0 || timestamps[len(timestamps)-1] != upperBound {
 		timestamps = append(timestamps, upperBound)
 	}
 
