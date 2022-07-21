@@ -15,13 +15,14 @@
 package chrony // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
-	"math/rand"
 	"net"
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
+	"github.com/tilinna/clock"
 	"go.uber.org/multierr"
 )
 
@@ -33,7 +34,7 @@ type Client interface {
 	// GetTrackingData will connection the configured chronyd endpoint
 	// and will read that instance tracking information relatively to the configured
 	// upstream NTP server(s).
-	GetTrackingData() (*Tracking, error)
+	GetTrackingData(ctx context.Context) (*Tracking, error)
 }
 
 type clientOption func(c *client)
@@ -44,7 +45,6 @@ type clientOption func(c *client)
 // The reason for the partial rewrite is that the original
 // client uses logrus' global instance within the main code path.
 type client struct {
-	seq         uint32
 	proto, addr string
 	timeout     time.Duration
 	dialer      func(network, addr string) (net.Conn, error)
@@ -52,8 +52,8 @@ type client struct {
 
 // New creates a client ready to use with chronyd
 func New(addr string, timeout time.Duration, opts ...clientOption) (Client, error) {
-	if timeout < time.Second {
-		return nil, errors.New("timeout must be greater than 1s")
+	if timeout < 1 {
+		return nil, errors.New("timeout must be positive")
 	}
 
 	network, endpoint, err := SplitNetworkEndpoint(addr)
@@ -62,7 +62,6 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 	}
 
 	c := &client{
-		seq:     rand.New(rand.NewSource(time.Now().Unix())).Uint32(),
 		proto:   network,
 		addr:    endpoint,
 		timeout: timeout,
@@ -75,18 +74,19 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 	return c, nil
 }
 
-func (c *client) GetTrackingData() (*Tracking, error) {
+func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	sock, err := c.dialer(c.proto, c.addr)
 	if err != nil {
 		return nil, err
 	}
-	if err = sock.SetDeadline(time.Now().Add(c.timeout)); err != nil {
+	clk := clock.FromContext(ctx)
+
+	if err = sock.SetDeadline(clk.Now().Add(c.timeout)); err != nil {
 		return nil, err
 	}
-	c.seq++
 
 	packet := chrony.NewTrackingPacket()
-	packet.SetSequence(c.seq)
+	packet.SetSequence(uint32(clk.Now().UnixNano()))
 
 	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
 		return nil, multierr.Combine(err, sock.Close())

@@ -1,3 +1,14 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//     http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // Copyright  The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,8 +40,8 @@ import (
 	Notice:
 
 	This file's contents has been taken and modified from:
-		https://github.com/facebook/time/blob/main/ntp/chrony/helpers.go
-		https://github.com/facebook/time/blob/main/ntp/chrony/packet.go
+		https://github.com/facebook/time/blob/f7a0d7702d50399208f352704780bc2fccf29eab/ntp/chrony/helpers.go
+		https://github.com/facebook/time/blob/f7a0d7702d50399208f352704780bc2fccf29eab/ntp/chrony/packet.go
 
 	The original implementation relies on the package `logrus` which is
 	not compatible with open telemetry collector and easy to convert to

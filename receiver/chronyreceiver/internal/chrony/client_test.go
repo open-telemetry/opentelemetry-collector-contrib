@@ -15,6 +15,7 @@
 package chrony
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"net"
@@ -140,9 +141,9 @@ func TestGettingTrackingData(t *testing.T) {
 		},
 		{
 			scenario: "Timeout waiting for response",
-			timeout:  time.Second,
+			timeout:  10 * time.Millisecond,
 			handler: func(conn net.Conn) error {
-				time.Sleep(2 * time.Second)
+				time.Sleep(100 * time.Millisecond)
 				return nil
 			},
 			err: os.ErrDeadlineExceeded,
@@ -188,7 +189,7 @@ func TestGettingTrackingData(t *testing.T) {
 			})
 			require.NoError(t, err, "Must not error when creating client")
 
-			data, err := client.GetTrackingData()
+			data, err := client.GetTrackingData(context.Background())
 			assert.EqualValues(t, tc.data, data, "Must match the expected data")
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
 		})
