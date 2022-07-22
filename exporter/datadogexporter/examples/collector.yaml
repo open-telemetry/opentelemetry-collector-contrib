@@ -34,51 +34,6 @@ exporters:
     #
     # hostname: customhostname
 
-    ## @param env - string - optional
-    ## The environment for unified service tagging.
-    ## Deprecated: [v0.49.0] Set `deployment.environment` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9016 for details.
-    ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_ENV` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-    #
-    # env: prod
-
-    ## @param service - string - optional
-    ## The service for unified service tagging.
-    ## Deprecated: [v0.49.0] Set `service.name` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8781 for details.
-    ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_SERVICE` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-    #
-    # service: myservice
-
-    ## @param version - string - optional
-    ## The version for unified service tagging.
-    ## Deprecated: [v0.49.0] Set `service.version` semconv instead, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8783 for details.
-    ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_VERSION` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
-    #
-    # version: myversion
-
-    ## @param tags - list of strings - optional - default: []
-    ## The list of tags to send as host tags.
-    ## Deprecated: [v0.49.0] Use `host_metadata::tags` instead.
-    ## This option will be removed in v0.52.0.
-    ## If unset it will be determined from the `DD_TAGS` environment variable, specified
-    ## as a list of space-separated strings (Deprecated: [v0.47.0] use 'env' config source instead).
-    #
-    # tags: []
-
-    ## @params send_metadata - boolean - optional - default: true
-    ## Deprecated: [v0.49.0] Use `host_metadata::enabled` instead.
-    ## This option will be removed in v0.52.0.
-    #
-    # send_metadata: true
-
-    ## @params use_resource_metadata - boolean - optional - default: true
-    ## Deprecated: [v0.49.0] Use `host_metadata::hostname_source` instead.
-    ## This option will be removed in v0.52.0.
-    #
-    # use_resource_metadata: true
-
     ## @param only_metadata - boolean - optional - default: false
     ## Whether to send only metadata. This is useful for agent-collector
     ## setups, so that metadata about a host is sent to the backend even
@@ -93,7 +48,6 @@ exporters:
       ## @ param key - string - required
       ## The Datadog API key to associate your Agent's data with your organization.
       ## Create a new API key here: https://app.datadoghq.com/account/settings
-      ## If unset it will be determined from the `DD_API_KEY` environment variable (Deprecated: [v0.47.0] set environment variable explicitly on configuration instead).
       #
       key: ${DD_API_KEY}
 
@@ -136,14 +90,6 @@ exporters:
       ## to metric tags.
       #
       # resource_attributes_as_tags: false
-
-      ## Deprecated: [0.54.0] use instrumentation_scope_metadata_as_tags instead in favor of
-      ## https://github.com/open-telemetry/opentelemetry-proto/releases/tag/v0.15.0
-      ## Both must not be enabled at the same time.
-      ## @param instrumentation_library_metadata_as_tags - string - optional - default: false
-      ## Set to true to add metadata about the instrumentation library that created a metric.
-      #
-      # instrumentation_library_metadata_as_tags: false
 
       ## @param instrumentation_scope_metadata_as_tags - string - optional - default: false
       ## Set to true to add metadata about the instrumentation scope that created a metric.
@@ -233,7 +179,7 @@ exporters:
       #
       # enabled: true
 
-      ## @param hostname_source - enum - optional - default: first_resource
+      ## @param hostname_source - enum - optional - default: config_or_system
       ## Source for the hostname of host metadata.
       ## Valid values are 'first_resource' and 'config_or_system':
       ## - 'first_resource' picks the host metadata hostname from the resource attributes on the first OTLP payload that gets to the exporter.
@@ -244,7 +190,7 @@ exporters:
       ##
       ##  The default is 'config_or_system'.
       #
-      # hostname_source: first_resource
+      # hostname_source: config_or_system
 
       ## @param tags - list of strings - optional - default: empty list
       ## List of host tags to be sent as part of the host metadata.

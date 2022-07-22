@@ -29,9 +29,6 @@ internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
 pkg/translator/prometheusremotewrite
-pkg/winperfcounters
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
-receiver/podmanreceiver
 testbed
-testbed/mockdatareceivers/mockawsxrayreceiver

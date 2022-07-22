@@ -84,6 +84,7 @@ extension/observer/k8sobserver/                      @open-telemetry/collector-c
 extension/oidcauthextension/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/pprofextension/                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/sigv4authextension/                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @erichsueh3
+extension/storage/                                   @open-telemetry/collector-contrib-approvers @dmitryax @atoulme @djaglowski
 extension/storage/dbstorage/                         @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 extension/storage/filestorage/                       @open-telemetry/collector-contrib-approvers @djaglowski
 
@@ -105,6 +106,7 @@ pkg/translator/opencensus/                           @open-telemetry/collector-c
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
 pkg/translator/signalfx/                             @open-telemetry/collector-contrib-approvers @pmcollins @pjanotti @dmitryax
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/winperfcounters/                                 @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
 
 processor/attributesprocessor/                       @open-telemetry/collector-contrib-approvers @boostchicken @pmm-sumo
 processor/cumulativetodeltaprocessor/                @open-telemetry/collector-contrib-approvers @TylerHelmuth
@@ -195,3 +197,4 @@ receiver/windowsperfcountersreceiver/                @open-telemetry/collector-c
 receiver/zipkinreceiver/                             @open-telemetry/collector-contrib-approvers @pmm-sumo
 receiver/zookeeperreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski
 
+testbed/mockdatareceivers/mockawsxrayreceiver/       @open-telemetry/collector-contrib-approvers @willarmiros
