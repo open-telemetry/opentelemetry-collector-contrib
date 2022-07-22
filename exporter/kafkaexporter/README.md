@@ -22,6 +22,8 @@ The following settings can be optionally configured:
   - The following encodings are valid *only* for **traces**.
     - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
     - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
+  - The following encodings are valid *only* for **logs**.
+    - `log_record_json`: the payload is single LogRecord serialized to JSON.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
