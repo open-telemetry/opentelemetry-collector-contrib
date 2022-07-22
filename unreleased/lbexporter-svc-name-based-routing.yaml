@@ -8,4 +8,4 @@ component: loadbalancingexporter
 note: Exporting trace pipelines based on Service name to avoid duplicate label svc + operation in collector hosts.
 
 # One or more tracking issues related to the change
-issues: []
+issues: [12652]
