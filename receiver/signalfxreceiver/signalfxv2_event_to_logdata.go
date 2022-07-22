@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
@@ -68,15 +67,16 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each
 				// individually.
-				if prop.Value.StrValue != nil {
+				switch {
+				case prop.Value.StrValue != nil:
 					propMap.InsertString(prop.Key, prop.Value.GetStrValue())
-				} else if prop.Value.IntValue != nil {
+				case prop.Value.IntValue != nil:
 					propMap.InsertInt(prop.Key, prop.Value.GetIntValue())
-				} else if prop.Value.DoubleValue != nil {
+				case prop.Value.DoubleValue != nil:
 					propMap.InsertDouble(prop.Key, prop.Value.GetDoubleValue())
-				} else if prop.Value.BoolValue != nil {
+				case prop.Value.BoolValue != nil:
 					propMap.InsertBool(prop.Key, prop.Value.GetBoolValue())
-				} else {
+				default:
 					// If there is no property value, just insert a null to
 					// record that the key was present.
 					propMap.InsertNull(prop.Key)

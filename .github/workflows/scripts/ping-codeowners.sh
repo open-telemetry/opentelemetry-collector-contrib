@@ -21,6 +21,16 @@ if [ -z "${COMPONENT}"] || [ -z "${ISSUE}" ]; then
     exit 0
 fi
 
+result=`grep -c ${COMPONENT} .github/CODEOWNERS`
+
+# there may be more than 1 component matching a label
+# if so, try to narrow things down by appending the component
+# type to the label
+if [[ $result != 1 ]]; then
+    COMPONENT_TYPE=`echo ${COMPONENT} | cut -f 1 -d '/'`
+    COMPONENT="${COMPONENT}${COMPONENT_TYPE}"
+fi
+
 OWNERS=`grep -m 1 ${COMPONENT} .github/CODEOWNERS | sed 's/   */ /g' | cut -f3- -d ' '`
 
 if [ -z "${OWNERS}" ]; then

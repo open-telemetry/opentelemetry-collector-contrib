@@ -1,4 +1,0 @@
-change_type: enhancement
-component: tanzuobservabilityexporter
-note: "Improve algorithm to translate OTEL delta exponential histograms into tanzu observability histograms"
-issues: [12173]

@@ -18,16 +18,18 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func traceID(bytes []byte) (ExprFunc, error) {
+func traceID(bytes []byte) (tql.ExprFunc, error) {
 	if len(bytes) != 16 {
 		return nil, errors.New("traces ids must be 16 bytes")
 	}
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
 	id := pcommon.NewTraceID(idArr)
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		return id
 	}, nil
 }

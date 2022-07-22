@@ -17,14 +17,16 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func isMatch(target Getter, pattern string) (ExprFunc, error) {
+func isMatch(target tql.Getter, pattern string) (tql.ExprFunc, error) {
 	regexp, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to IsMatch is not a valid regexp pattern: %w", err)
 	}
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		if val := target.Get(ctx); val != nil {
 			if valStr, ok := val.(string); ok {
 				return regexp.MatchString(valStr)
