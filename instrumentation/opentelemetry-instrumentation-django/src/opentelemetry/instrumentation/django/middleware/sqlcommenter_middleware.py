@@ -23,7 +23,7 @@ from django.db import connections
 from django.db.backends.utils import CursorDebugWrapper
 
 from opentelemetry.instrumentation.utils import (
-    _generate_sql_comment,
+    _add_sql_comment,
     _get_opentelemetry_values,
 )
 from opentelemetry.trace.propagation.tracecontext import (
@@ -84,7 +84,8 @@ class _QueryWrapper:
         db_driver = context["connection"].settings_dict.get("ENGINE", "")
         resolver_match = self.request.resolver_match
 
-        sql_comment = _generate_sql_comment(
+        sql = _add_sql_comment(
+            sql,
             # Information about the controller.
             controller=resolver_match.view_name
             if resolver_match and with_controller
@@ -112,7 +113,6 @@ class _QueryWrapper:
         # See:
         #  * https://github.com/basecamp/marginalia/issues/61
         #  * https://github.com/basecamp/marginalia/pull/80
-        sql += sql_comment
 
         # Add the query to the query log if debugging.
         if isinstance(context["cursor"], CursorDebugWrapper):

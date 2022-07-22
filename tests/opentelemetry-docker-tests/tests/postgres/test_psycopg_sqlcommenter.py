@@ -50,5 +50,5 @@ class TestFunctionalPsycopg(TestBase):
         self._cursor.execute("SELECT  1;")
         self.assertRegex(
             self._cursor.query.decode("ascii"),
-            r"SELECT  1; /\*traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/",
+            r"SELECT  1 /\*traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/;",
         )

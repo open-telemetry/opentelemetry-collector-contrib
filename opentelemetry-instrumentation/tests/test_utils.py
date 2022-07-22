@@ -16,6 +16,7 @@ import unittest
 from http import HTTPStatus
 
 from opentelemetry.instrumentation.utils import (
+    _add_sql_comment,
     _python_path_without_directory,
     http_status_to_status_code,
 )
@@ -152,3 +153,36 @@ class TestUtils(unittest.TestCase):
             python_path, directory, path_separator
         )
         self.assertEqual(actual_python_path, python_path)
+
+    def test_add_sql_comments_with_semicolon(self):
+        sql_query_without_semicolon = "Select 1;"
+        comments = {"comment_1": "value 1", "comment 2": "value 3"}
+        commented_sql_without_semicolon = _add_sql_comment(
+            sql_query_without_semicolon, **comments
+        )
+
+        self.assertEqual(
+            commented_sql_without_semicolon,
+            "Select 1 /*comment%%202='value%%203',comment_1='value%%201'*/;",
+        )
+
+    def test_add_sql_comments_without_semicolon(self):
+        sql_query_without_semicolon = "Select 1"
+        comments = {"comment_1": "value 1", "comment 2": "value 3"}
+        commented_sql_without_semicolon = _add_sql_comment(
+            sql_query_without_semicolon, **comments
+        )
+
+        self.assertEqual(
+            commented_sql_without_semicolon,
+            "Select 1 /*comment%%202='value%%203',comment_1='value%%201'*/",
+        )
+
+    def test_add_sql_comments_without_comments(self):
+        sql_query_without_semicolon = "Select 1"
+        comments = {}
+        commented_sql_without_semicolon = _add_sql_comment(
+            sql_query_without_semicolon, **comments
+        )
+
+        self.assertEqual(commented_sql_without_semicolon, "Select 1")

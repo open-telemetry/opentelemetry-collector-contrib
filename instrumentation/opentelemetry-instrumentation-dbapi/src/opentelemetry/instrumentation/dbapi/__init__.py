@@ -46,12 +46,12 @@ import wrapt
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dbapi.version import __version__
 from opentelemetry.instrumentation.utils import (
-    _generate_opentelemetry_traceparent,
-    _generate_sql_comment,
+    _add_sql_comment,
+    _get_opentelemetry_values,
     unwrap,
 )
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.trace import Span, SpanKind, TracerProvider, get_tracer
+from opentelemetry.trace import SpanKind, TracerProvider, get_tracer
 
 _logger = logging.getLogger(__name__)
 
@@ -375,15 +375,6 @@ class CursorTracer:
             return statement.decode("utf8", "replace")
         return statement
 
-    @staticmethod
-    def _generate_comment(span: Span) -> str:
-        span_context = span.get_span_context()
-        meta = {}
-        if span_context.is_valid:
-            meta.update(_generate_opentelemetry_traceparent(span))
-        # TODO(schekuri): revisit to enrich with info such as route, db_driver etc...
-        return _generate_sql_comment(**meta)
-
     def traced_execution(
         self,
         cursor,
@@ -405,11 +396,14 @@ class CursorTracer:
             self._populate_span(span, cursor, *args)
             if args and self._commenter_enabled:
                 try:
-                    comment = self._generate_comment(span)
-                    if isinstance(args[0], bytes):
-                        comment = comment.encode("utf8")
                     args_list = list(args)
-                    args_list[0] += comment
+                    commenter_data = {}
+                    commenter_data.update(_get_opentelemetry_values())
+                    statement = _add_sql_comment(
+                        args_list[0], **commenter_data
+                    )
+
+                    args_list[0] = statement
                     args = tuple(args_list)
                 except Exception as exc:  # pylint: disable=broad-except
                     _logger.exception(

@@ -236,12 +236,11 @@ class TestDBApiIntegration(TestBase):
             mock_connect, {}, {}
         )
         cursor = mock_connection.cursor()
-        cursor.executemany("Test query")
-        spans_list = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(spans_list), 1)
-        span = spans_list[0]
-        comment = dbapi.CursorTracer._generate_comment(span)
-        self.assertIn(comment, cursor.query)
+        cursor.executemany("Select 1;")
+        self.assertRegex(
+            cursor.query,
+            r"Select 1 /\*traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/;",
+        )
 
     def test_callproc(self):
         db_integration = dbapi.DatabaseApiIntegration(

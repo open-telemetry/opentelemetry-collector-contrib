@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
 
 import pytest
 from sqlalchemy import create_engine
@@ -28,6 +29,17 @@ class TestSqlalchemyInstrumentationWithSQLCommenter(TestBase):
         super().tearDown()
         SQLAlchemyInstrumentor().uninstrument()
 
+    def test_sqlcommenter_disabled(self):
+        logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+        engine = create_engine("sqlite:///:memory:", echo=True)
+        SQLAlchemyInstrumentor().instrument(
+            engine=engine, tracer_provider=self.tracer_provider
+        )
+        cnx = engine.connect()
+        cnx.execute("SELECT 1;").fetchall()
+
+        self.assertEqual(self.caplog.records[-2].getMessage(), "SELECT 1;")
+
     def test_sqlcommenter_enabled(self):
         engine = create_engine("sqlite:///:memory:")
         SQLAlchemyInstrumentor().instrument(
@@ -39,15 +51,5 @@ class TestSqlalchemyInstrumentationWithSQLCommenter(TestBase):
         cnx.execute("SELECT  1;").fetchall()
         self.assertRegex(
             self.caplog.records[-2].getMessage(),
-            r"SELECT  1; /\*traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/",
+            r"SELECT  1 /\*traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/;",
         )
-
-    def test_sqlcommenter_disabled(self):
-        engine = create_engine("sqlite:///:memory:", echo=True)
-        SQLAlchemyInstrumentor().instrument(
-            engine=engine, tracer_provider=self.tracer_provider
-        )
-        cnx = engine.connect()
-        cnx.execute("SELECT 1;").fetchall()
-
-        self.assertEqual(self.caplog.records[-2].getMessage(), "SELECT 1;")

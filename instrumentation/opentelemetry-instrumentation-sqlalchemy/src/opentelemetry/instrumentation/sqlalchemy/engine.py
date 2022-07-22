@@ -21,11 +21,10 @@ from opentelemetry.instrumentation.sqlalchemy.package import (
 )
 from opentelemetry.instrumentation.sqlalchemy.version import __version__
 from opentelemetry.instrumentation.utils import (
-    _generate_opentelemetry_traceparent,
-    _generate_sql_comment,
+    _add_sql_comment,
+    _get_opentelemetry_values,
 )
 from opentelemetry.semconv.trace import NetTransportValues, SpanAttributes
-from opentelemetry.trace import Span
 from opentelemetry.trace.status import Status, StatusCode
 
 
@@ -141,20 +140,14 @@ class EngineTracer:
                 span.set_attribute(SpanAttributes.DB_SYSTEM, self.vendor)
                 for key, value in attrs.items():
                     span.set_attribute(key, value)
+            if self.enable_commenter:
+                commenter_data = {}
+                commenter_data.update(_get_opentelemetry_values())
+                statement = _add_sql_comment(statement, **commenter_data)
 
         context._otel_span = span
-        if self.enable_commenter:
-            statement = statement + EngineTracer._generate_comment(span=span)
 
         return statement, params
-
-    @staticmethod
-    def _generate_comment(span: Span) -> str:
-        span_context = span.get_span_context()
-        meta = {}
-        if span_context.is_valid:
-            meta.update(_generate_opentelemetry_traceparent(span))
-        return _generate_sql_comment(**meta)
 
 
 # pylint: disable=unused-argument

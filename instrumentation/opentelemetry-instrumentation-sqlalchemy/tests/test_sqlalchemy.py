@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-import logging
 from unittest import mock
 
 import pytest
@@ -21,7 +20,6 @@ from sqlalchemy import create_engine
 
 from opentelemetry import trace
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.sqlalchemy.engine import EngineTracer
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider, export
 from opentelemetry.test.test_base import TestBase
@@ -217,22 +215,3 @@ class TestSqlalchemyInstrumentation(TestBase):
             )
 
         asyncio.get_event_loop().run_until_complete(run())
-
-    def test_generate_commenter(self):
-        logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
-        engine = create_engine("sqlite:///:memory:")
-        SQLAlchemyInstrumentor().instrument(
-            engine=engine,
-            tracer_provider=self.tracer_provider,
-            enable_commenter=True,
-        )
-
-        cnx = engine.connect()
-        cnx.execute("SELECT	1 + 1;").fetchall()
-        spans = self.memory_exporter.get_finished_spans()
-        self.assertEqual(len(spans), 2)
-        span = spans[1]
-        self.assertIn(
-            EngineTracer._generate_comment(span),
-            self.caplog.records[-2].getMessage(),
-        )
