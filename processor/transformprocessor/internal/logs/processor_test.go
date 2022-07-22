@@ -92,6 +92,18 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
+			query: `set(attributes["test"], "pass") where severity_number == SEVERITY_NUMBER_TRACE`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == 1`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(2)
+			},
+		},
+		{
 			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
@@ -107,6 +119,21 @@ func TestProcess(t *testing.T) {
 			query: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `delete_key(attributes, "http.url") where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.path", "/health")
+			},
+		},
+		{
+			query: `delete_matching_keys(attributes, "http.*t.*") where body == "operationA"`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.url", "http://localhost/health")
 			},
 		},
 	}
@@ -144,6 +171,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetFlags(1)
+	log.SetSeverityNumber(1)
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))
 	log.Attributes().InsertString("http.method", "get")

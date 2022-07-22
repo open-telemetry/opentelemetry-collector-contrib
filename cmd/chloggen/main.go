@@ -79,7 +79,7 @@ func main() {
 }
 
 func initialize(ctx chlogContext, filename string) error {
-	path := filepath.Join(ctx.unreleasedDir, filename)
+	path := filepath.Join(ctx.unreleasedDir, cleanFileName(filename))
 	var pathWithExt string
 	switch ext := filepath.Ext(path); ext {
 	case ".yaml":
@@ -219,6 +219,11 @@ func deleteEntries(ctx chlogContext) error {
 		}
 	}
 	return nil
+}
+
+func cleanFileName(filename string) string {
+	replace := strings.NewReplacer("/", "_", "\\", "_")
+	return replace.Replace(filename)
 }
 
 func usage() {

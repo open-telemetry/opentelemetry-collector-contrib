@@ -247,18 +247,16 @@ func (mtp *metricsTransformProcessor) processOTLPMetrics(md pmetric.Metrics) (pm
 			metrics := sm.Metrics()
 
 			for _, transform := range mtp.transforms {
-				if transform.Action == Group {
+				switch transform.Action {
+				case Group:
 					extractedMetrics := extractAndRemoveMatchedMetrics(transform.MetricIncludeFilter, metrics)
 					groupMatchedMetrics(rm.Resource(), sm.Scope(), extractedMetrics,
 						transform).CopyTo(groupedRMs.AppendEmpty())
-				}
-
-				matchedMetrics := matchMetrics(transform.MetricIncludeFilter, metrics)
-				if len(matchedMetrics) == 0 {
-					continue
-				}
-
-				if transform.Action == Combine {
+				case Combine:
+					matchedMetrics := matchMetrics(transform.MetricIncludeFilter, metrics)
+					if len(matchedMetrics) == 0 {
+						continue
+					}
 
 					if err := canBeCombined(matchedMetrics); err != nil {
 						// TODO: report via trace / metric instead
@@ -267,22 +265,37 @@ func (mtp *metricsTransformProcessor) processOTLPMetrics(md pmetric.Metrics) (pm
 					}
 
 					extractedMetrics := extractAndRemoveMatchedMetrics(transform.MetricIncludeFilter, metrics)
-					combinedMetric := metrics.AppendEmpty()
-					combine(transform, extractedMetrics).MoveTo(combinedMetric)
-
-					// set matchedMetrics to the combined metric so that any additional operations are performed on
-					// the combined metric
-					matchedMetrics = []pmetric.Metric{combinedMetric}
-				}
-
-				for _, metric := range matchedMetrics {
-					if transform.Action == Insert {
-						matchedMetric := transform.MetricIncludeFilter.extractMatchedMetric(metric)
-						newMetric := metrics.AppendEmpty()
-						matchedMetric.CopyTo(newMetric)
-						metric = newMetric
+					combinedMetric := combine(transform, extractedMetrics)
+					if transformMetric(combinedMetric, transform) {
+						combinedMetric.MoveTo(metrics.AppendEmpty())
 					}
-					transformMetric(metric, transform)
+				case Insert:
+					newMetrics := pmetric.NewMetricSlice()
+					newMetrics.EnsureCapacity(metrics.Len())
+					for i := 0; i < metrics.Len(); i++ {
+						metric := metrics.At(i)
+						newMetric := transform.MetricIncludeFilter.extractMatchedMetric(metric)
+						if newMetric == (pmetric.Metric{}) {
+							continue
+						}
+						if newMetric == metric {
+							newMetric = pmetric.NewMetric()
+							metric.CopyTo(newMetric)
+						}
+						if transformMetric(newMetric, transform) {
+							newMetric.MoveTo(newMetrics.AppendEmpty())
+						}
+					}
+					newMetrics.MoveAndAppendTo(metrics)
+				case Update:
+					metrics.RemoveIf(func(metric pmetric.Metric) bool {
+						if !transform.MetricIncludeFilter.matchMetric(metric) {
+							return false
+						}
+
+						// Drop the metric if all the data points were dropped after transformations.
+						return !transformMetric(metric, transform)
+					})
 				}
 			}
 
@@ -502,8 +515,27 @@ func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 	}
 }
 
-// transformMetric updates the metric content based on operations indicated in transform.
-func transformMetric(metric pmetric.Metric, transform internalTransform) {
+func countDataPoints(metric pmetric.Metric) int {
+	switch metric.DataType() {
+	case pmetric.MetricDataTypeGauge:
+		return metric.Gauge().DataPoints().Len()
+	case pmetric.MetricDataTypeSum:
+		return metric.Sum().DataPoints().Len()
+	case pmetric.MetricDataTypeHistogram:
+		return metric.Histogram().DataPoints().Len()
+	case pmetric.MetricDataTypeExponentialHistogram:
+		return metric.ExponentialHistogram().DataPoints().Len()
+	case pmetric.MetricDataTypeSummary:
+		return metric.Summary().DataPoints().Len()
+	}
+	return 0
+}
+
+// transformMetric updates the metric content based on operations indicated in transform and returns a flag
+// specifying whether the metric is valid after applying the translations,
+// e.g. false is returned if all the data points were removed after applying the translations.
+func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
+	isMetricEmpty := countDataPoints(metric) == 0
 	canChangeMetric := transform.Action != Update || matchAllDps(metric, transform.MetricIncludeFilter)
 
 	if transform.NewName != "" && canChangeMetric {
@@ -540,4 +572,7 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) {
 			}
 		}
 	}
+
+	// Consider metric invalid if all its data points were removed after applying the operations.
+	return isMetricEmpty || countDataPoints(metric) > 0
 }

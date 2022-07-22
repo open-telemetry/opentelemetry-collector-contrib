@@ -57,5 +57,5 @@ func requireSink(t *testing.T, sink *endpointSink, f func() bool) {
 		sink.Lock()
 		defer sink.Unlock()
 		return f()
-	}, 1*time.Second, 100*time.Millisecond)
+	}, 2*time.Second, 100*time.Millisecond)
 }

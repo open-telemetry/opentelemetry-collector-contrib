@@ -31,6 +31,7 @@ import (
 
 const (
 	typeStr         = "saphana"
+	stability       = component.StabilityLevelInDevelopment
 	defaultEndpoint = "localhost:33015"
 )
 
@@ -39,7 +40,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

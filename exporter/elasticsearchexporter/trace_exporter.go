@@ -18,11 +18,8 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
@@ -109,44 +106,5 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return e.pushSpan(ctx, document)
-}
-
-func (e *elasticsearchTracesExporter) pushSpan(ctx context.Context, document []byte) error {
-	attempts := 1
-	body := bytes.NewReader(document)
-	item := esBulkIndexerItem{Action: createAction, Index: e.index, Body: body}
-	// Setup error handler. The handler handles the per item response status based on the
-	// selective ACKing in the bulk response.
-	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
-		switch {
-		case attempts < e.maxAttempts && shouldRetryEvent(resp.Status):
-			e.logger.Debug("Retrying to index span",
-				zap.Int("attempt", attempts),
-				zap.Int("status", resp.Status),
-				zap.NamedError("reason", err))
-
-			attempts++
-			body.Seek(0, io.SeekStart)
-			e.bulkIndexer.Add(ctx, item)
-
-		case resp.Status == 0 && err != nil:
-			// Encoding error. We didn't even attempt to send the event
-			e.logger.Error("Drop span: failed to add span to the bulk request buffer.",
-				zap.NamedError("reason", err))
-
-		case err != nil:
-			e.logger.Error("Drop span: failed to index span",
-				zap.Int("attempt", attempts),
-				zap.Int("status", resp.Status),
-				zap.NamedError("reason", err))
-
-		default:
-			e.logger.Error(fmt.Sprintf("Drop span: failed to index span: %#v", resp.Error),
-				zap.Int("attempt", attempts),
-				zap.Int("status", resp.Status))
-		}
-	}
-
-	return e.bulkIndexer.Add(ctx, item)
+	return pushDocuments(ctx, e.logger, e.index, document, e.bulkIndexer, e.maxAttempts)
 }

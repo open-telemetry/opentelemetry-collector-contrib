@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -36,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
@@ -256,6 +258,78 @@ func TestExporter_pushLogData(t *testing.T) {
 	}
 }
 
+func TestTenantSource(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		tenant  *Tenant
+		srcType tenant.Source
+	}{
+		{
+			desc: "tenant source attributes",
+			tenant: &Tenant{
+				Source: "attributes",
+				Value:  "tenant.name",
+			},
+			srcType: &tenant.AttributeTenantSource{},
+		},
+		{
+			desc: "tenant source context",
+			tenant: &Tenant{
+				Source: "context",
+				Value:  "tenant.name",
+			},
+			srcType: &tenant.ContextTenantSource{},
+		},
+		{
+			desc: "tenant source static",
+			tenant: &Tenant{
+				Source: "static",
+				Value:  "acme",
+			},
+			srcType: &tenant.StaticTenantSource{},
+		},
+		{
+			desc:    "tenant source is non-existing",
+			tenant:  nil,
+			srcType: &tenant.StaticTenantSource{},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			cfg := &Config{
+				Tenant: tC.tenant,
+				Labels: LabelsConfig{
+					Attributes: map[string]string{
+						"severity": "severity",
+					},
+				},
+			}
+			exp := newExporter(cfg, componenttest.NewNopTelemetrySettings())
+			require.NotNil(t, exp)
+
+			assert.IsType(t, tC.srcType, exp.tenantSource)
+
+			cl := client.FromContext(context.Background())
+			cl.Metadata = client.NewMetadata(map[string][]string{"tenant.name": {"acme"}})
+
+			ctx := client.NewContext(context.Background(), cl)
+
+			ld := plog.NewLogs()
+			ld.ResourceLogs().AppendEmpty()
+			ld.ResourceLogs().At(0).Resource().Attributes().InsertString("tenant.name", "acme")
+
+			tenant, err := exp.tenantSource.GetTenant(ctx, ld)
+			assert.NoError(t, err)
+
+			if tC.tenant != nil {
+				assert.Equal(t, "acme", tenant)
+			} else {
+				assert.Empty(t, tenant)
+			}
+		})
+	}
+}
+
 func TestExporter_logDataToLoki(t *testing.T) {
 	config := &Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -298,13 +372,14 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr.Body().SetStringVal("log message")
 		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
 		lr.Attributes().InsertString("severity", "info")
-		lr.Attributes().InsertString("random.attribute", "random")
+		lr.Attributes().InsertString("random.attribute", "random attribute")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
 		require.Equal(t, 0, numDroppedLogs)
 		require.NotNil(t, pr)
 		require.Len(t, pr.Streams, 1)
+		require.Contains(t, pr.Streams[0].Entries[0].Line, fmt.Sprintf("%q", "random attribute"))
 	})
 
 	t.Run("with multiple logs and same attributes", func(t *testing.T) {

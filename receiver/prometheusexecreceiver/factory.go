@@ -30,7 +30,8 @@ import (
 // Factory for prometheusexec
 const (
 	// Key to invoke this receiver (prometheus_exec)
-	typeStr = "prometheus_exec"
+	typeStr   = "prometheus_exec"
+	stability = component.StabilityLevelDeprecated
 
 	defaultCollectionInterval = 60 * time.Second
 	defaultTimeoutInterval    = 10 * time.Second
@@ -43,7 +44,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func logDeprecation(logger *zap.Logger) {

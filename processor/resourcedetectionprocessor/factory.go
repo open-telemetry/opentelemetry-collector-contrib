@@ -43,6 +43,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resourcedetection"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -83,9 +85,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor),
-		component.WithMetricsProcessor(f.createMetricsProcessor),
-		component.WithLogsProcessor(f.createLogsProcessor))
+		component.WithTracesProcessorAndStabilityLevel(f.createTracesProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.

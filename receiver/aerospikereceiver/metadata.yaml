@@ -131,7 +131,7 @@ metrics:
       input_type: string
       monotonic: true
       aggregation: cumulative
-  aeropsike.namespace.transaction.count:
+  aerospike.namespace.transaction.count:
     enabled: true
     description: Number of transactions performed on the namespace
     unit: '{transactions}'

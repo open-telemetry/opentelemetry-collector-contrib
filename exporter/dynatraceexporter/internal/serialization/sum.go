@@ -17,6 +17,8 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,7 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )
 
-func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
+func serializeSumPoint(name, prefix string, dims dimensions.NormalizedDimensionList, t pmetric.MetricAggregationTemporality, dp pmetric.NumberDataPoint, prev *ttlmap.TTLMap) (string, error) {
 	switch t {
 	case pmetric.MetricAggregationTemporalityCumulative:
 		return serializeCumulativeCounter(name, prefix, dims, dp, prev)
@@ -37,6 +39,71 @@ func serializeSum(name, prefix string, dims dimensions.NormalizedDimensionList, 
 	}
 
 	return "", nil
+}
+
+func serializeSum(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, prev *ttlmap.TTLMap, metricLines []string) []string {
+	sum := metric.Sum()
+
+	if !sum.IsMonotonic() && sum.AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta {
+		logger.Warn(
+			"dropping delta non-monotonic sum",
+			zap.String("name", metric.Name()),
+		)
+		return metricLines
+	}
+
+	points := metric.Sum().DataPoints()
+
+	for i := 0; i < points.Len(); i++ {
+		dp := points.At(i)
+		if sum.IsMonotonic() {
+			// serialize monotonic sum points as count (cumulatives are converted to delta in serializeSumPoint)
+			line, err := serializeSumPoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+				metric.Sum().AggregationTemporality(),
+				dp,
+				prev,
+			)
+
+			if err != nil {
+				logger.Warn(
+					"Error serializing sum data point",
+					zap.String("name", metric.Name()),
+					zap.String("value-type", dp.ValueType().String()),
+					zap.Error(err),
+				)
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		} else {
+			// Cumulative non-monotonic sum points are serialized as gauges. Delta non-monotonic sums are dropped above.
+			line, err := serializeGaugePoint(
+				metric.Name(),
+				prefix,
+				makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+				dp,
+			)
+
+			if err != nil {
+				logger.Warn(
+					"Error serializing non-monotonic Sum as gauge",
+					zap.String("name", metric.Name()),
+					zap.String("value-type", dp.ValueType().String()),
+					zap.Error(err),
+				)
+			}
+
+			if line != "" {
+				metricLines = append(metricLines, line)
+			}
+		}
+	}
+
+	return metricLines
 }
 
 func serializeDeltaCounter(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {

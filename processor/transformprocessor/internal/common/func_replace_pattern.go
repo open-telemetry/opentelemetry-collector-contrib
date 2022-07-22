@@ -17,14 +17,16 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"regexp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func replacePattern(target GetSetter, regexPattern string, replacement string) (ExprFunc, error) {
+func replacePattern(target tql.GetSetter, regexPattern string, replacement string) (tql.ExprFunc, error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
 	}
-	return func(ctx TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		originalVal := target.Get(ctx)
 		if originalVal == nil {
 			return nil

@@ -29,6 +29,7 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr                    = "statsd"
+	stability                  = component.StabilityLevelBeta
 	defaultBindEndpoint        = "localhost:8125"
 	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
@@ -45,7 +46,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
 	)
 }
 

@@ -14,8 +14,10 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
-func set(target Setter, value Getter) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
+import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+
+func set(target tql.Setter, value tql.Getter) (tql.ExprFunc, error) {
+	return func(ctx tql.TransformContext) interface{} {
 		val := value.Get(ctx)
 		if val != nil {
 			target.Set(ctx, val)

@@ -27,7 +27,8 @@ import (
 // This file implements config for Prometheus receiver.
 
 const (
-	typeStr = "prometheus"
+	typeStr   = "prometheus"
+	stability = component.StabilityLevelBeta
 )
 
 var errRenamingDisallowed = errors.New("metric renaming using metric_relabel_configs is disallowed")
@@ -37,7 +38,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

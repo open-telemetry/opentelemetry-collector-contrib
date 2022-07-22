@@ -28,6 +28,9 @@ const (
 	// Key to invoke this receiver
 	typeStr = "awscontainerinsightreceiver"
 
+	// The stability of this receiver
+	stability = component.StabilityLevelBeta
+
 	// Default collection interval. Every 60s the receiver will collect metrics
 	defaultCollectionInterval = 60 * time.Second
 
@@ -49,7 +52,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 // createDefaultConfig returns a default config for the receiver.

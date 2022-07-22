@@ -24,14 +24,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-const typeStr = "sqlserver"
+const (
+	typeStr   = "sqlserver"
+	stability = component.StabilityLevelInDevelopment
+)
 
 // NewFactory creates a factory for SQL Server receiver.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

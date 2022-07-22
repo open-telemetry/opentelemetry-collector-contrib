@@ -29,6 +29,8 @@ const (
 	typeStr            = "elasticsearch"
 	defaultLogsIndex   = "logs-generic-default"
 	defaultTracesIndex = "traces-generic-default"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -36,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
+		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
 		component.WithTracesExporter(createTracesExporter),
 	)
 }

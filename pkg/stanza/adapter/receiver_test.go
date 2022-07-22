@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ import (
 func TestStart(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{})
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
@@ -65,7 +66,7 @@ func TestStart(t *testing.T) {
 func TestHandleStartError(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 
-	factory := NewFactory(TestReceiverType{})
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = newUnstartableParams()
@@ -79,7 +80,7 @@ func TestHandleStartError(t *testing.T) {
 
 func TestHandleConsumeError(t *testing.T) {
 	mockConsumer := &mockLogsRejecter{}
-	factory := NewFactory(TestReceiverType{})
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")

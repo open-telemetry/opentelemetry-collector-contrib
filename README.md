@@ -74,6 +74,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
@@ -86,8 +87,10 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [David Ashpole](https://github.com/dashpole), Google
-- [Przemek Maciolek](https://github.com/pmm-sumo), Sumo Logic
 - [Tyler Helmuth](https://github.com/TylerHelmuth), New Relic
+
+Emeritus Approvers:
+- [Przemek Maciolek](https://github.com/pmm-sumo)
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 

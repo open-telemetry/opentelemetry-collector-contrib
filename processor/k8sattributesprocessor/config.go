@@ -15,9 +15,12 @@
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/config"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -50,7 +53,17 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	return cfg.APIConfig.Validate()
+	if err := cfg.APIConfig.Validate(); err != nil {
+		return err
+	}
+
+	for _, assoc := range cfg.Association {
+		if len(assoc.Sources) > kube.PodIdentifierMaxLength {
+			return fmt.Errorf("too many association sources. limit is %v", kube.PodIdentifierMaxLength)
+		}
+	}
+
+	return nil
 }
 
 // ExtractConfig section allows specifying extraction rules to extract
@@ -214,13 +227,21 @@ type FieldFilterConfig struct {
 // PodAssociationConfig contain single rule how to associate Pod metadata
 // with logs, spans and metrics
 type PodAssociationConfig struct {
+	// Deprecated: Sources should be used to provide From and Name.
+	// If this is set, From and Name are going to be used as Sources' ones
 	// From represents the source of the association.
 	// Allowed values are "connection" and "resource_attribute".
 	From string `mapstructure:"from"`
 
+	// Deprecated: Sources should be used to provide From and Name.
+	// If this is set, From and Name are going to be used as Sources' ones
 	// Name represents extracted key name.
 	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
+
+	// List of pod association sources which should be taken
+	// to identify pod
+	Sources []PodAssociationSourceConfig `mapstructure:"sources"`
 }
 
 // ExcludeConfig represent a list of Pods to exclude
@@ -230,5 +251,15 @@ type ExcludeConfig struct {
 
 // ExcludePodConfig represent a Pod name to ignore
 type ExcludePodConfig struct {
+	Name string `mapstructure:"name"`
+}
+
+type PodAssociationSourceConfig struct {
+	// From represents the source of the association.
+	// Allowed values are "connection" and "resource_attribute".
+	From string `mapstructure:"from"`
+
+	// Name represents extracted key name.
+	// e.g. ip, pod_uid, k8s.pod.ip
 	Name string `mapstructure:"name"`
 }

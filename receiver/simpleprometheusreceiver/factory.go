@@ -29,6 +29,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus_simple"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelBeta
 
 	defaultEndpoint    = "localhost:9090"
 	defaultMetricsPath = "/metrics"
@@ -41,7 +43,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

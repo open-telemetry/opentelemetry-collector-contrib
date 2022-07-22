@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cpuscraper
 
 import (
@@ -196,7 +195,7 @@ func TestScrape_CpuUtilization(t *testing.T) {
 
 			_, err = scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
-			//2nd scrape will trigger utilization metrics calculation
+			// 2nd scrape will trigger utilization metrics calculation
 			md, err := scraper.scrape(context.Background())
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
@@ -225,10 +224,10 @@ func TestScrape_CpuUtilization(t *testing.T) {
 	}
 }
 
-//Error in calculation should be returned as PartialScrapeError
+// Error in calculation should be returned as PartialScrapeError
 func TestScrape_CpuUtilizationError(t *testing.T) {
 	scraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
-	//mock times function to force an error in next scrape
+	// mock times function to force an error in next scrape
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{{CPU: "1", System: 1, User: 2}}, nil
 	}
@@ -236,12 +235,12 @@ func TestScrape_CpuUtilizationError(t *testing.T) {
 	require.NoError(t, err, "Failed to initialize cpu scraper: %v", err)
 
 	_, err = scraper.scrape(context.Background())
-	//Force error not finding CPU info
+	// Force error not finding CPU info
 	scraper.times = func(bool) ([]cpu.TimesStat, error) {
 		return []cpu.TimesStat{}, nil
 	}
 	require.NoError(t, err, "Failed to scrape metrics: %v", err)
-	//2nd scrape will trigger utilization metrics calculation
+	// 2nd scrape will trigger utilization metrics calculation
 	md, err := scraper.scrape(context.Background())
 	var partialScrapeErr scrapererror.PartialScrapeError
 	assert.ErrorAs(t, err, &partialScrapeErr)
@@ -255,7 +254,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		},
 	}
 
-	//datapoint data
+	// datapoint data
 	type dpData struct {
 		val   float64
 		attrs map[string]string
@@ -299,7 +298,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 
 	cpuScraper := newCPUScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricSettings})
 	for _, scrapeData := range scrapesData {
-		//mock TimeStats and Now
+		// mock TimeStats and Now
 		cpuScraper.times = func(_ bool) ([]cpu.TimesStat, error) {
 			return scrapeData.times, nil
 		}
@@ -313,7 +312,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 
 		md, err := cpuScraper.scrape(context.Background())
 		require.NoError(t, err)
-		//no metrics in the first scrape
+		// no metrics in the first scrape
 		if len(scrapeData.expectedDps) == 0 {
 			assert.Equal(t, 0, md.ResourceMetrics().Len())
 			continue
@@ -331,7 +330,7 @@ func TestScrape_CpuUtilizationStandard(t *testing.T) {
 		}
 		assert.Equal(t, expectedDataPoints, dp.Len())
 
-		//remove empty values to make the test more simple
+		// remove empty values to make the test more simple
 		dp.RemoveIf(func(n pmetric.NumberDataPoint) bool {
 			return n.DoubleVal() == 0.0
 		})

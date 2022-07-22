@@ -331,6 +331,6 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
-	err := exporter.pushEvent(context.TODO(), []byte(contents))
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
 	require.NoError(t, err)
 }

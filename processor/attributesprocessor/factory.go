@@ -32,6 +32,8 @@ import (
 const (
 	// typeStr is the value of "type" key in configuration.
 	typeStr = "attributes"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -41,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithLogsProcessor(createLogProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
+		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
+		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -83,7 +85,7 @@ func createTracesProcessor(
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogProcessor(
+func createLogsProcessor(
 	_ context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,

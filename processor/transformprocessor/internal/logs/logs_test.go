@@ -15,6 +15,7 @@
 package logs
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -22,8 +23,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common/testhelper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 var (
@@ -56,14 +57,14 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		path     []common.Field
+		path     []tql.Field
 		orig     interface{}
 		new      interface{}
 		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource)
 	}{
 		{
 			name: "time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "time_unix_nano",
 				},
@@ -76,7 +77,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "observed_time_unix_nano",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "observed_time_unix_nano",
 				},
@@ -89,12 +90,12 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_number",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "severity_number",
 				},
 			},
-			orig: plog.SeverityNumberFATAL,
+			orig: int64(plog.SeverityNumberFATAL),
 			new:  int64(3),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
 				log.SetSeverityNumber(plog.SeverityNumberTRACE3)
@@ -102,7 +103,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "severity_text",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "severity_text",
 				},
@@ -115,7 +116,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "body",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "body",
 				},
@@ -128,7 +129,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "flags",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "flags",
 				},
@@ -141,7 +142,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "trace_id",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "trace_id",
 				},
@@ -154,7 +155,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "span_id",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "span_id",
 				},
@@ -166,8 +167,40 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "trace_id string",
+			path: []tql.Field{
+				{
+					Name: "trace_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(traceID[:]),
+			new:  hex.EncodeToString(traceID2[:]),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetTraceID(pcommon.NewTraceID(traceID2))
+			},
+		},
+		{
+			name: "span_id string",
+			path: []tql.Field{
+				{
+					Name: "span_id",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig: hex.EncodeToString(spanID[:]),
+			new:  hex.EncodeToString(spanID2[:]),
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				log.SetSpanID(pcommon.NewSpanID(spanID2))
+			},
+		},
+		{
 			name: "attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "attributes",
 				},
@@ -181,10 +214,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -195,10 +228,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -209,10 +242,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -223,10 +256,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -237,10 +270,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -251,10 +284,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -268,10 +301,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -285,10 +318,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -302,10 +335,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -319,10 +352,10 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -336,7 +369,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "dropped_attributes_count",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "dropped_attributes_count",
 				},
@@ -349,7 +382,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope name",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "instrumentation_scope",
 				},
@@ -365,7 +398,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "instrumentation_scope version",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "instrumentation_scope",
 				},
@@ -381,7 +414,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
@@ -398,13 +431,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("str"),
+					MapKey: tqltest.Strp("str"),
 				},
 			},
 			orig: "val",
@@ -415,13 +448,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bool"),
+					MapKey: tqltest.Strp("bool"),
 				},
 			},
 			orig: true,
@@ -432,13 +465,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("int"),
+					MapKey: tqltest.Strp("int"),
 				},
 			},
 			orig: int64(10),
@@ -449,13 +482,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("double"),
+					MapKey: tqltest.Strp("double"),
 				},
 			},
 			orig: float64(1.2),
@@ -466,13 +499,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("bytes"),
+					MapKey: tqltest.Strp("bytes"),
 				},
 			},
 			orig: []byte{1, 3, 2},
@@ -483,13 +516,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes array string",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_str"),
+					MapKey: tqltest.Strp("arr_str"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -503,13 +536,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes array bool",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bool"),
+					MapKey: tqltest.Strp("arr_bool"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -523,13 +556,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes array int",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_int"),
+					MapKey: tqltest.Strp("arr_int"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -543,13 +576,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes array float",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_float"),
+					MapKey: tqltest.Strp("arr_float"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -563,13 +596,13 @@ func Test_newPathGetSetter(t *testing.T) {
 		},
 		{
 			name: "resource attributes array bytes",
-			path: []common.Field{
+			path: []tql.Field{
 				{
 					Name: "resource",
 				},
 				{
 					Name:   "attributes",
-					MapKey: testhelper.Strp("arr_bytes"),
+					MapKey: tqltest.Strp("arr_bytes"),
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -665,4 +698,143 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
+}
+
+func Test_ParseEnum(t *testing.T) {
+	tests := []struct {
+		name string
+		want tql.Enum
+	}{
+		{
+			name: "SEVERITY_NUMBER_UNSPECIFIED",
+			want: 0,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE",
+			want: 1,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE2",
+			want: 2,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE3",
+			want: 3,
+		},
+		{
+			name: "SEVERITY_NUMBER_TRACE4",
+			want: 4,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG",
+			want: 5,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG2",
+			want: 6,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG3",
+			want: 7,
+		},
+		{
+			name: "SEVERITY_NUMBER_DEBUG4",
+			want: 8,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO",
+			want: 9,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO2",
+			want: 10,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO3",
+			want: 11,
+		},
+		{
+			name: "SEVERITY_NUMBER_INFO4",
+			want: 12,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN",
+			want: 13,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN2",
+			want: 14,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN3",
+			want: 15,
+		},
+		{
+			name: "SEVERITY_NUMBER_WARN4",
+			want: 16,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR",
+			want: 17,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR2",
+			want: 18,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR3",
+			want: 19,
+		},
+		{
+			name: "SEVERITY_NUMBER_ERROR4",
+			want: 20,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL",
+			want: 21,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL2",
+			want: 22,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL3",
+			want: 23,
+		},
+		{
+			name: "SEVERITY_NUMBER_FATAL4",
+
+			want: 24,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := ParseEnum((*tql.EnumSymbol)(tqltest.Strp(tt.name)))
+			assert.NoError(t, err)
+			assert.Equal(t, *actual, tt.want)
+		})
+	}
+}
+
+func Test_ParseEnum_False(t *testing.T) {
+	tests := []struct {
+		name       string
+		enumSymbol *tql.EnumSymbol
+	}{
+		{
+			name:       "unknown enum symbol",
+			enumSymbol: (*tql.EnumSymbol)(tqltest.Strp("not an enum")),
+		},
+		{
+			name:       "nil enum symbol",
+			enumSymbol: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actual, err := ParseEnum(tt.enumSymbol)
+			assert.Error(t, err)
+			assert.Nil(t, actual)
+		})
+	}
 }
