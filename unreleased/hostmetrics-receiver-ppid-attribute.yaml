@@ -5,7 +5,7 @@ change_type: enhancement
 component: hostmetricsreceiver
 
 # A brief description of the change
-note: added new attribute calle process.ppid to hostmetrics receiver.  The value of the attribute is the parent PID
+note: Add new resource attribute `process.parent_pid`.  The value of the attribute is the parent PID
 
 # One or more tracking issues related to the change
 issues: [12290]
