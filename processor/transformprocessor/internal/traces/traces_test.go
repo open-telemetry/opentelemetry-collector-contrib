@@ -236,6 +236,20 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "setting an attribute to nil is a no-op",
+			path: []tql.Field{
+				{
+					Name:   "attributes",
+					MapKey: tqltest.Strp("str"),
+				},
+			},
+			orig: "val",
+			new:  nil,
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+				// This behavior is undefined according to the spec, so it is implemented as a no-op.
+			},
+		},
+		{
 			name: "attributes string",
 			path: []tql.Field{
 				{

@@ -19,6 +19,8 @@ import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryq
 func set(target tql.Setter, value tql.Getter) (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
 		val := value.Get(ctx)
+
+		// No fields currently support `null` as a valid type.
 		if val != nil {
 			target.Set(ctx, val)
 		}
