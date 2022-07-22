@@ -36,9 +36,7 @@ const ExceptionEventName = "exception"
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.Code() != ptrace.StatusCodeError {
-		return false, false, false, attributes, nil
-	}
+
 	filtered = attributes
 
 	var (
@@ -89,6 +87,8 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
 				Exceptions: exceptions}}
+	} else if status.Code() != ptrace.StatusCodeError {
+		cause = nil
 	} else {
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
@@ -123,7 +123,11 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
+	if status.Code() != ptrace.StatusCodeError {
+		isError = false
+		isThrottle = false
+		isFault = false
+	} else if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
 		code := val.IntVal()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
