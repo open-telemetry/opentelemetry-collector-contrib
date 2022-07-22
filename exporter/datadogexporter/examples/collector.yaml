@@ -23,9 +23,21 @@ processors:
   # and is recommended for any production pipeline.
   batch:
 
+  # The resource detection processor adds context related to the cloud provider the Collector is running on.
+  # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
+  resourcedetection:
+    detectors: [gcp, ecs, ec2, azure, system]
+
 # Read more about exporters here:
 # https://opentelemetry.io/docs/collector/configuration/#exporters
 exporters:
+  # The OTLP exporter is necessary **only** on gateway deployment mode, to relay telemetry data to the gateway.
+  ## otlp:
+    ## @param endpoint - string - required
+    ## Endpoint where to send telemetry. On gateway mode, we set it to the gateway host IP.
+    #
+    # endpoint: ${GATEWAY_HOST_IP}:4317
+
   # The Datadog exporter is necessary for exporting telemetry signals to Datadog.
   datadog:
     ## @param hostname - string - optional
@@ -216,3 +228,15 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [datadog]
+
+    ## To send data to the gateway on gateway deployment mode, define these pipelines instead.
+    ##
+    ## metrics/gateway:
+    ##   receivers: [otlp]
+    ##   processors: [batch, resourcedetection]
+    ##   exporters: [otlp]
+    ##
+    ## traces/gateway:
+    ##   receivers: [otlp]
+    ##   processors: [batch, resourcedetection]
+    ##   exporters: [otlp]
