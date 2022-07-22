@@ -19,6 +19,7 @@ examples/demo/server
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
+extension/sigv4authextension
 extension/storage
 internal/common
 internal/containertest
