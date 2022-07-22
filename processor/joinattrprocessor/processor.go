@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package joinattrprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/joinattrprocessor"
+package joinattrprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/JoinAttrProcessor"
 
 import (
 	"context"
@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type joinAttrProcessor struct {
+type JoinAttrProcessor struct {
 	// JoinAttributes processor configuration
 	config *Config
 	// // Logger
@@ -34,13 +34,13 @@ type joinAttrProcessor struct {
 }
 
 // newJoinAttrProcessor creates a new instance of the joinattr processor
-func newJoinAttrProcessor(ctx context.Context, config *Config) (*joinAttrProcessor, error) {
+func newJoinAttrProcessor(ctx context.Context, config *Config) (*JoinAttrProcessor, error) {
 	if config == nil {
 		return nil, errors.New("no configuration provided")
 	}
 
 	if len(config.JoinAttributes) == 0 {
-		return nil, fmt.Errorf("%s field is required", "join_attributes")
+		return nil, fmt.Errorf("%s field is required", "attributes")
 	}
 
 	if config.TargetAttribute == "" {
@@ -51,29 +51,29 @@ func newJoinAttrProcessor(ctx context.Context, config *Config) (*joinAttrProcess
 		return nil, fmt.Errorf("%s field is required", "separator")
 	}
 
-	return &joinAttrProcessor{
+	return &JoinAttrProcessor{
 		config: config,
 	}, nil
 }
 
-// Start the joinAttrProcessor processor
-func (s *joinAttrProcessor) Start(_ context.Context, _ component.Host) error {
+// Start the JoinAttrProcessor processor
+func (s *JoinAttrProcessor) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-// Shutdown the joinAttrProcessor processor
-func (s *joinAttrProcessor) Shutdown(context.Context) error {
+// Shutdown the JoinAttrProcessor processor
+func (s *JoinAttrProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
 // Capabilities specifies what this processor does, such as whether it mutates data
-func (s *joinAttrProcessor) Capabilities() consumer.Capabilities {
+func (s *JoinAttrProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
 // processTraces implements ProcessMetricsFunc. It processes the incoming data
 // and returns the data to be sent to the next component
-func (s *joinAttrProcessor) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
+func (s *JoinAttrProcessor) processTraces(ctx context.Context, batch ptrace.Traces) (ptrace.Traces, error) {
 	for i := 0; i < batch.ResourceSpans().Len(); i++ {
 		rs := batch.ResourceSpans().At(i)
 		s.processResourceSpan(ctx, rs)
@@ -83,7 +83,7 @@ func (s *joinAttrProcessor) processTraces(ctx context.Context, batch ptrace.Trac
 
 // processResourceSpan processes the RS and all of its spans and then returns the last
 // view metric context. The context can be used for tests
-func (s *joinAttrProcessor) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
+func (s *JoinAttrProcessor) processResourceSpan(ctx context.Context, rs ptrace.ResourceSpans) {
 	rsAttrs := rs.Resource().Attributes()
 
 	// Attributes can be part of a resource span
@@ -102,17 +102,19 @@ func (s *joinAttrProcessor) processResourceSpan(ctx context.Context, rs ptrace.R
 }
 
 // processAttrs sets the new attribute of a resource span or a span
-func (s *joinAttrProcessor) processAttrs(_ context.Context, attributes *pcommon.Map) {
-	joinedAttr := s.getJoinedAttr(attributes)
-	if s.config.Override {
-		attributes.UpsertString(s.config.TargetAttribute, joinedAttr)
-	} else {
-		attributes.InsertString(s.config.TargetAttribute, joinedAttr)
+func (s *JoinAttrProcessor) processAttrs(_ context.Context, attributes *pcommon.Map) {
+	joinedAttr := s.GetJoinedAttr(attributes)
+	if joinedAttr != "" {
+		if s.config.Override {
+			attributes.UpsertString(s.config.TargetAttribute, joinedAttr)
+		} else {
+			attributes.InsertString(s.config.TargetAttribute, joinedAttr)
+		}
 	}
 }
 
-// getJoinedAttrs performs the join operation on the selected attributes' values
-func (s *joinAttrProcessor) getJoinedAttr(attributes *pcommon.Map) string {
+// GetJoinedAttr performs the join operation on the selected attributes' values
+func (s *JoinAttrProcessor) GetJoinedAttr(attributes *pcommon.Map) string {
 	values := []string{}
 	for _, attr := range s.config.JoinAttributes {
 		val, exists := attributes.Get(attr)

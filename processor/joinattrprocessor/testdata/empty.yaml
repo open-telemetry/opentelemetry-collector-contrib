@@ -2,7 +2,7 @@ receivers:
   nop:
 
 processors:
-  redaction:
+  join_attributes:
 
 exporters:
   nop:
@@ -13,6 +13,6 @@ service:
       receivers:
         - nop
       processors:
-        - redaction
+        - join_attributes
       exporters:
         - nop

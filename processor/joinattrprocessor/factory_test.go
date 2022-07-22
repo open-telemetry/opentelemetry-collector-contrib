@@ -26,13 +26,18 @@ import (
 
 func TestDefaultConfiguration(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	assert.Empty(t, c.AllowedKeys)
-	assert.Empty(t, c.BlockedValues)
+	assert.Empty(t, c.JoinAttributes)
+	assert.Empty(t, c.TargetAttribute)
+	assert.Empty(t, c.Separator)
+	assert.Empty(t, c.Override)
 }
 
 func TestCreateTestProcessor(t *testing.T) {
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+		JoinAttributes:    []string{"a", "b"},
+		TargetAttribute:   "someattribute",
+		Separator:         ",",
 	}
 
 	tp, err := createTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())

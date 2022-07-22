@@ -22,7 +22,7 @@ type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
 	// JoinAttributes are the attributes to be joined
-	JoinAttributes []string `mapstructure:"join_attributes"`
+	JoinAttributes []string `mapstructure:"attributes"`
 
 	// Attribute containing the final value
 	TargetAttribute string `mapstructure:"target_attribute"`
