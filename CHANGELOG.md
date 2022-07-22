@@ -275,7 +275,6 @@ This version has been skipped.
 - `tracegen`: Add additional resource attributes (#11145)
 - `transformprocessor`: Add IsMatch factory function.  This function allows regex matching in conditions. (#10903)
 - `transformprocessor`: replace_pattern` and `replace_all_patterns` use regex for pattern matching and replacing text in attributes/metrics (#11125)
-- `exporter/loadbalancingexporter`: Add `service name based routing` for load balancing exporters (#12421)
 
 ### 🧰 Bug fixes 🧰
 - `aerospikereceiver`: Fix issue where namespaces would not be collected (#11465)
