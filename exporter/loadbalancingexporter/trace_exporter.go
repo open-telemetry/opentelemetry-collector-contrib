@@ -99,13 +99,14 @@ func (e *traceExporterImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) 
 }
 
 func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) error {
+	var exp component.Exporter
 	routingIds, err := routingIdentifiersFromTraces(td, e.routingKey)
 	if err != nil {
 		return err
 	}
 	for rid := range routingIds {
 		endpoint := e.loadBalancer.Endpoint([]byte(rid))
-		exp, err := e.loadBalancer.Exporter(endpoint)
+		exp, err = e.loadBalancer.Exporter(endpoint)
 		if err != nil {
 			return err
 		}
