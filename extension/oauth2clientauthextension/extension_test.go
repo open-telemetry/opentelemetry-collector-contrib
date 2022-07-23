@@ -47,10 +47,10 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "all_valid_settings",
 			settings: &Config{
-				ClientID:       "testclientid",
-				ClientSecret:   "testsecret",
+				ClientID:       ValueValueFrom{Value: "testclientid"},
+				ClientSecret:   ValueValueFrom{Value: "testsecret"},
 				EndpointParams: url.Values{"audience": []string{"someaudience"}},
-				TokenURL:       "https://example.com/v1/token",
+				TokenURL:       ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:         []string{"resource.read"},
 				Timeout:        2,
 				TLSSetting: configtls.TLSClientSetting{
@@ -69,9 +69,9 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "invalid_tls",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
+				ClientID:     ValueValueFrom{Value: "testclientid"},
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
+				TokenURL:     ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:       []string{"resource.read"},
 				Timeout:      2,
 				TLSSetting: configtls.TLSClientSetting{
@@ -90,8 +90,8 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "missing_client_id",
 			settings: &Config{
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
+				TokenURL:     ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
@@ -100,8 +100,8 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "missing_client_secret",
 			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
+				ClientID: ValueValueFrom{Value: "testclientid"},
+				TokenURL: ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError:   true,
@@ -110,8 +110,8 @@ func TestOAuthClientSettings(t *testing.T) {
 		{
 			name: "missing_token_url",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
+				ClientID:     ValueValueFrom{Value: "testclientid"},
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
@@ -129,9 +129,9 @@ func TestOAuthClientSettings(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.Equal(t, test.settings.Scopes, rc.clientCredentials.Scopes)
-			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
-			assert.Equal(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
-			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
+			assert.Equal(t, test.settings.TokenURL.Value, rc.clientCredentials.TokenURL)
+			assert.Equal(t, test.settings.ClientSecret.Value, rc.clientCredentials.ClientSecret)
+			assert.Equal(t, test.settings.ClientID.Value, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 
@@ -162,9 +162,9 @@ func TestRoundTripper(t *testing.T) {
 		{
 			name: "returns_http_round_tripper",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
+				ClientID:     ValueValueFrom{Value: "testclientid"},
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
+				TokenURL:     ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError: false,
@@ -172,8 +172,8 @@ func TestRoundTripper(t *testing.T) {
 		{
 			name: "invalid_client_settings_should_error",
 			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
+				ClientID: ValueValueFrom{Value: "testclientid"},
+				TokenURL: ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError: true,
@@ -218,9 +218,9 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 		{
 			name: "returns_http_round_tripper",
 			settings: &Config{
-				ClientID:     "testclientid",
-				ClientSecret: "testsecret",
-				TokenURL:     "https://example.com/v1/token",
+				ClientID:     ValueValueFrom{Value: "testclientid"},
+				ClientSecret: ValueValueFrom{Value: "testsecret"},
+				TokenURL:     ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:       []string{"resource.read"},
 				Timeout:      1,
 			},
@@ -229,8 +229,8 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 		{
 			name: "invalid_client_settings_should_error",
 			settings: &Config{
-				ClientID: "testclientid",
-				TokenURL: "https://example.com/v1/token",
+				ClientID: ValueValueFrom{Value: "testclientid"},
+				TokenURL: ValueValueFrom{Value: "https://example.com/v1/token"},
 				Scopes:   []string{"resource.read"},
 			},
 			shouldError: true,
@@ -267,9 +267,9 @@ func TestFailContactingOAuth(t *testing.T) {
 	assert.NoError(t, err)
 
 	oauth2Authenticator, err := newClientAuthenticator(&Config{
-		ClientID:     "dummy",
-		ClientSecret: "ABC",
-		TokenURL:     serverURL.String(),
+		ClientID:     ValueValueFrom{Value: "dummy"},
+		ClientSecret: ValueValueFrom{Value: "ABC"},
+		TokenURL:     ValueValueFrom{Value: serverURL.String()},
 	}, zap.NewNop())
 	assert.Nil(t, err)
 
