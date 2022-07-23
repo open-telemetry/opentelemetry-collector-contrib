@@ -272,6 +272,8 @@ func TestProcessorConsumeTraces(t *testing.T) {
 		// instantiate a copy of the test case for t.Run's closure to use.
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			done := make(chan bool, 1)
+			var consumedMetrics bool
 			// Prepare
 			mexp := &mocks.MetricsExporter{}
 			tcon := &mocks.TracesConsumer{}
@@ -279,6 +281,10 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
 				return assert.Eventually(t, func() bool {
+					defer func() {
+						consumedMetrics = true
+						done <- true
+					}()
 					return tc.verifier(t, input)
 				}, 10*time.Second, time.Millisecond*100)
 			})).Return(nil)
@@ -293,6 +299,8 @@ func TestProcessorConsumeTraces(t *testing.T) {
 				err := p.ConsumeTraces(ctx, traces)
 
 				// Verify
+				<-done // Wait till ConsumeMetrics verification is done.
+				require.True(t, consumedMetrics)
 				assert.NoError(t, err)
 			}
 		})

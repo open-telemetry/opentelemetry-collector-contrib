@@ -228,6 +228,7 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 	// that should not interfere with the flow of trace data because
 	// it is an orthogonal concern to the trace flow (it should not impact
 	// upstream or downstream pipeline trace components).
+	tracesClone := traces.Clone()
 	go func() {
 		// Since this is in a goroutine, the entire func can be locked without
 		// impacting trace processing performance. This also significantly
@@ -236,7 +237,7 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 		p.lock.Lock()
 		defer p.lock.Unlock()
 
-		p.aggregateMetrics(traces)
+		p.aggregateMetrics(tracesClone)
 		m, err := p.buildMetrics()
 
 		if err != nil {
