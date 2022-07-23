@@ -189,7 +189,7 @@ func (r *pReceiver) applyCfg(cfg *config.Config) error {
 	}
 
 	discoveryCfg := make(map[string]discovery.Configs)
-	for _, scrapeConfig := range r.cfg.PrometheusConfig.ScrapeConfigs {
+	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
 	}
 	if err := r.discoveryManager.ApplyConfig(discoveryCfg); err != nil {
