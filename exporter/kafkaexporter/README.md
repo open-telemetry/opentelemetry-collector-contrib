@@ -24,6 +24,7 @@ The following settings can be optionally configured:
     - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.
   - The following encodings are valid *only* for **logs**.
     - `log_record_json`: the payload is single LogRecord serialized to JSON.
+    - `log_record_attributes_json`: the payload is single LogRecord attributes serialized to JSON. This is useful if you need custom schema of log record.
 - `auth`
   - `plain_text`
     - `username`: The username to use.

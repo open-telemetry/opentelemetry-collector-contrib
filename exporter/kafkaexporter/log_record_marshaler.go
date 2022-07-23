@@ -8,8 +8,10 @@ import (
 )
 
 const (
-	logRecordJSON     = "log_record_json"
-	logRecordProtobuf = "log_record_protobuf"
+	logRecordJSON               = "log_record_json"
+	logRecordProtobuf           = "log_record_protobuf"
+	logRecordAttributesJSON     = "log_record_attributes_json"
+	logRecordAttributesProtobuf = "log_record_attributes_protobuf"
 )
 
 type logRecordMarshaler struct {
@@ -29,6 +31,14 @@ func (p logRecordMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.Produ
 			// TODO: Add
 		case logRecordJSON:
 			bytes, err = json.Marshal(logRecord)
+			if err != nil {
+				return nil, err
+			}
+		case logRecordAttributesProtobuf:
+			// TODO: Add
+		case logRecordAttributesJSON:
+			attrs := logRecord.Attributes()
+			bytes, err = json.Marshal(attrs.AsRaw())
 			if err != nil {
 				return nil, err
 			}
