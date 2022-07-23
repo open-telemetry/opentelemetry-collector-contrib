@@ -132,6 +132,20 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
+			name: "setting an attribute to nil is a no-op",
+			path: []tql.Field{
+				{
+					Name:   "attributes",
+					MapKey: tqltest.Strp("str"),
+				},
+			},
+			orig: "val",
+			new:  nil,
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				// This behavior is undefined according to the spec, so it is implemented as a no-op.
+			},
+		},
+		{
 			name: "attributes string",
 			path: []tql.Field{
 				{

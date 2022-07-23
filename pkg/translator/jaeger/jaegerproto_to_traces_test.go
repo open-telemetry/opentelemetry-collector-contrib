@@ -430,6 +430,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 }
 
 func TestProtoBatchesToInternalTraces(t *testing.T) {
+	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12591")
 	batches := []*model.Batch{
 		{
 			Process: generateProtoProcess(),
