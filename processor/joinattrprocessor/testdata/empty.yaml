@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+processors:
+  join_attributes:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - nop
+      processors:
+        - join_attributes
+      exporters:
+        - nop

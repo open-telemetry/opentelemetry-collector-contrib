@@ -1,0 +1,22 @@
+receivers:
+  nop:
+
+processors:
+  join_attributes:
+    attributes: ['name','id']
+    target_attribute: 'name_and_id'
+    separator: '-'
+    override: true
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers:
+        - nop
+      processors:
+        - join_attributes
+      exporters:
+        - nop
