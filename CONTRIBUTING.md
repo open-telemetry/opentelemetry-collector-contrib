@@ -116,7 +116,6 @@ The following GitHub users are the currently available sponsors, either by being
 
 * [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
-* [@pmm-sumo](https://github.com/pmm-sumo)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
