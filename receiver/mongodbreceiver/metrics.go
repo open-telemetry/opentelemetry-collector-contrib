@@ -28,6 +28,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+var operationsMap = map[string]metadata.AttributeOperation{
+	"insert":   metadata.AttributeOperationInsert,
+	"queries":  metadata.AttributeOperationQuery,
+	"update":   metadata.AttributeOperationUpdate,
+	"remove":   metadata.AttributeOperationDelete,
+	"getmore":  metadata.AttributeOperationGetmore,
+	"commands": metadata.AttributeOperationCommand,
+}
+
 // DBStats
 func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	collectionsPath := []string{"collections"}
@@ -387,20 +396,12 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 		scraperErrors.AddPartial(1, err)
 		return
 	}
-	operationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames)
+	operationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames, operationsMap)
 	if err != nil {
 		scraperErrors.AddPartial(1, err)
 		return
 	}
 
-	operationsMap := map[string]metadata.AttributeOperation{
-		"insert":   metadata.AttributeOperationInsert,
-		"queries":  metadata.AttributeOperationQuery,
-		"update":   metadata.AttributeOperationUpdate,
-		"remove":   metadata.AttributeOperationDelete,
-		"getmore":  metadata.AttributeOperationGetmore,
-		"commands": metadata.AttributeOperationCommand,
-	}
 	for operationName, metadataOperationName := range operationsMap {
 		operationValue, ok := operationTimeValues[operationName]
 		if !ok {
@@ -411,11 +412,10 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 	}
 }
 
-func aggregateOperationTimeValues(document bson.M, collectionPathNames []string) (map[string]int64, error) {
+func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {
 	operationTotals := map[string]int64{}
-	operationNames := []string{"insert", "queries", "update", "remove", "getmore", "commands"}
 	for _, collectionPathName := range collectionPathNames {
-		for _, operationName := range operationNames {
+		for operationName, _ := range operationMap {
 			value, err := getOperationTimeValues(document, collectionPathName, operationName)
 			if err != nil {
 				return nil, err
