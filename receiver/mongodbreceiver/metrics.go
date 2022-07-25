@@ -373,9 +373,8 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 		if err != nil {
 			scraperErrors.AddPartial(1, err)
 			return
-		} else {
-			indexAccessTotal += indexAccessValue
 		}
+		indexAccessTotal += indexAccessValue
 	}
 	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 }
