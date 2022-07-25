@@ -35,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -95,6 +96,14 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "cloudfoundry",
 			skipLifecyle: true, // Requires UAA (auth) endpoint to run
+		},
+		{
+			receiver: "chrony",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["chrony"].CreateDefaultConfig().(*chronyreceiver.Config)
+				cfg.Endpoint = "udp://localhost:323"
+				return cfg
+			},
 		},
 		{
 			receiver: "collectd",
