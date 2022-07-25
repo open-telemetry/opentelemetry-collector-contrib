@@ -4,7 +4,7 @@ The Telemetry Query Language is a query language for transforming open telemetry
 
 This package reads in TQL queries and converts them to invokable Booleans and functions based on the TQL's grammar.
 
-The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry.
+The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a `TransformContext`, which provide access to the signal's telemetry. Telemetry data can be accessed and updated through [Getters and Setters](#getters-and-setters).
 
 ## Grammar
 
@@ -23,9 +23,34 @@ Example Invocations
 - `drop()`
 - `set(field, 1)`
 
+#### Invocation parameters
+
+The TQL will use reflection to determine parameter types when parsing an invocation within a statement.  When interpreting slice parameter types, the TQL will attempt to build the slice from all remaining Values in the Invocation's arguments.  As a result, function implementations of Invocations may only contain one slice argument and it must be the last argument in the function definition.  See [function syntax guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#function-syntax) for more details.
+
+The following types are supported for single parameter values:
+- `Setter`
+- `GetSetter`
+- `Getter`
+- `Enum`
+- `string`
+- `float64`
+- `int64`
+- `bool`
+
+For slice parameters, the following types are supported:
+- `string`
+- `float64`
+- `int64`
+- `uint8`. Slices of bytes will be interpreted as a byte array.
+- `Getter`
+
 ### Values
 
-Values are the things that get passed to an Invocation or used in an Expression. Values can be either a Path, a Literal, an Enum, or an Invocation.
+Values are passed as input to an Invocation or are used in an Expression. Values can take the form of:
+- [Paths](#paths).
+- [Literals](#literals).
+- [Enums](#enums).
+- [Invocations](#invocations).
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
@@ -70,7 +95,6 @@ Within the grammar Enums are always used as `int64`.  As a result, the Enum's sy
 
 When defining a function that will be used as an Invocation by the TQL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
 
-
 ### Expressions
 
 Expressions allow a decision to be made about whether an Invocation should be called. Expressions are optional.  When used, the parsed query will include a `Condition`, which can be used to evaluate the result of the query's Expression. Expressions always evaluate to a boolean value (true or false).
@@ -90,6 +114,20 @@ Operators determine how the two Values are compared.  The valid operators are:
 
 - Equal (`==`). Equal (`==`) checks if the left and right Values are equal, using Go's `==` operator.
 - Not Equal (`!=`).  Not Equal (`!=`) checks if the left and right Values are not equal, using Go's `!=` operator.
+
+## Accessing signal telemetry
+
+Access to signal telemetry is provided to TQL functions through a `TransformContext` that is created by the user and passed during statement evaluation. To allow functions to operate on the `TransformContext`, the TQL provides `Getter`, `Setter`, and `GetSetter` interfaces.
+
+### Getters and Setters
+
+Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted. 
+- [Paths](#paths).
+- [Enums](#enums).
+- [Literals](#literals).
+- [Invocations](#invocations).
+
+It is possible to update the Value in a telemetry field using a Setter. For read and write access, the `GetSetter` interface extends both interfaces.
 
 ## Examples
 
