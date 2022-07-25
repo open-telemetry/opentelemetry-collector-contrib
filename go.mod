@@ -90,6 +90,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.56.0
@@ -235,6 +236,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.10.0 // indirect
+	github.com/aws/smithy-go v1.9.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
@@ -288,6 +290,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.0 // indirect
 	github.com/getsentry/sentry-go v0.13.0 // indirect
+	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
@@ -501,6 +504,7 @@ require (
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.444 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
+	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/tinylru v1.1.0 // indirect
@@ -582,14 +586,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 	skywalking.apache.org/repo/goapi v0.0.0-20220121092418-9c455d0dda3f // indirect
-)
-
-require (
-	github.com/aws/smithy-go v1.11.0 // indirect
-	github.com/go-kit/kit v0.12.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.0.0-00010101000000-000000000000
-	github.com/smartystreets/assertions v1.0.1 // indirect
-	github.com/tidwall/gjson v1.12.1 // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
