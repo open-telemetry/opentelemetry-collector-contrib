@@ -21,6 +21,7 @@ import (
 
 	"github.com/hashicorp/go-version"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -99,7 +100,7 @@ func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string
 func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName string) ([]bson.M, error) {
 	db := c.Client.Database(database)
 	collection := db.Collection(collectionName)
-	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{{"$indexStats", bson.M{}}}})
+	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{primitive.E{Key: "$indexStats", Value: bson.M{}}}})
 	if err != nil {
 		return nil, err
 	}

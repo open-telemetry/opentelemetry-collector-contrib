@@ -167,11 +167,12 @@ func TestRunCommands(t *testing.T) {
 				logger: zap.NewNop(),
 			}
 			var result bson.M
-			if tc.cmd == serverStatusType {
+			switch tc.cmd {
+			case serverStatusType:
 				result, err = client.ServerStatus(context.Background(), "test")
-			} else if tc.cmd == dbStatsType {
+			case dbStatsType:
 				result, err = client.DBStats(context.Background(), "test")
-			} else if tc.cmd == topType {
+			case topType:
 				result, err = client.TopStats(context.Background())
 			}
 			require.NoError(t, err)
@@ -276,15 +277,16 @@ func loadTopAsMap() (bson.M, error) {
 
 func loadIndexStatsAsMap(collectionName string) ([]bson.M, error) {
 	indexStats := []bson.M{}
-	if collectionName == "products" {
+	switch collectionName {
+	case "products":
 		indexStats0, _ := loadTestFileAsMap("./testdata/productsIndexStats0.json")
 		indexStats = append(indexStats, indexStats0)
-	} else if collectionName == "orders" {
+	case "orders":
 		indexStats0, _ := loadTestFileAsMap("./testdata/ordersIndexStats0.json")
 		indexStats1, _ := loadTestFileAsMap("./testdata/ordersIndexStats1.json")
 		indexStats2, _ := loadTestFileAsMap("./testdata/ordersIndexStats2.json")
 		indexStats = append(indexStats, indexStats0, indexStats1, indexStats2)
-	} else {
+	default:
 		return nil, errors.New("failed to load index stats from an unknown collection name")
 	}
 	return indexStats, nil

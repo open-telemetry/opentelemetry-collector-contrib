@@ -151,7 +151,7 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 		errors.AddPartial(1, err)
 		return
 	}
-	s.recordIndexStats(ctx, now, indexStats, databaseName, collectionName, errors)
+	s.recordIndexStats(now, indexStats, databaseName, collectionName, errors)
 	s.mb.EmitForResource()
 }
 
@@ -181,6 +181,6 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordSessionCount(now, document, errors)
 }
 
-func (s *mongodbScraper) recordIndexStats(ctx context.Context, now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errors)
 }
