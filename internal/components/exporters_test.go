@@ -40,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter"
@@ -266,6 +267,14 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["awsxray"].CreateDefaultConfig().(*awsxrayexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				cfg.Region = "local"
+				return cfg
+			},
+		},
+		{
+			exporter: "azuredataexplorer",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
 				return cfg
 			},
 		},
