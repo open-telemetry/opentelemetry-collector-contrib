@@ -57,6 +57,10 @@ func TestLoadConfig(t *testing.T) {
 			WriteBufferSize: 512 * 1024,
 			Headers:         map[string]string{},
 		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
@@ -75,7 +79,56 @@ func TestLoadConfig(t *testing.T) {
 	})
 }
 
-func TestExporter(t *testing.T) {
+func TestLoadConfigAll(t *testing.T) {
+	factories, _ := componenttest.NopFactories()
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-all.yaml"), factories)
+	require.NoError(t, err)
+
+	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
+	err = apiConfig.Validate()
+	require.NoError(t, err)
+
+	assert.Equal(t, apiConfig, &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID("coralogix")),
+		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
+		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
+		PrivateKey:       "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		AppName:          "APP_NAME",
+		// Deprecated: [v0.47.0] SubSystem will remove in the next version
+		SubSystem:       "SUBSYSTEM_NAME",
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		Metrics: configgrpc.GRPCClientSettings{
+			Endpoint:        "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression:     "gzip",
+			WriteBufferSize: 512 * 1024,
+			Headers:         map[string]string{},
+		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Headers:  map[string]string{},
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
+			BalancerName:    "",
+		},
+	})
+}
+
+func TestTraceExporter(t *testing.T) {
 	factories, _ := componenttest.NopFactories()
 	factory := NewFactory()
 	factories.Exporters[typeStr] = factory

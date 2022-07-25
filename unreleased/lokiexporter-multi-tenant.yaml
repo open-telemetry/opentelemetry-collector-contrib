@@ -1,4 +1,0 @@
-change_type: enhancement
-component: exporter/loki
-note: Handle multi-tenant use-cases
-issues: [3121]

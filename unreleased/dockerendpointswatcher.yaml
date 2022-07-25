@@ -1,4 +1,0 @@
-change_type: enhancement
-component: dockerobserver
-note: incorporate observer.EndpointsWatcher in preparation of multiple event subscribers and use existing internal event loop watcher
-issues: [10830, 11541]
