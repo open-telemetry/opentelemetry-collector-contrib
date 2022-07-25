@@ -16,7 +16,6 @@ package observer // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"encoding/json"
-	"reflect"
 	"sync"
 	"time"
 
@@ -56,7 +55,7 @@ func NewEndpointsWatcher(endpointsLister EndpointsLister, refreshInterval time.D
 }
 
 // ListAndWatch runs EndpointsLister.ListEndpoints() on a regular interval and keeps track of the results
-// for alerting subscribed Notify's of the entries
+// for alerting all subscribed Notify's of the based on the differences from the previous call.
 func (ew *EndpointsWatcher) ListAndWatch(notify Notify) {
 	ew.once.Do(func() {
 		go func() {
@@ -73,14 +72,14 @@ func (ew *EndpointsWatcher) ListAndWatch(notify Notify) {
 						toNotify = append(toNotify, notifyID.(NotifyID))
 						return true
 					})
-					ew.notifyOfEndpoints(toNotify...)
+					ew.notifyOfLatestEndpoints(toNotify...)
 				}
 			}
 		}()
 	})
 
 	ew.toNotify.Store(notify.ID(), notify)
-	ew.notifyOfEndpoints(notify.ID())
+	ew.notifyOfLatestEndpoints(notify.ID())
 }
 
 func (ew *EndpointsWatcher) Unsubscribe(notify Notify) {
@@ -88,81 +87,94 @@ func (ew *EndpointsWatcher) Unsubscribe(notify Notify) {
 	ew.existingEndpoints.Delete(notify.ID())
 }
 
-// notifyOfEndpoints alerts subscribed Notify instances by their NotifyID of Endpoint events,
-// updating their internal store of last Endpoints advertised.
-func (ew *EndpointsWatcher) notifyOfEndpoints(notifyIDs ...NotifyID) {
+// notifyOfLatestEndpoints alerts subscribed Notify instances by their NotifyID of latest Endpoint events,
+// updating their internal store with results of ListEndpoints() call.
+func (ew *EndpointsWatcher) notifyOfLatestEndpoints(notifyIDs ...NotifyID) {
 	latestEndpoints := ew.EndpointsLister.ListEndpoints()
 
+	wg := &sync.WaitGroup{}
 	for _, notifyID := range notifyIDs {
 		var notify Notify
 		if n, ok := ew.toNotify.Load(notifyID); !ok {
 			// an Unsubscribe() must have occurred during this call
+			ew.logger.Debug("notifyOfEndpoints() ignoring instruction to notify non-subscribed Notify", zap.Any("notify", notifyID))
 			continue
 		} else if notify, ok = n.(Notify); !ok {
 			ew.logger.Warn("failed to obtain notify instance from EndpointsWatcher", zap.Any("notify", n))
 			continue
 		}
+		wg.Add(1)
+		go ew.updateAndNotifyOfEndpoints(notify, latestEndpoints, wg)
+	}
+	wg.Wait()
+}
 
-		// Create map from ID to endpoint for lookup.
-		latestEndpointsMap := make(map[EndpointID]bool, len(latestEndpoints))
-		for _, e := range latestEndpoints {
-			latestEndpointsMap[e.ID] = true
-		}
+func (ew *EndpointsWatcher) updateAndNotifyOfEndpoints(notify Notify, endpoints []Endpoint, done *sync.WaitGroup) {
+	defer done.Done()
+	removedEndpoints, addedEndpoints, changedEndpoints := ew.updateEndpoints(notify, endpoints)
+	if len(removedEndpoints) > 0 {
+		ew.logEndpointEvent("removed endpoints", notify, removedEndpoints)
+		notify.OnRemove(removedEndpoints)
+	}
 
-		le, _ := ew.existingEndpoints.LoadOrStore(notifyID, map[EndpointID]Endpoint{})
-		var storedEndpoints map[EndpointID]Endpoint
-		var ok bool
-		if storedEndpoints, ok = le.(map[EndpointID]Endpoint); !ok {
-			ew.logger.Warn("failed to load Endpoint store from EndpointsWatcher", zap.Any("endpoints", le))
-			continue
-		}
-		// copy to not modify sync.Map value directly (will be reloaded)
-		existingEndpoints := map[EndpointID]Endpoint{}
-		for id, endpoint := range storedEndpoints {
-			existingEndpoints[id] = endpoint
-		}
+	if len(addedEndpoints) > 0 {
+		ew.logEndpointEvent("added endpoints", notify, addedEndpoints)
+		notify.OnAdd(addedEndpoints)
+	}
 
-		var removedEndpoints, addedEndpoints, changedEndpoints []Endpoint
-		// Iterate over the latest endpoints obtained. An endpoint needs
-		// to be added or updated in case it is not already available in existingEndpoints or doesn't match
-		// the latest value.
-		for _, e := range latestEndpoints {
-			if existingEndpoint, ok := existingEndpoints[e.ID]; !ok {
-				existingEndpoints[e.ID] = e
-				addedEndpoints = append(addedEndpoints, e)
-			} else if !reflect.DeepEqual(existingEndpoint, e) {
-				// Collect updated endpoints.
-				existingEndpoints[e.ID] = e
-				changedEndpoints = append(changedEndpoints, e)
-			}
-		}
+	if len(changedEndpoints) > 0 {
+		ew.logEndpointEvent("changed endpoints", notify, changedEndpoints)
+		notify.OnChange(changedEndpoints)
+	}
+}
 
-		// If endpoint present in existingEndpoints does not exist in the latest
-		// list, it needs to be removed.
-		for id, e := range existingEndpoints {
-			if !latestEndpointsMap[e.ID] {
-				delete(existingEndpoints, id)
-				removedEndpoints = append(removedEndpoints, e)
-			}
-		}
+func (ew *EndpointsWatcher) updateEndpoints(notify Notify, endpoints []Endpoint) (removed, added, changed []Endpoint) {
+	notifyID := notify.ID()
+	// Create map from ID to endpoint for lookup.
+	endpointsMap := make(map[EndpointID]struct{}, len(endpoints))
+	for _, e := range endpoints {
+		endpointsMap[e.ID] = struct{}{}
+	}
 
-		ew.existingEndpoints.Store(notifyID, existingEndpoints)
+	le, _ := ew.existingEndpoints.LoadOrStore(notifyID, map[EndpointID]Endpoint{})
+	var storedEndpoints map[EndpointID]Endpoint
+	var ok bool
+	if storedEndpoints, ok = le.(map[EndpointID]Endpoint); !ok {
+		ew.logger.Warn("failed to load Endpoint store from EndpointsWatcher", zap.Any("endpoints", le))
+		return
+	}
+	// copy to not modify sync.Map value directly (will be reloaded)
+	existingEndpoints := map[EndpointID]Endpoint{}
+	for id, endpoint := range storedEndpoints {
+		existingEndpoints[id] = endpoint
+	}
 
-		if len(removedEndpoints) > 0 {
-			ew.logEndpointEvent("removed endpoints", notify, removedEndpoints)
-			notify.OnRemove(removedEndpoints)
-		}
-
-		if len(addedEndpoints) > 0 {
-			ew.logEndpointEvent("added endpoints", notify, addedEndpoints)
-			notify.OnAdd(addedEndpoints)
-		}
-
-		if len(changedEndpoints) > 0 {
-			ew.logEndpointEvent("changed endpoints", notify, changedEndpoints)
-			notify.OnChange(changedEndpoints)
+	// Iterate over the latest endpoints obtained. An endpoint needs
+	// to be added or updated in case it is not already available in existingEndpoints or doesn't match
+	// the latest value.
+	for _, e := range endpoints {
+		var existingEndpoint Endpoint
+		if existingEndpoint, ok = existingEndpoints[e.ID]; !ok {
+			existingEndpoints[e.ID] = e
+			added = append(added, e)
+		} else if !existingEndpoint.equals(e) {
+			// Collect updated endpoints.
+			existingEndpoints[e.ID] = e
+			changed = append(changed, e)
 		}
 	}
+
+	// If endpoint present in existingEndpoints does not exist in the latest
+	// list, it needs to be removed.
+	for id, e := range existingEndpoints {
+		if _, ok = endpointsMap[e.ID]; !ok {
+			delete(existingEndpoints, id)
+			removed = append(removed, e)
+		}
+	}
+
+	ew.existingEndpoints.Store(notifyID, existingEndpoints)
+	return
 }
 
 // StopListAndWatch polling the ListEndpoints.

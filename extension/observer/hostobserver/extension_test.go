@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -184,7 +185,7 @@ func startAndStopObserver(
 	require.NotNil(t, ml.getProcess)
 	require.NotNil(t, ml.collectProcessDetails)
 
-	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zap.NewNop())}
+	h := &hostObserver{EndpointsWatcher: observer.NewEndpointsWatcher(ml, 10*time.Second, zaptest.NewLogger(t))}
 
 	mn := mockNotifier{map[observer.EndpointID]observer.Endpoint{}}
 
