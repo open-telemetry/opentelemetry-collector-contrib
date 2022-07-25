@@ -8,7 +8,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.3
-	github.com/aws/aws-sdk-go v1.44.57
+	github.com/aws/aws-sdk-go v1.44.61
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.56.0
@@ -57,7 +57,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
