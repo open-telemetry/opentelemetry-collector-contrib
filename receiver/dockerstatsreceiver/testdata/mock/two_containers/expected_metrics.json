@@ -1,0 +1,2300 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "container.runtime",
+            "value": {
+              "stringValue": "docker"
+            }
+          },
+          {
+            "key": "container.id",
+            "value": {
+              "stringValue": "a359c0fc87c546b42d2ad32db7c978627f1d89b49cb3827a7b19ba97a1febcce"
+            }
+          },
+          {
+            "key": "container.image.name",
+            "value": {
+              "stringValue": "ubuntu"
+            }
+          },
+          {
+            "key": "container.name",
+            "value": {
+              "stringValue": "pensive_aryabhata"
+            }
+          },
+          {
+            "key": "container.hostname",
+            "value": {
+              "stringValue": "a359c0fc87c5"
+            }
+          },
+          {
+            "key": "env-var-metric-label",
+            "value": {
+              "stringValue": "env-var"
+            }
+          },
+          {
+            "key": "container-metric-label",
+            "value": {
+              "stringValue": "container-label"
+            }
+          }
+        ]
+      },
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1",
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "container.blockio.io_service_bytes_recursive.read",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.write",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.sync",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.async",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.discard",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.read",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.write",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.sync",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.async",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.discard",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.usage.system",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "14930240000000",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "31093384",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.kernelmode",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "10000000",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.usermode",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "10000000",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.throttling_data.periods",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.throttling_data.throttled_periods",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.throttling_data.throttled_time",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asDouble": 0,
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.cpu.percent",
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.usage.percpu",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "31093384",
+                    "attributes": [
+                      {
+                        "key": "core",
+                        "value": {
+                          "stringValue": "cpu0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "2074079232",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "352256",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.total",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asDouble": 0.016983729192463173,
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.percent",
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "6172672",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.max",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "4096",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.active_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.active_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.cache",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.dirty",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.hierarchical_memory_limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.hierarchical_memsw_limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "106496",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.inactive_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.inactive_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.mapped_file",
+              "unit": "By"
+            },
+            {
+              "name": "container.memory.pgfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2417",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgmajfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgpgin",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1980",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgpgout",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1935",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "110592",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.rss",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.rss_huge",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "4096",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_active_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_active_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "73728",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_cache",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_dirty",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "106496",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_inactive_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_inactive_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_mapped_file",
+              "unit": "By"
+            },
+            {
+              "name": "container.memory.total_pgfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2417",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgmajfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgpgin",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1980",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgpgout",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1935",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "110592",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_rss",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_rss_huge",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_unevictable",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_writeback",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.unevictable",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ]
+              },
+              "name": "container.memory.writeback",
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.rx_bytes",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "12394",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.tx_bytes",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.rx_dropped",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.rx_errors",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.rx_packets",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "96",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_dropped",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_errors",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_packets",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637112000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            }
+          ],
+          "scope": {}
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "container.runtime",
+            "value": {
+              "stringValue": "docker"
+            }
+          },
+          {
+            "key": "container.id",
+            "value": {
+              "stringValue": "89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7"
+            }
+          },
+          {
+            "key": "container.image.name",
+            "value": {
+              "stringValue": "alpine"
+            }
+          },
+          {
+            "key": "container.name",
+            "value": {
+              "stringValue": "loving_torvalds"
+            }
+          },
+          {
+            "key": "container.hostname",
+            "value": {
+              "stringValue": "89d28931fd8b"
+            }
+          },
+          {
+            "key": "env-var-metric-label",
+            "value": {
+              "stringValue": "env-var2"
+            }
+          },
+          {
+            "key": "container-metric-label",
+            "value": {
+              "stringValue": "container-label2"
+            }
+          }
+        ]
+      },
+      "schemaUrl": "https://opentelemetry.io/schemas/1.6.1",
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "container.blockio.io_service_bytes_recursive.read",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1187840",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.write",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.sync",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1187840",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.async",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.discard",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_service_bytes_recursive.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1187840",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.read",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "19",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.write",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.sync",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "19",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.async",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.discard",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.blockio.io_serviced_recursive.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "19",
+                    "attributes": [
+                      {
+                        "key": "device_major",
+                        "value": {
+                          "stringValue": "8"
+                        }
+                      },
+                      {
+                        "key": "device_minor",
+                        "value": {
+                          "stringValue": "0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.usage.system",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "14834790000000",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "34117917",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.kernelmode",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "20000000",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.usage.usermode",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "10000000",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "name": "container.cpu.throttling_data.periods",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.throttling_data.throttled_periods",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.throttling_data.throttled_time",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asDouble": 0,
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.cpu.percent",
+              "unit": "1"
+            },
+            {
+              "name": "container.cpu.usage.percpu",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "34117917",
+                    "attributes": [
+                      {
+                        "key": "core",
+                        "value": {
+                          "stringValue": "cpu0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "ns"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "2074079232",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "380928",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.total",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asDouble": 0.01836612575464041,
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.percent",
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "6201344",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.usage.max",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "4096",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.active_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "393216",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.active_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "921600",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.cache",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.dirty",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.hierarchical_memory_limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.hierarchical_memsw_limit",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "147456",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.inactive_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "528384",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.inactive_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "843776",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.mapped_file",
+              "unit": "By"
+            },
+            {
+              "name": "container.memory.pgfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2469",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgmajfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "8",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgpgin",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2288",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.pgpgout",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2026",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "151552",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.rss",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.rss_huge",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "4096",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_active_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "393216",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_active_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "921600",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_cache",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_dirty",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "147456",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_inactive_anon",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "528384",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_inactive_file",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "843776",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_mapped_file",
+              "unit": "By"
+            },
+            {
+              "name": "container.memory.total_pgfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2469",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgmajfault",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "8",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgpgin",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2288",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.memory.total_pgpgout",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "2026",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "151552",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_rss",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_rss_huge",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_unevictable",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.total_writeback",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.unevictable",
+              "unit": "By"
+            },
+            {
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ]
+              },
+              "name": "container.memory.writeback",
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.rx_bytes",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "11313",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.tx_bytes",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "By"
+            },
+            {
+              "name": "container.network.io.usage.rx_dropped",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.rx_errors",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.rx_packets",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "88",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_dropped",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_errors",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            },
+            {
+              "name": "container.network.io.usage.tx_packets",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "attributes": [
+                      {
+                        "key": "interface",
+                        "value": {
+                          "stringValue": "eth0"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1657771832637093000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            }
+          ],
+          "scope": {}
+        }
+      ]
+    }
+  ]
+}
