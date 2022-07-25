@@ -48,6 +48,9 @@ type Config struct {
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 	WAL                         *WALConfig                   `mapstructure:"wal"`
+
+	// Allow disabling the addition of target_info metric
+	DisableTargetInfoMetric bool `mapstructure:"disable_target_info_metric"`
 }
 
 // RemoteWriteQueue allows to configure the remote write queue.
