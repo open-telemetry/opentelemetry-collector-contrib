@@ -10,7 +10,6 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **mongodb.cache.operations** | The number of cache operations of the instance. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
 | **mongodb.collection.count** | The number of collections. | {collections} | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.connection.available** | The number of unused connections. | {connections} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.connection.count** | The number of connections. | {connections} | Sum(Int) | <ul> <li>database</li> <li>connection_type</li> </ul> |
 | **mongodb.cursor.count** | The number of open cursors maintained for clients. | {cursors} | Sum(Int) | <ul> </ul> |
 | **mongodb.cursor.timeout.count** | The number of cursors that have timed out. | {cursors} | Sum(Int) | <ul> </ul> |
@@ -20,10 +19,8 @@ These are the metrics available for this scraper.
 | **mongodb.document.insert.count** | The number of documents inserted. | {documents} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.document.update.count** | The number of documents updated. | {documents} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.extent.count** | The number of extents. | {extents} | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.flush.count** | The number of times the database has flushed writes to disk. | {flushes} | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.flush.time** | The total amount of time spent flushing writes to disk. | ms | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.global_lock.time** | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
-| **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>type</li> </ul> |
+| **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |
 | **mongodb.index.count** | The number of indexes. | {indexes} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.index.size** | Sum of the space allocated to all indexes in the database, including free index space. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.memory.usage** | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
@@ -55,6 +52,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| collection | The name of a collection. |  |
 | connection_type (type) | The status of the connection. | active, available, current |
 | database | The name of a database. |  |
 | memory_type (type) | The type of memory used. | resident, virtual |

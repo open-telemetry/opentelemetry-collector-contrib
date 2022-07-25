@@ -8,6 +8,8 @@ resource_attributes:
 attributes:
   database:
     description: The name of a database.
+  collection:
+    description: The name of a collection.
   memory_type:
     value: type
     description: The type of memory used.
@@ -146,15 +148,6 @@ metrics:
       value_type: int
       monotonic: true
     attributes: [database]
-  mongodb.connection.available:
-    description: The number of unused connections.
-    unit: "{connections}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-    attributes: [database]
   mongodb.database.count:
     description: The number of existing databases.
     unit: "{databases}"
@@ -172,7 +165,7 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
-    attributes: [database, type]
+    attributes: [database, collection]
   mongodb.document.insert.count:
     description: The number of documents inserted.
     unit: "{documents}"
@@ -245,24 +238,6 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: []
-  mongodb.flush.count:
-    description: The number of times the database has flushed writes to disk.
-    unit: "{flushes}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-    attributes: [database]
-  mongodb.flush.time:
-    description: The total amount of time spent flushing writes to disk.
-    unit: ms
-    enabled: true
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: true
-    attributes: [database]
   mongodb.cursor.count:
     description: The number of open cursors maintained for clients.
     unit: "{cursors}"

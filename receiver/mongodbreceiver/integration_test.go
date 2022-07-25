@@ -142,6 +142,10 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 		})
 	require.NoError(t, err)
 
+	code, err := container.Exec(context.Background(), []string{"/setup.sh"})
+	require.NoError(t, err)
+	require.Equal(t, 0, code)
+
 	err = container.Start(context.Background())
 	require.NoError(t, err)
 	return container

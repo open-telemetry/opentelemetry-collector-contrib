@@ -173,6 +173,44 @@ func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, db
 	}
 }
 
+func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
+	// Collect document insert, delete, update
+	operationRecorderMap := map[string]func(pcommon.Timestamp, int64, string){
+		"inserted": s.mb.RecordMongodbDocumentInsertCountDataPoint,
+		"deleted":  s.mb.RecordMongodbDocumentDeleteCountDataPoint,
+		"updated":  s.mb.RecordMongodbDocumentUpdateCountDataPoint,
+	}
+	for operationKey, recorder := range operationRecorderMap {
+		docOperation, err := dig(doc, []string{"metrics", "document", operationKey})
+		if err != nil {
+			errors.AddPartial(1, err)
+			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operationKey))
+		}
+		docOperationValue, err := parseInt(docOperation)
+		if err != nil {
+			errors.AddPartial(1, err)
+		} else {
+			recorder(now, docOperationValue, dbName)
+		}
+	}
+}
+
+func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+	// Collect session count
+	sessionCount, err := dig(doc, []string{"wiredTiger", "session", "open session count"})
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+
+	sessionCountValue, err := parseInt(sessionCount)
+	if err != nil {
+		errors.AddPartial(1, err)
+	} else {
+		s.mb.RecordMongodbSessionCountDataPoint(now, sessionCountValue)
+	}
+}
+
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
 	// Collect Operations
@@ -267,6 +305,148 @@ func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M,
 	}
 
 	errors.AddPartial(1, fmt.Errorf("was unable to calculate global lock time"))
+}
+
+func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+	// Collect cursor count
+	cursorCount, err := dig(doc, []string{"metrics", "cursor", "open", "total"})
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+
+	cursorCountValue, err := parseInt(cursorCount)
+	if err != nil {
+		errors.AddPartial(1, err)
+	}
+	s.mb.RecordMongodbCursorCountDataPoint(now, cursorCountValue)
+}
+
+func (s *mongodbScraper) recordCursorTimeoutCount(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+	// Collect cursor timeout count
+	cursorTimeoutCount, err := dig(doc, []string{"metrics", "cursor", "timedOut"})
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+
+	cursorTimeoutCountValue, err := parseInt(cursorTimeoutCount)
+	if err != nil {
+		errors.AddPartial(1, err)
+	}
+	s.mb.RecordMongodbCursorTimeoutCountDataPoint(now, cursorTimeoutCountValue)
+}
+
+func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, errors scrapererror.ScrapeErrors) {
+	// Collect network bytes receive, transmit, and request count
+	networkRecorderMap := map[string]func(pcommon.Timestamp, int64){
+		"bytesIn":     s.mb.RecordMongodbNetworkIoReceiveDataPoint,
+		"bytesOut":    s.mb.RecordMongodbNetworkIoTransmitDataPoint,
+		"numRequests": s.mb.RecordMongodbNetworkRequestCountDataPoint,
+	}
+	for networkKey, recorder := range networkRecorderMap {
+		network, err := dig(doc, []string{"network", networkKey})
+		if err != nil {
+			errors.AddPartial(1, err)
+			s.logger.Error("failed to find network", zap.Error(err), zap.String("network", networkKey))
+		}
+		networkValue, err := parseInt(network)
+		if err != nil {
+			errors.AddPartial(1, err)
+		} else {
+			recorder(now, networkValue)
+		}
+	}
+}
+
+// Index Stats
+func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, scraperErrors scrapererror.ScrapeErrors) {
+	// Collect the index access given a collection and database
+	var indexAccessTotal int64
+	for _, doc := range documents {
+		indexAccess, ok := doc["accesses"].(bson.M)["ops"]
+		if !ok {
+			scraperErrors.AddPartial(1, errors.New("could not find key for metric"))
+			return
+		}
+		indexAccessValue, err := parseInt(indexAccess)
+		if err != nil {
+			scraperErrors.AddPartial(1, err)
+			return
+		} else {
+			indexAccessTotal += indexAccessValue
+		}
+	}
+	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
+}
+
+// Top Stats
+func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, scraperErrors scrapererror.ScrapeErrors) {
+	// Collect the total operation time
+	collectionPathNames, err := digForCollectionPathNames(doc)
+	if err != nil {
+		scraperErrors.AddPartial(1, err)
+		return
+	}
+	operationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames)
+	if err != nil {
+		scraperErrors.AddPartial(1, err)
+		return
+	}
+
+	operationsMap := map[string]metadata.AttributeOperation{
+		"insert":   metadata.AttributeOperationInsert,
+		"queries":  metadata.AttributeOperationQuery,
+		"update":   metadata.AttributeOperationUpdate,
+		"remove":   metadata.AttributeOperationDelete,
+		"getmore":  metadata.AttributeOperationGetmore,
+		"commands": metadata.AttributeOperationCommand,
+	}
+	for operationName, metadataOperationName := range operationsMap {
+		operationValue, ok := operationTimeValues[operationName]
+		if !ok {
+			scraperErrors.AddPartial(1, errors.New("could not find key for metric"))
+			return
+		}
+		s.mb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
+	}
+}
+
+func aggregateOperationTimeValues(document bson.M, collectionPathNames []string) (map[string]int64, error) {
+	operationTotals := map[string]int64{}
+	operationNames := []string{"insert", "queries", "update", "remove", "getmore", "commands"}
+	for _, collectionPathName := range collectionPathNames {
+		for _, operationName := range operationNames {
+			value, err := getOperationTimeValues(document, collectionPathName, operationName)
+			if err != nil {
+				return nil, err
+			}
+			operationTotals[operationName] += value
+		}
+	}
+	return operationTotals, nil
+}
+
+func getOperationTimeValues(document bson.M, collectionPathName, operation string) (int64, error) {
+	rawValue, err := dig(document, []string{"totals", collectionPathName, operation, "time"})
+	if err != nil {
+		return 0, err
+	}
+	return parseInt(rawValue)
+}
+
+func digForCollectionPathNames(document bson.M) ([]string, error) {
+	docTotals, ok := document["totals"].(bson.M)
+	if !ok {
+		return nil, errors.New("could not find key for metric")
+	}
+	collectionPathNames := []string{}
+	for collectionPathName := range docTotals {
+		if collectionPathName != "note" {
+			collectionPathNames = append(collectionPathNames, collectionPathName)
+		}
+	}
+	return collectionPathNames, nil
 }
 
 func dig(document bson.M, path []string) (interface{}, error) {
