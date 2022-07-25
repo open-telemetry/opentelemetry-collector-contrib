@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sclient
 
 import (
@@ -70,7 +69,7 @@ users:
 	if err := ioutil.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
 		t.Error(err)
 	}
-	//overwrite the default kube config path
+	// overwrite the default kube config path
 	kubeConfigPath = tmpfile.Name()
 	return kubeConfigPath
 }
