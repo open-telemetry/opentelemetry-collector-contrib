@@ -59,8 +59,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 		host = h.(string)
 	}
 	createMetric := func(times time.Time, attr pcommon.Map, value func() float64, name string, desc string, mt pmetric.MetricDataType) *AdxMetric {
-		clonedScopedAttributes := cloneMap(scopeattrs)
-		copyMap(clonedScopedAttributes, attr.AsRaw())
+		clonedScopedAttributes := copyMap(cloneMap(scopeattrs), attr.AsRaw())
 		if isEmpty(name) {
 			name = md.Name()
 		}
@@ -132,13 +131,13 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			value := uint64(0)
 			// now create buckets for each bound.
 			for bi := 0; bi < len(bounds); bi++ {
-				var customMap pcommon.Map
-				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
-				// Add the LE field for the bucket's bound
-				customMap.InsertString("le", float64ToDimValue(bounds[bi]))
-				value += counts[bi]
+				customMap :=
+					copyMap(map[string]interface{}{
+						"le": float64ToDimValue(bounds[bi]),
+					}, dataPoint.Attributes().AsRaw())
 
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), customMap, func() float64 {
+				value += counts[bi]
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
 					// Change int to float. The value is a float64 in the table
 					return float64(value)
 				},
@@ -148,13 +147,12 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 			// add an upper bound for +Inf
 			{
-
-				var customMap pcommon.Map
-				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
 				// Add the LE field for the bucket's bound
-				customMap.InsertString("le", float64ToDimValue(math.Inf(1)))
-
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), customMap, func() float64 {
+				customMap :=
+					copyMap(map[string]interface{}{
+						"le": float64ToDimValue(math.Inf(1)),
+					}, dataPoint.Attributes().AsRaw())
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), pcommon.NewMapFromRaw(customMap), func() float64 {
 					// Change int to float. The value is a float64 in the table
 					return float64(value + counts[len(counts)-1])
 				},
@@ -211,13 +209,15 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// now create values for each quantile.
 			for bi := 0; bi < dataPoint.QuantileValues().Len(); bi++ {
 				dp := dataPoint.QuantileValues().At(bi)
-				var customMap pcommon.Map
-				copyMap(customMap.AsRaw(), dataPoint.Attributes().AsRaw())
-				customMap.InsertString("qt", float64ToDimValue(dp.Quantile()))
 				quantileName := fmt.Sprintf("%s_%s", md.Name(), strconv.FormatFloat(dp.Quantile(), 'f', -1, 64))
-				customMap.InsertDouble(quantileName, sanitizeFloat(dp.Value()).(float64))
+				metricQuantile := map[string]interface{}{
+					"qt":         float64ToDimValue(dp.Quantile()),
+					quantileName: sanitizeFloat(dp.Value()).(float64),
+				}
+				customMap :=
+					copyMap(metricQuantile, dataPoint.Attributes().AsRaw())
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
-					customMap,
+					pcommon.NewMapFromRaw(customMap),
 					func() float64 {
 						return dp.Value()
 					},
@@ -257,16 +257,16 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 	return transformedAdxMetrics, nil
 }
 
-func copyMap(toAttrib map[string]interface{}, fromAttrib map[string]interface{}) {
+func copyMap(toAttrib map[string]interface{}, fromAttrib map[string]interface{}) map[string]interface{} {
 	for k, v := range fromAttrib {
 		toAttrib[k] = v
 	}
+	return toAttrib
 }
 
 func cloneMap(fields map[string]interface{}) map[string]interface{} {
 	newFields := make(map[string]interface{}, len(fields))
-	copyMap(newFields, fields)
-	return newFields
+	return copyMap(newFields, fields)
 }
 
 func float64ToDimValue(f float64) string {
