@@ -138,8 +138,10 @@ func (s *sfxDPClient) pushMetricsDataForToken(ctx context.Context, sfxDataPoints
 		return len(sfxDataPoints), err
 	}
 
-	io.Copy(ioutil.Discard, resp.Body)
-	resp.Body.Close()
+	defer func() {
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {

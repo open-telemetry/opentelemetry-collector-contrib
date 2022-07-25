@@ -1,4 +1,0 @@
-change_type: enhancement
-component: metricstransformprocessor
-note: Do not produce empty metrics
-issues: [12210]
