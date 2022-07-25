@@ -415,7 +415,7 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 func aggregateOperationTimeValues(document bson.M, collectionPathNames []string, operationMap map[string]metadata.AttributeOperation) (map[string]int64, error) {
 	operationTotals := map[string]int64{}
 	for _, collectionPathName := range collectionPathNames {
-		for operationName, _ := range operationMap {
+		for operationName := range operationMap {
 			value, err := getOperationTimeValues(document, collectionPathName, operationName)
 			if err != nil {
 				return nil, err
