@@ -6,12 +6,12 @@ require (
 	github.com/apache/thrift v0.16.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jaegertracing/jaeger v1.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.56.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/semconv v0.56.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	google.golang.org/grpc v1.48.0
@@ -36,7 +36,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.16 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.55.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect

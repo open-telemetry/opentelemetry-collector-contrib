@@ -8,17 +8,17 @@ require (
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.3
-	github.com/aws/aws-sdk-go v1.44.57
+	github.com/aws/aws-sdk-go v1.44.62
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.56.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/semconv v0.56.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -57,7 +57,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -67,7 +67,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.56.0 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/outcaste-io/ristretto v0.2.0 // indirect
