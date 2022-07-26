@@ -11,9 +11,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.55.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50
-	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/semconv v0.56.0
 	go.uber.org/zap v1.21.0
 )
 
@@ -38,7 +38,7 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
-	github.com/klauspost/compress v1.15.7 // indirect
+	github.com/klauspost/compress v1.15.8 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -49,15 +49,15 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.55.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.55.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.56.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.35.0 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
