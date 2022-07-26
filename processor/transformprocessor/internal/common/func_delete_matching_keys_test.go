@@ -30,8 +30,8 @@ func Test_deleteMatchingKeys(t *testing.T) {
 	input.InsertInt("test2", 3)
 	input.InsertBool("test3", true)
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -98,8 +98,8 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		Item: input,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -116,8 +116,8 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		Item: nil,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -127,8 +127,8 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 }
 
 func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			t.Errorf("nothing should be received in this scenario")
 			return nil
 		},
