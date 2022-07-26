@@ -17,6 +17,7 @@ package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -27,6 +28,8 @@ import (
 )
 
 var errUnrecognizedEncoding = errors.New("unrecognized encoding")
+
+const alreadyClosedError = "AlreadyClosedError"
 
 type PulsarTracesConsumer struct {
 	id              config.ComponentID
@@ -47,10 +50,7 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.clientOptions()
-	if err != nil {
-		return nil, err
-	}
+	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
 			}
 			if errors.Is(err, context.Canceled) {
@@ -152,10 +152,7 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.clientOptions()
-	if err != nil {
-		return nil, err
-	}
+	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
 		return nil, err
@@ -207,7 +204,7 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
 			}
 			if errors.Is(err, context.Canceled) {
@@ -258,10 +255,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, errUnrecognizedEncoding
 	}
 
-	options, err := config.clientOptions()
-	if err != nil {
-		return nil, err
-	}
+	options := config.clientOptions()
 	client, err := pulsar.NewClient(options)
 	if err != nil {
 		return nil, err
@@ -315,7 +309,7 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 	for {
 		message, err := _consumer.Receive(ctx)
 		if err != nil {
-			if value, ok := err.(*pulsar.Error); ok && value.Result() == pulsar.AlreadyClosedError {
+			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
 			}
 			if errors.Is(err, context.Canceled) {

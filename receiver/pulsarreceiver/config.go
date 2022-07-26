@@ -110,7 +110,7 @@ func (cfg *Config) auth() pulsar.Authentication {
 	return nil
 }
 
-func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
+func (cfg *Config) clientOptions() pulsar.ClientOptions {
 	url := cfg.Endpoint
 	if len(url) == 0 {
 		url = defaultServiceURL
@@ -126,7 +126,7 @@ func (cfg *Config) clientOptions() (pulsar.ClientOptions, error) {
 
 	auth := cfg.auth()
 	options.Authentication = auth
-	return options, nil
+	return options
 }
 
 func (cfg *Config) consumerOptions() (pulsar.ConsumerOptions, error) {

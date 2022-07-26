@@ -34,11 +34,11 @@ const (
 )
 
 // FactoryOption applies changes to PulsarExporterFactory.
-type FactoryOption func(factory *PulsarReceiverFactory)
+type FactoryOption func(factory *pulsarReceiverFactory)
 
 // WithTracesUnmarshalers adds Unmarshalers.
 func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOption {
-	return func(factory *PulsarReceiverFactory) {
+	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range tracesUnmarshalers {
 			factory.tracesUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
@@ -47,7 +47,7 @@ func WithTracesUnmarshalers(tracesUnmarshalers ...TracesUnmarshaler) FactoryOpti
 
 // WithMetricsUnmarshalers adds MetricsUnmarshalers.
 func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryOption {
-	return func(factory *PulsarReceiverFactory) {
+	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range metricsUnmarshalers {
 			factory.metricsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
@@ -56,7 +56,7 @@ func WithMetricsUnmarshalers(metricsUnmarshalers ...MetricsUnmarshaler) FactoryO
 
 // WithLogsUnmarshalers adds LogsUnmarshalers.
 func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
-	return func(factory *PulsarReceiverFactory) {
+	return func(factory *pulsarReceiverFactory) {
 		for _, unmarshaler := range logsUnmarshalers {
 			factory.logsUnmarshalers[unmarshaler.Encoding()] = unmarshaler
 		}
@@ -66,7 +66,7 @@ func WithLogsUnmarshalers(logsUnmarshalers ...LogsUnmarshaler) FactoryOption {
 // NewFactory creates Pulsar receiver factory.
 func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 
-	f := &PulsarReceiverFactory{
+	f := &pulsarReceiverFactory{
 		tracesUnmarshalers:  defaultTracesUnmarshalers(),
 		metricsUnmarshalers: defaultMetricsUnmarshalers(),
 		logsUnmarshalers:    defaultLogsUnmarshalers(),
@@ -83,13 +83,13 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	)
 }
 
-type PulsarReceiverFactory struct {
+type pulsarReceiverFactory struct {
 	tracesUnmarshalers  map[string]TracesUnmarshaler
 	metricsUnmarshalers map[string]MetricsUnmarshaler
 	logsUnmarshalers    map[string]LogsUnmarshaler
 }
 
-func (f *PulsarReceiverFactory) createTracesReceiver(
+func (f *pulsarReceiverFactory) createTracesReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -106,7 +106,7 @@ func (f *PulsarReceiverFactory) createTracesReceiver(
 	return r, nil
 }
 
-func (f *PulsarReceiverFactory) createMetricsReceiver(
+func (f *pulsarReceiverFactory) createMetricsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,
@@ -123,7 +123,7 @@ func (f *PulsarReceiverFactory) createMetricsReceiver(
 	return r, nil
 }
 
-func (f *PulsarReceiverFactory) createLogsReceiver(
+func (f *pulsarReceiverFactory) createLogsReceiver(
 	_ context.Context,
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver,

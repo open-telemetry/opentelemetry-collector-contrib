@@ -31,7 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
-//copy from kafka receiver
+// copy from kafka receiver
 var v2FromTranslator zipkinv2.FromTranslator
 
 func TestUnmarshalZipkin(t *testing.T) {
