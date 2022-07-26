@@ -15,7 +15,6 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
-	"strings"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
@@ -32,13 +31,21 @@ const (
 	totalResourceAttributes = 4
 )
 
-const layout = "2006-01-02T15:04:05.000Z"
+const layout = "2006-01-02T15:04:05.000-07:00"
 
 // Only two types of events are created as of now.
 // For more info: https://docs.openshift.com/container-platform/4.9/rest_api/metadata_apis/event-core-v1.html
 var severityMap = map[string]plog.SeverityNumber{
-	"normal":  plog.SeverityNumberINFO,
-	"warning": plog.SeverityNumberWARN,
+	"F":  plog.SeverityNumberFATAL,
+	"E":  plog.SeverityNumberERROR,
+	"W":  plog.SeverityNumberWARN,
+	"I":  plog.SeverityNumberINFO,
+	"D":  plog.SeverityNumberDEBUG,
+	"D1": plog.SeverityNumberDEBUG,
+	"D2": plog.SeverityNumberDEBUG2,
+	"D3": plog.SeverityNumberDEBUG3,
+	"D4": plog.SeverityNumberDEBUG4,
+	"D5": plog.SeverityNumberDEBUG4,
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
@@ -57,11 +64,12 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	resourceAttrs.InsertString("cluster", r.Cluster.Name)
 	resourceAttrs.InsertString("hostname", r.Hostname)
 
-	t, err := time.Parse("layout", e.Timestamp.Date)
+	t, err := time.Parse(layout, e.Timestamp.Date)
 	if err != nil {
-
+		logger.Warn("Time failed to parse correctly", zap.Error(err))
 	}
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
@@ -69,7 +77,7 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.
-	if severityNumber, ok := severityMap[strings.ToLower(e.Severity)]; ok {
+	if severityNumber, ok := severityMap[e.Severity]; ok {
 		lr.SetSeverityNumber(severityNumber)
 		lr.SetSeverityText(e.Severity)
 	} else {
@@ -84,6 +92,7 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	attrs.InsertString("component", e.Component)
 	attrs.InsertString("context", e.Context)
 	attrs.InsertInt("id", e.ID)
+	attrs.InsertString("log_name", r.LogName)
 
 	return ld
 }

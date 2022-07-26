@@ -263,7 +263,9 @@ func (s *receiver) Shutdown(ctx context.Context) error {
 func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
-
+	if err != nil {
+		return nil, err
+	}
 	// Pass this into a gzip reader for decoding
 	reader, err := gzip.NewReader(buf)
 	if err != nil {
@@ -289,12 +291,13 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 }
 
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
-	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, r.LogName)
+	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName)
 	if err != nil {
-		s.log.Debug("Failed to retreive logs")
+		s.log.Warn("Failed to retreive logs", zap.Error(err))
 	}
 
 	for _, log := range logs {
+		r.LogName = logName
 		plog := mongodbEventToLogData(s.log, &log, r)
 		s.consumer.ConsumeLogs(context.Background(), plog)
 	}

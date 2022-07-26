@@ -41,7 +41,7 @@ type resourceInfo struct {
 	LogName  string
 }
 
-const collection_interval = time.Minute * 5
+const collection_interval = time.Second * 5
 
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 
@@ -149,7 +149,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			}
 
 			// filter out any projects not specified in the config
-			var filteredProjects map[string]*mongodbatlas.Project
+			filteredProjects := make(map[string]*mongodbatlas.Project)
 			for _, project := range projects {
 				if _, ok := cfgProjects[project.Name]; ok {
 					filteredProjects[project.Name] = project
@@ -192,6 +192,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				case <-stopper:
 					return
 				case <-time.After(collection_interval):
+					s.log.Debug("Collection Interval")
 					s.collectClusterLogs(clusters, cfgProjects, resource)
 				}
 			}
@@ -205,8 +206,8 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 		for _, hostname := range hostnames {
 			r.Cluster = &cluster
 			r.Hostname = hostname
-			s.sendLogs(r, "monogodb.gz")
-			s.sendLogs(r, "monogos.gz")
+			s.sendLogs(r, "mongodb.gz")
+			s.sendLogs(r, "mongos.gz")
 
 			if cfgProjects[r.Project.Name].EnableAuditLogs {
 				s.sendLogs(r, "mongodb-audit-log.gz")
