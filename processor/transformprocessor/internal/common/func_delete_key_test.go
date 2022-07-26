@@ -30,8 +30,8 @@ func Test_deleteKey(t *testing.T) {
 	input.InsertInt("test2", 3)
 	input.InsertBool("test3", true)
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}
@@ -100,11 +100,11 @@ func Test_deleteKey_bad_input(t *testing.T) {
 		Item: input,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
@@ -122,11 +122,11 @@ func Test_deleteKey_get_nil(t *testing.T) {
 		Item: nil,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}

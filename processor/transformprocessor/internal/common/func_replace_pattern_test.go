@@ -27,11 +27,11 @@ import (
 func Test_replacePattern(t *testing.T) {
 	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem().(pcommon.Value).StringVal()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
@@ -96,11 +96,11 @@ func Test_replacePattern_bad_input(t *testing.T) {
 		Item: input,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
@@ -117,11 +117,11 @@ func Test_replacePattern_get_nil(t *testing.T) {
 		Item: nil,
 	}
 
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
@@ -131,12 +131,12 @@ func Test_replacePattern_get_nil(t *testing.T) {
 }
 
 func Test_replacePatterns_invalid_pattern(t *testing.T) {
-	target := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			t.Errorf("nothing should be received in this scenario")
 			return nil
 		},
-		setter: func(ctx tql.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
