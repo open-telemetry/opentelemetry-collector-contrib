@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-//copy from kafka receiver
+// copy from kafka receiver
 func TestDefaultTracesUnMarshaler(t *testing.T) {
 	expectedEncodings := []string{
 		"otlp_proto",

@@ -19,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/zipkinv2"
 )
 
-//copy from kafka receiver
+// copy from kafka receiver
 const (
 	zipkinProtobufEncoding = "zipkin_proto"
 	zipkinJSONEncoding     = "zipkin_json"
