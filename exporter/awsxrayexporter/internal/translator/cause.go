@@ -53,7 +53,8 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if hasExceptions {
+	switch {
+	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.StringVal()
@@ -87,9 +88,11 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
 				Exceptions: exceptions}}
-	} else if status.Code() != ptrace.StatusCodeError {
+
+	case status.Code() != ptrace.StatusCodeError:
 		cause = nil
-	} else {
+
+	default:
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
 		filtered = make(map[string]pcommon.Value)
@@ -123,11 +126,14 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if status.Code() != ptrace.StatusCodeError {
+	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+
+	switch {
+	case status.Code() != ptrace.StatusCodeError:
 		isError = false
 		isThrottle = false
 		isFault = false
-	} else if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
+	case ok:
 		code := val.IntVal()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
@@ -141,11 +147,12 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			isThrottle = false
 			isFault = true
 		}
-	} else {
+	default:
 		isError = false
 		isThrottle = false
 		isFault = true
 	}
+
 	return isError, isFault, isThrottle, filtered, cause
 }
 
