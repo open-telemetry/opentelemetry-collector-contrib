@@ -26,7 +26,6 @@ import (
 )
 
 type cumulativeToDeltaProcessor struct {
-	metrics         map[string]struct{}
 	includeFS       filterset.FilterSet
 	excludeFS       filterset.FilterSet
 	logger          *zap.Logger
@@ -40,13 +39,6 @@ func newCumulativeToDeltaProcessor(config *Config, logger *zap.Logger) *cumulati
 		logger:          logger,
 		deltaCalculator: tracking.NewMetricTracker(ctx, logger, config.MaxStaleness),
 		cancelFunc:      cancel,
-	}
-	if len(config.Metrics) > 0 {
-		p.logger.Warn("The 'metrics' configuration is deprecated. Use 'include'/'exclude' instead.")
-		p.metrics = make(map[string]struct{}, len(config.Metrics))
-		for _, m := range config.Metrics {
-			p.metrics[m] = struct{}{}
-		}
 	}
 	if len(config.Include.Metrics) > 0 {
 		p.includeFS, _ = filterset.CreateFilterSet(config.Include.Metrics, &config.Include.Config)
@@ -108,11 +100,6 @@ func (ctdp *cumulativeToDeltaProcessor) shutdown(context.Context) error {
 }
 
 func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) bool {
-	// Legacy support for deprecated Metrics config
-	if len(ctdp.metrics) > 0 {
-		_, ok := ctdp.metrics[metricName]
-		return ok
-	}
 	return (ctdp.includeFS == nil || ctdp.includeFS.Matches(metricName)) &&
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
