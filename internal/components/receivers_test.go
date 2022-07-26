@@ -39,7 +39,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
@@ -248,12 +247,8 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
 		{
-			receiver: "pulsar",
-			getConfigFn: func() config.Receiver {
-				cfg := rcvrFactories["pulsar"].CreateDefaultConfig().(*pulsarreceiver.Config)
-				cfg.Endpoint = "unknown:6650"
-				return cfg
-			},
+			receiver:     "pulsar",
+			skipLifecyle: true,
 		},
 		{
 			receiver: "rabbitmq",
