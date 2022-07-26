@@ -17,7 +17,7 @@ Invocations represent a function call. Invocations are made up of 2 parts
 - a string identifier. The string identifier must start with a letter or an underscore (`_`).
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
-**The TQL does not define any functions implementations.** Users must supply a map between string identifiers and the actual function implementation.  The TQL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+**The TQL does not define any function implementations.** Users must supply a map between string identifiers and the actual function implementation.  The TQL will use this map and reflection to generate Invocations, that can then be invoked by the user.
 
 Example Invocations
 - `drop()`
