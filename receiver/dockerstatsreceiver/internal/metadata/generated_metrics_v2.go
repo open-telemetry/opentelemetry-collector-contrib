@@ -447,7 +447,7 @@ type metricContainerBlockioIoMergedRecursiveAsync struct {
 func (m *metricContainerBlockioIoMergedRecursiveAsync) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.async")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -501,7 +501,7 @@ type metricContainerBlockioIoMergedRecursiveDiscard struct {
 func (m *metricContainerBlockioIoMergedRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.discard")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -555,7 +555,7 @@ type metricContainerBlockioIoMergedRecursiveRead struct {
 func (m *metricContainerBlockioIoMergedRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.read")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -609,7 +609,7 @@ type metricContainerBlockioIoMergedRecursiveSync struct {
 func (m *metricContainerBlockioIoMergedRecursiveSync) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.sync")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -663,7 +663,7 @@ type metricContainerBlockioIoMergedRecursiveTotal struct {
 func (m *metricContainerBlockioIoMergedRecursiveTotal) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.total")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -717,7 +717,7 @@ type metricContainerBlockioIoMergedRecursiveWrite struct {
 func (m *metricContainerBlockioIoMergedRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_merged_recursive.write")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -771,7 +771,7 @@ type metricContainerBlockioIoQueuedRecursiveAsync struct {
 func (m *metricContainerBlockioIoQueuedRecursiveAsync) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.async")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -825,7 +825,7 @@ type metricContainerBlockioIoQueuedRecursiveDiscard struct {
 func (m *metricContainerBlockioIoQueuedRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.discard")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -879,7 +879,7 @@ type metricContainerBlockioIoQueuedRecursiveRead struct {
 func (m *metricContainerBlockioIoQueuedRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.read")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -933,7 +933,7 @@ type metricContainerBlockioIoQueuedRecursiveSync struct {
 func (m *metricContainerBlockioIoQueuedRecursiveSync) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.sync")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -987,7 +987,7 @@ type metricContainerBlockioIoQueuedRecursiveTotal struct {
 func (m *metricContainerBlockioIoQueuedRecursiveTotal) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.total")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1041,7 +1041,7 @@ type metricContainerBlockioIoQueuedRecursiveWrite struct {
 func (m *metricContainerBlockioIoQueuedRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_queued_recursive.write")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1419,7 +1419,7 @@ type metricContainerBlockioIoServiceTimeRecursiveAsync struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveAsync) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.async")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1473,7 +1473,7 @@ type metricContainerBlockioIoServiceTimeRecursiveDiscard struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.discard")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1527,7 +1527,7 @@ type metricContainerBlockioIoServiceTimeRecursiveRead struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.read")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1581,7 +1581,7 @@ type metricContainerBlockioIoServiceTimeRecursiveSync struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveSync) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.sync")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1635,7 +1635,7 @@ type metricContainerBlockioIoServiceTimeRecursiveTotal struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveTotal) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.total")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1689,7 +1689,7 @@ type metricContainerBlockioIoServiceTimeRecursiveWrite struct {
 func (m *metricContainerBlockioIoServiceTimeRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive.write")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1743,7 +1743,7 @@ type metricContainerBlockioIoServicedRecursiveAsync struct {
 func (m *metricContainerBlockioIoServicedRecursiveAsync) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.async")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1797,7 +1797,7 @@ type metricContainerBlockioIoServicedRecursiveDiscard struct {
 func (m *metricContainerBlockioIoServicedRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.discard")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1851,7 +1851,7 @@ type metricContainerBlockioIoServicedRecursiveRead struct {
 func (m *metricContainerBlockioIoServicedRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.read")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1905,7 +1905,7 @@ type metricContainerBlockioIoServicedRecursiveSync struct {
 func (m *metricContainerBlockioIoServicedRecursiveSync) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.sync")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1959,7 +1959,7 @@ type metricContainerBlockioIoServicedRecursiveTotal struct {
 func (m *metricContainerBlockioIoServicedRecursiveTotal) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.total")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2013,7 +2013,7 @@ type metricContainerBlockioIoServicedRecursiveWrite struct {
 func (m *metricContainerBlockioIoServicedRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive.write")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2391,7 +2391,7 @@ type metricContainerBlockioIoWaitTimeRecursiveAsync struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveAsync) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.async")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2445,7 +2445,7 @@ type metricContainerBlockioIoWaitTimeRecursiveDiscard struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.discard")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2499,7 +2499,7 @@ type metricContainerBlockioIoWaitTimeRecursiveRead struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveRead) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.read")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2553,7 +2553,7 @@ type metricContainerBlockioIoWaitTimeRecursiveSync struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveSync) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.sync")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2607,7 +2607,7 @@ type metricContainerBlockioIoWaitTimeRecursiveTotal struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveTotal) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.total")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2661,7 +2661,7 @@ type metricContainerBlockioIoWaitTimeRecursiveWrite struct {
 func (m *metricContainerBlockioIoWaitTimeRecursiveWrite) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive.write")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2715,7 +2715,7 @@ type metricContainerBlockioSectorsRecursiveAsync struct {
 func (m *metricContainerBlockioSectorsRecursiveAsync) init() {
 	m.data.SetName("container.blockio.sectors_recursive.async")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2769,7 +2769,7 @@ type metricContainerBlockioSectorsRecursiveDiscard struct {
 func (m *metricContainerBlockioSectorsRecursiveDiscard) init() {
 	m.data.SetName("container.blockio.sectors_recursive.discard")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2823,7 +2823,7 @@ type metricContainerBlockioSectorsRecursiveRead struct {
 func (m *metricContainerBlockioSectorsRecursiveRead) init() {
 	m.data.SetName("container.blockio.sectors_recursive.read")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2877,7 +2877,7 @@ type metricContainerBlockioSectorsRecursiveSync struct {
 func (m *metricContainerBlockioSectorsRecursiveSync) init() {
 	m.data.SetName("container.blockio.sectors_recursive.sync")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2931,7 +2931,7 @@ type metricContainerBlockioSectorsRecursiveTotal struct {
 func (m *metricContainerBlockioSectorsRecursiveTotal) init() {
 	m.data.SetName("container.blockio.sectors_recursive.total")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2985,7 +2985,7 @@ type metricContainerBlockioSectorsRecursiveWrite struct {
 func (m *metricContainerBlockioSectorsRecursiveWrite) init() {
 	m.data.SetName("container.blockio.sectors_recursive.write")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -3088,7 +3088,7 @@ type metricContainerCPUThrottlingDataPeriods struct {
 func (m *metricContainerCPUThrottlingDataPeriods) init() {
 	m.data.SetName("container.cpu.throttling_data.periods")
 	m.data.SetDescription("Number of periods with throttling active.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{periods}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -3139,7 +3139,7 @@ type metricContainerCPUThrottlingDataThrottledPeriods struct {
 func (m *metricContainerCPUThrottlingDataThrottledPeriods) init() {
 	m.data.SetName("container.cpu.throttling_data.throttled_periods")
 	m.data.SetDescription("Number of periods when the container hits its throttling limit.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{periods}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -3988,7 +3988,7 @@ type metricContainerMemoryPgfault struct {
 func (m *metricContainerMemoryPgfault) init() {
 	m.data.SetName("container.memory.pgfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup triggered a page fault.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{faults}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4039,7 +4039,7 @@ type metricContainerMemoryPgmajfault struct {
 func (m *metricContainerMemoryPgmajfault) init() {
 	m.data.SetName("container.memory.pgmajfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup triggered a major fault.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{faults}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4090,7 +4090,7 @@ type metricContainerMemoryPgpgin struct {
 func (m *metricContainerMemoryPgpgin) init() {
 	m.data.SetName("container.memory.pgpgin")
 	m.data.SetDescription("Number of pages read from disk by the cgroup.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4141,7 +4141,7 @@ type metricContainerMemoryPgpgout struct {
 func (m *metricContainerMemoryPgpgout) init() {
 	m.data.SetName("container.memory.pgpgout")
 	m.data.SetDescription("Number of pages written to disk by the cgroup.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4682,7 +4682,7 @@ type metricContainerMemoryTotalPgfault struct {
 func (m *metricContainerMemoryTotalPgfault) init() {
 	m.data.SetName("container.memory.total_pgfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{faults}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4733,7 +4733,7 @@ type metricContainerMemoryTotalPgmajfault struct {
 func (m *metricContainerMemoryTotalPgmajfault) init() {
 	m.data.SetName("container.memory.total_pgmajfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{faults}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4784,7 +4784,7 @@ type metricContainerMemoryTotalPgpgin struct {
 func (m *metricContainerMemoryTotalPgpgin) init() {
 	m.data.SetName("container.memory.total_pgpgin")
 	m.data.SetDescription("Number of pages read from disk by the cgroup and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -4835,7 +4835,7 @@ type metricContainerMemoryTotalPgpgout struct {
 func (m *metricContainerMemoryTotalPgpgout) init() {
 	m.data.SetName("container.memory.total_pgpgout")
 	m.data.SetDescription("Number of pages written to disk by the cgroup and descendant groups.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5429,7 +5429,7 @@ type metricContainerNetworkIoUsageRxDropped struct {
 func (m *metricContainerNetworkIoUsageRxDropped) init() {
 	m.data.SetName("container.network.io.usage.rx_dropped")
 	m.data.SetDescription("Incoming packets dropped.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{packets}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5482,7 +5482,7 @@ type metricContainerNetworkIoUsageRxErrors struct {
 func (m *metricContainerNetworkIoUsageRxErrors) init() {
 	m.data.SetName("container.network.io.usage.rx_errors")
 	m.data.SetDescription("Received errors.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{errors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5535,7 +5535,7 @@ type metricContainerNetworkIoUsageRxPackets struct {
 func (m *metricContainerNetworkIoUsageRxPackets) init() {
 	m.data.SetName("container.network.io.usage.rx_packets")
 	m.data.SetDescription("Packets received.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{packets}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5641,7 +5641,7 @@ type metricContainerNetworkIoUsageTxDropped struct {
 func (m *metricContainerNetworkIoUsageTxDropped) init() {
 	m.data.SetName("container.network.io.usage.tx_dropped")
 	m.data.SetDescription("Outgoing packets dropped.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{packets}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5694,7 +5694,7 @@ type metricContainerNetworkIoUsageTxErrors struct {
 func (m *metricContainerNetworkIoUsageTxErrors) init() {
 	m.data.SetName("container.network.io.usage.tx_errors")
 	m.data.SetDescription("Sent errors.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{errors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -5747,7 +5747,7 @@ type metricContainerNetworkIoUsageTxPackets struct {
 func (m *metricContainerNetworkIoUsageTxPackets) init() {
 	m.data.SetName("container.network.io.usage.tx_packets")
 	m.data.SetDescription("Packets sent.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{packets}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

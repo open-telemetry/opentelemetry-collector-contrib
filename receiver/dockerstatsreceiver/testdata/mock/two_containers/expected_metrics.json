@@ -245,7 +245,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.write",
@@ -273,7 +273,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.sync",
@@ -301,7 +301,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.async",
@@ -329,7 +329,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.discard",
@@ -357,7 +357,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.total",
@@ -385,7 +385,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.cpu.usage.system",
@@ -455,7 +455,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
               "name": "container.cpu.throttling_data.throttled_periods",
@@ -469,7 +469,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
               "name": "container.cpu.throttling_data.throttled_time",
@@ -687,7 +687,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.pgmajfault",
@@ -701,7 +701,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.pgpgin",
@@ -715,7 +715,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.memory.pgpgout",
@@ -729,7 +729,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "gauge": {
@@ -851,7 +851,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.total_pgmajfault",
@@ -865,7 +865,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.total_pgpgin",
@@ -879,7 +879,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.memory.total_pgpgout",
@@ -893,7 +893,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "gauge": {
@@ -1031,7 +1031,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.rx_errors",
@@ -1053,7 +1053,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
               "name": "container.network.io.usage.rx_packets",
@@ -1075,7 +1075,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.tx_dropped",
@@ -1097,7 +1097,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.tx_errors",
@@ -1119,7 +1119,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
               "name": "container.network.io.usage.tx_packets",
@@ -1141,7 +1141,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             }
           ],
           "scope": {}
@@ -1393,7 +1393,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.write",
@@ -1421,7 +1421,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.sync",
@@ -1449,7 +1449,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.async",
@@ -1477,7 +1477,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.discard",
@@ -1505,7 +1505,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.blockio.io_serviced_recursive.total",
@@ -1533,7 +1533,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.cpu.usage.system",
@@ -1603,7 +1603,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
               "name": "container.cpu.throttling_data.throttled_periods",
@@ -1617,7 +1617,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
               "name": "container.cpu.throttling_data.throttled_time",
@@ -1835,7 +1835,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.pgmajfault",
@@ -1849,7 +1849,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.pgpgin",
@@ -1863,7 +1863,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.memory.pgpgout",
@@ -1877,7 +1877,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "gauge": {
@@ -1999,7 +1999,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.total_pgmajfault",
@@ -2013,7 +2013,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
               "name": "container.memory.total_pgpgin",
@@ -2027,7 +2027,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "name": "container.memory.total_pgpgout",
@@ -2041,7 +2041,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
               "gauge": {
@@ -2179,7 +2179,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.rx_errors",
@@ -2201,7 +2201,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
               "name": "container.network.io.usage.rx_packets",
@@ -2223,7 +2223,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.tx_dropped",
@@ -2245,7 +2245,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
               "name": "container.network.io.usage.tx_errors",
@@ -2267,7 +2267,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
               "name": "container.network.io.usage.tx_packets",
@@ -2289,7 +2289,7 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             }
           ],
           "scope": {}
