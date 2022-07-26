@@ -150,6 +150,17 @@ in general try to follow them.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
   on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
 
+## Adding Labels via Comments
+
+In order to facilitate proper label usage and to empower Code Owners, you are able to add the following labels to issues via comments.
+
+| Label              | Generating Comment |
+|--------------------|--------------------|
+| `good first issue` | /good-first-issue  |
+| `help wanted`      | /help-wanted       |
+
+Currently, labels can only be created via comment, not deleted.  You must make a new comment; you cannot edit an existing comment.
+
 ## Becoming a Code Owner
 
 A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
