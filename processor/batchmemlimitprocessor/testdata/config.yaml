@@ -4,7 +4,7 @@ receivers:
 
 processors:
   batchmemorylimit:
-    batch_limit_mib: 128
+    batch_mem_limit: 200
 
 exporters:
   nop:
