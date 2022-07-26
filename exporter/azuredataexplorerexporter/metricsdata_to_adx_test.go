@@ -49,7 +49,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	rmap["key"] = "value"
 	rmap[hostkey] = testhost
 
-	//Metric map , with scopes
+	// Metric map , with scopes
 	mmap := make(map[string]interface{})
 	mmap[scopename] = "SN"
 	mmap[scopeversion] = "SV"
@@ -61,10 +61,9 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 		expectedAdxMetrics []*AdxMetric // expected results
 	}{
 		{
-			name: "metrics_counter_over_time",
-			metricsDataFn: func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
-				return newMetrics(metricType, ts)
-			},
+			//
+			name:           "metrics_counter_over_time",
+			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricDataTypeSum,
 			expectedAdxMetrics: []*AdxMetric{
 				{
@@ -80,10 +79,8 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 			},
 		},
 		{
-			name: "metrics_simple_histogram_with_value",
-			metricsDataFn: func(metricType pmetric.MetricDataType, ts pcommon.Timestamp) pmetric.Metrics {
-				return newMetrics(metricType, ts)
-			},
+			name:           "metrics_simple_histogram_with_value",
+			metricsDataFn:  newMetrics,
 			metricDataType: pmetric.MetricDataTypeHistogram,
 			expectedAdxMetrics: []*AdxMetric{
 				{
@@ -108,7 +105,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
-				//The list of buckets
+				// The list of buckets
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_bucket",
@@ -163,7 +160,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := tt.metricsDataFn(tt.metricDataType, ts)
-			actualMetrics, _ := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
+			actualMetrics := rawMetricsToAdxMetrics(context.Background(), metrics, zap.NewNop())
 			encoder := json.NewEncoder(ioutil.Discard)
 			for i, expectedMetric := range tt.expectedAdxMetrics {
 				assert.Equal(t, expectedMetric.Timestamp, actualMetrics[i].Timestamp)
@@ -174,7 +171,7 @@ func Test_rawMetricsToAdxMetrics(t *testing.T) {
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
-				// Host as seperate column
+				// Host as separate column
 				assert.Equal(t, expectedMetric.Host, actualMetrics[i].Host)
 				// Resource attributes
 				assert.Equal(t, expectedMetric.ResourceAttributes, actualMetrics[i].ResourceAttributes)
@@ -202,10 +199,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 		configFn           func() *Config          // the config to apply
 	}{
 		{
-			name: "counter_over_time",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "counter_over_time",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
@@ -234,10 +229,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "int_counter_over_time",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "int_counter_over_time",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
@@ -267,10 +260,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 		},
 
 		{
-			name: "nil_counter_over_time",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "nil_counter_over_time",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				sumV := pmetric.NewMetric()
 				sumV.SetName("page_faults")
@@ -282,10 +273,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "simple_histogram_with_value",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "simple_histogram_with_value",
+			resourceFn: newDummyResource,
 			// Refers example from https://opentelemetry.io/docs/reference/specification/metrics/api/#instrument-unit
 			metricDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
@@ -328,7 +317,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 					Host:               testhost,
 					ResourceAttributes: rmap,
 				},
-				//The list of buckets
+				// The list of buckets
 				{
 					Timestamp:          tstr,
 					MetricName:         "http.server.duration_bucket",
@@ -379,10 +368,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "nil_gauge_value",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("cpu.frequency")
@@ -396,10 +383,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "int_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "int_gauge_value",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("cpu.frequency")
@@ -429,10 +414,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "float_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "float_gauge_value",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("cpu.frequency")
@@ -462,10 +445,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "summary",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "summary",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("http.server.duration")
@@ -536,10 +517,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_summary",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "nil_summary",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("nil_summary")
@@ -563,10 +542,8 @@ func Test_mapToAdxMetric(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown_type",
-			resourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
+			name:       "unknown_type",
+			resourceFn: newDummyResource,
 			metricDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("unknown_with_dims")
@@ -595,7 +572,7 @@ func Test_mapToAdxMetric(t *testing.T) {
 				assert.Equal(t, expectedMetric.MetricDescription, actualMetrics[i].MetricDescription)
 				assert.Equal(t, expectedMetric.MetricUnit, actualMetrics[i].MetricUnit)
 				assert.Equal(t, expectedMetric.MetricAttributes, actualMetrics[i].MetricAttributes)
-				// Host as seperate column
+				// Host as separate column
 				assert.Equal(t, expectedMetric.Host, actualMetrics[i].Host)
 				// Resource attributes
 				assert.Equal(t, expectedMetric.ResourceAttributes, actualMetrics[i].ResourceAttributes)
@@ -615,7 +592,11 @@ func newDummyResource() pcommon.Resource {
 
 func newMapFromAttr(jsonStr string) map[string]interface{} {
 	dynamic := make(map[string]interface{})
-	json.Unmarshal([]byte(jsonStr), &dynamic)
+	err := json.Unmarshal([]byte(jsonStr), &dynamic)
+	// If there is a failure , send the error back in a map
+	if err != nil {
+		return map[string]interface{}{"err": err.Error()}
+	}
 	return dynamic
 }
 

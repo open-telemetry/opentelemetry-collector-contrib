@@ -50,19 +50,15 @@ const (
 
 // given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
-	transformedAdxMetrics, err := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
+	transformedAdxMetrics := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
 	metricsBuffer := make([]string, len(transformedAdxMetrics))
-	if err != nil {
-		e.logger.Error("Error transforming metrics to ADX metric format.", zap.Error(err))
-		return err
-	}
 	// Since the transform succeeded ,  using the option for ingestion ingest the data into ADX
 	for idx, tm := range transformedAdxMetrics {
-		adxMetricJsonString, err := jsoniter.MarshalToString(tm)
+		adxMetricJSONString, err := jsoniter.MarshalToString(tm)
 		if err != nil {
 			e.logger.Error("Error performing serialization of data.", zap.Error(err))
 		}
-		metricsBuffer[idx] = adxMetricJsonString
+		metricsBuffer[idx] = adxMetricJSONString
 	}
 	if len(metricsBuffer) != 0 {
 		if err := e.ingestData(metricsBuffer); err != nil {
@@ -97,11 +93,11 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 			for k := 0; k < logs.Len(); k++ {
 				logData := logs.At(k)
 				transformedADXLog := mapToAdxLog(resource.Resource(), scope.Scope(), logData, e.logger)
-				adxLogJsonBytes, err := jsoniter.MarshalToString(transformedADXLog)
+				adxLogJSONBytes, err := jsoniter.MarshalToString(transformedADXLog)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				logsBuffer = append(logsBuffer, adxLogJsonBytes)
+				logsBuffer = append(logsBuffer, adxLogJSONBytes)
 			}
 		}
 	}
@@ -124,12 +120,12 @@ func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				spanData := spans.At(k)
-				transformedADXTrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spanData, e.logger)
-				adxTraceJsonBytes, err := jsoniter.MarshalToString(transformedADXTrace)
+				transformedADXTrace := mapToAdxTrace(resource.Resource(), scope.Scope(), spanData)
+				adxTraceJSONBytes, err := jsoniter.MarshalToString(transformedADXTrace)
 				if err != nil {
 					e.logger.Error("Error performing serialization of data.", zap.Error(err))
 				}
-				spanBuffer = append(spanBuffer, adxTraceJsonBytes)
+				spanBuffer = append(spanBuffer, adxTraceJSONBytes)
 			}
 		}
 	}
@@ -141,21 +137,21 @@ func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace
 	return nil
 }
 
-func (adp *adxDataProducer) Close(context.Context) error {
+func (e *adxDataProducer) Close(context.Context) error {
 
 	var err error
 
-	err = adp.ingestor.Close()
-	err2 := adp.client.Close()
+	err = e.ingestor.Close()
+	err2 := e.client.Close()
 	if err == nil {
 		err = err2
 	} else {
 		err = kustoerrors.GetCombinedError(err, err2)
 	}
 	if err != nil {
-		adp.logger.Warn("Error closing connections", zap.Error(err))
+		e.logger.Warn("Error closing connections", zap.Error(err))
 	} else {
-		adp.logger.Info("Closed Ingestor and Client")
+		e.logger.Info("Closed Ingestor and Client")
 	}
 	return err
 }
@@ -189,14 +185,12 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*ad
 			return nil, err
 		}
 		ingestor = mi
-		err = nil
 	} else {
 		qi, err := createQueuedIngestor(config, metricClient, tableName)
 		if err != nil {
 			return nil, err
 		}
 		ingestor = qi
-		err = nil
 	}
 	return &adxDataProducer{
 		client:        metricClient,
@@ -231,14 +225,14 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 
 func buildAdxClient(config *Config) (*kusto.Client, error) {
 	authorizer := kusto.Authorization{
-		Config: auth.NewClientCredentialsConfig(config.ApplicationId,
-			config.ApplicationKey, config.TenantId),
+		Config: auth.NewClientCredentialsConfig(config.ApplicationID,
+			config.ApplicationKey, config.TenantID),
 	}
-	client, err := kusto.New(config.ClusterUri, authorizer)
+	client, err := kusto.New(config.ClusterURI, authorizer)
 	return client, err
 }
 
-// Depending on the table , create seperate ingestors
+// Depending on the table , create separate ingestors
 func createManagedStreamingIngestor(config *Config, adxclient *kusto.Client, tablename string) (*ingest.Managed, error) {
 	ingestor, err := ingest.NewManaged(adxclient, config.Database, tablename)
 	return ingestor, err

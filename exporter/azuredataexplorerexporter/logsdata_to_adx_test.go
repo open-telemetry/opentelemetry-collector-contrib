@@ -1,4 +1,17 @@
-package azuredataexplorerexporter
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
 	"encoding/json"
@@ -20,8 +33,8 @@ func Test_mapToAdxLog(t *testing.T) {
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
-	spanId := [8]byte{0, 0, 0, 0, 0, 0, 0, 50}
-	traceId := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}
+	spanID := [8]byte{0, 0, 0, 0, 0, 0, 0, 50}
+	traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}
 
 	tests := []struct {
 		name            string                // name of the test
@@ -38,24 +51,20 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.Attributes().InsertString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanId))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceId))
+				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
+				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
-			logResourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
-			logScopeFn: func() pcommon.InstrumentationScope {
-				return newScopeWithData()
-			},
+			logResourceFn: newDummyResource,
+			logScopeFn:    newScopeWithData,
 			expectedAdxLogs: []*AdxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
-					SpanId:             "0000000000000032",
-					TraceId:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceID:            "00000000000000000000000000000064",
 					Body:               "mylogsample",
 					SeverityText:       "DEBUG",
 					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
@@ -73,22 +82,18 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.Attributes().InsertString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanId))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceId))
+				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
+				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
 				return logRecord
 			},
-			logResourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
-			logScopeFn: func() pcommon.InstrumentationScope {
-				return newScopeWithData()
-			},
+			logResourceFn: newDummyResource,
+			logScopeFn:    newScopeWithData,
 			expectedAdxLogs: []*AdxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
-					SpanId:             "0000000000000032",
-					TraceId:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceID:            "00000000000000000000000000000064",
 					Body:               "mylogsample",
 					ResourceAttributes: tmap,
 
@@ -103,24 +108,20 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.Attributes().InsertString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanId))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceId))
+				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
+				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
-			logResourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
-			logScopeFn: func() pcommon.InstrumentationScope {
-				return newScopeWithData()
-			},
+			logResourceFn: newDummyResource,
+			logScopeFn:    newScopeWithData,
 			expectedAdxLogs: []*AdxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
-					SpanId:             "0000000000000032",
-					TraceId:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceID:            "00000000000000000000000000000064",
 					SeverityText:       "DEBUG",
 					SeverityNumber:     int32(plog.SeverityNumberDEBUG),
 					ResourceAttributes: tmap,
@@ -141,24 +142,20 @@ func Test_mapToAdxLog(t *testing.T) {
 				logRecord.Attributes().InsertString("test", "value")
 				logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
-				logRecord.SetSpanID(pcommon.NewSpanID(spanId))
-				logRecord.SetTraceID(pcommon.NewTraceID(traceId))
+				logRecord.SetSpanID(pcommon.NewSpanID(spanID))
+				logRecord.SetTraceID(pcommon.NewTraceID(traceID))
 				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
 				logRecord.SetSeverityText("DEBUG")
 				return logRecord
 			},
-			logResourceFn: func() pcommon.Resource {
-				return newDummyResource()
-			},
-			logScopeFn: func() pcommon.InstrumentationScope {
-				return newScopeWithData()
-			},
+			logResourceFn: newDummyResource,
+			logScopeFn:    newScopeWithData,
 			expectedAdxLogs: []*AdxLog{
 				{
 					Timestamp:          tstr,
 					ObservedTimestamp:  tstr,
-					SpanId:             "0000000000000032",
-					TraceId:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceID:            "00000000000000000000000000000064",
 					Body:               `{"23":45,"foo":"bar"}`,
 					SeverityText:       "DEBUG",
 					SeverityNumber:     int32(plog.SeverityNumberDEBUG),

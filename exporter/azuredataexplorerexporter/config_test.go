@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package azuredataexplorerexporter
+package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
 	"path/filepath"
@@ -46,20 +46,22 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ClusterUri:     "https://CLUSTER.kusto.windows.net",
-			ApplicationId:  "f80da32c-108c-415c-a19e-643f461a677a",
-			ApplicationKey: "xx-xx-xx-xx",
-			TenantId:       "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
-			Database:       "oteldb",
-			MetricTable:    "OTELMetrics",
-			LogTable:       "OTELLogs",
-			TraceTable:     "OTELTraces",
-			IngestionType:  managedIngestType,
+			ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+			ClusterURI:       "https://CLUSTER.kusto.windows.net",
+			ApplicationID:    "f80da32c-108c-415c-a19e-643f461a677a",
+			ApplicationKey:   "xx-xx-xx-xx",
+			TenantID:         "21ff9e36-fbaa-43c8-98ba-00431ea10bc3",
+			Database:         "oteldb",
+			MetricTable:      "OTELMetrics",
+			LogTable:         "OTELLogs",
+			TraceTable:       "OTELTraces",
+			IngestionType:    managedIngestType,
 		},
 		exporter)
 
 	// The second one has a validation error
 	exporter = cfg.Exporters[config.NewComponentIDWithName(typeStr, "2")].(*Config)
+	require.NotNil(t, exporter)
 	err2 := cfg.Validate()
 	assert.EqualError(t, err2, `exporter "azuredataexplorer/2" has invalid configuration: mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `)
 }

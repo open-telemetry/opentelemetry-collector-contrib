@@ -274,7 +274,10 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "azuredataexplorer",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["azuredataexplorer"].CreateDefaultConfig().(*azuredataexplorerexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
+				cfg.ClusterURI = "http://" + endpoint
+				cfg.ApplicationID = "otel-app-id"
+				cfg.ApplicationKey = "otel-app-key"
+				cfg.TenantID = "otel-tenant-id"
 				return cfg
 			},
 		},

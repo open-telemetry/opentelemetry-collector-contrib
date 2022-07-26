@@ -12,5 +12,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package azuredataexplorerexporter exports trace data to Kafka.
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"

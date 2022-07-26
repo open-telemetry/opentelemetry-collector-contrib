@@ -174,13 +174,20 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.13 // indirect
 	github.com/99designs/keyring v1.1.6 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
+	github.com/Azure/azure-kusto-go v0.7.0 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0 // indirect
 	github.com/Azure/azure-storage-blob-go v0.14.0 // indirect
+	github.com/Azure/azure-storage-queue-go v0.0.0-20191125232315-636801874cdd // indirect
 	github.com/Azure/go-amqp v0.17.5 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.20 // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11 // indirect
+	github.com/Azure/go-autorest/autorest/azure/cli v0.4.5 // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
@@ -264,6 +271,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/digitalocean/godo v1.81.0 // indirect
+	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect

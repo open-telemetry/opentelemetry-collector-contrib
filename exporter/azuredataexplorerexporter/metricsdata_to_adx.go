@@ -1,4 +1,17 @@
-package azuredataexplorerexporter
+// Copyright 2020, OpenTelemetry Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
 import (
 	"context"
@@ -30,16 +43,16 @@ const (
 
 // This is derived from the specification https://opentelemetry.io/docs/reference/specification/metrics/datamodel/
 type AdxMetric struct {
-	Timestamp string //The timestamp of the occurance. A metric is measured at a point of time. Formatted into string as RFC3339
-	//Including name, the Metric object is defined by the following properties:
-	MetricName        string                 //Name of the metric field
+	Timestamp string // The timestamp of the occurrence. A metric is measured at a point of time. Formatted into string as RFC3339
+	// Including name, the Metric object is defined by the following properties:
+	MetricName        string                 // Name of the metric field
 	MetricType        string                 // The data point type (e.g. Sum, Gauge, Histogram ExponentialHistogram, Summary)
 	MetricUnit        string                 // The metric stream’s unit
-	MetricDescription string                 //The metric stream’s description
+	MetricDescription string                 // The metric stream’s description
 	MetricValue       float64                // the value of the metric
 	MetricAttributes  map[string]interface{} // JSON attributes that can then be parsed. Extrinsic properties
-	//Additional properties
-	Host               string                 // the hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
+	// Additional properties
+	Host               string                 // The hostname for analysis of the metric. Extracted from https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/host/
 	ResourceAttributes map[string]interface{} // The originating Resource attributes. Refer https://opentelemetry.io/docs/reference/specification/resource/sdk/
 }
 
@@ -90,7 +103,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				case pmetric.NumberDataPointValueTypeInt:
 					metricValue = float64(dataPoint.IntVal())
 				case pmetric.NumberDataPointValueTypeDouble:
-					metricValue = float64(dataPoint.DoubleVal())
+					metricValue = dataPoint.DoubleVal()
 				}
 				return metricValue
 			}, "", "", pmetric.MetricDataTypeGauge)
@@ -106,9 +119,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			// first, add one event for sum, and one for count
 			{
 				adxMetrics = append(adxMetrics,
-					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
-						return dataPoint.Sum()
-					},
+					createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 						fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 						fmt.Sprintf("%s%s", md.Description(), sumdescription),
 						pmetric.MetricDataTypeHistogram))
@@ -173,7 +184,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 				case pmetric.NumberDataPointValueTypeInt:
 					metricValue = float64(dataPoint.IntVal())
 				case pmetric.NumberDataPointValueTypeDouble:
-					metricValue = float64(dataPoint.DoubleVal())
+					metricValue = dataPoint.DoubleVal()
 				}
 				return metricValue
 			}, "", "", pmetric.MetricDataTypeSum)
@@ -187,14 +198,12 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			dataPoint := dataPoints.At(gi)
 			// first, add one event for sum, and one for count
 			{
-				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), func() float64 {
-					return float64(dataPoint.Sum())
-				},
+				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(), dataPoint.Attributes(), dataPoint.Sum,
 					fmt.Sprintf("%s_%s", md.Name(), sumsuffix),
 					fmt.Sprintf("%s%s", md.Description(), sumdescription),
 					pmetric.MetricDataTypeSummary))
 			}
-			//counts
+			// counts
 			{
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
 					dataPoint.Attributes(),
@@ -218,9 +227,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 					copyMap(metricQuantile, dataPoint.Attributes().AsRaw())
 				adxMetrics = append(adxMetrics, createMetric(dataPoint.Timestamp().AsTime(),
 					pcommon.NewMapFromRaw(customMap),
-					func() float64 {
-						return dp.Value()
-					},
+					dp.Value,
 					quantileName,
 					fmt.Sprintf("%s%s", md.Description(), countdescription),
 					pmetric.MetricDataTypeSummary))
@@ -238,7 +245,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 }
 
 // Given all the metrics , transform that to the representative structure
-func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) ([]*AdxMetric, error) {
+func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *zap.Logger) []*AdxMetric {
 	var transformedAdxMetrics []*AdxMetric
 	resourceMetric := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetric.Len(); i++ {
@@ -254,7 +261,7 @@ func rawMetricsToAdxMetrics(_ context.Context, metrics pmetric.Metrics, logger *
 			}
 		}
 	}
-	return transformedAdxMetrics, nil
+	return transformedAdxMetrics
 }
 
 func copyMap(toAttrib map[string]interface{}, fromAttrib map[string]interface{}) map[string]interface{} {
