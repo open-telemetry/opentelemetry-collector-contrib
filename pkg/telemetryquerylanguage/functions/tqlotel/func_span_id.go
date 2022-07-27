@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func spanID(bytes []byte) (tql.ExprFunc, error) {
+func SpanID(bytes []byte) (tql.ExprFunc, error) {
 	if len(bytes) != 8 {
 		return nil, errors.New("span ids must be 8 bytes")
 	}

@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func deleteKey(target tql.Getter, key string) (tql.ExprFunc, error) {
+func DeleteKey(target tql.Getter, key string) (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {

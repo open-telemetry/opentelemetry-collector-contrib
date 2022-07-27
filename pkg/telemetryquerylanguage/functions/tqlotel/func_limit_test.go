@@ -95,7 +95,7 @@ func Test_limit(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := limit(tt.target, tt.limit)
+			exprFunc, _ := Limit(tt.target, tt.limit)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -120,7 +120,7 @@ func Test_limit_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := limit(tt.target, tt.limit)
+			_, err := Limit(tt.target, tt.limit)
 			assert.Error(t, err, "invalid limit for limit function, -1 cannot be negative")
 		})
 	}
@@ -141,7 +141,7 @@ func Test_limit_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := limit(target, 1)
+	exprFunc, _ := Limit(target, 1)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -161,6 +161,6 @@ func Test_limit_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := limit(target, 1)
+	exprFunc, _ := Limit(target, 1)
 	exprFunc(ctx)
 }

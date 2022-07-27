@@ -40,7 +40,7 @@ func Test_spanID(t *testing.T) {
 
 			ctx := tqltest.TestTransformContext{}
 
-			exprFunc, _ := spanID(tt.bytes)
+			exprFunc, _ := SpanID(tt.bytes)
 			actual := exprFunc(ctx)
 
 			assert.Equal(t, tt.want, actual)
@@ -64,7 +64,7 @@ func Test_spanID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := traceID(tt.bytes)
+			_, err := TraceID(tt.bytes)
 			assert.Error(t, err, "span ids must be 8 bytes")
 		})
 	}

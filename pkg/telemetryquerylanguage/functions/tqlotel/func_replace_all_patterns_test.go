@@ -93,7 +93,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := replaceAllPatterns(tt.target, tt.pattern, tt.replacement)
+			exprFunc, _ := ReplaceAllPatterns(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -119,7 +119,7 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := replaceAllPatterns(target, "regexpattern", "{replacement}")
+	exprFunc, err := ReplaceAllPatterns(target, "regexpattern", "{replacement}")
 	assert.Nil(t, err)
 
 	exprFunc(ctx)
@@ -141,7 +141,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := replaceAllPatterns(target, "regexp", "{anything}")
+	exprFunc, err := ReplaceAllPatterns(target, "regexp", "{anything}")
 	assert.Nil(t, err)
 	exprFunc(ctx)
 }
@@ -158,7 +158,7 @@ func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 	}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := replaceAllPatterns(target, invalidRegexPattern, "{anything}")
+	exprFunc, err := ReplaceAllPatterns(target, invalidRegexPattern, "{anything}")
 	assert.Nil(t, exprFunc)
 	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

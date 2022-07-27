@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func deleteMatchingKeys(target tql.Getter, pattern string) (tql.ExprFunc, error) {
+func DeleteMatchingKeys(target tql.Getter, pattern string) (tql.ExprFunc, error) {
 	compiledPattern, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to delete_matching_keys is not a valid pattern: %w", err)

@@ -81,7 +81,7 @@ func Test_replaceAllMatches(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := replaceAllMatches(tt.target, tt.pattern, tt.replacement)
+			exprFunc, _ := ReplaceAllMatches(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -107,7 +107,7 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceAllMatches(target, "*", "{replacement}")
+	exprFunc, _ := ReplaceAllMatches(target, "*", "{replacement}")
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -127,6 +127,6 @@ func Test_replaceAllMatches_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := replaceAllMatches(target, "*", "{anything}")
+	exprFunc, _ := ReplaceAllMatches(target, "*", "{anything}")
 	exprFunc(ctx)
 }

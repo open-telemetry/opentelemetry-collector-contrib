@@ -40,7 +40,7 @@ func Test_traceID(t *testing.T) {
 
 			ctx := tqltest.TestTransformContext{}
 
-			exprFunc, _ := traceID(tt.bytes)
+			exprFunc, _ := TraceID(tt.bytes)
 			actual := exprFunc(ctx)
 
 			assert.Equal(t, tt.want, actual)
@@ -64,7 +64,7 @@ func Test_traceID_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := traceID(tt.bytes)
+			_, err := TraceID(tt.bytes)
 			assert.Error(t, err, "traces ids must be 16 bytes")
 		})
 	}

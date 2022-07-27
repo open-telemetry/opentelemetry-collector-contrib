@@ -81,7 +81,7 @@ func Test_deleteMatchingKeys(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := deleteMatchingKeys(tt.target, tt.pattern)
+			exprFunc, _ := DeleteMatchingKeys(tt.target, tt.pattern)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -104,7 +104,7 @@ func Test_deleteMatchingKeys_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, err := deleteMatchingKeys(target, "anything")
+	exprFunc, err := DeleteMatchingKeys(target, "anything")
 	assert.Nil(t, err)
 	exprFunc(ctx)
 
@@ -122,7 +122,7 @@ func Test_deleteMatchingKeys_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := deleteMatchingKeys(target, "anything")
+	exprFunc, _ := DeleteMatchingKeys(target, "anything")
 	exprFunc(ctx)
 }
 
@@ -135,7 +135,7 @@ func Test_deleteMatchingKeys_invalid_pattern(t *testing.T) {
 	}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := deleteMatchingKeys(target, invalidRegexPattern)
+	exprFunc, err := DeleteMatchingKeys(target, invalidRegexPattern)
 	assert.Nil(t, exprFunc)
 	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

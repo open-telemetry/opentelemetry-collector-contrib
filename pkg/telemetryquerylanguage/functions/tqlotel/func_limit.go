@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func limit(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
+func Limit(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
 	}

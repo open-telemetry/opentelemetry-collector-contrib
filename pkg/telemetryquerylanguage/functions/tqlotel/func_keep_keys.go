@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func keepKeys(target tql.GetSetter, keys []string) (tql.ExprFunc, error) {
+func KeepKeys(target tql.GetSetter, keys []string) (tql.ExprFunc, error) {
 	keySet := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
 		keySet[key] = struct{}{}

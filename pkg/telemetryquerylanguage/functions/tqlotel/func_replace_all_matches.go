@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func replaceAllMatches(target tql.GetSetter, pattern string, replacement string) (tql.ExprFunc, error) {
+func ReplaceAllMatches(target tql.GetSetter, pattern string, replacement string) (tql.ExprFunc, error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)

@@ -83,7 +83,7 @@ func Test_deleteKey(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := deleteKey(tt.target, tt.key)
+			exprFunc, _ := DeleteKey(tt.target, tt.key)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -111,7 +111,7 @@ func Test_deleteKey_bad_input(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, _ := deleteKey(target, key)
+	exprFunc, _ := DeleteKey(target, key)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -133,6 +133,6 @@ func Test_deleteKey_get_nil(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, _ := deleteKey(target, key)
+	exprFunc, _ := DeleteKey(target, key)
 	exprFunc(ctx)
 }

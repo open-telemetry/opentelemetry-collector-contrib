@@ -100,7 +100,7 @@ func Test_truncateAll(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := truncateAll(tt.target, tt.limit)
+			exprFunc, _ := TruncateAll(tt.target, tt.limit)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -125,7 +125,7 @@ func Test_truncateAll_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := truncateAll(tt.target, tt.limit)
+			_, err := TruncateAll(tt.target, tt.limit)
 			assert.Error(t, err, "invalid limit for truncate_all function, -1 cannot be negative")
 		})
 	}
@@ -146,7 +146,7 @@ func Test_truncateAll_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
+	exprFunc, _ := TruncateAll(target, 1)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -166,6 +166,6 @@ func Test_truncateAll_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := truncateAll(target, 1)
+	exprFunc, _ := TruncateAll(target, 1)
 	exprFunc(ctx)
 }

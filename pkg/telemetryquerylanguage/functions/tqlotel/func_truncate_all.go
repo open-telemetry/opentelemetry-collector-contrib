@@ -22,7 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func truncateAll(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
+func TruncateAll(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for truncate_all function, %d cannot be negative", limit)
 	}

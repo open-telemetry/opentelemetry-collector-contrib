@@ -99,7 +99,7 @@ func Test_keepKeys(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := keepKeys(tt.target, tt.keys)
+			exprFunc, _ := KeepKeys(tt.target, tt.keys)
 			exprFunc(ctx)
 
 			expected := pcommon.NewMap()
@@ -127,7 +127,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, _ := keepKeys(target, keys)
+	exprFunc, _ := KeepKeys(target, keys)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -149,6 +149,6 @@ func Test_keepKeys_get_nil(t *testing.T) {
 
 	keys := []string{"anything"}
 
-	exprFunc, _ := keepKeys(target, keys)
+	exprFunc, _ := KeepKeys(target, keys)
 	exprFunc(ctx)
 }
