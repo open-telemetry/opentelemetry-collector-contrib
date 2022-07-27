@@ -29,22 +29,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type spanTransformContext struct {
-	span     ptrace.Span
-	il       pcommon.InstrumentationScope
-	resource pcommon.Resource
+type SpanTransformContext struct {
+	Span                 ptrace.Span
+	InstrumentationScope pcommon.InstrumentationScope
+	Resource             pcommon.Resource
 }
 
-func (ctx spanTransformContext) GetItem() interface{} {
-	return ctx.span
+func (ctx SpanTransformContext) GetItem() interface{} {
+	return ctx.Span
 }
 
-func (ctx spanTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.il
+func (ctx SpanTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.InstrumentationScope
 }
 
-func (ctx spanTransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
+func (ctx SpanTransformContext) GetResource() pcommon.Resource {
+	return ctx.Resource
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.

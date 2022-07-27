@@ -28,22 +28,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type logTransformContext struct {
-	log      plog.LogRecord
-	il       pcommon.InstrumentationScope
-	resource pcommon.Resource
+type LogTransformContext struct {
+	Log                  plog.LogRecord
+	InstrumentationScope pcommon.InstrumentationScope
+	Resource             pcommon.Resource
 }
 
-func (ctx logTransformContext) GetItem() interface{} {
-	return ctx.log
+func (ctx LogTransformContext) GetItem() interface{} {
+	return ctx.Log
 }
 
-func (ctx logTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.il
+func (ctx LogTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.InstrumentationScope
 }
 
-func (ctx logTransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
+func (ctx LogTransformContext) GetResource() pcommon.Resource {
+	return ctx.Resource
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
