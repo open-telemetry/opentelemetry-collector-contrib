@@ -78,4 +78,5 @@ The feature gate `receiver.dockerstatsd.useNewImplementation` once enabled allow
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims 
-to give users time to migrate to the new implementation.
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default 
+is 0.60.0.
