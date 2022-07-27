@@ -16,7 +16,6 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
-// nolint:errcheck
 package proxy
 
 import (
@@ -53,9 +52,14 @@ func TestHappyCase(t *testing.T) {
 	cfg.ProxyAddress = "https://example.com"
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
-	go srv.ListenAndServe()
+	go func() {
+		_ = srv.ListenAndServe()
+	}()
+
 	assert.NoError(t, err, "NewServer should succeed")
-	defer srv.Shutdown(context.Background())
+	defer func() {
+		_ = srv.Shutdown(context.Background())
+	}()
 
 	assert.Eventuallyf(t, func() bool {
 		_, err := net.DialTimeout("tcp", tcpAddr, time.Second)
