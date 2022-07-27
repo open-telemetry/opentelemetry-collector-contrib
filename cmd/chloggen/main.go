@@ -16,13 +16,14 @@ package main
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -35,47 +36,60 @@ const (
 	insertPoint = "<!-- next version -->"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		usage()
-		os.Exit(1)
-	}
+var rootCmd = &cobra.Command{
+	Use:   "chloggen",
+	Short: "Generate change log entries",
+}
 
-	newCmd := flag.NewFlagSet("new", flag.ExitOnError)
-	filename := newCmd.String("filename", "", "'filename' is required")
-
-	updateCmd := flag.NewFlagSet("preview", flag.ExitOnError)
-	version := updateCmd.String("version", "vTODO", "'version' will be rendered directly into the update text")
-	dry := updateCmd.Bool("dry", false, "'dry' will generate the update text and print to stdout")
-
-	switch command := os.Args[1]; command {
-	case "new":
-		if err := newCmd.Parse(os.Args[2:]); err != nil {
+var filename = ""
+var newCommand = &cobra.Command{
+	Use:   "new",
+	Short: "Create a new changelog item",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := initialize(defaultCtx, filename); err != nil {
 			fmt.Printf("FAIL: new: %v\n", err)
 			os.Exit(1)
 		}
-		if err := initialize(defaultCtx, *filename); err != nil {
-			fmt.Printf("FAIL: new: %v\n", err)
-			os.Exit(1)
-		}
-	case "validate":
+	},
+}
+
+var validateCommand = &cobra.Command{
+	Use:   "validate",
+	Short: "Update 'CHANGELOG.md' deleting all entries in 'unreleased' that have been included with this run",
+	Run: func(cmd *cobra.Command, args []string) {
 		if err := validate(defaultCtx); err != nil {
 			fmt.Printf("FAIL: validate: %v\n", err)
 			os.Exit(1)
 		}
-	case "update":
-		if err := updateCmd.Parse(os.Args[2:]); err != nil {
+	},
+}
+
+var dryFlag bool
+var version string
+var updateCommand = &cobra.Command{
+	Use:   "update",
+	Short: "Validates all changelog entries",
+	Run: func(cmd *cobra.Command, args []string) {
+		if err := update(defaultCtx, version, dryFlag); err != nil {
 			fmt.Printf("FAIL: update: %v\n", err)
 			os.Exit(1)
 		}
-		if err := update(defaultCtx, *version, *dry); err != nil {
-			fmt.Printf("FAIL: update: %v\n", err)
-			os.Exit(1)
-		}
-	default:
-		usage()
-		os.Exit(1)
-	}
+	},
+}
+
+func initCobra() {
+	newCommand.Flags().StringVarP(&filename, "FILENAME", "", "", "the filename of the changelog entry")
+	rootCmd.AddCommand(newCommand)
+	rootCmd.AddCommand(validateCommand)
+
+	updateCommand.Flags().BoolVarP(&dryFlag, "dry", "", false, "'dry' will generate the update text and print to stdout")
+	updateCommand.Flags().StringVarP(&version, "version", "", "", "'version' will be rendered directly into the update text")
+	rootCmd.AddCommand(updateCommand)
+}
+
+func main() {
+	initCobra()
+	rootCmd.Execute()
 }
 
 func initialize(ctx chlogContext, filename string) error {
