@@ -90,7 +90,8 @@ func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 
 	client, err := r.clientFactory(r.host, r.port)
 	if err != nil {
-		return fmt.Errorf("failed to start: %w", err)
+		client = nil
+		r.logger.Sugar().Warnf("initial client creation failed: %w", err)
 	}
 
 	r.client = client
@@ -99,8 +100,9 @@ func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 
 func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 	r.logger.Debug("executing close")
-	r.client.Close()
-	r.logger.Debug("returning close")
+	if r.client != nil {
+		r.client.Close()
+	}
 	return nil
 }
 
@@ -109,6 +111,18 @@ func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	r.logger.Sugar().Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
+
+	if r.client == nil {
+		var err error
+		r.logger.Sugar().Debug("client is nil, attempting to create a new client")
+		r.client, err = r.clientFactory(r.host, r.port)
+		if err != nil {
+			r.client = nil
+			addPartialIfError(errs, fmt.Errorf("client creation failed: %w", err))
+			return r.mb.Emit(), errs.Combine()
+		}
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 	client := r.client
 

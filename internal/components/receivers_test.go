@@ -59,7 +59,6 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "aerospike",
-			skipLifecyle: true, // Requires a running Aerospike node
 		},
 		{
 			receiver: "apache",
