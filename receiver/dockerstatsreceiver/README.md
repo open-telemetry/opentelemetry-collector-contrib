@@ -65,3 +65,20 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
+
+## Feature Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+**ALPHA**: `receiver.dockerstats.useNewImplementation`
+
+The `receiver.dockerstats.useNewImplementation` is disabled by default. If enabled, the new implementation of the
+scraper will be used, meaning the metrics defined in `documentation.md` will be emitted.
+The metrics emitted from the new implementation (func scrapeV2) are slightly different and may cause breaking 
+changes. If this featuregate is enabled, each metric can be enabled or disabled due to the more
+granular configuration options provided by the new implementation. See [documentation.md](./documentation.md) for 
+information on configuration. 
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims 
+to give users time to migrate to the new implementation.
