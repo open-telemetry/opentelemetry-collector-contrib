@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclient
 
 import (
@@ -185,7 +184,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newPodClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(podArray, "")
+	assert.NoError(t, client.store.Replace(podArray, ""))
 	client.refresh()
 
 	expectedMap := map[string]int{
