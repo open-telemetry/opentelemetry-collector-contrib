@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
+// nolint:gocritic
 package k8sclient
 
 import (
@@ -305,7 +305,7 @@ func TestNodeClient(t *testing.T) {
 
 	fakeClientSet := fake.NewSimpleClientset()
 	client := newNodeClient(fakeClientSet, zap.NewNop(), setOption)
-	client.store.Replace(nodeArray, "")
+	assert.NoError(t, client.store.Replace(nodeArray, ""))
 
 	expectedClusterNodeCount := 3
 	expectedClusterFailedNodeCount := 1
