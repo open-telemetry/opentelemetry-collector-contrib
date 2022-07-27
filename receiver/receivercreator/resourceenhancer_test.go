@@ -44,10 +44,11 @@ func Test_newResourceEnhancer(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	type args struct {
-		resources    resourceAttributes
-		env          observer.EndpointEnv
-		endpoint     observer.Endpoint
-		nextConsumer consumer.Metrics
+		resources          resourceAttributes
+		resourceAttributes map[string]string
+		env                observer.EndpointEnv
+		endpoint           observer.Endpoint
+		nextConsumer       consumer.Metrics
 	}
 	tests := []struct {
 		name    string
@@ -132,6 +133,39 @@ func Test_newResourceEnhancer(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "both forms of resource attributes",
+			args: args{
+				resources: func() resourceAttributes {
+					res := map[observer.EndpointType]map[string]string{observer.PodType: {}}
+					for k, v := range cfg.ResourceAttributes[observer.PodType] {
+						res[observer.PodType][k] = v
+					}
+					res[observer.PodType]["duplicate.resource.attribute"] = "pod.value"
+					res[observer.PodType]["delete.me"] = "pod.value"
+					return res
+				}(),
+				resourceAttributes: map[string]string{
+					"expanded.resource.attribute":  "`'labels' in pod ? pod.labels['region'] : labels['region']`",
+					"duplicate.resource.attribute": "receiver.value",
+					"delete.me":                    "",
+				},
+				env:          podEnv,
+				endpoint:     podEndpoint,
+				nextConsumer: nil,
+			},
+			want: &resourceEnhancer{
+				nextConsumer: nil,
+				attrs: map[string]string{
+					"k8s.namespace.name":           "default",
+					"k8s.pod.name":                 "pod-1",
+					"k8s.pod.uid":                  "uid-1",
+					"duplicate.resource.attribute": "receiver.value",
+					"expanded.resource.attribute":  "west-1",
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "error",
 			args: args{
 				resources: func() resourceAttributes {
@@ -149,7 +183,7 @@ func Test_newResourceEnhancer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newResourceEnhancer(tt.args.resources, tt.args.env, tt.args.endpoint, tt.args.nextConsumer)
+			got, err := newResourceEnhancer(tt.args.resources, tt.args.resourceAttributes, tt.args.env, tt.args.endpoint, tt.args.nextConsumer)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("newResourceEnhancer() error = %v, wantErr %v", err, tt.wantErr)
 				return
