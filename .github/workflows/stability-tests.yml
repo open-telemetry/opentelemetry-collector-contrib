@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   setup-environment:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
