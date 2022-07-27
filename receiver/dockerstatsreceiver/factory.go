@@ -28,14 +28,14 @@ import (
 )
 
 const (
-	typeStr              = "docker_stats"
-	stability            = component.StabilityLevelAlpha
-	newImplFeatureGateID = "receiver.dockerstats.useNewImplementation"
+	typeStr        = "docker_stats"
+	stability      = component.StabilityLevelAlpha
+	useScraperV2ID = "receiver.dockerstats.useScraperV2"
 )
 
 func init() {
 	featuregate.GetRegistry().MustRegister(featuregate.Gate{
-		ID:          newImplFeatureGateID,
+		ID:          useScraperV2ID,
 		Description: "When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation.",
 		Enabled:     false,
 	})
@@ -70,7 +70,7 @@ func createMetricsReceiver(
 	dsr := newReceiver(params, dockerConfig)
 
 	scrapeFunc := dsr.scrape
-	if featuregate.GetRegistry().IsEnabled(newImplFeatureGateID) {
+	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {
 		scrapeFunc = dsr.scrapeV2
 	}
 

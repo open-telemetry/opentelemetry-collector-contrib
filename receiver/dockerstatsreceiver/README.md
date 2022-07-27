@@ -71,9 +71,9 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**ALPHA**: `receiver.dockerstats.useNewImplementation`
+**ALPHA**: `receiver.dockerstats.useScraperV2`
 
-The feature gate `receiver.dockerstatsd.useNewImplementation` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+The feature gate `receiver.dockerstatsd.useScraperV2` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
 
 This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
