@@ -11,8 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-// nolint:errcheck
 package k8sclient
 
 import (
@@ -69,7 +67,7 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 	for i := range replicaSetArray {
 		replicaSets[i] = replicaSetArray[i]
 	}
-	client.store.Replace(replicaSets, "")
+	assert.NoError(t, client.store.Replace(replicaSets, ""))
 
 	expectedMap := map[string]string{
 		"cloudwatch-agent-statsd-7f8459d648": "cloudwatch-agent-statsd",
