@@ -290,15 +290,58 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 	}
 }
 
+func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
+	// Get gzip bytes buffer from API
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+	if err != nil {
+		return nil, err
+	}
+	// Pass this into a gzip reader for decoding
+	reader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Logs are in JSON format so create a JSON decoder to process them
+	dec := json.NewDecoder(reader)
+
+	entries := make([]model.AuditLog, 0)
+	for {
+		var entry model.AuditLog
+		err := dec.Decode(&entry)
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+}
+
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName)
-	if err != nil {
+	if err != nil && err != io.EOF {
 		s.log.Warn("Failed to retreive logs", zap.Error(err))
 	}
 
 	for _, log := range logs {
 		r.LogName = logName
 		plog := mongodbEventToLogData(s.log, &log, r)
+		s.consumer.ConsumeLogs(context.Background(), plog)
+	}
+}
+
+func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
+	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName)
+	if err != nil && err != io.EOF {
+		s.log.Warn("Failed to retreive logs", zap.Error(err))
+	}
+
+	for _, log := range logs {
+		r.LogName = logName
+		plog := mongodbAuditEventToLogData(s.log, &log, r)
 		s.consumer.ConsumeLogs(context.Background(), plog)
 	}
 }

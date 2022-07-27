@@ -15,6 +15,7 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
@@ -49,6 +50,59 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
+func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourceInfo) plog.Logs {
+	ld := plog.NewLogs()
+	rl := ld.ResourceLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+	lr := sl.LogRecords().AppendEmpty()
+
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.EnsureCapacity(totalResourceAttributes)
+
+	// Attributes related to the object causing the event.
+	resourceAttrs.InsertString("org", r.Org.Name)
+	resourceAttrs.InsertString("project", r.Project.Name)
+	resourceAttrs.InsertString("cluster", r.Cluster.Name)
+	resourceAttrs.InsertString("hostname", r.Hostname)
+
+	t, err := time.Parse(layout, e.Timestamp.Date)
+	if err != nil {
+		logger.Warn("Time failed to parse correctly", zap.Error(err))
+	}
+	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+	// The Message field contains description about the event,
+	// which is best suited for the "Body" of the LogRecordSlice.
+	data, err := json.Marshal(e)
+	if err != nil {
+		logger.Warn("failed to marsha", zap.Error(err))
+	}
+	lr.Body().SetStringVal(string(data))
+
+	// Set the "SeverityNumber" and "SeverityText" if a known type of
+	// severity is found.
+	lr.SetSeverityNumber(plog.SeverityNumberINFO)
+	lr.SetSeverityText("I")
+
+	attrs := lr.Attributes()
+	attrs.EnsureCapacity(totalLogAttributes)
+
+	attrs.InsertString("authtype", e.AuthType)
+	attrs.InsertString("local.ip", e.Local.IP)
+	attrs.InsertInt("local.port", int64(e.Local.Port))
+	attrs.InsertString("remote.ip", e.Remote.IP)
+	attrs.InsertInt("remote.port", int64(e.Remote.Port))
+	attrs.InsertString("uuid.binary", e.ID.Binary)
+	attrs.InsertString("uuid.type", e.ID.Type)
+	attrs.InsertInt("remote.port", int64(e.Result))
+	attrs.InsertString("param.user", e.Param.User)
+	attrs.InsertString("param.database", e.Param.Database)
+	attrs.InsertString("param.mechanism", e.Param.Mechanism)
+
+	return ld
+}
+
 func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
@@ -93,6 +147,13 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	attrs.InsertString("context", e.Context)
 	attrs.InsertInt("id", e.ID)
 	attrs.InsertString("log_name", r.LogName)
+
+	data, err := json.Marshal(e)
+	if err != nil {
+		logger.Warn("failed to marsha", zap.Error(err))
+	}
+
+	attrs.InsertString("raw", string(data))
 
 	return ld
 }

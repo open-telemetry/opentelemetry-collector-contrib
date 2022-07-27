@@ -41,7 +41,7 @@ type resourceInfo struct {
 	LogName  string
 }
 
-const collection_interval = time.Second * 5
+const collection_interval = time.Minute * 5
 
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 
@@ -210,8 +210,8 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 			s.sendLogs(r, "mongos.gz")
 
 			if cfgProjects[r.Project.Name].EnableAuditLogs {
-				s.sendLogs(r, "mongodb-audit-log.gz")
-				s.sendLogs(r, "mongos-audit-log.gz")
+				s.sendAuditLogs(r, "mongodb-audit-log.gz")
+				s.sendAuditLogs(r, "mongos-audit-log.gz")
 			}
 		}
 	}

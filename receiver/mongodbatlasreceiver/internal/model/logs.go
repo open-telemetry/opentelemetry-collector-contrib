@@ -25,9 +25,47 @@ type LogEntry struct {
 	Attributes map[string]interface{} `json:"attr"`
 }
 
+type AuditLog struct {
+	AuthType  string       `json:"authenticate"`
+	Timestamp logTimestamp `json:"ts"`
+	ID        UUID         `json:"uuid"`
+	Users     []User       `json:"users"`
+	Local     Address      `json:"local"`
+	Remote    Address      `json:"remote"`
+	Roles     []Role       `json:"roles"`
+	Result    int          `json:"result"`
+	Param     Param        `json:"param"`
+}
+
 // logTimestamp is the structure that represents a Log Timestamp
 type logTimestamp struct {
 	Date string `json:"$date"`
+}
+
+type User struct {
+	Name     string `json:"user"`
+	Database string `json:"db"`
+}
+
+type Role struct {
+	Name     string `json:"role"`
+	Database string `json:"db"`
+}
+
+type UUID struct {
+	Binary string `json:"$binary"`
+	Type   string `json:"$type"`
+}
+
+type Address struct {
+	IP   string `json:"ip"`
+	Port int    `json:"port"`
+}
+
+type Param struct {
+	User      string `json:"user"`
+	Database  string `json:"db"`
+	Mechanism string `json:"mechanism"`
 }
 
 // {"t":{"$date":"2022-07-12T16:44:55.709+00:00"},"s":"I",  "c":"NETWORK",  "id":22943,   "ctx":"listener","msg":"Connection accepted","attr":{"remote":"192.168.254.61:58838","uuid":"dc95f0c0-bd0f-4266-a120-2248362a70db","connectionId":313919,"connectionCount":35}}
