@@ -24,7 +24,12 @@ import (
 )
 
 const (
-	typeStr             = "pulsar"
+	// The value of "type" key in configuration.
+	typeStr = "pulsar"
+
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
@@ -57,9 +62,9 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter),
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithLogsExporter(f.createLogsExporter),
+		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
+		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(f.createLogsExporter, stability),
 	)
 }
 
