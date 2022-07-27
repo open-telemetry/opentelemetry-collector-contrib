@@ -45,9 +45,9 @@ func ReadFields(v reflect.Value, dr DirResolver) (*Field, error) {
 	return field, err
 }
 
-func refl(f *Field, v reflect.Value, dr DirResolver) error {
+func refl(field *Field, v reflect.Value, dr DirResolver) error {
 	if v.Kind() == reflect.Ptr {
-		err := refl(f, v.Elem(), dr)
+		err := refl(field, v.Elem(), dr)
 		if err != nil {
 			return err
 		}
@@ -60,11 +60,11 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 		return err
 	}
 
-	// we also check if f.Doc hasn't already been written, thus preventing a
-	// squashed type with struct comments from overwriting the containing struct's
-	// comments
-	if sc, ok := comments["_struct"]; ok && f.Doc == "" {
-		f.Doc = sc
+	// _struct comments are those that are on the struct type itself. Here we check
+	// if field.Doc is empty, thus preventing a squashed type with struct comments
+	// from overwriting the containing struct's comments.
+	if sc, ok := comments["_struct"]; ok && field.Doc == "" {
+		field.Doc = sc
 	}
 
 	for i := 0; i < v.NumField(); i++ {
@@ -74,14 +74,14 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 		}
 		tagName, options, err := mapstructure(structField.Tag)
 		if err != nil {
-			log.Printf("error parsing mapstructure tag for type: %s: %s: %v", f.Type, structField.Tag, err)
+			log.Printf("error parsing mapstructure tag for type: %s: %s: %v", field.Type, structField.Tag, err)
 			// not fatal, can keep going
 		}
 		if tagName == "-" {
 			continue
 		}
 		fv := v.Field(i)
-		next := f
+		next := field
 		if !containsSquash(options) {
 			name := tagName
 			if name == "" {
@@ -98,7 +98,7 @@ func refl(f *Field, v reflect.Value, dr DirResolver) error {
 				Kind: kindStr,
 				Doc:  comments[structField.Name],
 			}
-			f.Fields = append(f.Fields, next)
+			field.Fields = append(field.Fields, next)
 		}
 		err = handleKind(fv, next, dr)
 		if err != nil {

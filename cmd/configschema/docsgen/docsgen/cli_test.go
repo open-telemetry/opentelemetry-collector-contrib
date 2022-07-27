@@ -77,7 +77,7 @@ func TestHandleCLI_Single(t *testing.T) {
 
 	assert.Equal(t, 1, len(wr.configFiles))
 	assert.Equal(t, 1, len(wr.fileContents))
-	assert.True(t, strings.Contains(wr.fileContents[0], `"redis" Receiver Reference`))
+	assert.True(t, strings.Contains(wr.fileContents[0], `Redis Receiver Reference`))
 }
 
 func TestHandleCLI_All(t *testing.T) {
