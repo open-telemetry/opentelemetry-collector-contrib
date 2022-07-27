@@ -29,14 +29,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/cache"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -127,7 +126,7 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 }
 
 func (exporter *logzioExporter) start(_ context.Context, host component.Host) error {
-	client, err := exporter.config.HTTPClientSettings.ToClient(host.GetExtensions(), exporter.settings)
+	client, err := exporter.config.HTTPClientSettings.ToClientWithHost(host, exporter.settings)
 	if err != nil {
 		return err
 	}
