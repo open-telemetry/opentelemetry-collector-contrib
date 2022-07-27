@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsemfexporter
 
 import (
@@ -326,7 +325,7 @@ func TestGetLogInfo(t *testing.T) {
 			"/aws/ecs/containerinsights/test-cluster-name/performance",
 			"test-task-id",
 		},
-		//test case for aws container insight usage
+		// test case for aws container insight usage
 		{
 			"empty namespace, config w/ pattern",
 			"",

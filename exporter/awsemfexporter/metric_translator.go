@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -345,7 +344,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	cWMetricMap := make(map[string]interface{})
 	fieldMap := cWMetric.fields
 
-	//restore the json objects that are stored as string in attributes
+	// restore the json objects that are stored as string in attributes
 	for _, key := range config.ParseJSONEncodedAttributeValues {
 		if fieldMap[key] == nil {
 			continue
