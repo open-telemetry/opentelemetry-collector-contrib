@@ -73,12 +73,9 @@ See the [Collector feature gates](https://github.com/open-telemetry/opentelemetr
 
 **ALPHA**: `receiver.dockerstats.useNewImplementation`
 
-The `receiver.dockerstats.useNewImplementation` is disabled by default. If enabled, the new implementation of the
-scraper will be used, meaning the metrics defined in `documentation.md` will be emitted.
-The metrics emitted from the new implementation (func scrapeV2) are slightly different and may cause breaking 
-changes. If this featuregate is enabled, each metric can be enabled or disabled due to the more
-granular configuration options provided by the new implementation. See [documentation.md](./documentation.md) for 
-information on configuration. 
+The feature gate `receiver.dockerstatsd.useNewImplementation` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
 
 This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims 
 to give users time to migrate to the new implementation.
