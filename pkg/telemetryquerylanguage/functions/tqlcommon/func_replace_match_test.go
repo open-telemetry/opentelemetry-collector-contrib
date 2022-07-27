@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package functions
+package tqlcommon
 
 import (
 	"testing"
@@ -24,35 +24,41 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
-func Test_set(t *testing.T) {
-	input := pcommon.NewValueString("original name")
+func Test_replaceMatch(t *testing.T) {
+	input := pcommon.NewValueString("hello world")
 
 	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(pcommon.Value).StringVal()
+		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
 
 	tests := []struct {
-		name   string
-		setter tql.Setter
-		getter tql.Getter
-		want   func(pcommon.Value)
+		name        string
+		target      tql.GetSetter
+		pattern     string
+		replacement string
+		want        func(pcommon.Value)
 	}{
 		{
-			name:   "set name",
-			setter: target,
-			getter: tql.Literal{Value: "new name"},
+			name:        "replace match",
+			target:      target,
+			pattern:     "hello*",
+			replacement: "hello {universe}",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("new name")
+				expectedValue.SetStringVal("hello {universe}")
 			},
 		},
 		{
-			name:   "set nil value",
-			setter: target,
-			getter: tql.Literal{Value: nil},
+			name:        "no match",
+			target:      target,
+			pattern:     "goodbye*",
+			replacement: "goodbye {universe}",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("original name")
+				expectedValue.SetStringVal("hello world")
 			},
 		},
 	}
@@ -64,7 +70,7 @@ func Test_set(t *testing.T) {
 				Item: scenarioValue,
 			}
 
-			exprFunc, _ := Set(tt.setter, tt.getter)
+			exprFunc, _ := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
 			expected := pcommon.NewValueString("")
@@ -75,23 +81,41 @@ func Test_set(t *testing.T) {
 	}
 }
 
-func Test_set_get_nil(t *testing.T) {
+func Test_replaceMatch_bad_input(t *testing.T) {
+	input := pcommon.NewValueInt(1)
 	ctx := tqltest.TestTransformContext{
-		Item: nil,
+		Item: input,
 	}
 
-	setter := &tql.StandardGetSetter{
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem()
+		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	getter := &tql.StandardGetSetter{
+	exprFunc, _ := ReplaceMatch(target, "*", "{replacement}")
+	exprFunc(ctx)
+
+	assert.Equal(t, pcommon.NewValueInt(1), input)
+}
+
+func Test_replaceMatch_get_nil(t *testing.T) {
+	ctx := tqltest.TestTransformContext{
+		Item: nil,
+	}
+
+	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
 	}
 
-	exprFunc, _ := Set(setter, getter)
+	exprFunc, _ := ReplaceMatch(target, "*", "{anything}")
 	exprFunc(ctx)
 }

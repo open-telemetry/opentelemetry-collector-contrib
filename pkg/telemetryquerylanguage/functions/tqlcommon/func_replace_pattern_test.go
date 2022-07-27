@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package functions
+package tqlcommon
 
 import (
 	"testing"
@@ -24,8 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
-func Test_replaceMatch(t *testing.T) {
-	input := pcommon.NewValueString("hello world")
+func Test_replacePattern(t *testing.T) {
+	input := pcommon.NewValueString("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -44,21 +44,30 @@ func Test_replaceMatch(t *testing.T) {
 		want        func(pcommon.Value)
 	}{
 		{
-			name:        "replace match",
+			name:        "replace regex match",
 			target:      target,
-			pattern:     "hello*",
-			replacement: "hello {universe}",
+			pattern:     `passwd\=[^\s]*(\s?)`,
+			replacement: "passwd=*** ",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello {universe}")
+				expectedValue.SetStringVal("application passwd=*** otherarg=notsensitive key1 key2")
 			},
 		},
 		{
-			name:        "no match",
+			name:        "no regex match",
 			target:      target,
-			pattern:     "goodbye*",
-			replacement: "goodbye {universe}",
+			pattern:     `nomatch\=[^\s]*(\s?)`,
+			replacement: "shouldnotbeinoutput",
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStringVal("hello world")
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive key1 key2")
+			},
+		},
+		{
+			name:        "multiple regex match",
+			target:      target,
+			pattern:     `key[^\s]*(\s?)`,
+			replacement: "**** ",
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStringVal("application passwd=sensitivedtata otherarg=notsensitive **** **** ")
 			},
 		},
 	}
@@ -70,7 +79,7 @@ func Test_replaceMatch(t *testing.T) {
 				Item: scenarioValue,
 			}
 
-			exprFunc, _ := ReplaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, _ := ReplacePattern(tt.target, tt.pattern, tt.replacement)
 			exprFunc(ctx)
 
 			expected := pcommon.NewValueString("")
@@ -81,7 +90,7 @@ func Test_replaceMatch(t *testing.T) {
 	}
 }
 
-func Test_replaceMatch_bad_input(t *testing.T) {
+func Test_replacePattern_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	ctx := tqltest.TestTransformContext{
 		Item: input,
@@ -96,13 +105,14 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := ReplaceMatch(target, "*", "{replacement}")
+	exprFunc, err := ReplacePattern(target, "regexp", "{replacement}")
+	assert.Nil(t, err)
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueInt(1), input)
 }
 
-func Test_replaceMatch_get_nil(t *testing.T) {
+func Test_replacePattern_get_nil(t *testing.T) {
 	ctx := tqltest.TestTransformContext{
 		Item: nil,
 	}
@@ -116,6 +126,23 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := ReplaceMatch(target, "*", "{anything}")
+	exprFunc, _ := ReplacePattern(target, `nomatch\=[^\s]*(\s?)`, "{anything}")
 	exprFunc(ctx)
+}
+
+func Test_replacePatterns_invalid_pattern(t *testing.T) {
+	target := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			t.Errorf("nothing should be received in this scenario")
+			return nil
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			t.Errorf("nothing should be set in this scenario")
+		},
+	}
+
+	invalidRegexPattern := "*"
+	exprFunc, err := ReplacePattern(target, invalidRegexPattern, "{anything}")
+	assert.Nil(t, exprFunc)
+	assert.Contains(t, err.Error(), "error parsing regexp:")
 }

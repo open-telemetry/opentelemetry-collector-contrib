@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package functions // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions"
+package tqlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
 
 import (
 	"fmt"
-
-	"github.com/gobwas/glob"
+	"regexp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func ReplaceMatch(target tql.GetSetter, pattern string, replacement string) (tql.ExprFunc, error) {
-	glob, err := glob.Compile(pattern)
+func ReplacePattern(target tql.GetSetter, regexPattern string, replacement string) (tql.ExprFunc, error) {
+	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
+		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
 	}
 	return func(ctx tql.TransformContext) interface{} {
-		val := target.Get(ctx)
-		if val == nil {
+		originalVal := target.Get(ctx)
+		if originalVal == nil {
 			return nil
 		}
-		if valStr, ok := val.(string); ok {
-			if glob.Match(valStr) {
-				target.Set(ctx, replacement)
+		if originalValStr, ok := originalVal.(string); ok {
+			if compiledPattern.MatchString(originalValStr) {
+				updatedStr := compiledPattern.ReplaceAllLiteralString(originalValStr, replacement)
+				target.Set(ctx, updatedStr)
 			}
 		}
 		return nil
