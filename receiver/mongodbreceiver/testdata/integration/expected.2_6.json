@@ -1,0 +1,314 @@
+{
+   "resourceMetrics": [
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of open cursors maintained for clients.",
+                     "name": "mongodb.cursor.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "{cursors}"
+                  },
+                  {
+                     "description": "The number of cursors that have timed out.",
+                     "name": "mongodb.cursor.timeout.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "{cursors}"
+                  },
+                  {
+                     "description": "The number of existing databases.",
+                     "name": "mongodb.database.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "{databases}"
+                  },
+                  {
+                     "description": "The time the global lock has been held.",
+                     "name": "mongodb.global_lock.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
+                  },
+                  {
+                     "description": "The number of bytes received.",
+                     "name": "mongodb.network.io.receive",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "2252",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of by transmitted.",
+                     "name": "mongodb.network.io.transmit",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4926",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of requests received by the server.",
+                     "name": "mongodb.network.request.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "25",
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ]
+                     },
+                     "unit": "{requests}"
+                  },
+                  {
+                     "description": "The number of operations executed.",
+                     "name": "mongodb.operation.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "27",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{operations}"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/mongodbreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {},
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The total time spent performing operations.",
+                     "name": "mongodb.operation.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "247",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "69572",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           },
+                           {
+                              "asInt": "20",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659013561302791000",
+                              "timeUnixNano": "1659013621342408000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/mongodbreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      }
+   ]
+}

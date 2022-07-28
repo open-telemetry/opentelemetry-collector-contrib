@@ -5,13 +5,7 @@ add_collections() {
     mongo <<EOF
     use testdb
     db.createCollection("orders")
-    db.orders.createIndex( { item: 1, quantity: 1 } )
-    db.orders.createIndex( { type: 1, item: 1 } )
-    { "_id" : 1, "item" : "abc", "price" : 12, "quantity" : 2, "type": "apparel" }
-    { "_id" : 2, "item" : "jkl", "price" : 20, "quantity" : 1, "type": "electronics" }
-    { "_id" : 3, "item" : "abc", "price" : 10, "quantity" : 5, "type": "apparel" }
-    db.orders.find( { type: "apparel"} )
-    db.orders.find( { item: "abc" } ).sort( { quantity: 1 } )
+    db.createCollection("products")
 EOF
 }
 
