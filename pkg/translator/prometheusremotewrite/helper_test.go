@@ -457,10 +457,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceName:       "service-name",
 		conventions.AttributeServiceNamespace:  "service-namespace",
 		conventions.AttributeServiceInstanceID: "service-instance-id",
-		"resource_attr":                        "resource-attr-val-1",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
+	resourceWithServiceAttrs.Attributes().UpsertString("resource_attr", "resource-attr-val-1")
+	resourceWithOnlyServiceAttrs := pcommon.NewResource()
+	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithOnlyServiceAttrs.Attributes())
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource
@@ -556,6 +558,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc:      "with resource, with only service attributes",
+			resource:  resourceWithOnlyServiceAttrs,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected:  map[string]*prompb.TimeSeries{},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
