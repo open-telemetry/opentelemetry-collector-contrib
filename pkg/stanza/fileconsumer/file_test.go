@@ -755,96 +755,57 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	wg.Wait()
 }
 
-// OffsetsAfterRestart tests that a operator is able to load
-// its offsets after a restart
-func TestOffsetsAfterRestart(t *testing.T) {
-	t.Parallel()
+func TestRestartOffsets(t *testing.T) {
+	testCases := []struct {
+		name       string
+		startAt    string
+		lineLength int
+	}{
+		{"start_at_beginning_short", "beginning", 20},
+		{"start_at_end_short", "end", 20},
+		{"start_at_beginning_long", "beginning", 2000},
+		{"start_at_end_short", "end", 2000},
+	}
 
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
-	persister := testutil.NewMockPersister("test")
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-	temp1 := openTemp(t, tempDir)
-	writeString(t, temp1, "testlog1\n")
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = tc.startAt
 
-	// Start the operator and expect a message
-	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-	waitForToken(t, emitCalls, []byte("testlog1"))
+			persister := testutil.NewMockPersister("test")
 
-	// Restart the operator. Stop and build a new
-	// one to guarantee freshness
-	require.NoError(t, operator.Stop())
-	require.NoError(t, operator.Start(persister))
+			logFile := openTemp(t, tempDir)
 
-	// Write a new log and expect only that log
-	writeString(t, temp1, "testlog2\n")
-	waitForToken(t, emitCalls, []byte("testlog2"))
-}
+			before1stRun := tokenWithLength(tc.lineLength)
+			during1stRun := tokenWithLength(tc.lineLength)
+			duringRestart := tokenWithLength(tc.lineLength)
+			during2ndRun := tokenWithLength(tc.lineLength)
 
-func TestOffsetsAfterRestart_BigFiles(t *testing.T) {
-	t.Parallel()
+			operatorOne, emitCallsOne := buildTestOperator(t, cfg)
+			writeString(t, logFile, string(before1stRun)+"\n")
+			require.NoError(t, operatorOne.Start(persister))
+			if tc.startAt == "beginning" {
+				waitForToken(t, emitCallsOne, before1stRun)
+			} else {
+				expectNoTokensUntil(t, emitCallsOne, 500*time.Millisecond)
+			}
+			writeString(t, logFile, string(during1stRun)+"\n")
+			waitForToken(t, emitCallsOne, during1stRun)
+			require.NoError(t, operatorOne.Stop())
 
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
-	persister := testutil.NewMockPersister("test")
+			writeString(t, logFile, string(duringRestart)+"\n")
 
-	log1 := tokenWithLength(2000)
-	log2 := tokenWithLength(2000)
-
-	temp1 := openTemp(t, tempDir)
-	writeString(t, temp1, string(log1)+"\n")
-
-	// Start the operator
-	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-	waitForToken(t, emitCalls, log1)
-
-	// Restart the operator
-	require.NoError(t, operator.Stop())
-	require.NoError(t, operator.Start(persister))
-
-	writeString(t, temp1, string(log2)+"\n")
-	waitForToken(t, emitCalls, log2)
-}
-
-func TestOffsetsAfterRestart_BigFilesWrittenWhileOff(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
-	persister := testutil.NewMockPersister("test")
-
-	log1 := tokenWithLength(2000)
-	log2 := tokenWithLength(2000)
-
-	temp := openTemp(t, tempDir)
-	writeString(t, temp, string(log1)+"\n")
-
-	// Start the operator and expect the first message
-	require.NoError(t, operator.Start(persister))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-	waitForToken(t, emitCalls, log1)
-
-	// Stop the operator and write a new message
-	require.NoError(t, operator.Stop())
-	writeString(t, temp, string(log2)+"\n")
-
-	// Start the operator and expect the message
-	require.NoError(t, operator.Start(persister))
-	waitForToken(t, emitCalls, log2)
+			operatorTwo, emitCallsTwo := buildTestOperator(t, cfg)
+			require.NoError(t, operatorTwo.Start(persister))
+			waitForToken(t, emitCallsTwo, duringRestart)
+			writeString(t, logFile, string(during2ndRun)+"\n")
+			waitForToken(t, emitCallsTwo, during2ndRun)
+			require.NoError(t, operatorTwo.Stop())
+		})
+	}
 }
 
 func TestManyLogsDelivered(t *testing.T) {
