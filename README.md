@@ -74,6 +74,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:

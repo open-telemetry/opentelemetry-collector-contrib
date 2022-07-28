@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// nolint:gocritic
 package containerinsight // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 
 import (
@@ -19,14 +18,14 @@ import (
 	"time"
 )
 
-//define metric names, attribute names, metric types, and units for both EKS and ECS Container Insights
+// define metric names, attribute names, metric types, and units for both EKS and ECS Container Insights
 const (
 	GoPSUtilProcDirEnv = "HOST_PROC"
 
-	//We assume 50 micro-seconds is the minimal gap between two collected data sample to be valid to calculate delta
+	// We assume 50 micro-seconds is the minimal gap between two collected data sample to be valid to calculate delta
 	MinTimeDiff = 50 * time.Microsecond
 
-	//Attribute names
+	// Attribute names
 	InstanceID              = "InstanceId"
 	InstanceType            = "InstanceType"
 	ClusterNameKey          = "ClusterName"
@@ -34,14 +33,14 @@ const (
 	NodeNameKey             = "NodeName"
 	Version                 = "Version"
 	DiskDev                 = "device"
-	EbsVolumeID             = "ebs_volume_id" //used by kubernetes cluster as persistent volume
-	HostEbsVolumeID         = "EBSVolumeId"   //used by host filesystem
+	EbsVolumeID             = "ebs_volume_id" // used by kubernetes cluster as persistent volume
+	HostEbsVolumeID         = "EBSVolumeId"   // used by host filesystem
 	FSType                  = "fstype"
 	MetricType              = "Type"
 	SourcesKey              = "Sources"
 	Timestamp               = "Timestamp"
 
-	//The following constants are used for metric name construction
+	// The following constants are used for metric name construction
 	CPUTotal                   = "cpu_usage_total"
 	CPUUser                    = "cpu_usage_user"
 	CPUSystem                  = "cpu_usage_system"
@@ -103,13 +102,13 @@ const (
 	DiskIOWrite              = "Write"
 	DiskIOTotal              = "Total"
 
-	//Define the metric types
+	// Define the metric types
 	TypeCluster          = "Cluster"
 	TypeClusterService   = "ClusterService"
 	TypeClusterNamespace = "ClusterNamespace"
 	TypeService          = "Service"
-	TypeInstance         = "Instance" //mean EC2 Instance in ECS
-	TypeNode             = "Node"     //mean EC2 Instance in EKS
+	TypeInstance         = "Instance" // mean EC2 Instance in ECS
+	TypeNode             = "Node"     // mean EC2 Instance in EKS
 	TypeInstanceFS       = "InstanceFS"
 	TypeNodeFS           = "NodeFS"
 	TypeInstanceNet      = "InstanceNet"
@@ -122,7 +121,7 @@ const (
 	TypeContainerFS      = "ContainerFS"
 	TypeContainerDiskIO  = "ContainerDiskIO"
 
-	//unit
+	// unit
 	UnitBytes       = "Bytes"
 	UnitMegaBytes   = "Megabytes"
 	UnitNanoSecond  = "Nanoseconds"
@@ -137,8 +136,8 @@ var metricToUnitMap map[string]string
 
 func init() {
 	metricToUnitMap = map[string]string{
-		//cpu metrics
-		//The following metrics are reported in unit of millicores, but cloudwatch doesn't support it
+		// cpu metrics
+		// The following metrics are reported in unit of millicores, but cloudwatch doesn't support it
 		// CPUTotal
 		// CPUUser
 		// CPUSystem
@@ -148,7 +147,7 @@ func init() {
 		CPUReservedCapacity:        UnitPercent,
 		CPUUtilizationOverPodLimit: UnitPercent,
 
-		//memory metrics
+		// memory metrics
 		MemUsage:                   UnitBytes,
 		MemCache:                   UnitBytes,
 		MemRss:                     UnitBytes,
@@ -168,7 +167,7 @@ func init() {
 		MemHierarchicalPgfault:    UnitCountPerSec,
 		MemHierarchicalPgmajfault: UnitCountPerSec,
 
-		//disk io metrics
+		// disk io metrics
 		strings.ToLower(DiskIOServiceBytesPrefix + DiskIOAsync): UnitBytesPerSec,
 		strings.ToLower(DiskIOServiceBytesPrefix + DiskIORead):  UnitBytesPerSec,
 		strings.ToLower(DiskIOServiceBytesPrefix + DiskIOSync):  UnitBytesPerSec,
@@ -180,7 +179,7 @@ func init() {
 		strings.ToLower(DiskIOServicedPrefix + DiskIOWrite):     UnitCountPerSec,
 		strings.ToLower(DiskIOServicedPrefix + DiskIOTotal):     UnitCountPerSec,
 
-		//network metrics
+		// network metrics
 		NetRxBytes:    UnitBytesPerSec,
 		NetRxPackets:  UnitCountPerSec,
 		NetRxDropped:  UnitCountPerSec,
@@ -191,7 +190,7 @@ func init() {
 		NetTxErrors:   UnitCountPerSec,
 		NetTotalBytes: UnitBytesPerSec,
 
-		//filesystem metrics
+		// filesystem metrics
 		FSUsage:       UnitBytes,
 		FSCapacity:    UnitBytes,
 		FSAvailable:   UnitBytes,
@@ -199,11 +198,11 @@ func init() {
 		FSInodesfree:  UnitCount,
 		FSUtilization: UnitPercent,
 
-		//cluster metrics
+		// cluster metrics
 		NodeCount:       UnitCount,
 		FailedNodeCount: UnitCount,
 
-		//others
+		// others
 		RunningPodCount:       UnitCount,
 		RunningContainerCount: UnitCount,
 		ContainerCount:        UnitCount,

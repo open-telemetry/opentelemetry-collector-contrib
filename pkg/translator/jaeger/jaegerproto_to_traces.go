@@ -16,7 +16,9 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/base64"
+	"encoding/binary"
 	"fmt"
+	"hash/fnv"
 	"reflect"
 	"strconv"
 	"strings"
@@ -40,6 +42,7 @@ func ProtoToTraces(batches []*model.Batch) (ptrace.Traces, error) {
 		return traceData, nil
 	}
 
+	batches = regroup(batches)
 	rss := traceData.ResourceSpans()
 	rss.EnsureCapacity(len(batches))
 
@@ -52,6 +55,75 @@ func ProtoToTraces(batches []*model.Batch) (ptrace.Traces, error) {
 	}
 
 	return traceData, nil
+}
+
+func regroup(batches []*model.Batch) []*model.Batch {
+	// Re-group batches
+	// This is needed as there might be a Process within Batch and Span at the same
+	// time, with the span one taking precedence.
+	// As we only have it at one level in OpenTelemetry, ResourceSpans, we split
+	// each batch into potentially multiple other batches, with the sum of their
+	// processes as the key to a map.
+	// Step 1) iterate over the batches
+	// Step 2) for each batch, calculate the batch's process checksum and store
+	// it on a map, with the checksum as the key and the process as the value
+	// Step 3) iterate the spans for a batch: if a given span has its own process,
+	// calculate the checksum for the process and store it on the same map
+	// Step 4) each entry on the map becomes a ResourceSpan
+	registry := map[uint64]*model.Batch{}
+
+	for _, batch := range batches {
+		bb := batchForProcess(registry, batch.Process)
+		for _, span := range batch.Spans {
+			if span.Process == nil {
+				bb.Spans = append(bb.Spans, span)
+			} else {
+				b := batchForProcess(registry, span.Process)
+				b.Spans = append(b.Spans, span)
+			}
+		}
+	}
+
+	result := []*model.Batch{}
+	for _, v := range registry {
+		result = append(result, v)
+	}
+
+	return result
+}
+
+func batchForProcess(registry map[uint64]*model.Batch, p *model.Process) *model.Batch {
+	sum := checksum(p)
+	batch := registry[sum]
+	if batch == nil {
+		batch = &model.Batch{
+			Process: p,
+		}
+		registry[sum] = batch
+	}
+
+	return batch
+}
+
+func checksum(process *model.Process) uint64 {
+	// this will get all the keys and values, plus service name, into this buffer
+	// this is potentially dangerous, as a batch/span with a big enough processes
+	// might cause the collector to allocate this extra big information
+	// for this reason, we hash it as an integer and return it, instead of keeping
+	// all the hashes for all the processes for all batches in memory
+	fnvHash := fnv.New64a()
+
+	if process != nil {
+		// this effectively means that all spans from batches with nil processes
+		// will be grouped together
+		// this should only ever happen in unit tests
+		// this implementation never returns an error according to the Hash interface
+		_ = process.Hash(fnvHash)
+	}
+
+	out := make([]byte, 0, 16)
+	out = fnvHash.Sum(out)
+	return binary.BigEndian.Uint64(out)
 }
 
 func protoBatchToResourceSpans(batch model.Batch, dest ptrace.ResourceSpans) {

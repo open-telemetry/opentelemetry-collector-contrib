@@ -79,7 +79,7 @@ type Comparison struct {
 // Invocation represents a function call.
 // nolint:govet
 type Invocation struct {
-	Function  string  `@Ident`
+	Function  string  `@(Uppercase | Lowercase)+`
 	Arguments []Value `"(" ( @@ ( "," @@ )* )? ")"`
 }
 
@@ -94,6 +94,7 @@ type Value struct {
 	Int        *int64      `| @Int`
 	Bool       *Boolean    `| @Boolean`
 	IsNil      *IsNil      `| @"nil"`
+	Enum       *EnumSymbol `| @Uppercase`
 	Path       *Path       `| @@ )`
 }
 
@@ -106,7 +107,7 @@ type Path struct {
 // Field is an item within a Path.
 // nolint:govet
 type Field struct {
-	Name   string  `@Ident`
+	Name   string  `@Lowercase`
 	MapKey *string `( "[" @String "]" )?`
 }
 
@@ -146,7 +147,9 @@ func (n *IsNil) Capture(_ []string) error {
 	return nil
 }
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
+type EnumSymbol string
+
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 
@@ -156,12 +159,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
+		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		expression, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser)
+		expression, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -205,7 +208,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
-		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
+		{Name: `Uppercase`, Pattern: `[A-Z_][A-Z0-9_]*`},
+		{Name: `Lowercase`, Pattern: `[a-z_][a-z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
 }

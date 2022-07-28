@@ -21,11 +21,25 @@ if [ -z "${COMPONENT}"] || [ -z "${ISSUE}" ]; then
     exit 0
 fi
 
+result=`grep -c ${COMPONENT} .github/CODEOWNERS`
+
+# there may be more than 1 component matching a label
+# if so, try to narrow things down by appending the component
+# type to the label
+if [[ $result != 1 ]]; then
+    COMPONENT_TYPE=`echo ${COMPONENT} | cut -f 1 -d '/'`
+    COMPONENT="${COMPONENT}${COMPONENT_TYPE}"
+fi
+
 OWNERS=`grep -m 1 ${COMPONENT} .github/CODEOWNERS | sed 's/   */ /g' | cut -f3- -d ' '`
 
 if [ -z "${OWNERS}" ]; then
     exit 0
 fi
 
-gh issue comment ${ISSUE} --body "Pinging code owners: ${OWNERS}"
+if [[ "${OWNERS}" =~ "${SENDER}" ]]; then
+    echo "Label applied by code owner ${SENDER}"
+    exit 0
+fi
 
+gh issue comment ${ISSUE} --body "Pinging code owners: ${OWNERS}. See [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself."

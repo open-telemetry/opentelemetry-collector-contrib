@@ -299,7 +299,7 @@ type HostMetadataConfig struct {
 	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
 	//    If this is empty it will use available system APIs and cloud provider endpoints.
 	//
-	// The current default if 'first_resource'.
+	// The default is 'config_or_system'.
 	HostnameSource HostnameSource `mapstructure:"hostname_source"`
 
 	// Tags is a list of host tags.

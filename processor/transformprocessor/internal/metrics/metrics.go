@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 type metricTransformContext struct {
@@ -52,21 +52,7 @@ func (ctx metricTransformContext) GetMetrics() pmetric.MetricSlice {
 	return ctx.metrics
 }
 
-// pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
-type pathGetSetter struct {
-	getter common.ExprFunc
-	setter func(ctx common.TransformContext, val interface{})
-}
-
-func (path pathGetSetter) Get(ctx common.TransformContext) interface{} {
-	return path.getter(ctx)
-}
-
-func (path pathGetSetter) Set(ctx common.TransformContext, val interface{}) {
-	path.setter(ctx, val)
-}
-
-var symbolTable = map[string]common.Enum{
+var symbolTable = map[tql.EnumSymbol]tql.Enum{
 	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    0,
 	"AGGREGATION_TEMPORALITY_DELTA":          1,
 	"AGGREGATION_TEMPORALITY_CUMULATIVE":     2,
@@ -80,23 +66,24 @@ var symbolTable = map[string]common.Enum{
 	"METRIC_DATA_TYPE_SUMMARY":               5,
 }
 
-func ParseEnum(val *common.Path) (*common.Enum, bool) {
-	if val != nil && len(val.Fields) > 0 {
-		if enum, ok := symbolTable[val.Fields[0].Name]; ok {
-			return &enum, true
+func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {
+	if val != nil {
+		if enum, ok := symbolTable[*val]; ok {
+			return &enum, nil
 		}
+		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
 	}
-	return nil, false
+	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func ParsePath(val *common.Path) (common.GetSetter, error) {
+func ParsePath(val *tql.Path) (tql.GetSetter, error) {
 	if val != nil && len(val.Fields) > 0 {
 		return newPathGetSetter(val.Fields)
 	}
 	return nil, fmt.Errorf("bad path %v", val)
 }
 
-func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
+func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
 		if len(path) == 1 {
@@ -194,12 +181,12 @@ func newPathGetSetter(path []common.Field) (common.GetSetter, error) {
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
-func accessResource() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessResource() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetResource()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
 				ctx.GetResource().Attributes().Clear()
 				newRes.CopyTo(ctx.GetResource())
@@ -208,12 +195,12 @@ func accessResource() pathGetSetter {
 	}
 }
 
-func accessResourceAttributes() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessResourceAttributes() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetResource().Attributes()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
 				ctx.GetResource().Attributes().Clear()
 				attrs.CopyTo(ctx.GetResource().Attributes())
@@ -222,23 +209,23 @@ func accessResourceAttributes() pathGetSetter {
 	}
 }
 
-func accessResourceAttributesKey(mapKey *string) pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessResourceAttributesKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return getAttr(ctx.GetResource().Attributes(), *mapKey)
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
 		},
 	}
 }
 
-func accessInstrumentationScope() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessInstrumentationScope() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetInstrumentationScope()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
 				newIl.CopyTo(ctx.GetInstrumentationScope())
 			}
@@ -246,12 +233,12 @@ func accessInstrumentationScope() pathGetSetter {
 	}
 }
 
-func accessInstrumentationScopeName() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessInstrumentationScopeName() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetInstrumentationScope().Name()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetInstrumentationScope().SetName(str)
 			}
@@ -259,12 +246,12 @@ func accessInstrumentationScopeName() pathGetSetter {
 	}
 }
 
-func accessInstrumentationScopeVersion() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessInstrumentationScopeVersion() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetInstrumentationScope().Version()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.GetInstrumentationScope().SetVersion(str)
 			}
@@ -272,12 +259,12 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 	}
 }
 
-func accessMetric() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetric() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.(metricTransformContext).GetMetric()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
 				newMetric.CopyTo(ctx.(metricTransformContext).GetMetric())
 			}
@@ -285,12 +272,12 @@ func accessMetric() pathGetSetter {
 	}
 }
 
-func accessMetricName() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricName() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.(metricTransformContext).GetMetric().Name()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.(metricTransformContext).GetMetric().SetName(str)
 			}
@@ -298,12 +285,12 @@ func accessMetricName() pathGetSetter {
 	}
 }
 
-func accessMetricDescription() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricDescription() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.(metricTransformContext).GetMetric().Description()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.(metricTransformContext).GetMetric().SetDescription(str)
 			}
@@ -311,12 +298,12 @@ func accessMetricDescription() pathGetSetter {
 	}
 }
 
-func accessMetricUnit() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricUnit() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.(metricTransformContext).GetMetric().Unit()
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				ctx.(metricTransformContext).GetMetric().SetUnit(str)
 			}
@@ -324,21 +311,21 @@ func accessMetricUnit() pathGetSetter {
 	}
 }
 
-func accessMetricType() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricType() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return int64(ctx.(metricTransformContext).GetMetric().DataType())
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10130
 		},
 	}
 }
 
-func accessMetricAggTemporality() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricAggTemporality() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
@@ -350,7 +337,7 @@ func accessMetricAggTemporality() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
@@ -366,9 +353,9 @@ func accessMetricAggTemporality() pathGetSetter {
 	}
 }
 
-func accessMetricIsMonotonic() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessMetricIsMonotonic() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			metric := ctx.(metricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
@@ -376,7 +363,7 @@ func accessMetricIsMonotonic() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
 				metric := ctx.(metricTransformContext).GetMetric()
 				switch metric.DataType() {
@@ -388,9 +375,9 @@ func accessMetricIsMonotonic() pathGetSetter {
 	}
 }
 
-func accessAttributes() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessAttributes() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).Attributes()
@@ -403,7 +390,7 @@ func accessAttributes() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
@@ -430,9 +417,9 @@ func accessAttributes() pathGetSetter {
 	}
 }
 
-func accessAttributesKey(mapKey *string) pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return getAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey)
@@ -445,7 +432,7 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				setAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
@@ -460,9 +447,9 @@ func accessAttributesKey(mapKey *string) pathGetSetter {
 	}
 }
 
-func accessStartTimeUnixNano() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessStartTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).StartTimestamp().AsTime().UnixNano()
@@ -475,7 +462,7 @@ func accessStartTimeUnixNano() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newTime, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -492,9 +479,9 @@ func accessStartTimeUnixNano() pathGetSetter {
 	}
 }
 
-func accessTimeUnixNano() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).Timestamp().AsTime().UnixNano()
@@ -507,7 +494,7 @@ func accessTimeUnixNano() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newTime, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -524,16 +511,16 @@ func accessTimeUnixNano() pathGetSetter {
 	}
 }
 
-func accessDoubleValue() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessDoubleValue() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).DoubleVal()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newDouble, ok := val.(float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -544,16 +531,16 @@ func accessDoubleValue() pathGetSetter {
 	}
 }
 
-func accessIntValue() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessIntValue() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).IntVal()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newInt, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -564,9 +551,9 @@ func accessIntValue() pathGetSetter {
 	}
 }
 
-func accessExemplars() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessExemplars() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return ctx.GetItem().(pmetric.NumberDataPoint).Exemplars()
@@ -577,7 +564,7 @@ func accessExemplars() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newExemplars, ok := val.(pmetric.ExemplarSlice); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -592,9 +579,9 @@ func accessExemplars() pathGetSetter {
 	}
 }
 
-func accessFlags() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessFlags() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
@@ -607,7 +594,7 @@ func accessFlags() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
@@ -624,9 +611,9 @@ func accessFlags() pathGetSetter {
 	}
 }
 
-func accessCount() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
 				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Count())
@@ -637,7 +624,7 @@ func accessCount() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newCount, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
@@ -652,9 +639,9 @@ func accessCount() pathGetSetter {
 	}
 }
 
-func accessSum() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessSum() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
 				return ctx.GetItem().(pmetric.HistogramDataPoint).Sum()
@@ -665,7 +652,7 @@ func accessSum() pathGetSetter {
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newSum, ok := val.(float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
@@ -680,16 +667,16 @@ func accessSum() pathGetSetter {
 	}
 }
 
-func accessExplicitBounds() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessExplicitBounds() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
 				return ctx.GetItem().(pmetric.HistogramDataPoint).MExplicitBounds()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newExplicitBounds, ok := val.([]float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
@@ -700,16 +687,16 @@ func accessExplicitBounds() pathGetSetter {
 	}
 }
 
-func accessBucketCounts() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessBucketCounts() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
 				return ctx.GetItem().(pmetric.HistogramDataPoint).MBucketCounts()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newBucketCount, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
@@ -720,16 +707,16 @@ func accessBucketCounts() pathGetSetter {
 	}
 }
 
-func accessScale() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessScale() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Scale())
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newScale, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -740,16 +727,16 @@ func accessScale() pathGetSetter {
 	}
 }
 
-func accessZeroCount() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessZeroCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).ZeroCount())
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newZeroCount, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -760,16 +747,16 @@ func accessZeroCount() pathGetSetter {
 	}
 }
 
-func accessPositive() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessPositive() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newPositive, ok := val.(pmetric.Buckets); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -780,16 +767,16 @@ func accessPositive() pathGetSetter {
 	}
 }
 
-func accessPositiveOffset() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessPositiveOffset() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().Offset())
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newPositiveOffset, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -800,16 +787,16 @@ func accessPositiveOffset() pathGetSetter {
 	}
 }
 
-func accessPositiveBucketCounts() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessPositiveBucketCounts() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().MBucketCounts()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -820,16 +807,16 @@ func accessPositiveBucketCounts() pathGetSetter {
 	}
 }
 
-func accessNegative() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessNegative() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newNegative, ok := val.(pmetric.Buckets); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -840,16 +827,16 @@ func accessNegative() pathGetSetter {
 	}
 }
 
-func accessNegativeOffset() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessNegativeOffset() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().Offset())
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newNegativeOffset, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -860,16 +847,16 @@ func accessNegativeOffset() pathGetSetter {
 	}
 }
 
-func accessNegativeBucketCounts() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessNegativeBucketCounts() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
 				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().MBucketCounts()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
@@ -880,16 +867,16 @@ func accessNegativeBucketCounts() pathGetSetter {
 	}
 }
 
-func accessQuantileValues() pathGetSetter {
-	return pathGetSetter{
-		getter: func(ctx common.TransformContext) interface{} {
+func accessQuantileValues() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.SummaryDataPoint:
 				return ctx.GetItem().(pmetric.SummaryDataPoint).QuantileValues()
 			}
 			return nil
 		},
-		setter: func(ctx common.TransformContext, val interface{}) {
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newQuantileValues, ok := val.(pmetric.ValueAtQuantileSlice); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.SummaryDataPoint:
