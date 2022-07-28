@@ -90,9 +90,11 @@ func (c *mongodbClient) TopStats(ctx context.Context) (bson.M, error) {
 }
 
 // ListCollectionNames returns a list of collection names for a given database
+// SetAuthorizedCollections allows a user without the required privilege to run the command ListCollections.
 // more information can be found here: https://pkg.go.dev/go.mongodb.org/mongo-driver@v1.9.0/mongo#Database.ListCollectionNames
 func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string) ([]string, error) {
-	return c.Database(database).ListCollectionNames(ctx, bson.M{})
+	lcOpts := options.ListCollections().SetAuthorizedCollections(true)
+	return c.Database(database).ListCollectionNames(context.Background(), bson.D{}, lcOpts)
 }
 
 // IndexStats returns the index stats per collection for a given database

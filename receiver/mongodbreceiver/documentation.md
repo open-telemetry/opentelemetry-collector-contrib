@@ -15,9 +15,7 @@ These are the metrics available for this scraper.
 | **mongodb.cursor.timeout.count** | The number of cursors that have timed out. | {cursors} | Sum(Int) | <ul> </ul> |
 | **mongodb.data.size** | The size of the collection. Data compression does not affect this value. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.database.count** | The number of existing databases. | {databases} | Sum(Int) | <ul> </ul> |
-| **mongodb.document.delete.count** | The number of documents deleted. | {documents} | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.document.insert.count** | The number of documents inserted. | {documents} | Sum(Int) | <ul> <li>database</li> </ul> |
-| **mongodb.document.update.count** | The number of documents updated. | {documents} | Sum(Int) | <ul> <li>database</li> </ul> |
+| **mongodb.document.operation.count** | The number of documents operations executed. | {documents} | Sum(Int) | <ul> <li>database</li> <li>operation</li> </ul> |
 | **mongodb.extent.count** | The number of extents. | {extents} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.global_lock.time** | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
 | **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |

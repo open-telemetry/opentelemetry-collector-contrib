@@ -166,33 +166,15 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [database, collection]
-  mongodb.document.insert.count:
-    description: The number of documents inserted.
+  mongodb.document.operation.count:
+    description: The number of documents operations executed.
     unit: "{documents}"
     enabled: true
     sum:
       value_type: int
       aggregation: cumulative
       monotonic: false
-    attributes: [database]
-  mongodb.document.delete.count:
-    description: The number of documents deleted.
-    unit: "{documents}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-    attributes: [database]
-  mongodb.document.update.count:
-    description: The number of documents updated.
-    unit: "{documents}"
-    enabled: true
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-    attributes: [database]
+    attributes: [database, operation]
   mongodb.network.io.receive:
     description: The number of bytes received.
     unit: By

@@ -1,1 +1,19 @@
-{"host":"7ed0d71b9d8c:27017","accesses":{"ops":{"$numberLong":"0"},"since":{"$date":{"$numberLong":"1658658169155"}}},"name":"_id_","key":{"_id":{"$numberInt":"1"}}}
+{
+    "host": "18b74be36b02:27017",
+    "accesses": {
+        "since": {
+            "$date": {
+                "$numberLong": "1658840946592"
+            }
+        },
+        "ops": {
+            "$numberLong": "0"
+        }
+    },
+    "name": "_id_",
+    "key": {
+        "_id": {
+            "$numberInt": "1"
+        }
+    }
+}

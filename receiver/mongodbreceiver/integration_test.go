@@ -36,12 +36,28 @@ import (
 )
 
 var (
+	containerRequest2_6 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.mongodb.2_6",
+		},
+		ExposedPorts: []string{"27017:27017"},
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(8 * time.Minute),
+	}
+	containerRequest3_0 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.mongodb.3_0",
+		},
+		ExposedPorts: []string{"27117:27017"},
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(8 * time.Minute),
+	}
 	containerRequest4_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.4_0",
 		},
-		ExposedPorts: []string{"27017:27017"},
+		ExposedPorts: []string{"27217:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest5_0 = testcontainers.ContainerRequest{
@@ -49,12 +65,88 @@ var (
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.5_0",
 		},
-		ExposedPorts: []string{"27018:27017"},
+		ExposedPorts: []string{"27317:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 )
 
 func TestMongodbIntegration(t *testing.T) {
+	t.Run("Running mongodb 2.6", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest2_6)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Hosts = []confignet.NetAddr{
+			{
+				Endpoint: net.JoinHostPort(hostname, "27017"),
+			},
+		}
+		cfg.Insecure = true
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 8*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.2_6.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, err)
+	})
+	t.Run("Running mongodb 3.0", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest3_0)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Hosts = []confignet.NetAddr{
+			{
+				Endpoint: net.JoinHostPort(hostname, "27117"),
+			},
+		}
+		cfg.Insecure = true
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 8*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.3_0.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, err)
+	})
 	t.Run("Running mongodb 4.0", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest4_0)
@@ -68,7 +160,7 @@ func TestMongodbIntegration(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27017"),
+				Endpoint: net.JoinHostPort(hostname, "27217"),
 			},
 		}
 		cfg.Insecure = true
@@ -106,7 +198,7 @@ func TestMongodbIntegration(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27018"),
+				Endpoint: net.JoinHostPort(hostname, "27317"),
 			},
 		}
 		cfg.Insecure = true
