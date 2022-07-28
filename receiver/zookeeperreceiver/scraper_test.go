@@ -50,18 +50,20 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                         string
-		expectedMetricsFilename      string
-		expectedResourceAttributes   map[string]string
-		metricsSettings              func() metadata.MetricsSettings
-		mockedZKOutputSourceFilename string
-		mockZKConnectionErr          bool
-		expectedLogs                 []logMsg
-		expectedNumResourceMetrics   int
-		setConnectionDeadline        func(net.Conn, time.Time) error
-		closeConnection              func(net.Conn) error
-		sendCmd                      func(net.Conn, string) (*bufio.Scanner, error)
-		wantErr                      bool
+		name                                 string
+		expectedMetricsFilename              string
+		expectedResourceAttributes           map[string]string
+		metricsSettings                      func() metadata.MetricsSettings
+		mockedZKOutputSourceFilename         string
+		mockZKConnectionErr                  bool
+		expectedLogs                         []logMsg
+		expectedNumResourceMetrics           int
+		setConnectionDeadline                func(net.Conn, time.Time) error
+		closeConnection                      func(net.Conn) error
+		sendCmd                              func(net.Conn, string) (*bufio.Scanner, error)
+		wantErr                              bool
+		emitMetricsWithDirectionAttribute    bool
+		emitMetricsWithoutDirectionAttribute bool
 	}{
 		{
 			name:                         "Test correctness with v3.4.14",
@@ -77,7 +79,27 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.DebugLevel,
 				},
 			},
-			expectedNumResourceMetrics: 1,
+			expectedNumResourceMetrics:           1,
+			emitMetricsWithDirectionAttribute:    true,
+			emitMetricsWithoutDirectionAttribute: false,
+		},
+		{
+			name:                         "Test correctness with v3.4.14 without direction attribute",
+			mockedZKOutputSourceFilename: "mntr-3.4.14",
+			expectedMetricsFilename:      "correctness-v3.4.14-without-direction",
+			expectedResourceAttributes: map[string]string{
+				"server.state": "standalone",
+				"zk.version":   "3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf",
+			},
+			expectedLogs: []logMsg{
+				{
+					msg:   "metric computation failed",
+					level: zapcore.DebugLevel,
+				},
+			},
+			expectedNumResourceMetrics:           1,
+			emitMetricsWithDirectionAttribute:    false,
+			emitMetricsWithoutDirectionAttribute: true,
 		},
 		{
 			name:                         "Test correctness with v3.5.5",
@@ -87,7 +109,21 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				"server.state": "leader",
 				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
 			},
-			expectedNumResourceMetrics: 1,
+			expectedNumResourceMetrics:           1,
+			emitMetricsWithDirectionAttribute:    true,
+			emitMetricsWithoutDirectionAttribute: false,
+		},
+		{
+			name:                         "Test correctness with v3.5.5 without direction attribute",
+			mockedZKOutputSourceFilename: "mntr-3.5.5",
+			expectedMetricsFilename:      "correctness-v3.5.5-without-direction",
+			expectedResourceAttributes: map[string]string{
+				"server.state": "leader",
+				"zk.version":   "3.5.5-390fe37ea45dee01bf87dc1c042b5e3dcce88653",
+			},
+			expectedNumResourceMetrics:           1,
+			emitMetricsWithDirectionAttribute:    false,
+			emitMetricsWithoutDirectionAttribute: true,
 		},
 		{
 			name:                "Arbitrary connection error",
@@ -152,6 +188,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			setConnectionDeadline: func(conn net.Conn, t time.Time) error {
 				return errors.New("")
 			},
+			emitMetricsWithDirectionAttribute:    true,
+			emitMetricsWithoutDirectionAttribute: false,
 		},
 		{
 			name:                         "Error closing connection",
@@ -175,6 +213,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			closeConnection: func(conn net.Conn) error {
 				return errors.New("")
 			},
+			emitMetricsWithDirectionAttribute:    true,
+			emitMetricsWithoutDirectionAttribute: false,
 		},
 		{
 			name:                         "Failed to send command",
@@ -208,7 +248,9 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 					level: zapcore.DebugLevel,
 				},
 			},
-			expectedNumResourceMetrics: 1,
+			expectedNumResourceMetrics:           1,
+			emitMetricsWithDirectionAttribute:    true,
+			emitMetricsWithoutDirectionAttribute: false,
 		},
 	}
 	for _, tt := range tests {
@@ -230,6 +272,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
+			z.emitMetricsWithDirectionAttribute = tt.emitMetricsWithDirectionAttribute
+			z.emitMetricsWithoutDirectionAttribute = tt.emitMetricsWithoutDirectionAttribute
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 

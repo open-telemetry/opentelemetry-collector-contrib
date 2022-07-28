@@ -36,7 +36,7 @@ import (
 var zookeeperFormatRE = regexp.MustCompile(`(^zk_\w+)\s+([\w\.\-]+)`)
 
 const (
-	mntrCommand = "mntr"
+	mntrCommand                                       = "mntr"
 	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute"
 	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute"
 )
@@ -99,12 +99,12 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 	}
 
 	return &zookeeperMetricsScraper{
-		logger:                settings.Logger,
-		config:                config,
-		mb:                    metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
-		closeConnection:       closeConnection,
-		setConnectionDeadline: setConnectionDeadline,
-		sendCmd:               sendCmd,
+		logger:                               settings.Logger,
+		config:                               config,
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		closeConnection:                      closeConnection,
+		setConnectionDeadline:                setConnectionDeadline,
+		sendCmd:                              sendCmd,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}, nil
@@ -156,7 +156,7 @@ func (z *zookeeperMetricsScraper) getResourceMetrics(conn net.Conn) (pmetric.Met
 		return pmetric.NewMetrics(), err
 	}
 
-	creator := newMetricCreator(z.mb)
+	creator := newMetricCreator(z.mb, z.emitMetricsWithDirectionAttribute, z.emitMetricsWithoutDirectionAttribute)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
 	for scanner.Scan() {
