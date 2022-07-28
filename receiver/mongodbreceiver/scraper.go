@@ -96,7 +96,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror
 
 	// Mongo version 4.0+ is required to have authorized access to list collection names
 	// reference: https://www.mongodb.com/docs/manual/reference/method/db.getCollectionNames/
-	// TODO:
 	mongo40, _ := version.NewVersion("4.0")
 	if s.mongoVersion.GreaterThanOrEqual(mongo40) {
 		for _, dbName := range dbNames {
