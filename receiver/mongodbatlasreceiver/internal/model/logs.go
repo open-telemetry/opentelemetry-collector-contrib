@@ -29,10 +29,8 @@ type AuditLog struct {
 	AuthType  string       `json:"authenticate"`
 	Timestamp logTimestamp `json:"ts"`
 	ID        UUID         `json:"uuid"`
-	Users     []User       `json:"users"`
 	Local     Address      `json:"local"`
 	Remote    Address      `json:"remote"`
-	Roles     []Role       `json:"roles"`
 	Result    int          `json:"result"`
 	Param     Param        `json:"param"`
 }
@@ -40,16 +38,6 @@ type AuditLog struct {
 // logTimestamp is the structure that represents a Log Timestamp
 type logTimestamp struct {
 	Date string `json:"$date"`
-}
-
-type User struct {
-	Name     string `json:"user"`
-	Database string `json:"db"`
-}
-
-type Role struct {
-	Name     string `json:"role"`
-	Database string `json:"db"`
 }
 
 type UUID struct {

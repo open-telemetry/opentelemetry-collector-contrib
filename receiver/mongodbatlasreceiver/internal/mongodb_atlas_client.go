@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -555,9 +556,14 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 	return measurements.Measurements, hasNext(measurements.Links), nil
 }
 
-func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string) (*bytes.Buffer, error) {
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, col_interval time.Duration) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
-	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, nil)
+
+	t := strconv.Itoa(int(time.Now().Add(-col_interval).Unix()))
+	end := strconv.Itoa(int(time.Now().Unix()))
+
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: t, EndDate: end})
+	// resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, nil)
 	if err != nil {
 		return nil, err
 	}

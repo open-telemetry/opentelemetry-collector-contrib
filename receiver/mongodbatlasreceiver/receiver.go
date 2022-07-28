@@ -262,7 +262,7 @@ func (s *receiver) Shutdown(ctx context.Context) error {
 
 func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
 	if err != nil {
 		return nil, err
 	}
@@ -292,7 +292,7 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 
 func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
 	if err != nil {
 		return nil, err
 	}

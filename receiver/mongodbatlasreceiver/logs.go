@@ -192,7 +192,6 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				case <-stopper:
 					return
 				case <-time.After(collection_interval):
-					s.log.Debug("Collection Interval")
 					s.collectClusterLogs(clusters, cfgProjects, resource)
 				}
 			}

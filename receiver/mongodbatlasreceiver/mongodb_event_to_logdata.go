@@ -83,12 +83,15 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.
 	lr.SetSeverityNumber(plog.SeverityNumberINFO)
-	lr.SetSeverityText("I")
+	lr.SetSeverityText("INFO")
 
 	attrs := lr.Attributes()
 	attrs.EnsureCapacity(totalLogAttributes)
 
-	attrs.InsertString("authtype", e.AuthType)
+	if e.AuthType != "" {
+		attrs.InsertString("authtype", e.AuthType)
+	}
+
 	attrs.InsertString("local.ip", e.Local.IP)
 	attrs.InsertInt("local.port", int64(e.Local.Port))
 	attrs.InsertString("remote.ip", e.Remote.IP)
@@ -96,9 +99,13 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 	attrs.InsertString("uuid.binary", e.ID.Binary)
 	attrs.InsertString("uuid.type", e.ID.Type)
 	attrs.InsertInt("remote.port", int64(e.Result))
-	attrs.InsertString("param.user", e.Param.User)
-	attrs.InsertString("param.database", e.Param.Database)
-	attrs.InsertString("param.mechanism", e.Param.Mechanism)
+	attrs.InsertString("log_name", r.LogName)
+
+	if e.Param.User != "" {
+		attrs.InsertString("param.user", e.Param.User)
+		attrs.InsertString("param.database", e.Param.Database)
+		attrs.InsertString("param.mechanism", e.Param.Mechanism)
+	}
 
 	return ld
 }
