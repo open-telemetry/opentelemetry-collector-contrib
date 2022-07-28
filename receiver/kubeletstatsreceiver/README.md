@@ -213,7 +213,7 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-1. v0.56.0, July 2022:
+1. v0.57.0, July 2022:
 
 - The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
 - The old metrics with `direction` attribute are deprecated with a warning.
