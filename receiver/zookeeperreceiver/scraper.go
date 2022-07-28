@@ -98,7 +98,7 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 		return nil, errors.New("timeout must be a positive duration")
 	}
 
-	return &zookeeperMetricsScraper{
+	z := &zookeeperMetricsScraper{
 		logger:                               settings.Logger,
 		config:                               config,
 		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
@@ -107,7 +107,20 @@ func newZookeeperMetricsScraper(settings component.ReceiverCreateSettings, confi
 		sendCmd:                              sendCmd,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
-	}, nil
+	}
+
+	if z.emitMetricsWithDirectionAttribute {
+		z.logger.Info("WARNING - Breaking Change: " + emitMetricsWithDirectionAttributeFeatureGate.Description)
+		z.logger.Info("The feature gate " + emitMetricsWithDirectionAttributeFeatureGate.ID + " is enabled. This " +
+			"otel collector will report metrics with a direction attribute, be aware this will not be supported in the future")
+	}
+
+	if z.emitMetricsWithoutDirectionAttribute {
+		z.logger.Info("The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is enabled. This " +
+			"otel collector will report metrics without a direction attribute, which is good for future support")
+	}
+
+	return z, nil
 }
 
 func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {

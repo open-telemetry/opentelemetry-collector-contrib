@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -47,6 +48,27 @@ type logMsg struct {
 func TestZookeeperMetricsScraperScrape(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping flaky test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10171")
+	}
+
+	// additional temporary log messages expected while transitioning to metrics without a direction attribute
+	expectedLogsWithDirectionAttribute := []logMsg{
+		{
+			msg:   "WARNING - Breaking Change: " + emitMetricsWithDirectionAttributeFeatureGate.Description,
+			level: zapcore.InfoLevel,
+		},
+		{
+			msg: "The feature gate " + emitMetricsWithDirectionAttributeFeatureGate.ID + " is enabled. This " +
+				"otel collector will report metrics with a direction attribute, be aware this will not be supported in the future",
+			level: zapcore.InfoLevel,
+		},
+	}
+
+	expectedLogsWithoutDirectionAttribute := []logMsg{
+		{
+			msg: "The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is enabled. This " +
+				"otel collector will report metrics without a direction attribute, which is good for future support",
+			level: zapcore.InfoLevel,
+		},
 	}
 
 	tests := []struct {
@@ -268,12 +290,12 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				cfg.Metrics = tt.metricsSettings()
 			}
 
+			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute})
+			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute})
 			core, observedLogs := observer.New(zap.DebugLevel)
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = zap.New(core)
 			z, err := newZookeeperMetricsScraper(settings, cfg)
-			z.emitMetricsWithDirectionAttribute = tt.emitMetricsWithDirectionAttribute
-			z.emitMetricsWithoutDirectionAttribute = tt.emitMetricsWithoutDirectionAttribute
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 
@@ -294,8 +316,20 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
-			require.Equal(t, len(tt.expectedLogs), observedLogs.Len())
-			for i, log := range tt.expectedLogs {
+			var expectedLogs []logMsg
+
+			if tt.emitMetricsWithoutDirectionAttribute {
+				expectedLogs = append(expectedLogs, expectedLogsWithoutDirectionAttribute...)
+			}
+
+			if tt.emitMetricsWithDirectionAttribute {
+				expectedLogs = append(expectedLogs, expectedLogsWithDirectionAttribute...)
+			}
+
+			expectedLogs = append(expectedLogs, tt.expectedLogs...)
+
+			require.Equal(t, len(expectedLogs), observedLogs.Len())
+			for i, log := range expectedLogs {
 				require.Equal(t, log.msg, observedLogs.All()[i].Message)
 				require.Equal(t, log.level, observedLogs.All()[i].Level)
 			}
