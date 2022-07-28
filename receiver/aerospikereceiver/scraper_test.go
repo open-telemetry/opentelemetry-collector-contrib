@@ -178,5 +178,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	initialClient.AssertNumberOfCalls(t, "Close", 1)
 
 	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
-	require.EqualError(t, err, "failed to start: connection timeout")
+	require.NoError(t, err)
+	require.Equal(t, receiverConnErr.client, nil, "client should be set to nil because of connection error")
+
 }
