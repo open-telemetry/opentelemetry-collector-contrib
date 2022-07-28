@@ -564,6 +564,294 @@ func Test_metricDataToSplunk(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			name:       "gauge_attribute_mapping",
+			resourceFn: newMetricsWithResources,
+			metricsDataFn: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("gauge_with_host_name")
+				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				doubleDataPt := metric.Gauge().DataPoints().AppendEmpty()
+				doubleDataPt.SetDoubleVal(doubleVal)
+				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				doubleDataPt.Attributes().InsertString("host.name", "metric_host")
+				doubleDataPt.Attributes().InsertString("com.splunk.index", "metric_index")
+				doubleDataPt.Attributes().InsertString("com.splunk.source", "metric_source")
+				doubleDataPt.Attributes().InsertString("com.splunk.sourcetype", "metric_sourcetype")
+				return metric
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				commonSplunkMetric("gauge_with_host_name", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "metric_source", "metric_sourcetype", "metric_index", "metric_host"),
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name:       "gauge_attribute_mapping_custom_mapping",
+			resourceFn: newMetricsWithResources,
+			metricsDataFn: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("gauge_with_host_name")
+				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				doubleDataPt := metric.Gauge().DataPoints().AppendEmpty()
+				doubleDataPt.SetDoubleVal(doubleVal)
+				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				doubleDataPt.Attributes().InsertString("foo.host", "metric_host")
+				doubleDataPt.Attributes().InsertString("foo.index", "metric_index")
+				doubleDataPt.Attributes().InsertString("foo.source", "metric_source")
+				doubleDataPt.Attributes().InsertString("foo.sourcetype", "metric_sourcetype")
+				return metric
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				commonSplunkMetric("gauge_with_host_name", tsMSecs, []string{"k0", "k1", "metric_type"}, []interface{}{"v0", "v1", "Gauge"}, doubleVal, "metric_source", "metric_sourcetype", "metric_index", "metric_host"),
+			},
+			configFn: func() *Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.HecToOtelAttrs.Host = "foo.host"
+				cfg.HecToOtelAttrs.Index = "foo.index"
+				cfg.HecToOtelAttrs.Source = "foo.source"
+				cfg.HecToOtelAttrs.SourceType = "foo.sourcetype"
+				return cfg
+			},
+		},
+		{
+			name:       "summary_attribute_mapping",
+			resourceFn: newMetricsWithResources,
+			metricsDataFn: func() pmetric.Metric {
+				summary := pmetric.NewMetric()
+				summary.SetName("summary")
+				summary.SetDataType(pmetric.MetricDataTypeSummary)
+				summaryPt := summary.Summary().DataPoints().AppendEmpty()
+				summaryPt.SetTimestamp(ts)
+				summaryPt.SetStartTimestamp(ts)
+				summaryPt.SetCount(2)
+				summaryPt.SetSum(42)
+				summaryPt.Attributes().InsertString("host.name", "metric_host")
+				summaryPt.Attributes().InsertString("com.splunk.index", "metric_index")
+				summaryPt.Attributes().InsertString("com.splunk.source", "metric_source")
+				summaryPt.Attributes().InsertString("com.splunk.sourcetype", "metric_sourcetype")
+				qt1 := summaryPt.QuantileValues().AppendEmpty()
+				qt1.SetQuantile(0.5)
+				qt1.SetValue(34)
+				qt2 := summaryPt.QuantileValues().AppendEmpty()
+				qt2.SetQuantile(0.6)
+				qt2.SetValue(45)
+				return summary
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"metric_name:summary_sum": float64(42),
+						"metric_type":             "Summary",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                        "v0",
+						"k1":                        "v1",
+						"metric_name:summary_count": uint64(2),
+						"metric_type":               "Summary",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"qt":                      "0.5",
+						"metric_name:summary_0.5": float64(34),
+						"metric_type":             "Summary",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                      "v0",
+						"k1":                      "v1",
+						"qt":                      "0.6",
+						"metric_name:summary_0.6": float64(45),
+						"metric_type":             "Summary",
+					},
+				},
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name:       "int_sum_attribute_mapping",
+			resourceFn: newMetricsWithResources,
+			metricsDataFn: func() pmetric.Metric {
+				intSum := pmetric.NewMetric()
+				intSum.SetName("int_sum_with_dims")
+				intSum.SetDataType(pmetric.MetricDataTypeSum)
+				intDataPt := intSum.Sum().DataPoints().AppendEmpty()
+				intDataPt.Attributes().InsertString("host.name", "metric_host")
+				intDataPt.Attributes().InsertString("com.splunk.index", "metric_index")
+				intDataPt.Attributes().InsertString("com.splunk.source", "metric_source")
+				intDataPt.Attributes().InsertString("com.splunk.sourcetype", "metric_sourcetype")
+				intDataPt.SetTimestamp(ts)
+				intDataPt.SetIntVal(62)
+				return intSum
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0":                            "v0",
+						"k1":                            "v1",
+						"metric_name:int_sum_with_dims": int64(62),
+						"metric_type":                   "Sum",
+					},
+				},
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
+		{
+			name:       "histogram_with_attributes_mapping",
+			resourceFn: newMetricsWithResources,
+			metricsDataFn: func() pmetric.Metric {
+				histogram := pmetric.NewMetric()
+				histogram.SetName("double_histogram_with_dims")
+				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
+				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+				histogramPt.SetExplicitBounds(distributionBounds)
+				histogramPt.SetBucketCounts(distributionCounts)
+				histogramPt.SetSum(23)
+				histogramPt.SetCount(7)
+				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
+				histogramPt.Attributes().InsertString("host.name", "metric_host")
+				histogramPt.Attributes().InsertString("com.splunk.index", "metric_index")
+				histogramPt.Attributes().InsertString("com.splunk.source", "metric_source")
+				histogramPt.Attributes().InsertString("com.splunk.sourcetype", "metric_sourcetype")
+				return histogram
+			},
+			wantSplunkMetrics: []*splunk.Event{
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"metric_name:double_histogram_with_dims_sum": float64(23),
+						"metric_type": "Histogram",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"metric_name:double_histogram_with_dims_count": uint64(7),
+						"metric_type": "Histogram",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"le": "1",
+						"metric_name:double_histogram_with_dims_bucket": uint64(4),
+						"metric_type": "Histogram",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"le": "2",
+						"metric_name:double_histogram_with_dims_bucket": uint64(6),
+						"metric_type": "Histogram",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"le": "4",
+						"metric_name:double_histogram_with_dims_bucket": uint64(9),
+						"metric_type": "Histogram",
+					},
+				},
+				{
+					Host:       "metric_host",
+					Source:     "metric_source",
+					SourceType: "metric_sourcetype",
+					Index:      "metric_index",
+					Event:      "metric",
+					Time:       tsMSecs,
+					Fields: map[string]interface{}{
+						"k0": "v0",
+						"k1": "v1",
+						"le": "+Inf",
+						"metric_name:double_histogram_with_dims_bucket": uint64(14),
+						"metric_type": "Histogram",
+					},
+				},
+			},
+			configFn: func() *Config {
+				return createDefaultConfig().(*Config)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
