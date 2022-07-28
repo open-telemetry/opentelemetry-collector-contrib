@@ -1,0 +1,4 @@
+change_type: enhancement
+component: observer
+note: Add observer.Endpoint.ID to Env()
+issues: [12751]
