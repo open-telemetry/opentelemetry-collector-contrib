@@ -32,6 +32,24 @@ attributes:
       - abort
       - complete
       - error
+  query_type:
+    value: type
+    description: Type of query operation performed on a namespace
+    enum:
+      - aggregation
+      - basic # removed in Aerospike server 6.0
+      - long
+      - short
+      - ops_background
+      - udf_background
+  query_result:
+    value: result
+    description: Result of a query operation performed on a namespace
+    enum:
+      - abort
+      - complete
+      - error
+      - timeout # short_basic queries only
   transaction_type:
     value: type
     description: Type of transaction performed on a namespace
@@ -126,6 +144,17 @@ metrics:
     unit: '{scans}'
     extended_documentation: Aggregate of Aerospike Metrics scan_aggr_abort, scan_aggr_complete, scan_aggr_error, scan_basic_abort, scan_basic_complete, scan_basic_error, scan_ops_bg_abort, scan_ops_bg_complete, scan_ops_bg_error, scan_udf_bg_abort, scan_udf_bg_complete, scan_udf_bg_error
     attributes: [scan_type, scan_result]
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: true
+      aggregation: cumulative
+  aerospike.namespace.query.count:
+    enabled: true
+    description: Number of query operations performed on the namespace
+    unit: '{queries}'
+    extended_documentation: Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr_error, query_basic_abort, query_basic_complete, query_basic_error, query_ops_bg_abort, query_ops_bg_complete, query_ops_bg_error, query_udf_bg_abort, query_udf_bg_complete, query_udf_bg_error
+    attributes: [query_type, query_result]
     sum:
       value_type: int
       input_type: string

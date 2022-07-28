@@ -22,6 +22,7 @@ type MetricsSettings struct {
 	AerospikeNamespaceDiskAvailable    MetricSettings `mapstructure:"aerospike.namespace.disk.available"`
 	AerospikeNamespaceMemoryFree       MetricSettings `mapstructure:"aerospike.namespace.memory.free"`
 	AerospikeNamespaceMemoryUsage      MetricSettings `mapstructure:"aerospike.namespace.memory.usage"`
+	AerospikeNamespaceQueryCount       MetricSettings `mapstructure:"aerospike.namespace.query.count"`
 	AerospikeNamespaceScanCount        MetricSettings `mapstructure:"aerospike.namespace.scan.count"`
 	AerospikeNamespaceTransactionCount MetricSettings `mapstructure:"aerospike.namespace.transaction.count"`
 	AerospikeNodeConnectionCount       MetricSettings `mapstructure:"aerospike.node.connection.count"`
@@ -38,6 +39,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		AerospikeNamespaceMemoryUsage: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceQueryCount: MetricSettings{
 			Enabled: true,
 		},
 		AerospikeNamespaceScanCount: MetricSettings{
@@ -146,6 +150,82 @@ var MapAttributeNamespaceComponent = map[string]AttributeNamespaceComponent{
 	"index":           AttributeNamespaceComponentIndex,
 	"set_index":       AttributeNamespaceComponentSetIndex,
 	"secondary_index": AttributeNamespaceComponentSecondaryIndex,
+}
+
+// AttributeQueryResult specifies the a value query_result attribute.
+type AttributeQueryResult int
+
+const (
+	_ AttributeQueryResult = iota
+	AttributeQueryResultAbort
+	AttributeQueryResultComplete
+	AttributeQueryResultError
+	AttributeQueryResultTimeout
+)
+
+// String returns the string representation of the AttributeQueryResult.
+func (av AttributeQueryResult) String() string {
+	switch av {
+	case AttributeQueryResultAbort:
+		return "abort"
+	case AttributeQueryResultComplete:
+		return "complete"
+	case AttributeQueryResultError:
+		return "error"
+	case AttributeQueryResultTimeout:
+		return "timeout"
+	}
+	return ""
+}
+
+// MapAttributeQueryResult is a helper map of string to AttributeQueryResult attribute value.
+var MapAttributeQueryResult = map[string]AttributeQueryResult{
+	"abort":    AttributeQueryResultAbort,
+	"complete": AttributeQueryResultComplete,
+	"error":    AttributeQueryResultError,
+	"timeout":  AttributeQueryResultTimeout,
+}
+
+// AttributeQueryType specifies the a value query_type attribute.
+type AttributeQueryType int
+
+const (
+	_ AttributeQueryType = iota
+	AttributeQueryTypeAggregation
+	AttributeQueryTypeBasic
+	AttributeQueryTypeLong
+	AttributeQueryTypeShort
+	AttributeQueryTypeOpsBackground
+	AttributeQueryTypeUdfBackground
+)
+
+// String returns the string representation of the AttributeQueryType.
+func (av AttributeQueryType) String() string {
+	switch av {
+	case AttributeQueryTypeAggregation:
+		return "aggregation"
+	case AttributeQueryTypeBasic:
+		return "basic"
+	case AttributeQueryTypeLong:
+		return "long"
+	case AttributeQueryTypeShort:
+		return "short"
+	case AttributeQueryTypeOpsBackground:
+		return "ops_background"
+	case AttributeQueryTypeUdfBackground:
+		return "udf_background"
+	}
+	return ""
+}
+
+// MapAttributeQueryType is a helper map of string to AttributeQueryType attribute value.
+var MapAttributeQueryType = map[string]AttributeQueryType{
+	"aggregation":    AttributeQueryTypeAggregation,
+	"basic":          AttributeQueryTypeBasic,
+	"long":           AttributeQueryTypeLong,
+	"short":          AttributeQueryTypeShort,
+	"ops_background": AttributeQueryTypeOpsBackground,
+	"udf_background": AttributeQueryTypeUdfBackground,
 }
 
 // AttributeScanResult specifies the a value scan_result attribute.
@@ -435,6 +515,60 @@ func newMetricAerospikeNamespaceMemoryUsage(settings MetricSettings) metricAeros
 	return m
 }
 
+type metricAerospikeNamespaceQueryCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.query.count metric with initial data.
+func (m *metricAerospikeNamespaceQueryCount) init() {
+	m.data.SetName("aerospike.namespace.query.count")
+	m.data.SetDescription("Number of query operations performed on the namespace")
+	m.data.SetUnit("{queries}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryTypeAttributeValue string, queryResultAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert("type", pcommon.NewValueString(queryTypeAttributeValue))
+	dp.Attributes().Insert("result", pcommon.NewValueString(queryResultAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceQueryCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceQueryCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceQueryCount(settings MetricSettings) metricAerospikeNamespaceQueryCount {
+	m := metricAerospikeNamespaceQueryCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricAerospikeNamespaceScanCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -710,6 +844,7 @@ type MetricsBuilder struct {
 	metricAerospikeNamespaceDiskAvailable    metricAerospikeNamespaceDiskAvailable
 	metricAerospikeNamespaceMemoryFree       metricAerospikeNamespaceMemoryFree
 	metricAerospikeNamespaceMemoryUsage      metricAerospikeNamespaceMemoryUsage
+	metricAerospikeNamespaceQueryCount       metricAerospikeNamespaceQueryCount
 	metricAerospikeNamespaceScanCount        metricAerospikeNamespaceScanCount
 	metricAerospikeNamespaceTransactionCount metricAerospikeNamespaceTransactionCount
 	metricAerospikeNodeConnectionCount       metricAerospikeNodeConnectionCount
@@ -735,6 +870,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricAerospikeNamespaceDiskAvailable:    newMetricAerospikeNamespaceDiskAvailable(settings.AerospikeNamespaceDiskAvailable),
 		metricAerospikeNamespaceMemoryFree:       newMetricAerospikeNamespaceMemoryFree(settings.AerospikeNamespaceMemoryFree),
 		metricAerospikeNamespaceMemoryUsage:      newMetricAerospikeNamespaceMemoryUsage(settings.AerospikeNamespaceMemoryUsage),
+		metricAerospikeNamespaceQueryCount:       newMetricAerospikeNamespaceQueryCount(settings.AerospikeNamespaceQueryCount),
 		metricAerospikeNamespaceScanCount:        newMetricAerospikeNamespaceScanCount(settings.AerospikeNamespaceScanCount),
 		metricAerospikeNamespaceTransactionCount: newMetricAerospikeNamespaceTransactionCount(settings.AerospikeNamespaceTransactionCount),
 		metricAerospikeNodeConnectionCount:       newMetricAerospikeNodeConnectionCount(settings.AerospikeNodeConnectionCount),
@@ -809,6 +945,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricAerospikeNamespaceDiskAvailable.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryFree.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryUsage.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceQueryCount.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceScanCount.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceTransactionCount.emit(ils.Metrics())
 	mb.metricAerospikeNodeConnectionCount.emit(ils.Metrics())
@@ -860,6 +997,16 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommo
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryUsage, value was %s: %w", inputVal, err)
 	}
 	mb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(mb.startTime, ts, val, namespaceComponentAttributeValue.String())
+	return nil
+}
+
+// RecordAerospikeNamespaceQueryCountDataPoint adds a data point to aerospike.namespace.query.count metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceQueryCountDataPoint(ts pcommon.Timestamp, inputVal string, queryTypeAttributeValue AttributeQueryType, queryResultAttributeValue AttributeQueryResult) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceQueryCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceQueryCount.recordDataPoint(mb.startTime, ts, val, queryTypeAttributeValue.String(), queryResultAttributeValue.String())
 	return nil
 }
 

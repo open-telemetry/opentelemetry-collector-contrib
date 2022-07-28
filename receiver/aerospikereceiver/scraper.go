@@ -230,6 +230,32 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 		case "scan_udf_bg_error":
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBackground, metadata.AttributeScanResultError))
 
+			// Queries
+		case "query_aggr_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultAbort))
+		case "query_aggr_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultComplete))
+		case "query_aggr_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultError))
+		case "query_basic_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultAbort))
+		case "query_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultComplete))
+		case "query_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultError))
+		case "query_ops_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultAbort))
+		case "query_ops_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultComplete))
+		case "query_ops_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultError))
+		case "query_udf_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultAbort))
+		case "query_udf_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultComplete))
+		case "query_udf_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultError))
+
 		// 'Delete' transactions
 		case "client_delete_error":
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultError))
