@@ -50,7 +50,7 @@ type clientConfig struct {
 	username              string
 	password              string
 	timeout               time.Duration
-	logger                *zap.Logger
+	logger                *zap.SugaredLogger
 	collectClusterMetrics bool
 }
 
@@ -61,8 +61,8 @@ type nodeGetter interface {
 
 type defaultASClient struct {
 	cluster nodeGetter
-	policy  *as.ClientPolicy // Timeout and authentication information
-	logger  *zap.Logger      // logs malformed metrics in responses
+	policy  *as.ClientPolicy   // Timeout and authentication information
+	logger  *zap.SugaredLogger // logs malformed metrics in responses
 }
 
 type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error)
@@ -180,7 +180,7 @@ func (c *defaultASClient) Close() {
 // mapNodeInfoFunc maps a nodeFunc to all nodes in the list in parallel
 // if an error occurs during any of the nodeFuncs' execution, it is logged but not returned
 // the return value is a clusterInfo map from node name to command to unparsed metric string
-func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy, logger *zap.Logger) clusterInfo {
+func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy, logger *zap.SugaredLogger) clusterInfo {
 	numNodes := len(nodes)
 	res := make(clusterInfo, numNodes)
 
@@ -201,7 +201,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Sugar().Errorf("mapNodeInfoFunc err: %s", err)
+				logger.Errorf("mapNodeInfoFunc err: %s", err)
 			}
 
 			ns := nodeStats{
@@ -299,10 +299,10 @@ func parseStats(defaultKey, s, sep string) metricsMap {
 
 // mergeMetricsMap merges values from rm into lm
 // logs a warning if a duplicate key is found
-func mergeMetricsMap(lm, rm metricsMap, logger *zap.Logger) {
+func mergeMetricsMap(lm, rm metricsMap, logger *zap.SugaredLogger) {
 	for k, v := range rm {
 		if _, ok := lm[k]; ok {
-			logger.Sugar().Warnf("duplicate key: %s", k)
+			logger.Warnf("duplicate key: %s", k)
 		}
 		lm[k] = v
 	}

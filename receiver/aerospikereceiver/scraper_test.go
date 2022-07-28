@@ -146,7 +146,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		port:          3000,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
-		logger:        logger,
+		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
 		},
@@ -169,7 +169,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		port:          3002,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
-		logger:        logger,
+		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
 		},

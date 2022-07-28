@@ -56,7 +56,7 @@ func TestAerospike_Info(t *testing.T) {
 	require.NoError(t, err)
 
 	clientCfg := clientConfig{
-		logger: logger,
+		logger: logger.Sugar(),
 	}
 
 	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
@@ -119,7 +119,7 @@ func TestAerospike_NamespaceInfo(t *testing.T) {
 	require.NoError(t, err)
 
 	clientCfg := clientConfig{
-		logger: logger,
+		logger: logger.Sugar(),
 	}
 
 	nodeGetterFactoryFunc := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
