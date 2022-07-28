@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/cluster/mocks"
 )
 
-func TestSubsettCluster_New(t *testing.T) {
+func TestSubsetCluster_New(t *testing.T) {
 	t.Parallel()
 
 	nodes := []Node{
@@ -65,7 +65,7 @@ func TestSubsettCluster_New(t *testing.T) {
 	require.EqualError(t, err, "invalid host")
 }
 
-func TestSubsettCluster_GetNodes(t *testing.T) {
+func TestSubsetCluster_GetNodes(t *testing.T) {
 	t.Parallel()
 
 	nodes := []Node{
@@ -81,7 +81,7 @@ func TestSubsettCluster_GetNodes(t *testing.T) {
 	require.Equal(t, len(actualNodes), len(nodes))
 }
 
-func TestSubsettCluster_Close(t *testing.T) {
+func TestSubsetCluster_Close(t *testing.T) {
 	t.Parallel()
 
 	n1 := mocks.NewNode(t)
