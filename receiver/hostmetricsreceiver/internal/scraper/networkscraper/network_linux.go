@@ -17,6 +17,13 @@
 
 package networkscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/networkscraper"
 
+import (
+	"fmt"
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
+
 var allTCPStates = []string{
 	"CLOSE_WAIT",
 	"CLOSE",
@@ -30,4 +37,15 @@ var allTCPStates = []string{
 	"SYN_SENT",
 	"SYN_RECV",
 	"TIME_WAIT",
+}
+
+func (s *scraper) recordNetworkConntrackMetrics() error {
+	now := pcommon.NewTimestampFromTime(time.Now())
+	conntrack, err := s.conntrack()
+	if err != nil {
+		return fmt.Errorf("failed to read conntrack info: %w", err)
+	}
+	s.mb.RecordSystemNetworkConntrackCountDataPoint(now, conntrack[0].ConnTrackCount)
+	s.mb.RecordSystemNetworkConntrackMaxDataPoint(now, conntrack[0].ConnTrackMax)
+	return nil
 }

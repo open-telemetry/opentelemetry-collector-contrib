@@ -94,7 +94,7 @@ func TestFactory_CreateTracesProcessor_InvalidConfig(t *testing.T) {
 	}
 }
 
-func TestFactory_CreateMetricProcessor(t *testing.T) {
+func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 

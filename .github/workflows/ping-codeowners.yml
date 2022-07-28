@@ -17,4 +17,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE: ${{ github.event.issue.number }}
           COMPONENT: ${{ github.event.label.name }}
-
+          SENDER: ${{ github.event.sender.login }}

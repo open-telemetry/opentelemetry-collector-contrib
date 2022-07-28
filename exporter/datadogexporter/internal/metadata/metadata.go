@@ -96,9 +96,14 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
+	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+}
+
+// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
+func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate)
+	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
 	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier

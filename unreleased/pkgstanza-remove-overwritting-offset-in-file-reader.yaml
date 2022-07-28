@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: pkg/stanza
+
+note: Stop readerFactory from returning an error when creating an unsafeReader
+
+issues: [12766]
+
+subtext: This bug caused the filelog receiver to crash when the collector was restarted and the logs were being read from the end of the file

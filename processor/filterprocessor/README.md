@@ -229,7 +229,7 @@ processors:
         services:
           - app_3
       exclude:
-        match_type: regex
+        match_type: regexp
         services:
           - app_1
           - app_2

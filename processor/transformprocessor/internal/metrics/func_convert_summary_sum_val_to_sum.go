@@ -19,10 +19,10 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.ExprFunc, error) {
+func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (tql.ExprFunc, error) {
 	var aggTemp pmetric.MetricAggregationTemporality
 	switch stringAggTemp {
 	case "delta":
@@ -32,7 +32,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (common.Exp
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
-	return func(ctx common.TransformContext) interface{} {
+	return func(ctx tql.TransformContext) interface{} {
 		mtc, ok := ctx.(metricTransformContext)
 		if !ok {
 			return nil

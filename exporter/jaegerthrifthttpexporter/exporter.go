@@ -61,7 +61,7 @@ type jaegerThriftHTTPSender struct {
 
 // start starts the exporter
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = s.config.HTTPClientSettings.ToClient(host.GetExtensions(), s.settings)
+	s.client, err = s.config.HTTPClientSettings.ToClientWithHost(host, s.settings)
 
 	if err != nil {
 		return consumererror.NewPermanent(err)
