@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
@@ -228,29 +229,33 @@ func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) 
 	// that should not interfere with the flow of trace data because
 	// it is an orthogonal concern to the trace flow (it should not impact
 	// upstream or downstream pipeline trace components).
-	tracesClone := traces.Clone()
-	go func() {
-		// Since this is in a goroutine, the entire func can be locked without
-		// impacting trace processing performance. This also significantly
-		// reduces the number of locks/unlocks to manage, reducing the
-		// concurrency-bug surface area.
-		p.lock.Lock()
-		defer p.lock.Unlock()
-
-		p.aggregateMetrics(tracesClone)
-		m, err := p.buildMetrics()
-
-		if err != nil {
-			p.logger.Error(err.Error())
-		} else if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
-			p.logger.Error(err.Error())
-		}
-
-		p.resetExemplarData()
-	}()
 
 	// Forward trace data unmodified.
-	return p.nextConsumer.ConsumeTraces(ctx, traces)
+	return multierr.Combine(p.tracesToMetrics(ctx, traces), p.nextConsumer.ConsumeTraces(ctx, traces))
+}
+
+func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces) error {
+	p.lock.Lock()
+
+	p.aggregateMetrics(traces)
+	m, err := p.buildMetrics()
+
+	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
+	// regardless of error while building metrics, before the next batch is received.
+	p.resetExemplarData()
+
+	// This component no longer needs to read the metrics once built, so it is safe to unlock.
+	p.lock.Unlock()
+
+	if err != nil {
+		return err
+	}
+
+	if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
