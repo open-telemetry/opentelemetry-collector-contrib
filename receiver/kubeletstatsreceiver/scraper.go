@@ -109,6 +109,15 @@ func newKubletScraper(
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
+	if ks.emitMetricsWithDirectionAttribute {
+		ks.logger.Info("WARNING - Breaking Change: " + emitMetricsWithDirectionAttributeFeatureGate.Description)
+		ks.logger.Info("The feature gate " + emitMetricsWithDirectionAttributeFeatureGate.ID + " is enabled. This " +
+			"otel collector will report metrics with a direction attribute, be aware this will not be supported in the future")
+	}
+	if ks.emitMetricsWithoutDirectionAttribute {
+		ks.logger.Info("The " + emitMetricsWithoutDirectionAttributeFeatureGate.ID + " feature gate is enabled. This " +
+			"otel collector will report metrics without a direction attribute, which is good for future support")
+	}
 	return scraperhelper.NewScraper(typeStr, ks.scrape)
 }
 
