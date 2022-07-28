@@ -21,11 +21,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
-                              "asInt": "410",
+                              "asInt": "349",
                               "attributes": [
                                  {
                                     "key": "type",
@@ -34,8 +34,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -50,8 +50,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -65,8 +65,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -80,8 +80,8 @@
                         "dataPoints": [
                            {
                               "asInt": "4",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -94,9 +94,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "61009",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "asInt": "61216",
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -110,9 +110,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "2902",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "asInt": "2725",
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -125,9 +125,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8852",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "asInt": "8590",
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -140,9 +140,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "30",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "asInt": "28",
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -164,8 +164,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "1",
@@ -177,8 +177,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -190,8 +190,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -203,8 +203,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -216,11 +216,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
-                              "asInt": "33",
+                              "asInt": "31",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -229,8 +229,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -245,8 +245,8 @@
                         "dataPoints": [
                            {
                               "asInt": "19",
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -281,11 +281,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
-                              "asInt": "67",
+                              "asInt": "128",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -294,8 +294,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -307,8 +307,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -320,8 +320,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -333,11 +333,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
-                              "asInt": "18212",
+                              "asInt": "8778",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -346,8 +346,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -392,8 +392,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -405,25 +405,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
-                           },
                            {
                               "asInt": "838857",
                               "attributes": [
@@ -440,8 +421,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "3",
@@ -459,8 +440,27 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -482,8 +482,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -511,8 +511,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -530,8 +530,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -549,8 +549,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -572,8 +572,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -595,8 +595,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -618,8 +618,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -632,7 +632,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "85983232",
+                              "asInt": "83886080",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -647,8 +647,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "1142947840",
@@ -666,8 +666,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -689,8 +689,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -712,8 +712,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -757,8 +757,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -802,8 +802,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -831,8 +831,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "838857",
@@ -850,8 +850,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "3",
@@ -869,8 +869,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -892,8 +892,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -921,8 +921,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -940,8 +940,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -959,8 +959,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -982,8 +982,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1005,8 +1005,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1028,8 +1028,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1042,7 +1042,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "85983232",
+                              "asInt": "83886080",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1057,8 +1057,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "1142947840",
@@ -1076,8 +1076,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1099,8 +1099,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1122,8 +1122,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -1167,8 +1167,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1212,8 +1212,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1241,8 +1241,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "838857",
@@ -1260,8 +1260,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "3",
@@ -1279,8 +1279,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1302,8 +1302,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1327,12 +1327,31 @@
                                  {
                                     "key": "operation",
                                     "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
                                        "stringValue": "insert"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -1350,27 +1369,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1392,8 +1392,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1415,8 +1415,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1438,8 +1438,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1451,25 +1451,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "85983232",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "resident"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
-                           },
                            {
                               "asInt": "1142947840",
                               "attributes": [
@@ -1486,8 +1467,27 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
+                           },
+                           {
+                              "asInt": "83886080",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "resident"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1509,8 +1509,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1532,8 +1532,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -1577,8 +1577,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1613,7 +1613,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "2",
+                              "asInt": "1",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1622,8 +1622,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1635,25 +1635,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "838857",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "available"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
-                           },
                            {
                               "asInt": "3",
                               "attributes": [
@@ -1670,8 +1651,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "1",
@@ -1689,8 +1670,27 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
+                           },
+                           {
+                              "asInt": "838857",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "testdb"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1712,8 +1712,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1741,8 +1741,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -1760,8 +1760,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "0",
@@ -1779,8 +1779,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1802,8 +1802,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1816,7 +1816,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "2",
+                              "asInt": "1",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1825,8 +1825,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1839,7 +1839,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8192",
+                              "asInt": "4096",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1848,8 +1848,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1862,7 +1862,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "85983232",
+                              "asInt": "83886080",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1877,8 +1877,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            },
                            {
                               "asInt": "1142947840",
@@ -1896,8 +1896,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1919,8 +1919,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },
@@ -1933,7 +1933,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8192",
+                              "asInt": "4096",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1942,8 +1942,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ],
                         "isMonotonic": true
@@ -1987,52 +1987,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
-                           }
-                        ]
-                     },
-                     "unit": "{accesses}"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": []
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of times an index has been accessed.",
-                     "name": "mongodb.index.access.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 },
-                                 {
-                                    "key": "collection",
-                                    "value": {
-                                       "stringValue": "products"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659013541055721000",
-                              "timeUnixNano": "1659013601067067000"
+                              "startTimeUnixNano": "1659041321356490000",
+                              "timeUnixNano": "1659041381430031000"
                            }
                         ]
                      },

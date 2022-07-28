@@ -42,7 +42,7 @@ var (
 			Dockerfile: "Dockerfile.mongodb.2_6",
 		},
 		ExposedPorts: []string{"27017:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(8 * time.Minute),
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest3_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
@@ -50,7 +50,7 @@ var (
 			Dockerfile: "Dockerfile.mongodb.3_0",
 		},
 		ExposedPorts: []string{"27117:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(8 * time.Minute),
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 	containerRequest4_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
@@ -97,7 +97,7 @@ func TestMongodbIntegration(t *testing.T) {
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
-		}, 8*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
 		actualMetrics := consumer.AllMetrics()[0]
@@ -135,7 +135,7 @@ func TestMongodbIntegration(t *testing.T) {
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
-		}, 8*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
 		actualMetrics := consumer.AllMetrics()[0]

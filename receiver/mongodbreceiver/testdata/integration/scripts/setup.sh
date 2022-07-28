@@ -5,7 +5,6 @@ add_collections() {
     mongo <<EOF
     use testdb
     db.createCollection("orders")
-    db.createCollection("products")
 EOF
 }
 
