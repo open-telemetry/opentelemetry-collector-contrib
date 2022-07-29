@@ -1,0 +1,32 @@
+name: httpcheckreceiver
+
+resource_attributes:
+
+attributes:
+  http.url:
+    description: Full HTTP request URL.
+    type: string
+  http.status_code:
+    description: HTTP response status code
+    type: int
+  http.method:
+    description: HTTP request method
+    type: string
+
+metrics:
+  httpcheck.status:
+    description: 1 if the endpoint resulted in status http.status_code, otherwise 0.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    unit: 1
+    attributes: [http.url, http.status_code, http.method]
+  httpcheck.duration:
+    description: Measures the duration of the HTTP check.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [http.url]

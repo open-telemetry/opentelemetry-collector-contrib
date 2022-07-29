@@ -1,0 +1,72 @@
+{
+    "resourceMetrics": [
+       {
+        "scopeMetrics": [
+           {
+                "scope": {
+                    "name": "otelcol/httpcheckreceiver",
+                    "version": "latest"
+                },
+                "metrics": [
+                    {
+                        "description": "Measures the duration of HTTP check.",
+                        "name": "httpcheck.duration",
+                        "sum": {
+                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "dataPoints": [
+                                {
+                                    "asInt": "0",
+                                    "attributes": [
+                                        {
+                                            "key": "http.url",
+                                            "value": {
+                                                "stringValue": "http://127.0.0.1:8000"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "unit": "ms"
+                    },
+                    {
+                        "description": "The response of the endpoint resulted in status 200.",
+                        "name": "httpcheck.success",
+                        "sum": {
+                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                            "dataPoints": [
+                                {
+                                    "asInt": "0",
+                                    "startTimeUnixNano": "1651783208655196000",
+                                    "timeUnixNano": "1651783208656862000",
+                                    "attributes": [
+                                        {
+                                            "key": "http.url",
+                                            "value": {
+                                                "stringValue": "http://127.0.0.1:8000"
+                                            }
+                                        },
+                                        {
+                                            "key": "http.status_code",
+                                            "value": {
+                                                "intValue": 404
+                                            }
+                                        },
+                                        {
+                                            "key": "http.method",
+                                            "value": {
+                                                "stringValue": "GET"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "unit": "1"
+                    }
+                ]
+            }
+        ]
+       }
+    ]   
+}
