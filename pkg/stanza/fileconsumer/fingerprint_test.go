@@ -31,8 +31,12 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 
 	fileContents := fmt.Sprintf("%s%s%s\n", fingerprint, next, extra)
 
-	f, _, tempDir := newTestScenario(t, nil)
-	f.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, _ := buildTestOperator(t, cfg)
+
+	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
 	// Create a new file
 	temp := openTemp(t, tempDir)
@@ -47,7 +51,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := f.readerFactory.newFingerprint(temp)
+	fp, err := operator.readerFactory.newFingerprint(temp)
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
@@ -122,8 +126,13 @@ func TestNewFingerprint(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			f, _, tempDir := newTestScenario(t, nil)
-			f.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
+
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = "beginning"
+			operator, _ := buildTestOperator(t, cfg)
+
+			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
 			// Create a new file
 			temp := openTemp(t, tempDir)
@@ -134,7 +143,7 @@ func TestNewFingerprint(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := f.readerFactory.newFingerprint(temp)
+			fp, err := operator.readerFactory.newFingerprint(temp)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedLen, len(fp.FirstBytes))
@@ -225,7 +234,11 @@ func TestFingerprintStartsWith(t *testing.T) {
 func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	r := rand.New(rand.NewSource(112358))
 
-	operator, _, tempDir := newTestScenario(t, nil)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, _ := buildTestOperator(t, cfg)
+
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 
 	fileLength := 12 * operator.readerFactory.readerConfig.fingerprintSize
