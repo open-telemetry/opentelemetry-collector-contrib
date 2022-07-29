@@ -248,7 +248,7 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver:     "pulsar",
-			skipLifecyle: true,
+			skipLifecyle: true, //TODO It requires a running pulsar instance to start successfully.
 		},
 		{
 			receiver: "rabbitmq",

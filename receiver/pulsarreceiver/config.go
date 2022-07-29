@@ -37,8 +37,8 @@ type Config struct {
 	// Set the path to the trusted TLS certificate file
 	TLSTrustCertsFilePath string `mapstructure:"tls_trust_certs_file_path"`
 	// Configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
-	Insecure       bool           `mapstructure:"insecure"`
-	Authentication Authentication `mapstructure:"auth"`
+	TLSAllowInsecureConnection bool           `mapstructure:"tls_allow_insecure_connection"`
+	Authentication             Authentication `mapstructure:"auth"`
 }
 
 type Authentication struct {
@@ -119,7 +119,7 @@ func (cfg *Config) clientOptions() pulsar.ClientOptions {
 		URL: url,
 	}
 
-	options.TLSAllowInsecureConnection = cfg.Insecure
+	options.TLSAllowInsecureConnection = cfg.TLSAllowInsecureConnection
 	if len(cfg.TLSTrustCertsFilePath) > 0 {
 		options.TLSTrustCertsFilePath = cfg.TLSTrustCertsFilePath
 	}

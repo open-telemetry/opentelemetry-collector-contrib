@@ -24,6 +24,7 @@ import (
 
 const (
 	typeStr             = "pulsar"
+	stability           = component.StabilityLevelAlpha
 	defaultEncoding     = "otlp_proto"
 	defaultTraceTopic   = "otlp_spans"
 	defaultMeticsTopic  = "otlp_metrics"
@@ -77,9 +78,9 @@ func NewFactory(options ...FactoryOption) component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver),
-		component.WithMetricsReceiver(f.createMetricsReceiver),
-		component.WithLogsReceiver(f.createLogsReceiver),
+		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, stability),
+		component.WithMetricsReceiverAndStabilityLevel(f.createMetricsReceiver, stability),
+		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, stability),
 	)
 }
 
@@ -142,12 +143,13 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:            "",
-		Encoding:         defaultEncoding,
-		ConsumerName:     defaultConsumerName,
-		Subscription:     defaultSubscription,
-		Endpoint:         defaultServiceURL,
-		Authentication:   Authentication{},
+		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Topic:                      "",
+		Encoding:                   defaultEncoding,
+		ConsumerName:               defaultConsumerName,
+		Subscription:               defaultSubscription,
+		Endpoint:                   defaultServiceURL,
+		TLSAllowInsecureConnection: false,
+		Authentication:             Authentication{},
 	}
 }

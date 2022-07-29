@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [in-development]      |
+| Stability                | [alpha]               |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | none                  |
+| Distributions            | [contrib]             |
 
 Pulsar receiver receives logs, metrics, and traces from Pulsar.
 
@@ -44,7 +44,7 @@ The following settings can be optionally configured:
 - `subscription` (default = otlp_subscription): the subscription name of consumer.
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
-- `insecure`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+- `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
 
 
 Example configuration:
@@ -60,6 +60,9 @@ receivers:
       tls:
         cert_file: cert.pem
         key_file: key.pem
-    insecure: false
+    tls_allow_insecure_connection: false
     tls_trust_certs_file_path: ca.pem
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
