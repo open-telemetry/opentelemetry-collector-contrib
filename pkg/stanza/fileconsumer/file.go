@@ -320,6 +320,11 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 		return fmt.Errorf("decoding file count: %w", err)
 	}
 
+	if knownFileCount > 0 {
+		f.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+		f.readerFactory.fromBeginning = true
+	}
+
 	// Decode each of the known files
 	f.knownFiles = make([]*Reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
