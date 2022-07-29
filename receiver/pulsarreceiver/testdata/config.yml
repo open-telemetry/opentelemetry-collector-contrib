@@ -5,7 +5,7 @@ receivers:
     consumer_name: otel-collector
     subscription: otel-collector
     tls_trust_certs_file_path: ca.pem
-    insecure: false
+    tls_allow_insecure_connection: false
     auth:
       tls:
         cert_file: cert.pem
