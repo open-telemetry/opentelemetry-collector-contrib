@@ -28,6 +28,8 @@ type MetricsSettings struct {
 	ZookeeperLatencyMax                  MetricSettings `mapstructure:"zookeeper.latency.max"`
 	ZookeeperLatencyMin                  MetricSettings `mapstructure:"zookeeper.latency.min"`
 	ZookeeperPacketCount                 MetricSettings `mapstructure:"zookeeper.packet.count"`
+	ZookeeperPacketReceivedCount         MetricSettings `mapstructure:"zookeeper.packet.received.count"`
+	ZookeeperPacketSentCount             MetricSettings `mapstructure:"zookeeper.packet.sent.count"`
 	ZookeeperRequestActive               MetricSettings `mapstructure:"zookeeper.request.active"`
 	ZookeeperSyncPending                 MetricSettings `mapstructure:"zookeeper.sync.pending"`
 	ZookeeperWatchCount                  MetricSettings `mapstructure:"zookeeper.watch.count"`
@@ -67,6 +69,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ZookeeperPacketCount: MetricSettings{
+			Enabled: true,
+		},
+		ZookeeperPacketReceivedCount: MetricSettings{
+			Enabled: true,
+		},
+		ZookeeperPacketSentCount: MetricSettings{
 			Enabled: true,
 		},
 		ZookeeperRequestActive: MetricSettings{
@@ -693,6 +701,108 @@ func newMetricZookeeperPacketCount(settings MetricSettings) metricZookeeperPacke
 	return m
 }
 
+type metricZookeeperPacketReceivedCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills zookeeper.packet.received.count metric with initial data.
+func (m *metricZookeeperPacketReceivedCount) init() {
+	m.data.SetName("zookeeper.packet.received.count")
+	m.data.SetDescription("The number of ZooKeeper packets received by a server.")
+	m.data.SetUnit("{packets}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricZookeeperPacketReceivedCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricZookeeperPacketReceivedCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricZookeeperPacketReceivedCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricZookeeperPacketReceivedCount(settings MetricSettings) metricZookeeperPacketReceivedCount {
+	m := metricZookeeperPacketReceivedCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricZookeeperPacketSentCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills zookeeper.packet.sent.count metric with initial data.
+func (m *metricZookeeperPacketSentCount) init() {
+	m.data.SetName("zookeeper.packet.sent.count")
+	m.data.SetDescription("The number of ZooKeeper packets sent by a server.")
+	m.data.SetUnit("{packets}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricZookeeperPacketSentCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricZookeeperPacketSentCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricZookeeperPacketSentCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricZookeeperPacketSentCount(settings MetricSettings) metricZookeeperPacketSentCount {
+	m := metricZookeeperPacketSentCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricZookeeperRequestActive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -916,6 +1026,8 @@ type MetricsBuilder struct {
 	metricZookeeperLatencyMax                  metricZookeeperLatencyMax
 	metricZookeeperLatencyMin                  metricZookeeperLatencyMin
 	metricZookeeperPacketCount                 metricZookeeperPacketCount
+	metricZookeeperPacketReceivedCount         metricZookeeperPacketReceivedCount
+	metricZookeeperPacketSentCount             metricZookeeperPacketSentCount
 	metricZookeeperRequestActive               metricZookeeperRequestActive
 	metricZookeeperSyncPending                 metricZookeeperSyncPending
 	metricZookeeperWatchCount                  metricZookeeperWatchCount
@@ -948,6 +1060,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(settings.ZookeeperLatencyMax),
 		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(settings.ZookeeperLatencyMin),
 		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(settings.ZookeeperPacketCount),
+		metricZookeeperPacketReceivedCount:         newMetricZookeeperPacketReceivedCount(settings.ZookeeperPacketReceivedCount),
+		metricZookeeperPacketSentCount:             newMetricZookeeperPacketSentCount(settings.ZookeeperPacketSentCount),
 		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(settings.ZookeeperRequestActive),
 		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(settings.ZookeeperSyncPending),
 		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(settings.ZookeeperWatchCount),
@@ -1029,6 +1143,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricZookeeperLatencyMax.emit(ils.Metrics())
 	mb.metricZookeeperLatencyMin.emit(ils.Metrics())
 	mb.metricZookeeperPacketCount.emit(ils.Metrics())
+	mb.metricZookeeperPacketReceivedCount.emit(ils.Metrics())
+	mb.metricZookeeperPacketSentCount.emit(ils.Metrics())
 	mb.metricZookeeperRequestActive.emit(ils.Metrics())
 	mb.metricZookeeperSyncPending.emit(ils.Metrics())
 	mb.metricZookeeperWatchCount.emit(ils.Metrics())
@@ -1105,6 +1221,16 @@ func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pcommon.Timestam
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
 func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordZookeeperPacketReceivedCountDataPoint adds a data point to zookeeper.packet.received.count metric.
+func (mb *MetricsBuilder) RecordZookeeperPacketReceivedCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricZookeeperPacketReceivedCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordZookeeperPacketSentCountDataPoint adds a data point to zookeeper.packet.sent.count metric.
+func (mb *MetricsBuilder) RecordZookeeperPacketSentCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricZookeeperPacketSentCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
