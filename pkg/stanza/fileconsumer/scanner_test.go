@@ -15,7 +15,8 @@
 package fileconsumer
 
 import (
-	"context"
+	"bufio"
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,73 +24,88 @@ import (
 
 func TestScanner(t *testing.T) {
 	testCases := []struct {
-		testName    string
-		fileContent []byte
+		name        string
+		stream      []byte
+		delimiter   []byte
+		startOffset int64
+		maxSize     int
 		expected    [][]byte
 	}{
 		{
-			"simple",
-			[]byte("testlog1\ntestlog2\n"),
-			[][]byte{
+			name:      "simple",
+			stream:    []byte("testlog1\ntestlog2\n"),
+			delimiter: []byte("\n"),
+			maxSize:   100,
+			expected: [][]byte{
 				[]byte("testlog1"),
 				[]byte("testlog2"),
 			},
 		},
 		{
-			"empty_only",
-			[]byte("\n"),
-			[][]byte{
+			name:      "empty_tokens",
+			stream:    []byte("\ntestlog1\n\ntestlog2\n\n"),
+			delimiter: []byte("\n"),
+			maxSize:   100,
+			expected: [][]byte{
+				[]byte(""),
+				[]byte("testlog1"),
+				[]byte(""),
+				[]byte("testlog2"),
 				[]byte(""),
 			},
 		},
 		{
-			"empty_first",
-			[]byte("\ntestlog1\ntestlog2\n"),
-			[][]byte{
-				[]byte(""),
+			name:      "multichar_delimiter",
+			stream:    []byte("testlog1@#$testlog2@#$"),
+			delimiter: []byte("@#$"),
+			maxSize:   100,
+			expected: [][]byte{
 				[]byte("testlog1"),
 				[]byte("testlog2"),
 			},
 		},
 		{
-			"empty_between_lines",
-			[]byte("testlog1\n\ntestlog2\n"),
-			[][]byte{
-				[]byte("testlog1"),
-				[]byte(""),
-				[]byte("testlog2"),
-			},
-		},
-		{
-			"multiple_empty",
-			[]byte("\n\ntestlog1\n\n\ntestlog2\n"),
-			[][]byte{
-				[]byte(""),
+			name:      "multichar_delimiter_empty_tokens",
+			stream:    []byte("@#$testlog1@#$@#$testlog2@#$@#$"),
+			delimiter: []byte("@#$"),
+			maxSize:   100,
+			expected: [][]byte{
 				[]byte(""),
 				[]byte("testlog1"),
 				[]byte(""),
-				[]byte(""),
 				[]byte("testlog2"),
+				[]byte(""),
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.testName, func(t *testing.T) {
-			f, emitChan := testReaderFactory(t)
+		t.Run(tc.name, func(t *testing.T) {
+			reader := bytes.NewReader(tc.stream)
+			splitter := simpleSplit(tc.delimiter)
+			scanner := NewPositionalScanner(reader, tc.maxSize, tc.startOffset, splitter)
 
-			temp := openTemp(t, t.TempDir())
-			_, err := temp.Write(tc.fileContent)
-			require.NoError(t, err)
+			for i, p := 0, 0; scanner.Scan(); i++ {
+				require.NoError(t, scanner.getError())
 
-			r, err := f.newReaderBuilder().withFile(temp).build()
-			require.NoError(t, err)
+				token := scanner.Bytes()
+				require.Equal(t, tc.expected[i], token)
 
-			r.ReadToEnd(context.Background())
-
-			for _, expected := range tc.expected {
-				require.Equal(t, expected, readToken(t, emitChan))
+				p += len(tc.expected[i]) + len(tc.delimiter)
+				require.Equal(t, int64(p), scanner.Pos())
 			}
 		})
+	}
+}
+
+func simpleSplit(delim []byte) bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		if atEOF && len(data) == 0 {
+			return 0, nil, nil
+		}
+		if i := bytes.Index(data, delim); i >= 0 {
+			return i + len(delim), data[:i], nil
+		}
+		return 0, nil, nil
 	}
 }
