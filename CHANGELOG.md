@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1187](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1187))
 - SQLCommenter semicolon bug fix
   ([#1200](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1200/files))
+- Add psycopg2 native tags to sqlcommenter
+  ([#1203](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1203))
 
 ### Added
 - `opentelemetry-instrumentation-redis` add support to instrument RedisCluster clients
