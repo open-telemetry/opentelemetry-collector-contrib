@@ -45,7 +45,10 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
 			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
-			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				Endpoint:  ":14250",
+				Transport: "tcp",
+			}},
 			Source: Source{
 				Remote: &configgrpc.GRPCClientSettings{
 					Endpoint: "jaeger-collector:14250",
@@ -59,7 +62,10 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExtensionSettings:  config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
 			HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
-			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+			GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+				Endpoint:  ":14250",
+				Transport: "tcp",
+			}},
 			Source: Source{
 				ReloadInterval: time.Second,
 				File:           "/etc/otelcol/sampling_strategies.json",
