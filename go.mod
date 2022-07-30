@@ -88,6 +88,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver v0.57.2
@@ -822,6 +823,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsec
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver => ./receiver/awsfirehosereceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver => ./receiver/awsxrayreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver => ./receiver/azureeventhubreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver => ./receiver/bigipreceiver
 
