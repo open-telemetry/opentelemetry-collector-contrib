@@ -296,11 +296,11 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
-			ctx := metricTransformContext{
-				dataPoint: numberDataPoint,
-				metric:    pmetric.NewMetric(),
-				il:        pcommon.NewInstrumentationScope(),
-				resource:  pcommon.NewResource(),
+			ctx := MetricTransformContext{
+				DataPoint:            numberDataPoint,
+				Metric:               pmetric.NewMetric(),
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -628,11 +628,11 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			numberDataPoint := createHistogramDataPointTelemetry()
 
-			ctx := metricTransformContext{
-				dataPoint: numberDataPoint,
-				metric:    pmetric.NewMetric(),
-				il:        pcommon.NewInstrumentationScope(),
-				resource:  pcommon.NewResource(),
+			ctx := MetricTransformContext{
+				DataPoint:            numberDataPoint,
+				Metric:               pmetric.NewMetric(),
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -1056,11 +1056,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			numberDataPoint := createExpoHistogramDataPointTelemetry()
 
-			ctx := metricTransformContext{
-				dataPoint: numberDataPoint,
-				metric:    pmetric.NewMetric(),
-				il:        pcommon.NewInstrumentationScope(),
-				resource:  pcommon.NewResource(),
+			ctx := MetricTransformContext{
+				DataPoint:            numberDataPoint,
+				Metric:               pmetric.NewMetric(),
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -1369,11 +1369,11 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			numberDataPoint := createSummaryDataPointTelemetry()
 
-			ctx := metricTransformContext{
-				dataPoint: numberDataPoint,
-				metric:    pmetric.NewMetric(),
-				il:        pcommon.NewInstrumentationScope(),
-				resource:  pcommon.NewResource(),
+			ctx := MetricTransformContext{
+				DataPoint:            numberDataPoint,
+				Metric:               pmetric.NewMetric(),
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
@@ -1565,11 +1565,11 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
-			ctx := metricTransformContext{
-				dataPoint: pmetric.NewNumberDataPoint(),
-				metric:    metric,
-				il:        pcommon.NewInstrumentationScope(),
-				resource:  pcommon.NewResource(),
+			ctx := MetricTransformContext{
+				DataPoint:            pmetric.NewNumberDataPoint(),
+				Metric:               metric,
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
 			}
 
 			got := accessor.Get(ctx)
