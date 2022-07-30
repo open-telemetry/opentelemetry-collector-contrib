@@ -25,32 +25,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type metricTransformContext struct {
-	dataPoint interface{}
-	metric    pmetric.Metric
-	metrics   pmetric.MetricSlice
-	il        pcommon.InstrumentationScope
-	resource  pcommon.Resource
+type MetricTransformContext struct {
+	DataPoint            interface{}
+	Metric               pmetric.Metric
+	Metrics              pmetric.MetricSlice
+	InstrumentationScope pcommon.InstrumentationScope
+	Resource             pcommon.Resource
 }
 
-func (ctx metricTransformContext) GetItem() interface{} {
-	return ctx.dataPoint
+func (ctx MetricTransformContext) GetItem() interface{} {
+	return ctx.DataPoint
 }
 
-func (ctx metricTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.il
+func (ctx MetricTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.InstrumentationScope
 }
 
-func (ctx metricTransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
+func (ctx MetricTransformContext) GetResource() pcommon.Resource {
+	return ctx.Resource
 }
 
-func (ctx metricTransformContext) GetMetric() pmetric.Metric {
-	return ctx.metric
+func (ctx MetricTransformContext) GetMetric() pmetric.Metric {
+	return ctx.Metric
 }
 
-func (ctx metricTransformContext) GetMetrics() pmetric.MetricSlice {
-	return ctx.metrics
+func (ctx MetricTransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.Metrics
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.
@@ -277,11 +277,11 @@ func accessInstrumentationScopeVersion() pathGetSetter {
 func accessMetric() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric()
+			return ctx.(MetricTransformContext).GetMetric()
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.(metricTransformContext).GetMetric())
+				newMetric.CopyTo(ctx.(MetricTransformContext).GetMetric())
 			}
 		},
 	}
@@ -290,11 +290,11 @@ func accessMetric() pathGetSetter {
 func accessMetricName() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().Name()
+			return ctx.(MetricTransformContext).GetMetric().Name()
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetMetric().SetName(str)
+				ctx.(MetricTransformContext).GetMetric().SetName(str)
 			}
 		},
 	}
@@ -303,11 +303,11 @@ func accessMetricName() pathGetSetter {
 func accessMetricDescription() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().Description()
+			return ctx.(MetricTransformContext).GetMetric().Description()
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetMetric().SetDescription(str)
+				ctx.(MetricTransformContext).GetMetric().SetDescription(str)
 			}
 		},
 	}
@@ -316,11 +316,11 @@ func accessMetricDescription() pathGetSetter {
 func accessMetricUnit() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(metricTransformContext).GetMetric().Unit()
+			return ctx.(MetricTransformContext).GetMetric().Unit()
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(metricTransformContext).GetMetric().SetUnit(str)
+				ctx.(MetricTransformContext).GetMetric().SetUnit(str)
 			}
 		},
 	}
@@ -329,7 +329,7 @@ func accessMetricUnit() pathGetSetter {
 func accessMetricType() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.(metricTransformContext).GetMetric().DataType())
+			return int64(ctx.(MetricTransformContext).GetMetric().DataType())
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
@@ -341,7 +341,7 @@ func accessMetricType() pathGetSetter {
 func accessMetricAggTemporality() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(metricTransformContext).GetMetric()
+			metric := ctx.(MetricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return int64(metric.Sum().AggregationTemporality())
@@ -354,7 +354,7 @@ func accessMetricAggTemporality() pathGetSetter {
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
-				metric := ctx.(metricTransformContext).GetMetric()
+				metric := ctx.(MetricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
@@ -371,7 +371,7 @@ func accessMetricAggTemporality() pathGetSetter {
 func accessMetricIsMonotonic() pathGetSetter {
 	return pathGetSetter{
 		getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(metricTransformContext).GetMetric()
+			metric := ctx.(MetricTransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return metric.Sum().IsMonotonic()
@@ -380,7 +380,7 @@ func accessMetricIsMonotonic() pathGetSetter {
 		},
 		setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.(metricTransformContext).GetMetric()
+				metric := ctx.(MetricTransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)
