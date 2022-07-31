@@ -64,7 +64,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.55.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.55.0
@@ -78,6 +78,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.55.0
@@ -150,7 +151,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.55.0
 	github.com/prometheus/prometheus v0.36.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.55.1-0.20220711160057-6133c820fd50
+	go.opentelemetry.io/collector v0.56.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220624220833-87e55d714810
 )
@@ -529,8 +530,8 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.55.1-0.20220711160057-6133c820fd50 // indirect
-	go.opentelemetry.io/collector/semconv v0.55.1-0.20220711160057-6133c820fd50 // indirect
+	go.opentelemetry.io/collector/pdata v0.56.0 // indirect
+	go.opentelemetry.io/collector/semconv v0.56.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.33.0 // indirect
@@ -804,6 +805,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/tail
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor => ./processor/transformprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor => ./processor/schemaprocessor
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/scrubbingprocessor => ./processor/scrubbingprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver => ./receiver/activedirectorydsreceiver
 
