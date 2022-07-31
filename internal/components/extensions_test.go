@@ -16,7 +16,6 @@
 //go:build !windows
 // +build !windows
 
-// nolint:errcheck
 package components
 
 import (
