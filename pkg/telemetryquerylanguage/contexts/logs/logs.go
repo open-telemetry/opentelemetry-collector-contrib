@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package tqllogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/logs"
 
 import (
@@ -111,8 +110,7 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		if len(path) == 1 {
 			return accessResource(), nil
 		}
-		switch path[1].Name {
-		case "attributes":
+		if path[1].Name == "attributes" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {
 				return accessResourceAttributes(), nil
@@ -153,16 +151,14 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		if len(path) == 1 {
 			return accessTraceID(), nil
 		}
-		switch path[1].Name {
-		case "string":
+		if path[1].Name == "string" {
 			return accessStringTraceID(), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
 			return accessSpanID(), nil
 		}
-		switch path[1].Name {
-		case "string":
+		if path[1].Name == "string" {
 			return accessStringSpanID(), nil
 		}
 	}
