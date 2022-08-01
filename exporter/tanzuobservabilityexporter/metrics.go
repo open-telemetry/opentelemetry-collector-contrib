@@ -762,8 +762,8 @@ func fromOtelHistogramDataPoint(point pmetric.HistogramDataPoint) bucketHistogra
 	return bucketHistogramDataPoint{
 		Attributes:        point.Attributes(),
 		SecondsSinceEpoch: point.Timestamp().AsTime().Unix(),
-		bucketCounts:      point.MBucketCounts(),
-		explicitBounds:    point.MExplicitBounds(),
+		bucketCounts:      point.BucketCounts().AsRaw(),
+		explicitBounds:    point.ExplicitBounds().AsRaw(),
 	}
 }
 
