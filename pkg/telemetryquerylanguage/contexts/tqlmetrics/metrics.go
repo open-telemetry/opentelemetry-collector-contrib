@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package tqlmetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/metrics"
+package tqlmetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 import (
 	"fmt"
 	"time"
