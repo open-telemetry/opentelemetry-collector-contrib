@@ -44,8 +44,8 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, 5*time.Second, ocfg.RetrySettings.InitialInterval, "default retry InitialInterval")
 	assert.Equal(t, 30*time.Second, ocfg.RetrySettings.MaxInterval, "default retry MaxInterval")
 	assert.Equal(t, true, ocfg.QueueSettings.Enabled, "default sending queue is enabled")
-	assert.Equal(t, "", ocfg.TenantID)
-	assert.Equal(t, map[string]string{}, ocfg.Labels.Attributes)
+	assert.Nil(t, ocfg.TenantID)
+	assert.Nil(t, ocfg.Labels)
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
@@ -62,7 +62,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://" + testutil.GetAvailableLocalAddress(t),
 				},
-				Labels: LabelsConfig{
+				Labels: &LabelsConfig{
 					Attributes:         testValidAttributesWithMapping,
 					ResourceAttributes: testValidResourceWithMapping,
 				},

@@ -54,7 +54,9 @@ type lokiExporter struct {
 	tenantSource tenant.Source
 }
 
-func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
+func newLegacyExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
+	settings.Logger.Info("using the legacy Loki exporter")
+
 	lokiexporter := &lokiExporter{
 		config:   config,
 		settings: settings,
@@ -77,11 +79,16 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 	}
 
 	if config.Tenant == nil {
-		config.Tenant = &Tenant{
-			Source: "static",
-
-			// this might be empty, which is fine, we handle empty later
-			Value: config.TenantID,
+		if config.TenantID != nil {
+			config.Tenant = &Tenant{
+				Source: "static",
+				Value:  *config.TenantID,
+			}
+		} else {
+			config.Tenant = &Tenant{
+				Source: "static",
+				Value:  "",
+			}
 		}
 	}
 
