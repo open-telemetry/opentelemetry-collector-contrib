@@ -33,24 +33,22 @@ type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 // TODO rename this struct
 type Input struct {
 	*zap.SugaredLogger
-	finder       Finder
-	PollInterval time.Duration
-
-	MaxConcurrentFiles int
-	SeenPaths          map[string]struct{}
-
-	persister operator.Persister
-
-	knownFiles    []*Reader
-	queuedMatches []string
-	maxBatchFiles int
-	roller        roller
-
-	firstCheck bool
-	wg         sync.WaitGroup
-	cancel     context.CancelFunc
+	wg     sync.WaitGroup
+	cancel context.CancelFunc
 
 	readerFactory readerFactory
+	finder        Finder
+	roller        roller
+	persister     operator.Persister
+
+	pollInterval       time.Duration
+	maxConcurrentFiles int
+	maxBatchFiles      int
+
+	knownFiles    []*Reader
+	seenPaths     map[string]struct{}
+	firstCheck    bool
+	queuedMatches []string
 }
 
 func (f *Input) Start(persister operator.Persister) error {
@@ -90,7 +88,7 @@ func (f *Input) startPoller(ctx context.Context) {
 	f.wg.Add(1)
 	go func() {
 		defer f.wg.Done()
-		globTicker := time.NewTicker(f.PollInterval)
+		globTicker := time.NewTicker(f.pollInterval)
 		defer globTicker.Stop()
 
 		for {
@@ -107,7 +105,7 @@ func (f *Input) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (f *Input) poll(ctx context.Context) {
-	f.maxBatchFiles = f.MaxConcurrentFiles / 2
+	f.maxBatchFiles = f.maxConcurrentFiles / 2
 	var matches []string
 	if len(f.queuedMatches) > f.maxBatchFiles {
 		matches, f.queuedMatches = f.queuedMatches[:f.maxBatchFiles], f.queuedMatches[f.maxBatchFiles:]
@@ -166,13 +164,13 @@ func (f *Input) makeReaders(filesPaths []string) []*Reader {
 	// Open the files first to minimize the time between listing and opening
 	files := make([]*os.File, 0, len(filesPaths))
 	for _, path := range filesPaths {
-		if _, ok := f.SeenPaths[path]; !ok {
+		if _, ok := f.seenPaths[path]; !ok {
 			if f.readerFactory.fromBeginning {
 				f.Infow("Started watching file", "path", path)
 			} else {
 				f.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
 			}
-			f.SeenPaths[path] = struct{}{}
+			f.seenPaths[path] = struct{}{}
 		}
 		file, err := os.Open(path) // #nosec - operator must read in files defined by user
 		if err != nil {

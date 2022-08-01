@@ -407,8 +407,11 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 // we don't read any entries that were in the file before startup
 func TestStartAtEnd(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
+		pollInterval = cfg.PollInterval.Raw()
 	}, nil)
 
 	temp := openTemp(t, tempDir)
@@ -419,7 +422,7 @@ func TestStartAtEnd(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	expectNoMessages(t, logReceived)
 
@@ -433,8 +436,11 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
+		pollInterval = cfg.PollInterval.Raw()
 	}, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -442,7 +448,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
