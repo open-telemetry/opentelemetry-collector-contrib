@@ -13,12 +13,7 @@ setup_permissions() {
           {
               user: "${USER}",
               pwd: "${PASS}",
-              roles: [
-                  {
-                      role: "clusterMonitor",
-                      db: "admin"
-                  }
-              ]
+              roles: [ "clusterMonitor"]
           }
   );
 EOF
