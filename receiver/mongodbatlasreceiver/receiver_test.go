@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -86,5 +87,40 @@ func TestTimeConstraints(t *testing.T) {
 
 	for _, testCase := range tt {
 		t.Run(testCase.name, testCase.run)
+	}
+}
+
+func getEvent() model.LogEntry {
+	return model.LogEntry{
+		Severity:   "I",
+		Component:  "NETWORK",
+		ID:         12312,
+		Context:    "context",
+		Message:    "Connection ended",
+		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "uuid": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+	}
+}
+
+func getAuditEvent() model.AuditLog {
+	return model.AuditLog{
+		AuthType: "authtype",
+		ID: model.UUID{
+			Type:   "type",
+			Binary: "binary",
+		},
+		Local: model.Address{
+			IP:   "ip",
+			Port: 12345,
+		},
+		Remote: model.Address{
+			IP:   "ip",
+			Port: 12345,
+		},
+		Result: 40,
+		Param: model.Param{
+			User:      "name",
+			Database:  "db",
+			Mechanism: "mechanism",
+		},
 	}
 }

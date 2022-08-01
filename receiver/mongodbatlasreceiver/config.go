@@ -61,10 +61,14 @@ type Project struct {
 }
 
 var (
+	// Alerts Receiver Errors
 	errNoEndpoint = errors.New("an endpoint must be specified")
 	errNoSecret   = errors.New("a webhook secret must be specified")
 	errNoCert     = errors.New("tls was configured, but no cert file was specified")
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
+
+	// Logs Receiver Errors
+	errNoProjects = errors.New("no projects were listed to pull logs from")
 )
 
 func (c *Config) Validate() error {
@@ -72,6 +76,20 @@ func (c *Config) Validate() error {
 
 	errs = multierr.Append(errs, c.ScraperControllerSettings.Validate())
 	errs = multierr.Append(errs, c.Alerts.validate())
+	errs = multierr.Append(errs, c.Logs.validate())
+
+	return errs
+}
+
+func (l *LogConfig) validate() error {
+	var errs error
+	if !l.Enabled {
+		return nil
+	}
+
+	if len(l.Projects) == 0 {
+		errs = multierr.Append(errs, errNoProjects)
+	}
 
 	return errs
 }

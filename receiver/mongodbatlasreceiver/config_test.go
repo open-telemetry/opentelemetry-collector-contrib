@@ -104,6 +104,35 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: errNoCert.Error(),
 		},
+		{
+			name: "Valid Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*Project{
+						{
+							Name:            "Project1",
+							EnableAuditLogs: false,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Invalid Logs Config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
+					Projects: []*Project{
+						{
+							Name:            "",
+							EnableAuditLogs: false,
+						},
+					},
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
 	}
 
 	for _, tc := range testCases {

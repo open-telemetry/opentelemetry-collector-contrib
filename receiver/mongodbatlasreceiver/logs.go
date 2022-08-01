@@ -192,14 +192,17 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				case <-stopper:
 					return
 				case <-time.After(collection_interval):
-					s.collectClusterLogs(clusters, cfgProjects, resource)
+					err = s.collectClusterLogs(clusters, cfgProjects, resource)
+					if err != nil {
+						s.log.Debug("Failure to collect logs from cluster")
+					}
 				}
 			}
 		}
 	}
 }
 
-func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
+func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) error {
 	for _, cluster := range clusters {
 		hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
 		for _, hostname := range hostnames {
@@ -214,6 +217,9 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 			}
 		}
 	}
+
+	return nil
+
 }
 
 func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]string, include bool) ([]mongodbatlas.Cluster, error) {

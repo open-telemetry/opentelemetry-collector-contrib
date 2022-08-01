@@ -49,7 +49,7 @@ var severityMap = map[string]plog.SeverityNumber{
 	"D5": plog.SeverityNumberDEBUG4,
 }
 
-// k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
+// mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
 func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourceInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
@@ -65,6 +65,11 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 	resourceAttrs.InsertString("cluster", r.Cluster.Name)
 	resourceAttrs.InsertString("hostname", r.Hostname)
 
+	data, err := json.Marshal(e)
+	if err != nil {
+		logger.Warn("failed to marshal", zap.Error(err))
+	}
+
 	t, err := time.Parse(layout, e.Timestamp.Date)
 	if err != nil {
 		logger.Warn("Time failed to parse correctly", zap.Error(err))
@@ -74,10 +79,6 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
-	data, err := json.Marshal(e)
-	if err != nil {
-		logger.Warn("failed to marsha", zap.Error(err))
-	}
 	lr.Body().SetStringVal(string(data))
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
@@ -110,6 +111,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 	return ld
 }
 
+// mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
 func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
@@ -124,6 +126,11 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	resourceAttrs.InsertString("project", r.Project.Name)
 	resourceAttrs.InsertString("cluster", r.Cluster.Name)
 	resourceAttrs.InsertString("hostname", r.Hostname)
+
+	data, err := json.Marshal(e)
+	if err != nil {
+		logger.Warn("failed to marshal", zap.Error(err))
+	}
 
 	t, err := time.Parse(layout, e.Timestamp.Date)
 	if err != nil {
@@ -154,12 +161,6 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	attrs.InsertString("context", e.Context)
 	attrs.InsertInt("id", e.ID)
 	attrs.InsertString("log_name", r.LogName)
-
-	data, err := json.Marshal(e)
-	if err != nil {
-		logger.Warn("failed to marsha", zap.Error(err))
-	}
-
 	attrs.InsertString("raw", string(data))
 
 	return ld
