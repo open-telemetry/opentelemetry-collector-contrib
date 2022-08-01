@@ -66,6 +66,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.55.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/batchmemlimitprocessor v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.55.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.55.0
@@ -769,6 +770,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx => ./pkg/translator/signalfx
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ./pkg/translator/zipkin
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/batchmemlimitprocessor => ./processor/batchmemlimitprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor => ./processor/attributesprocessor
 

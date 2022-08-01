@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+
+processors:
+  batchmemorylimit:
+    batch_mem_limit: 200
+
+exporters:
+  nop:
+
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [batchmemorylimit]
+      exporters: [nop]
