@@ -306,6 +306,11 @@ func (p *processHandleMock) IOCounters() (*process.IOCountersStat, error) {
 	return args.Get(0).(*process.IOCountersStat), args.Error(1)
 }
 
+func (p *processHandleMock) NumThreads() (int32, error) {
+	args := p.MethodCalled("NumThreads")
+	return args.Get(0).(int32), args.Error(1)
+}
+
 func (p *processHandleMock) CreateTime() (int64, error) {
 	args := p.MethodCalled("CreateTime")
 	return args.Get(0).(int64), args.Error(1)
