@@ -36,14 +36,14 @@ func (h StorageHost) GetExtensions() map[config.ComponentID]component.Extension 
 	return h.extensions
 }
 
-func NewStorageHost(t *testing.T, directory string, extensionNames ...string) StorageHost {
+func NewStorageHost(t *testing.T, directory string, ids ...config.ComponentID) StorageHost {
 	h := StorageHost{
 		Host:       componenttest.NewNopHost(),
 		extensions: make(map[config.ComponentID]component.Extension),
 	}
 
-	for _, name := range extensionNames {
-		h.extensions[newTestEntity(name)] = NewTestExtension(t, directory)
+	for _, id := range ids {
+		h.extensions[id] = NewTestExtension(t, directory)
 	}
 	return h
 }
@@ -56,8 +56,4 @@ func NewTestExtension(t *testing.T, directory string) storage.Extension {
 	extension, _ := f.CreateExtension(context.Background(), params, cfg)
 	se, _ := extension.(storage.Extension)
 	return se
-}
-
-func newTestEntity(name string) config.ComponentID {
-	return config.NewComponentIDWithName("nop", name)
 }

@@ -17,13 +17,19 @@ package storagetest
 import (
 	"testing"
 
+	"go.opentelemetry.io/collector/config"
+
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewStorageHost(t *testing.T) {
-	host := NewStorageHost(t, t.TempDir(), "test")
+	testID := config.NewComponentIDWithName("nop", "test")
+	oneID := config.NewComponentIDWithName("nop", "one")
+	twoID := config.NewComponentIDWithName("nop", "two")
+
+	host := NewStorageHost(t, t.TempDir(), testID)
 	require.Equal(t, 1, len(host.GetExtensions()))
 
-	hostWithTwo := NewStorageHost(t, t.TempDir(), "one", "two")
+	hostWithTwo := NewStorageHost(t, t.TempDir(), oneID, twoID)
 	require.Equal(t, 2, len(hostWithTwo.GetExtensions()))
 }

@@ -18,6 +18,8 @@ import (
 	"context"
 	"testing"
 
+	"go.opentelemetry.io/collector/config"
+
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -29,7 +31,7 @@ import (
 func TestStorage(t *testing.T) {
 	ctx := context.Background()
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "test")
+	host := storagetest.NewStorageHost(t, t.TempDir(), config.NewComponentIDWithName("nop", "test"))
 	require.NoError(t, r.Start(ctx, host))
 
 	myBytes := []byte("my_value")
@@ -69,12 +71,84 @@ func TestStorage(t *testing.T) {
 	require.Equal(t, "database not open", err.Error())
 }
 
-func TestFailOnMultipleStorageExtensions(t *testing.T) {
+func TestNoStorageExtension(t *testing.T) {
+	host := storagetest.NewStorageHost(t, t.TempDir())
+
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "one", "two")
+	require.NoError(t, r.Start(context.Background(), host))
+	require.Nil(t, r.storageExtension)
+	require.NoError(t, r.Shutdown(context.Background()))
+}
+
+func TestNamedStorageExtension(t *testing.T) {
+	idOne := config.NewComponentIDWithName("nop", "one")
+	idTwo := config.NewComponentIDWithName("nop", "two")
+	host := storagetest.NewStorageHost(t, t.TempDir(), idOne, idTwo)
+
+	r := createReceiver(t)
+	r.storageID = idTwo
+	require.NoError(t, r.Start(context.Background(), host))
+	require.Equal(t, host.GetExtensions()[idTwo], r.storageExtension)
+	require.NoError(t, r.Shutdown(context.Background()))
+}
+
+func TestAutoselectUnnamedStorageExtension(t *testing.T) {
+	idOne := config.NewComponentIDWithName("nop", "one")
+	host := storagetest.NewStorageHost(t, t.TempDir(), idOne)
+
+	r := createReceiver(t)
+	require.NoError(t, r.Start(context.Background(), host))
+	require.Equal(t, host.GetExtensions()[idOne], r.storageExtension)
+	require.NoError(t, r.Shutdown(context.Background()))
+}
+
+func TestDisableStorageExtension(t *testing.T) {
+	idOne := config.NewComponentIDWithName("nop", "one")
+	idTwo := config.NewComponentIDWithName("nop", "two")
+
+	hostNoExt := storagetest.NewStorageHost(t, t.TempDir())
+	hostOneExt := storagetest.NewStorageHost(t, t.TempDir(), idOne)
+	hostTwoExt := storagetest.NewStorageHost(t, t.TempDir(), idOne, idTwo)
+
+	rNone := createReceiver(t)
+	rNone.storageID = config.NewComponentID("false")
+	require.NoError(t, rNone.Start(context.Background(), hostNoExt))
+	require.Nil(t, rNone.storageExtension)
+	require.NoError(t, rNone.Shutdown(context.Background()))
+
+	rOne := createReceiver(t)
+	rOne.storageID = config.NewComponentID("false")
+	require.NoError(t, rOne.Start(context.Background(), hostOneExt))
+	require.Nil(t, rOne.storageExtension)
+	require.NoError(t, rOne.Shutdown(context.Background()))
+
+	rTwo := createReceiver(t)
+	rTwo.storageID = config.NewComponentID("false")
+	require.NoError(t, rTwo.Start(context.Background(), hostTwoExt))
+	require.Nil(t, rTwo.storageExtension)
+	require.NoError(t, rTwo.Shutdown(context.Background()))
+
+}
+
+func TestFailAmbiguousStorageExtensions(t *testing.T) {
+	idOne := config.NewComponentIDWithName("nop", "one")
+	idTwo := config.NewComponentIDWithName("nop", "two")
+	host := storagetest.NewStorageHost(t, t.TempDir(), idOne, idTwo)
+
+	r := createReceiver(t)
 	err := r.Start(context.Background(), host)
-	require.Error(t, err)
-	require.Equal(t, "storage client: multiple storage extensions found", err.Error())
+	require.ErrorContains(t, err, "ambiguous storage extension")
+}
+
+func TestFailMissingStorageExtensions(t *testing.T) {
+	idOne := config.NewComponentIDWithName("nop", "one")
+	idTwo := config.NewComponentIDWithName("nop", "two")
+	host := storagetest.NewStorageHost(t, t.TempDir(), idOne, idTwo)
+
+	r := createReceiver(t)
+	r.storageID = config.NewComponentIDWithName("nop", "three")
+	err := r.Start(context.Background(), host)
+	require.ErrorContains(t, err, "storage extension not found: nop/three")
 }
 
 func createReceiver(t *testing.T) *receiver {

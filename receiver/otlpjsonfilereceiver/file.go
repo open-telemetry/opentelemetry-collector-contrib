@@ -17,6 +17,8 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/extension/experimental/storage"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,6 +50,7 @@ func NewFactory() component.ReceiverFactory {
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	fileconsumer.Config     `mapstructure:",squash"`
+	StorageID               config.ComponentID `mapstructure:"storage"`
 }
 
 func createDefaultConfig() config.Receiver {
@@ -58,16 +61,25 @@ func createDefaultConfig() config.Receiver {
 }
 
 type receiver struct {
-	input *fileconsumer.Input
-	id    config.ComponentID
+	input     *fileconsumer.Input
+	id        config.ComponentID
+	storageID config.ComponentID
 }
 
 func (f *receiver) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, f.id, component.KindReceiver, host)
+	ext, err := adapter.GetStorageExtension(ctx, host, f.storageID)
 	if err != nil {
 		return err
 	}
-	return f.input.Start(storageClient)
+	if ext == nil {
+		return f.input.Start(storage.NewNopClient())
+	}
+
+	client, err := ext.GetClient(ctx, component.KindReceiver, f.id, "")
+	if err != nil {
+		return err
+	}
+	return f.input.Start(client)
 }
 
 func (f *receiver) Shutdown(ctx context.Context) error {
@@ -81,7 +93,8 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*Config).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	cfg := configuration.(*Config)
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		l, err := logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
@@ -95,7 +108,7 @@ func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSett
 		return nil, err
 	}
 
-	return &receiver{input: input, id: configuration.ID()}, nil
+	return &receiver{input: input, id: cfg.ID(), storageID: cfg.StorageID}, nil
 }
 
 func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, metrics consumer.Metrics) (component.MetricsReceiver, error) {
@@ -105,7 +118,8 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*Config).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	cfg := configuration.(*Config)
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		m, err := metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
@@ -119,7 +133,7 @@ func createMetricsReceiver(_ context.Context, settings component.ReceiverCreateS
 		return nil, err
 	}
 
-	return &receiver{input: input, id: configuration.ID()}, nil
+	return &receiver{input: input, id: configuration.ID(), storageID: cfg.StorageID}, nil
 }
 
 func createTracesReceiver(ctx context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, traces consumer.Traces) (component.TracesReceiver, error) {
@@ -129,7 +143,8 @@ func createTracesReceiver(ctx context.Context, settings component.ReceiverCreate
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
 	})
-	input, err := configuration.(*Config).Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	cfg := configuration.(*Config)
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
 		ctx = obsrecv.StartTracesOp(ctx)
 		t, err := tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
@@ -143,5 +158,5 @@ func createTracesReceiver(ctx context.Context, settings component.ReceiverCreate
 		return nil, err
 	}
 
-	return &receiver{input: input, id: configuration.ID()}, nil
+	return &receiver{input: input, id: configuration.ID(), storageID: cfg.StorageID}, nil
 }

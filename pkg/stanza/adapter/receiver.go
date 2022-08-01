@@ -35,13 +35,16 @@ type receiver struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	pipe          pipeline.Pipeline
-	emitter       *LogEmitter
-	consumer      consumer.Logs
-	storageClient storage.Client
-	converter     *Converter
-	logger        *zap.Logger
-	obsrecv       *obsreport.Receiver
+	pipe      pipeline.Pipeline
+	emitter   *LogEmitter
+	consumer  consumer.Logs
+	converter *Converter
+	logger    *zap.Logger
+	obsrecv   *obsreport.Receiver
+
+	storageID        config.ComponentID
+	storageExtension storage.Extension
+	storageClient    storage.Client
 }
 
 // Ensure this receiver adheres to required interface
@@ -53,7 +56,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 	r.cancel = cancel
 	r.logger.Info("Starting stanza receiver")
 
-	if err := r.setStorageClient(ctx, host); err != nil {
+	if err := r.setStorage(ctx, host); err != nil {
 		return fmt.Errorf("storage client: %w", err)
 	}
 

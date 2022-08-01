@@ -96,6 +96,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			ReceiverID:             cfg.ID(),
 			ReceiverCreateSettings: params,
 		})
+
 		return &receiver{
 			id:        cfg.ID(),
 			pipe:      pipe,
@@ -104,6 +105,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
 		}, nil
 	}
 }

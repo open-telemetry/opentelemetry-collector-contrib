@@ -17,6 +17,7 @@ package adapter // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -25,37 +26,64 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-func GetStorageClient(ctx context.Context, id config.ComponentID, componentKind component.Kind, host component.Host) (storage.Client, error) {
-	var storageExtension storage.Extension
-	if host != nil {
-		for _, ext := range host.GetExtensions() {
-			if se, ok := ext.(storage.Extension); ok {
-				if storageExtension != nil {
-					return nil, errors.New("multiple storage extensions found")
-				}
-				storageExtension = se
+func GetStorageExtension(ctx context.Context, host component.Host, storageID config.ComponentID) (storage.Extension, error) {
+	if host == nil {
+		return nil, nil
+	}
+
+	// Storage explicitly disabled. (e.g. 'storage: false')
+	if storageID.String() == "false" {
+		return nil, nil
+	}
+
+	// Storage explicitly specified.
+	if storageID.String() != "" {
+		ext, found := host.GetExtensions()[storageID]
+		if !found {
+			return nil, fmt.Errorf("storage extension not found: %s", storageID.String())
+		}
+		if se, ok := ext.(storage.Extension); ok {
+			return se, nil
+		}
+		return nil, errors.New("non-storage extension specified")
+	}
+
+	// Storage not specified. Automatically select if unambiguous.
+	var storageExt storage.Extension
+	for _, ext := range host.GetExtensions() {
+		if se, ok := ext.(storage.Extension); ok {
+			if storageExt != nil {
+				return nil, errors.New("ambiguous storage extension")
 			}
+			storageExt = se
 		}
 	}
 
-	if storageExtension == nil {
-		return storage.NewNopClient(), nil
-	}
-
-	return storageExtension.GetClient(ctx, componentKind, id, "")
+	// Extension will be nil if none was specified
+	return storageExt, nil
 }
 
 func GetPersister(storageClient storage.Client) operator.Persister {
 	return &persister{storageClient}
 }
 
-func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
-	client, err := GetStorageClient(ctx, r.id, component.KindReceiver, host)
+func (r *receiver) setStorage(ctx context.Context, host component.Host) error {
+	extension, err := GetStorageExtension(ctx, host, r.storageID)
 	if err != nil {
 		return err
 	}
 
-	r.storageClient = client
+	if extension == nil {
+		r.storageClient = storage.NewNopClient()
+		return nil
+	}
+
+	client, err := extension.GetClient(ctx, component.KindReceiver, r.id, "")
+	if err != nil {
+		return err
+	}
+
+	r.storageExtension, r.storageClient = extension, client
 	return nil
 }
 
