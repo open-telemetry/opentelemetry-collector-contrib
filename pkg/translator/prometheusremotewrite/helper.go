@@ -52,7 +52,7 @@ const (
 	traceIDKey       = "trace_id"
 	spanIDKey        = "span_id"
 	infoType         = "info"
-	targetMetricName = "target"
+	targetMetricName = "target_info"
 )
 
 type bucketBoundsData struct {
