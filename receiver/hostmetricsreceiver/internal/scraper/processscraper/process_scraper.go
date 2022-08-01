@@ -38,7 +38,7 @@ const (
 	diskMetricsLen   = 1
 	threadMetricsLen = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + threadMetricsLen
 )
 
 // scraper for Process Metrics
