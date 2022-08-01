@@ -108,7 +108,7 @@ metrics:
       monotonic: true
 
   process.threads.count:
-    enabled: true
+    enabled: false
     description: Process threads count.
     unit: By
     sum:

@@ -48,7 +48,7 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ProcessThreadsCount: MetricSettings{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
