@@ -48,6 +48,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	settings := componenttest.NewNopReceiverCreateSettings()
 	receiver, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
 	require.NoError(t, err, "failed creating metrics receiver")
+	time.Sleep(time.Second / 2)
 	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
 
 	require.Eventually(t, func() bool {
@@ -60,5 +61,28 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("node.name")))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+
+	// now do a run in cluster mode
+	cfg.CollectClusterMetrics = true
+
+	consumer = new(consumertest.MetricsSink)
+	settings = componenttest.NewNopReceiverCreateSettings()
+	receiver, err = f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+	require.NoError(t, err, "failed creating metrics receiver")
+	time.Sleep(time.Second / 2)
+	require.NoError(t, receiver.Start(context.Background(), componenttest.NewNopHost()), "failed starting metrics receiver")
+
+	require.Eventually(t, func() bool {
+		return consumer.DataPointCount() > 0
+	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+	require.NoError(t, receiver.Shutdown(context.Background()), "failed shutting down metrics receiver")
+
+	actualMetrics = consumer.AllMetrics()[0]
+	expectedFile = filepath.Join("testdata", "integration", "expected.json")
+	expectedMetrics, err = golden.ReadMetrics(expectedFile)
+	require.NoError(t, err, "failed reading expected metrics")
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
+
 }

@@ -77,12 +77,8 @@ func createMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
-		if transform.MetricIncludeFilter.Include == "" && transform.MetricName == "" {
+		if transform.MetricIncludeFilter.Include == "" {
 			return fmt.Errorf("missing required field %q", IncludeFieldName)
-		}
-
-		if transform.MetricIncludeFilter.Include != "" && transform.MetricName != "" {
-			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
@@ -147,11 +143,6 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 
-		// for backwards compatibility, convert metric name to an include filter
-		if t.MetricName != "" {
-			t.MetricIncludeFilter = FilterConfig{Include: t.MetricName}
-			t.MetricName = ""
-		}
 		if t.MetricIncludeFilter.MatchType == "" {
 			t.MetricIncludeFilter.MatchType = StrictMatchType
 		}

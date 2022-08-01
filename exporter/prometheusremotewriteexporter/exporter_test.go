@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusremotewriteexporter
 
 import (
@@ -743,7 +742,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
-		//disable sanitizeLabel flag
+		// disable sanitizeLabel flag
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
