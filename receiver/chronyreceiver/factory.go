@@ -28,13 +28,16 @@ import (
 
 const (
 	typeStr = "chrony"
+
+	// The stability level of the receiver.
+	stability = component.StabilityLevelAlpha
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		newDefaultCongfig,
-		component.WithMetricsReceiver(newMetricsReceiver),
+		component.WithMetricsReceiverAndStabilityLevel(newMetricsReceiver, stability),
 	)
 }
 

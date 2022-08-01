@@ -18,7 +18,7 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include_file_path`             | `false`          | Whether to add the file path as the attribute `log.file.path`. |
 | `include_file_name_resolved`    | `false`          | Whether to add the file name after symlinks resolution as the attribute `log.file.name_resolved`. |
 | `include_file_path_resolved`    | `false`          | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`. |
-| `start_at`                      | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
+| `start_at`                      | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. This setting will be ignored if previously read file offsets are retrieved from a persistence mechanism. |
 | `fingerprint_size`              | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time). |
 | `max_log_size`                  | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |.
 | `max_concurrent_files`          | 1024             | The maximum number of log files from which logs will be read concurrently (minimum = 2). If the number of files matched in the `include` pattern exceeds half of this number, then files will be processed in batches. One batch will be processed per `poll_interval`. |

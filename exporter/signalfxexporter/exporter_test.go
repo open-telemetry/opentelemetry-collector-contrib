@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter
 
 import (
@@ -193,7 +192,7 @@ func TestConsumeMetrics(t *testing.T) {
 					w.Header().Add(splunk.HeaderRetryAfter, strconv.Itoa(tt.retryAfter))
 				}
 				w.WriteHeader(tt.httpResponseCode)
-				w.Write([]byte("response content"))
+				_, _ = w.Write([]byte("response content"))
 			}))
 			defer server.Close()
 
@@ -428,7 +427,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
-			defer sfxExp.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
 
 			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
 
@@ -679,7 +680,9 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
-			defer sfxExp.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
 
 			assert.NoError(t, sfxExp.ConsumeLogs(context.Background(), newLogData(tt.includedInLogData)))
 
