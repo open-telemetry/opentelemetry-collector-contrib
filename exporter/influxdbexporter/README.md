@@ -12,7 +12,8 @@ This exporter supports sending tracing, metrics, and logging data to [InfluxDB](
 
 The following configuration options are supported:
 
-* `endpoint` (required) HTTP destination for line protocol
+* `endpoint` (required) HTTP/S destination for line protocol
+  - if path is set to root (/) or is unspecified, it will be changed to /api/v2/write.
 * `timeout` (default = 5s) Timeout for requests
 * `headers`: (optional) additional headers attached to each HTTP request
   - header `User-Agent` is `OpenTelemetry -> Influx` by default
