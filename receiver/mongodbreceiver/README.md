@@ -59,5 +59,9 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
+The metrics `mongodb.global_lock.time` and `mongodb.index.access.count` will only be collected when using a mongodb instance 4.0+.
+
+For mongodb, is it recommended to set up a least privilege user (LPU) with a [`clusterMonitor` role](https://www.mongodb.com/docs/v5.0/reference/built-in-roles/#mongodb-authrole-clusterMonitor) in order to collect metrics. An example setup can be found in [lpu.sh](./testdata/integration/scripts/lpu.sh).
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

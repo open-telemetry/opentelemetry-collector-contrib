@@ -36,6 +36,8 @@ import (
 )
 
 var (
+	LPUSetupScript      = []string{"/lpu.sh"}
+	setupScript         = []string{"/setup.sh"}
 	containerRequest2_6 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
@@ -60,12 +62,20 @@ var (
 		ExposedPorts: []string{"27217:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
+	containerRequest4_0LPU = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.mongodb.4_0.lpu",
+		},
+		ExposedPorts: []string{"27317:27017"},
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+	}
 	containerRequest5_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
 			Dockerfile: "Dockerfile.mongodb.5_0",
 		},
-		ExposedPorts: []string{"27317:27017"},
+		ExposedPorts: []string{"27417:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
 )
@@ -73,7 +83,7 @@ var (
 func TestMongodbIntegration(t *testing.T) {
 	t.Run("Running mongodb 2.6", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest2_6)
+		container := getContainer(t, containerRequest2_6, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -111,7 +121,7 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 	t.Run("Running mongodb 3.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest3_0)
+		container := getContainer(t, containerRequest3_0, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -149,7 +159,7 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 	t.Run("Running mongodb 4.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest4_0)
+		container := getContainer(t, containerRequest4_0, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -185,9 +195,49 @@ func TestMongodbIntegration(t *testing.T) {
 		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
 	})
+	t.Run("Running mongodb 4.0 as LPU", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest4_0LPU, LPUSetupScript)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Username = "otelu"
+		cfg.Password = "otelp"
+		cfg.Hosts = []confignet.NetAddr{
+			{
+				Endpoint: net.JoinHostPort(hostname, "27317"),
+			},
+		}
+		cfg.Insecure = true
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMetrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.4_0.lpu.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
+		require.NoError(t, err)
+	})
 	t.Run("Running mongodb 5.0", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest5_0)
+		container := getContainer(t, containerRequest5_0, setupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -198,7 +248,7 @@ func TestMongodbIntegration(t *testing.T) {
 		cfg := f.CreateDefaultConfig().(*Config)
 		cfg.Hosts = []confignet.NetAddr{
 			{
-				Endpoint: net.JoinHostPort(hostname, "27317"),
+				Endpoint: net.JoinHostPort(hostname, "27417"),
 			},
 		}
 		cfg.Insecure = true
@@ -224,7 +274,7 @@ func TestMongodbIntegration(t *testing.T) {
 	})
 }
 
-func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
+func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []string) testcontainers.Container {
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
 		context.Background(),
@@ -234,7 +284,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 		})
 	require.NoError(t, err)
 
-	code, err := container.Exec(context.Background(), []string{"/setup.sh"})
+	code, err := container.Exec(context.Background(), script)
 	require.NoError(t, err)
 	require.Equal(t, 0, code)
 

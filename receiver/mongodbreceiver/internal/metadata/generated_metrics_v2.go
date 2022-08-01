@@ -611,7 +611,7 @@ type metricMongodbDocumentOperationCount struct {
 // init fills mongodb.document.operation.count metric with initial data.
 func (m *metricMongodbDocumentOperationCount) init() {
 	m.data.SetName("mongodb.document.operation.count")
-	m.data.SetDescription("The number of documents operations executed.")
+	m.data.SetDescription("The number of document operations executed.")
 	m.data.SetUnit("{documents}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)

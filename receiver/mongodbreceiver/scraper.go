@@ -94,18 +94,18 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror
 	s.collectAdminDatabase(ctx, now, errors)
 	s.collectTopStats(ctx, now, errors)
 
-	// Mongo version 4.0+ is required to have authorized access to list collection names
-	// reference: https://www.mongodb.com/docs/manual/reference/method/db.getCollectionNames/
-	mongo40, _ := version.NewVersion("4.0")
-	if s.mongoVersion.GreaterThanOrEqual(mongo40) {
-		for _, dbName := range dbNames {
-			s.collectDatabase(ctx, now, dbName, errors)
-			collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
-			if err != nil {
-				s.logger.Error("Failed to fetch collection names", zap.Error(err))
-				return
-			}
+	for _, dbName := range dbNames {
+		s.collectDatabase(ctx, now, dbName, errors)
+		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
+		if err != nil {
+			s.logger.Error("Failed to fetch collection names", zap.Error(err))
+			return
+		}
 
+		// Mongo version 4.0+ is required to have authorized access to list collection names
+		// reference: https://www.mongodb.com/docs/manual/reference/method/db.getCollectionNames/
+		mongo40, _ := version.NewVersion("4.0")
+		if s.mongoVersion.GreaterThanOrEqual(mongo40) {
 			for _, collectionName := range collectionNames {
 				s.collectIndexStats(ctx, now, dbName, collectionName, errors)
 			}

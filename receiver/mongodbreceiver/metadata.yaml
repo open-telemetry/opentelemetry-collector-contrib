@@ -167,7 +167,7 @@ metrics:
       monotonic: false
     attributes: [database, collection]
   mongodb.document.operation.count:
-    description: The number of documents operations executed.
+    description: The number of document operations executed.
     unit: "{documents}"
     enabled: true
     sum:
