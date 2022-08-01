@@ -134,6 +134,22 @@
 			"$numberInt": "1089"
 		}
 	},
+	"metrics": {
+        "document": {
+            "updated": {
+                "$numberLong": "1"
+            },
+            "deleted": {
+                "$numberLong": "0"
+            },
+            "inserted": {
+                "$numberLong": "1"
+            },
+            "returned": {
+                "$numberLong": "0"
+            }
+        }
+	},
 	"network": {
 		"bytesIn": {
 			"$numberLong": "2683"

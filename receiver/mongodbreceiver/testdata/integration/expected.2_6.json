@@ -6,43 +6,6 @@
             {
                "metrics": [
                   {
-                     "description": "The number of cache operations of the instance.",
-                     "name": "mongodb.cache.operations",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "miss"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "349",
-                              "attributes": [
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "hit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "{operations}"
-                  },
-                  {
                      "description": "The number of open cursors maintained for clients.",
                      "name": "mongodb.cursor.count",
                      "sum": {
@@ -50,8 +13,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -65,8 +28,8 @@
                         "dataPoints": [
                            {
                               "asInt": "0",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -79,9 +42,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "4",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "asInt": "3",
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -94,9 +57,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "64661",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "asInt": "438",
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ],
                         "isMonotonic": true
@@ -110,9 +73,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "2660",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "asInt": "2105",
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -125,9 +88,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "8366",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "asInt": "4679",
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -140,9 +103,9 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "27",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "asInt": "23",
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -155,33 +118,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "getmore"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "30",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "command"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
+                              "asInt": "1",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -190,11 +127,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
-                              "asInt": "1",
+                              "asInt": "4",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -203,8 +140,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
                               "asInt": "0",
@@ -216,8 +153,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
                               "asInt": "0",
@@ -229,28 +166,39 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "25",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ],
                         "isMonotonic": true
                      },
                      "unit": "{operations}"
-                  },
-                  {
-                     "description": "The total number of active sessions.",
-                     "name": "mongodb.session.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "19",
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{sessions}"
                   }
                ],
                "scope": {
@@ -272,6 +220,58 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
+                              "asInt": "140",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "748",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
                               "asInt": "0",
                               "attributes": [
                                  {
@@ -281,11 +281,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
-                              "asInt": "368984",
+                              "asInt": "632046",
                               "attributes": [
                                  {
                                     "key": "operation",
@@ -294,1295 +294,13 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "57",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "query"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ],
                         "isMonotonic": true
                      },
                      "unit": "ms"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "database",
-                  "value": {
-                     "stringValue": "admin"
-                  }
-               }
-            ]
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of collections.",
-                     "name": "mongodb.collection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{collections}"
-                  },
-                  {
-                     "description": "The number of connections.",
-                     "name": "mongodb.connection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "838857",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "available"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "current"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{connections}"
-                  },
-                  {
-                     "description": "The size of the collection. Data compression does not affect this value.",
-                     "name": "mongodb.data.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "59",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of document operations executed.",
-                     "name": "mongodb.document.operation.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
-                  },
-                  {
-                     "description": "The number of extents.",
-                     "name": "mongodb.extent.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{extents}"
-                  },
-                  {
-                     "description": "The number of indexes.",
-                     "name": "mongodb.index.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{indexes}"
-                  },
-                  {
-                     "description": "Sum of the space allocated to all indexes in the database, including free index space.",
-                     "name": "mongodb.index.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "16384",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The amount of memory used.",
-                     "name": "mongodb.memory.usage",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "83886080",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "resident"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "1141899264",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "virtual"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of objects.",
-                     "name": "mongodb.object.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{objects}"
-                  },
-                  {
-                     "description": "The total amount of storage allocated to this collection.",
-                     "name": "mongodb.storage.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "16384",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "By"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": []
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of times an index has been accessed.",
-                     "name": "mongodb.index.access.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "admin"
-                                    }
-                                 },
-                                 {
-                                    "key": "collection",
-                                    "value": {
-                                       "stringValue": "system.version"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{accesses}"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "database",
-                  "value": {
-                     "stringValue": "config"
-                  }
-               }
-            ]
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of collections.",
-                     "name": "mongodb.collection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{collections}"
-                  },
-                  {
-                     "description": "The number of connections.",
-                     "name": "mongodb.connection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "838857",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "available"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "current"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{connections}"
-                  },
-                  {
-                     "description": "The size of the collection. Data compression does not affect this value.",
-                     "name": "mongodb.data.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of document operations executed.",
-                     "name": "mongodb.document.operation.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
-                  },
-                  {
-                     "description": "The number of extents.",
-                     "name": "mongodb.extent.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{extents}"
-                  },
-                  {
-                     "description": "The number of indexes.",
-                     "name": "mongodb.index.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "2",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{indexes}"
-                  },
-                  {
-                     "description": "Sum of the space allocated to all indexes in the database, including free index space.",
-                     "name": "mongodb.index.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "8192",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The amount of memory used.",
-                     "name": "mongodb.memory.usage",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "83886080",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "resident"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "1141899264",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "virtual"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of objects.",
-                     "name": "mongodb.object.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{objects}"
-                  },
-                  {
-                     "description": "The total amount of storage allocated to this collection.",
-                     "name": "mongodb.storage.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "4096",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "By"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": []
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of times an index has been accessed.",
-                     "name": "mongodb.index.access.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "config"
-                                    }
-                                 },
-                                 {
-                                    "key": "collection",
-                                    "value": {
-                                       "stringValue": "system.sessions"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{accesses}"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "database",
-                  "value": {
-                     "stringValue": "local"
-                  }
-               }
-            ]
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of collections.",
-                     "name": "mongodb.collection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{collections}"
-                  },
-                  {
-                     "description": "The number of connections.",
-                     "name": "mongodb.connection.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "838857",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "available"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "current"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{connections}"
-                  },
-                  {
-                     "description": "The size of the collection. Data compression does not affect this value.",
-                     "name": "mongodb.data.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1445",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of document operations executed.",
-                     "name": "mongodb.document.operation.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "update"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{documents}"
-                  },
-                  {
-                     "description": "The number of extents.",
-                     "name": "mongodb.extent.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{extents}"
-                  },
-                  {
-                     "description": "The number of indexes.",
-                     "name": "mongodb.index.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{indexes}"
-                  },
-                  {
-                     "description": "Sum of the space allocated to all indexes in the database, including free index space.",
-                     "name": "mongodb.index.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "16384",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The amount of memory used.",
-                     "name": "mongodb.memory.usage",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "83886080",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "resident"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "1141899264",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "virtual"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "By"
-                  },
-                  {
-                     "description": "The number of objects.",
-                     "name": "mongodb.object.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{objects}"
-                  },
-                  {
-                     "description": "The total amount of storage allocated to this collection.",
-                     "name": "mongodb.storage.size",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "16384",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "By"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": []
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of times an index has been accessed.",
-                     "name": "mongodb.index.access.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "local"
-                                    }
-                                 },
-                                 {
-                                    "key": "collection",
-                                    "value": {
-                                       "stringValue": "startup_log"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ]
-                     },
-                     "unit": "{accesses}"
                   }
                ],
                "scope": {
@@ -1613,7 +331,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "1",
+                              "asInt": "3",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1622,8 +340,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1635,25 +353,6 @@
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "active"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
                            {
                               "asInt": "838857",
                               "attributes": [
@@ -1670,8 +369,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
                               "asInt": "3",
@@ -1689,8 +388,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1703,7 +402,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "0",
+                              "asInt": "256",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1712,8 +411,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1737,31 +436,12 @@
                                  {
                                     "key": "operation",
                                     "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
                                        "stringValue": "update"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
                               "asInt": "0",
@@ -1779,8 +459,27 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "testdb"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1793,7 +492,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "0",
+                              "asInt": "3",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1802,8 +501,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1825,8 +524,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1839,7 +538,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "4096",
+                              "asInt": "8176",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1848,8 +547,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1862,7 +561,7 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "83886080",
+                              "asInt": "62914560",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1877,11 +576,11 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            },
                            {
-                              "asInt": "1141899264",
+                              "asInt": "528482304",
                               "attributes": [
                                  {
                                     "key": "database",
@@ -1896,8 +595,702 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of objects.",
+                     "name": "mongodb.object.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "testdb"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{objects}"
+                  },
+                  {
+                     "description": "The total amount of storage allocated to this collection.",
+                     "name": "mongodb.storage.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "24576",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "testdb"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/mongodbreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "database",
+                  "value": {
+                     "stringValue": "local"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of collections.",
+                     "name": "mongodb.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The number of connections.",
+                     "name": "mongodb.connection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "838857",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "current"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "The size of the collection. Data compression does not affect this value.",
+                     "name": "mongodb.data.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1160",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of document operations executed.",
+                     "name": "mongodb.document.operation.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
+                     "description": "The number of extents.",
+                     "name": "mongodb.extent.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{extents}"
+                  },
+                  {
+                     "description": "The number of indexes.",
+                     "name": "mongodb.index.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{indexes}"
+                  },
+                  {
+                     "description": "Sum of the space allocated to all indexes in the database, including free index space.",
+                     "name": "mongodb.index.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "8176",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The amount of memory used.",
+                     "name": "mongodb.memory.usage",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "79691776",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "resident"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "528482304",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "virtual"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of objects.",
+                     "name": "mongodb.object.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{objects}"
+                  },
+                  {
+                     "description": "The total amount of storage allocated to this collection.",
+                     "name": "mongodb.storage.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "10502144",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "local"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  }
+               ],
+               "scope": {
+                  "name": "otelcol/mongodbreceiver",
+                  "version": "latest"
+               }
+            }
+         ]
+      },
+      {
+         "resource": {
+            "attributes": [
+               {
+                  "key": "database",
+                  "value": {
+                     "stringValue": "admin"
+                  }
+               }
+            ]
+         },
+         "scopeMetrics": [
+            {
+               "metrics": [
+                  {
+                     "description": "The number of collections.",
+                     "name": "mongodb.collection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{collections}"
+                  },
+                  {
+                     "description": "The number of connections.",
+                     "name": "mongodb.connection.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "current"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "838857",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "The size of the collection. Data compression does not affect this value.",
+                     "name": "mongodb.data.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of document operations executed.",
+                     "name": "mongodb.document.operation.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "update"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
+                     "description": "The number of extents.",
+                     "name": "mongodb.extent.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{extents}"
+                  },
+                  {
+                     "description": "The number of indexes.",
+                     "name": "mongodb.index.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "{indexes}"
+                  },
+                  {
+                     "description": "Sum of the space allocated to all indexes in the database, including free index space.",
+                     "name": "mongodb.index.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The amount of memory used.",
+                     "name": "mongodb.memory.usage",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "79691776",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "resident"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
+                           },
+                           {
+                              "asInt": "528482304",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "admin"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "virtual"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1915,12 +1308,12 @@
                                  {
                                     "key": "database",
                                     "value": {
-                                       "stringValue": "testdb"
+                                       "stringValue": "admin"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
                         ]
                      },
@@ -1933,66 +1326,22 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
-                              "asInt": "4096",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
-                           }
-                        ],
-                        "isMonotonic": true
-                     },
-                     "unit": "By"
-                  }
-               ],
-               "scope": {
-                  "name": "otelcol/mongodbreceiver",
-                  "version": "latest"
-               }
-            }
-         ]
-      },
-      {
-         "resource": {
-            "attributes": []
-         },
-         "scopeMetrics": [
-            {
-               "metrics": [
-                  {
-                     "description": "The number of times an index has been accessed.",
-                     "name": "mongodb.index.access.count",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
                               "asInt": "0",
                               "attributes": [
                                  {
                                     "key": "database",
                                     "value": {
-                                       "stringValue": "testdb"
-                                    }
-                                 },
-                                 {
-                                    "key": "collection",
-                                    "value": {
-                                       "stringValue": "orders"
+                                       "stringValue": "admin"
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1659372653220006000",
-                              "timeUnixNano": "1659372713228518000"
+                              "startTimeUnixNano": "1659372711430617000",
+                              "timeUnixNano": "1659372771440302000"
                            }
-                        ]
+                        ],
+                        "isMonotonic": true
                      },
-                     "unit": "{accesses}"
+                     "unit": "By"
                   }
                ],
                "scope": {
