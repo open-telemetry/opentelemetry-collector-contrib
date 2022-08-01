@@ -437,7 +437,7 @@ func getValue(val pcommon.Value) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.MBytesVal()
+		return val.BytesVal().AsRaw()
 	}
 	return nil
 }
