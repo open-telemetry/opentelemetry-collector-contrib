@@ -15,16 +15,22 @@
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
 import (
+	"compress/gzip"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 )
 
 // combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
@@ -41,10 +47,11 @@ type resourceInfo struct {
 	LogName  string
 }
 
+// MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collection_interval = time.Minute * 5
 
+// Starts up the combined MongoDB Atlas Logs and Alert Receiver
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
-
 	var errs error
 
 	// If we have an alerts receiver start alerts collection
@@ -64,6 +71,7 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 	return errs
 }
 
+// Shuts Down the Alerts and Log combined receiver
 func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
@@ -127,25 +135,26 @@ func FilterHostName(s string) []string {
 	return hostnames
 }
 
+// Actual functionality the receiver executes from the Start function
 func (s *receiver) KickoffReceiver(ctx context.Context) {
 	stopper := make(chan struct{})
 	s.stopperChanList = append(s.stopperChanList, stopper)
 	cfgProjects, err := s.createProjectMap()
 	if err != nil {
-		s.log.Debug("error ")
+		s.log.Error("Failed to create project map", zap.Error(err))
 	}
 
 	for {
 		// reterive all organizations listed in the MongoDB client
 		orgs, err := s.client.Organizations(ctx)
 		if err != nil {
-			s.log.Debug("error retrieving organizations: %w")
+			s.log.Error("Error retrieving organizations", zap.Error(err))
 		}
 		// get all projects listed for each of the organizations
 		for _, org := range orgs {
 			projects, err := s.client.Projects(ctx, org.ID)
 			if err != nil {
-				s.log.Debug("error retrieving projects: %w")
+				s.log.Error("Error retrieving projects", zap.Error(err))
 			}
 
 			// filter out any projects not specified in the config
@@ -160,7 +169,10 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			for _, project := range filteredProjects {
 				resource := resourceInfo{Org: org, Project: project}
 				include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
-				clusters, err := s.client.GetClusters(ctx, project.ID, include, exclude)
+				clusters, err := s.client.GetClusters(ctx, project.ID)
+				if err != nil {
+					s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
+				}
 
 				// check to include or exclude clusters
 				switch {
@@ -178,11 +190,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				// both are initialized
 				default:
 					clusters = nil
-					s.log.Debug("Error can not have both include and exclude parameters initialized")
-				}
-
-				if err != nil {
-					s.log.Debug("error retreiving clusters from project")
+					s.log.Error("Error can not have both include and exclude parameters initialized")
 				}
 
 				// collection interval loop,
@@ -194,7 +202,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				case <-time.After(collection_interval):
 					err = s.collectClusterLogs(clusters, cfgProjects, resource)
 					if err != nil {
-						s.log.Debug("Failure to collect logs from cluster")
+						s.log.Error("Failure to collect logs from cluster %w", zap.Error(err))
 					}
 				}
 			}
@@ -239,4 +247,90 @@ func createStringMap(in []string) map[string]string {
 	}
 
 	return list
+}
+
+func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
+	// Get gzip bytes buffer from API
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
+	if err != nil {
+		return nil, err
+	}
+	// Pass this into a gzip reader for decoding
+	reader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Logs are in JSON format so create a JSON decoder to process them
+	dec := json.NewDecoder(reader)
+
+	entries := make([]model.LogEntry, 0)
+	for {
+		var entry model.LogEntry
+		err := dec.Decode(&entry)
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+}
+
+func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
+	// Get gzip bytes buffer from API
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
+	if err != nil {
+		return nil, err
+	}
+	// Pass this into a gzip reader for decoding
+	reader, err := gzip.NewReader(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	// Logs are in JSON format so create a JSON decoder to process them
+	dec := json.NewDecoder(reader)
+
+	entries := make([]model.AuditLog, 0)
+	for {
+		var entry model.AuditLog
+		err := dec.Decode(&entry)
+		if errors.Is(err, io.EOF) {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		entries = append(entries, entry)
+	}
+}
+
+func (s *receiver) sendLogs(r resourceInfo, logName string) {
+	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName)
+	if err != nil && err != io.EOF {
+		s.log.Warn("Failed to retreive logs", zap.Error(err))
+	}
+
+	for _, log := range logs {
+		r.LogName = logName
+		plog := mongodbEventToLogData(s.log, &log, r)
+		s.consumer.ConsumeLogs(context.Background(), plog)
+	}
+}
+
+func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
+	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName)
+	if err != nil && err != io.EOF {
+		s.log.Warn("Failed to retreive logs", zap.Error(err))
+	}
+
+	for _, log := range logs {
+		r.LogName = logName
+		plog := mongodbAuditEventToLogData(s.log, &log, r)
+		s.consumer.ConsumeLogs(context.Background(), plog)
+	}
 }

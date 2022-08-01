@@ -34,8 +34,8 @@ const (
 	defaultAlertsEnabled = false
 )
 
-// mongoDBReciever is a handle to the receiver as it is shared between metrics and logging
-var mongoDBReciever *receiver
+// receivers is a handle to the receiver as it is shared between metrics and logging
+var receivers = make(map[string]*receiver)
 
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() component.ReceiverFactory {
@@ -129,14 +129,14 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-// getReceiver ensures we only create a single receiver because it is shared between logs and metrics
+// getReceiver ensures we only create a single receiver per receiver ID because it is shared between logs and metrics
 func getReceiver(params component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
+	mongoDBReceiver, ok := receivers[cfg.ID().String()]
 	var err error
-
-	// If we don't have one yet create it
-	if mongoDBReciever == nil {
-		mongoDBReciever, err = newMongoDBAtlasReciever(params, cfg)
+	if !ok {
+		mongoDBReceiver, err = newMongoDBAtlasReciever(params, cfg)
+		receivers[cfg.ID().String()] = mongoDBReceiver
 	}
 
-	return mongoDBReciever, err
+	return mongoDBReceiver, err
 }

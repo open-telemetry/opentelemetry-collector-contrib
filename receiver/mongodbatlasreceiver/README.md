@@ -18,7 +18,9 @@ The MongoDB Atlas receiver takes the following parameters. `public_key` and
 below both values are being pulled from the environment.
 
 Retrieving logs requires a specified project to pull logs from. The include/exclude are for the cluster Names to exclude/include
-from the log collection. Exclude will remove any specified clusters from the log collection, likewise the include string array will declare which clusters to include with log collection, and will exclude all other clusters. Specifying an exclude and include, will result in a config error.
+from the log collection. Exclude will remove any specified clusters from the log collection, likewise the include string array will declare which clusters to include with log collection, and will exclude all other clusters. Specifying an exclude and include, will result in a config error. When Exclude and Include fields are left empty, the receiver will collect from all clusters in the project.
+
+MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) reccommends a polling interval of 5  minutes 
 
 - `public_key` (required for metrics)
 - `private_key` (required for metrics)
@@ -36,10 +38,10 @@ from the log collection. Exclude will remove any specified clusters from the log
     - `key_file`
     - `cert_file`
 - `logs`
-  - `enabled` (default false)
+  - `enabled` (default true)
   - `projects` (required if enabled)
     - `name` (required if enabled)
-    - `enable_aduit_logs` (default false)
+    - `collect_aduit_logs` (default false)
     - `include_clusters` (default empty)
     - `exclude_clusters` (defualt empty)
 
@@ -71,8 +73,8 @@ receivers:
     logs:
       enabled: true
       projects: 
-        name: "project 1"
-        collect_audit_logs: true
+        - name: "project 1"
+          collect_audit_logs: true
 ```
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta

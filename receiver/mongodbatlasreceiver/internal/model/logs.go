@@ -25,14 +25,15 @@ type LogEntry struct {
 	Attributes map[string]interface{} `json:"attr"`
 }
 
+// AuditLog represents a MongoDB Atlas JSON audit log entry
 type AuditLog struct {
 	AuthType  string       `json:"authenticate"`
 	Timestamp logTimestamp `json:"ts"`
-	ID        UUID         `json:"uuid"`
-	Local     Address      `json:"local"`
-	Remote    Address      `json:"remote"`
+	ID        id           `json:"uuid"`
+	Local     address      `json:"local"`
+	Remote    address      `json:"remote"`
 	Result    int          `json:"result"`
-	Param     Param        `json:"param"`
+	Param     param        `json:"param"`
 }
 
 // logTimestamp is the structure that represents a Log Timestamp
@@ -40,20 +41,53 @@ type logTimestamp struct {
 	Date string `json:"$date"`
 }
 
-type UUID struct {
+type id struct {
 	Binary string `json:"$binary"`
 	Type   string `json:"$type"`
 }
 
-type Address struct {
-	IP   string `json:"ip"`
+type address struct {
+	Ip   string `json:"Ip"`
 	Port int    `json:"port"`
 }
 
-type Param struct {
+type param struct {
 	User      string `json:"user"`
 	Database  string `json:"db"`
 	Mechanism string `json:"mechanism"`
 }
 
-// {"t":{"$date":"2022-07-12T16:44:55.709+00:00"},"s":"I",  "c":"NETWORK",  "id":22943,   "ctx":"listener","msg":"Connection accepted","attr":{"remote":"192.168.254.61:58838","uuid":"dc95f0c0-bd0f-4266-a120-2248362a70db","connectionId":313919,"connectionCount":35}}
+func GetTestEvent() LogEntry {
+	return LogEntry{
+		Severity:   "I",
+		Component:  "NETWORK",
+		ID:         12312,
+		Context:    "context",
+		Message:    "Connection ended",
+		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+	}
+}
+
+func GetTestAuditEvent() AuditLog {
+	return AuditLog{
+		AuthType: "authtype",
+		ID: id{
+			Type:   "type",
+			Binary: "binary",
+		},
+		Local: address{
+			Ip:   "Ip",
+			Port: 12345,
+		},
+		Remote: address{
+			Ip:   "Ip",
+			Port: 12345,
+		},
+		Result: 40,
+		Param: param{
+			User:      "name",
+			Database:  "db",
+			Mechanism: "mechanism",
+		},
+	}
+}

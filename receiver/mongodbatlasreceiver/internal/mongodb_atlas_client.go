@@ -556,14 +556,14 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 	return measurements.Measurements, hasNext(measurements.Links), nil
 }
 
+// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
 func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, col_interval time.Duration) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
 
-	t := strconv.Itoa(int(time.Now().Add(-col_interval).Unix()))
+	start := strconv.Itoa(int(time.Now().Add(-col_interval).Unix()))
 	end := strconv.Itoa(int(time.Now().Unix()))
 
-	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: t, EndDate: end})
-	// resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, nil)
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: start, EndDate: end})
 	if err != nil {
 		return nil, err
 	}
@@ -575,7 +575,8 @@ func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, log
 	return buf, nil
 }
 
-func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string, include, exclude []string) ([]mongodbatlas.Cluster, error) {
+// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
 	options := mongodbatlas.ListOptions{}
 
 	clusters, _, err := s.client.Clusters.List(ctx, groupID, &options)

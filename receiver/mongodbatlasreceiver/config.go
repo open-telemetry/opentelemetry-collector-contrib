@@ -68,7 +68,8 @@ var (
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
 
 	// Logs Receiver Errors
-	errNoProjects = errors.New("no projects were listed to pull logs from")
+	errNoProjects    = errors.New("no projects were listed to pull logs from")
+	errClusterConfig = errors.New("Include and Exclude Cluster fields both specified in config")
 )
 
 func (c *Config) Validate() error {
@@ -89,6 +90,12 @@ func (l *LogConfig) validate() error {
 
 	if len(l.Projects) == 0 {
 		errs = multierr.Append(errs, errNoProjects)
+	}
+
+	for _, project := range l.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
 	}
 
 	return errs

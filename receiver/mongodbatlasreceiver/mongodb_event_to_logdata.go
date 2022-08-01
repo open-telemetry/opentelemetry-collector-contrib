@@ -32,10 +32,10 @@ const (
 	totalResourceAttributes = 4
 )
 
+// layout for the timestamp format in the plog.Logs structure
 const layout = "2006-01-02T15:04:05.000-07:00"
 
-// Only two types of events are created as of now.
-// For more info: https://docs.openshift.com/container-platform/4.9/rest_api/metadata_apis/event-core-v1.html
+// Severity mapping of the mongodb atlas logs
 var severityMap = map[string]plog.SeverityNumber{
 	"F":  plog.SeverityNumberFATAL,
 	"E":  plog.SeverityNumberERROR,
@@ -93,13 +93,13 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 		attrs.InsertString("authtype", e.AuthType)
 	}
 
-	attrs.InsertString("local.ip", e.Local.IP)
+	attrs.InsertString("local.ip", e.Local.Ip)
 	attrs.InsertInt("local.port", int64(e.Local.Port))
-	attrs.InsertString("remote.ip", e.Remote.IP)
+	attrs.InsertString("remote.ip", e.Remote.Ip)
 	attrs.InsertInt("remote.port", int64(e.Remote.Port))
 	attrs.InsertString("uuid.binary", e.ID.Binary)
 	attrs.InsertString("uuid.type", e.ID.Type)
-	attrs.InsertInt("remote.port", int64(e.Result))
+	attrs.InsertInt("result", int64(e.Result))
 	attrs.InsertString("log_name", r.LogName)
 
 	if e.Param.User != "" {
@@ -141,7 +141,7 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 
 	// The Message field contains description about the event,
 	// which is best suited for the "Body" of the LogRecordSlice.
-	lr.Body().SetStringVal(e.Message)
+	lr.Body().SetStringVal(string(data))
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of
 	// severity is found.

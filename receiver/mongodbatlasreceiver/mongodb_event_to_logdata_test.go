@@ -17,6 +17,7 @@ package mongodbatlasreceiver
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -24,7 +25,7 @@ import (
 )
 
 func TestMongoeventToLogData(t *testing.T) {
-	mongoevent := getEvent()
+	mongoevent := model.GetTestEvent()
 	r := resourceInfo{
 		Org:      &mongodbatlas.Organization{Name: "Org"},
 		Project:  &mongodbatlas.Project{Name: "Project"},
@@ -48,7 +49,7 @@ func TestMongoeventToLogData(t *testing.T) {
 }
 
 func TestUnknownSeverity(t *testing.T) {
-	mongoevent := getEvent()
+	mongoevent := model.GetTestEvent()
 	mongoevent.Severity = "Unknown"
 	r := resourceInfo{
 		Org:      &mongodbatlas.Organization{Name: "Org"},
@@ -67,7 +68,7 @@ func TestUnknownSeverity(t *testing.T) {
 }
 
 func TestMongoEventToAuditLogData(t *testing.T) {
-	mongoevent := getAuditEvent()
+	mongoevent := model.GetTestAuditEvent()
 	r := resourceInfo{
 		Org:      &mongodbatlas.Organization{Name: "Org"},
 		Project:  &mongodbatlas.Project{Name: "Project"},
