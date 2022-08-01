@@ -404,7 +404,7 @@ func (c *client) pushMetricsRecords(ctx context.Context, mds pmetric.ResourceMet
 		}
 	}
 
-	for k := 0; k < len(events); k++ {
+	for k, event := range events
 		if state.bufFront == nil {
 			state.bufFront = &index{resource: state.resource, library: state.library, record: k}
 		}
