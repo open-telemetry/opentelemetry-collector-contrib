@@ -1,0 +1,33 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  opensearch:
+    endpoints: [https://opensearch.example.com:9200]
+  opensearch/customname:
+    endpoints: [https://opensearch.example.com:9200]
+    cloudid: TRNMxjXlNJEt
+    timeout: 2m
+    headers:
+      myheader: test
+    index: myindex
+    pipeline: mypipeline
+    user: opensearch
+    password: search
+    api_key: AvFsEiPs==
+    discover:
+      on_start: true
+    flush:
+      bytes: 10485760
+    retry:
+      max_requests: 5
+
+service:
+  pipelines:
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [opensearch]
