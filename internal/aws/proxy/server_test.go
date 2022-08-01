@@ -53,7 +53,7 @@ func TestHappyCase(t *testing.T) {
 	srv, err := NewServer(cfg, logger)
 	assert.NoError(t, err, "NewServer should succeed")
 	go func() {
-    assert.NoError(t, srv.ListenAndServe())
+		assert.NoError(t, srv.ListenAndServe())
 	}()
 	defer func() {
 		assert.NoError(t, srv.Shutdown(context.Background()))
