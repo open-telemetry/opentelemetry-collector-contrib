@@ -34,7 +34,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestOperator(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
@@ -130,7 +130,7 @@ func TestNewFingerprint(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			operator, _ := buildTestOperator(t, cfg)
+			operator, _ := buildTestManager(t, cfg)
 
 			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
@@ -237,7 +237,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestOperator(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 
