@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/traces"
+package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 
 import (
 	"encoding/hex"
