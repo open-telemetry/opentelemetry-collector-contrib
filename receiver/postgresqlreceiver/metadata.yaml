@@ -1,32 +1,43 @@
 name: postgresqlreceiver
 
-attributes:
-  database:
+resource_attributes:
+  postgresql.database:
     description: The name of the database being monitored
     type: string
-  table:
+  postgresql.database.table:
     description: The schema name followed by the table name.
     type: string
-  bg_checkpoint_type:
-    value: type
-    description: The type of checkpoint state
-    enum:
-      - requested
-      - scheduled
-  bg_duration_type:
-    value: type
-    description: The type of time spent during the checkpoint.
-    enum:
-      - sync
-      - write
+  postgresql.index.name:
+    description: The name of the index.
+    type: string
+  postgresql.query:
+    description: The SQL query text of the query.
+    type: string
+
+attributes:
   bg_buffer_source:
-    value: source
     description: The source of a buffer write.
     enum:
       - backend
       - backend_fsync
       - checkpoints
       - bgwriter
+    value: source
+  bg_checkpoint_type:
+    description: The type of checkpoint state
+    enum:
+      - requested
+      - scheduled
+    value: type
+  bg_duration_type:
+    description: The type of time spent during the checkpoint.
+    enum:
+      - sync
+      - write
+    value: type
+  database:
+    description: The name of the database being monitored
+    type: string
   operation:
     description: The database operation.
     enum:
@@ -34,6 +45,20 @@ attributes:
       - upd
       - del
       - hot_upd
+  query_block_operation:
+    description: The operation the query performed on the block.
+    enum:
+      - dirty
+      - read
+      - write
+    value: operation
+  query_block_type:
+    description: The type of block utilized by the query.
+    enum:
+      - local
+      - shared
+      - temp
+    value: block
   source:
     description: The block read source type.
     enum:
@@ -50,10 +75,21 @@ attributes:
     enum:
       - dead
       - live
+  table:
+    description: The schema name followed by the table name.
+    type: string
+  transaction_result:
+    value: result
+    description: The result of a transaction
+    type: string
+    enum:
+      - rollback
+      - committed
 
 metrics:
   postgresql.backends:
-    attributes: [database]
+    attributes:
+      - database
     description: The number of backends.
     enabled: true
     sum:
@@ -70,7 +106,8 @@ metrics:
       value_type: int
     unit: "{buffers}"
   postgresql.bgwriter.buffers.writes:
-    attributes: [bg_buffer_source]
+    attributes:
+      - bg_buffer_source
     description: Number of buffers written
     enabled: true
     sum:
@@ -79,7 +116,8 @@ metrics:
       value_type: int
     unit: "{buffers}"
   postgresql.bgwriter.checkpoint.count:
-    attributes: [bg_checkpoint_type]
+    attributes:
+      - bg_checkpoint_type
     description: The number of checkpoints performed
     enabled: true
     sum:
@@ -88,7 +126,8 @@ metrics:
       value_type: int
     unit: "{checkpoints}"
   postgresql.bgwriter.duration:
-    attributes: [bg_duration_type]
+    attributes:
+      - bg_duration_type
     description: Total time spent writing and syncing files to disk by checkpoints.
     enabled: true
     sum:
@@ -124,7 +163,8 @@ metrics:
       value_type: int
     unit: 1
   postgresql.commits:
-    attributes: [database]
+    attributes:
+      - database
     description: The number of commits.
     enabled: true
     sum:
@@ -147,6 +187,7 @@ metrics:
       value_type: int
     unit: By
   postgresql.database.transactions:
+    attributes: [transaction_result]
     description: Number of transactions rolled back or committed.
     enabled: true
     sum:
@@ -155,7 +196,8 @@ metrics:
       value_type: int
     unit: "{transactions}"
   postgresql.db_size:
-    attributes: [database]
+    attributes:
+      - database
     description: The database disk usage.
     enabled: true
     sum:
@@ -175,8 +217,59 @@ metrics:
       monotonic: true
       value_type: int
     unit: 1
+  postgresql.query.block.count:
+    attributes:
+      - query_block_operation
+      - query_block_type
+    description: Total number of blocks dirtied, read, or written by queries.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{queries}"
+  postgresql.query.count:
+    attributes: []
+    description: Number of queries executed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{queries}"
+  postgresql.query.duration.average:
+    attributes: []
+    description: Average time spent executing a query.
+    enabled: true
+    gauge:
+      value_type: double
+    unit: ms
+  postgresql.query.duration.total:
+    attributes: []
+    description: Total time spent executing a query.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: double
+    unit: ms
+  postgresql.replication.delay:
+    attributes: []
+    description: The amount of time of lag between the current clock and the timestamp of the last WAL record.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+  postgresql.replication.data_delay:
+    attributes: []
+    description: The amount of data delayed in replication.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: By
   postgresql.rollbacks:
-    attributes: [database]
+    attributes:
+      - database
     description: The number of rollbacks.
     enabled: true
     sum:
@@ -196,3 +289,9 @@ metrics:
       monotonic: false
       value_type: int
     unit: 1
+  postgresql.table.count:
+    attributes: []
+    description: Number of tables in a database.
+    enabled: true
+    gauge:
+      value_type: int

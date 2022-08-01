@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 )
 
 type client interface {
@@ -36,6 +37,9 @@ type client interface {
 	getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error)
 	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
 	getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error)
+	getIndexStats(ctx context.Context, database string) (*IndexStat, error)
+	getQueryStats(ctx context.Context) ([]QueryStat, error)
+	getReplicationDelay(ctx context.Context) (int64, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -125,19 +129,16 @@ type MetricStat struct {
 
 func (c *postgreSQLClient) getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
-
 	return c.collectStatsFromQuery(ctx, query, true, false, "xact_commit", "xact_rollback")
 }
 
 func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
-
 	return c.collectStatsFromQuery(ctx, query, true, false, "count")
 }
 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
-
 	return c.collectStatsFromQuery(ctx, query, true, false, "db_size")
 }
 
@@ -148,10 +149,11 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]Metri
 	n_tup_ins AS ins,
 	n_tup_upd AS upd,
 	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd
+	n_tup_hot_upd AS hot_upd,
+	pg_relation_size(relid) AS table_size,
+	vacuum_count AS vacuum_count
 	FROM pg_stat_user_tables;`
-
-	return c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd")
+	return c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd", "table_size", "vacuum_count")
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricStat, error) {
@@ -167,6 +169,185 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricSt
 	FROM pg_statio_user_tables;`
 
 	return c.collectStatsFromQuery(ctx, query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
+}
+
+// IndexStat holds the statistics information for a particular index of a database
+type IndexStat struct {
+	database   string
+	indexStats map[string]indexStatHolder
+}
+
+type indexStatHolder struct {
+	size  int64
+	scans int64
+	index string
+	table string
+}
+
+// getIndexStats requires a db client in
+func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (*IndexStat, error) {
+	query := `SELECT relname, indexrelname,
+	pg_relation_size(indexrelid) AS index_size,
+	idx_scan
+	FROM pg_stat_user_indexes;
+	`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var errs []error
+	stats := IndexStat{
+		database:   database,
+		indexStats: make(map[string]indexStatHolder),
+	}
+
+	for rows.Next() {
+		var (
+			table, index          string
+			indexSize, indexScans int64
+		)
+		err := rows.Scan(&table, &index, &indexSize, &indexScans)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		stats.indexStats[index] = indexStatHolder{
+			size:  indexSize,
+			index: index,
+			table: table,
+			scans: indexScans,
+		}
+	}
+	return &stats, multierr.Combine(errs...)
+}
+
+func (c *postgreSQLClient) getReplicationDelay(ctx context.Context) (int64, error) {
+	query := `SELECT
+	CASE WHEN pg_last_wal_receive_lsn() = pg_last_wal_replay_lsn()
+	THEN 0 ELSE (coalesce(extract(epoch FROM now()) - extract(epoch FROM pg_last_xact_replay_timestamp()), 0))::int
+	END AS estimated_replication_delay;
+	`
+	row := c.client.QueryRowContext(ctx, query)
+	var replicationDelay int64
+	err := row.Scan(&replicationDelay)
+	if err != nil {
+		return 0, err
+	}
+	return replicationDelay, nil
+}
+
+func (c *postgreSQLClient) getBytesPendingReplication(ctx context.Context) (int64, error) {
+	query := `SELECT 
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0)
+	 FROM pg_stat_replication;
+	`
+	rows := c.client.QueryRowContext(ctx, query)
+	var replicationBytes int64
+	err := rows.Scan(&replicationBytes)
+	if err != nil {
+		return 0, err
+	}
+	return replicationBytes, nil
+}
+
+func (c *postgreSQLClient) getWALStats(ctx context.Context) ([]MetricStat, error) {
+	query := `SELECT
+	coalesce(last_archived_wal, '0') AS last_archived_wal
+	FROM pg_stat_archiver;
+	`
+	row := c.client.QueryRowContext(ctx, query)
+	var lastArchivedWal string
+	err := row.Scan(&lastArchivedWal)
+	if err != nil {
+		return nil, err
+	}
+	return c.collectStatsFromQuery(ctx, query, false, false, "last_archived_wal")
+}
+
+// QueryStat contain statistics about a particular query sourced from
+type QueryStat struct {
+	query           string
+	meanExecTimeMs  float64
+	totalExecTimeMs float64
+	calls           int64
+
+	sharedBlocksRead    int64
+	sharedBlocksWritten int64
+	sharedBlocksDirtied int64
+
+	localBlocksRead    int64
+	localBlocksWritten int64
+	localBlocksDirtied int64
+
+	tempBlocksRead    int64
+	tempBlocksWritten int64
+}
+
+func (c *postgreSQLClient) getQueryStats(ctx context.Context) ([]QueryStat, error) {
+	query := `SELECT
+	"query",
+	mean_exec_time,
+	total_exec_time,
+	calls,
+	shared_blks_read, shared_blks_written, shared_blks_dirtied,
+	local_blks_read, local_blks_written, local_blks_dirtied,
+	temp_blks_read, temp_blks_written
+	FROM pg_stat_statements(true);
+	`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var errs []error
+	qs := []QueryStat{}
+
+	for rows.Next() {
+		var (
+			query                                              string
+			meanExecTimeMs, totalExecTimeMs                    float64
+			calls                                              int64
+			sharedBlksRead, sharedBlksDirty, sharedBlksWritten int64
+			localBlksRead, localBlksDirty, localBlksWritten    int64
+			tempBlksRead, tempBlksWritten                      int64
+		)
+		err := rows.Scan(
+			&query,
+			&meanExecTimeMs,
+			&totalExecTimeMs,
+			&calls,
+			&sharedBlksRead,
+			&sharedBlksDirty,
+			&sharedBlksWritten,
+			&localBlksRead,
+			&localBlksDirty,
+			&localBlksWritten,
+			&tempBlksRead,
+			&tempBlksWritten,
+		)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		qs = append(qs, QueryStat{
+			query:               query,
+			meanExecTimeMs:      meanExecTimeMs,
+			totalExecTimeMs:     totalExecTimeMs,
+			calls:               calls,
+			sharedBlocksRead:    sharedBlksRead,
+			sharedBlocksWritten: sharedBlksWritten,
+			sharedBlocksDirtied: sharedBlksDirty,
+			localBlocksRead:     localBlksRead,
+			localBlocksWritten:  localBlksWritten,
+			localBlocksDirtied:  localBlksDirty,
+			tempBlocksRead:      tempBlksRead,
+			tempBlocksWritten:   tempBlksWritten,
+		})
+	}
+	return qs, multierr.Combine(errs...)
 }
 
 func (c *postgreSQLClient) getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error) {

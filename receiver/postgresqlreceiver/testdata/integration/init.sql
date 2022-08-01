@@ -8,3 +8,5 @@ CREATE DATABASE otel2;
 \c otel2
 CREATE TABLE test1 ();
 CREATE TABLE test2 ();
+
+CREATE EXTENSION pg_stat_statements;

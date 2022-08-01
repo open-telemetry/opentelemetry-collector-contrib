@@ -16,6 +16,7 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -91,6 +92,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectDatabaseSize(ctx, now, listClient, databases, errors)
 	p.collectBackends(ctx, now, listClient, databases, errors)
 	p.collectBackgroundWriterStats(ctx, now, listClient, databases, errors)
+	p.collectReplicationStats(ctx, now, listClient, errors)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -103,6 +105,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		p.collectBlockReads(ctx, now, dbClient, errors)
 		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
+		p.collectIndexStats(ctx, now, dbClient, database, errors)
+	}
+
+	if p.config.collectQueryPerformance {
+		p.collectQueries(ctx, now, listClient, errors)
 	}
 
 	return p.mb.Emit(), errors.Combine()
@@ -282,6 +289,45 @@ func (p *postgreSQLScraper) collectBackends(
 	}
 }
 
+func (p *postgreSQLScraper) collectIndexStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	db string,
+	errors scrapererror.ScrapeErrors,
+) {
+	indexStat, err := client.getIndexStats(ctx, db)
+	if err != nil {
+		p.logger.Error(fmt.Sprintf("Errors encountered while fetching index statistics for database %s", db), zap.Error(err))
+		errors.AddPartial(1, err)
+		return
+	}
+
+	for _, is := range indexStat.indexStats {
+		p.mb.RecordPostgresqlDatabaseTableIndexSizeDataPoint(now, is.size)
+		p.mb.RecordPostgresqlDatabaseTableIndexScansDataPoint(now, is.scans)
+		p.mb.EmitForResource(
+			metadata.WithPostgresqlDatabase(db),
+			metadata.WithPostgresqlDatabaseTable(is.table),
+			metadata.WithPostgresqlIndexName(is.index),
+		)
+	}
+}
+
+func (p *postgreSQLScraper) collectReplicationStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errors scrapererror.ScrapeErrors,
+) {
+	replicationDelay, err := client.getReplicationDelay(ctx)
+	if err != nil {
+		errors.Add(err)
+		return
+	}
+	p.mb.RecordPostgresqlReplicationDelayDataPoint(now, replicationDelay)
+}
+
 func (p *postgreSQLScraper) collectBackgroundWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
@@ -331,6 +377,33 @@ func (p *postgreSQLScraper) collectBackgroundWriterStats(
 				p.mb.RecordPostgresqlBgwriterMaxwrittenCountDataPoint(now, i)
 			}
 		}
+	}
+}
+
+func (p *postgreSQLScraper) collectQueries(ctx context.Context, now pcommon.Timestamp, client client, errs scrapererror.ScrapeErrors) {
+	qs, err := client.getQueryStats(ctx)
+	if err != nil {
+		p.logger.Warn("unable to collect query stats, be sure to enable the \"pg_stat_statements\" extension to collect performance statistics.", zap.Error(err))
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for _, qs := range qs {
+		p.mb.RecordPostgresqlQueryDurationTotalDataPoint(now, qs.totalExecTimeMs)
+		p.mb.RecordPostgresqlQueryDurationAverageDataPoint(now, qs.meanExecTimeMs)
+		p.mb.RecordPostgresqlQueryCountDataPoint(now, qs.calls)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeShared)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeShared)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksDirtied, metadata.AttributeQueryBlockOperationDirty, metadata.AttributeQueryBlockTypeShared)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksDirtied, metadata.AttributeQueryBlockOperationDirty, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeTemp)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksRead, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeTemp)
+
+		p.mb.EmitForResource(
+			metadata.WithPostgresqlQuery(qs.query),
+		)
 	}
 }
 

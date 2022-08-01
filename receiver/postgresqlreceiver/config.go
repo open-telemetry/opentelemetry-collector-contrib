@@ -41,6 +41,7 @@ type Config struct {
 	Username                                string                         `mapstructure:"username"`
 	Password                                string                         `mapstructure:"password"`
 	Databases                               []string                       `mapstructure:"databases"`
+	collectQueryPerformance                 bool                           `mapstructure:"collect_query_performance"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
 	Metrics                                 metadata.MetricsSettings       `mapstructure:"metrics"`
