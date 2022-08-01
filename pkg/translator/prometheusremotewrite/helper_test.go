@@ -478,11 +478,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target-resource_attr-resource-attr-val-1": {
+				"info-__name__-target_info-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "target",
+							Value: "target_info",
 						},
 						{
 							Name:  "resource_attr",
@@ -504,11 +504,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			timestamp: testdata.TestMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-foo_target-resource_attr-resource-attr-val-1": {
+				"info-__name__-foo_target_info-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "foo_target",
+							Value: "foo_target_info",
 						},
 						{
 							Name:  "resource_attr",
@@ -529,11 +529,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
+				"info-__name__-target_info-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "target",
+							Value: "target_info",
 						},
 						{
 							Name:  "instance",
