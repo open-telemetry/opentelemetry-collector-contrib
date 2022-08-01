@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package tqllogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/logs"
 
 import (
@@ -28,22 +27,22 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type logTransformContext struct {
-	log      plog.LogRecord
-	il       pcommon.InstrumentationScope
-	resource pcommon.Resource
+type LogTransformContext struct {
+	Log                  plog.LogRecord
+	InstrumentationScope pcommon.InstrumentationScope
+	Resource             pcommon.Resource
 }
 
-func (ctx logTransformContext) GetItem() interface{} {
-	return ctx.log
+func (ctx LogTransformContext) GetItem() interface{} {
+	return ctx.Log
 }
 
-func (ctx logTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.il
+func (ctx LogTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.InstrumentationScope
 }
 
-func (ctx logTransformContext) GetResource() pcommon.Resource {
-	return ctx.resource
+func (ctx LogTransformContext) GetResource() pcommon.Resource {
+	return ctx.Resource
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
@@ -97,7 +96,6 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		if len(path) == 1 {
 			return accessResource(), nil
 		}
-
 		if path[1].Name == "attributes" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {

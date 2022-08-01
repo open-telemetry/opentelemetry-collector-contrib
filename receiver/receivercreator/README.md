@@ -109,6 +109,7 @@ targeting it will have different variables available.
 | Variable    | Description                       |
 |-------------|-----------------------------------|
 | type        | `"pod"`                           |
+| id          | ID of source endpoint             |
 | name        | name of the pod                   |
 | namespace   | namespace of the pod              |
 | uid         | unique id of the pod              |
@@ -120,6 +121,7 @@ targeting it will have different variables available.
 | Variable        | Description                             |
 |-----------------|-----------------------------------------|
 | type            | `"port"`                                |
+| id              | ID of source endpoint                   |
 | name            | container port name                     |
 | port            | port number                             |
 | protocol        | The transport protocol ("TCP" or "UDP") |
@@ -134,6 +136,7 @@ targeting it will have different variables available.
 | Variable      | Description                                      |
 |---------------|--------------------------------------------------|
 | type          | `"hostport"`                                     |
+| id            | ID of source endpoint                            |
 | process_name  | Name of the process                              |
 | command       | Command line with the used to invoke the process |
 | is_ipv6       | true if endpoint is IPv6, otherwise false        |
@@ -145,6 +148,7 @@ targeting it will have different variables available.
 | Variable       | Description                                                       |
 |----------------|-------------------------------------------------------------------|
 | type           | `"container"`                                                     |
+| id             | ID of source endpoint                                             |
 | name           | Primary name of the container                                     |
 | image          | Name of the container image                                       |
 | port           | Exposed port of the container                                     |
@@ -160,6 +164,7 @@ targeting it will have different variables available.
 | Variable       | Description                                                       |
 |----------------|-------------------------------------------------------------------|
 | type                  | `"k8s.node"`                                                                                                           |
+| id                    | ID of source endpoint                                                                                                  |
 | name                  | The name of the Kubernetes node                                                                                        |
 | uid                   | The unique ID for the node                                                                                             |
 | hostname              | The node's hostname as reported by its Status object                                                                   |

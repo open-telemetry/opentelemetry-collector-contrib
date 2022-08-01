@@ -717,17 +717,17 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			span, il, resource := createTelemetry()
 
-			got := accessor.Get(spanTransformContext{
-				span:     span,
-				il:       il,
-				resource: resource,
+			got := accessor.Get(SpanTransformContext{
+				Span:                 span,
+				InstrumentationScope: il,
+				Resource:             resource,
 			})
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(spanTransformContext{
-				span:     span,
-				il:       il,
-				resource: resource,
+			accessor.Set(SpanTransformContext{
+				Span:                 span,
+				InstrumentationScope: il,
+				Resource:             resource,
 			}, tt.newVal)
 
 			exSpan, exIl, exRes := createTelemetry()

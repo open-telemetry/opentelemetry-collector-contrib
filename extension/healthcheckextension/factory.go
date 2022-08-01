@@ -19,7 +19,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 const (
@@ -42,7 +42,7 @@ func NewFactory() component.ExtensionFactory {
 func createDefaultConfig() config.Extension {
 	return &Config{
 		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-		TCPAddr: confignet.TCPAddr{
+		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: defaultEndpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -53,7 +53,7 @@ func createDefaultConfig() config.Extension {
 func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg config.Extension) (component.Extension, error) {
 	config := cfg.(*Config)
 
-	return newServer(*config, set.Logger), nil
+	return newServer(*config, set.TelemetrySettings), nil
 }
 
 // defaultCheckCollectorPipelineSettings returns the default settings for CheckCollectorPipeline.

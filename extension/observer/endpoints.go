@@ -74,6 +74,7 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env := e.Details.Env()
 	env["endpoint"] = e.Target
 	env["type"] = string(e.Details.Type())
+	env["id"] = string(e.ID)
 
 	return env, nil
 }

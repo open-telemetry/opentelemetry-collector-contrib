@@ -43,7 +43,10 @@ func TestMultiFileRotate(t *testing.T) {
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 
 	numFiles := 3
 	numMessages := 3
@@ -98,7 +101,10 @@ func TestMultiFileRotateSlow(t *testing.T) {
 
 	t.Parallel()
 
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -146,7 +152,10 @@ func TestMultiFileRotateSlow(t *testing.T) {
 }
 
 func TestMultiCopyTruncateSlow(t *testing.T) {
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -248,13 +257,14 @@ func (rt rotationTest) expectEphemeralLines() bool {
 
 func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(t *testing.T) {
 	return func(t *testing.T) {
+
+		tempDir := t.TempDir()
+		cfg := NewConfig().includeDir(tempDir)
+		cfg.StartAt = "beginning"
+		cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 		emitCalls := make(chan *emitParams, tc.totalLines)
-		operator, tempDir := newTestScenarioWithChan(t,
-			func(cfg *Config) {
-				cfg.PollInterval = helper.NewDuration(tc.pollInterval)
-			},
-			emitCalls,
-		)
+		operator := buildTestOperatorWithEmit(t, cfg, emitCalls)
+
 		logger := getRotatingLogger(t, tempDir, tc.maxLinesPerFile, tc.maxBackupFiles, copyTruncate, sequential)
 
 		expected := make([][]byte, 0, tc.totalLines)
@@ -351,7 +361,11 @@ func TestMoveFile(t *testing.T) {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -379,7 +393,11 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 		t.Skip("Moving files while open is unsupported on Windows")
 	}
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -416,7 +434,11 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 // any new writes are picked up
 func TestTruncateThenWrite(t *testing.T) {
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -446,7 +468,11 @@ func TestTruncateThenWrite(t *testing.T) {
 // written to the truncated file
 func TestCopyTruncateWriteBoth(t *testing.T) {
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -482,7 +508,11 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 
 func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	t.Parallel()
-	operator, emitCalls, tempDir := newTestScenario(t, nil)
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	operator, emitCalls := buildTestOperator(t, cfg)
 	persister := testutil.NewMockPersister("test")
 
 	log1 := tokenWithLength(1000)

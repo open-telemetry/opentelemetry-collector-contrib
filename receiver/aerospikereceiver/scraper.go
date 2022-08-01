@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,12 +38,13 @@ type aerospikeReceiver struct {
 	host          string // host/IP of configured Aerospike node
 	port          int    // port of configured Aerospike node
 	clientFactory clientFactoryFunc
+	client        Aerospike
 	mb            *metadata.MetricsBuilder
-	logger        *zap.Logger
+	logger        *zap.SugaredLogger
 }
 
 // clientFactoryFunc creates an Aerospike connection to the given host and port
-type clientFactoryFunc func(host string, port int) (aerospike, error)
+type clientFactoryFunc func(host string, port int) (Aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
@@ -60,12 +60,25 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		return nil, fmt.Errorf("%w: %s", errBadPort, err)
 	}
 
+	sugaredLogger := params.Logger.Sugar()
 	return &aerospikeReceiver{
-		logger:   params.Logger,
+		logger:   sugaredLogger,
 		config:   cfg,
 		consumer: consumer,
-		clientFactory: func(host string, port int) (aerospike, error) {
-			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout, params.Logger)
+		clientFactory: func(host string, port int) (Aerospike, error) {
+			conf := &clientConfig{
+				host:                  host,
+				port:                  port,
+				username:              cfg.Username,
+				password:              cfg.Password,
+				timeout:               cfg.Timeout,
+				logger:                sugaredLogger,
+				collectClusterMetrics: cfg.CollectClusterMetrics,
+			}
+			return newASClient(
+				conf,
+				nodeGetterFactory,
+			)
 		},
 		host: host,
 		port: int(port),
@@ -73,77 +86,59 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 	}, nil
 }
 
+func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
+	r.logger.Debug("executing start")
+
+	client, err := r.clientFactory(r.host, r.port)
+	if err != nil {
+		client = nil
+		r.logger.Warn("initial client creation failed: %w", err) //  .Sugar().Warnf("initial client creation failed: %w", err)
+	}
+
+	r.client = client
+	return nil
+}
+
+func (r *aerospikeReceiver) shutdown(_ context.Context) error {
+	r.logger.Debug("executing close")
+	if r.client != nil {
+		r.client.Close()
+	}
+	return nil
+}
+
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	r.logger.Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
-	now := pcommon.NewTimestampFromTime(time.Now().UTC())
-	client, err := r.clientFactory(r.host, r.port)
-	if err != nil {
-		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
-	}
-	defer client.Close()
 
-	info, err := client.Info()
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
-		return r.mb.Emit(), err
-	}
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-
-	if r.config.CollectClusterMetrics {
-		r.logger.Debug("Collecting peer nodes")
-		for _, n := range strings.Split(info["services"], ";") {
-			r.scrapeDiscoveredNode(n, now, errs)
+	if r.client == nil {
+		var err error
+		r.logger.Debug("client is nil, attempting to create a new client")
+		r.client, err = r.clientFactory(r.host, r.port)
+		if err != nil {
+			r.client = nil
+			addPartialIfError(errs, fmt.Errorf("client creation failed: %w", err))
+			return r.mb.Emit(), errs.Combine()
 		}
 	}
+
+	now := pcommon.NewTimestampFromTime(time.Now().UTC())
+	client := r.client
+
+	info := client.Info()
+	for _, nodeInfo := range info {
+		r.emitNode(nodeInfo, now, errs)
+	}
+	r.scrapeNamespaces(client, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
 }
 
-// scrapeNode collects metrics from a single Aerospike node
-func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	info, err := client.Info()
-	if err != nil {
-		errs.AddPartial(0, err)
-		return
-	}
-
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-}
-
-// scrapeDiscoveredNode connects to a discovered Aerospike node and scrapes it using that connection
-//
-// If unable to parse the endpoint or connect, that error is logged and we return early
-func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	host, portStr, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
-		errs.Add(err)
-		return
-	}
-	port, err := strconv.ParseInt(portStr, 10, 32)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
-		errs.Add(err)
-		return
-	}
-
-	nClient, err := r.clientFactory(host, int(port))
-	if err != nil {
-		r.logger.Warn(err.Error())
-		errs.Add(err)
-		return
-	}
-	defer nClient.Close()
-
-	r.scrapeNode(nClient, now, errs)
-}
-
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
 func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debugf("emitNode len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		case "client_connections":
@@ -170,29 +165,27 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNodeName(info["node"]))
+	r.logger.Debug("finished emitNode")
 }
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) scrapeNamespaces(info map[string]string, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	namespaces := strings.Split(info["namespaces"], ";")
-	for _, n := range namespaces {
-		if n == "" {
-			continue
+func (r *aerospikeReceiver) scrapeNamespaces(client Aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debug("scraping namespaces")
+	nInfo := client.NamespaceInfo()
+	r.logger.Debugf("scrapeNamespaces len(nInfo): %v", len(nInfo))
+	for node, nsMap := range nInfo {
+		for nsName, nsStats := range nsMap {
+			nsStats["node"] = node
+			nsStats["name"] = nsName
+			r.emitNamespace(nsStats, now, errs)
 		}
-		nInfo, err := client.NamespaceInfo(n)
-		if err != nil {
-			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
-			errs.AddPartial(0, err)
-			continue
-		}
-		nInfo["node"] = info["node"]
-		r.emitNamespace(nInfo, now, errs)
 	}
 }
 
 // emitNamespace emits a namespace resource with its name as resource attribute
 func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debugf("emitNamespace len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		// Capacity
@@ -289,6 +282,7 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info["name"]), metadata.WithAerospikeNodeName(info["node"]))
+	r.logger.Debug("finished emitNamespace")
 }
 
 // addPartialIfError adds a partial error if the given error isn't nil
