@@ -32,7 +32,6 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
-	formatBody := "body"
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -91,7 +90,6 @@ func TestLoadConfig(t *testing.T) {
 				"traceID": "traceid",
 			},
 		},
-		Format: &formatBody,
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }
