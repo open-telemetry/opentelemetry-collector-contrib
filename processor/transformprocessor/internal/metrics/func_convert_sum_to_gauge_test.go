@@ -95,7 +95,7 @@ func Test_convertSumToGauge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := tqlmetrics.MetricTransformContext{
+			ctx := tqlmetrics.TransformContext{
 				Metric: metric,
 			}
 
