@@ -43,6 +43,7 @@ type WatchClient struct {
 	informer          cache.SharedInformer
 	namespaceInformer cache.SharedInformer
 	deploymentRegex   *regexp.Regexp
+	statefulsetRegex  *regexp.Regexp
 	deleteQueue       []deleteRequest
 	stopCh            chan struct{}
 
@@ -63,16 +64,21 @@ type WatchClient struct {
 // format: [deployment-name]-[Random-String-For-ReplicaSet]-[Random-String-For-Pod]
 var dRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*-[0-9a-zA-Z]*$`)
 
+// Extract statefulset name from the pod name. Pod name is created using
+// format: [statefulset-name]-[pod-number]
+var stsRegex = regexp.MustCompile(`^(.*)-[0-9]*$`)
+
 // New initializes a new k8s Client.
 func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace) (Client, error) {
 	c := &WatchClient{
-		logger:          logger,
-		Rules:           rules,
-		Filters:         filters,
-		Associations:    associations,
-		Exclude:         exclude,
-		deploymentRegex: dRegex,
-		stopCh:          make(chan struct{}),
+		logger:           logger,
+		Rules:            rules,
+		Filters:          filters,
+		Associations:     associations,
+		Exclude:          exclude,
+		deploymentRegex:  dRegex,
+		statefulsetRegex: stsRegex,
+		stopCh:           make(chan struct{}),
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -296,6 +302,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
 			tags[conventions.AttributeK8SDeploymentName] = parts[1]
+		}
+	}
+	if c.Rules.StatefulSet {
+		// format: [statefulset-name]-[pod-number]
+		parts := c.statefulsetRegex.FindStringSubmatch(pod.Name)
+		if len(parts) == 2 {
+			tags[conventions.AttributeK8SStatefulSetName] = parts[1]
 		}
 	}
 

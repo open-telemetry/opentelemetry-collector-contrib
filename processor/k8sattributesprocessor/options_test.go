@@ -316,6 +316,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.StartTime)
 	assert.True(t, p.rules.Deployment)
 	assert.True(t, p.rules.Node)
+	assert.True(t, p.rules.StatefulSet)
 
 	p = &kubernetesprocessor{}
 	err := withExtractMetadata("randomfield")(p)
@@ -330,6 +331,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.False(t, p.rules.StartTime)
 	assert.False(t, p.rules.Deployment)
 	assert.False(t, p.rules.Node)
+	assert.False(t, p.rules.StatefulSet)
 }
 
 func TestWithFilterLabels(t *testing.T) {

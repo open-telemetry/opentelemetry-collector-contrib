@@ -81,6 +81,7 @@ func withExtractMetadata(fields ...string) option {
 				conventions.AttributeContainerID,
 				conventions.AttributeContainerImageName,
 				conventions.AttributeContainerImageTag,
+				conventions.AttributeK8SStatefulSetName,
 			}
 		}
 		for _, field := range fields {
@@ -108,6 +109,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageTag = true
 			case deprecatedMetadataCluster, conventions.AttributeK8SClusterName:
 				// This one is deprecated, ignore it
+			case conventions.AttributeK8SStatefulSetName:
+				p.rules.StatefulSet = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
