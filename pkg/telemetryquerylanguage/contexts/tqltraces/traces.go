@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/traces"
+package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 
 import (
 	"encoding/hex"
@@ -565,7 +565,7 @@ func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.MBytesVal()
+		return val.BytesVal().AsRaw()
 	}
 	return nil
 }

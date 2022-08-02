@@ -2,6 +2,10 @@ extensions:
   health_check:
   health_check/1:
     endpoint: "localhost:13"
+    tls:
+      ca_file: "/path/to/ca"
+      key_file: "/path/to/key"
+      cert_file: "/path/to/cert"
     check_collector_pipeline:
       enabled: false
       interval: "5m"

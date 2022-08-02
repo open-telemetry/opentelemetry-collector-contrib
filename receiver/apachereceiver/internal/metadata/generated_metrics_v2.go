@@ -167,7 +167,7 @@ func (m *metricApacheCurrentConnections) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -220,7 +220,7 @@ func (m *metricApacheRequests) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -273,8 +273,8 @@ func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
-	dp.Attributes().Insert("state", pcommon.NewValueString(scoreboardStateAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().InsertString("state", scoreboardStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -327,7 +327,7 @@ func (m *metricApacheTraffic) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -380,7 +380,7 @@ func (m *metricApacheUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -433,8 +433,8 @@ func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("server_name", pcommon.NewValueString(serverNameAttributeValue))
-	dp.Attributes().Insert("state", pcommon.NewValueString(workersStateAttributeValue))
+	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().InsertString("state", workersStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

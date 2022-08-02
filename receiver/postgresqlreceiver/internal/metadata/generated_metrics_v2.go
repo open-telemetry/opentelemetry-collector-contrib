@@ -469,7 +469,7 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -573,7 +573,7 @@ func (m *metricPostgresqlBgwriterBuffersWrites) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("source", pcommon.NewValueString(bgBufferSourceAttributeValue))
+	dp.Attributes().InsertString("source", bgBufferSourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -626,7 +626,7 @@ func (m *metricPostgresqlBgwriterCheckpointCount) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(bgCheckpointTypeAttributeValue))
+	dp.Attributes().InsertString("type", bgCheckpointTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -679,7 +679,7 @@ func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(bgDurationTypeAttributeValue))
+	dp.Attributes().InsertString("type", bgDurationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -834,9 +834,9 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert("source", pcommon.NewValueString(sourceAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
+	dp.Attributes().InsertString("source", sourceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -889,7 +889,7 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -942,7 +942,7 @@ func (m *metricPostgresqlDatabaseTransactions) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("result", pcommon.NewValueString(transactionResultAttributeValue))
+	dp.Attributes().InsertString("result", transactionResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -995,7 +995,7 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1148,9 +1148,9 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
-	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
+	dp.Attributes().InsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1203,8 +1203,8 @@ func (m *metricPostgresqlQueryBlockCount) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("operation", pcommon.NewValueString(queryBlockOperationAttributeValue))
-	dp.Attributes().Insert("block", pcommon.NewValueString(queryBlockTypeAttributeValue))
+	dp.Attributes().InsertString("operation", queryBlockOperationAttributeValue)
+	dp.Attributes().InsertString("block", queryBlockTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1506,7 +1506,7 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1559,9 +1559,9 @@ func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1612,7 +1612,7 @@ func (m *metricPostgresqlTableCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1663,8 +1663,8 @@ func (m *metricPostgresqlTableSize) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1717,8 +1717,8 @@ func (m *metricPostgresqlTableVacuumCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("database", pcommon.NewValueString(databaseAttributeValue))
-	dp.Attributes().Insert("table", pcommon.NewValueString(tableAttributeValue))
+	dp.Attributes().InsertString("database", databaseAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1818,7 +1818,7 @@ func (m *metricPostgresqlWalLag) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("operation", pcommon.NewValueString(walOperationLagAttributeValue))
+	dp.Attributes().InsertString("operation", walOperationLagAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
