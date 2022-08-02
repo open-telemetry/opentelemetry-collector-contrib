@@ -22,14 +22,24 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "docker_stats"
-	stability = component.StabilityLevelAlpha
+	typeStr        = "docker_stats"
+	stability      = component.StabilityLevelAlpha
+	useScraperV2ID = "receiver.dockerstats.useScraperV2"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegister(featuregate.Gate{
+		ID:          useScraperV2ID,
+		Description: "When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation.",
+		Enabled:     false,
+	})
+}
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
@@ -59,7 +69,12 @@ func createMetricsReceiver(
 	dockerConfig := config.(*Config)
 	dsr := newReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(typeStr, dsr.scrape, scraperhelper.WithStart(dsr.start))
+	scrapeFunc := dsr.scrape
+	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {
+		scrapeFunc = dsr.scrapeV2
+	}
+
+	scrp, err := scraperhelper.NewScraper(typeStr, scrapeFunc, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}

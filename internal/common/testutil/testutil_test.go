@@ -37,6 +37,21 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
+func TestGetAvailableLocalUDPAddress(t *testing.T) {
+	addr := GetAvailableLocalNetworkAddress(t, "udp")
+	// Endpoint should be free.
+	ln0, err := net.ListenPacket("udp", addr)
+	require.NoError(t, err)
+	require.NotNil(t, ln0)
+	t.Cleanup(func() {
+		require.NoError(t, ln0.Close())
+	})
+
+	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+	ln1, err := net.ListenPacket("udp", addr)
+	require.Error(t, err)
+	require.Nil(t, ln1)
+}
 
 func TestCreateExclusionsList(t *testing.T) {
 	// Test two examples of typical output from "netsh interface ipv4 show excludedportrange protocol=tcp"

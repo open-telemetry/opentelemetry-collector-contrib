@@ -1,0 +1,11 @@
+FROM mongo:4.0
+
+COPY scripts/setup.sh /setup.sh
+RUN chmod +x /setup.sh
+
+COPY scripts/lpu.sh /lpu.sh
+RUN chmod +x /lpu.sh
+
+EXPOSE 27017
+ENV MONGO_INITDB_ROOT_USERNAME=otel
+ENV MONGO_INITDB_ROOT_PASSWORD=otel

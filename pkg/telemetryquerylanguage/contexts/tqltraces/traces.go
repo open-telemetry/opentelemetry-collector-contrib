@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/traces"
+package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 
 import (
 	"encoding/hex"
@@ -69,7 +69,7 @@ var symbolTable = map[tql.EnumSymbol]tql.Enum{
 	"SPAN_KIND_PRODUCER":    tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
 	"SPAN_KIND_CONSUMER":    tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
 	"STATUS_CODE_UNSET":     tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
-	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
+	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_STATUS_CODE_OK),
 	"STATUS_CODE_ERROR":     tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
 }
 
@@ -565,7 +565,7 @@ func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.MBytesVal()
+		return val.BytesVal().AsRaw()
 	}
 	return nil
 }
