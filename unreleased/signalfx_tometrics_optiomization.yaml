@@ -1,0 +1,4 @@
+change_type: enhancement
+component: pkg/translator/signalfx
+note: Optimize ToMetrics to emit datapoints under the same metric when same name and type.
+issues: [12902]
