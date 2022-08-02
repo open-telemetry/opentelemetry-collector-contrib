@@ -59,7 +59,7 @@ undocumented metrics types, including:
 * Statset
 
 More details can be found from the
-[prometheus text parser source code]( https://github.com/prometheus/prometheus/blob/master/pkg/textparse/interface.go#L82)
+[prometheus text parser source code](https://github.com/prometheus/prometheus/blob/afdd1357e008375e693a1b4c096f81b2358cb46f/model/textparse/interface.go#L25)
 
 ### Metric Grouping
 
@@ -110,12 +110,12 @@ receiver properly.
 #### Appendable
 [Appendable](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/manager.go#L37-L39) is used to acquire a storage appender instance at the beginning of each scrapeLoop run
 
-#### Storage appender
-[Storage appender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95) is an abstraction of the metric storage which can be a filesystem, a database or a remote endpoint...etc. For the OpenTelemetry prometheus receiver, this is
+#### StorageAppender
+[StorageAppender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95) is an abstraction of the metric storage which can be a filesystem, a database or a remote endpoint...etc. For the OpenTelemetry prometheus receiver, this is
 also the interface we need to implement to provide a customized storage appender backed by a metrics sink.
 
 #### ScrapeLoop
-[ScrapeLoop](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L586-L1024)is the actual scrape pipeline which performs the main scraping and ingestion logic.
+[ScrapeLoop](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L586-L1024) is the actual scrape pipeline which performs the main scraping and ingestion logic.
 
 ### Prometheus ScrapeLoop workflow explained
 Each scraping cycle is triggered by a configured interval, its workflow is as
@@ -125,8 +125,8 @@ shown in the flowchart below:
 
 It basically does the following things in turn:
 
-  1. make a http call to fetch data from the binding [target](#ScrapeManager)'s metrics endpoint with [scraper](#Scraper)
-  2. acquired a [storage appender](#Storage appender) instance with the [Appendable](#Appendable) interface 
+  1. make a http call to fetch data from the binding [target](#target)'s metrics endpoint with [scraper](#scraper)
+  2. acquired a [storageAppender](#storageappender) instance with the [Appendable](#appendable) interface 
   3. feed the data to a textParser
   4. parse and feed metric data points to storage appender
   5. commit if success or rollback
