@@ -15,6 +15,7 @@
 package testutil
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
@@ -34,6 +35,22 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 
 	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
 	ln1, err := net.Listen("tcp", addr)
+	require.Error(t, err)
+	require.Nil(t, ln1)
+}
+func TestGetAvailableLocalUDPAddress(t *testing.T) {
+	addr := GetAvailableLocalNetworkAddress(t, "udp")
+	fmt.Println(addr)
+	// Endpoint should be free.
+	ln0, err := net.ListenPacket("udp", addr)
+	require.NoError(t, err)
+	require.NotNil(t, ln0)
+	t.Cleanup(func() {
+		require.NoError(t, ln0.Close())
+	})
+
+	// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+	ln1, err := net.ListenPacket("udp", addr)
 	require.Error(t, err)
 	require.Nil(t, ln1)
 }
