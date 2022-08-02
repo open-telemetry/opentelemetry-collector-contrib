@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	metricsproto "go.opentelemetry.io/proto/otlp/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
@@ -1628,15 +1627,15 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "AGGREGATION_TEMPORALITY_UNSPECIFIED",
-			want: tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED),
+			want: tql.Enum(pmetric.MetricAggregationTemporalityUnspecified),
 		},
 		{
 			name: "AGGREGATION_TEMPORALITY_DELTA",
-			want: tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
+			want: tql.Enum(pmetric.MetricAggregationTemporalityDelta),
 		},
 		{
 			name: "AGGREGATION_TEMPORALITY_CUMULATIVE",
-			want: tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
+			want: tql.Enum(pmetric.MetricAggregationTemporalityCumulative),
 		},
 		{
 			name: "FLAG_NONE",

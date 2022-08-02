@@ -92,11 +92,6 @@ func TestValidateConfig(t *testing.T) {
 			succeed:    true,
 		},
 		{
-			configName:   "config_invalid_combo.yaml",
-			succeed:      false,
-			errorMessage: "metrics and include/exclude cannot be used at the same time",
-		},
-		{
 			configName:   "config_missing_match_type.yaml",
 			succeed:      false,
 			errorMessage: "match_type must be set if metrics are supplied",

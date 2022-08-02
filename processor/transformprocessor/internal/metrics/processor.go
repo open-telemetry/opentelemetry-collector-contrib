@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
@@ -30,7 +32,7 @@ type Processor struct {
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, ParsePath, ParseEnum)
+	queries, err := tql.ParseQueries(statements, functions, tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 	if err != nil {
 		return nil, err
 	}
@@ -41,28 +43,28 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx := metricTransformContext{}
+	ctx := tqlmetrics.MetricTransformContext{}
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
-		ctx.resource = rmetrics.Resource()
+		ctx.Resource = rmetrics.Resource()
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			ctx.il = smetrics.Scope()
+			ctx.InstrumentationScope = smetrics.Scope()
 			metrics := smetrics.Metrics()
-			ctx.metrics = metrics
+			ctx.Metrics = metrics
 			for k := 0; k < metrics.Len(); k++ {
-				ctx.metric = metrics.At(k)
-				switch ctx.metric.DataType() {
+				ctx.Metric = metrics.At(k)
+				switch ctx.Metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					p.handleNumberDataPoints(ctx, ctx.metric.Sum().DataPoints())
+					p.handleNumberDataPoints(ctx, ctx.Metric.Sum().DataPoints())
 				case pmetric.MetricDataTypeGauge:
-					p.handleNumberDataPoints(ctx, ctx.metric.Gauge().DataPoints())
+					p.handleNumberDataPoints(ctx, ctx.Metric.Gauge().DataPoints())
 				case pmetric.MetricDataTypeHistogram:
-					p.handleHistogramDataPoints(ctx, ctx.metric.Histogram().DataPoints())
+					p.handleHistogramDataPoints(ctx, ctx.Metric.Histogram().DataPoints())
 				case pmetric.MetricDataTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(ctx, ctx.metric.ExponentialHistogram().DataPoints())
+					p.handleExponetialHistogramDataPoints(ctx, ctx.Metric.ExponentialHistogram().DataPoints())
 				case pmetric.MetricDataTypeSummary:
-					p.handleSummaryDataPoints(ctx, ctx.metric.Summary().DataPoints())
+					p.handleSummaryDataPoints(ctx, ctx.Metric.Summary().DataPoints())
 				}
 			}
 		}
@@ -70,35 +72,35 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 	return td, nil
 }
 
-func (p *Processor) handleNumberDataPoints(ctx metricTransformContext, dps pmetric.NumberDataPointSlice) {
+func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.NumberDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.dataPoint = dps.At(i)
+		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleHistogramDataPoints(ctx metricTransformContext, dps pmetric.HistogramDataPointSlice) {
+func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.dataPoint = dps.At(i)
+		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleExponetialHistogramDataPoints(ctx metricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
+func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.dataPoint = dps.At(i)
+		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleSummaryDataPoints(ctx metricTransformContext, dps pmetric.SummaryDataPointSlice) {
+func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.SummaryDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.dataPoint = dps.At(i)
+		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) callFunctions(ctx metricTransformContext) {
+func (p *Processor) callFunctions(ctx tqlmetrics.MetricTransformContext) {
 	for _, statement := range p.queries {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)
