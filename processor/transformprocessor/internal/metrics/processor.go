@@ -43,7 +43,7 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx := tqlmetrics.MetricTransformContext{}
+	ctx := tqlmetrics.TransformContext{}
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
 		ctx.Resource = rmetrics.Resource()
@@ -72,35 +72,35 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 	return td, nil
 }
 
-func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.NumberDataPointSlice) {
+func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.NumberDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.HistogramDataPointSlice) {
+func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
+func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.MetricTransformContext, dps pmetric.SummaryDataPointSlice) {
+func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.SummaryDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		ctx.DataPoint = dps.At(i)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) callFunctions(ctx tqlmetrics.MetricTransformContext) {
+func (p *Processor) callFunctions(ctx tqlmetrics.TransformContext) {
 	for _, statement := range p.queries {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)

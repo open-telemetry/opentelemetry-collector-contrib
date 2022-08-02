@@ -28,13 +28,13 @@ import (
 )
 
 type TransformContext struct {
-	Log                  plog.LogRecord
+	LogRecord            plog.LogRecord
 	InstrumentationScope pcommon.InstrumentationScope
 	Resource             pcommon.Resource
 }
 
 func (ctx TransformContext) GetItem() interface{} {
-	return ctx.Log
+	return ctx.LogRecord
 }
 
 func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
