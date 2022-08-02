@@ -123,15 +123,26 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
+				},
+			},
+			expectedErr: errNoProjects.Error(),
+		},
+		{
+			name: "Invalid Project Config",
+			input: Config{
+				Logs: LogConfig{
+					Enabled: true,
 					Projects: []*Project{
 						{
-							Name:            "",
+							Name:            "Project1",
 							EnableAuditLogs: false,
+							ExcludeClusters: []string{"cluster1"},
+							IncludeClusters: []string{"cluster2"},
 						},
 					},
 				},
 			},
-			expectedErr: errNoProjects.Error(),
+			expectedErr: errClusterConfig.Error(),
 		},
 	}
 

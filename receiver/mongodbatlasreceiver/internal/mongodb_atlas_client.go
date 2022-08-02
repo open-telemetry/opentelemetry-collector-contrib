@@ -115,6 +115,8 @@ type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
 	roundTripper *clientRoundTripper
+	startTime    string
+	endTime      string
 }
 
 // NewMongoDBAtlasClient creates a new MongoDB Atlas client wrapper
@@ -128,10 +130,13 @@ func NewMongoDBAtlasClient(
 	roundTripper := newClientRoundTripper(t, log, retrySettings)
 	tc := &http.Client{Transport: roundTripper}
 	client := mongodbatlas.NewClient(tc)
+	start := strconv.Itoa(int(time.Now().Unix()))
 	return &MongoDBAtlasClient{
 		log,
 		client,
 		roundTripper,
+		start,
+		"",
 	}, nil
 }
 
@@ -557,10 +562,13 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 }
 
 // retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
-func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, col_interval time.Duration) (*bytes.Buffer, error) {
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
+	var start string
+	if s.endTime != "" {
+		start = s.endTime
+	}
 
-	start := strconv.Itoa(int(time.Now().Add(-col_interval).Unix()))
 	end := strconv.Itoa(int(time.Now().Unix()))
 
 	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: start, EndDate: end})

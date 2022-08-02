@@ -18,10 +18,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 const (
@@ -77,12 +78,11 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
-	// The Message field contains description about the event,
-	// which is best suited for the "Body" of the LogRecordSlice.
+	// Insert Raw Log message into Body of LogRecord
 	lr.Body().SetStringVal(string(data))
 
-	// Set the "SeverityNumber" and "SeverityText" if a known type of
-	// severity is found.
+	// Since Audit Logs don't have a severity/level
+	// Set the "SeverityNumber" and "SeverityText" to INFO
 	lr.SetSeverityNumber(plog.SeverityNumberINFO)
 	lr.SetSeverityText("INFO")
 
@@ -139,8 +139,7 @@ func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
-	// The Message field contains description about the event,
-	// which is best suited for the "Body" of the LogRecordSlice.
+	// Insert Raw Log message into Body of LogRecord
 	lr.Body().SetStringVal(string(data))
 
 	// Set the "SeverityNumber" and "SeverityText" if a known type of

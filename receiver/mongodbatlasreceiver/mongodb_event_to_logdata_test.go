@@ -17,11 +17,12 @@ package mongodbatlasreceiver
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 func TestMongoeventToLogData(t *testing.T) {
@@ -41,11 +42,11 @@ func TestMongoeventToLogData(t *testing.T) {
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
-	assert.Equal(t, attrs.Len(), 10)
+	assert.Equal(t, attrs.Len(), 9)
 
 	// Count attribute will not be present in the LogData
 	ld = mongodbEventToLogData(zap.NewNop(), &mongoevent, r)
-	assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), 10)
+	assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), 9)
 }
 
 func TestUnknownSeverity(t *testing.T) {
@@ -84,9 +85,8 @@ func TestMongoEventToAuditLogData(t *testing.T) {
 	attrs := lr.LogRecords().At(0).Attributes()
 	assert.Equal(t, ld.ResourceLogs().Len(), 1)
 	assert.Equal(t, resourceAttrs.Len(), 4)
-	assert.Equal(t, 11, attrs.Len())
+	assert.Equal(t, 12, attrs.Len())
 
-	// Count attribute will not be present in the LogData
 	ld = mongodbAuditEventToLogData(zap.NewNop(), &mongoevent, r)
-	assert.Equal(t, 11, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }

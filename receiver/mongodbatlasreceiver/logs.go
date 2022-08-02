@@ -27,10 +27,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
 // combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
@@ -181,11 +182,11 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 					break
 				// include is initialized
 				case len(include) > 0 && len(exclude) == 0:
-					clusters, err = filterClusters(clusters, createStringMap(include), true)
+					clusters, err = filterClusters(clusters, createStringSet(include), true)
 					break
 				// exclude is initialized
 				case len(exclude) > 0 && len(include) == 0:
-					clusters, err = filterClusters(clusters, createStringMap(exclude), false)
+					clusters, err = filterClusters(clusters, createStringSet(exclude), false)
 					break
 				// both are initialized
 				default:
@@ -230,20 +231,20 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 
 }
 
-func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]string, include bool) ([]mongodbatlas.Cluster, error) {
+func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]struct{}, include bool) ([]mongodbatlas.Cluster, error) {
 	var filtered []mongodbatlas.Cluster
 	for _, cluster := range clusters {
-		if _, ok := keys[cluster.ID]; (!ok && !include) || (ok && include) {
+		if _, ok := keys[cluster.Name]; (!ok && !include) || (ok && include) {
 			filtered = append(filtered, cluster)
 		}
 	}
 	return filtered, nil
 }
 
-func createStringMap(in []string) map[string]string {
-	list := make(map[string]string)
+func createStringSet(in []string) map[string]struct{} {
+	list := map[string]struct{}{}
 	for i := range in {
-		list[in[i]] = in[i]
+		list[in[i]] = struct{}{}
 	}
 
 	return list
@@ -251,7 +252,7 @@ func createStringMap(in []string) map[string]string {
 
 func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +282,7 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 
 func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, collection_interval)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
 	if err != nil {
 		return nil, err
 	}
