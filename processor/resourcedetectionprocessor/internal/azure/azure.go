@@ -61,10 +61,21 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 	attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
+	// Note: At the time of writing, the value of the "name" field from the metadata
+	// API (compute.Name) may differ from the actual hostname (e.g. if you update a
+	// VM's hostname, the metadata API will still return the original name).
 	attrs.InsertString(conventions.AttributeHostName, compute.Name)
 	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
 	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
 	attrs.InsertString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	// Some components (e.g. signalfx exporter) require the compute.Name value (the
+	// "name" returned from the metadata API), which historically has been written
+	// to the host name attribute (AttributeHostName, inserted above), but another
+	// detector may have precedence in writing to this attribute, in which case the
+	// original name value from the metadata API will be lost by the time a
+	// downstream component runs. To make sure this value is avaliable, we also save
+	// the compute.Name in "azure.vm.name" here for use by downstream components.
+	attrs.InsertString("azure.vm.name", compute.Name)
 	attrs.InsertString("azure.vm.size", compute.VMSize)
 	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
 	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)

@@ -266,3 +266,20 @@ func TestAzureID(t *testing.T) {
 	expected := "mycloudaccount/myresourcegroup/microsoft.compute/virtualmachinescalesets/myscalesetname/virtualmachines/1"
 	assert.Equal(t, expected, id)
 }
+
+func TestAzureID_VMName(t *testing.T) {
+	attrs := pcommon.NewMap()
+	attrs.Insert("azure.resourcegroup.name", pcommon.NewValueString("my-resource-group"))
+	attrs.Insert("azure.vm.name", pcommon.NewValueString("my-vm-name"))
+	attrs.Insert(conventions.AttributeHostName, pcommon.NewValueString("my.fq.host.name"))
+	id := azureID(attrs, "my-cloud-account")
+	assert.Equal(t, "my-cloud-account/my-resource-group/microsoft.compute/virtualmachines/my-vm-name", id)
+}
+
+func TestAzureID_HostName(t *testing.T) {
+	attrs := pcommon.NewMap()
+	attrs.Insert("azure.resourcegroup.name", pcommon.NewValueString("my-resource-group"))
+	attrs.Insert(conventions.AttributeHostName, pcommon.NewValueString("my.fq.host.name"))
+	id := azureID(attrs, "my-cloud-account")
+	assert.Equal(t, "my-cloud-account/my-resource-group/microsoft.compute/virtualmachines/my.fq.host.name", id)
+}

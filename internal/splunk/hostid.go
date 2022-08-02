@@ -123,7 +123,15 @@ func azureID(attrs pcommon.Map, cloudAccount string) string {
 	}
 
 	var hostname string
-	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
+
+	// Since the sfx backend expects a resource ID that was built using the VM name
+	// value returned by the Azure metadata API, and not the hostname (which may
+	// have been set by a system detector, be fully qualified, and may also differ
+	// from the hostname) we attempt to use the azure.vm.name attribute as the
+	// hostname.
+	if attr, ok := attrs.Get("azure.vm.name"); ok {
+		hostname = attr.StringVal()
+	} else if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
 		hostname = attr.StringVal()
 	}
 	if hostname == "" {

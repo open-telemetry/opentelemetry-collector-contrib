@@ -245,6 +245,7 @@ Queries the [Azure Instance Metadata Service](https://aka.ms/azureimds) to retri
     * cloud.account.id (subscription ID)
     * host.id (virtual machine ID)
     * host.name
+    * azure.vm.name (same as host.name, but preserved in the presence of a system detector with precedence)
     * azure.vm.size (virtual machine size)
     * azure.vm.scaleset.name (name of the scale set if any)
     * azure.resourcegroup.name (resource group name)
