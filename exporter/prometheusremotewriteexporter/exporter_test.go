@@ -369,6 +369,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
+	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
+
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
@@ -468,6 +470,13 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:            &histogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 12,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "valid_empty_histogram_case",
+			metrics:            &emptyDataPointHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 6,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{

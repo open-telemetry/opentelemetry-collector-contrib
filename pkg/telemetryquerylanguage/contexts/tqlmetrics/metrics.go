@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // nolint:gocritic
-package tqlmetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/metrics"
+package tqlmetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 import (
 	"fmt"
 	"time"
@@ -673,7 +673,7 @@ func accessExplicitBounds() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).MExplicitBounds()
+				return ctx.GetItem().(pmetric.HistogramDataPoint).ExplicitBounds().AsRaw()
 			}
 			return nil
 		},
@@ -681,7 +681,7 @@ func accessExplicitBounds() tql.StandardGetSetter {
 			if newExplicitBounds, ok := val.([]float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetMExplicitBounds(newExplicitBounds)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetExplicitBounds(pcommon.NewImmutableFloat64Slice(newExplicitBounds))
 				}
 			}
 		},
@@ -693,7 +693,7 @@ func accessBucketCounts() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.HistogramDataPoint:
-				return ctx.GetItem().(pmetric.HistogramDataPoint).MBucketCounts()
+				return ctx.GetItem().(pmetric.HistogramDataPoint).BucketCounts().AsRaw()
 			}
 			return nil
 		},
@@ -701,7 +701,7 @@ func accessBucketCounts() tql.StandardGetSetter {
 			if newBucketCount, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetMBucketCounts(newBucketCount)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetBucketCounts(pcommon.NewImmutableUInt64Slice(newBucketCount))
 				}
 			}
 		},
@@ -793,7 +793,7 @@ func accessPositiveBucketCounts() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().MBucketCounts()
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().BucketCounts().AsRaw()
 			}
 			return nil
 		},
@@ -801,7 +801,7 @@ func accessPositiveBucketCounts() tql.StandardGetSetter {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetMBucketCounts(newPositiveBucketCounts)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newPositiveBucketCounts))
 				}
 			}
 		},
@@ -853,7 +853,7 @@ func accessNegativeBucketCounts() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.ExponentialHistogramDataPoint:
-				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().MBucketCounts()
+				return ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().BucketCounts().AsRaw()
 			}
 			return nil
 		},
@@ -861,7 +861,7 @@ func accessNegativeBucketCounts() tql.StandardGetSetter {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetMBucketCounts(newNegativeBucketCounts)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newNegativeBucketCounts))
 				}
 			}
 		},
@@ -911,7 +911,7 @@ func getValue(val pcommon.Value) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.MBytesVal()
+		return val.BytesVal().AsRaw()
 	}
 	return nil
 }

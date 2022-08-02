@@ -52,6 +52,7 @@
         {
           "metrics": [
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.read",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -80,6 +81,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.write",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -108,6 +110,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.sync",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -136,6 +139,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.async",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -164,6 +168,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.discard",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -192,6 +197,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
               "name": "container.blockio.io_service_bytes_recursive.total",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -220,6 +226,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.read",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -245,9 +252,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.write",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -273,9 +281,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.sync",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -301,9 +310,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.async",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -329,9 +339,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.discard",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -357,9 +368,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
               "name": "container.blockio.io_serviced_recursive.total",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -385,9 +397,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "System CPU usage.",
               "name": "container.cpu.usage.system",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -402,6 +415,7 @@
               "unit": "ns"
             },
             {
+              "description": "Total CPU time consumed.",
               "name": "container.cpu.usage.total",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -416,6 +430,7 @@
               "unit": "ns"
             },
             {
+              "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
               "name": "container.cpu.usage.kernelmode",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -430,6 +445,7 @@
               "unit": "ns"
             },
             {
+              "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
               "name": "container.cpu.usage.usermode",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -444,6 +460,7 @@
               "unit": "ns"
             },
             {
+              "description": "Number of periods with throttling active.",
               "name": "container.cpu.throttling_data.periods",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -455,9 +472,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
+              "description": "Number of periods when the container hits its throttling limit.",
               "name": "container.cpu.throttling_data.throttled_periods",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -469,9 +487,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
+              "description": "Aggregate time the container was throttled.",
               "name": "container.cpu.throttling_data.throttled_time",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -486,6 +505,7 @@
               "unit": "ns"
             },
             {
+              "description": "Percent of CPU used by the container.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -498,6 +518,7 @@
               "unit": "1"
             },
             {
+              "description": "Per-core CPU usage by the container.",
               "name": "container.cpu.usage.percpu",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -604,6 +625,7 @@
               "unit": "ns"
             },
             {
+              "description": "Memory limit of the container.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -616,6 +638,7 @@
               "unit": "By"
             },
             {
+              "description": "Memory usage of the container. This excludes the total cache.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -628,6 +651,7 @@
               "unit": "By"
             },
             {
+              "description": "Percentage of memory used.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -640,6 +664,7 @@
               "unit": "1"
             },
             {
+              "description": "Maximum memory usage.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -652,6 +677,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of anonymous memory that has been identified as active by the kernel.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -664,6 +690,7 @@
               "unit": "By"
             },
             {
+              "description": "Cache memory that has been identified as active by the kernel.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -676,6 +703,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -688,6 +716,7 @@
               "unit": "By"
             },
             {
+              "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -700,6 +729,7 @@
               "unit": "By"
             },
             {
+              "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -712,6 +742,7 @@
               "unit": "By"
             },
             {
+              "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -724,6 +755,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -736,6 +768,7 @@
               "unit": "By"
             },
             {
+              "description": "Cache memory that has been identified as inactive by the kernel.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -748,6 +781,7 @@
               "unit": "By"
             },
             {
+              "description": "Indicates the amount of memory mapped by the processes in the control group.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -760,6 +794,7 @@
               "unit": "By"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup triggered a page fault.",
               "name": "container.memory.pgfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -771,9 +806,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup triggered a major fault.",
               "name": "container.memory.pgmajfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -785,9 +821,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Number of pages read from disk by the cgroup.",
               "name": "container.memory.pgpgin",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -799,9 +836,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of pages written to disk by the cgroup.",
               "name": "container.memory.pgpgout",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -813,9 +851,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -828,6 +867,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -840,6 +880,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -852,6 +893,7 @@
               "unit": "By"
             },
             {
+              "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -864,6 +906,7 @@
               "unit": "By"
             },
             {
+              "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -876,6 +919,7 @@
               "unit": "By"
             },
             {
+              "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -888,6 +932,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -900,6 +945,7 @@
               "unit": "By"
             },
             {
+              "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -912,6 +958,7 @@
               "unit": "By"
             },
             {
+              "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -924,6 +971,7 @@
               "unit": "By"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.",
               "name": "container.memory.total_pgfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -935,9 +983,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.",
               "name": "container.memory.total_pgmajfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -949,9 +998,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Number of pages read from disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgin",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -963,9 +1013,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of pages written to disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgout",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -977,9 +1028,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -992,6 +1044,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -1004,6 +1057,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -1016,6 +1070,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -1028,6 +1083,7 @@
               "unit": "By"
             },
             {
+              "description": "The amount of memory that cannot be reclaimed.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -1040,6 +1096,7 @@
               "unit": "By"
             },
             {
+              "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -1052,6 +1109,7 @@
               "unit": "By"
             },
             {
+              "description": "Bytes received by the container.",
               "name": "container.network.io.usage.rx_bytes",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1074,6 +1132,7 @@
               "unit": "By"
             },
             {
+              "description": "Bytes sent.",
               "name": "container.network.io.usage.tx_bytes",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1096,6 +1155,7 @@
               "unit": "By"
             },
             {
+              "description": "Incoming packets dropped.",
               "name": "container.network.io.usage.rx_dropped",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1115,9 +1175,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Received errors.",
               "name": "container.network.io.usage.rx_errors",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1137,9 +1198,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
+              "description": "Packets received.",
               "name": "container.network.io.usage.rx_packets",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1159,9 +1221,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Outgoing packets dropped.",
               "name": "container.network.io.usage.tx_dropped",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1181,9 +1244,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Sent errors.",
               "name": "container.network.io.usage.tx_errors",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1203,9 +1267,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
+              "description": "Packets sent.",
               "name": "container.network.io.usage.tx_packets",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1225,10 +1290,13 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             }
           ],
-          "scope": {}
+          "scope": {
+            "name": "otelcol/dockerstatsreceiver",
+            "version": "latest"
+          }
         }
       ]
     }

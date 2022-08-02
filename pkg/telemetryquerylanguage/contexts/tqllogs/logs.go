@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
-package tqltraces // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/traces"
+package tqllogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 
 import (
 	"encoding/hex"
@@ -22,41 +21,56 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/otel/trace"
-	tracesproto "go.opentelemetry.io/proto/otlp/trace/v1"
+	"go.opentelemetry.io/collector/pdata/plog"
+	logsproto "go.opentelemetry.io/proto/otlp/logs/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type SpanTransformContext struct {
-	Span                 ptrace.Span
+type LogTransformContext struct {
+	Log                  plog.LogRecord
 	InstrumentationScope pcommon.InstrumentationScope
 	Resource             pcommon.Resource
 }
 
-func (ctx SpanTransformContext) GetItem() interface{} {
-	return ctx.Span
+func (ctx LogTransformContext) GetItem() interface{} {
+	return ctx.Log
 }
 
-func (ctx SpanTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+func (ctx LogTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return ctx.InstrumentationScope
 }
 
-func (ctx SpanTransformContext) GetResource() pcommon.Resource {
+func (ctx LogTransformContext) GetResource() pcommon.Resource {
 	return ctx.Resource
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"SPAN_KIND_UNSPECIFIED": tql.Enum(tracesproto.Span_SPAN_KIND_UNSPECIFIED),
-	"SPAN_KIND_INTERNAL":    tql.Enum(tracesproto.Span_SPAN_KIND_INTERNAL),
-	"SPAN_KIND_SERVER":      tql.Enum(tracesproto.Span_SPAN_KIND_SERVER),
-	"SPAN_KIND_CLIENT":      tql.Enum(tracesproto.Span_SPAN_KIND_CLIENT),
-	"SPAN_KIND_PRODUCER":    tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
-	"SPAN_KIND_CONSUMER":    tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
-	"STATUS_CODE_UNSET":     tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
-	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
-	"STATUS_CODE_ERROR":     tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
+	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_UNSPECIFIED),
+	"SEVERITY_NUMBER_TRACE":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE),
+	"SEVERITY_NUMBER_TRACE2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE2),
+	"SEVERITY_NUMBER_TRACE3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE3),
+	"SEVERITY_NUMBER_TRACE4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_TRACE4),
+	"SEVERITY_NUMBER_DEBUG":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG),
+	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG2),
+	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG3),
+	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_DEBUG4),
+	"SEVERITY_NUMBER_INFO":        tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO),
+	"SEVERITY_NUMBER_INFO2":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO2),
+	"SEVERITY_NUMBER_INFO3":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO3),
+	"SEVERITY_NUMBER_INFO4":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_INFO4),
+	"SEVERITY_NUMBER_WARN":        tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN),
+	"SEVERITY_NUMBER_WARN2":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN2),
+	"SEVERITY_NUMBER_WARN3":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN3),
+	"SEVERITY_NUMBER_WARN4":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_WARN4),
+	"SEVERITY_NUMBER_ERROR":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR),
+	"SEVERITY_NUMBER_ERROR2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR2),
+	"SEVERITY_NUMBER_ERROR3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR3),
+	"SEVERITY_NUMBER_ERROR4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_ERROR4),
+	"SEVERITY_NUMBER_FATAL":       tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL),
+	"SEVERITY_NUMBER_FATAL2":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL2),
+	"SEVERITY_NUMBER_FATAL3":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL3),
+	"SEVERITY_NUMBER_FATAL4":      tql.Enum(logsproto.SeverityNumber_SEVERITY_NUMBER_FATAL4),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {
@@ -82,15 +96,14 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		if len(path) == 1 {
 			return accessResource(), nil
 		}
-		switch path[1].Name {
-		case "attributes":
+		if path[1].Name == "attributes" {
 			mapKey := path[1].MapKey
 			if mapKey == nil {
 				return accessResourceAttributes(), nil
 			}
 			return accessResourceAttributesKey(mapKey), nil
 		}
-	case "instrumentation_library":
+	case "instrumentation_scope":
 		if len(path) == 1 {
 			return accessInstrumentationScope(), nil
 		}
@@ -100,38 +113,16 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		case "version":
 			return accessInstrumentationScopeVersion(), nil
 		}
-	case "trace_id":
-		if len(path) == 1 {
-			return accessTraceID(), nil
-		}
-		switch path[1].Name {
-		case "string":
-			return accessStringTraceID(), nil
-		}
-	case "span_id":
-		if len(path) == 1 {
-			return accessSpanID(), nil
-		}
-		switch path[1].Name {
-		case "string":
-			return accessStringSpanID(), nil
-		}
-	case "trace_state":
-		mapKey := path[0].MapKey
-		if mapKey == nil {
-			return accessTraceState(), nil
-		}
-		return accessTraceStateKey(mapKey), nil
-	case "parent_span_id":
-		return accessParentSpanID(), nil
-	case "name":
-		return accessName(), nil
-	case "kind":
-		return accessKind(), nil
-	case "start_time_unix_nano":
-		return accessStartTimeUnixNano(), nil
-	case "end_time_unix_nano":
-		return accessEndTimeUnixNano(), nil
+	case "time_unix_nano":
+		return accessTimeUnixNano(), nil
+	case "observed_time_unix_nano":
+		return accessObservedTimeUnixNano(), nil
+	case "severity_number":
+		return accessSeverityNumber(), nil
+	case "severity_text":
+		return accessSeverityText(), nil
+	case "body":
+		return accessBody(), nil
 	case "attributes":
 		mapKey := path[0].MapKey
 		if mapKey == nil {
@@ -140,26 +131,22 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		return accessAttributesKey(mapKey), nil
 	case "dropped_attributes_count":
 		return accessDroppedAttributesCount(), nil
-	case "events":
-		return accessEvents(), nil
-	case "dropped_events_count":
-		return accessDroppedEventsCount(), nil
-	case "links":
-		return accessLinks(), nil
-	case "dropped_links_count":
-		return accessDroppedLinksCount(), nil
-	case "status":
+	case "flags":
+		return accessFlags(), nil
+	case "trace_id":
 		if len(path) == 1 {
-			return accessStatus(), nil
+			return accessTraceID(), nil
 		}
-		switch path[1].Name {
-		case "code":
-			return accessStatusCode(), nil
-		case "message":
-			return accessStatusMessage(), nil
+		if path[1].Name == "string" {
+			return accessStringTraceID(), nil
 		}
-	default:
-		return nil, fmt.Errorf("invalid path expression, unrecognized field %v", path[0].Name)
+	case "span_id":
+		if len(path) == 1 {
+			return accessSpanID(), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringSpanID(), nil
+		}
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
@@ -243,14 +230,128 @@ func accessInstrumentationScopeVersion() tql.StandardGetSetter {
 	}
 }
 
+func accessTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).Timestamp().AsTime().UnixNano()
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetItem().(plog.LogRecord).SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+			}
+		},
+	}
+}
+
+func accessObservedTimeUnixNano() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).ObservedTimestamp().AsTime().UnixNano()
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetItem().(plog.LogRecord).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+			}
+		},
+	}
+}
+
+func accessSeverityNumber() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return int64(ctx.GetItem().(plog.LogRecord).SeverityNumber())
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetItem().(plog.LogRecord).SetSeverityNumber(plog.SeverityNumber(i))
+			}
+		},
+	}
+}
+
+func accessSeverityText() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).SeverityText()
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if s, ok := val.(string); ok {
+				ctx.GetItem().(plog.LogRecord).SetSeverityText(s)
+			}
+		},
+	}
+}
+
+func accessBody() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return getValue(ctx.GetItem().(plog.LogRecord).Body())
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			setValue(ctx.GetItem().(plog.LogRecord).Body(), val)
+		},
+	}
+}
+
+func accessAttributes() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetItem().(plog.LogRecord).Attributes()
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if attrs, ok := val.(pcommon.Map); ok {
+				ctx.GetItem().(plog.LogRecord).Attributes().Clear()
+				attrs.CopyTo(ctx.GetItem().(plog.LogRecord).Attributes())
+			}
+		},
+	}
+}
+
+func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return getAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey)
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			setAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey, val)
+		},
+	}
+}
+
+func accessDroppedAttributesCount() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return int64(ctx.GetItem().(plog.LogRecord).DroppedAttributesCount())
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetItem().(plog.LogRecord).SetDroppedAttributesCount(uint32(i))
+			}
+		},
+	}
+}
+
+func accessFlags() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return int64(ctx.GetItem().(plog.LogRecord).Flags())
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if i, ok := val.(int64); ok {
+				ctx.GetItem().(plog.LogRecord).SetFlags(uint32(i))
+			}
+		},
+	}
+}
+
 func accessTraceID() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID()
+			return ctx.GetItem().(plog.LogRecord).TraceID()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newTraceID, ok := val.(pcommon.TraceID); ok {
-				ctx.GetItem().(ptrace.Span).SetTraceID(newTraceID)
+				ctx.GetItem().(plog.LogRecord).SetTraceID(newTraceID)
 			}
 		},
 	}
@@ -259,12 +360,12 @@ func accessTraceID() tql.StandardGetSetter {
 func accessStringTraceID() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).TraceID().HexString()
+			return ctx.GetItem().(plog.LogRecord).TraceID().HexString()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if traceID, err := parseTraceID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetTraceID(traceID)
+					ctx.GetItem().(plog.LogRecord).SetTraceID(traceID)
 				}
 			}
 		},
@@ -274,11 +375,11 @@ func accessStringTraceID() tql.StandardGetSetter {
 func accessSpanID() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID()
+			return ctx.GetItem().(plog.LogRecord).SpanID()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newSpanID, ok := val.(pcommon.SpanID); ok {
-				ctx.GetItem().(ptrace.Span).SetSpanID(newSpanID)
+				ctx.GetItem().(plog.LogRecord).SetSpanID(newSpanID)
 			}
 		},
 	}
@@ -287,246 +388,13 @@ func accessSpanID() tql.StandardGetSetter {
 func accessStringSpanID() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).SpanID().HexString()
+			return ctx.GetItem().(plog.LogRecord).SpanID().HexString()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
 				if spanID, err := parseSpanID(str); err == nil {
-					ctx.GetItem().(ptrace.Span).SetSpanID(spanID)
+					ctx.GetItem().(plog.LogRecord).SetSpanID(spanID)
 				}
-			}
-		},
-	}
-}
-
-func accessTraceState() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return (string)(ctx.GetItem().(ptrace.Span).TraceState())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(str))
-			}
-		},
-	}
-}
-
-func accessTraceStateKey(mapKey *string) tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
-				return ts.Get(*mapKey)
-			}
-			return nil
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				if ts, err := trace.ParseTraceState(string(ctx.GetItem().(ptrace.Span).TraceState())); err == nil {
-					if updated, err := ts.Insert(*mapKey, str); err == nil {
-						ctx.GetItem().(ptrace.Span).SetTraceState(ptrace.TraceState(updated.String()))
-					}
-				}
-			}
-		},
-	}
-}
-
-func accessParentSpanID() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).ParentSpanID()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newParentSpanID, ok := val.(pcommon.SpanID); ok {
-				ctx.GetItem().(ptrace.Span).SetParentSpanID(newParentSpanID)
-			}
-		},
-	}
-}
-
-func accessName() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Name()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).SetName(str)
-			}
-		},
-	}
-}
-
-func accessKind() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).Kind())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetKind(ptrace.SpanKind(i))
-			}
-		},
-	}
-}
-
-func accessStartTimeUnixNano() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).StartTimestamp().AsTime().UnixNano()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
-			}
-		},
-	}
-}
-
-func accessEndTimeUnixNano() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).EndTimestamp().AsTime().UnixNano()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetEndTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
-			}
-		},
-	}
-}
-
-func accessAttributes() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Attributes()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetItem().(ptrace.Span).Attributes().Clear()
-				attrs.CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
-			}
-		},
-	}
-}
-
-func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey)
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetItem().(ptrace.Span).Attributes(), *mapKey, val)
-		},
-	}
-}
-
-func accessDroppedAttributesCount() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedAttributesCount())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedAttributesCount(uint32(i))
-			}
-		},
-	}
-}
-
-func accessEvents() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Events()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if slc, ok := val.(ptrace.SpanEventSlice); ok {
-				ctx.GetItem().(ptrace.Span).Events().RemoveIf(func(event ptrace.SpanEvent) bool {
-					return true
-				})
-				slc.CopyTo(ctx.GetItem().(ptrace.Span).Events())
-			}
-		},
-	}
-}
-
-func accessDroppedEventsCount() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedEventsCount())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedEventsCount(uint32(i))
-			}
-		},
-	}
-}
-
-func accessLinks() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Links()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if slc, ok := val.(ptrace.SpanLinkSlice); ok {
-				ctx.GetItem().(ptrace.Span).Links().RemoveIf(func(event ptrace.SpanLink) bool {
-					return true
-				})
-				slc.CopyTo(ctx.GetItem().(ptrace.Span).Links())
-			}
-		},
-	}
-}
-
-func accessDroppedLinksCount() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).DroppedLinksCount())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).SetDroppedLinksCount(uint32(i))
-			}
-		},
-	}
-}
-
-func accessStatus() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if status, ok := val.(ptrace.SpanStatus); ok {
-				status.CopyTo(ctx.GetItem().(ptrace.Span).Status())
-			}
-		},
-	}
-}
-
-func accessStatusCode() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(ptrace.Span).Status().Code())
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if i, ok := val.(int64); ok {
-				ctx.GetItem().(ptrace.Span).Status().SetCode(ptrace.StatusCode(i))
-			}
-		},
-	}
-}
-
-func accessStatusMessage() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(ptrace.Span).Status().Message()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetItem().(ptrace.Span).Status().SetMessage(str)
 			}
 		},
 	}
@@ -537,6 +405,10 @@ func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	if !ok {
 		return nil
 	}
+	return getValue(val)
+}
+
+func getValue(val pcommon.Value) interface{} {
 	switch val.Type() {
 	case pcommon.ValueTypeString:
 		return val.StringVal()
@@ -551,7 +423,7 @@ func getAttr(attrs pcommon.Map, mapKey string) interface{} {
 	case pcommon.ValueTypeSlice:
 		return val.SliceVal()
 	case pcommon.ValueTypeBytes:
-		return val.MBytesVal()
+		return val.BytesVal().AsRaw()
 	}
 	return nil
 }
@@ -598,6 +470,58 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
 		}
 		attrs.Upsert(mapKey, arr)
+	default:
+		// TODO(anuraaga): Support set of map type.
+	}
+}
+
+func setValue(value pcommon.Value, val interface{}) {
+	switch v := val.(type) {
+	case string:
+		value.SetStringVal(v)
+	case bool:
+		value.SetBoolVal(v)
+	case int64:
+		value.SetIntVal(v)
+	case float64:
+		value.SetDoubleVal(v)
+	case []byte:
+		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
+	case []string:
+		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+			return true
+		})
+		for _, str := range v {
+			value.SliceVal().AppendEmpty().SetStringVal(str)
+		}
+	case []bool:
+		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+			return true
+		})
+		for _, b := range v {
+			value.SliceVal().AppendEmpty().SetBoolVal(b)
+		}
+	case []int64:
+		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+			return true
+		})
+		for _, i := range v {
+			value.SliceVal().AppendEmpty().SetIntVal(i)
+		}
+	case []float64:
+		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+			return true
+		})
+		for _, f := range v {
+			value.SliceVal().AppendEmpty().SetDoubleVal(f)
+		}
+	case [][]byte:
+		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
+			return true
+		})
+		for _, b := range v {
+			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
+		}
 	default:
 		// TODO(anuraaga): Support set of map type.
 	}

@@ -26,14 +26,12 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -77,7 +75,7 @@ func TestErrorsInStart(t *testing.T) {
 	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
 
-func TestScrapes(t *testing.T) {
+func TestScrapeV2(t *testing.T) {
 	containerIDs := []string{
 		"10b703fb312b25e8368ab5a3bce3a1610d1cee5d71a94920f1a7adbc5b0cb326",
 		"89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7",
@@ -103,39 +101,16 @@ func TestScrapes(t *testing.T) {
 
 	testCases := []struct {
 		desc                string
-		scrape              func(*receiver) (pmetric.Metrics, error)
 		expectedMetricsFile string
 		mockDockerEngine    *httptest.Server
 	}{
 		{
-			desc: "scrapeV1_single_container",
-			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
-				return rcv.scrape(context.Background())
-			},
+			desc:                "scrapeV2_single_container",
 			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
 			mockDockerEngine:    singleContainerEngineMock,
 		},
 		{
-			desc: "scrapeV2_single_container",
-			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
-				return rcv.scrapeV2(context.Background())
-			},
-			expectedMetricsFile: filepath.Join(mockFolder, "single_container", "expected_metrics.json"),
-			mockDockerEngine:    singleContainerEngineMock,
-		},
-		{
-			desc: "scrapeV1_two_containers",
-			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
-				return rcv.scrape(context.Background())
-			},
-			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
-			mockDockerEngine:    twoContainerEngineMock,
-		},
-		{
-			desc: "scrapeV2_two_containers",
-			scrape: func(rcv *receiver) (pmetric.Metrics, error) {
-				return rcv.scrapeV2(context.Background())
-			},
+			desc:                "scrapeV2_two_containers",
 			expectedMetricsFile: filepath.Join(mockFolder, "two_containers", "expected_metrics.json"),
 			mockDockerEngine:    twoContainerEngineMock,
 		},
@@ -153,24 +128,11 @@ func TestScrapes(t *testing.T) {
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 
-			actualMetrics, err := tc.scrape(receiver)
+			actualMetrics, err := receiver.scrapeV2(context.Background())
 			require.NoError(t, err)
 
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedMetricsFile)
 
-			if !strings.HasPrefix(tc.desc, "scrapeV1") {
-				// Unset various fields for comparison purposes (non-mdatagen implementation doesn't have these set)
-				for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
-					for j := 0; j < actualMetrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
-						sm := actualMetrics.ResourceMetrics().At(i).ScopeMetrics().At(j)
-						sm.Scope().SetName("")
-						sm.Scope().SetVersion("")
-						for k := 0; k < sm.Metrics().Len(); k++ {
-							sm.Metrics().At(k).SetDescription("")
-						}
-					}
-				}
-			}
 			assert.NoError(t, err)
 			assert.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 		})
