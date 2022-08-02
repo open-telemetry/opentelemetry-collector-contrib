@@ -27,7 +27,7 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
 * The `dns` node also accepts an optional property `port` to specify the port to be used for exporting the traces to the IP addresses resolved from `hostname`. If `port` is not specified, the default port 4317 is used.
 * The `routing_key` property is used to route spans to exporters based on different parameters. This functionality is currently enabled only for `trace` pipeline types. It supports one of the following values:
     * `service`: exports spans based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate. 
-    * `traceID` (default): exports spans based on its `traceID`.
+    * `traceID` (default): exports spans based on their `traceID`.
     * If not configured, defaults to `traceID` based routing.
   
 
