@@ -59,7 +59,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			require.Error(t, err)
 			require.Nil(t, ln1)
 
-			//Unbind the local address so the mock UDP service can use it
+			// Unbind the local address so the mock UDP service can use it
 			ln0.Close()
 
 			srv, err := tt.buildServerFn(addr)
