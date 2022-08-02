@@ -221,16 +221,7 @@ func (p *processorImp) Capabilities() consumer.Capabilities {
 // It aggregates the trace data to generate metrics, forwarding these metrics to the discovered metrics exporter.
 // The original input trace data will be forwarded to the next consumer, unmodified.
 func (p *processorImp) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	// Execute trace to metrics aggregation as a goroutine and only log errors instead
-	// of failing the entire pipeline to prioritize the propagation of trace data,
-	// regardless of error.
-	//
-	// This processor should be treated as a branched, out-of-band process
-	// that should not interfere with the flow of trace data because
-	// it is an orthogonal concern to the trace flow (it should not impact
-	// upstream or downstream pipeline trace components).
-
-	// Forward trace data unmodified.
+	// Forward trace data unmodified and propagate both metrics and trace pipeline errors, if any.
 	return multierr.Combine(p.tracesToMetrics(ctx, traces), p.nextConsumer.ConsumeTraces(ctx, traces))
 }
 
@@ -241,7 +232,7 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 	m, err := p.buildMetrics()
 
 	// Exemplars are only relevant to this batch of traces, so must be cleared within the lock,
-	// regardless of error while building metrics, before the next batch is received.
+	// regardless of error while building metrics, before the next batch of spans is received.
 	p.resetExemplarData()
 
 	// This component no longer needs to read the metrics once built, so it is safe to unlock.
