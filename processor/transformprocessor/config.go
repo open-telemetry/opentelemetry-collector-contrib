@@ -18,9 +18,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
@@ -49,7 +49,7 @@ func (c *Config) Validate() error {
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Metrics.Queries, c.Metrics.functions, metrics.ParsePath, metrics.ParseEnum)
+	_, err = tql.ParseQueries(c.Metrics.Queries, c.Metrics.functions, tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
