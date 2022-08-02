@@ -110,7 +110,7 @@ metrics:
   process.threads.count:
     enabled: false
     description: Process threads count.
-    unit: By
+    unit: Unit
     sum:
       value_type: int
       aggregation: cumulative

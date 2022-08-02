@@ -429,7 +429,7 @@ type metricProcessThreadsCount struct {
 func (m *metricProcessThreadsCount) init() {
 	m.data.SetName("process.threads.count")
 	m.data.SetDescription("Process threads count.")
-	m.data.SetUnit("By")
+	m.data.SetUnit("Unit")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
