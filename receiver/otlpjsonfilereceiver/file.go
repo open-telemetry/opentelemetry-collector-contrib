@@ -58,7 +58,7 @@ func createDefaultConfig() config.Receiver {
 }
 
 type receiver struct {
-	input *fileconsumer.Input
+	input *fileconsumer.Manager
 	id    config.ComponentID
 }
 

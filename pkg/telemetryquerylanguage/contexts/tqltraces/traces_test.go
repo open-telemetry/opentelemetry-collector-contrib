@@ -837,7 +837,7 @@ func Test_ParseEnum(t *testing.T) {
 		},
 		{
 			name: "STATUS_CODE_OK",
-			want: tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
+			want: tql.Enum(tracesproto.Status_STATUS_CODE_OK),
 		},
 		{
 			name: "STATUS_CODE_ERROR",
