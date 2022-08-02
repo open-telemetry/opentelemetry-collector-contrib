@@ -41,26 +41,28 @@ type Input struct {
 	roller        roller
 	persister     operator.Persister
 
-	pollInterval       time.Duration
-	maxConcurrentFiles int
-	maxBatchFiles      int
+	pollInterval  time.Duration
+	maxBatchFiles int
 
 	knownFiles    []*Reader
 	seenPaths     map[string]struct{}
-	firstCheck    bool
 	queuedMatches []string
 }
 
 func (f *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
-	f.firstCheck = true
-
 	f.persister = persister
 
 	// Load offsets from disk
 	if err := f.loadLastPollFiles(ctx); err != nil {
 		return fmt.Errorf("read known files from database: %w", err)
+	}
+
+	if len(f.finder.FindFiles()) == 0 {
+		f.Warnw("no files match the configured include patterns",
+			"include", f.finder.Include,
+			"exclude", f.finder.Exclude)
 	}
 
 	// Start polling goroutine
@@ -105,7 +107,7 @@ func (f *Input) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (f *Input) poll(ctx context.Context) {
-	f.maxBatchFiles = f.maxConcurrentFiles / 2
+
 	var matches []string
 	if len(f.queuedMatches) > f.maxBatchFiles {
 		matches, f.queuedMatches = f.queuedMatches[:f.maxBatchFiles], f.queuedMatches[f.maxBatchFiles:]
@@ -121,18 +123,13 @@ func (f *Input) poll(ctx context.Context) {
 
 			// Get the list of paths on disk
 			matches = f.finder.FindFiles()
-			if f.firstCheck && len(matches) == 0 {
-				f.Warnw("no files match the configured include patterns",
-					"include", f.finder.Include,
-					"exclude", f.finder.Exclude)
-			} else if len(matches) > f.maxBatchFiles {
+			if len(matches) > f.maxBatchFiles {
 				matches, f.queuedMatches = matches[:f.maxBatchFiles], matches[f.maxBatchFiles:]
 			}
 		}
 	}
 
 	readers := f.makeReaders(matches)
-	f.firstCheck = false
 
 	// Any new files that appear should be consumed entirely
 	f.readerFactory.fromBeginning = true
