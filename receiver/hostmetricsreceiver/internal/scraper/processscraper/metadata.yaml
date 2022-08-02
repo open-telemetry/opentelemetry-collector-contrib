@@ -107,7 +107,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
 
-  process.threads.count:
+  process.threads:
     enabled: false
     description: Process threads count.
     unit: "{threads}"

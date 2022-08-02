@@ -250,7 +250,7 @@ func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle pr
 	if err != nil {
 		return err
 	}
-	s.mb.RecordProcessThreadsCountDataPoint(now, int64(threads))
+	s.mb.RecordProcessThreadsDataPoint(now, int64(threads))
 
 	return nil
 }

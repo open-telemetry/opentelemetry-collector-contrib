@@ -556,7 +556,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			}
 
 			metricsSettings := metadata.DefaultMetricsSettings()
-			metricsSettings.ProcessThreadsCount.Enabled = true
+			metricsSettings.ProcessThreads.Enabled = true
 			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsSettings})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())

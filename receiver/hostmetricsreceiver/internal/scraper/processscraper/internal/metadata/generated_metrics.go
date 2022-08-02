@@ -24,7 +24,7 @@ type MetricsSettings struct {
 	ProcessDiskIoWrite         MetricSettings `mapstructure:"process.disk.io.write"`
 	ProcessMemoryPhysicalUsage MetricSettings `mapstructure:"process.memory.physical_usage"`
 	ProcessMemoryVirtualUsage  MetricSettings `mapstructure:"process.memory.virtual_usage"`
-	ProcessThreadsCount        MetricSettings `mapstructure:"process.threads.count"`
+	ProcessThreads             MetricSettings `mapstructure:"process.threads"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -47,7 +47,7 @@ func DefaultMetricsSettings() MetricsSettings {
 		ProcessMemoryVirtualUsage: MetricSettings{
 			Enabled: true,
 		},
-		ProcessThreadsCount: MetricSettings{
+		ProcessThreads: MetricSettings{
 			Enabled: false,
 		},
 	}
@@ -419,15 +419,15 @@ func newMetricProcessMemoryVirtualUsage(settings MetricSettings) metricProcessMe
 	return m
 }
 
-type metricProcessThreadsCount struct {
+type metricProcessThreads struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills process.threads.count metric with initial data.
-func (m *metricProcessThreadsCount) init() {
-	m.data.SetName("process.threads.count")
+// init fills process.threads metric with initial data.
+func (m *metricProcessThreads) init() {
+	m.data.SetName("process.threads")
 	m.data.SetDescription("Process threads count.")
 	m.data.SetUnit("{threads}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -435,7 +435,7 @@ func (m *metricProcessThreadsCount) init() {
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
-func (m *metricProcessThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricProcessThreads) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -446,14 +446,14 @@ func (m *metricProcessThreadsCount) recordDataPoint(start pcommon.Timestamp, ts 
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricProcessThreadsCount) updateCapacity() {
+func (m *metricProcessThreads) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricProcessThreadsCount) emit(metrics pmetric.MetricSlice) {
+func (m *metricProcessThreads) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -461,8 +461,8 @@ func (m *metricProcessThreadsCount) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricProcessThreadsCount(settings MetricSettings) metricProcessThreadsCount {
-	m := metricProcessThreadsCount{settings: settings}
+func newMetricProcessThreads(settings MetricSettings) metricProcessThreads {
+	m := metricProcessThreads{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -484,7 +484,7 @@ type MetricsBuilder struct {
 	metricProcessDiskIoWrite         metricProcessDiskIoWrite
 	metricProcessMemoryPhysicalUsage metricProcessMemoryPhysicalUsage
 	metricProcessMemoryVirtualUsage  metricProcessMemoryVirtualUsage
-	metricProcessThreadsCount        metricProcessThreadsCount
+	metricProcessThreads             metricProcessThreads
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -508,7 +508,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricProcessDiskIoWrite:         newMetricProcessDiskIoWrite(settings.ProcessDiskIoWrite),
 		metricProcessMemoryPhysicalUsage: newMetricProcessMemoryPhysicalUsage(settings.ProcessMemoryPhysicalUsage),
 		metricProcessMemoryVirtualUsage:  newMetricProcessMemoryVirtualUsage(settings.ProcessMemoryVirtualUsage),
-		metricProcessThreadsCount:        newMetricProcessThreadsCount(settings.ProcessThreadsCount),
+		metricProcessThreads:             newMetricProcessThreads(settings.ProcessThreads),
 	}
 	for _, op := range options {
 		op(mb)
@@ -617,7 +617,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessDiskIoWrite.emit(ils.Metrics())
 	mb.metricProcessMemoryPhysicalUsage.emit(ils.Metrics())
 	mb.metricProcessMemoryVirtualUsage.emit(ils.Metrics())
-	mb.metricProcessThreadsCount.emit(ils.Metrics())
+	mb.metricProcessThreads.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -667,9 +667,9 @@ func (mb *MetricsBuilder) RecordProcessMemoryVirtualUsageDataPoint(ts pcommon.Ti
 	mb.metricProcessMemoryVirtualUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordProcessThreadsCountDataPoint adds a data point to process.threads.count metric.
-func (mb *MetricsBuilder) RecordProcessThreadsCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessThreadsCount.recordDataPoint(mb.startTime, ts, val)
+// RecordProcessThreadsDataPoint adds a data point to process.threads metric.
+func (mb *MetricsBuilder) RecordProcessThreadsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricProcessThreads.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
