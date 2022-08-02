@@ -118,7 +118,7 @@ func TestNewECSInfo(t *testing.T) {
 	}
 	hostIPProvider := &FakehostInfo{}
 
-	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
+	ecsinfo, _ := NewECSInfo(time.Minute, hostIPProvider, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), containerInstanceInfoCreatorOpt, taskinfoCreatorOpt, cgroupScannerCreatorOpt)
 	assert.NotNil(t, ecsinfo)
 
 	<-ecsinfo.taskInfoTestReadyC

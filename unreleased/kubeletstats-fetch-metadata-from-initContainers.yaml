@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: kubeletstatsreceiver
+note: Fetch metadata from initContainers
+issues: [12887]

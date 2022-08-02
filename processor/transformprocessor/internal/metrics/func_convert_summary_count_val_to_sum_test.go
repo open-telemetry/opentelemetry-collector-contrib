@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
@@ -76,13 +78,13 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, DefaultFunctions(), ParsePath, ParseEnum)
+			evaluate, err := tql.NewFunctionCall(tt.inv, DefaultFunctions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 			assert.NoError(t, err)
-			evaluate(metricTransformContext{
-				il:       pcommon.NewInstrumentationScope(),
-				resource: pcommon.NewResource(),
-				metric:   tt.input,
-				metrics:  actualMetrics,
+			evaluate(tqlmetrics.MetricTransformContext{
+				InstrumentationScope: pcommon.NewInstrumentationScope(),
+				Resource:             pcommon.NewResource(),
+				Metric:               tt.input,
+				Metrics:              actualMetrics,
 			})
 
 			expected := pmetric.NewMetricSlice()

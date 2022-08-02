@@ -61,7 +61,7 @@ type Config struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -116,17 +116,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	return &Input{
-		SugaredLogger:      logger.With("component", "fileconsumer"),
-		finder:             c.Finder,
-		PollInterval:       c.PollInterval.Raw(),
-		queuedMatches:      make([]string, 0),
-		firstCheck:         true,
-		cancel:             func() {},
-		knownFiles:         make([]*Reader, 0, 10),
-		roller:             newRoller(),
-		MaxConcurrentFiles: c.MaxConcurrentFiles,
-		SeenPaths:          make(map[string]struct{}, 100),
+	return &Manager{
+		SugaredLogger: logger.With("component", "fileconsumer"),
+		cancel:        func() {},
 		readerFactory: readerFactory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
 			readerConfig: &readerConfig{
@@ -137,5 +129,12 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 			fromBeginning:  startAtBeginning,
 			splitterConfig: c.Splitter,
 		},
+		finder:        c.Finder,
+		roller:        newRoller(),
+		pollInterval:  c.PollInterval.Raw(),
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		knownFiles:    make([]*Reader, 0, 10),
+		seenPaths:     make(map[string]struct{}, 100),
+		queuedMatches: make([]string, 0),
 	}, nil
 }

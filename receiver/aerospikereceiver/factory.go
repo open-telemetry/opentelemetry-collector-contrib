@@ -56,7 +56,12 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scraper, err := scraperhelper.NewScraper(typeStr, receiver.scrape)
+	scraper, err := scraperhelper.NewScraper(
+		typeStr,
+		receiver.scrape,
+		scraperhelper.WithStart(receiver.start),
+		scraperhelper.WithShutdown(receiver.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}

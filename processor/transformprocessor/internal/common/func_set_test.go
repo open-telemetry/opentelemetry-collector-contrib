@@ -27,8 +27,8 @@ import (
 func Test_set(t *testing.T) {
 	input := pcommon.NewValueString("original name")
 
-	target := &testGetSetter{
-		setter: func(ctx tql.TransformContext, val interface{}) {
+	target := &tql.StandardGetSetter{
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			ctx.GetItem().(pcommon.Value).SetStringVal(val.(string))
 		},
 	}
@@ -42,7 +42,7 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set name",
 			setter: target,
-			getter: testLiteral{value: "new name"},
+			getter: tql.Literal{Value: "new name"},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("new name")
 			},
@@ -50,7 +50,7 @@ func Test_set(t *testing.T) {
 		{
 			name:   "set nil value",
 			setter: target,
-			getter: testLiteral{value: nil},
+			getter: tql.Literal{Value: nil},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStringVal("original name")
 			},
@@ -80,14 +80,14 @@ func Test_set_get_nil(t *testing.T) {
 		Item: nil,
 	}
 
-	setter := &testGetSetter{
-		setter: func(ctx tql.TransformContext, val interface{}) {
+	setter := &tql.StandardGetSetter{
+		Setter: func(ctx tql.TransformContext, val interface{}) {
 			t.Errorf("nothing should be set in this scenario")
 		},
 	}
 
-	getter := &testGetSetter{
-		getter: func(ctx tql.TransformContext) interface{} {
+	getter := &tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
 			return ctx.GetItem()
 		},
 	}

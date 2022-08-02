@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 
 import (
@@ -120,7 +119,10 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 	// write the response if client does not accept gzip encoding
 	if req.Header.Get(sapmprotocol.AcceptEncodingHeaderName) != sapmprotocol.GZipEncodingHeaderValue {
 		// write the response bytes
-		rw.Write(respBytes)
+		_, err = rw.Write(respBytes)
+		if err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -151,7 +153,10 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 	// write the successfully gzipped payload
 	rw.Header().Set(sapmprotocol.ContentEncodingHeaderName, sapmprotocol.GZipEncodingHeaderValue)
-	rw.Write(gzipBuffer.Bytes())
+	_, err = rw.Write(gzipBuffer.Bytes())
+	if err != nil {
+		rw.WriteHeader(http.StatusBadRequest)
+	}
 }
 
 // Start starts the sapmReceiver's server.

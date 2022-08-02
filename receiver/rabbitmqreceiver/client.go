@@ -50,7 +50,7 @@ type rabbitmqCredentials struct {
 }
 
 func newClient(cfg *Config, host component.Host, settings component.TelemetrySettings, logger *zap.Logger) (client, error) {
-	httpClient, err := cfg.ToClient(host.GetExtensions(), settings)
+	httpClient, err := cfg.ToClientWithHost(host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: skywalkingreceiver
+note: Add extra link attributes from skywalking ref.
+issues: [12651]

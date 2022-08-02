@@ -12,28 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+package tqlcommon // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
 
 import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 
-// testGetSetter is a getSetter for testing.
-type testGetSetter struct {
-	getter tql.ExprFunc
-	setter func(ctx tql.TransformContext, val interface{})
-}
+func Set(target tql.Setter, value tql.Getter) (tql.ExprFunc, error) {
+	return func(ctx tql.TransformContext) interface{} {
+		val := value.Get(ctx)
 
-func (path testGetSetter) Get(ctx tql.TransformContext) interface{} {
-	return path.getter(ctx)
-}
-
-func (path testGetSetter) Set(ctx tql.TransformContext, val interface{}) {
-	path.setter(ctx, val)
-}
-
-type testLiteral struct {
-	value interface{}
-}
-
-func (t testLiteral) Get(ctx tql.TransformContext) interface{} {
-	return t.value
+		// No fields currently support `null` as a valid type.
+		if val != nil {
+			target.Set(ctx, val)
+		}
+		return nil
+	}, nil
 }

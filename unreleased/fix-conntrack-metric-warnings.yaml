@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receiver/hostmetrics
+note: Do not throw scraping errors if conntrack metrics collection is disabled
+issues: [12799]
