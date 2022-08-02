@@ -40,6 +40,10 @@ var allTCPStates = []string{
 }
 
 func (s *scraper) recordNetworkConntrackMetrics() error {
+	if !s.config.Metrics.SystemNetworkConntrackCount.Enabled && !s.config.Metrics.SystemNetworkConntrackMax.Enabled {
+		return nil
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 	conntrack, err := s.conntrack()
 	if err != nil {
