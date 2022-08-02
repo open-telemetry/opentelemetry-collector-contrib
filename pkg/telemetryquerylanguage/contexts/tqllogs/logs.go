@@ -27,21 +27,29 @@ import (
 )
 
 type TransformContext struct {
-	LogRecord            plog.LogRecord
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+	logRecord            plog.LogRecord
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
+}
+
+func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		logRecord:            logRecord,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
 func (ctx TransformContext) GetItem() interface{} {
-	return ctx.LogRecord
+	return ctx.logRecord
 }
 
 func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+	return ctx.instrumentationScope
 }
 
 func (ctx TransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+	return ctx.resource
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.

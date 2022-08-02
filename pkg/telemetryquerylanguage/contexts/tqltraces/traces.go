@@ -29,21 +29,29 @@ import (
 )
 
 type TransformContext struct {
-	Span                 ptrace.Span
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+	span                 ptrace.Span
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
+}
+
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		span:                 span,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
 func (ctx TransformContext) GetItem() interface{} {
-	return ctx.Span
+	return ctx.span
 }
 
 func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+	return ctx.instrumentationScope
 }
 
 func (ctx TransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+	return ctx.resource
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.

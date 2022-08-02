@@ -25,31 +25,41 @@ import (
 )
 
 type TransformContext struct {
-	DataPoint            interface{}
-	Metric               pmetric.Metric
-	Metrics              pmetric.MetricSlice
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+	dataPoint            interface{}
+	metric               pmetric.Metric
+	metrics              pmetric.MetricSlice
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
+}
+
+func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		dataPoint:            dataPoint,
+		metric:               metric,
+		metrics:              metrics,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
 func (ctx TransformContext) GetItem() interface{} {
-	return ctx.DataPoint
+	return ctx.dataPoint
 }
 
 func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+	return ctx.instrumentationScope
 }
 
 func (ctx TransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+	return ctx.resource
 }
 
 func (ctx TransformContext) GetMetric() pmetric.Metric {
-	return ctx.Metric
+	return ctx.metric
 }
 
 func (ctx TransformContext) GetMetrics() pmetric.MetricSlice {
-	return ctx.Metrics
+	return ctx.metrics
 }
 
 // pathGetSetter is a getSetter which has been resolved using a path expression provided by a user.

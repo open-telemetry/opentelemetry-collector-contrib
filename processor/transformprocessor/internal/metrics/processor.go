@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -43,28 +44,24 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetric.Metrics, error) {
-	ctx := tqlmetrics.TransformContext{}
 	for i := 0; i < td.ResourceMetrics().Len(); i++ {
 		rmetrics := td.ResourceMetrics().At(i)
-		ctx.Resource = rmetrics.Resource()
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			ctx.InstrumentationScope = smetrics.Scope()
 			metrics := smetrics.Metrics()
-			ctx.Metrics = metrics
 			for k := 0; k < metrics.Len(); k++ {
-				ctx.Metric = metrics.At(k)
-				switch ctx.Metric.DataType() {
+				metric := metrics.At(k)
+				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Sum().DataPoints())
+					p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricDataTypeGauge:
-					p.handleNumberDataPoints(ctx, ctx.Metric.Gauge().DataPoints())
+					p.handleNumberDataPoints(metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricDataTypeHistogram:
-					p.handleHistogramDataPoints(ctx, ctx.Metric.Histogram().DataPoints())
+					p.handleHistogramDataPoints(metric.Histogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricDataTypeExponentialHistogram:
-					p.handleExponetialHistogramDataPoints(ctx, ctx.Metric.ExponentialHistogram().DataPoints())
+					p.handleExponetialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				case pmetric.MetricDataTypeSummary:
-					p.handleSummaryDataPoints(ctx, ctx.Metric.Summary().DataPoints())
+					p.handleSummaryDataPoints(metric.Summary().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
 				}
 			}
 		}
@@ -72,30 +69,30 @@ func (p *Processor) ProcessMetrics(_ context.Context, td pmetric.Metrics) (pmetr
 	return td, nil
 }
 
-func (p *Processor) handleNumberDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.NumberDataPointSlice) {
+func (p *Processor) handleNumberDataPoints(dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleHistogramDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.HistogramDataPointSlice) {
+func (p *Processor) handleHistogramDataPoints(dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleExponetialHistogramDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.ExponentialHistogramDataPointSlice) {
+func (p *Processor) handleExponetialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
 
-func (p *Processor) handleSummaryDataPoints(ctx tqlmetrics.TransformContext, dps pmetric.SummaryDataPointSlice) {
+func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) {
 	for i := 0; i < dps.Len(); i++ {
-		ctx.DataPoint = dps.At(i)
+		ctx := tqlmetrics.NewTransformContext(dps.At(i), metric, metrics, is, resource)
 		p.callFunctions(ctx)
 	}
 }
