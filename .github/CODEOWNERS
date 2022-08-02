@@ -73,6 +73,7 @@ extension/asapauthextension/                         @open-telemetry/collector-c
 extension/awsproxy/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin
 extension/bearertokenauthextension/                  @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123
+extension/headerssetter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/healthcheckextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/jaegerremotesampling/                      @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/oauth2clientauthextension/                 @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
