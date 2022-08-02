@@ -43,9 +43,8 @@ type Manager struct {
 	pollInterval  time.Duration
 	maxBatchFiles int
 
-	knownFiles    []*Reader
-	seenPaths     map[string]struct{}
-	queuedMatches []string
+	knownFiles []*Reader
+	seenPaths  map[string]struct{}
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -106,31 +105,24 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
-	var matches []string
-	if len(m.queuedMatches) > m.maxBatchFiles {
-		matches, m.queuedMatches = m.queuedMatches[:m.maxBatchFiles], m.queuedMatches[m.maxBatchFiles:]
-	} else {
-		if len(m.queuedMatches) > 0 {
-			matches, m.queuedMatches = m.queuedMatches, make([]string, 0)
-		} else {
-			// Increment the generation on all known readers
-			// This is done here because the next generation is about to start
-			for i := 0; i < len(m.knownFiles); i++ {
-				m.knownFiles[i].generation++
-			}
-
-			// Get the list of paths on disk
-			matches = m.finder.FindFiles()
-			if len(matches) > m.maxBatchFiles {
-				matches, m.queuedMatches = matches[:m.maxBatchFiles], matches[m.maxBatchFiles:]
-			}
-		}
+	// Increment the generation on all known readers
+	// This is done here because the next generation is about to start
+	for i := 0; i < len(m.knownFiles); i++ {
+		m.knownFiles[i].generation++
 	}
 
-	readers := m.makeReaders(matches)
+	// Get the list of paths on disk
+	matches := m.finder.FindFiles()
+	for len(matches) > m.maxBatchFiles {
+		m.consume(ctx, matches[:m.maxBatchFiles])
+		matches = matches[m.maxBatchFiles:]
+	}
+	m.consume(ctx, matches)
+}
 
-	// Any new files that appear should be consumed entirely
-	m.readerFactory.fromBeginning = true
+func (m *Manager) consume(ctx context.Context, paths []string) {
+	m.Debug("Consuming files")
+	readers := m.makeReaders(paths)
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
@@ -146,6 +138,9 @@ func (m *Manager) poll(ctx context.Context) {
 		}(reader)
 	}
 	wg.Wait()
+
+	// Any new files that appear should be consumed entirely
+	m.readerFactory.fromBeginning = true
 
 	m.roller.roll(ctx, readers)
 	m.saveCurrent(readers)
