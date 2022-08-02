@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -29,17 +30,20 @@ import (
 	"go.uber.org/multierr"
 )
 
+var errNoLastArchive = errors.New("no last archive found, not able to calculate oldest WAL age")
+
 type client interface {
 	Close() error
 	getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error)
 	getBackends(ctx context.Context, databases []string) ([]MetricStat, error)
 	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
-	getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error)
+	getDatabaseTableMetrics(ctx context.Context) ([]TableMetrics, error)
 	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
 	getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error)
 	getIndexStats(ctx context.Context, database string) (*IndexStat, error)
 	getQueryStats(ctx context.Context) ([]QueryStat, error)
 	getReplicationDelay(ctx context.Context) (int64, error)
+	getWALStats(ctx context.Context) (*walStats, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -142,7 +146,21 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 	return c.collectStatsFromQuery(ctx, query, true, false, "db_size")
 }
 
-func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error) {
+// TableMetrics contains a result for a row of the getDatabaseTableMetrics result
+type TableMetrics struct {
+	database    string
+	table       string
+	live        int64
+	dead        int64
+	inserts     int64
+	upd         int64
+	del         int64
+	hotUpd      int64
+	size        int64
+	vacuumCount int64
+}
+
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]TableMetrics, error) {
 	query := `SELECT schemaname || '.' || relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
@@ -153,7 +171,60 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]Metri
 	pg_relation_size(relid) AS table_size,
 	vacuum_count AS vacuum_count
 	FROM pg_stat_user_tables;`
-	return c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd", "table_size", "vacuum_count")
+	stats, err := c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd", "table_size", "vacuum_count")
+	if err != nil {
+		return nil, err
+	}
+	return c.mapTableMetrics(stats)
+}
+
+func (c *postgreSQLClient) mapTableMetrics(metricStats []MetricStat) ([]TableMetrics, error) {
+	tms := []TableMetrics{}
+	var errs error
+	for _, ms := range metricStats {
+		tm := TableMetrics{
+			database: ms.database,
+			table:    ms.table,
+		}
+		for mkey, v := range ms.stats {
+			switch mkey {
+			case "live":
+				live, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.live = live
+			case "dead":
+				dead, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.dead = dead
+			case "ins":
+				ins, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.inserts = ins
+			case "upd":
+				upd, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.upd = upd
+			case "del":
+				deletes, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.del = deletes
+			case "hot_upd":
+				hotUpd, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.hotUpd = hotUpd
+			case "table_size":
+				tableSize, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.size = tableSize
+			case "vacuum_count":
+				vc, err := parseInt(v)
+				errs = multierr.Append(errs, err)
+				tm.vacuumCount = vc
+			}
+		}
+		tms = append(tms, tm)
+	}
+	return tms, errs
 }
 
 func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricStat, error) {
@@ -238,32 +309,77 @@ func (c *postgreSQLClient) getReplicationDelay(ctx context.Context) (int64, erro
 	return replicationDelay, nil
 }
 
-func (c *postgreSQLClient) getBytesPendingReplication(ctx context.Context) (int64, error) {
-	query := `SELECT 
-	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0)
-	 FROM pg_stat_replication;
-	`
-	rows := c.client.QueryRowContext(ctx, query)
-	var replicationBytes int64
-	err := rows.Scan(&replicationBytes)
-	if err != nil {
-		return 0, err
-	}
-	return replicationBytes, nil
+type replicationStats struct {
+	client       string
+	pendingBytes int64
+	flushLag     int64
+	replayLag    int64
+	writeLag     int64
 }
 
-func (c *postgreSQLClient) getWALStats(ctx context.Context) ([]MetricStat, error) {
+func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	query := `SELECT 
+	client_addr,
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0) AS replication_bytes_pending,
+	write_lag,
+	flush_lag,
+	replay_lag
+	FROM pg_stat_replication;
+	`
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
+	}
+	defer rows.Close()
+	rs := []replicationStats{}
+	for rows.Next() {
+		var client string
+		var replicationBytes, writeLag, flushLag, replayLag int64
+		rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		rs = append(rs, replicationStats{
+			client:       client,
+			pendingBytes: replicationBytes,
+			replayLag:    replayLag,
+			writeLag:     writeLag,
+			flushLag:     flushLag,
+		})
+	}
+
+	return rs, nil
+}
+
+type walStats struct {
+	age int64
+	lag walLag
+}
+
+type walLag struct {
+	flushLag  int64
+	replayLag int64
+	writeLag  int64
+}
+
+func (c *postgreSQLClient) getWALStats(ctx context.Context) (*walStats, error) {
 	query := `SELECT
-	coalesce(last_archived_wal, '0') AS last_archived_wal
+	coalesce(last_archived_time, CURRENT_TIMESTAMP) AS last_archived_wal,
+	CURRENT_TIMESTAMP,
 	FROM pg_stat_archiver;
 	`
 	row := c.client.QueryRowContext(ctx, query)
-	var lastArchivedWal string
-	err := row.Scan(&lastArchivedWal)
+	var lastArchivedWal, currentInstanceTime time.Time
+	err := row.Scan(lastArchivedWal, currentInstanceTime)
 	if err != nil {
 		return nil, err
 	}
-	return c.collectStatsFromQuery(ctx, query, false, false, "last_archived_wal")
+
+	if lastArchivedWal.Equal(currentInstanceTime) {
+		return nil, errNoLastArchive
+	}
+
+	age := int64(currentInstanceTime.Sub(lastArchivedWal).Seconds())
+	return &walStats{
+		age: age,
+	}, nil
 }
 
 // QueryStat contain statistics about a particular query sourced from

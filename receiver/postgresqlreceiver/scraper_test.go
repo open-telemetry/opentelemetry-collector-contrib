@@ -131,6 +131,11 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (m *mockClient) getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error) {
+	args := m.Called()
+	return args.Get(0).([]MetricStat), args.Error(1)
+}
+
 func (m *mockClientFactory) getClient(c *Config, database string) (client, error) {
 	args := m.Called(database)
 	return args.Get(0).(client), args.Error(1)
@@ -179,6 +184,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getCommitsAndRollbacks", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
+		m.On("getReplicationDelay", databases).Return(200, nil)
 	} else {
 		tableMetrics := []MetricStat{}
 		tableMetrics = append(tableMetrics, MetricStat{

@@ -85,6 +85,14 @@ attributes:
     enum:
       - rollback
       - committed
+  wal_operation_lag:
+    value: operation
+    description: The operation which responsible for the lag.
+    type: string
+    enum:
+      - flush
+      - replay
+      - write
 
 metrics:
   postgresql.backends:
@@ -172,7 +180,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: 1
-  postgresql.database.table.index.scans:
+  postgresql.index.scans:
     description: The number of index scans on a table.
     enabled: true
     sum:
@@ -180,7 +188,7 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{scans}"
-  postgresql.database.table.index.size:
+  postgresql.index.size:
     description: Size of the index on disk.
     enabled: true
     gauge:
@@ -205,6 +213,15 @@ metrics:
       monotonic: false
       value_type: int
     unit: By
+  postgresql.table.size:
+    attributes:
+      - database
+      - table
+    description: Disk space used by a table.
+    enabled: true
+    unit: By
+    gauge:
+      value_type: int
   postgresql.operations:
     attributes:
       - database
@@ -290,8 +307,31 @@ metrics:
       value_type: int
     unit: 1
   postgresql.table.count:
+    attributes:
+      - database
+    description: Number of user tables in a database.
+    enabled: true
+    gauge:
+      value_type: int
+  postgresql.table.vacuum.count:
+    attributes:
+      - database
+      - table
+    description: Number of times a table has manually been vacuumed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+  postgresql.wal.age:
     attributes: []
-    description: Number of tables in a database.
+    description: Age of the oldest WAL file.
+    enabled: true
+    gauge:
+      value_type: int
+  postgresql.wal.lag:
+    attributes: [wal_operation_lag]
+    description: Time between flushing recent WAL locally and receiving notification that this standby server has completed an operation with it.
     enabled: true
     gauge:
       value_type: int

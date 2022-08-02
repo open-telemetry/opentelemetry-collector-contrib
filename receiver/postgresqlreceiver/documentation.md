@@ -17,10 +17,10 @@ These are the metrics available for this scraper.
 | **postgresql.block.count** | Total number of blocks | {blocks} | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.database.table.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
-| **postgresql.database.table.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.database.transactions** | Number of transactions rolled back or committed. | {transactions} | Sum(Int) | <ul> <li>transaction_result</li> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
+| **postgresql.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.query.block.count** | Total number of blocks dirtied, read, or written by queries. | {queries} | Sum(Int) | <ul> <li>query_block_operation</li> <li>query_block_type</li> </ul> |
 | **postgresql.query.count** | Number of queries executed. | {queries} | Sum(Int) | <ul> </ul> |
@@ -30,7 +30,11 @@ These are the metrics available for this scraper.
 | **postgresql.replication.delay** | The amount of time of lag between the current clock and the timestamp of the last WAL record. | ms | Gauge(Int) | <ul> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>state</li> <li>database</li> <li>table</li> </ul> |
-| **postgresql.table.count** | Number of tables in a database. |  | Gauge(Int) | <ul> </ul> |
+| **postgresql.table.count** | Number of user tables in a database. |  | Gauge(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.table.size** | Disk space used by a table. | By | Gauge(Int) | <ul> <li>database</li> <li>table</li> </ul> |
+| **postgresql.table.vacuum.count** | Number of times a table has manually been vacuumed. |  | Sum(Int) | <ul> <li>database</li> <li>table</li> </ul> |
+| **postgresql.wal.age** | Age of the oldest WAL file. |  | Gauge(Int) | <ul> </ul> |
+| **postgresql.wal.lag** | Time between flushing recent WAL locally and receiving notification that this standby server has completed an operation with it. |  | Gauge(Int) | <ul> <li>wal_operation_lag</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -65,3 +69,4 @@ metrics:
 | state | The tuple (row) state. | dead, live |
 | table | The schema name followed by the table name. |  |
 | transaction_result (result) | The result of a transaction | rollback, committed |
+| wal_operation_lag (operation) | The operation which responsible for the lag. | flush, replay, write |

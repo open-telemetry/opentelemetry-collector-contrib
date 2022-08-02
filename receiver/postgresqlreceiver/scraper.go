@@ -16,6 +16,7 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -88,11 +89,13 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errors scrapererror.ScrapeErrors
 
+	// instance level metrics
 	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, errors)
 	p.collectDatabaseSize(ctx, now, listClient, databases, errors)
 	p.collectBackends(ctx, now, listClient, databases, errors)
 	p.collectBackgroundWriterStats(ctx, now, listClient, databases, errors)
 	p.collectReplicationStats(ctx, now, listClient, errors)
+	p.collectWalStats(ctx, now, listClient, errors)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -153,7 +156,7 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	now pcommon.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
-) {
+) (numTables int64) {
 	databaseTableMetrics, err := client.getDatabaseTableMetrics(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database table metrics", zap.Error(err))
@@ -165,34 +168,16 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 		return
 	}
 	for _, table := range databaseTableMetrics {
-		for stateKey, state := range metadata.MapAttributeState {
-			value, ok := table.stats[stateKey]
-			if !ok {
-				// Data isn't present, error was already logged at a lower level
-				continue
-			}
-			i, err := p.parseInt(stateKey, value)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, state, table.database, table.table)
-		}
-
-		for opKey, op := range metadata.MapAttributeOperation {
-			value, ok := table.stats[opKey]
-			if !ok {
-				// Data isn't present, error was already logged at a lower level
-				continue
-			}
-			i, err := p.parseInt(opKey, value)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, op)
-		}
+		p.mb.RecordPostgresqlRowsDataPoint(now, table.dead, metadata.AttributeStateDead, table.database, table.table)
+		p.mb.RecordPostgresqlRowsDataPoint(now, table.live, metadata.AttributeStateLive, table.database, table.table)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, table.del, table.database, table.table, metadata.AttributeOperationDel)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, table.inserts, table.database, table.table, metadata.AttributeOperationIns)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, table.upd, table.database, table.table, metadata.AttributeOperationUpd)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, table.hotUpd, table.database, table.table, metadata.AttributeOperationHotUpd)
+		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, table.vacuumCount, table.database, table.table)
+		p.mb.RecordPostgresqlTableSizeDataPoint(now, table.size, table.database, table.table)
 	}
+	return int64(len(databaseTableMetrics))
 }
 
 func (p *postgreSQLScraper) collectCommitsAndRollbacks(
@@ -304,8 +289,8 @@ func (p *postgreSQLScraper) collectIndexStats(
 	}
 
 	for _, is := range indexStat.indexStats {
-		p.mb.RecordPostgresqlDatabaseTableIndexSizeDataPoint(now, is.size)
-		p.mb.RecordPostgresqlDatabaseTableIndexScansDataPoint(now, is.scans)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, is.size)
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, is.scans)
 		p.mb.EmitForResource(
 			metadata.WithPostgresqlDatabase(db),
 			metadata.WithPostgresqlDatabaseTable(is.table),
@@ -399,12 +384,26 @@ func (p *postgreSQLScraper) collectQueries(ctx context.Context, now pcommon.Time
 		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeLocal)
 		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksDirtied, metadata.AttributeQueryBlockOperationDirty, metadata.AttributeQueryBlockTypeLocal)
 		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeTemp)
-		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksRead, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeTemp)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeTemp)
 
 		p.mb.EmitForResource(
 			metadata.WithPostgresqlQuery(qs.query),
 		)
 	}
+}
+
+func (p *postgreSQLScraper) collectWalStats(ctx context.Context, now pcommon.Timestamp, client client, errs scrapererror.ScrapeErrors) {
+	ws, err := client.getWALStats(ctx)
+	if err != nil {
+		// return no metric because there was no difference in
+		// the current instance time and the last archived time.
+		// This is not indicative of a scraping error so no point in recording it
+		if !errors.Is(err, errNoLastArchive) {
+			errs.AddPartial(1, err)
+		}
+		return
+	}
+	p.mb.RecordPostgresqlWalAgeDataPoint(now, ws.age)
 }
 
 // parseInt converts string to int64.
@@ -420,4 +419,8 @@ func (p *postgreSQLScraper) parseInt(key, value string) (int64, error) {
 		return 0, err
 	}
 	return i, nil
+}
+
+func parseInt(v string) (int64, error) {
+	return strconv.ParseInt(v, 10, 64)
 }
