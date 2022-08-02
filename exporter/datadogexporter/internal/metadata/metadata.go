@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -111,16 +110,17 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
-	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+	switch {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}

@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	tracesproto "go.opentelemetry.io/proto/otlp/trace/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
@@ -809,39 +808,39 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SPAN_KIND_UNSPECIFIED",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_UNSPECIFIED),
+			want: tql.Enum(ptrace.SpanKindUnspecified),
 		},
 		{
 			name: "SPAN_KIND_INTERNAL",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_INTERNAL),
+			want: tql.Enum(ptrace.SpanKindInternal),
 		},
 		{
 			name: "SPAN_KIND_SERVER",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_SERVER),
+			want: tql.Enum(ptrace.SpanKindServer),
 		},
 		{
 			name: "SPAN_KIND_CLIENT",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_CLIENT),
+			want: tql.Enum(ptrace.SpanKindClient),
 		},
 		{
 			name: "SPAN_KIND_PRODUCER",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
+			want: tql.Enum(ptrace.SpanKindProducer),
 		},
 		{
 			name: "SPAN_KIND_CONSUMER",
-			want: tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
+			want: tql.Enum(ptrace.SpanKindConsumer),
 		},
 		{
 			name: "STATUS_CODE_UNSET",
-			want: tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
+			want: tql.Enum(ptrace.StatusCodeUnset),
 		},
 		{
 			name: "STATUS_CODE_OK",
-			want: tql.Enum(tracesproto.Status_STATUS_CODE_OK),
+			want: tql.Enum(ptrace.StatusCodeOk),
 		},
 		{
 			name: "STATUS_CODE_ERROR",
-			want: tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
+			want: tql.Enum(ptrace.StatusCodeError),
 		},
 	}
 	for _, tt := range tests {

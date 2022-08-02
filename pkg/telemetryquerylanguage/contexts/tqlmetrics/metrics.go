@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	metricsproto "go.opentelemetry.io/proto/otlp/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
@@ -68,9 +67,9 @@ func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED),
-	"AGGREGATION_TEMPORALITY_DELTA":          tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
-	"AGGREGATION_TEMPORALITY_CUMULATIVE":     tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
+	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    tql.Enum(pmetric.MetricAggregationTemporalityUnspecified),
+	"AGGREGATION_TEMPORALITY_DELTA":          tql.Enum(pmetric.MetricAggregationTemporalityDelta),
+	"AGGREGATION_TEMPORALITY_CUMULATIVE":     tql.Enum(pmetric.MetricAggregationTemporalityCumulative),
 	"FLAG_NONE":                              0,
 	"FLAG_NO_RECORDED_VALUE":                 1,
 	"METRIC_DATA_TYPE_NONE":                  tql.Enum(pmetric.MetricDataTypeNone),
