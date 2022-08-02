@@ -147,6 +147,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver v0.56.0
+	// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zabbixreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.56.0
 	github.com/prometheus/prometheus v0.37.0
@@ -940,6 +941,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavef
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ./receiver/windowseventlogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver => ./receiver/windowsperfcountersreceiver
+
+// replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zabbixreceiver> ./receiver/zabbixreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ./receiver/zipkinreceiver
 
