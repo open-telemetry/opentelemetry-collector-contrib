@@ -46,6 +46,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":     "pod",
 				"endpoint": "192.68.73.2",
+				"id":       "pod_id",
 				"name":     "pod_name",
 				"labels": map[string]string{
 					"label_key": "label_val",
@@ -83,6 +84,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":     "port",
 				"endpoint": "192.68.73.2",
+				"id":       "port_id",
 				"name":     "port_name",
 				"port":     uint16(2379),
 				"pod": EndpointEnv{
@@ -116,6 +118,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":         "hostport",
 				"endpoint":     "127.0.0.1",
+				"id":           "port_id",
 				"process_name": "process_name",
 				"command":      "./cmd --config config.yaml",
 				"is_ipv6":      true,
@@ -146,6 +149,7 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			want: EndpointEnv{
 				"type":           "container",
+				"id":             "container_endpoint_id",
 				"name":           "otel-collector",
 				"image":          "otel-collector-image",
 				"tag":            "1.0.0",
@@ -186,6 +190,7 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			want: EndpointEnv{
 				"type":                  "k8s.node",
+				"id":                    "k8s_node_endpoint_id",
 				"name":                  "a-k8s-node",
 				"uid":                   "a-k8s-node-uid",
 				"hostname":              "a-k8s-node-hostname",

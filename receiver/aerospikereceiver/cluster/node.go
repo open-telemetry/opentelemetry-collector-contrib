@@ -60,12 +60,12 @@ func _newConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool, conn
 
 	var deadline time.Time
 	// Set deadline to 0 (inf) so we can always reuse this connection
-	if err := conn.SetTimeout(deadline, policy.Timeout); err != nil {
+	if err = conn.SetTimeout(deadline, policy.Timeout); err != nil {
 		return nil, fmt.Errorf("failed to set timeout: %w", err)
 	}
 
 	if authEnabled {
-		if err := conn.Login(policy); err != nil {
+		if err = conn.Login(policy); err != nil {
 			return nil, err
 		}
 	}

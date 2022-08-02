@@ -90,9 +90,26 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.collectAdminDatabase(ctx, now, errors)
+	s.collectTopStats(ctx, now, errors)
+
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errors)
+		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
+		if err != nil {
+			s.logger.Error("Failed to fetch collection names", zap.Error(err))
+			return
+		}
+
+		// Mongo version 4.0+ is required to have authorized access to list collection names
+		// reference: https://www.mongodb.com/docs/manual/reference/method/db.getCollectionNames/
+		mongo40, _ := version.NewVersion("4.0")
+		if s.mongoVersion.GreaterThanOrEqual(mongo40) {
+			for _, collectionName := range collectionNames {
+				s.collectIndexStats(ctx, now, dbName, collectionName, errors)
+			}
+		}
 	}
 }
 
@@ -124,6 +141,26 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.T
 	s.mb.EmitForResource()
 }
 
+func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+	topStats, err := s.client.TopStats(ctx)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	s.recordOperationTime(now, topStats, errors)
+	s.mb.EmitForResource()
+}
+
+func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
+	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+	s.recordIndexStats(now, indexStats, databaseName, collectionName, errors)
+	s.mb.EmitForResource()
+}
+
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordCollections(now, doc, dbName, errors)
 	s.recordDataSize(now, doc, dbName, errors)
@@ -136,11 +173,20 @@ func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName
 
 func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
 	s.recordConnections(now, doc, dbName, errors)
+	s.recordDocumentOperations(now, doc, dbName, errors)
 	s.recordMemoryUsage(now, doc, dbName, errors)
 }
 
 func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
-	s.recordGlobalLockTime(now, document, errors)
 	s.recordCacheOperations(now, document, errors)
+	s.recordCursorCount(now, document, errors)
+	s.recordCursorTimeoutCount(now, document, errors)
+	s.recordGlobalLockTime(now, document, errors)
+	s.recordNetworkCount(now, document, errors)
 	s.recordOperations(now, document, errors)
+	s.recordSessionCount(now, document, errors)
+}
+
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
+	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errors)
 }

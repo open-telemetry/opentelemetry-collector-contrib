@@ -51,7 +51,7 @@ func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVar
 }
 
 func (e *expVarScraper) start(_ context.Context, host component.Host) error {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.set.TelemetrySettings)
+	client, err := e.cfg.HTTPClientSettings.ToClientWithHost(host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}

@@ -37,7 +37,7 @@ type aerospikeReceiver struct {
 	clientFactory clientFactoryFunc
 	client        Aerospike
 	mb            *metadata.MetricsBuilder
-	logger        *zap.Logger
+	logger        *zap.SugaredLogger
 }
 
 // clientFactoryFunc creates an Aerospike connection to the given host and port
@@ -56,8 +56,9 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		}
 	}
 
+	sugaredLogger := params.Logger.Sugar()
 	return &aerospikeReceiver{
-		logger:   params.Logger,
+		logger:   sugaredLogger,
 		config:   cfg,
 		consumer: consumer,
 		clientFactory: func() (Aerospike, error) {
@@ -66,7 +67,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 				username:              cfg.Username,
 				password:              cfg.Password,
 				timeout:               cfg.Timeout,
-				logger:                params.Logger,
+				logger:                sugaredLogger,
 				collectClusterMetrics: cfg.CollectClusterMetrics,
 				tls:                   tlsCfg,
 			}
@@ -84,7 +85,8 @@ func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 
 	client, err := r.clientFactory()
 	if err != nil {
-		return fmt.Errorf("failed to start: %w", err)
+		client = nil
+		r.logger.Warn("initial client creation failed: %w", err) //  .Sugar().Warnf("initial client creation failed: %w", err)
 	}
 
 	r.client = client
@@ -93,16 +95,29 @@ func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
 
 func (r *aerospikeReceiver) shutdown(_ context.Context) error {
 	r.logger.Debug("executing close")
-	r.client.Close()
-	r.logger.Debug("returning close")
+	if r.client != nil {
+		r.client.Close()
+	}
 	return nil
 }
 
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	r.logger.Sugar().Debug("begining scrape")
+	r.logger.Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
+
+	if r.client == nil {
+		var err error
+		r.logger.Debug("client is nil, attempting to create a new client")
+		r.client, err = r.clientFactory()
+		if err != nil {
+			r.client = nil
+			addPartialIfError(errs, fmt.Errorf("client creation failed: %w", err))
+			return r.mb.Emit(), errs.Combine()
+		}
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 	client := r.client
 
@@ -117,7 +132,7 @@ func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
 func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	r.logger.Sugar().Debugf("emitNode len(info): %v", len(info))
+	r.logger.Debugf("emitNode len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		case "client_connections":
@@ -144,15 +159,15 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNodeName(info["node"]))
-	r.logger.Sugar().Debug("finished emitNode")
+	r.logger.Debug("finished emitNode")
 }
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
 func (r *aerospikeReceiver) scrapeNamespaces(client Aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	r.logger.Sugar().Debug("scraping namespaces")
+	r.logger.Debug("scraping namespaces")
 	nInfo := client.NamespaceInfo()
-	r.logger.Sugar().Debugf("scrapeNamespaces len(nInfo): %v", len(nInfo))
+	r.logger.Debugf("scrapeNamespaces len(nInfo): %v", len(nInfo))
 	for node, nsMap := range nInfo {
 		for nsName, nsStats := range nsMap {
 			nsStats["node"] = node
@@ -164,7 +179,7 @@ func (r *aerospikeReceiver) scrapeNamespaces(client Aerospike, now pcommon.Times
 
 // emitNamespace emits a namespace resource with its name as resource attribute
 func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	r.logger.Sugar().Debugf("emitNamespace len(info): %v", len(info))
+	r.logger.Debugf("emitNamespace len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		// Capacity
@@ -261,7 +276,7 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info["name"]), metadata.WithAerospikeNodeName(info["node"]))
-	r.logger.Sugar().Debug("finished emitNamespace")
+	r.logger.Debug("finished emitNamespace")
 }
 
 // addPartialIfError adds a partial error if the given error isn't nil

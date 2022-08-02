@@ -159,3 +159,21 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [protocol, state]
+
+  system.network.conntrack.count:
+    enabled: false
+    description: The count of entries in conntrack table.
+    unit: "{entries}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  system.network.conntrack.max:
+    enabled: false
+    description: The limit for entries in the conntrack table.
+    unit: "{entries}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false

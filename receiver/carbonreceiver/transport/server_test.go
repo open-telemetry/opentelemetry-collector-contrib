@@ -55,7 +55,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalAddress(t)
+			addr := testutil.GetAvailableLocalNetworkAddress(t, tt.name)
+
 			svr, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, svr)

@@ -61,7 +61,7 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("node.name")))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 	// now do a run in cluster mode
 	cfg.CollectClusterMetrics = true
@@ -83,6 +83,6 @@ func TestAerospikeIntegration(t *testing.T) {
 	expectedMetrics, err = golden.ReadMetrics(expectedFile)
 	require.NoError(t, err, "failed reading expected metrics")
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("node.name")))
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("aerospike.node.name")))
 
 }
