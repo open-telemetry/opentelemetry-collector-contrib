@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
@@ -34,9 +35,15 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		resourceAttributes := ld.ResourceLogs().At(i).Resource().Attributes()
 		for _, setting := range sp.config.Masking {
-			if setting.AttributeType == "" || setting.AttributeType == "resource" {
-				if attributeValue, ok := resourceAttributes.Get(setting.AttributeName); ok {
-					regexp := regexp.MustCompile(setting.Regexp)
+			regexp := regexp.MustCompile(setting.Regexp)
+
+			if (setting.AttributeType == ResourceAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey == "" {
+				resourceAttributes.Range(func(key string, attributeValue pcommon.Value) bool {
+					attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+					return true
+				})
+			} else if setting.AttributeType == ResourceAttribute && setting.AttributeKey != "" {
+				if attributeValue, ok := resourceAttributes.Get(setting.AttributeKey); ok {
 					attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 				}
 			}
@@ -53,8 +60,13 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 					regexp := regexp.MustCompile(setting.Regexp)
 
 					// masking in record attributes
-					if setting.AttributeType == "" || setting.AttributeType == "record" {
-						if attributeValue, ok := log.Attributes().Get(setting.AttributeName); ok {
+					if (setting.AttributeType == RecordAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey == "" {
+						log.Attributes().Range(func(key string, attributeValue pcommon.Value) bool {
+							attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
+							return true
+						})
+					} else if setting.AttributeType == RecordAttribute && setting.AttributeKey != "" {
+						if attributeValue, ok := log.Attributes().Get(setting.AttributeKey); ok {
 							attributeValue.SetStringVal(regexp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 						}
 					}

@@ -5,11 +5,19 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
+type AttributeType string
+
+const (
+	EmptyAttribute    AttributeType = ""
+	ResourceAttribute               = "resource"
+	RecordAttribute                 = "record"
+)
+
 type MaskingSettings struct {
-	AttributeType string `mapstructure:"attribute_type"`
-	AttributeName string `mapstructure:"attribute_name"`
-	Regexp        string `mapstructure:"regexp"`
-	Placeholder   string `mapstructure:"placeholder"`
+	AttributeType AttributeType `mapstructure:"attribute_type"`
+	AttributeKey  string        `mapstructure:"attribute_key"`
+	Regexp        string        `mapstructure:"regexp"`
+	Placeholder   string        `mapstructure:"placeholder"`
 }
 
 // Config defines configuration for Resource processor.
