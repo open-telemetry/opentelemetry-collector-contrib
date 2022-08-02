@@ -31,20 +31,20 @@ var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
 const alreadyClosedError = "AlreadyClosedError"
 
-type PulsarTracesConsumer struct {
+type pulsarTracesConsumer struct {
 	id              config.ComponentID
 	tracesConsumer  consumer.Traces
 	topic           string
 	client          pulsar.Client
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
-	ready           chan bool
+	ready           chan error
 	unmarshaler     TracesUnmarshaler
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*PulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -61,19 +61,19 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		return nil, err
 	}
 
-	return &PulsarTracesConsumer{
+	return &pulsarTracesConsumer{
 		id:              config.ID(),
 		tracesConsumer:  nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan bool),
+		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *PulsarTracesConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
@@ -84,16 +84,17 @@ func (c *PulsarTracesConsumer) Start(context.Context, component.Host) error {
 		}
 	}()
 
-	<-c.ready
-	return nil
+	err := <-c.ready
+	close(c.ready)
+	return err
 }
 
-func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
+func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 	unmarshaler := c.unmarshaler
 	traceConsumer := c.tracesConsumer
-	close(c.ready)
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
+	c.ready <- err
 	if nil != err {
 		return err
 	}
@@ -126,27 +127,27 @@ func consumerTracesLoop(ctx context.Context, c *PulsarTracesConsumer) error {
 	}
 }
 
-func (c *PulsarTracesConsumer) Shutdown(context.Context) error {
+func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
 	return nil
 }
 
-type PulsarMetricsConsumer struct {
+type pulsarMetricsConsumer struct {
 	id              config.ComponentID
 	metricsConsumer consumer.Metrics
 	unmarshaler     MetricsUnmarshaler
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
-	ready           chan bool
+	ready           chan error
 	cancel          context.CancelFunc
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*PulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -163,19 +164,19 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		return nil, err
 	}
 
-	return &PulsarMetricsConsumer{
+	return &pulsarMetricsConsumer{
 		id:              config.ID(),
 		metricsConsumer: nextConsumer,
 		topic:           config.Topic,
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan bool),
+		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *PulsarMetricsConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
@@ -186,15 +187,16 @@ func (c *PulsarMetricsConsumer) Start(context.Context, component.Host) error {
 		}
 	}()
 
-	<-c.ready
-	return nil
+	err := <-c.ready
+	close(c.ready)
+	return err
 }
 
-func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
+func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 	unmarshaler := c.unmarshaler
-	close(c.ready)
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
+	c.ready <- err
 	if nil != err {
 		return err
 	}
@@ -229,27 +231,27 @@ func consumeMetricsLoop(ctx context.Context, c *PulsarMetricsConsumer) error {
 	}
 }
 
-func (c *PulsarMetricsConsumer) Shutdown(context.Context) error {
+func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
 	return nil
 }
 
-type PulsarLogsConsumer struct {
+type pulsarLogsConsumer struct {
 	id              config.ComponentID
 	logsConsumer    consumer.Logs
 	unmarshaler     LogsUnmarshaler
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
-	ready           chan bool
+	ready           chan error
 	cancel          context.CancelFunc
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*PulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -266,7 +268,7 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		return nil, err
 	}
 
-	return &PulsarLogsConsumer{
+	return &pulsarLogsConsumer{
 		id:              config.ID(),
 		logsConsumer:    nextConsumer,
 		topic:           config.Topic,
@@ -274,12 +276,12 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan bool),
+		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
 
-func (c *PulsarLogsConsumer) Start(context.Context, component.Host) error {
+func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
@@ -290,16 +292,16 @@ func (c *PulsarLogsConsumer) Start(context.Context, component.Host) error {
 		}
 	}()
 
-	<-c.ready
-	return nil
+	err := <-c.ready
+	close(c.ready)
+	return err
 }
 
-func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
+func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 	unmarshaler := c.unmarshaler
-	close(c.ready)
 
 	_consumer, err := c.client.Subscribe(c.consumerOptions)
-
+	c.ready <- err
 	if nil != err {
 		return err
 	}
@@ -333,7 +335,7 @@ func consumeLogsLoop(ctx context.Context, c *PulsarLogsConsumer) error {
 	}
 }
 
-func (c *PulsarLogsConsumer) Shutdown(context.Context) error {
+func (c *pulsarLogsConsumer) Shutdown(context.Context) error {
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()

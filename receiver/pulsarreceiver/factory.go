@@ -143,13 +143,10 @@ func (f *pulsarReceiverFactory) createLogsReceiver(
 
 func createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:           config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		Topic:                      "",
-		Encoding:                   defaultEncoding,
-		ConsumerName:               defaultConsumerName,
-		Subscription:               defaultSubscription,
-		Endpoint:                   defaultServiceURL,
-		TLSAllowInsecureConnection: false,
-		Authentication:             Authentication{},
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Encoding:         defaultEncoding,
+		ConsumerName:     defaultConsumerName,
+		Subscription:     defaultSubscription,
+		Endpoint:         defaultServiceURL,
 	}
 }
