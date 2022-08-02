@@ -72,7 +72,7 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 	return errs
 }
 
-// Shuts Down the Alerts and Log combined receiver
+// Shutsdown the combined MongoDB Atlas Logs and Alert Receiver
 func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
@@ -104,39 +104,41 @@ func (s *receiver) createProjectMap() (map[string]*Project, error) {
 	return projects, nil
 }
 
-// function parses out the hostname from the specified cluster host
+// FilterHostName parses out the hostname from the specified cluster host
 func FilterHostName(s string) []string {
 	var hostnames []string
 
 	// first check to make sure string is of adequate size
-	if len(s) > 0 {
-		// create an array with a comma delimiter from the original string
-		tmp := strings.Split(s, ",")
-		for _, t := range tmp {
+	if len(s) < 1 {
+		return []string{}
+	}
 
-			u, err := url.Parse(t)
-			if err != nil {
-				fmt.Printf("Error parsing out %s", t)
-			}
+	// create an array with a comma delimiter from the original string
+	tmp := strings.Split(s, ",")
+	for _, t := range tmp {
 
-			// separate hostname from scheme and port
-			host, _, err := net.SplitHostPort(u.Host)
-			if err != nil {
-				// the scheme prefix was not added on to this string
-				// thus the hostname will have been placed under the "Scheme" field
-				hostnames = append(hostnames, u.Scheme)
-			} else {
-				// hostname parsed successfully
-				hostnames = append(hostnames, host)
-			}
-
+		u, err := url.Parse(t)
+		if err != nil {
+			fmt.Printf("Error parsing out %s", t)
 		}
+
+		// separate hostname from scheme and port
+		host, _, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			// the scheme prefix was not added on to this string
+			// thus the hostname will have been placed under the "Scheme" field
+			hostnames = append(hostnames, u.Scheme)
+		} else {
+			// hostname parsed successfully
+			hostnames = append(hostnames, host)
+		}
+
 	}
 
 	return hostnames
 }
 
-// Actual functionality the receiver executes from the Start function
+// KickoffReceiver spins off functionality of the receiver from the Start function
 func (s *receiver) KickoffReceiver(ctx context.Context) {
 	stopper := make(chan struct{})
 	s.stopperChanList = append(s.stopperChanList, stopper)
@@ -159,15 +161,10 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			}
 
 			// filter out any projects not specified in the config
-			filteredProjects := make(map[string]*mongodbatlas.Project)
-			for _, project := range projects {
-				if _, ok := cfgProjects[project.Name]; ok {
-					filteredProjects[project.Name] = project
-				}
-			}
+			fp := filterProjects(projects, cfgProjects)
 
 			// get clusters for each of the projects
-			for _, project := range filteredProjects {
+			for _, project := range fp {
 				resource := resourceInfo{Org: org, Project: project}
 				include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
 				clusters, err := s.client.GetClusters(ctx, project.ID)
@@ -175,24 +172,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 					s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
 				}
 
-				// check to include or exclude clusters
-				switch {
-				//keep all clusters if include and exclude are not specified
-				case len(include) == 0 && len(exclude) == 0:
-					break
-				// include is initialized
-				case len(include) > 0 && len(exclude) == 0:
-					clusters, err = filterClusters(clusters, createStringSet(include), true)
-					break
-				// exclude is initialized
-				case len(exclude) > 0 && len(include) == 0:
-					clusters, err = filterClusters(clusters, createStringSet(exclude), false)
-					break
-				// both are initialized
-				default:
-					clusters = nil
-					s.log.Error("Error can not have both include and exclude parameters initialized")
-				}
+				clusters, err = processClusters(clusters, include, exclude)
 
 				// collection interval loop,
 				select {
@@ -208,6 +188,35 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 				}
 			}
 		}
+	}
+}
+
+func filterProjects(projects []*mongodbatlas.Project, cfgProjects map[string]*Project) map[string]*mongodbatlas.Project {
+	fp := make(map[string]*mongodbatlas.Project)
+	for _, project := range projects {
+		if _, ok := cfgProjects[project.Name]; ok {
+			fp[project.Name] = project
+		}
+	}
+
+	return fp
+}
+
+func processClusters(clusters []mongodbatlas.Cluster, include, exclude []string) ([]mongodbatlas.Cluster, error) {
+	// check to include or exclude clusters
+	switch {
+	//keep all clusters if include and exclude are not specified
+	case len(include) == 0 && len(exclude) == 0:
+		return clusters, nil
+	// include is initialized
+	case len(include) > 0 && len(exclude) == 0:
+		return filterClusters(clusters, createStringSet(include), true)
+	// exclude is initialized
+	case len(exclude) > 0 && len(include) == 0:
+		return filterClusters(clusters, createStringSet(exclude), false)
+	// both are initialized
+	default:
+		return nil, nil
 	}
 }
 
@@ -313,7 +322,7 @@ func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName)
 	if err != nil && err != io.EOF {
-		s.log.Warn("Failed to retreive logs", zap.Error(err))
+		s.log.Warn("Failed to retreive logs from: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {
@@ -326,7 +335,7 @@ func (s *receiver) sendLogs(r resourceInfo, logName string) {
 func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName)
 	if err != nil && err != io.EOF {
-		s.log.Warn("Failed to retreive logs", zap.Error(err))
+		s.log.Warn("Failed to retreive audit logs: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {

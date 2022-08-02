@@ -564,14 +564,13 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 // retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
 func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
-	var start string
 	if s.endTime != "" {
-		start = s.endTime
+		s.startTime = s.endTime
 	}
 
-	end := strconv.Itoa(int(time.Now().Unix()))
+	s.endTime = strconv.Itoa(int(time.Now().Unix()))
 
-	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: start, EndDate: end})
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: s.startTime, EndDate: s.endTime})
 	if err != nil {
 		return nil, err
 	}
