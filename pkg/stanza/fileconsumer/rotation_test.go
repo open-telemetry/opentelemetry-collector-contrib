@@ -46,7 +46,7 @@ func TestMultiFileRotate(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	numFiles := 3
 	numMessages := 3
@@ -104,7 +104,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -155,7 +155,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -263,7 +263,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		cfg.StartAt = "beginning"
 		cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 		emitCalls := make(chan *emitParams, tc.totalLines)
-		operator := buildTestOperatorWithEmit(t, cfg, emitCalls)
+		operator := buildTestManagerWithEmit(t, cfg, emitCalls)
 
 		logger := getRotatingLogger(t, tempDir, tc.maxLinesPerFile, tc.maxBackupFiles, copyTruncate, sequential)
 
@@ -365,7 +365,7 @@ func TestMoveFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -397,7 +397,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -438,7 +438,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -472,7 +472,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -512,7 +512,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	persister := testutil.NewMockPersister("test")
 
 	log1 := tokenWithLength(1000)
