@@ -8,7 +8,6 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.56.0
 	go.opentelemetry.io/otel/trace v1.8.0
-	go.opentelemetry.io/proto/otlp v0.7.0
 	go.uber.org/multierr v1.8.0
 )
 
