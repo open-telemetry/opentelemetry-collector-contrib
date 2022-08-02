@@ -19,6 +19,8 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
@@ -33,7 +35,7 @@ func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (tql.Expr
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(metricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
 		if !ok {
 			return nil
 		}
