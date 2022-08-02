@@ -31,40 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver/mocks"
 )
 
-// TODO this was merged fix it
-// func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
-// 	testCases := []struct {
-// 		name     string
-// 		endpoint string
-// 		errMsg   string
-// 	}{
-// 		{
-// 			name:     "no port",
-// 			endpoint: "localhost",
-// 			errMsg:   "missing port in address",
-// 		},
-// 		{
-// 			name:     "no address",
-// 			endpoint: "",
-// 			errMsg:   "missing port in address",
-// 		},
-// 	}
-
-// 	cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
-// 	require.NoError(t, err)
-
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			t.Parallel()
-
-// 			cfg := &Config{Endpoint: tc.endpoint}
-// 			receiver, err := newAerospikeReceiver(component.ReceiverCreateSettings{}, cfg, cs)
-// 			require.ErrorContains(t, err, tc.errMsg)
-// 			require.Nil(t, receiver)
-// 		})
-// 	}
-// }
-
 func TestScrape_CollectClusterMetrics(t *testing.T) {
 	t.Parallel()
 
@@ -169,5 +135,6 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	initialClient.AssertNumberOfCalls(t, "Close", 1)
 
 	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
-	require.EqualError(t, err, "failed to start: connection timeout")
+	require.NoError(t, err)
+	require.Equal(t, receiverConnErr.client, nil, "client should be set to nil because of connection error")
 }
