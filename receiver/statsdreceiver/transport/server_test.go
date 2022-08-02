@@ -31,7 +31,6 @@ import (
 )
 
 func Test_Server_ListenAndServe(t *testing.T) {
-	t.Skip("Test is unstable, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1426")
 
 	tests := []struct {
 		name          string
@@ -48,7 +47,21 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalAddress(t)
+			addr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
+
+			// Endpoint should be free.
+			ln0, err := net.ListenPacket("udp", addr)
+			require.NoError(t, err)
+			require.NotNil(t, ln0)
+
+			// Ensure that the endpoint wasn't something like ":0" by checking that a second listener will fail.
+			ln1, err := net.ListenPacket("udp", addr)
+			require.Error(t, err)
+			require.Nil(t, ln1)
+
+			// Unbind the local address so the mock UDP service can use it
+			ln0.Close()
+
 			srv, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, srv)
