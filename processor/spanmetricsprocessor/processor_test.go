@@ -35,7 +35,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
@@ -189,18 +188,22 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 		consumeTracesErr  error
 	}{
 		{
-			name:              "metricsExporter error",
-			consumeMetricsErr: fmt.Errorf("metricsExporter error"),
+			name:              "ConsumeMetrics error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
 		},
 		{
-			name:             "nextConsumer error",
-			consumeTracesErr: fmt.Errorf("nextConsumer error"),
+			name:             "ConsumeTraces error",
+			consumeTracesErr: fmt.Errorf("consume traces error"),
+		},
+		{
+			name:              "ConsumeMetrics and ConsumeTraces error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
+			consumeTracesErr:  fmt.Errorf("consume traces error"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			obs, logs := observer.New(zap.ErrorLevel)
-			logger := zap.New(obs)
+			logger := zap.NewNop()
 
 			mexp := &mocks.MetricsExporter{}
 			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
@@ -215,17 +218,19 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			// Test
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.ConsumeTraces(ctx, traces)
-			if tc.consumeTracesErr != nil {
-				require.Error(t, err)
-				assert.EqualError(t, err, tc.consumeTracesErr.Error())
-				return
-			}
 
 			// Verify
-			require.NoError(t, err)
-			assert.Eventually(t, func() bool {
-				return logs.FilterMessage(tc.consumeMetricsErr.Error()).Len() > 0
-			}, 10*time.Second, time.Millisecond*100)
+			require.Error(t, err)
+			switch {
+			case tc.consumeMetricsErr != nil && tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error()+"; "+tc.consumeTracesErr.Error())
+			case tc.consumeMetricsErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error())
+			case tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeTracesErr.Error())
+			default:
+				assert.Fail(t, "expected at least one error")
+			}
 		})
 	}
 }
