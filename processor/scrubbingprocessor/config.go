@@ -6,8 +6,10 @@ import (
 )
 
 type MaskingSettings struct {
-	Regexp      string `mapstructure:"regexp"`
-	Placeholder string `mapstructure:"placeholder"`
+	AttributeType string `mapstructure:"attribute_type"`
+	AttributeName string `mapstructure:"attribute_name"`
+	Regexp        string `mapstructure:"regexp"`
+	Placeholder   string `mapstructure:"placeholder"`
 }
 
 // Config defines configuration for Resource processor.
