@@ -41,7 +41,6 @@ type testMetric struct {
 
 type cumulativeToDeltaTest struct {
 	name       string
-	metrics    []string
 	include    MatchMetrics
 	exclude    MatchMetrics
 	inMetrics  pmetric.Metrics
@@ -51,36 +50,7 @@ type cumulativeToDeltaTest struct {
 var (
 	testCases = []cumulativeToDeltaTest{
 		{
-			name:    "legacy_cumulative_to_delta_one_positive",
-			metrics: []string{"metric_1"},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, 500}, {4}},
-				isCumulative: []bool{true, true},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 100, 300}, {4}},
-				isCumulative: []bool{false, true},
-			}),
-		},
-		{
-			name:    "legacy_cumulative_to_delta_nan_value",
-			metrics: []string{"metric_1"},
-			inMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 200, math.NaN()}, {4}},
-				isCumulative: []bool{true, true},
-			}),
-			outMetrics: generateTestMetrics(testMetric{
-				metricNames:  []string{"metric_1", "metric_2"},
-				metricValues: [][]float64{{100, 100, math.NaN()}, {4}},
-				isCumulative: []bool{false, true},
-			}),
-		},
-		{
-			name:    "cumulative_to_delta_convert_nothing",
-			metrics: nil,
+			name: "cumulative_to_delta_convert_nothing",
 			exclude: MatchMetrics{
 				Metrics: []string{".*"},
 				Config: filterset.Config{
@@ -140,8 +110,7 @@ var (
 			}),
 		},
 		{
-			name:    "cumulative_to_delta_exclude_precedence",
-			metrics: nil,
+			name: "cumulative_to_delta_exclude_precedence",
 			include: MatchMetrics{
 				Metrics: []string{".*"},
 				Config: filterset.Config{
@@ -177,7 +146,6 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Metrics:           test.metrics,
 				Include:           test.include,
 				Exclude:           test.exclude,
 			}
@@ -286,7 +254,6 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 		BuildInfo: component.BuildInfo{},
 	}
 	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics = []string{""}
 	p, err := createMetricsProcessor(context.Background(), params, cfg, c)
 	if err != nil {
 		b.Fatal(err)
