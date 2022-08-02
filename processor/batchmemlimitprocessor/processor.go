@@ -82,6 +82,10 @@ func (mp *batchMemoryLimitProcessor) extractBatch(ld plog.Logs) plog.Logs {
 
 			scLog.LogRecords().RemoveIf(func(rec plog.LogRecord) bool {
 				recordSize := getLogRecordProtoSize(rec)
+				if recordSize > mp.config.MemoryLimit {
+					mp.logger.Warn("log record size exceeds memory batch limit", zap.Int("log record size", recordSize), zap.Int("memory batch limit", mp.config.MemoryLimit))
+					return true
+				}
 				if size+recordSize > mp.config.MemoryLimit {
 					return false
 				}
