@@ -69,7 +69,7 @@ var symbolTable = map[tql.EnumSymbol]tql.Enum{
 	"SPAN_KIND_PRODUCER":    tql.Enum(tracesproto.Span_SPAN_KIND_PRODUCER),
 	"SPAN_KIND_CONSUMER":    tql.Enum(tracesproto.Span_SPAN_KIND_CONSUMER),
 	"STATUS_CODE_UNSET":     tql.Enum(tracesproto.Status_STATUS_CODE_UNSET),
-	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_DEPRECATED_STATUS_CODE_OK),
+	"STATUS_CODE_OK":        tql.Enum(tracesproto.Status_STATUS_CODE_OK),
 	"STATUS_CODE_ERROR":     tql.Enum(tracesproto.Status_STATUS_CODE_ERROR),
 }
 
