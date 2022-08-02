@@ -15,7 +15,6 @@
 package testutil
 
 import (
-	"fmt"
 	"net"
 	"testing"
 
@@ -40,7 +39,6 @@ func TestGetAvailableLocalAddress(t *testing.T) {
 }
 func TestGetAvailableLocalUDPAddress(t *testing.T) {
 	addr := GetAvailableLocalNetworkAddress(t, "udp")
-	fmt.Println(addr)
 	// Endpoint should be free.
 	ln0, err := net.ListenPacket("udp", addr)
 	require.NoError(t, err)

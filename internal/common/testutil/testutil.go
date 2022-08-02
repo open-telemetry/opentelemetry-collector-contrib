@@ -15,7 +15,6 @@
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 
 import (
-	"fmt"
 	"net"
 	"os/exec"
 	"runtime"
@@ -87,7 +86,6 @@ func findAvailableAddress(t testing.TB, network string) string {
 		defer func() {
 			assert.NoError(t, ln.Close())
 		}()
-		fmt.Printf("Network: %s Address: %s\n", network, ln.Addr().String())
 		return ln.Addr().String()
 	// net.ListenPacket supported network strings
 	case "udp", "udp4", "udp6", "unixgram":
@@ -98,7 +96,6 @@ func findAvailableAddress(t testing.TB, network string) string {
 		defer func() {
 			assert.NoError(t, ln.Close())
 		}()
-		fmt.Printf("Network: %s Address: %s\n", network, ln.LocalAddr().String())
 		return ln.LocalAddr().String()
 	}
 	return ""
