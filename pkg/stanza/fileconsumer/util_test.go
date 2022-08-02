@@ -48,12 +48,12 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestOperator(t *testing.T, cfg *Config) (*Input, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	return buildTestOperatorWithEmit(t, cfg, emitChan), emitChan
+	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
 }
 
-func buildTestOperatorWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Input {
+func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
 	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
 		emitChan <- &emitParams{attrs, token}
 	})

@@ -40,7 +40,7 @@ See this issue for details: https://github.com/census-instrumentation/opencensus
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestOperator(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	_ = openTemp(t, tempDir)
 	err := operator.Start(testutil.NewMockPersister("test"))
@@ -60,7 +60,7 @@ func TestAddFileFields(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.IncludeFileName = true
 	cfg.IncludeFilePath = true
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -88,7 +88,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	cfg.IncludeFilePath = true
 	cfg.IncludeFileNameResolved = true
 	cfg.IncludeFilePathResolved = true
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	// Create temp dir with log file
 	dir := t.TempDir()
@@ -140,7 +140,7 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	cfg.IncludeFilePath = true
 	cfg.IncludeFileNameResolved = true
 	cfg.IncludeFilePathResolved = true
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	// Create temp dir with log file
 	dir := t.TempDir()
@@ -215,7 +215,7 @@ func TestReadExistingLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	// Create a file, then start
 	temp := openTemp(t, tempDir)
@@ -283,7 +283,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
 			cfg.Splitter.EncodingConfig.Encoding = "nop"
-			operator, emitCalls := buildTestOperator(t, cfg)
+			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -367,7 +367,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
 			cfg.Splitter.EncodingConfig.Encoding = "nop"
-			operator, emitCalls := buildTestOperator(t, cfg)
+			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
 			temp := openTemp(t, tempDir)
@@ -392,7 +392,7 @@ func TestReadNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Poll once so we know this isn't a new file
@@ -420,7 +420,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Start with a file with an entry in it, and expect that entry
@@ -444,7 +444,7 @@ func TestStartAtEnd(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -469,7 +469,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	operator.poll(context.Background())
@@ -491,7 +491,7 @@ func TestNoNewline(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.Splitter = helper.NewSplitterConfig()
 	cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2")
@@ -512,7 +512,7 @@ func TestEmptyLine(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\n\ntestlog2\n")
@@ -535,7 +535,7 @@ func TestMultipleEmpty(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\n\ntestlog1\n\n\ntestlog2\n")
@@ -562,7 +562,7 @@ func TestLeadingEmpty(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "\ntestlog1\ntestlog2\n")
@@ -586,7 +586,7 @@ func TestSplitWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -606,7 +606,7 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -633,7 +633,7 @@ func TestDecodeBufferIsResized(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
 	defer func() {
@@ -653,7 +653,7 @@ func TestMultiFileSimple(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp1 := openTemp(t, tempDir)
 	temp2 := openTemp(t, tempDir)
@@ -677,7 +677,7 @@ func TestMultiFileParallel_PreloadedFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	numFiles := 10
 	numMessages := 100
@@ -718,7 +718,7 @@ func TestMultiFileParallel_LiveFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	numFiles := 10
 	numMessages := 100
@@ -784,7 +784,7 @@ func TestRestartOffsets(t *testing.T) {
 			duringRestart := tokenWithLength(tc.lineLength)
 			during2ndRun := tokenWithLength(tc.lineLength)
 
-			operatorOne, emitCallsOne := buildTestOperator(t, cfg)
+			operatorOne, emitCallsOne := buildTestManager(t, cfg)
 			writeString(t, logFile, string(before1stRun)+"\n")
 			require.NoError(t, operatorOne.Start(persister))
 			if tc.startAt == "beginning" {
@@ -798,7 +798,7 @@ func TestRestartOffsets(t *testing.T) {
 
 			writeString(t, logFile, string(duringRestart)+"\n")
 
-			operatorTwo, emitCallsTwo := buildTestOperator(t, cfg)
+			operatorTwo, emitCallsTwo := buildTestManager(t, cfg)
 			require.NoError(t, operatorTwo.Start(persister))
 			waitForToken(t, emitCallsTwo, duringRestart)
 			writeString(t, logFile, string(during2ndRun)+"\n")
@@ -814,7 +814,7 @@ func TestManyLogsDelivered(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	count := 1000
 	expectedTokens := make([]string, 0, count)
@@ -861,7 +861,7 @@ func TestFileBatching(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	emitCalls := make(chan *emitParams, expectedLinesPerBatch*2)
-	operator := buildTestOperatorWithEmit(t, cfg, emitCalls)
+	operator := buildTestManagerWithEmit(t, cfg, emitCalls)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temps := make([]*os.File, 0, files)
@@ -912,7 +912,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
 	tempCopy := openFile(t, temp.Name())
@@ -954,7 +954,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := buildTestOperator(t, cfg)
+			operator, _ := buildTestManager(t, cfg)
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
@@ -1017,7 +1017,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.FingerprintSize = helper.ByteSize(maxFP)
-			operator, _ := buildTestOperator(t, cfg)
+			operator, _ := buildTestManager(t, cfg)
 
 			temp := openTemp(t, tempDir)
 			tempCopy := openFile(t, temp.Name())
@@ -1139,7 +1139,7 @@ func TestEncodings(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: tc.encoding}
-			operator, emitCalls := buildTestOperator(t, cfg)
+			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Populate the file
 			temp := openTemp(t, tempDir)
