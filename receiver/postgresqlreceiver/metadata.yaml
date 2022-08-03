@@ -205,7 +205,7 @@ metrics:
       value_type: int
     unit: 1
   postgresql.index.scans:
-    attributes: [index]
+    attributes: [index, table]
     description: The number of index scans on a table.
     enabled: true
     sum:
@@ -214,7 +214,7 @@ metrics:
       value_type: int
     unit: "{scans}"
   postgresql.index.size:
-    attributes: [index]
+    attributes: [index, table]
     description: Size of the index on disk.
     enabled: true
     gauge:

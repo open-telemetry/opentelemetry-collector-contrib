@@ -134,18 +134,18 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockClient) getVersion(_ context.Context) (*version.Version, error) {
-	args := m.Called()
+func (m *mockClient) getVersion(ctx context.Context) (*version.Version, error) {
+	args := m.Called(ctx)
 	return args.Get(0).(*version.Version), args.Error(1)
 }
 
-func (m *mockClient) getBackgroundWriterStats(_ context.Context) ([]MetricStat, error) {
-	args := m.Called()
+func (m *mockClient) getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error) {
+	args := m.Called(ctx)
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
 func (m *mockClient) getIndexStats(ctx context.Context, database string) (*IndexStat, error) {
-	args := m.Called(database)
+	args := m.Called(ctx, database)
 	return args.Get(0).(*IndexStat), args.Error(1)
 }
 
@@ -193,6 +193,7 @@ func (m *mockClientFactory) initMocks(databases []string) {
 
 func (m *mockClient) initMocks(database string, databases []string, index int) {
 	m.On("Close").Return(nil)
+	m.On("getVersion", mock.Anything).Return(version.NewVersion("10.21"))
 
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
@@ -222,11 +223,12 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getCommitsAndRollbacks", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
-		m.On("getReplicationDelay").Return(200, nil)
+		m.On("getReplicationDelay").Return(int64(200), nil)
+		m.On("getMaxConnections").Return(int64(100), nil)
 		m.On("getWALStats", mock.Anything).Return(&walStats{
 			age: 6799,
-		})
-		m.On("getBackgroundWriterStats").Return([]MetricStat{
+		}, nil)
+		m.On("getBackgroundWriterStats", mock.Anything).Return([]MetricStat{
 			{
 				stats: map[string]string{
 					"buffers_allocated":         "6",
@@ -241,35 +243,43 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 					"maxwritten_count":          "1111",
 				},
 			},
-		})
+		}, nil)
+		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
+			{
+				flushLag:  int64(500),
+				replayLag: int64(300),
+				writeLag:  int64(421),
+				client:    "198.64.23.1",
+			},
+		}, nil)
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"
-		tableMetrics := []MetricStat{}
-		tableMetrics = append(tableMetrics, MetricStat{
-			database: database,
-			table:    table1,
-			stats: map[string]string{
-				"live":    fmt.Sprintf("%d", index+7),
-				"dead":    fmt.Sprintf("%d", index+8),
-				"ins":     fmt.Sprintf("%d", index+39),
-				"upd":     fmt.Sprintf("%d", index+40),
-				"del":     fmt.Sprintf("%d", index+41),
-				"hot_upd": fmt.Sprintf("%d", index+42),
-			},
+		tableMetrics := []TableMetrics{}
+		tableMetrics = append(tableMetrics, TableMetrics{
+			database:    database,
+			table:       table1,
+			live:        int64(index + 7),
+			dead:        int64(index + 8),
+			inserts:     int64(89),
+			upd:         int64(index + 40),
+			del:         int64(index + 41),
+			hotUpd:      int64(1),
+			size:        int64(1024),
+			vacuumCount: int64(2),
 		})
 
-		tableMetrics = append(tableMetrics, MetricStat{
-			database: database,
-			table:    table2,
-			stats: map[string]string{
-				"live":    fmt.Sprintf("%d", index+9),
-				"dead":    fmt.Sprintf("%d", index+10),
-				"ins":     fmt.Sprintf("%d", index+43),
-				"upd":     fmt.Sprintf("%d", index+44),
-				"del":     fmt.Sprintf("%d", index+45),
-				"hot_upd": fmt.Sprintf("%d", index+46),
-			},
+		tableMetrics = append(tableMetrics, TableMetrics{
+			database:    database,
+			table:       table2,
+			live:        int64(index + 7),
+			dead:        int64(index + 8),
+			inserts:     int64(89),
+			upd:         int64(index + 40),
+			del:         int64(index + 41),
+			hotUpd:      int64(1),
+			size:        int64(1024),
+			vacuumCount: int64(2),
 		})
 		m.On("getDatabaseTableMetrics").Return(tableMetrics, nil)
 
@@ -323,6 +333,6 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 					index: index2,
 				},
 			},
-		})
+		}, nil)
 	}
 }

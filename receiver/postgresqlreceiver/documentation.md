@@ -22,8 +22,8 @@ These are the metrics available for this scraper.
 | **postgresql.database.count** | Number of user databases. | {databases} | Gauge(Int) | <ul> </ul> |
 | **postgresql.database.transactions** | Number of transactions rolled back or committed. | {transactions} | Sum(Int) | <ul> <li>transaction_result</li> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> <li>index</li> </ul> |
-| **postgresql.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> <li>index</li> </ul> |
+| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> <li>index</li> <li>table</li> </ul> |
+| **postgresql.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> <li>index</li> <li>table</li> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.query.block.count** | Total number of blocks dirtied, read, or written by queries. | {queries} | Sum(Int) | <ul> <li>query_block_operation</li> <li>query_block_type</li> <li>query</li> </ul> |
 | **postgresql.query.count** | Number of queries executed. | {queries} | Sum(Int) | <ul> <li>query</li> </ul> |

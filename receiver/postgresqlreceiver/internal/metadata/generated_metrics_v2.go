@@ -1199,7 +1199,7 @@ func (m *metricPostgresqlIndexScans) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAttributeValue string) {
+func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAttributeValue string, tableAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1208,6 +1208,7 @@ func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().InsertString("index", indexAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1250,7 +1251,7 @@ func (m *metricPostgresqlIndexSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAttributeValue string) {
+func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexAttributeValue string, tableAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1259,6 +1260,7 @@ func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
 	dp.Attributes().InsertString("index", indexAttributeValue)
+	dp.Attributes().InsertString("table", tableAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2275,13 +2277,13 @@ func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64, indexAttributeValue string) {
-	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val, indexAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64, indexAttributeValue string, tableAttributeValue string) {
+	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val, indexAttributeValue, tableAttributeValue)
 }
 
 // RecordPostgresqlIndexSizeDataPoint adds a data point to postgresql.index.size metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64, indexAttributeValue string) {
-	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val, indexAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64, indexAttributeValue string, tableAttributeValue string) {
+	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val, indexAttributeValue, tableAttributeValue)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.

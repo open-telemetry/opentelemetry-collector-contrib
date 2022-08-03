@@ -5,7 +5,7 @@ change_type: enhancement
 component: postgresqlreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: Adds index, query, bgwriter, and WAL metrics to the `postgresqlreceiver`
 
 # One or more tracking issues related to the change
 issues: [12338]

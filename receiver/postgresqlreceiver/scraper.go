@@ -325,8 +325,8 @@ func (p *postgreSQLScraper) collectIndexStats(
 	}
 
 	for _, is := range indexStat.indexStats {
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, is.size, is.index)
-		p.mb.RecordPostgresqlIndexScansDataPoint(now, is.scans, is.index)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, is.size, is.index, is.table)
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, is.scans, is.index, is.table)
 		// TODO: use resoruce attributes rather than metric ones.
 		// p.mb.EmitForResource(
 		// 	metadata.WithPostgresqlDatabase(db),
@@ -377,7 +377,7 @@ func (p *postgreSQLScraper) collectBackgroundWriterStats(
 ) {
 	bgStats, err := client.getBackgroundWriterStats(ctx)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching backends", zap.Error(err))
+		p.logger.Error("Errors encountered while fetching background writers", zap.Error(err))
 		errors.AddPartial(0, err)
 	}
 
