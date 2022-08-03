@@ -20,6 +20,7 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configtls"
 )
 
 func TestValidate(t *testing.T) {
@@ -27,7 +28,7 @@ func TestValidate(t *testing.T) {
 		name     string
 		config   *Config
 		expected error
-	}{
+	}{ // TODO add tls tests
 		{
 			name: "blank endpoint",
 			config: &Config{
@@ -94,6 +95,36 @@ func TestValidate(t *testing.T) {
 				Username: "ro_user",
 			},
 			expected: errEmptyPassword,
+		},
+		{
+			name: "bad TLS config",
+			config: &Config{
+				Endpoint: as.Host{
+					Name:    "localhost",
+					Port:    3001,
+					TLSName: "tls1",
+				},
+				TLS: &configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile: "BADCAFILE",
+					},
+				},
+			},
+			expected: errFailedTLSLoad,
+		},
+		{
+			name: "empty tls name",
+			config: &Config{
+				Endpoint: as.Host{
+					Name:    "localhost",
+					Port:    3001,
+					TLSName: "",
+				},
+				TLS: &configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{},
+				},
+			},
+			expected: errEmptyEndpointTLSName,
 		},
 	}
 
