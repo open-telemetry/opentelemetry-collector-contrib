@@ -289,7 +289,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		},
 	}
 
-	client, _ := setting.ToClientWithHost(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
+	client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)
