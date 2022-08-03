@@ -26,12 +26,6 @@ import (
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
-const (
-	containerNameLable = "io.kubernetes.container.name"
-	// TODO: https://github.com/containerd/cri/issues/922#issuecomment-423729537 the container name can be empty on containerd
-	infraContainerName = "POD"
-)
-
 func GetStats(info *cinfo.ContainerInfo) *cinfo.ContainerStats {
 	if len(info.Stats) == 0 {
 		return nil
@@ -47,10 +41,12 @@ type CPUMemInfoProvider interface {
 
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
-	GetValue(*cinfo.ContainerInfo, CPUMemInfoProvider, string) []*CAdvisorMetric
+	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
 }
 
 type CAdvisorMetric struct {
+	// source of the metric for debugging merge conflict
+	cgroupPath string
 	//key/value pairs that are typed and contain the metric (numerical) data
 	fields map[string]interface{}
 	//key/value string pairs that are used to identify the metrics
@@ -120,6 +116,7 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	for k, v := range src.fields {
 		if _, ok := c.fields[k]; ok {
 			c.logger.Debug(fmt.Sprintf("metric being merged has conflict in fields, src: %v, dest: %v \n", *src, *c))
+			c.logger.Debug("metric being merged has conflict in fields", zap.String("src", src.cgroupPath), zap.String("dest", c.cgroupPath))
 			if c.tags[ci.Timestamp] < src.tags[ci.Timestamp] {
 				continue
 			}
