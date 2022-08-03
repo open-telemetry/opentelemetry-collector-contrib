@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/hashicorp/go-version v1.6.0
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opentelemetry.io/collector/pdata v0.56.1-0.20220803125008-a585d0de68c4
 )
@@ -33,7 +34,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
