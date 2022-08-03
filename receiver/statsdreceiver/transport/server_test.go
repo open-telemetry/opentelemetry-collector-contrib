@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -101,6 +102,27 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			err = gc.Disconnect()
 			assert.NoError(t, err)
 
+			// Keep trying until we're timed out or got a result
+			timeout := time.After(10 * time.Second)
+			ticker := time.Tick(500 * time.Millisecond)
+			for {
+				stop := false
+				select {
+				// Got a timeout!
+				case <-timeout:
+					stop = true
+				// Got a tick
+				case <-ticker:
+					if len(transferChan) > 0 {
+						result = true
+					}
+				}
+				if stop {
+					break
+				}
+			}
+
+			// Close the server connection, this will cause ListenAndServer to error out and the deferred wgListenAndServe.Done will fire
 			err = srv.Close()
 			assert.NoError(t, err)
 
