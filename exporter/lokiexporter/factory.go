@@ -52,7 +52,6 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		TenantID:      "",
-		Format:        "body",
 		Labels: LabelsConfig{
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},
