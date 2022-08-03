@@ -40,9 +40,9 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
-		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver, stability),
-		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability))
+		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		component.WithLogsReceiver(createLogsReceiver, stability),
+		component.WithTracesReceiver(createTracesReceiver, stability))
 }
 
 type Config struct {
