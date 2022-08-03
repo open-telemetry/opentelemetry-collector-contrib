@@ -378,7 +378,8 @@ func (p *postgreSQLScraper) collectBackgroundWriterStats(
 	bgStats, err := client.getBackgroundWriterStats(ctx)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching background writers", zap.Error(err))
-		errors.AddPartial(0, err)
+		errors.AddPartial(1, err)
+		return
 	}
 
 	// Metrics can be partially collected (non-nil) even if there were partial errors reported

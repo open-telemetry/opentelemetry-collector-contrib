@@ -6,7 +6,7 @@ The query metrics (all metrics prefixed with `postgresql.query.*` rely on the `p
 
 For security reasons only super users and members of the `pg_read_all_stats` role are allowed to see the SQL text.
 
-1. On the database issue this create extension command
+1. On the database run this create extension command
 
     ```sql
     CREATE EXTENSION pg_stat_statements;
@@ -19,4 +19,3 @@ For security reasons only super users and members of the `pg_read_all_stats` rol
     ```
 
 3. Restart the instance to enable the extension. Now the query metrics can be collected.
-

@@ -119,7 +119,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			cfg: func(hostname string) *Config {
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
-				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
+				cfg.Endpoint = net.JoinHostPort(hostname, "15433")
 				cfg.Databases = []string{}
 				cfg.Username = "otel"
 				cfg.Password = "otel"
@@ -134,7 +134,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			cfg: func(hostname string) *Config {
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
-				cfg.Endpoint = net.JoinHostPort(hostname, "15433")
+				cfg.Endpoint = net.JoinHostPort(hostname, "15434")
 				cfg.Databases = []string{"otel"}
 				cfg.Username = "otel"
 				cfg.Password = "otel"
@@ -214,6 +214,7 @@ func runTest(t *testing.T, tc testCase, hostname string) {
 	require.Eventuallyf(t, func() bool {
 		return consumer.DataPointCount() > 0
 	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 
 	actualMetrics := consumer.AllMetrics()[0]
