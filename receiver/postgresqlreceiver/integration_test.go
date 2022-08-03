@@ -126,7 +126,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
-			postgresVersion: pg96,
+			postgresVersion: pg10,
 			expectedFile:    filepath.Join("testdata", "integration", "expected_all_db.json"),
 		},
 		{
