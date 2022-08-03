@@ -31,6 +31,10 @@ For logs:
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `severity_texts`: SeverityTexts defines a list of possible severity texts to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `bodies`: Bodies defines a list of possible log bodies to match the logs against.
+  A match occurs if the record matches any expression in this given list.
 
 For metrics:
 
