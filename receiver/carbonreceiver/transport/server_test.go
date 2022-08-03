@@ -93,10 +93,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			// Keep trying until we're timed out or got a result
 			assert.Eventually(t, func() bool {
 				mdd := mc.AllMetrics()
-				if len(mdd) > 0 {
-					return true
-				}
-				return false
+				return len(mdd) > 0
 			}, 10*time.Second, 500*time.Millisecond)
 
 			err = svr.Close()
