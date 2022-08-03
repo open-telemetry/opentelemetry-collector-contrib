@@ -15,40 +15,59 @@
 package tailsamplingprocessor
 
 import (
-	"testing"
-	"time"
-
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config"
 	"go.uber.org/zap"
+	"testing"
 )
 
 func TestAndHelper(t *testing.T) {
-	cfg := &Config{
-		ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		DecisionWait:            10 * time.Second,
-		NumTraces:               100,
-		ExpectedNewTracesPerSec: 10,
-		PolicyCfgs: []PolicyCfg{
+	andCfg := &AndCfg{
+		SubPolicyCfg: []AndSubPolicyCfg{
 			{
-				Name: "and-policy-1",
-				Type: And,
-				AndCfg: AndCfg{
-					SubPolicyCfg: []AndSubPolicyCfg{
-						{
-							Name:         "test-and-policy-1",
-							Type:         SpanCount,
-							SpanCountCfg: SpanCountCfg{MinSpans: 2},
-						},
-					},
-				},
+				Name: "test-and-policy-1",
+				Type: AlwaysSample,
+			},
+			{
+				Name:                "test-and-policy-2",
+				Type:                NumericAttribute,
+				NumericAttributeCfg: NumericAttributeCfg{Key: "key1", MinValue: 50, MaxValue: 100},
+			},
+			{
+				Name:               "test-and-policy-3",
+				Type:               StringAttribute,
+				StringAttributeCfg: StringAttributeCfg{Key: "key2", Values: []string{"value1", "value2"}},
+			},
+			{
+				Name:            "test-and-policy-4",
+				Type:            RateLimiting,
+				RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 10},
+			},
+			{
+				Name:          "test-and-policy-5",
+				Type:          StatusCode,
+				StatusCodeCfg: StatusCodeCfg{StatusCodes: []string{"ERROR", "UNSET"}},
+			},
+			{
+				Name:             "test-and-policy-6",
+				Type:             Probabilistic,
+				ProbabilisticCfg: ProbabilisticCfg{HashSalt: "salt", SamplingPercentage: 10},
+			},
+			{
+				Name:          "test-and-policy-3",
+				Type:          TraceState,
+				TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+			},
+			{
+				Name:         "test-and-policy-1",
+				Type:         SpanCount,
+				SpanCountCfg: SpanCountCfg{MinSpans: 2},
 			},
 		},
 	}
 
-	andCfg := cfg.PolicyCfgs[0].AndCfg
-	andSubPolicyConfig := andCfg.SubPolicyCfg[0]
-	result, e := getAndSubPolicyEvaluator(zap.NewNop(), &andSubPolicyConfig)
-	require.NotNil(t, result)
-	require.NoError(t, e)
+	for i := range andCfg.SubPolicyCfg {
+		policy, e := getAndSubPolicyEvaluator(zap.NewNop(), &andCfg.SubPolicyCfg[i])
+		require.NotNil(t, policy)
+		require.NoError(t, e)
+	}
 }
