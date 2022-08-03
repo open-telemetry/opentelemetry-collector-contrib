@@ -80,15 +80,29 @@ processors:
           - Key: host.name
             Value: just_this_one_hostname
     logs/regexp:
+      include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
     logs/regexp_record:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
+    logs/severity:
+      include:
+        match_type: regexp
+        severity_texts:
+        - INFO[2-4]?
+        - WARN[2-4]?
+        - ERROR[2-4]?
+    logs/bodies:
+      include:
+        match_type: regexp
+        bodies:
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed
