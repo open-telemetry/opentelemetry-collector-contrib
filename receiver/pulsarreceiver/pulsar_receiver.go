@@ -38,7 +38,6 @@ type pulsarTracesConsumer struct {
 	client          pulsar.Client
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
-	ready           chan error
 	unmarshaler     TracesUnmarshaler
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
@@ -68,7 +67,6 @@ func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unma
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
@@ -77,15 +75,17 @@ func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
-	go func() {
-		err := consumerTracesLoop(ctx, c)
-		if err != nil {
-			c.settings.Logger.Error("Consume tracesConsumer failed", zap.Error(err))
-		}
-	}()
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
+	if err == nil {
+		c.consumer = _consumer
+		go func() {
+			err := consumerTracesLoop(ctx, c)
+			if err != nil {
+				c.settings.Logger.Error("Consume tracesConsumer failed", zap.Error(err))
+			}
+		}()
+	}
 
-	err := <-c.ready
-	close(c.ready)
 	return err
 }
 
@@ -93,16 +93,8 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 	unmarshaler := c.unmarshaler
 	traceConsumer := c.tracesConsumer
 
-	_consumer, err := c.client.Subscribe(c.consumerOptions)
-	c.ready <- err
-	if nil != err {
-		return err
-	}
-
-	c.consumer = _consumer
-
 	for {
-		message, err := _consumer.Receive(ctx)
+		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
@@ -141,7 +133,6 @@ type pulsarMetricsConsumer struct {
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
-	ready           chan error
 	cancel          context.CancelFunc
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
@@ -171,7 +162,6 @@ func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unm
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
@@ -180,31 +170,27 @@ func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
-	go func() {
-		err := consumeMetricsLoop(ctx, c)
-		if err != nil {
-			c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(err))
-		}
-	}()
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
+	if err == nil {
+		c.consumer = _consumer
 
-	err := <-c.ready
-	close(c.ready)
+		go func() {
+			err := consumeMetricsLoop(ctx, c)
+			if err != nil {
+				c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(err))
+			}
+		}()
+	}
+
 	return err
 }
 
 func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 	unmarshaler := c.unmarshaler
-
-	_consumer, err := c.client.Subscribe(c.consumerOptions)
-	c.ready <- err
-	if nil != err {
-		return err
-	}
-
-	c.consumer = _consumer
+	metricsConsumer := c.metricsConsumer
 
 	for {
-		message, err := _consumer.Receive(ctx)
+		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
@@ -223,7 +209,7 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
 		}
 
-		if err := c.metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
+		if err := metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
@@ -245,7 +231,6 @@ type pulsarLogsConsumer struct {
 	topic           string
 	client          pulsar.Client
 	consumer        pulsar.Consumer
-	ready           chan error
 	cancel          context.CancelFunc
 	settings        component.ReceiverCreateSettings
 	consumerOptions pulsar.ConsumerOptions
@@ -276,7 +261,6 @@ func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmars
 		unmarshaler:     unmarshaler,
 		settings:        set,
 		client:          client,
-		ready:           make(chan error),
 		consumerOptions: consumerOptions,
 	}, nil
 }
@@ -285,31 +269,26 @@ func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancel = cancel
 
-	go func() {
-		err := consumeLogsLoop(ctx, c)
-		if err != nil {
-			c.settings.Logger.Error("consume logs loop occurs an error")
-		}
-	}()
+	_consumer, err := c.client.Subscribe(c.consumerOptions)
+	if err == nil {
+		c.consumer = _consumer
+		go func() {
+			err := consumeLogsLoop(ctx, c)
+			if err != nil {
+				c.settings.Logger.Error("consume logs loop occurs an error")
+			}
+		}()
+	}
 
-	err := <-c.ready
-	close(c.ready)
 	return err
 }
 
 func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 	unmarshaler := c.unmarshaler
-
-	_consumer, err := c.client.Subscribe(c.consumerOptions)
-	c.ready <- err
-	if nil != err {
-		return err
-	}
-
-	c.consumer = _consumer
+	logsConsumer := c.logsConsumer
 
 	for {
-		message, err := _consumer.Receive(ctx)
+		message, err := c.consumer.Receive(ctx)
 		if err != nil {
 			if strings.Contains(err.Error(), alreadyClosedError) {
 				return err
@@ -327,7 +306,7 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
 		}
 
-		if err := c.logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
+		if err := logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
 			c.settings.Logger.Error("consume traces failed", zap.Error(err))
 		}
 
