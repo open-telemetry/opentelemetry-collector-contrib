@@ -127,8 +127,9 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 			rcvr, err := obs.runner.start(
 				receiverConfig{
-					id:     template.id,
-					config: resolvedConfig,
+					id:         template.id,
+					config:     resolvedConfig,
+					endpointID: e.ID,
 				},
 				resolvedDiscoveredConfig,
 				resourceEnhancer,
