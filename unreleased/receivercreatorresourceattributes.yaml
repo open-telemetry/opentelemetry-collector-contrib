@@ -1,0 +1,4 @@
+change_type: enhancement
+component: receivercreator
+note: add per-receiver `resource_attribute` and validate endpoint type keys on global
+issues: [11766]
