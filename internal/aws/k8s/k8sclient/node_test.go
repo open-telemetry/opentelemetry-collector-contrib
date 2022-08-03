@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package k8sclient
 
 import (
@@ -247,7 +246,7 @@ var nodeArray = []interface{}{
 					Reason:  "KubeletHasSufficientMemory",
 					Message: "kubelet has sufficient memory available",
 				},
-				{ //This entry shows failed node
+				{ // This entry shows failed node
 					Type:   "DiskPressure",
 					Status: "True",
 					LastHeartbeatTime: metav1.Time{

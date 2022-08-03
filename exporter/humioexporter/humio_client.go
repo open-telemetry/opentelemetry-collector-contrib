@@ -107,7 +107,7 @@ type humioClient struct {
 
 // Constructs a new HTTP client for sending payloads to Humio
 func newHumioClient(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClientWithHost(host, settings)
+	client, err := cfg.HTTPClientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}

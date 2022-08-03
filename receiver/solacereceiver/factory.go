@@ -39,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		componentType,
 		createDefaultConfig,
-		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability),
+		component.WithTracesReceiver(createTracesReceiver, stability),
 	)
 }
 

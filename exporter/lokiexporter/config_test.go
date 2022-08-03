@@ -90,12 +90,12 @@ func TestLoadConfig(t *testing.T) {
 				"traceID": "traceid",
 			},
 		},
-		Format: "body",
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }
 
 func TestJSONLoadConfig(t *testing.T) {
+	formatJSON := "json"
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
@@ -142,7 +142,7 @@ func TestJSONLoadConfig(t *testing.T) {
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},
 		},
-		Format: "json",
+		Format: &formatJSON,
 	}
 	require.Equal(t, &expectedCfg, actualCfg)
 }

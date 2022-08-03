@@ -65,6 +65,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	attrs.InsertString(conventions.AttributeCloudRegion, compute.Location)
 	attrs.InsertString(conventions.AttributeHostID, compute.VMID)
 	attrs.InsertString(conventions.AttributeCloudAccountID, compute.SubscriptionID)
+	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
+	// used by system detector.
+	attrs.InsertString("azure.vm.name", compute.Name)
 	attrs.InsertString("azure.vm.size", compute.VMSize)
 	attrs.InsertString("azure.vm.scaleset.name", compute.VMScaleSetName)
 	attrs.InsertString("azure.resourcegroup.name", compute.ResourceGroupName)
