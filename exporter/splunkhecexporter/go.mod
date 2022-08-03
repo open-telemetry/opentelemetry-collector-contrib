@@ -5,10 +5,10 @@ go 1.17
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.57.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.57.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.57.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.56.1-0.20220803125008-a585d0de68c4
 	go.opentelemetry.io/collector/pdata v0.56.1-0.20220803125008-a585d0de68c4
