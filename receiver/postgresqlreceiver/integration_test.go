@@ -130,31 +130,6 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			expectedFile:    filepath.Join("testdata", "integration", "expected_all_db.json"),
 		},
 		{
-			name: "query_stats",
-			cfg: func(hostname string) *Config {
-				f := NewFactory()
-				cfg := f.CreateDefaultConfig().(*Config)
-				cfg.Endpoint = net.JoinHostPort(hostname, "15433")
-				cfg.Username = "otel"
-				cfg.Password = "otel"
-				cfg.Insecure = true
-				cfg.CollectQueryPerformance = true
-				return cfg
-			},
-			// query metrics require Postgres > 10
-			postgresVersion: pg10,
-			expectedFile:    filepath.Join("testdata", "integration", "expected_with_query_stats.json"),
-			// ignore time dependent query metric attribute
-			scraperOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricAttributeValue(
-					"query",
-					"postgresql.query.count",
-					"postgresql.query.block.count",
-					"postgresql.query.duration.total",
-					"postgresql.query.duration.average",
-				)},
-		},
-		{
 			name: "single_db_pg14",
 			cfg: func(hostname string) *Config {
 				f := NewFactory()
