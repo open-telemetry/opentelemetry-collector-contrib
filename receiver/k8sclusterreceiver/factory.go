@@ -87,5 +87,5 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }

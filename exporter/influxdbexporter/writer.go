@@ -60,7 +60,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, host component.Ho
 		config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
 	}
 
-	httpClient, err := config.HTTPClientSettings.ToClientWithHost(host, settings)
+	httpClient, err := config.HTTPClientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}

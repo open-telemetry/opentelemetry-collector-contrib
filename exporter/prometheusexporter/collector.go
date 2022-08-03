@@ -28,6 +28,14 @@ import (
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
+const (
+	targetMetricName = "target_info"
+)
+
+var (
+	separatorString = string([]byte{model.SeparatorByte})
+)
+
 type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
@@ -220,6 +228,94 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	return m, nil
 }
 
+func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
+	var metrics []prometheus.Metric
+	var lastErr error
+
+	// deduplicate resourceAttrs by job and instance
+	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
+	seenResource := map[string]struct{}{}
+	for _, attrs := range resourceAttrs {
+		sig := resourceSignature(attrs)
+		if sig == "" {
+			continue
+		}
+		if _, ok := seenResource[resourceSignature(attrs)]; !ok {
+			seenResource[resourceSignature(attrs)] = struct{}{}
+			deduplicatedResourceAttrs = append(deduplicatedResourceAttrs, attrs)
+		}
+	}
+
+	for _, rAttributes := range deduplicatedResourceAttrs {
+		// map ensures no duplicate label name
+		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
+
+		// Use resource attributes (other than those used for job+instance) as the
+		// metric labels for the target info metric
+		attributes := pcommon.NewMap()
+		rAttributes.CopyTo(attributes)
+		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+			switch k {
+			case conventions.AttributeServiceName, conventions.AttributeServiceNamespace, conventions.AttributeServiceInstanceID:
+				// Remove resource attributes used for job + instance
+				return true
+			default:
+				return false
+			}
+		})
+
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			finalKey := prometheustranslator.NormalizeLabel(k)
+			if existingVal, ok := labels[finalKey]; ok {
+				labels[finalKey] = existingVal + ";" + v.AsString()
+			} else {
+				labels[finalKey] = v.AsString()
+			}
+
+			return true
+		})
+
+		// Map service.name + service.namespace to job
+		if serviceName, ok := rAttributes.Get(conventions.AttributeServiceName); ok {
+			val := serviceName.AsString()
+			if serviceNamespace, ok := rAttributes.Get(conventions.AttributeServiceNamespace); ok {
+				val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+			}
+			labels[model.JobLabel] = val
+		}
+		// Map service.instance.id to instance
+		if instance, ok := rAttributes.Get(conventions.AttributeServiceInstanceID); ok {
+			labels[model.InstanceLabel] = instance.AsString()
+		}
+
+		name := targetMetricName
+		if len(c.namespace) > 0 {
+			name = c.namespace + "_" + name
+		}
+
+		keys := make([]string, 0, len(labels))
+		values := make([]string, 0, len(labels))
+		for key, value := range labels {
+			keys = append(keys, key)
+			values = append(values, value)
+		}
+
+		metric, err := prometheus.NewConstMetric(
+			prometheus.NewDesc(name, "Target metadata", keys, nil),
+			prometheus.GaugeValue,
+			1,
+			values...,
+		)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		metrics = append(metrics, metric)
+	}
+	return metrics, lastErr
+}
+
 /*
 	Reporting
 */
@@ -227,6 +323,15 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
 	inMetrics, resourceAttrs := c.accumulator.Collect()
+
+	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
+	if err != nil {
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", targetMetricName, err.Error()))
+	}
+	for _, m := range targetMetrics {
+		ch <- m
+		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+	}
 
 	for i := range inMetrics {
 		pMetric := inMetrics[i]
@@ -241,4 +346,27 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
+}
+
+func resourceSignature(attributes pcommon.Map) string {
+	job := ""
+	instance := ""
+
+	// Map service.name + service.namespace to job
+	if serviceName, ok := attributes.Get(conventions.AttributeServiceName); ok {
+		job = serviceName.AsString()
+		if serviceNamespace, ok := attributes.Get(conventions.AttributeServiceNamespace); ok {
+			job = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), job)
+		}
+	}
+	// Map service.instance.id to instance
+	if inst, ok := attributes.Get(conventions.AttributeServiceInstanceID); ok {
+		instance = inst.AsString()
+	}
+
+	if job == "" && instance == "" {
+		return ""
+	}
+
+	return job + separatorString + instance
 }

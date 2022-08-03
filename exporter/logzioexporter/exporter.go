@@ -126,7 +126,7 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 }
 
 func (exporter *logzioExporter) start(_ context.Context, host component.Host) error {
-	client, err := exporter.config.HTTPClientSettings.ToClientWithHost(host, exporter.settings)
+	client, err := exporter.config.HTTPClientSettings.ToClient(host, exporter.settings)
 	if err != nil {
 		return err
 	}
