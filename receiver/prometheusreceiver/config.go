@@ -70,9 +70,9 @@ type Config struct {
 }
 
 type targetAllocator struct {
-	Endpoint    string
-	Interval    time.Duration
-	CollectorID string `mapstructure:"collector_id"`
+	Endpoint    string        `mapstructure:"endpoint"`
+	Interval    time.Duration `mapstructure:"interval"`
+	CollectorID string        `mapstructure:"collector_id"`
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
