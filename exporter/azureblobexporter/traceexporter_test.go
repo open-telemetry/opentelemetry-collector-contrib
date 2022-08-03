@@ -20,8 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -46,15 +45,15 @@ func getTracesExporter(tb testing.TB, blobClient BlobClient) *traceExporter {
 	exporter := &traceExporter{
 		blobClient:      blobClient,
 		logger:          zaptest.NewLogger(tb),
-		tracesMarshaler: otlp.NewJSONTracesMarshaler(),
+		tracesMarshaler: ptrace.NewJSONMarshaler(),
 	}
 
 	return exporter
 }
 
-func getTestTraces(tb testing.TB) pdata.Traces {
-	tracesMarshaler := otlp.NewJSONTracesUnmarshaler()
-	traces, err := tracesMarshaler.UnmarshalTraces(testTraces)
+func getTestTraces(tb testing.TB) ptrace.Traces {
+	tracesUnmarshaler := ptrace.NewJSONUnmarshaler()
+	traces, err := tracesUnmarshaler.UnmarshalTraces(testTraces)
 	require.NoError(tb, err, "Can't unmarshal testing traces data -> %s", err)
 	return traces
 }

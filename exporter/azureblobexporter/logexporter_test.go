@@ -20,13 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap/zaptest"
 )
 
 var (
-	testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","name":"FilterModule.Program","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
+	testLogs = []byte(`{"resourceLogs":[{"resource":{"attributes":[{"key":"service.name","value":{"stringValue":"dotnet"}}]},"instrumentationLibraryLogs":[{"instrumentationLibrary":{},"logRecords":[{"timeUnixNano":"1643240673066096200","severityText":"Information","body":{"stringValue":"Message Body"},"flags":1,"traceId":"7b20d1349ef9b6d6f9d4d1d4a3ac2e82","spanId":"0c2ad924e1771630"}]}]}]}`)
 )
 
 // Test onLogData callback for the test logs data
@@ -46,15 +45,15 @@ func getLogsExporter(tb testing.TB, blobClient BlobClient) *logExporter {
 	exporter := &logExporter{
 		blobClient:    blobClient,
 		logger:        zaptest.NewLogger(tb),
-		logsMarshaler: otlp.NewJSONLogsMarshaler(),
+		logsMarshaler: plog.NewJSONMarshaler(),
 	}
 
 	return exporter
 }
 
-func getTestLogs(tb testing.TB) pdata.Logs {
-	logsMarshaler := otlp.NewJSONLogsUnmarshaler()
-	logs, err := logsMarshaler.UnmarshalLogs(testLogs)
+func getTestLogs(tb testing.TB) plog.Logs {
+	logsUnmarshaler := plog.NewJSONUnmarshaler()
+	logs, err := logsUnmarshaler.UnmarshalLogs(testLogs)
 	require.NoError(tb, err, "Can't unmarshal testing logs data -> %s", err)
 	return logs
 }

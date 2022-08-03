@@ -20,18 +20,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
 type traceExporter struct {
 	blobClient      BlobClient
 	logger          *zap.Logger
-	tracesMarshaler pdata.TracesMarshaler
+	tracesMarshaler ptrace.Marshaler
 }
 
-func (ex *traceExporter) onTraceData(context context.Context, traceData pdata.Traces) error {
+func (ex *traceExporter) onTraceData(context context.Context, traceData ptrace.Traces) error {
 	buf, err := ex.tracesMarshaler.MarshalTraces(traceData)
 	if err != nil {
 		ex.logger.Error(err.Error())
@@ -51,7 +50,7 @@ func newTracesExporter(config *Config, blobClient BlobClient, set component.Expo
 	exporter := &traceExporter{
 		blobClient:      blobClient,
 		logger:          set.Logger,
-		tracesMarshaler: otlp.NewJSONTracesMarshaler(),
+		tracesMarshaler: ptrace.NewJSONMarshaler(),
 	}
 
 	return exporterhelper.NewTracesExporter(config, set, exporter.onTraceData)

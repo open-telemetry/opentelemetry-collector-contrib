@@ -20,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlp"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
@@ -29,7 +27,7 @@ import (
 type logExporter struct {
 	blobClient    BlobClient
 	logger        *zap.Logger
-	logsMarshaler plog.LogsMarshaler
+	logsMarshaler plog.Marshaler
 }
 
 func (ex *logExporter) onLogData(context context.Context, logData plog.Logs) error {
@@ -52,7 +50,7 @@ func newLogsExporter(config *Config, blobClient BlobClient, set component.Export
 	exporter := &logExporter{
 		blobClient:    blobClient,
 		logger:        set.Logger,
-		logsMarshaler: otlp.NewJSONLogsMarshaler(),
+		logsMarshaler: plog.NewJSONMarshaler(),
 	}
 
 	return exporterhelper.NewLogsExporter(config, set, exporter.onLogData)
