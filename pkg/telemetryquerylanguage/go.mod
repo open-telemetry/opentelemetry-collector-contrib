@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage
 
-go 1.17
+go 1.18
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha9

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/influxdata/influxdb-observability/common v0.2.25
