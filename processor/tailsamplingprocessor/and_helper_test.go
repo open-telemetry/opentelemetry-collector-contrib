@@ -15,9 +15,10 @@
 package tailsamplingprocessor
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"testing"
 )
 
 func TestAndHelper(t *testing.T) {
