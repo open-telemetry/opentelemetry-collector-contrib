@@ -60,7 +60,17 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 		settings: settings,
 	}
 
-	if config.Format == "json" {
+	if config.Format != nil && *config.Format == "body" {
+		lokiexporter.settings.Logger.Warn("The `body` format for this exporter will be removed soon. Set the value explicitly to `json` instead.")
+	}
+
+	if config.Format == nil {
+		lokiexporter.settings.Logger.Warn("The format attribute wasn't specified and the current default, `body`, was applied. Set the value explicitly to `json` to be compatible with future versions of this exporter.")
+		formatBody := "body"
+		config.Format = &formatBody
+	}
+
+	if *config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 	} else {
 		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
@@ -206,7 +216,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 						errors.New(
 							fmt.Sprint(
 								"failed to convert, dropping log",
-								zap.String("format", l.config.Format),
+								zap.String("format", *l.config.Format),
 								zap.Error(err),
 							),
 						),
