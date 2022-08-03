@@ -43,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
-		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.

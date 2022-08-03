@@ -30,9 +30,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTraceExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelAlpha),
+		component.WithTracesExporter(createTraceExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
