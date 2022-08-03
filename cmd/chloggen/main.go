@@ -89,7 +89,9 @@ func initCobra() {
 
 func main() {
 	initCobra()
-	rootCmd.Execute()
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func initialize(ctx chlogContext, filename string) error {
@@ -238,10 +240,4 @@ func deleteEntries(ctx chlogContext) error {
 func cleanFileName(filename string) string {
 	replace := strings.NewReplacer("/", "_", "\\", "_")
 	return replace.Replace(filename)
-}
-
-func usage() {
-	fmt.Println("usage: [FILENAME=my-change] chloggen new")
-	fmt.Println("       chloggen validate")
-	fmt.Println("       chloggen update [-version v0.55.0] [-dry]")
 }
