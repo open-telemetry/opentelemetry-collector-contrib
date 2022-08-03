@@ -32,6 +32,7 @@ func TestFilterClusters(t *testing.T) {
 func TestDefaultLoggingConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetIDName("LoggingID")
 	params := componenttest.NewNopReceiverCreateSettings()
 	ctx := context.Background()
 

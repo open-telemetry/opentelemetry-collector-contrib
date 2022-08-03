@@ -165,28 +165,34 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			// filter out any projects not specified in the config
 			fp := filterProjects(projects, cfgProjects)
 
+			if len(projects) < 1 {
+				return
+			}
+
 			// get clusters for each of the projects
 			for _, project := range fp {
 				resource.Org, resource.Project = org, project
 				clusters, err := s.processClusters(cfgProjects, ctx, &resource)
 
-				// collection interval loop,
-				select {
-				case <-ctx.Done():
-					return
-				case <-s.stopperChan:
-					return
-				case <-time.After(collection_interval):
-					if resource.end != "" {
-						resource.start = resource.end
-					}
-					resource.end = strconv.Itoa(int(time.Now().Unix()))
-					err = s.collectClusterLogs(clusters, cfgProjects, resource)
-					if err != nil {
-						s.log.Error("Failure to collect logs from cluster %w", zap.Error(err))
-					}
+				if resource.end != "" {
+					resource.start = resource.end
+				}
+				resource.end = strconv.Itoa(int(time.Now().Unix()))
+				err = s.collectClusterLogs(clusters, cfgProjects, resource)
+				if err != nil {
+					s.log.Error("Failure to collect logs from cluster %w", zap.Error(err))
 				}
 			}
+		}
+
+		// collection interval loop,
+		select {
+		case <-ctx.Done():
+			return
+		case <-s.stopperChan:
+			return
+		case <-time.After(collection_interval):
+
 		}
 	}
 }
@@ -223,7 +229,7 @@ func (s *receiver) processClusters(cfgProjects map[string]*Project, ctx context.
 		return filterClusters(clusters, createStringSet(exclude), false), nil
 	// both are initialized
 	default:
-		return nil, errors.New("Both Include and Exclude clusters configured")
+		return nil, errors.New("both Include and Exclude clusters configured")
 	}
 }
 

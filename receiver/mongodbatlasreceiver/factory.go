@@ -34,7 +34,7 @@ const (
 	defaultAlertsEnabled = false
 )
 
-// receivers is a handle to the receiver as it is shared between metrics and logging
+// receivers is a mapping of receiver ID to a receiver that is shared between metrics and log scraping
 var receivers = make(map[string]*receiver)
 
 // NewFactory creates a factory for MongoDB Atlas receiver

@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
@@ -39,6 +40,7 @@ type receiver struct {
 	mb          *metadata.MetricsBuilder
 	consumer    consumer.Logs
 	stopperChan chan struct{}
+	wg          sync.WaitGroup
 }
 
 type timeconstraints struct {
@@ -84,6 +86,8 @@ func (s *receiver) timeConstraints(now time.Time) timeconstraints {
 }
 
 func (s *receiver) shutdown(context.Context) error {
+	close(s.stopperChan)
+	s.wg.Wait()
 	return s.client.Shutdown()
 }
 
@@ -241,14 +245,14 @@ func (s *receiver) extractProcessDiskMetrics(
 
 // Log receiver logic
 func (s *receiver) Start(ctx context.Context, host component.Host) error {
+	s.wg.Add(1)
 	go func() {
+		defer s.wg.Done()
 		s.KickoffReceiver(ctx)
 	}()
 	return nil
 }
 
 func (s *receiver) Shutdown(ctx context.Context) error {
-	close(s.stopperChan)
-
-	return nil
+	return s.shutdown(ctx)
 }

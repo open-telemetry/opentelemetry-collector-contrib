@@ -555,7 +555,7 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 	return measurements.Measurements, hasNext(measurements.Links), nil
 }
 
-// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
+// GetLogs retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
 func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName, start, end string) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
 
