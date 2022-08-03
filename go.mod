@@ -151,7 +151,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.56.0
 	github.com/prometheus/prometheus v0.37.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.1-0.20220803125008-a585d0de68c4
+	go.opentelemetry.io/collector v0.57.2
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
 )
@@ -536,8 +536,8 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.56.1-0.20220803125008-a585d0de68c4 // indirect
-	go.opentelemetry.io/collector/semconv v0.56.1-0.20220803125008-a585d0de68c4 // indirect
+	go.opentelemetry.io/collector/pdata v0.57.2 // indirect
+	go.opentelemetry.io/collector/semconv v0.57.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.33.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.33.0 // indirect
