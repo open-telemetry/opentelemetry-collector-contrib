@@ -33,9 +33,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

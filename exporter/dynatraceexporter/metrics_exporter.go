@@ -281,7 +281,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 // start starts the exporter
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClientWithHost(host, e.settings)
+	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
 		return fmt.Errorf("start: %w", err)
