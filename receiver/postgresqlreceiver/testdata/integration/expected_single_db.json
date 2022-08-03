@@ -1,1 +1,1225 @@
-{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{"name":"otelcol/postgresqlreceiver","version":"latest"},"metrics":[{"name":"postgresql.backends","description":"The number of backends.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"1"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE"}},{"name":"postgresql.bgwriter.buffers.allocated","description":"Number of buffers allocated","unit":"{buffers}","sum":{"dataPoints":[{"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"343"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.bgwriter.buffers.writes","description":"Number of buffers written","unit":"{buffers}","sum":{"dataPoints":[{"attributes":[{"key":"source","value":{"stringValue":"backend"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"6"},{"attributes":[{"key":"source","value":{"stringValue":"backend_fsync"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"source","value":{"stringValue":"checkpoints"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"89"},{"attributes":[{"key":"source","value":{"stringValue":"bgwriter"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.bgwriter.checkpoint.count","description":"The number of checkpoints performed","unit":"{checkpoints}","sum":{"dataPoints":[{"attributes":[{"key":"type","value":{"stringValue":"requested"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"4"},{"attributes":[{"key":"type","value":{"stringValue":"scheduled"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.bgwriter.duration","description":"Total time spent writing and syncing files to disk by checkpoints.","unit":"ms","sum":{"dataPoints":[{"attributes":[{"key":"type","value":{"stringValue":"write"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"18"},{"attributes":[{"key":"type","value":{"stringValue":"sync"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"35"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.bgwriter.maxwritten.count","description":"Number of times the background writer stopped a cleaning scan because it had written too many buffers.","sum":{"dataPoints":[{"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.blocks_read","description":"The number of blocks read.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"toast_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"toast_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"tidx_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"tidx_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"heap_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"heap_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"idx_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"source","value":{"stringValue":"idx_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"tidx_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"tidx_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"heap_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"heap_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"idx_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"idx_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"toast_read"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"source","value":{"stringValue":"toast_hit"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.commits","description":"The number of commits.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"9"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.connections.max","description":"The maximum number of client connections allowed to the instance.","unit":"{connections}","gauge":{"dataPoints":[{"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"100"}]}},{"name":"postgresql.database.count","description":"Number of user databases.","unit":"{databases}","gauge":{"dataPoints":[{"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"1"}]}},{"name":"postgresql.db_size","description":"The database disk usage.","unit":"By","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"7313944"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE"}},{"name":"postgresql.index.scans","description":"The number of index scans on a table.","unit":"{scans}","sum":{"dataPoints":[{"attributes":[{"key":"index","value":{"stringValue":"table1_pkey"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"index","value":{"stringValue":"table2_pkey"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE"}},{"name":"postgresql.index.size","description":"Size of the index on disk.","unit":"By","gauge":{"dataPoints":[{"attributes":[{"key":"index","value":{"stringValue":"table1_pkey"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"8192"},{"attributes":[{"key":"index","value":{"stringValue":"table2_pkey"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"8192"}]}},{"name":"postgresql.operations","description":"The number of db row operations.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"operation","value":{"stringValue":"del"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"operation","value":{"stringValue":"ins"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"operation","value":{"stringValue":"upd"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}},{"key":"operation","value":{"stringValue":"hot_upd"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"operation","value":{"stringValue":"del"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"operation","value":{"stringValue":"ins"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"operation","value":{"stringValue":"upd"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}},{"key":"operation","value":{"stringValue":"hot_upd"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.rollbacks","description":"The number of rollbacks.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE","isMonotonic":true}},{"name":"postgresql.rows","description":"The number of rows in the database.","unit":"1","sum":{"dataPoints":[{"attributes":[{"key":"state","value":{"stringValue":"dead"}},{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"state","value":{"stringValue":"live"}},{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"state","value":{"stringValue":"dead"}},{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"state","value":{"stringValue":"live"}},{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE"}},{"name":"postgresql.table.count","description":"Number of user tables in a database.","gauge":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"2"}]}},{"name":"postgresql.table.size","description":"Disk space used by a table.","unit":"By","gauge":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}]}},{"name":"postgresql.table.vacuum.count","description":"Number of times a table has manually been vacuumed.","sum":{"dataPoints":[{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table2"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"},{"attributes":[{"key":"database","value":{"stringValue":"otel"}},{"key":"table","value":{"stringValue":"public.table1"}}],"startTimeUnixNano":"1659539093401006000","timeUnixNano":"1659539103416979000","asInt":"0"}],"aggregationTemporality":"AGGREGATION_TEMPORALITY_CUMULATIVE"}}]}]}]}
+{
+    "resourceMetrics": [
+        {
+            "resource": {},
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.backends",
+                            "description": "The number of backends.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "1"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.buffers.allocated",
+                            "description": "Number of buffers allocated",
+                            "unit": "{buffers}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "343"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.buffers.writes",
+                            "description": "Number of buffers written",
+                            "unit": "{buffers}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "backend"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "6"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "backend_fsync"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "checkpoints"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "89"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "bgwriter"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.checkpoint.count",
+                            "description": "The number of checkpoints performed",
+                            "unit": "{checkpoints}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "requested"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "4"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "scheduled"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.duration",
+                            "description": "Total time spent writing and syncing files to disk by checkpoints.",
+                            "unit": "ms",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "write"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "18"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "sync"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "35"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.maxwritten.count",
+                            "description": "Number of times the background writer stopped a cleaning scan because it had written too many buffers.",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.blocks_read",
+                            "description": "The number of blocks read.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.commits",
+                            "description": "The number of commits.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "9"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.connections.max",
+                            "description": "The maximum number of client connections allowed to the instance.",
+                            "unit": "{connections}",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "100"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "postgresql.database.count",
+                            "description": "Number of user databases.",
+                            "unit": "{databases}",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "1"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "postgresql.db_size",
+                            "description": "The database disk usage.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "7313944"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "index",
+                                                "value": {
+                                                    "stringValue": "table1_pkey"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "index",
+                                                "value": {
+                                                    "stringValue": "table2_pkey"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "Size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "index",
+                                                "value": {
+                                                    "stringValue": "table1_pkey"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "8192"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "index",
+                                                "value": {
+                                                    "stringValue": "table2_pkey"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "8192"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "postgresql.operations",
+                            "description": "The number of db row operations.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "del"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "ins"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "hot_upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "del"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "ins"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            },
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "hot_upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.rollbacks",
+                            "description": "The number of rollbacks.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.rows",
+                            "description": "The number of rows in the database.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "dead"
+                                                }
+                                            },
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "live"
+                                                }
+                                            },
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "dead"
+                                                }
+                                            },
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "live"
+                                                }
+                                            },
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.table.count",
+                            "description": "Number of user tables in a database.",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "2"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "postgresql.table.size",
+                            "description": "Disk space used by a table.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "postgresql.table.vacuum.count",
+                            "description": "Number of times a table has manually been vacuumed.",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table2"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "database",
+                                                "value": {
+                                                    "stringValue": "otel"
+                                                }
+                                            },
+                                            {
+                                                "key": "table",
+                                                "value": {
+                                                    "stringValue": "public.table1"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659539093401006000",
+                                        "timeUnixNano": "1659539103416979000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
