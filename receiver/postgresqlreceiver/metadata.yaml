@@ -1,18 +1,19 @@
 name: postgresqlreceiver
 
-resource_attributes:
-  postgresql.database:
-    description: The name of the database being monitored
-    type: string
-  postgresql.database.table:
-    description: The schema name followed by the table name.
-    type: string
-  postgresql.index.name:
-    description: The name of the index.
-    type: string
-  postgresql.query:
-    description: The SQL query text of the query.
-    type: string
+# TODO: use resource attributes
+# resource_attributes:
+#   postgresql.database:
+#     description: The name of the database being monitored
+#     type: string
+#   postgresql.database.table:
+#     description: The schema name followed by the table name.
+#     type: string
+#   postgresql.index.name:
+#     description: The name of the index on a table.
+#     type: string
+#   postgresql.query:
+#     description: The SQL query text of the query.
+#     type: string
 
 attributes:
   bg_buffer_source:
@@ -37,6 +38,12 @@ attributes:
     value: type
   database:
     description: The name of the database being monitored
+    type: string
+  index:
+    description: The name of the index on a table.
+    type: string
+  query:
+    description: The SQL query text of the query.
     type: string
   operation:
     description: The database operation.
@@ -70,6 +77,9 @@ attributes:
       - toast_hit
       - tidx_read
       - tidx_hit
+  replication_client:
+    description: IP address of the client connected to this backend. If this field is empty, it indicates either that the client is connected via a Unix socket.
+    type: string
   state:
     description: The tuple (row) state.
     enum:
@@ -105,6 +115,20 @@ metrics:
       monotonic: false
       value_type: int
     unit: 1
+  postgresql.connections.open:
+    attributes: []
+    description: Number of active connections to the database.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: '{connections}'
+  postgresql.connections.max:
+    attributes: []
+    description: The maximum number of client connections allowed to the instance.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: '{connections}'
   postgresql.bgwriter.buffers.allocated:
     description: Number of buffers allocated
     enabled: true
@@ -181,6 +205,7 @@ metrics:
       value_type: int
     unit: 1
   postgresql.index.scans:
+    attributes: [index]
     description: The number of index scans on a table.
     enabled: true
     sum:
@@ -189,6 +214,7 @@ metrics:
       value_type: int
     unit: "{scans}"
   postgresql.index.size:
+    attributes: [index]
     description: Size of the index on disk.
     enabled: true
     gauge:
@@ -203,6 +229,13 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{transactions}"
+  postgresql.database.count:
+    attributes: []
+    description: Number of user databases.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{databases}"
   postgresql.db_size:
     attributes:
       - database
@@ -238,6 +271,7 @@ metrics:
     attributes:
       - query_block_operation
       - query_block_type
+      - query
     description: Total number of blocks dirtied, read, or written by queries.
     enabled: true
     sum:
@@ -246,7 +280,7 @@ metrics:
       value_type: int
     unit: "{queries}"
   postgresql.query.count:
-    attributes: []
+    attributes: [query]
     description: Number of queries executed.
     enabled: true
     sum:
@@ -255,14 +289,14 @@ metrics:
       value_type: int
     unit: "{queries}"
   postgresql.query.duration.average:
-    attributes: []
+    attributes: [query]
     description: Average time spent executing a query.
     enabled: true
     gauge:
       value_type: double
     unit: ms
   postgresql.query.duration.total:
-    attributes: []
+    attributes: [query]
     description: Total time spent executing a query.
     enabled: true
     sum:
@@ -278,7 +312,7 @@ metrics:
       value_type: int
     unit: ms
   postgresql.replication.data_delay:
-    attributes: []
+    attributes: [replication_client]
     description: The amount of data delayed in replication.
     enabled: true
     gauge:
@@ -326,6 +360,8 @@ metrics:
   postgresql.wal.age:
     attributes: []
     description: Age of the oldest WAL file.
+    extended_documentation: | 
+     This metric requires WAL to be enabled with at least one replica.
     enabled: true
     gauge:
       value_type: int
@@ -335,3 +371,5 @@ metrics:
     enabled: true
     gauge:
       value_type: int
+    extended_documentation: |
+      This metric requires WAL to be enabled with at least one replica.

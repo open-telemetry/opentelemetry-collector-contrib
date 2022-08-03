@@ -36,12 +36,13 @@ const (
 	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 )
 
+// Config is the configuration object for the postgresqlreceiver
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	Username                                string                         `mapstructure:"username"`
 	Password                                string                         `mapstructure:"password"`
 	Databases                               []string                       `mapstructure:"databases"`
-	collectQueryPerformance                 bool                           `mapstructure:"collect_query_performance"`
+	CollectQueryPerformance                 bool                           `mapstructure:"collect_query_performance"`
 	confignet.NetAddr                       `mapstructure:",squash"`       // provides Endpoint and Transport
 	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"` // provides SSL details
 	Metrics                                 metadata.MetricsSettings       `mapstructure:"metrics"`

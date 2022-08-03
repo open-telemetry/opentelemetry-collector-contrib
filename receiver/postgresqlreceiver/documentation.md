@@ -17,24 +17,29 @@ These are the metrics available for this scraper.
 | **postgresql.block.count** | Total number of blocks | {blocks} | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.connections.max** | The maximum number of client connections allowed to the instance. | {connections} | Gauge(Int) | <ul> </ul> |
+| **postgresql.connections.open** | Number of active connections to the database. | {connections} | Gauge(Int) | <ul> </ul> |
+| **postgresql.database.count** | Number of user databases. | {databases} | Gauge(Int) | <ul> </ul> |
 | **postgresql.database.transactions** | Number of transactions rolled back or committed. | {transactions} | Sum(Int) | <ul> <li>transaction_result</li> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
-| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
-| **postgresql.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
+| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> <li>index</li> </ul> |
+| **postgresql.index.size** | Size of the index on disk. | By | Gauge(Int) | <ul> <li>index</li> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
-| **postgresql.query.block.count** | Total number of blocks dirtied, read, or written by queries. | {queries} | Sum(Int) | <ul> <li>query_block_operation</li> <li>query_block_type</li> </ul> |
-| **postgresql.query.count** | Number of queries executed. | {queries} | Sum(Int) | <ul> </ul> |
-| **postgresql.query.duration.average** | Average time spent executing a query. | ms | Gauge(Double) | <ul> </ul> |
-| **postgresql.query.duration.total** | Total time spent executing a query. | ms | Sum(Double) | <ul> </ul> |
-| **postgresql.replication.data_delay** | The amount of data delayed in replication. | By | Gauge(Int) | <ul> </ul> |
+| **postgresql.query.block.count** | Total number of blocks dirtied, read, or written by queries. | {queries} | Sum(Int) | <ul> <li>query_block_operation</li> <li>query_block_type</li> <li>query</li> </ul> |
+| **postgresql.query.count** | Number of queries executed. | {queries} | Sum(Int) | <ul> <li>query</li> </ul> |
+| **postgresql.query.duration.average** | Average time spent executing a query. | ms | Gauge(Double) | <ul> <li>query</li> </ul> |
+| **postgresql.query.duration.total** | Total time spent executing a query. | ms | Sum(Double) | <ul> <li>query</li> </ul> |
+| **postgresql.replication.data_delay** | The amount of data delayed in replication. | By | Gauge(Int) | <ul> <li>replication_client</li> </ul> |
 | **postgresql.replication.delay** | The amount of time of lag between the current clock and the timestamp of the last WAL record. | ms | Gauge(Int) | <ul> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>state</li> <li>database</li> <li>table</li> </ul> |
 | **postgresql.table.count** | Number of user tables in a database. |  | Gauge(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.table.size** | Disk space used by a table. | By | Gauge(Int) | <ul> <li>database</li> <li>table</li> </ul> |
 | **postgresql.table.vacuum.count** | Number of times a table has manually been vacuumed. |  | Sum(Int) | <ul> <li>database</li> <li>table</li> </ul> |
-| **postgresql.wal.age** | Age of the oldest WAL file. |  | Gauge(Int) | <ul> </ul> |
-| **postgresql.wal.lag** | Time between flushing recent WAL locally and receiving notification that this standby server has completed an operation with it. |  | Gauge(Int) | <ul> <li>wal_operation_lag</li> </ul> |
+| **postgresql.wal.age** | Age of the oldest WAL file. This metric requires WAL to be enabled with at least one replica.
+ |  | Gauge(Int) | <ul> </ul> |
+| **postgresql.wal.lag** | Time between flushing recent WAL locally and receiving notification that this standby server has completed an operation with it. This metric requires WAL to be enabled with at least one replica.
+ |  | Gauge(Int) | <ul> <li>wal_operation_lag</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -45,15 +50,6 @@ metrics:
     enabled: <true|false>
 ```
 
-## Resource attributes
-
-| Name | Description | Type |
-| ---- | ----------- | ---- |
-| postgresql.database | The name of the database being monitored | String |
-| postgresql.database.table | The schema name followed by the table name. | String |
-| postgresql.index.name | The name of the index. | String |
-| postgresql.query | The SQL query text of the query. | String |
-
 ## Metric attributes
 
 | Name | Description | Values |
@@ -62,9 +58,12 @@ metrics:
 | bg_checkpoint_type (type) | The type of checkpoint state | requested, scheduled |
 | bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
 | database | The name of the database being monitored |  |
+| index | The name of the index on a table. |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
+| query | The SQL query text of the query. |  |
 | query_block_operation (operation) | The operation the query performed on the block. | dirty, read, write |
 | query_block_type (block) | The type of block utilized by the query. | local, shared, temp |
+| replication_client | IP address of the client connected to this backend. If this field is empty, it indicates either that the client is connected via a Unix socket. |  |
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
 | state | The tuple (row) state. | dead, live |
 | table | The schema name followed by the table name. |  |

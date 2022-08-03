@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -96,6 +97,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 type mockClientFactory struct{ mock.Mock }
 type mockClient struct{ mock.Mock }
 
+var _ client = &mockClient{}
+
 func (m *mockClient) Close() error {
 	args := m.Called()
 	return args.Error(0)
@@ -116,9 +119,9 @@ func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) ([]M
 	return args.Get(0).([]MetricStat), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(_ context.Context) ([]MetricStat, error) {
+func (m *mockClient) getDatabaseTableMetrics(_ context.Context) ([]TableMetrics, error) {
 	args := m.Called()
-	return args.Get(0).([]MetricStat), args.Error(1)
+	return args.Get(0).([]TableMetrics), args.Error(1)
 }
 
 func (m *mockClient) getBlocksReadByTable(_ context.Context) ([]MetricStat, error) {
@@ -131,9 +134,44 @@ func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
-func (m *mockClient) getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error) {
+func (m *mockClient) getVersion(_ context.Context) (*version.Version, error) {
+	args := m.Called()
+	return args.Get(0).(*version.Version), args.Error(1)
+}
+
+func (m *mockClient) getBackgroundWriterStats(_ context.Context) ([]MetricStat, error) {
 	args := m.Called()
 	return args.Get(0).([]MetricStat), args.Error(1)
+}
+
+func (m *mockClient) getIndexStats(ctx context.Context, database string) (*IndexStat, error) {
+	args := m.Called(database)
+	return args.Get(0).(*IndexStat), args.Error(1)
+}
+
+func (m *mockClient) getQueryStats(ctx context.Context, v version.Version) ([]QueryStat, error) {
+	args := m.Called(ctx, v)
+	return args.Get(0).([]QueryStat), args.Error(1)
+}
+
+func (m *mockClient) getReplicationDelay(_ context.Context) (int64, error) {
+	args := m.Called()
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	args := m.Called()
+	return args.Get(0).([]replicationStats), args.Error(1)
+}
+
+func (m *mockClient) getMaxConnections(_ context.Context) (int64, error) {
+	args := m.Called()
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getWALStats(c context.Context) (*walStats, error) {
+	args := m.Called(c)
+	return args.Get(0).(*walStats), args.Error(1)
 }
 
 func (m *mockClientFactory) getClient(c *Config, database string) (client, error) {
@@ -184,12 +222,33 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getCommitsAndRollbacks", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
-		m.On("getReplicationDelay", databases).Return(200, nil)
+		m.On("getReplicationDelay").Return(200, nil)
+		m.On("getWALStats", mock.Anything).Return(&walStats{
+			age: 6799,
+		})
+		m.On("getBackgroundWriterStats").Return([]MetricStat{
+			{
+				stats: map[string]string{
+					"buffers_allocated":         "6",
+					"checkpoint_req":            "8",
+					"checkpoint_scheduled":      "12",
+					"checkpoint_duration_write": "3",
+					"checkpoint_duration_sync":  "3",
+					"bg_writes":                 "44",
+					"backend_writes":            "22",
+					"buffers_written_fsync":     "12",
+					"buffers_checkpoints":       "44",
+					"maxwritten_count":          "1111",
+				},
+			},
+		})
 	} else {
+		table1 := "public.table1"
+		table2 := "public.table2"
 		tableMetrics := []MetricStat{}
 		tableMetrics = append(tableMetrics, MetricStat{
 			database: database,
-			table:    "public.table1",
+			table:    table1,
 			stats: map[string]string{
 				"live":    fmt.Sprintf("%d", index+7),
 				"dead":    fmt.Sprintf("%d", index+8),
@@ -202,7 +261,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 
 		tableMetrics = append(tableMetrics, MetricStat{
 			database: database,
-			table:    "public.table2",
+			table:    table2,
 			stats: map[string]string{
 				"live":    fmt.Sprintf("%d", index+9),
 				"dead":    fmt.Sprintf("%d", index+10),
@@ -245,5 +304,25 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 			},
 		})
 		m.On("getBlocksReadByTable").Return(blocksMetrics, nil)
+
+		index1 := "sequelize_pkey"
+		index2 := "notifications_pkey"
+		m.On("getIndexStats", mock.Anything, database).Return(&IndexStat{
+			database: database,
+			indexStats: map[string]indexStatHolder{
+				index1: {
+					table: table1,
+					size:  1024,
+					scans: 3,
+					index: index1,
+				},
+				index2: {
+					table: table2,
+					size:  2048,
+					scans: 67,
+					index: index2,
+				},
+			},
+		})
 	}
 }

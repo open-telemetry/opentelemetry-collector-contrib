@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -34,15 +35,18 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 
 type client interface {
 	Close() error
-	getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error)
+	getVersion(ctx context.Context) (*version.Version, error)
 	getBackends(ctx context.Context, databases []string) ([]MetricStat, error)
-	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
-	getDatabaseTableMetrics(ctx context.Context) ([]TableMetrics, error)
 	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
 	getBackgroundWriterStats(ctx context.Context) ([]MetricStat, error)
+	getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error)
+	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
+	getDatabaseTableMetrics(ctx context.Context) ([]TableMetrics, error)
+	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (*IndexStat, error)
-	getQueryStats(ctx context.Context) ([]QueryStat, error)
 	getReplicationDelay(ctx context.Context) (int64, error)
+	getReplicationStats(ctx context.Context) ([]replicationStats, error)
+	getQueryStats(ctx context.Context, pgVersion version.Version) ([]QueryStat, error)
 	getWALStats(ctx context.Context) (*walStats, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
@@ -125,6 +129,20 @@ func (c *postgreSQLClient) Close() error {
 	return c.client.Close()
 }
 
+func (c *postgreSQLClient) getVersion(ctx context.Context) (*version.Version, error) {
+	query := `SHOW server_version;`
+	row := c.client.QueryRowContext(ctx, query)
+	var versionString string
+	err := row.Scan(&versionString)
+	if err != nil {
+		return nil, err
+	}
+	// some results of show semver_version suffix with a clarifier such as "Debian" dependent on OS
+	// so just grab the parseable semver
+	semverString := strings.Split(versionString, " ")[0]
+	return version.NewVersion(semverString)
+}
+
 type MetricStat struct {
 	database string
 	table    string
@@ -144,6 +162,14 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
 	return c.collectStatsFromQuery(ctx, query, true, false, "db_size")
+}
+
+func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error) {
+	query := `SHOW max_connections;`
+	row := c.client.QueryRowContext(ctx, query)
+	var maxConnections int64
+	err := row.Scan(&maxConnections)
+	return maxConnections, err
 }
 
 // TableMetrics contains a result for a row of the getDatabaseTableMetrics result
@@ -303,10 +329,7 @@ func (c *postgreSQLClient) getReplicationDelay(ctx context.Context) (int64, erro
 	row := c.client.QueryRowContext(ctx, query)
 	var replicationDelay int64
 	err := row.Scan(&replicationDelay)
-	if err != nil {
-		return 0, err
-	}
-	return replicationDelay, nil
+	return replicationDelay, err
 }
 
 type replicationStats struct {
@@ -332,10 +355,15 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	}
 	defer rows.Close()
 	rs := []replicationStats{}
+	var errors error
 	for rows.Next() {
 		var client string
 		var replicationBytes, writeLag, flushLag, replayLag int64
-		rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
 		rs = append(rs, replicationStats{
 			client:       client,
 			pendingBytes: replicationBytes,
@@ -345,18 +373,11 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		})
 	}
 
-	return rs, nil
+	return rs, errors
 }
 
 type walStats struct {
 	age int64
-	lag walLag
-}
-
-type walLag struct {
-	flushLag  int64
-	replayLag int64
-	writeLag  int64
 }
 
 func (c *postgreSQLClient) getWALStats(ctx context.Context) (*walStats, error) {
@@ -401,17 +422,43 @@ type QueryStat struct {
 	tempBlocksWritten int64
 }
 
-func (c *postgreSQLClient) getQueryStats(ctx context.Context) ([]QueryStat, error) {
-	query := `SELECT
-	"query",
-	mean_exec_time,
-	total_exec_time,
-	calls,
-	shared_blks_read, shared_blks_written, shared_blks_dirtied,
-	local_blks_read, local_blks_written, local_blks_dirtied,
-	temp_blks_read, temp_blks_written
-	FROM pg_stat_statements(true);
+func (c *postgreSQLClient) getQueryStats(ctx context.Context, pgVersion version.Version) ([]QueryStat, error) {
+	// version definitions defined here https://www.postgresql.org/docs/current/pgstatstatements.html
+	pg96, _ := version.NewVersion("9.6")
+	pg10, _ := version.NewVersion("10.0")
+	pg13, _ := version.NewVersion("13.0")
+
+	var query string
+	switch {
+	// unsupported operation so just return here
+	case pgVersion.LessThanOrEqual(pg96):
+		return []QueryStat{}, nil
+	// main difference is the change of mean_time => mean_exec_time from pg 10,11,12 => 13
+	case pgVersion.GreaterThanOrEqual(pg10) && pgVersion.LessThan(pg13):
+		query = `
+		SELECT
+			query,
+			mean_time,
+			total_time,
+			calls,
+			shared_blks_read, shared_blks_written, shared_blks_dirtied,
+			local_blks_read, local_blks_written, local_blks_dirtied,
+			temp_blks_read, temp_blks_written
+		FROM pg_stat_statements(true);
 	`
+	// default is a postgres instance version of > 13. Something to be conscious of if ends up changing.
+	default:
+		query = `SELECT
+			query,
+			mean_exec_time,
+			total_exec_time,
+			calls,
+			shared_blks_read, shared_blks_written, shared_blks_dirtied,
+			local_blks_read, local_blks_written, local_blks_dirtied,
+			temp_blks_read, temp_blks_written
+		FROM pg_stat_statements(true);
+	`
+	}
 
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {

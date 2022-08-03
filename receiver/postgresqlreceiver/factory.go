@@ -33,6 +33,7 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
+// NewFactory returns the postgresqlreceiver component factory
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
@@ -55,7 +56,7 @@ func createDefaultConfig() config.Receiver {
 			InsecureSkipVerify: true,
 		},
 		Databases:               make([]string, 0),
-		collectQueryPerformance: false,
+		CollectQueryPerformance: false,
 		Metrics:                 metadata.DefaultMetricsSettings(),
 	}
 }
