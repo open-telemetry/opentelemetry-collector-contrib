@@ -21,12 +21,10 @@ func TestFilterClusters(t *testing.T) {
 
 	exclude := []string{"cluster1", "cluster3"}
 	include := []string{"cluster1", "cluster3"}
-	ec, err := filterClusters(clusters, createStringSet(exclude), false)
-	require.NoError(t, err)
+	ec := filterClusters(clusters, createStringSet(exclude), false)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster2", ID: "2"}}, ec)
 
-	ic, err := filterClusters(clusters, createStringSet(include), true)
-	require.NoError(t, err)
+	ic := filterClusters(clusters, createStringSet(include), true)
 	require.Equal(t, []mongodbatlas.Cluster{{Name: "cluster1", ID: "1"}, {Name: "cluster3", ID: "3"}}, ic)
 
 }

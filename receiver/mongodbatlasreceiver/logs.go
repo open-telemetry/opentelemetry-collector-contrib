@@ -23,6 +23,7 @@ import (
 	"io"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -46,6 +47,8 @@ type resourceInfo struct {
 	Cluster  *mongodbatlas.Cluster
 	Hostname string
 	LogName  string
+	start    string
+	end      string
 }
 
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
@@ -140,8 +143,7 @@ func FilterHostName(s string) []string {
 
 // KickoffReceiver spins off functionality of the receiver from the Start function
 func (s *receiver) KickoffReceiver(ctx context.Context) {
-	stopper := make(chan struct{})
-	s.stopperChanList = append(s.stopperChanList, stopper)
+	resource := resourceInfo{start: strconv.Itoa(int(time.Now().Unix())), end: ""}
 	cfgProjects, err := s.createProjectMap()
 	if err != nil {
 		s.log.Error("Failed to create project map", zap.Error(err))
@@ -165,22 +167,20 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 
 			// get clusters for each of the projects
 			for _, project := range fp {
-				resource := resourceInfo{Org: org, Project: project}
-				include, exclude := cfgProjects[project.Name].IncludeClusters, cfgProjects[project.Name].ExcludeClusters
-				clusters, err := s.client.GetClusters(ctx, project.ID)
-				if err != nil {
-					s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
-				}
-
-				clusters, err = processClusters(clusters, include, exclude)
+				resource.Org, resource.Project = org, project
+				clusters, err := s.processClusters(cfgProjects, ctx, &resource)
 
 				// collection interval loop,
 				select {
 				case <-ctx.Done():
 					return
-				case <-stopper:
+				case <-s.stopperChan:
 					return
 				case <-time.After(collection_interval):
+					if resource.end != "" {
+						resource.start = resource.end
+					}
+					resource.end = strconv.Itoa(int(time.Now().Unix()))
 					err = s.collectClusterLogs(clusters, cfgProjects, resource)
 					if err != nil {
 						s.log.Error("Failure to collect logs from cluster %w", zap.Error(err))
@@ -202,21 +202,28 @@ func filterProjects(projects []*mongodbatlas.Project, cfgProjects map[string]*Pr
 	return fp
 }
 
-func processClusters(clusters []mongodbatlas.Cluster, include, exclude []string) ([]mongodbatlas.Cluster, error) {
+func (s *receiver) processClusters(cfgProjects map[string]*Project, ctx context.Context, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
+	include, exclude := cfgProjects[r.Project.Name].IncludeClusters, cfgProjects[r.Project.Name].ExcludeClusters
+	clusters, err := s.client.GetClusters(ctx, r.Project.ID)
+	if err != nil {
+		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
+		return clusters, err
+	}
+
 	// check to include or exclude clusters
 	switch {
-	//keep all clusters if include and exclude are not specified
+	// keep all clusters if include and exclude are not specified
 	case len(include) == 0 && len(exclude) == 0:
 		return clusters, nil
 	// include is initialized
 	case len(include) > 0 && len(exclude) == 0:
-		return filterClusters(clusters, createStringSet(include), true)
+		return filterClusters(clusters, createStringSet(include), true), nil
 	// exclude is initialized
 	case len(exclude) > 0 && len(include) == 0:
-		return filterClusters(clusters, createStringSet(exclude), false)
+		return filterClusters(clusters, createStringSet(exclude), false), nil
 	// both are initialized
 	default:
-		return nil, nil
+		return nil, errors.New("Both Include and Exclude clusters configured")
 	}
 }
 
@@ -240,14 +247,14 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 
 }
 
-func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]struct{}, include bool) ([]mongodbatlas.Cluster, error) {
+func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]struct{}, include bool) []mongodbatlas.Cluster {
 	var filtered []mongodbatlas.Cluster
 	for _, cluster := range clusters {
 		if _, ok := keys[cluster.Name]; (!ok && !include) || (ok && include) {
 			filtered = append(filtered, cluster)
 		}
 	}
-	return filtered, nil
+	return filtered
 }
 
 func createStringSet(in []string) map[string]struct{} {
@@ -259,9 +266,9 @@ func createStringSet(in []string) map[string]struct{} {
 	return list
 }
 
-func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEntry, error) {
+func (s *receiver) getHostLogs(groupID, hostname, logName, start, end string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -289,9 +296,9 @@ func (s *receiver) getHostLogs(groupID, hostname, logName string) ([]model.LogEn
 	}
 }
 
-func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
+func (s *receiver) getHostAuditLogs(groupID, hostname, logName, start, end string) ([]model.AuditLog, error) {
 	// Get gzip bytes buffer from API
-	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName)
+	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +327,7 @@ func (s *receiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.
 }
 
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
-	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName)
+	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && err != io.EOF {
 		s.log.Warn("Failed to retreive logs from: "+logName, zap.Error(err))
 	}
@@ -333,7 +340,7 @@ func (s *receiver) sendLogs(r resourceInfo, logName string) {
 }
 
 func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
-	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName)
+	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && err != io.EOF {
 		s.log.Warn("Failed to retreive audit logs: "+logName, zap.Error(err))
 	}

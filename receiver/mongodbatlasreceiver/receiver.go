@@ -32,13 +32,13 @@ import (
 )
 
 type receiver struct {
-	log             *zap.Logger
-	cfg             *Config
-	client          *internal.MongoDBAtlasClient
-	lastRun         time.Time
-	mb              *metadata.MetricsBuilder
-	consumer        consumer.Logs
-	stopperChanList []chan struct{}
+	log         *zap.Logger
+	cfg         *Config
+	client      *internal.MongoDBAtlasClient
+	lastRun     time.Time
+	mb          *metadata.MetricsBuilder
+	consumer    consumer.Logs
+	stopperChan chan struct{}
 }
 
 type timeconstraints struct {
@@ -52,7 +52,7 @@ func newMongoDBAtlasReciever(settings component.ReceiverCreateSettings, cfg *Con
 	if err != nil {
 		return nil, err
 	}
-	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
+	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo), stopperChan: make(chan struct{})}
 	return recv, nil
 }
 
@@ -248,9 +248,7 @@ func (s *receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (s *receiver) Shutdown(ctx context.Context) error {
-	for _, stopperChan := range s.stopperChanList {
-		close(stopperChan)
-	}
+	close(s.stopperChan)
 
 	return nil
 }
