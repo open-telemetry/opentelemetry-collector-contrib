@@ -54,7 +54,9 @@ The following settings can be optionally configured:
 
 - `headers` (no default): Name/value pairs added to the HTTP request headers.
 
-- `format` (default = body): Set the log entry line format. This can be set to 'json' (the entire JSON encoded log record) or 'body' (the log record body field as a string).
+- `format` Deprecated without replacement. If you rely on this, let us know by opening an issue before v0.59.0 and we'll 
+assist you in finding a solution. The current default is `body` but the `json` encoder will be used after v0.59.0. To be
+ready for future versions, set this to `json` explicitly.
 
 Example:
 

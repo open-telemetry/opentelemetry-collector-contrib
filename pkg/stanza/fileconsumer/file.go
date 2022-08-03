@@ -30,8 +30,7 @@ import (
 
 type EmitFunc func(ctx context.Context, attrs *FileAttributes, token []byte)
 
-// TODO rename this struct
-type Input struct {
+type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
@@ -49,48 +48,48 @@ type Input struct {
 	queuedMatches []string
 }
 
-func (f *Input) Start(persister operator.Persister) error {
+func (m *Manager) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	f.cancel = cancel
-	f.persister = persister
+	m.cancel = cancel
+	m.persister = persister
 
 	// Load offsets from disk
-	if err := f.loadLastPollFiles(ctx); err != nil {
+	if err := m.loadLastPollFiles(ctx); err != nil {
 		return fmt.Errorf("read known files from database: %w", err)
 	}
 
-	if len(f.finder.FindFiles()) == 0 {
-		f.Warnw("no files match the configured include patterns",
-			"include", f.finder.Include,
-			"exclude", f.finder.Exclude)
+	if len(m.finder.FindFiles()) == 0 {
+		m.Warnw("no files match the configured include patterns",
+			"include", m.finder.Include,
+			"exclude", m.finder.Exclude)
 	}
 
 	// Start polling goroutine
-	f.startPoller(ctx)
+	m.startPoller(ctx)
 
 	return nil
 }
 
 // Stop will stop the file monitoring process
-func (f *Input) Stop() error {
-	f.cancel()
-	f.wg.Wait()
-	f.roller.cleanup()
-	for _, reader := range f.knownFiles {
+func (m *Manager) Stop() error {
+	m.cancel()
+	m.wg.Wait()
+	m.roller.cleanup()
+	for _, reader := range m.knownFiles {
 		reader.Close()
 	}
-	f.knownFiles = nil
-	f.cancel = nil
+	m.knownFiles = nil
+	m.cancel = nil
 	return nil
 }
 
 // startPoller kicks off a goroutine that will poll the filesystem periodically,
 // checking if there are new files or new logs in the watched files
-func (f *Input) startPoller(ctx context.Context) {
-	f.wg.Add(1)
+func (m *Manager) startPoller(ctx context.Context) {
+	m.wg.Add(1)
 	go func() {
-		defer f.wg.Done()
-		globTicker := time.NewTicker(f.pollInterval)
+		defer m.wg.Done()
+		globTicker := time.NewTicker(m.pollInterval)
 		defer globTicker.Stop()
 
 		for {
@@ -100,44 +99,43 @@ func (f *Input) startPoller(ctx context.Context) {
 			case <-globTicker.C:
 			}
 
-			f.poll(ctx)
+			m.poll(ctx)
 		}
 	}()
 }
 
 // poll checks all the watched paths for new entries
-func (f *Input) poll(ctx context.Context) {
-
+func (m *Manager) poll(ctx context.Context) {
 	var matches []string
-	if len(f.queuedMatches) > f.maxBatchFiles {
-		matches, f.queuedMatches = f.queuedMatches[:f.maxBatchFiles], f.queuedMatches[f.maxBatchFiles:]
+	if len(m.queuedMatches) > m.maxBatchFiles {
+		matches, m.queuedMatches = m.queuedMatches[:m.maxBatchFiles], m.queuedMatches[m.maxBatchFiles:]
 	} else {
-		if len(f.queuedMatches) > 0 {
-			matches, f.queuedMatches = f.queuedMatches, make([]string, 0)
+		if len(m.queuedMatches) > 0 {
+			matches, m.queuedMatches = m.queuedMatches, make([]string, 0)
 		} else {
 			// Increment the generation on all known readers
 			// This is done here because the next generation is about to start
-			for i := 0; i < len(f.knownFiles); i++ {
-				f.knownFiles[i].generation++
+			for i := 0; i < len(m.knownFiles); i++ {
+				m.knownFiles[i].generation++
 			}
 
 			// Get the list of paths on disk
-			matches = f.finder.FindFiles()
-			if len(matches) > f.maxBatchFiles {
-				matches, f.queuedMatches = matches[:f.maxBatchFiles], matches[f.maxBatchFiles:]
+			matches = m.finder.FindFiles()
+			if len(matches) > m.maxBatchFiles {
+				matches, m.queuedMatches = matches[:m.maxBatchFiles], matches[m.maxBatchFiles:]
 			}
 		}
 	}
 
-	readers := f.makeReaders(matches)
+	readers := m.makeReaders(matches)
 
 	// Any new files that appear should be consumed entirely
-	f.readerFactory.fromBeginning = true
+	m.readerFactory.fromBeginning = true
 
 	// take care of files which disappeared from the pattern since the last poll cycle
 	// this can mean either files which were removed, or rotated into a name not matching the pattern
 	// we do this before reading existing files to ensure we emit older log lines before newer ones
-	f.roller.readLostFiles(ctx, readers)
+	m.roller.readLostFiles(ctx, readers)
 
 	var wg sync.WaitGroup
 	for _, reader := range readers {
@@ -149,29 +147,29 @@ func (f *Input) poll(ctx context.Context) {
 	}
 	wg.Wait()
 
-	f.roller.roll(ctx, readers)
-	f.saveCurrent(readers)
-	f.syncLastPollFiles(ctx)
+	m.roller.roll(ctx, readers)
+	m.saveCurrent(readers)
+	m.syncLastPollFiles(ctx)
 }
 
 // makeReaders takes a list of paths, then creates readers from each of those paths,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (f *Input) makeReaders(filesPaths []string) []*Reader {
+func (m *Manager) makeReaders(filesPaths []string) []*Reader {
 	// Open the files first to minimize the time between listing and opening
 	files := make([]*os.File, 0, len(filesPaths))
 	for _, path := range filesPaths {
-		if _, ok := f.seenPaths[path]; !ok {
-			if f.readerFactory.fromBeginning {
-				f.Infow("Started watching file", "path", path)
+		if _, ok := m.seenPaths[path]; !ok {
+			if m.readerFactory.fromBeginning {
+				m.Infow("Started watching file", "path", path)
 			} else {
-				f.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
+				m.Infow("Started watching file from end. To read preexisting logs, configure the argument 'start_at' to 'beginning'", "path", path)
 			}
-			f.seenPaths[path] = struct{}{}
+			m.seenPaths[path] = struct{}{}
 		}
 		file, err := os.Open(path) // #nosec - operator must read in files defined by user
 		if err != nil {
-			f.Debugf("Failed to open file", zap.Error(err))
+			m.Debugf("Failed to open file", zap.Error(err))
 			continue
 		}
 		files = append(files, file)
@@ -180,9 +178,9 @@ func (f *Input) makeReaders(filesPaths []string) []*Reader {
 	// Get fingerprints for each file
 	fps := make([]*Fingerprint, 0, len(files))
 	for _, file := range files {
-		fp, err := f.readerFactory.newFingerprint(file)
+		fp, err := m.readerFactory.newFingerprint(file)
 		if err != nil {
-			f.Errorw("Failed creating fingerprint", zap.Error(err))
+			m.Errorw("Failed creating fingerprint", zap.Error(err))
 			continue
 		}
 		fps = append(fps, fp)
@@ -194,7 +192,7 @@ OUTER:
 		fp := fps[i]
 		if len(fp.FirstBytes) == 0 {
 			if err := files[i].Close(); err != nil {
-				f.Errorf("problem closing file", "file", files[i].Name())
+				m.Errorf("problem closing file", "file", files[i].Name())
 			}
 			// Empty file, don't read it until we can compare its fingerprint
 			fps = append(fps[:i], fps[i+1:]...)
@@ -207,7 +205,7 @@ OUTER:
 			if fp.StartsWith(fp2) || fp2.StartsWith(fp) {
 				// Exclude
 				if err := files[i].Close(); err != nil {
-					f.Errorf("problem closing file", "file", files[i].Name())
+					m.Errorf("problem closing file", "file", files[i].Name())
 				}
 				fps = append(fps[:i], fps[i+1:]...)
 				files = append(files[:i], files[i+1:]...)
@@ -219,9 +217,9 @@ OUTER:
 
 	readers := make([]*Reader, 0, len(fps))
 	for i := 0; i < len(fps); i++ {
-		reader, err := f.newReader(files[i], fps[i])
+		reader, err := m.newReader(files[i], fps[i])
 		if err != nil {
-			f.Errorw("Failed to create reader", zap.Error(err))
+			m.Errorw("Failed to create reader", zap.Error(err))
 			continue
 		}
 		readers = append(readers, reader)
@@ -233,36 +231,36 @@ OUTER:
 // saveCurrent adds the readers from this polling interval to this list of
 // known files, then increments the generation of all tracked old readers
 // before clearing out readers that have existed for 3 generations.
-func (f *Input) saveCurrent(readers []*Reader) {
+func (m *Manager) saveCurrent(readers []*Reader) {
 	// Add readers from the current, completed poll interval to the list of known files
-	f.knownFiles = append(f.knownFiles, readers...)
+	m.knownFiles = append(m.knownFiles, readers...)
 
 	// Clear out old readers. They are sorted such that they are oldest first,
 	// so we can just find the first reader whose generation is less than our
 	// max, and keep every reader after that
-	for i := 0; i < len(f.knownFiles); i++ {
-		reader := f.knownFiles[i]
+	for i := 0; i < len(m.knownFiles); i++ {
+		reader := m.knownFiles[i]
 		if reader.generation <= 3 {
-			f.knownFiles = f.knownFiles[i:]
+			m.knownFiles = m.knownFiles[i:]
 			break
 		}
 	}
 }
 
-func (f *Input) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
+func (m *Manager) newReader(file *os.File, fp *Fingerprint) (*Reader, error) {
 	// Check if the new path has the same fingerprint as an old path
-	if oldReader, ok := f.findFingerprintMatch(fp); ok {
-		return f.readerFactory.copy(oldReader, file)
+	if oldReader, ok := m.findFingerprintMatch(fp); ok {
+		return m.readerFactory.copy(oldReader, file)
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	return f.readerFactory.newReader(file, fp)
+	return m.readerFactory.newReader(file, fp)
 }
 
-func (f *Input) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
+func (m *Manager) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 	// Iterate backwards to match newest first
-	for i := len(f.knownFiles) - 1; i >= 0; i-- {
-		oldReader := f.knownFiles[i]
+	for i := len(m.knownFiles) - 1; i >= 0; i-- {
+		oldReader := m.knownFiles[i]
 		if fp.StartsWith(oldReader.Fingerprint) {
 			return oldReader, true
 		}
@@ -273,37 +271,37 @@ func (f *Input) findFingerprintMatch(fp *Fingerprint) (*Reader, bool) {
 const knownFilesKey = "knownFiles"
 
 // syncLastPollFiles syncs the most recent set of files to the database
-func (f *Input) syncLastPollFiles(ctx context.Context) {
+func (m *Manager) syncLastPollFiles(ctx context.Context) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
 	// Encode the number of known files
-	if err := enc.Encode(len(f.knownFiles)); err != nil {
-		f.Errorw("Failed to encode known files", zap.Error(err))
+	if err := enc.Encode(len(m.knownFiles)); err != nil {
+		m.Errorw("Failed to encode known files", zap.Error(err))
 		return
 	}
 
 	// Encode each known file
-	for _, fileReader := range f.knownFiles {
+	for _, fileReader := range m.knownFiles {
 		if err := enc.Encode(fileReader); err != nil {
-			f.Errorw("Failed to encode known files", zap.Error(err))
+			m.Errorw("Failed to encode known files", zap.Error(err))
 		}
 	}
 
-	if err := f.persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
-		f.Errorw("Failed to sync to database", zap.Error(err))
+	if err := m.persister.Set(ctx, knownFilesKey, buf.Bytes()); err != nil {
+		m.Errorw("Failed to sync to database", zap.Error(err))
 	}
 }
 
 // syncLastPollFiles loads the most recent set of files to the database
-func (f *Input) loadLastPollFiles(ctx context.Context) error {
-	encoded, err := f.persister.Get(ctx, knownFilesKey)
+func (m *Manager) loadLastPollFiles(ctx context.Context) error {
+	encoded, err := m.persister.Get(ctx, knownFilesKey)
 	if err != nil {
 		return err
 	}
 
 	if encoded == nil {
-		f.knownFiles = make([]*Reader, 0, 10)
+		m.knownFiles = make([]*Reader, 0, 10)
 		return nil
 	}
 
@@ -316,23 +314,23 @@ func (f *Input) loadLastPollFiles(ctx context.Context) error {
 	}
 
 	if knownFileCount > 0 {
-		f.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
-		f.readerFactory.fromBeginning = true
+		m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+		m.readerFactory.fromBeginning = true
 	}
 
 	// Decode each of the known files
-	f.knownFiles = make([]*Reader, 0, knownFileCount)
+	m.knownFiles = make([]*Reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		// Only the offset, fingerprint, and splitter
 		// will be used before this reader is discarded
-		unsafeReader, err := f.readerFactory.unsafeReader()
+		unsafeReader, err := m.readerFactory.unsafeReader()
 		if err != nil {
 			return err
 		}
 		if err = dec.Decode(unsafeReader); err != nil {
 			return err
 		}
-		f.knownFiles = append(f.knownFiles, unsafeReader)
+		m.knownFiles = append(m.knownFiles, unsafeReader)
 	}
 
 	return nil

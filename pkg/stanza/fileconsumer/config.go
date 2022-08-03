@@ -61,7 +61,7 @@ type Config struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -116,7 +116,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Input, error) 
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	return &Input{
+	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: readerFactory{
