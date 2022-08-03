@@ -125,6 +125,7 @@ func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetri
 	}
 
 	dp.SetZeroCount(agg.ZeroCount())
+	dp.SetScale(agg.Scale())
 
 	for _, half := range []struct {
 		inFunc  func() *structure.Buckets

@@ -20,8 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 )
@@ -1014,16 +1016,34 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 	timeNowFunc = func() time.Time {
 		return time.Unix(711, 0)
 	}
-	// @@@
+	// It is easiest to validate data in tests such as this by limiting the
+	// histogram size to a small number and then setting the maximum range
+	// to test at scale 0, which is easy to reason about.  The tests use
+	// max size 10, so tests w/ a range of 2**10 appear below.
+
+	// Note: The structure here uses the mapping functions from
+	// OTel-Go sdk/metric/aggregator/exponential/mapping, which
+	// are the state of the OTel specification before the
+	// inclusivity adjustment here:
+	// https://github.com/open-telemetry/opentelemetry-specification/pull/2633,
+	// Tests that use exact powers-of-two will shift by one after
+	// this change which is the reason we avoid using exact powers
+	// of two (or anything near an exact power of two).
 
 	normalMapping := []TimerHistogramMapping{
 		{
 			StatsdType:   "timer",
 			ObserverType: "histogram",
+			Histogram: HistogramConfig{
+				MaxSize: 10,
+			},
 		},
 		{
 			StatsdType:   "histogram",
 			ObserverType: "histogram",
+			Histogram: HistogramConfig{
+				MaxSize: 10,
+			},
 		},
 	}
 
@@ -1051,36 +1071,154 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 			name: "basic",
 			input: []string{
 				"expohisto:0|ms|#mykey:myvalue",
-				"expohisto:1|ms|#mykey:myvalue",
-				"expohisto:128|ms|#mykey:myvalue",
-				"expohisto:512|ms|#mykey:myvalue",
-				"expohisto:1024|ms|#mykey:myvalue",
+				"expohisto:1.5|ms|#mykey:myvalue",
+				"expohisto:2.5|ms|#mykey:myvalue",
+				"expohisto:4.5|ms|#mykey:myvalue",
+				"expohisto:8.5|ms|#mykey:myvalue",
+				"expohisto:16.5|ms|#mykey:myvalue",
+				"expohisto:32.5|ms|#mykey:myvalue",
+				"expohisto:64.5|ms|#mykey:myvalue",
+				"expohisto:128.5|ms|#mykey:myvalue",
+				"expohisto:256.5|ms|#mykey:myvalue",
+				"expohisto:512.5|ms|#mykey:myvalue",
 			},
 			expected: func() pmetric.Metrics {
 				data, dp := newPoint()
-				dp.SetCount(5)
-				dp.SetSum(1765)
+				dp.SetCount(11)
+				dp.SetSum(1028)
 				dp.SetZeroCount(1)
-				dp.Positive().SetOffset(-1)
-				dp.Positive().SetBucketCounts(pmetric.NewImmutableUInt64Slice([]uint64{}))
+				dp.SetScale(0)
+				dp.Positive().SetOffset(0)
+				dp.Positive().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+					}))
 				return data
 			}(),
 			mapping: normalMapping,
 		},
 		{
-			name: "negative_only",
+			name: "negative",
 			input: []string{
-				"expohisto:-0|h|#mykey:myvalue",
-				"expohisto:-1|h|#mykey:myvalue",
-				"expohisto:-100|h|#mykey:myvalue",
-				"expohisto:-600|h|#mykey:myvalue",
-				"expohisto:-1000|h|#mykey:myvalue",
+				"expohisto:-0|ms|#mykey:myvalue",
+				"expohisto:-1.5|ms|#mykey:myvalue",
+				"expohisto:-2.5|ms|#mykey:myvalue",
+				"expohisto:-4.5|ms|#mykey:myvalue",
+				"expohisto:-8.5|ms|#mykey:myvalue",
+				"expohisto:-16.5|ms|#mykey:myvalue",
+				"expohisto:-32.5|ms|#mykey:myvalue",
+				"expohisto:-64.5|ms|#mykey:myvalue",
+				"expohisto:-128.5|ms|#mykey:myvalue",
+				"expohisto:-256.5|ms|#mykey:myvalue",
+				"expohisto:-512.5|ms|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(11)
+				dp.SetSum(-1028)
+				dp.SetZeroCount(1)
+				dp.SetScale(0)
+				dp.Negative().SetOffset(0)
+				dp.Negative().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+					}))
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "halffull",
+			input: []string{
+				"expohisto:1.5|ms|#mykey:myvalue",
+				"expohisto:4.5|ms|#mykey:myvalue",
+				"expohisto:16.5|ms|#mykey:myvalue",
+				"expohisto:64.5|ms|#mykey:myvalue",
+				"expohisto:512.5|ms|#mykey:myvalue",
 			},
 			expected: func() pmetric.Metrics {
 				data, dp := newPoint()
 				dp.SetCount(5)
-				dp.SetSum(-1701)
+				dp.SetSum(599.5)
+				dp.SetZeroCount(0)
+				dp.SetScale(0)
+				dp.Positive().SetOffset(0)
+				dp.Positive().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						1, 0, 1, 0, 1, 0, 1, 0, 0, 1,
+					}))
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "one_each",
+			input: []string{
+				"expohisto:1|h|#mykey:myvalue",
+				"expohisto:0|h|#mykey:myvalue",
+				"expohisto:-1|h|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(3)
+				dp.SetSum(0)
 				dp.SetZeroCount(1)
+				dp.SetScale(logarithm.MaxScale)
+				dp.Positive().SetOffset(0)
+				dp.Negative().SetOffset(0)
+				dp.Positive().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						1,
+					}))
+				dp.Negative().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						1,
+					}))
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "all_zeros",
+			input: []string{
+				"expohisto:0|h|#mykey:myvalue",
+				"expohisto:0|h|#mykey:myvalue",
+				"expohisto:0|h|#mykey:myvalue",
+				"expohisto:0|h|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(4)
+				dp.SetSum(0)
+				dp.SetZeroCount(4)
+				dp.SetScale(0)
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "sampled",
+			input: []string{
+				"expohisto:1|h|@0.125|#mykey:myvalue",
+				"expohisto:0|h|@0.25|#mykey:myvalue",
+				"expohisto:-1|h|@0.5|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(14)
+				dp.SetSum(6)
+				dp.SetZeroCount(4)
+				dp.SetScale(logarithm.MaxScale)
+				dp.Positive().SetOffset(0)
+				dp.Negative().SetOffset(0)
+				dp.Positive().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						8, // 1 / 0.125
+					}))
+				dp.Negative().SetBucketCounts(
+					pcommon.NewImmutableUInt64Slice([]uint64{
+						2, // 1 / 0.5
+					}))
 				return data
 			}(),
 			mapping: normalMapping,

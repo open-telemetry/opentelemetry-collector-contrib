@@ -252,7 +252,10 @@ func diffExponentialHistogramPtBuckets(
 	diffs = diff(diffs, expected.Offset(), actual.Offset(), "ExponentialHistogramDataPoint Buckets Offset")
 	exC := expected.BucketCounts()
 	acC := actual.BucketCounts()
-	diffs = diff(diffs, exC.Len(), acC.Len(), "ExponentialHistogramDataPoint Buckets Len")
+	diffs, mod := diffValues(diffs, exC.Len(), acC.Len(), "ExponentialHistogramDataPoint Buckets Len")
+	if mod {
+		return diffs
+	}
 	for i := 0; i < exC.Len(); i++ {
 		diffs = diff(diffs, exC.At(i), acC.At(i), fmt.Sprintf("ExponentialHistogramDataPoint Buckets Count[%d]", i))
 	}

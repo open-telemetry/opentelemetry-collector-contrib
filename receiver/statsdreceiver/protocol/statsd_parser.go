@@ -59,13 +59,13 @@ const (
 )
 
 type TimerHistogramMapping struct {
-	StatsdType   TypeName         `mapstructure:"statsd_type"`
-	ObserverType ObserverType     `mapstructure:"observer_type"`
-	Histogram    HistogramOptions `mapstructure:"histogram"`
+	StatsdType   TypeName        `mapstructure:"statsd_type"`
+	ObserverType ObserverType    `mapstructure:"observer_type"`
+	Histogram    HistogramConfig `mapstructure:"histogram"`
 }
 
-type HistogramOptions struct {
-	MaxSize int `mapstructure:"max_size"`
+type HistogramConfig struct {
+	MaxSize int32 `mapstructure:"max_size"`
 }
 
 type ObserverCategory struct {
@@ -156,16 +156,16 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 		switch eachMap.StatsdType {
 		case HistogramTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
-			p.histogramEvents.histogramConfig = expoHistogramOptions(eachMap.Histogram)
+			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
-			p.timerEvents.histogramConfig = expoHistogramOptions(eachMap.Histogram)
+			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
 		}
 	}
 	return nil
 }
 
-func expoHistogramOptions(opts HistogramOptions) structure.Config {
+func expoHistogramConfig(opts HistogramConfig) structure.Config {
 	var r []structure.Option
 	if opts.MaxSize >= structure.MinSize {
 		r = append(r, structure.WithMaxSize(int32(opts.MaxSize)))
