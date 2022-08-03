@@ -94,6 +94,23 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
+func TestScraperWithQueryMultipleDatabase(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "open", "telemetry"})
+	cfg := createDefaultConfig().(*Config)
+
+	cfg.CollectQueryPerformance = true
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_with_query.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
 type mockClientFactory struct{ mock.Mock }
 type mockClient struct{ mock.Mock }
 
@@ -193,7 +210,8 @@ func (m *mockClientFactory) initMocks(databases []string) {
 
 func (m *mockClient) initMocks(database string, databases []string, index int) {
 	m.On("Close").Return(nil)
-	m.On("getVersion", mock.Anything).Return(version.NewVersion("10.21"))
+	mockVersion, err := version.NewVersion("10.21")
+	m.On("getVersion", mock.Anything).Return(mockVersion, err)
 
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
@@ -250,6 +268,21 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				replayLag: int64(300),
 				writeLag:  int64(421),
 				client:    "198.64.23.1",
+			},
+		}, nil)
+		m.On("getQueryStats", mock.Anything, *mockVersion).Return([]QueryStat{
+			{
+				query:               "SELECT * FROM pg_stat_database;",
+				sharedBlocksRead:    int64(34),
+				sharedBlocksWritten: int64(164),
+				sharedBlocksDirtied: int64(34),
+				localBlocksRead:     int64(37),
+				localBlocksWritten:  int64(4),
+				localBlocksDirtied:  int64(15),
+				tempBlocksRead:      int64(54),
+				tempBlocksWritten:   int64(32),
+				totalExecTimeMs:     4009,
+				meanExecTimeMs:      56.1,
 			},
 		}, nil)
 	} else {

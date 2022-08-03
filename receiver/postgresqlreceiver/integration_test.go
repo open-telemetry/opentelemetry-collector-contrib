@@ -145,13 +145,14 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			postgresVersion: pg10,
 			expectedFile:    filepath.Join("testdata", "integration", "expected_with_query_stats.json"),
 			// ignore time dependent query metric attribute
-			scraperOptions: []scrapertest.CompareOption{scrapertest.IgnoreMetricAttributeValue(
-				"query",
-				"postgresql.query.count",
-				"postgresql.query.block.count",
-				"postgresql.query.duration.total",
-				"postgresql.query.duration.average",
-			)},
+			scraperOptions: []scrapertest.CompareOption{
+				scrapertest.IgnoreMetricAttributeValue(
+					"query",
+					"postgresql.query.count",
+					"postgresql.query.block.count",
+					"postgresql.query.duration.total",
+					"postgresql.query.duration.average",
+				)},
 		},
 		{
 			name: "single_db_pg14",
