@@ -25,6 +25,9 @@ import (
 
 const (
 	componentType config.Type = "solace"
+	// The stability level of the receiver.
+	stability = component.StabilityLevelInDevelopment
+
 	// default value for max unaked messages
 	defaultMaxUnaked uint32 = 1000
 	// default value for host
@@ -36,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		componentType,
 		createDefaultConfig,
-		component.WithTracesReceiver(createTracesReceiver),
+		component.WithTracesReceiverAndStabilityLevel(createTracesReceiver, stability),
 	)
 }
 

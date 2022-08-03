@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 )
@@ -91,13 +90,12 @@ func (e *EcsInfo) GetClusterName() string {
 type ecsInfoOption func(*EcsInfo)
 
 // New creates a k8sApiServer which can generate cluster-level metrics
-func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
-
+func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, host component.Host, settings component.TelemetrySettings, options ...ecsInfoOption) (*EcsInfo, error) {
 	setting := confighttp.HTTPClientSettings{
 		Timeout: defaultTimeout,
 	}
 
-	client, err := setting.ToClient(map[config.ComponentID]component.Extension{}, settings)
+	client, err := setting.ToClientWithHost(host, settings)
 
 	if err != nil {
 		settings.Logger.Warn("Failed to create a http client for ECS info!")

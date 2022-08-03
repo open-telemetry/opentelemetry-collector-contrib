@@ -16,7 +16,6 @@
 //go:build !windows
 // +build !windows
 
-// nolint:errcheck
 package components
 
 import (
@@ -66,7 +65,7 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() config.Extension {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
-				cfg.TCPAddr.Endpoint = endpoint
+				cfg.Endpoint = endpoint
 				return cfg
 			},
 		},
