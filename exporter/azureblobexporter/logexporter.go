@@ -22,16 +22,17 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/model/otlp"
 	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
 
 type logExporter struct {
 	blobClient    BlobClient
 	logger        *zap.Logger
-	logsMarshaler pdata.LogsMarshaler
+	logsMarshaler plog.LogsMarshaler
 }
 
-func (ex *logExporter) onLogData(context context.Context, logData pdata.Logs) error {
+func (ex *logExporter) onLogData(context context.Context, logData plog.Logs) error {
 	buf, err := ex.logsMarshaler.MarshalLogs(logData)
 	if err != nil {
 		ex.logger.Error(err.Error())
