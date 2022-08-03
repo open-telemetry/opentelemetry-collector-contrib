@@ -61,6 +61,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		conventions.AttributeCloudRegion:    "location",
 		conventions.AttributeHostID:         "vmID",
 		conventions.AttributeCloudAccountID: "subscriptionID",
+		"azure.vm.name":                     "name",
 		"azure.vm.size":                     "vmSize",
 		"azure.resourcegroup.name":          "resourceGroup",
 		"azure.vm.scaleset.name":            "myScaleset",
