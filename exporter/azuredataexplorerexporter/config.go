@@ -1,4 +1,4 @@
-// Copyright OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 )
 
-// Config defines configuration for Azure Monitor
+// Config defines configuration for Azure Data Explorer Exporter
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	ClusterURI              string `mapstructure:"cluster_uri"`
@@ -39,7 +39,7 @@ type Config struct {
 	IngestionType           string `mapstructure:"ingestion_type"`
 }
 
-// Validate checks if the exporter configuration is valid. TODO tests for this one
+// Validate checks if the exporter configuration is valid
 func (adxCfg *Config) Validate() error {
 	if adxCfg == nil {
 		return errors.New("ADX config is nil / not provided")

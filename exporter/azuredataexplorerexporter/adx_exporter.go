@@ -33,10 +33,10 @@ import (
 
 // adxDataProducer uses the ADX client to perform ingestion
 type adxDataProducer struct {
-	client        *kusto.Client       // client for logs , traces and metrics
-	ingestor      ingest.Ingestor     // ingestion for  logs, traces and metrics
-	ingestOptions []ingest.FileOption // Options for the ingestion
-	logger        *zap.Logger         // Loggers for tracing the flow
+	client        *kusto.Client       // client for logs, traces and metrics
+	ingestor      ingest.Ingestor     // ingestion for logs, traces and metrics
+	ingestOptions []ingest.FileOption // options for the ingestion
+	logger        *zap.Logger         // logger for tracing the flow
 }
 
 const nextline = "\n"
@@ -48,11 +48,11 @@ const (
 	scopeversion = "scope.version"
 )
 
-// given the full metrics , extract each metric , resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
+// given the full metrics, extract each metric, resource attributes and scope attributes. Individual metric mapping is sent on to metricdata mapping
 func (e *adxDataProducer) metricsDataPusher(ctx context.Context, metrics pmetric.Metrics) error {
 	transformedAdxMetrics := rawMetricsToAdxMetrics(ctx, metrics, e.logger)
 	metricsBuffer := make([]string, len(transformedAdxMetrics))
-	// Since the transform succeeded ,  using the option for ingestion ingest the data into ADX
+	// since the transform succeeded, using the option for ingestion ingest the data into ADX
 	for idx, tm := range transformedAdxMetrics {
 		adxMetricJSONString, err := jsoniter.MarshalToString(tm)
 		if err != nil {
@@ -142,11 +142,9 @@ func (e *adxDataProducer) Close(context.Context) error {
 	var err error
 
 	err = e.ingestor.Close()
-	err2 := e.client.Close()
-	if err == nil {
-		err = err2
-	} else {
-		err = kustoerrors.GetCombinedError(err, err2)
+
+	if clientErr := e.client.Close(); clientErr != nil {
+		err = kustoerrors.GetCombinedError(err, clientErr)
 	}
 	if err != nil {
 		e.logger.Warn("Error closing connections", zap.Error(err))
@@ -156,9 +154,8 @@ func (e *adxDataProducer) Close(context.Context) error {
 	return err
 }
 
-/*
-Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
-*/
+// Create an exporter. The exporter instantiates a client , creates the ingestor and then sends data through it
+
 func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*adxDataProducer, error) {
 	tableName, err := getTableName(config, telemetryDataType)
 	if err != nil {
@@ -200,11 +197,7 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int) (*ad
 	}, nil
 }
 
-/**
-Common functions that are used by all the 3 parts of OTEL , namely Traces , Logs and Metrics
-*/
-
-/* Fetchs the coresponding ingetionRef if the mapping is provided*/
+// Fetches the corresponding ingestionRef if the mapping is provided
 func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 	switch telemetryDataType {
 	case metricsType:
@@ -232,7 +225,7 @@ func buildAdxClient(config *Config) (*kusto.Client, error) {
 	return client, err
 }
 
-// Depending on the table , create separate ingestors
+// Depending on the table, create separate ingestors
 func createManagedStreamingIngestor(config *Config, adxclient *kusto.Client, tablename string) (*ingest.Managed, error) {
 	ingestor, err := ingest.NewManaged(adxclient, config.Database, tablename)
 	return ingestor, err

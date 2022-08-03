@@ -1,5 +1,11 @@
 # Azure Data Explorer Exporter
 
+| Status                   |           |
+| ------------------------ | --------- |
+| Stability                | [alpha]   |
+| Supported pipeline types | logs,metrics,traces  |
+| Distributions            | [contrib] |
+
 This exporter sends metrics, logs and trace data to [Azure Data Explorer](https://azure.microsoft.com/services/data-explorer/).
 
 ## Configuration
@@ -12,19 +18,22 @@ The following settings are required:
 - `tenant_id` (no default): The tenant id where the application_id is referenced from.
 
 The following settings can be optionally configured and have default values:
-> Note that the database , tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
+> Note that the database tables are expected to be created upfront before the exporter is in operation , the definition of these are in the section [Database and Table definition scripts](#database-and-table-definition-scripts)
+
 - `db_name` (default = "oteldb"): The ADX database where the tables are present to ingest the data.
 - `metrics_table_name` (default = OTELMetrics): The target table in the database `db_name` that stores exported metric data.
 - `logs_table_name` (default = OTELLogs): The target table in the database `db_name` that stores exported logs data.
-- `traces_table_name` (default = OTELLogs): The target table in the database `db_name` that stores exported traces data.
+- `traces_table_name` (default = OTELTraces): The target table in the database `db_name` that stores exported traces data.
 
   Optionally the following table mappings can be specified if the data needs to be mapped to a different table on ADX. This uses json [table mapping](https://docs.microsoft.com/azure/data-explorer/kusto/management/mappings#json-mapping) that can be used to map [attributes](#attribute-mapping) to target tables
-- `metrics_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`metrics_table_name` 
+- `metrics_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`metrics_table_name`
 - `logs_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`logs_table_name`
 - `traces_table_json_mapping` (optional, no default): The table mapping name to be used for the table `db_name`.`traces_table_name`
 - `ingestion_type` (possible values=`queued` / `managed`,  default = queued): ADX ingest can happen in managed [streaming](https://docs.microsoft.com/azure/data-explorer/kusto/management/streamingingestionpolicy) or [queued](https://docs.microsoft.com/azure/data-explorer/kusto/management/batchingpolicy) modes.
-> Note: [Streaming ingestion](https://docs.microsoft.com/azure/data-explorer/ingest-data-streaming?tabs=azure-portal%2Ccsharp) has to be enabled on ADX [configure the ADX cluster] in case of `streaming` option. Refer the query below to check if streaming is enabled 
-```
+
+> Note: [Streaming ingestion](https://docs.microsoft.com/azure/data-explorer/ingest-data-streaming?tabs=azure-portal%2Ccsharp) has to be enabled on ADX [configure the ADX cluster] in case of `streaming` option. Refer the query below to check if streaming is enabled
+
+```kql
 .show database <DB-Name> policy streamingingestion
 ```
 
@@ -70,20 +79,19 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | TraceId                     | A valid trace identifier is a 16-byte array with at least one non-zero byte.                   |
 | SpanId                    | A valid span identifier is an 8-byte array with at least one non-zero byte.                      |
 | ParentId                    | A parent spanId, for the current span                                                          |
-| SpanName                    | The span name                                                                                  | 
+| SpanName                    | The span name                                                                                  |
 | SpanStatus             | [Status](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span. |
 | SpanKind                   | [SpanKind](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind) describes the relationship between the Span, its parents, and its children in a Trace |
 | StartTime                   | A start timestamp                                                                               |
 | EndTime                   | An end timestamp                                                                                  |
 | TraceAttributes              | Custom metric [attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) set from the application. Also contains the [instrumentation scope](https://opentelemetry.io/docs/reference/specification/common/#attribute) name and version  |
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                                                                   |
-| Events                   | A list of timestamped [ Events](https://opentelemetry.io/docs/reference/specification/trace/api/#add-events) |
+| Events                   | A list of timestamped [Events](https://opentelemetry.io/docs/reference/specification/trace/api/#add-events) |
 | Links                   | A list of [Links](https://opentelemetry.io/docs/reference/specification/trace/api/#specifying-links) to other Spans |
-
 
 ### Metrics
 
-| ADX Table column              | Description / OpenTelemetry attribute                             
+| ADX Table column              | Description / OpenTelemetry attribute
 | ----------------------------- |---------------------------------------------------------------------------------------------------|
 | Timestamp                     | The timestamp of the datapoint                                                                    |
 | MetricName                    | The name of the datapoint                                                                         |
@@ -97,7 +105,7 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 
 ### Logs
 
-| ADX Table column              | Description / OpenTelemetry attribute                 |              
+| ADX Table column              | Description / OpenTelemetry attribute                 |
 | ----------------------------- |------------------------------------------------------ |
 | Timestamp                     | The timestamp of the datapoint                        |
 | ObservedTimestamp                    | Time when the event was observed.              |
@@ -108,7 +116,6 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | Body                          | The body of the log record.                           |
 | LogsAttributes              | Custom metric [attributes](https://opentelemetry.io/docs/reference/specification/common/#attribute) set from the application. Also contains the [instrumentation scope](https://opentelemetry.io/docs/reference/specification/common/#attribute) name and version  |
 | ResourceAttributes            | The resource attributes JSON map as specified in open telemetry [resource semantics](https://opentelemetry.io/docs/reference/specification/resource/semantic_conventions/)                                           |
-
 
 ### Database and Table definition scripts
 
@@ -125,6 +132,7 @@ The following tables need to be created in the database specified in the configu
 .alter table <Table-Name> policy streamingingestion enable
 
 ```
+
 ### Optional configurations/Enhancements suggestions
 
 - Using update policies , the collected data can further be processed as per application need. The following is an example where histogram metrics are exported to a histo specific table (buckets and aggregates)

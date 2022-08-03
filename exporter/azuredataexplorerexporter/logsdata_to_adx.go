@@ -1,4 +1,4 @@
-// Copyright 2020, OpenTelemetry Authors
+// Copyright The OpenTelemetry Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,10 +33,7 @@ type AdxLog struct {
 	LogsAttributes     map[string]interface{} // JSON attributes that can then be parsed.
 }
 
-/*
-Convert the plog to the type ADXLog, this matches the scheme in the Log table in the database
-*/
-
+// Convert the plog to the type ADXLog, this matches the scheme in the Log table in the database
 func mapToAdxLog(resource pcommon.Resource, scope pcommon.InstrumentationScope, logData plog.LogRecord, _ *zap.Logger) *AdxLog {
 
 	logAttrib := logData.Attributes().AsRaw()
