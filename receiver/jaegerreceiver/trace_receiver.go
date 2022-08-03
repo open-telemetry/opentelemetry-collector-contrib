@@ -23,21 +23,17 @@ import (
 	"mime"
 	"net/http"
 	"sync"
-	"time"
 
 	apacheThrift "github.com/apache/thrift/lib/go/thrift"
 	"github.com/gorilla/mux"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/configmanager"
-	jSamplingConfig "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/httpserver"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/processors"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers"
 	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
-	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/model"
 	"github.com/jaegertracing/jaeger/pkg/metrics"
-	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger/thrift-gen/baggage"
@@ -51,7 +47,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
@@ -63,12 +58,9 @@ type configuration struct {
 	CollectorHTTPSettings       confighttp.HTTPServerSettings
 	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
 
-	AgentCompactThrift                       ProtocolUDP
-	AgentBinaryThrift                        ProtocolUDP
-	AgentHTTPEndpoint                        string
-	RemoteSamplingClientSettings             configgrpc.GRPCClientSettings
-	RemoteSamplingStrategyFile               string
-	RemoteSamplingStrategyFileReloadInterval time.Duration
+	AgentCompactThrift ProtocolUDP
+	AgentBinaryThrift  ProtocolUDP
+	AgentHTTPEndpoint  string
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Jaeger.
@@ -82,9 +74,8 @@ type jReceiver struct {
 	grpc            *grpc.Server
 	collectorServer *http.Server
 
-	agentSamplingManager *jSamplingConfig.SamplingManager
-	agentProcessors      []processors.Processor
-	agentServer          *http.Server
+	agentProcessors []processors.Processor
+	agentServer     *http.Server
 
 	goroutines sync.WaitGroup
 
@@ -183,7 +174,19 @@ func consumeTraces(ctx context.Context, batch *jaeger.Batch, consumer consumer.T
 
 var _ agent.Agent = (*agentHandler)(nil)
 var _ api_v2.CollectorServiceServer = (*jReceiver)(nil)
-var _ configmanager.ClientConfigManager = (*jReceiver)(nil)
+var _ configmanager.ClientConfigManager = (*notImplementedConfigManager)(nil)
+
+var errNotImplemented = fmt.Errorf("not implemented")
+
+type notImplementedConfigManager struct{}
+
+func (notImplementedConfigManager) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
+	return nil, errNotImplemented
+}
+
+func (notImplementedConfigManager) GetBaggageRestrictions(ctx context.Context, serviceName string) ([]*baggage.BaggageRestriction, error) {
+	return nil, errNotImplemented
+}
 
 type agentHandler struct {
 	nextConsumer consumer.Traces
@@ -202,21 +205,6 @@ func (h *agentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) error
 	numSpans, err := consumeTraces(ctx, batch, h.nextConsumer)
 	h.obsrecv.EndTracesOp(ctx, thriftFormat, numSpans, err)
 	return err
-}
-
-func (jr *jReceiver) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	return jr.agentSamplingManager.GetSamplingStrategy(ctx, serviceName)
-}
-
-func (jr *jReceiver) GetBaggageRestrictions(ctx context.Context, serviceName string) ([]*baggage.BaggageRestriction, error) {
-	br, err := jr.agentSamplingManager.GetBaggageRestrictions(ctx, serviceName)
-	if err != nil {
-		// Baggage restrictions are not yet implemented - refer to - https://github.com/jaegertracing/jaeger/issues/373
-		// As of today, GetBaggageRestrictions() always returns an error.
-		// However, we `return nil, nil` here in order to serve a valid `200 OK` response.
-		return nil, nil
-	}
-	return br, nil
 }
 
 func (jr *jReceiver) PostSpans(ctx context.Context, r *api_v2.PostSpansRequest) (*api_v2.PostSpansResponse, error) {
@@ -283,25 +271,8 @@ func (jr *jReceiver) startAgent(host component.Host) error {
 		}(processor)
 	}
 
-	// Start upstream grpc client before serving sampling endpoints over HTTP
-	if jr.config.RemoteSamplingClientSettings.Endpoint != "" {
-		grpcOpts, err := jr.config.RemoteSamplingClientSettings.ToDialOptions(host, jr.settings.TelemetrySettings)
-		if err != nil {
-			jr.settings.Logger.Error("Error creating grpc dial options for remote sampling endpoint", zap.Error(err))
-			return err
-		}
-		jr.config.RemoteSamplingClientSettings.SanitizedEndpoint()
-		conn, err := grpc.Dial(jr.config.RemoteSamplingClientSettings.Endpoint, grpcOpts...)
-		if err != nil {
-			jr.settings.Logger.Error("Error creating grpc connection to jaeger remote sampling endpoint", zap.String("endpoint", jr.config.RemoteSamplingClientSettings.Endpoint))
-			return err
-		}
-
-		jr.agentSamplingManager = jSamplingConfig.NewConfigManager(conn)
-	}
-
 	if jr.config.AgentHTTPEndpoint != "" {
-		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, jr, metrics.NullFactory, jr.settings.Logger)
+		jr.agentServer = httpserver.NewHTTPServer(jr.config.AgentHTTPEndpoint, &notImplementedConfigManager{}, metrics.NullFactory, jr.settings.Logger)
 
 		jr.goroutines.Add(1)
 		go func() {
@@ -433,16 +404,6 @@ func (jr *jReceiver) startCollector(host component.Host) error {
 		}
 
 		api_v2.RegisterCollectorServiceServer(jr.grpc, jr)
-
-		// init and register sampling strategy store
-		ss, err := staticStrategyStore.NewStrategyStore(staticStrategyStore.Options{
-			StrategiesFile: jr.config.RemoteSamplingStrategyFile,
-			ReloadInterval: jr.config.RemoteSamplingStrategyFileReloadInterval,
-		}, jr.settings.Logger)
-		if err != nil {
-			return fmt.Errorf("failed to create collector strategy store: %w", err)
-		}
-		api_v2.RegisterSamplingManagerServer(jr.grpc, collectorSampling.NewGRPCHandler(ss))
 
 		jr.goroutines.Add(1)
 		go func() {
