@@ -30,19 +30,6 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected pmetric.Metrics, actual pmetric.Metrics) []*MetricDiff {
-	expectedRMSlice := expected.ResourceMetrics()
-	actualRMSlice := actual.ResourceMetrics()
-	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
-}
-
-func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
-	for i := 0; i < s.Len(); i++ {
-		out = append(out, s.At(i))
-	}
-	return out
-}
-
 func TestDifferentValues(t *testing.T) {
 	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()

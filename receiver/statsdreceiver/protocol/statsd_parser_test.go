@@ -22,6 +22,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -902,8 +904,8 @@ func TestStatsDParser_Initialize(t *testing.T) {
 		attrs:      *attribute.EmptySet()}
 	p.gauges[teststatsdDMetricdescription] = pmetric.ScopeMetrics{}
 	assert.Equal(t, 1, len(p.gauges))
-	assert.Equal(t, GaugeObserver, p.observeTimer)
-	assert.Equal(t, GaugeObserver, p.observeHistogram)
+	assert.Equal(t, GaugeObserver, p.timerEvents.method)
+	assert.Equal(t, GaugeObserver, p.histogramEvents.method)
 }
 
 func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
@@ -1006,4 +1008,95 @@ func TestStatsDParser_Mappings(t *testing.T) {
 func TestTimeNowFunc(t *testing.T) {
 	timeNow := timeNowFunc()
 	assert.NotNil(t, timeNow)
+}
+
+func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+	// @@@
+
+	normalMapping := []TimerHistogramMapping{
+		{
+			StatsdType:   "timer",
+			ObserverType: "histogram",
+		},
+		{
+			StatsdType:   "histogram",
+			ObserverType: "histogram",
+		},
+	}
+
+	newPoint := func() (pmetric.Metrics, pmetric.ExponentialHistogramDataPoint) {
+		data := pmetric.NewMetrics()
+		ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		m := ilm.Metrics().AppendEmpty()
+		m.SetName("expohisto")
+		m.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+		ep := m.ExponentialHistogram()
+		ep.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		dp := ep.DataPoints().AppendEmpty()
+
+		dp.Attributes().InsertString("mykey", "myvalue")
+		return data, dp
+	}
+
+	tests := []struct {
+		name     string
+		input    []string
+		expected pmetric.Metrics
+		mapping  []TimerHistogramMapping
+	}{
+		{
+			name: "basic",
+			input: []string{
+				"expohisto:0|ms|#mykey:myvalue",
+				"expohisto:1|ms|#mykey:myvalue",
+				"expohisto:128|ms|#mykey:myvalue",
+				"expohisto:512|ms|#mykey:myvalue",
+				"expohisto:1024|ms|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(5)
+				dp.SetSum(1765)
+				dp.SetZeroCount(1)
+				dp.Positive().SetOffset(-1)
+				dp.Positive().SetBucketCounts(pmetric.NewImmutableUInt64Slice([]uint64{}))
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+		{
+			name: "negative_only",
+			input: []string{
+				"expohisto:-0|h|#mykey:myvalue",
+				"expohisto:-1|h|#mykey:myvalue",
+				"expohisto:-100|h|#mykey:myvalue",
+				"expohisto:-600|h|#mykey:myvalue",
+				"expohisto:-1000|h|#mykey:myvalue",
+			},
+			expected: func() pmetric.Metrics {
+				data, dp := newPoint()
+				dp.SetCount(5)
+				dp.SetSum(-1701)
+				dp.SetZeroCount(1)
+				return data
+			}(),
+			mapping: normalMapping,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			p := &StatsDParser{}
+			p.Initialize(false, false, tt.mapping)
+			for _, line := range tt.input {
+				err = p.Aggregate(line)
+				assert.NoError(t, err)
+			}
+			var nodiffs []*metrics.MetricDiff
+			assert.Equal(t, nodiffs, metrics.DiffMetrics(nodiffs, tt.expected, p.GetMetrics()))
+		})
+	}
 }
