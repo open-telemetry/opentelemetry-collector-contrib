@@ -91,24 +91,14 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			mr.WaitAllOnMetricsProcessedCalls()
 
 			// Keep trying until we're timed out or got a result
-			timeout := time.After(10 * time.Second)
-			ticker := time.Tick(500 * time.Millisecond)
-			for {
-				stop := false
-				select {
-				// Got a timeout!
-				case <-timeout:
-					stop = true
-				// Got a tick
-				case <-ticker:
-					if len(mc.AllMetrics()) > 0 {
-						stop = true
-					}
+			assert.Eventually(t, func() bool {
+				mdd := mc.AllMetrics()
+				if len(mdd) > 0 {
+					return true
 				}
-				if stop {
-					break
-				}
-			}
+				return false
+			}, 10*time.Second, 500*time.Millisecond)
+
 			err = svr.Close()
 			assert.NoError(t, err)
 

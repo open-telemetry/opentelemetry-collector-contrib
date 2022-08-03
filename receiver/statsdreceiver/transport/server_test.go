@@ -90,7 +90,6 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			gc, err := tt.buildClientFn(host, port)
 			require.NoError(t, err)
 			require.NotNil(t, gc)
-
 			err = gc.SendMetric(client.Metric{
 				Name:  "test.metric",
 				Value: "42",
@@ -98,29 +97,16 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			runtime.Gosched()
-
 			err = gc.Disconnect()
 			assert.NoError(t, err)
 
 			// Keep trying until we're timed out or got a result
-			timeout := time.After(10 * time.Second)
-			ticker := time.Tick(500 * time.Millisecond)
-			for {
-				stop := false
-				select {
-				// Got a timeout!
-				case <-timeout:
-					stop = true
-				// Got a tick
-				case <-ticker:
-					if len(transferChan) > 0 {
-						result = true
-					}
+			assert.Eventually(t, func() bool {
+				if len(transferChan) > 0 {
+					return true
 				}
-				if stop {
-					break
-				}
-			}
+				return false
+			}, 10*time.Second, 500*time.Millisecond)
 
 			// Close the server connection, this will cause ListenAndServer to error out and the deferred wgListenAndServe.Done will fire
 			err = srv.Close()
