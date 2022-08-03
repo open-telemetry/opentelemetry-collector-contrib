@@ -36,10 +36,6 @@ exporters:
 
 service:
     pipelines:
-        traces:
-            receivers: [nop]
-            processors: [filter/empty]
-            exporters: [nop]
         logs:
             receivers: [nop]
             processors: [filter/include, filter/exclude, filter/includeexclude]
