@@ -94,11 +94,14 @@ def _wrap_connect(tracer_provider=None):
 
 
 class EngineTracer:
-    def __init__(self, tracer, engine, enable_commenter=False):
+    def __init__(
+        self, tracer, engine, enable_commenter=True, commenter_options=None
+    ):
         self.tracer = tracer
         self.engine = engine
         self.vendor = _normalize_vendor(engine.name)
         self.enable_commenter = enable_commenter
+        self.commenter_options = commenter_options if commenter_options else {}
 
         listen(
             engine, "before_cursor_execute", self._before_cur_exec, retval=True
@@ -141,8 +144,22 @@ class EngineTracer:
                 for key, value in attrs.items():
                     span.set_attribute(key, value)
             if self.enable_commenter:
-                commenter_data = {}
-                commenter_data.update(_get_opentelemetry_values())
+                commenter_data = dict(
+                    db_driver=conn.engine.driver,
+                    # Driver/framework centric information.
+                    db_framework=f"sqlalchemy:{__version__}",
+                )
+
+                if self.commenter_options.get("opentelemetry_values", True):
+                    commenter_data.update(**_get_opentelemetry_values())
+
+                # Filter down to just the requested attributes.
+                commenter_data = {
+                    k: v
+                    for k, v in commenter_data.items()
+                    if self.commenter_options.get(k, True)
+                }
+
                 statement = _add_sql_comment(statement, **commenter_data)
 
         context._otel_span = span
