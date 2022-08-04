@@ -111,10 +111,21 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 				continue
 			}
 
+			resAttrs := map[string]string{}
+			for k, v := range template.ResourceAttributes {
+				strVal, ok := v.(string)
+				if !ok {
+					obs.logger.Info(fmt.Sprintf("ignoring unsupported `resource_attributes` %q value %v", k, v))
+					continue
+				}
+				resAttrs[k] = strVal
+			}
+
 			// Adds default and/or configured resource attributes (e.g. k8s.pod.uid) to resources
 			// as telemetry is emitted.
 			resourceEnhancer, err := newResourceEnhancer(
 				obs.config.ResourceAttributes,
+				resAttrs,
 				env,
 				e,
 				obs.nextConsumer,

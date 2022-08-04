@@ -21,13 +21,11 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configcompression"
-
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -41,8 +39,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, component.StabilityLevelBeta))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelBeta))
 
 }
 

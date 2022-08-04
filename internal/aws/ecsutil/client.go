@@ -69,7 +69,7 @@ func defaultClient(
 	host component.Host,
 	settings component.TelemetrySettings,
 ) (*clientImpl, error) {
-	client, err := clientSettings.ToClientWithHost(host, settings)
+	client, err := clientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}
