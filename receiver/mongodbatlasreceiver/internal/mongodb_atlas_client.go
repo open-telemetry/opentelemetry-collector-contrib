@@ -52,6 +52,10 @@ func newClientRoundTripper(
 }
 
 func (rt *clientRoundTripper) Shutdown() error {
+	if rt.isStopped {
+		return nil
+	}
+
 	rt.isStopped = true
 	rt.shutdownChan <- struct{}{}
 	close(rt.shutdownChan)

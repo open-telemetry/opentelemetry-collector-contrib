@@ -86,8 +86,6 @@ func (s *receiver) timeConstraints(now time.Time) timeconstraints {
 }
 
 func (s *receiver) shutdown(context.Context) error {
-	close(s.stopperChan)
-	s.wg.Wait()
 	return s.client.Shutdown()
 }
 
@@ -254,5 +252,7 @@ func (s *receiver) Start(ctx context.Context, host component.Host) error {
 }
 
 func (s *receiver) Shutdown(ctx context.Context) error {
+	close(s.stopperChan)
+	s.wg.Wait()
 	return s.shutdown(ctx)
 }
