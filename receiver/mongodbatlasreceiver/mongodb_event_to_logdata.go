@@ -51,7 +51,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourceInfo) plog.Logs {
+func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resourceInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -93,9 +93,9 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 		attrs.InsertString("authtype", e.AuthType)
 	}
 
-	attrs.InsertString("local.ip", e.Local.Ip)
+	attrs.InsertString("local.ip", e.Local.IP)
 	attrs.InsertInt("local.port", int64(e.Local.Port))
-	attrs.InsertString("remote.ip", e.Remote.Ip)
+	attrs.InsertString("remote.ip", e.Remote.IP)
 	attrs.InsertInt("remote.port", int64(e.Remote.Port))
 	attrs.InsertString("uuid.binary", e.ID.Binary)
 	attrs.InsertString("uuid.type", e.ID.Type)
@@ -112,7 +112,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e *model.AuditLog, r resourc
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, e *model.LogEntry, r resourceInfo) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()

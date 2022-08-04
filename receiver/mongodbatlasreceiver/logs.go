@@ -42,9 +42,9 @@ type combindedLogsReceiver struct {
 }
 
 type resourceInfo struct {
-	Org      *mongodbatlas.Organization
-	Project  *mongodbatlas.Project
-	Cluster  *mongodbatlas.Cluster
+	Org      mongodbatlas.Organization
+	Project  mongodbatlas.Project
+	Cluster  mongodbatlas.Cluster
 	Hostname string
 	LogName  string
 	start    string
@@ -52,7 +52,7 @@ type resourceInfo struct {
 }
 
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
-const collection_interval = time.Minute * 5
+const collectionInterval = time.Minute * 5
 
 // Starts up the combined MongoDB Atlas Logs and Alert Receiver
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
@@ -97,6 +97,10 @@ func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (s *receiver) createProjectMap() (map[string]*Project, error) {
+	if len(s.cfg.Logs.Projects) < 1 {
+		return nil, errors.New("no projects specified")
+	}
+
 	// create a map of Projects
 	projects := make(map[string]*Project)
 
@@ -171,17 +175,17 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 
 			// get clusters for each of the projects
 			for _, project := range fp {
-				resource.Org, resource.Project = org, project
-				clusters, err := s.processClusters(cfgProjects, ctx, &resource)
+				resource.Org, resource.Project = *org, *project
+				clusters, err := s.processClusters(ctx, cfgProjects, &resource)
+				if err != nil {
+					s.log.Error("Failure to process Clusters", zap.Error(err))
+				}
 
 				if resource.end != "" {
 					resource.start = resource.end
 				}
 				resource.end = strconv.Itoa(int(time.Now().Unix()))
-				err = s.collectClusterLogs(clusters, cfgProjects, resource)
-				if err != nil {
-					s.log.Error("Failure to collect logs from cluster %w", zap.Error(err))
-				}
+				s.collectClusterLogs(clusters, cfgProjects, resource)
 			}
 		}
 
@@ -191,7 +195,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			return
 		case <-s.stopperChan:
 			return
-		case <-time.After(collection_interval):
+		case <-time.After(collectionInterval):
 
 		}
 	}
@@ -208,7 +212,7 @@ func filterProjects(projects []*mongodbatlas.Project, cfgProjects map[string]*Pr
 	return fp
 }
 
-func (s *receiver) processClusters(cfgProjects map[string]*Project, ctx context.Context, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
+func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*Project, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
 	include, exclude := cfgProjects[r.Project.Name].IncludeClusters, cfgProjects[r.Project.Name].ExcludeClusters
 	clusters, err := s.client.GetClusters(ctx, r.Project.ID)
 	if err != nil {
@@ -233,11 +237,11 @@ func (s *receiver) processClusters(cfgProjects map[string]*Project, ctx context.
 	}
 }
 
-func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) error {
+func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
 	for _, cluster := range clusters {
 		hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
 		for _, hostname := range hostnames {
-			r.Cluster = &cluster
+			r.Cluster = cluster
 			r.Hostname = hostname
 			s.sendLogs(r, "mongodb.gz")
 			s.sendLogs(r, "mongos.gz")
@@ -248,9 +252,6 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 			}
 		}
 	}
-
-	return nil
-
 }
 
 func filterClusters(clusters []mongodbatlas.Cluster, keys map[string]struct{}, include bool) []mongodbatlas.Cluster {
@@ -334,26 +335,32 @@ func (s *receiver) getHostAuditLogs(groupID, hostname, logName, start, end strin
 
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {
 		r.LogName = logName
-		plog := mongodbEventToLogData(s.log, &log, r)
-		s.consumer.ConsumeLogs(context.Background(), plog)
+		plog := mongodbEventToLogData(s.log, log, r)
+		err := s.consumer.ConsumeLogs(context.Background(), plog)
+		if err != nil {
+			s.log.Error("Failed to consume logs", zap.Error(err))
+		}
 	}
 }
 
 func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve audit logs: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {
 		r.LogName = logName
-		plog := mongodbAuditEventToLogData(s.log, &log, r)
-		s.consumer.ConsumeLogs(context.Background(), plog)
+		plog := mongodbAuditEventToLogData(s.log, log, r)
+		err := s.consumer.ConsumeLogs(context.Background(), plog)
+		if err != nil {
+			s.log.Error("Failed to consume logs", zap.Error(err))
+		}
 	}
 }

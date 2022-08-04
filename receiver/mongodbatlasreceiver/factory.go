@@ -42,8 +42,8 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability),
-		component.WithLogsReceiverAndStabilityLevel(createCombinedLogReceiver, stability))
+		component.WithMetricsReceiver(createMetricsReceiver, stability),
+		component.WithLogsReceiver(createCombinedLogReceiver, stability))
 
 }
 
@@ -65,21 +65,6 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(ms))
-}
-
-func createAlertsLogReceiver(
-	_ context.Context,
-	params component.ReceiverCreateSettings,
-	rConf config.Receiver,
-	consumer consumer.Logs,
-) (component.LogsReceiver, error) {
-	cfg := rConf.(*Config)
-	recv, err := newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
-	if err != nil {
-		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
-	}
-
-	return recv, nil
 }
 
 func createCombinedLogReceiver(

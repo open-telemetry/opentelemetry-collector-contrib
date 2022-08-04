@@ -47,7 +47,7 @@ type id struct {
 }
 
 type address struct {
-	Ip   string `json:"Ip"`
+	IP   string `json:"Ip"`
 	Port int    `json:"port"`
 }
 
@@ -76,11 +76,11 @@ func GetTestAuditEvent() AuditLog {
 			Binary: "binary",
 		},
 		Local: address{
-			Ip:   "Ip",
+			IP:   "Ip",
 			Port: 12345,
 		},
 		Remote: address{
-			Ip:   "Ip",
+			IP:   "Ip",
 			Port: 12345,
 		},
 		Result: 40,
