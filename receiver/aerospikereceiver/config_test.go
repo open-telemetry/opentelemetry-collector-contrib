@@ -105,6 +105,7 @@ func TestValidate(t *testing.T) {
 					TLSName: "tls1",
 				},
 				TLS: &configtls.TLSClientSetting{
+					Insecure: false,
 					TLSSetting: configtls.TLSSetting{
 						CAFile: "BADCAFILE",
 					},
@@ -121,6 +122,7 @@ func TestValidate(t *testing.T) {
 					TLSName: "",
 				},
 				TLS: &configtls.TLSClientSetting{
+					Insecure:   false,
 					TLSSetting: configtls.TLSSetting{},
 				},
 			},
