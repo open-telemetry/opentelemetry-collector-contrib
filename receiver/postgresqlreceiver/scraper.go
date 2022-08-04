@@ -16,7 +16,6 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"strconv"
 	"sync"
 	"time"
 
@@ -242,19 +241,4 @@ func (p *postgreSQLScraper) retrieveBackends(
 	r.Lock()
 	r.activityMap = activityByDB
 	r.Unlock()
-}
-
-// parseInt converts string to int64.
-func (p *postgreSQLScraper) parseInt(key, value string) (int64, error) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		p.logger.Info(
-			"invalid value",
-			zap.String("expectedType", "int"),
-			zap.String("key", key),
-			zap.String("value", value),
-		)
-		return 0, err
-	}
-	return i, nil
 }

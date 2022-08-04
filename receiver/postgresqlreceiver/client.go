@@ -123,6 +123,9 @@ type databaseStats struct {
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[string]databaseStats, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
 	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
 	var errs error
 	dbStats := map[string]databaseStats{}
 	for rows.Next() {
