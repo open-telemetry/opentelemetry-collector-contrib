@@ -42,3 +42,5 @@ httpx>=0.18.0
 # indirect dependency pins
 markupsafe==2.0.1
 itsdangerous==2.0.1
+
+docutils==0.16
