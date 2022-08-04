@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3provider
+package s3mapprovider
 
 import (
 	"bytes"
@@ -31,34 +31,30 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Interface testClient standardizes GetObject, which mocks S3 client works
-type testClient struct {
-	GetObject func(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+// A s3 client mocking s3mapprovider works in normal cases
+type testClient struct{}
+
+// A provider mocking s3mapprovider works in normal cases
+type testProvider struct {
+	client testClient
 }
 
-// Create a client mocking S3 client works in normal cases
-func NewTestClient() *testClient {
-	return &testClient{
-		GetObject: func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
-			// read local config file and return
-			f, err := ioutil.ReadFile("./testdata/otel-config.yaml")
-			if err != nil {
-				return &s3.GetObjectOutput{}, err
-			}
-			return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
-		}}
+// Implement GetObject() for testClient in normal cases
+func (client *testClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	// read local config file and return
+	f, err := ioutil.ReadFile("./testdata/otel-config.yaml")
+	if err != nil {
+		return &s3.GetObjectOutput{}, err
+	}
+	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
 }
 
-// testRetrieve: Mock how Retrieve() works in normal cases
-type testRetrieve struct {
-	client *testClient
+// Create a provider mocking s3mapprovider works in normal cases
+func NewTestProvider() confmap.Provider {
+	return &testProvider{client: testClient{}}
 }
 
-func NewTestRetrieve() confmap.Provider {
-	return &testRetrieve{client: NewTestClient()}
-}
-
-func (fp *testRetrieve) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
+func (fp *testProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
@@ -94,34 +90,35 @@ func (fp *testRetrieve) Retrieve(ctx context.Context, uri string, watcher confma
 	return confmap.NewRetrieved(rawConf)
 }
 
-func (fp *testRetrieve) Scheme() string {
+func (fp *testProvider) Scheme() string {
 	return schemeName
 }
 
-func (fp *testRetrieve) Shutdown(context.Context) error {
+func (fp *testProvider) Shutdown(context.Context) error {
 	return nil
 }
 
-// Create a client mocking S3 client works when the returned config file is invalid
-func NewTestInvalidClient() *testClient {
-	return &testClient{
-		GetObject: func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
-			// read local config file and return
-			f := []byte("wrong yaml:[")
-			return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
-		}}
+// A s3 client mocking s3mapprovider works when the returned config file is invalid
+type testInvalidClient struct{}
+
+// A provider mocking s3mapprovider works when the returned config file is invalid
+type testInvalidProvider struct {
+	client testInvalidClient
 }
 
-// testInvalidRetrieve: Mock how Retrieve() and S3 client works when the returned config file is invalid
-type testInvalidRetrieve struct {
-	client *testClient
+// Create a provider mocking s3mapprovider works when the returned config file is invalid
+func NewTestInvalidProvider() confmap.Provider {
+	return &testInvalidProvider{client: testInvalidClient{}}
 }
 
-func NewTestInvalidRetrieve() confmap.Provider {
-	return &testInvalidRetrieve{client: NewTestInvalidClient()}
+// Implement GetObject() for testClient when the returned config file is invalid
+func (client *testInvalidClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	// read local config file and return
+	f := []byte("wrong yaml:[")
+	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
 }
 
-func (fp *testInvalidRetrieve) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
+func (fp *testInvalidProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
@@ -157,37 +154,35 @@ func (fp *testInvalidRetrieve) Retrieve(ctx context.Context, uri string, watcher
 	return confmap.NewRetrieved(rawConf)
 }
 
-func (fp *testInvalidRetrieve) Scheme() string {
+func (fp *testInvalidProvider) Scheme() string {
 	return schemeName
 }
 
-func (fp *testInvalidRetrieve) Shutdown(context.Context) error {
+func (fp *testInvalidProvider) Shutdown(context.Context) error {
 	return nil
 }
 
-// Create a client mocking S3 client works when there is no corresponding config file according to the given s3-uri
-func NewTestNonExistClient() *testClient {
-	return &testClient{
-		GetObject: func(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
-			// read local config file and return
-			f, err := ioutil.ReadFile("../../testdata/nonexist-config.yaml")
-			if err != nil {
-				return &s3.GetObjectOutput{}, err
-			}
-			return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
-		}}
+// A s3 client mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
+type testNonExistClient struct{}
+
+// A provider mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
+type testNonExistProvider struct {
+	client testNonExistClient
 }
 
-// testNonExistRetrieve: Mock how Retrieve() works when there is no corresponding config file according to the given s3-uri
-type testNonExistRetrieve struct {
-	client *testClient
+// Create a provider mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
+func NewTestNonExistProvider() confmap.Provider {
+	return &testNonExistProvider{client: testNonExistClient{}}
 }
 
-func NewTestNonExistRetrieve() confmap.Provider {
-	return &testNonExistRetrieve{client: NewTestNonExistClient()}
+// Implement GetObject() for testClient when there is no corresponding config file according to the given s3-uri
+func (client *testNonExistClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	// read local config file and return
+	f := []byte("wrong yaml:[")
+	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
 }
 
-func (fp *testNonExistRetrieve) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
+func (fp *testNonExistProvider) Retrieve(ctx context.Context, uri string, watcher confmap.WatcherFunc) (confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
@@ -223,23 +218,23 @@ func (fp *testNonExistRetrieve) Retrieve(ctx context.Context, uri string, watche
 	return confmap.NewRetrieved(rawConf)
 }
 
-func (fp *testNonExistRetrieve) Scheme() string {
+func (fp *testNonExistProvider) Scheme() string {
 	return schemeName
 }
 
-func (fp *testNonExistRetrieve) Shutdown(context.Context) error {
+func (fp *testNonExistProvider) Shutdown(context.Context) error {
 	return nil
 }
 
 func TestFunctionalityDownloadFileS3(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/key", nil)
 	assert.NoError(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestFunctionalityS3URISplit(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	bucket, region, key, err := s3URISplit("s3://bucket.s3.region.amazonaws.com/key")
 	assert.NoError(t, err)
 	assert.Equal(t, "bucket", bucket)
@@ -249,7 +244,7 @@ func TestFunctionalityS3URISplit(t *testing.T) {
 }
 
 func TestInvalidS3URISplit(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.aws.com/key", nil)
@@ -258,28 +253,28 @@ func TestInvalidS3URISplit(t *testing.T) {
 }
 
 func TestUnsupportedScheme(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "https://google.com", nil)
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestEmptyBucket(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://.s3.region.amazonaws.com/key", nil)
 	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestEmptyKey(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/", nil)
 	require.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestNonExistent(t *testing.T) {
-	fp := NewTestNonExistRetrieve()
+	fp := NewTestNonExistProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://non-exist-bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	_, err = fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/non-exist-key.yaml", nil)
@@ -290,14 +285,14 @@ func TestNonExistent(t *testing.T) {
 }
 
 func TestInvalidYAML(t *testing.T) {
-	fp := NewTestInvalidRetrieve()
+	fp := NewTestInvalidProvider()
 	_, err := fp.Retrieve(context.Background(), "s3://bucket.s3.region.amazonaws.com/key", nil)
 	assert.Error(t, err)
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestScheme(t *testing.T) {
-	fp := NewTestRetrieve()
+	fp := NewTestProvider()
 	assert.Equal(t, "s3", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }

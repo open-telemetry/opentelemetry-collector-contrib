@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package s3provider
+package s3mapprovider
 
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/url"
 	"regexp"
@@ -35,8 +34,12 @@ const (
 	schemeName = "s3"
 )
 
+type s3Client interface {
+	GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+}
+
 type provider struct {
-	client *s3.Client
+	client s3Client
 }
 
 // New returns a new confmap.Provider that reads the configuration from a file.
@@ -79,20 +82,15 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 		return confmap.Retrieved{}, fmt.Errorf("file in S3 failed to fetch : uri %q", uri)
 	}
 
-	// create a buffer and read content from the response body
-	buffer := make([]byte, int(resp.ContentLength))
+	// read config from response body
+	dec := yaml.NewDecoder(resp.Body)
 	defer resp.Body.Close()
-	_, err = resp.Body.Read(buffer)
-	if err != io.EOF && err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("failed to read content from the downloaded config file via uri %q", uri)
-	}
-
-	// unmarshalling the yaml to map[string]interface{}, then construct a Retrieved object
-	var rawConf map[string]interface{}
-	if err := yaml.Unmarshal(buffer, &rawConf); err != nil {
+	var conf map[string]interface{}
+	err = dec.Decode(&conf)
+	if err != nil {
 		return confmap.Retrieved{}, err
 	}
-	return confmap.NewRetrieved(rawConf)
+	return confmap.NewRetrieved(conf)
 }
 
 func (*provider) Scheme() string {
@@ -118,7 +116,7 @@ func s3URISplit(uri string) (string, string, string, error) {
 	// parse the uri as [scheme:][//[userinfo@]host][/]path[?query][#fragment], then extract components from
 	u, err := url.Parse(uri)
 	if err != nil {
-		return "", "", "", fmt.Errorf("failed to change the s3-uri to url.URL")
+		return "", "", "", fmt.Errorf("failed to change the s3-uri to url.URL: %w", err)
 	}
 	// extract components
 	key := strings.TrimPrefix(u.Path, "/")
