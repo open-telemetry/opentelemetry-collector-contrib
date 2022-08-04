@@ -79,9 +79,9 @@ func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			err := consumerTracesLoop(ctx, c)
-			if err != nil {
-				c.settings.Logger.Error("Consume tracesConsumer failed", zap.Error(err))
+			e := consumerTracesLoop(ctx, c)
+			if e != nil {
+				c.settings.Logger.Error("Consume tracesConsumer failed", zap.Error(e))
 			}
 		}()
 	}
@@ -104,12 +104,14 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 				return err
 			}
 			time.Sleep(time.Second)
+			c.settings.Logger.Error("failed to receive traces message from Pulsar", zap.Error(err))
 			continue
 		}
 
 		traces, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
+			c.settings.Logger.Error("failed to unmarshaler traces message", zap.Error(err))
+			return err
 		}
 
 		if err := traceConsumer.ConsumeTraces(context.Background(), traces); err != nil {
@@ -175,9 +177,9 @@ func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
 		c.consumer = _consumer
 
 		go func() {
-			err := consumeMetricsLoop(ctx, c)
-			if err != nil {
-				c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(err))
+			e := consumeMetricsLoop(ctx, c)
+			if e != nil {
+				c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(e))
 			}
 		}()
 	}
@@ -201,12 +203,14 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 			}
 
 			time.Sleep(time.Second)
+			c.settings.Logger.Error("failed to receive metrics messages from Pulsar", zap.Error(err))
 			continue
 		}
 
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
+			c.settings.Logger.Error("failed to unmarshaler metrics message", zap.Error(err))
+			return err
 		}
 
 		if err := metricsConsumer.ConsumeMetrics(context.Background(), metrics); err != nil {
@@ -273,9 +277,9 @@ func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			err := consumeLogsLoop(ctx, c)
-			if err != nil {
-				c.settings.Logger.Error("consume logs loop occurs an error")
+			e := consumeLogsLoop(ctx, c)
+			if e != nil {
+				c.settings.Logger.Error("consume logs loop occurs an error", zap.Error(e))
 			}
 		}()
 	}
@@ -298,12 +302,14 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 				return err
 			}
 			time.Sleep(time.Second)
+			c.settings.Logger.Error("failed to receive logs messages from Pulsar", zap.Error(err))
 			continue
 		}
 
 		logs, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
-			c.settings.Logger.Error("unmarshaler message failed", zap.Error(err))
+			c.settings.Logger.Error("failed to unmarshaler logs message", zap.Error(err))
+			return err
 		}
 
 		if err := logsConsumer.ConsumeLogs(context.Background(), logs); err != nil {
