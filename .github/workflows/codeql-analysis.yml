@@ -3,7 +3,6 @@ name: "CodeQL Analysis"
 on:
   push:
     branches: [main]
-  pull_request: # TODO - this line added for testing on PR. Remove this.
 
 jobs:
   CodeQL-Build:
