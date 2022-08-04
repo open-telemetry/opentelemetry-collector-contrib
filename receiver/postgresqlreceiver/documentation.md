@@ -29,7 +29,7 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| postgresql.database | The name of the database being monitored | String |
+| postgresql.database | The name of the database. | String |
 | postgresql.table | The schema name followed by the table name. | String |
 
 ## Metric attributes

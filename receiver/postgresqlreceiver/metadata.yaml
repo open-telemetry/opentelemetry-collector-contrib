@@ -2,7 +2,7 @@ name: postgresqlreceiver
 
 resource_attributes:
   postgresql.database:
-    description: The name of the database being monitored
+    description: The name of the database.
     type: string
   postgresql.table:
     description: The schema name followed by the table name.
