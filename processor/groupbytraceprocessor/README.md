@@ -62,5 +62,5 @@ Most metrics are updated when the events occur, except for the following ones, w
 * `otelcol_processor_groupbytrace_num_events_in_queue`
 * `otelcol_processor_groupbytrace_num_traces_in_memory`
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
