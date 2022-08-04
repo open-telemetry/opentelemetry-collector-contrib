@@ -74,6 +74,14 @@
 - `splunkhecexporter`: use proper config flags to configure content length of gzip buffers for metrics and traces (#12906)
 
 
+# v0.57.1
+
+This version has been skipped.
+
+# v0.57.0
+
+This version has been skipped.
+
 # v0.56.0
 
 ## 🛑 Breaking changes 🛑
