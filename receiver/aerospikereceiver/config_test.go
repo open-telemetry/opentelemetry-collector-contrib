@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -28,53 +27,53 @@ func TestValidate(t *testing.T) {
 		name     string
 		config   *Config
 		expected error
-	}{ // TODO add tls tests
+	}{
 		{
 			name: "blank endpoint",
 			config: &Config{
-				Endpoint: as.Host{},
+				Endpoint: "",
 			},
-			expected: errEmptyEndpointHost,
+			expected: errEmptyEndpoint,
 		},
 		{
 			name: "missing port",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost"},
+				Endpoint: "localhost",
 			},
-			expected: errEmptyEndpointPort,
+			expected: errBadEndpoint,
 		},
 		{
 			name: "bad endpoint",
 			config: &Config{
-				Endpoint: as.Host{Name: "x;;ef;s;d:::ss", Port: 23423423423423423},
+				Endpoint: "x;;ef;s;d:::ss:23423423423423423",
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "missing host",
 			config: &Config{
-				Endpoint: as.Host{Port: 3001},
+				Endpoint: ":3001",
 			},
-			expected: errEmptyEndpointHost,
+			expected: errBadEndpoint,
 		},
 		{
 			name: "negative port",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost", Port: -2},
+				Endpoint: "localhost:-2",
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "bad port",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost", Port: 999999999999999},
+				Endpoint: "localhost:9999999999999999999",
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "negative timeout",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost", Port: 3000},
+				Endpoint: "localhost:3000",
 				Timeout:  -1 * time.Second,
 			},
 			expected: errNegativeTimeout,
@@ -82,7 +81,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "password but no username",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost", Port: 3000},
+				Endpoint: "localhost:3000",
 				Username: "",
 				Password: "secret",
 			},
@@ -91,7 +90,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "username but no password",
 			config: &Config{
-				Endpoint: as.Host{Name: "localhost", Port: 3000},
+				Endpoint: "localhost:3000",
 				Username: "ro_user",
 			},
 			expected: errEmptyPassword,
@@ -99,11 +98,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "bad TLS config",
 			config: &Config{
-				Endpoint: as.Host{
-					Name:    "localhost",
-					Port:    3001,
-					TLSName: "tls1",
-				},
+				Endpoint: "localhost:3000",
+				TLSName:  "tls1",
 				TLS: &configtls.TLSClientSetting{
 					Insecure: false,
 					TLSSetting: configtls.TLSSetting{
@@ -116,11 +112,8 @@ func TestValidate(t *testing.T) {
 		{
 			name: "empty tls name",
 			config: &Config{
-				Endpoint: as.Host{
-					Name:    "localhost",
-					Port:    3001,
-					TLSName: "",
-				},
+				Endpoint: "localhost:3000",
+				TLSName:  "",
 				TLS: &configtls.TLSClientSetting{
 					Insecure:   false,
 					TLSSetting: configtls.TLSSetting{},

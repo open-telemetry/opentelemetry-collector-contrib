@@ -18,9 +18,9 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -29,10 +29,9 @@ import (
 )
 
 var (
-	errBadEndpoint          = errors.New("endpoint must include a Host string, Port int, and TLSName string is using TLS")
+	errBadEndpoint          = errors.New("endpoint must be specified as host:port")
 	errBadPort              = errors.New("invalid port in endpoint")
-	errEmptyEndpointHost    = errors.New("endpoint host must be specified")
-	errEmptyEndpointPort    = errors.New("endpoint port must be specified")
+	errEmptyEndpoint        = errors.New("endpoint must be specified")
 	errEmptyEndpointTLSName = errors.New("endpoint TLSName must be specified")
 	errEmptyPassword        = errors.New("password must be set if username is set")
 	errEmptyUsername        = errors.New("username must be set if password is set")
@@ -43,7 +42,8 @@ var (
 // Config is the receiver configuration
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                as.Host                     `mapstructure:"endpoint"`
+	Endpoint                                string                      `mapstructure:"endpoint"`
+	TLSName                                 string                      `mapstructure:"tlsname"`
 	Username                                string                      `mapstructure:"username"`
 	Password                                string                      `mapstructure:"password"`
 	CollectClusterMetrics                   bool                        `mapstructure:"collect_cluster_metrics"`
@@ -56,22 +56,22 @@ type Config struct {
 func (c *Config) Validate() error {
 	var allErrs error
 
-	host := c.Endpoint.Name
-	port := c.Endpoint.Port
-	TLSName := c.Endpoint.TLSName
-	endpointString := fmt.Sprintf("%s:%d", host, port)
-
-	if host == "" {
-		return multierr.Append(allErrs, errEmptyEndpointHost)
+	if c.Endpoint == "" {
+		return multierr.Append(allErrs, errEmptyEndpoint)
 	}
 
-	if port == 0 {
-		return multierr.Append(allErrs, errEmptyEndpointPort)
-	}
-
-	_, _, err := net.SplitHostPort(endpointString)
+	host, portStr, err := net.SplitHostPort(c.Endpoint)
 	if err != nil {
 		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
+	}
+
+	if host == "" {
+		allErrs = multierr.Append(allErrs, errBadEndpoint)
+	}
+
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err))
 	}
 
 	if port < 0 || port > 65535 {
@@ -96,7 +96,7 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	if c.TLS != nil && TLSName == "" {
+	if c.TLS != nil && c.TLSName == "" {
 		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: when using TLS", errEmptyEndpointTLSName))
 	}
 

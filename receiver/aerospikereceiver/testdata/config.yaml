@@ -1,8 +1,6 @@
 receivers:
     aerospike:
-        endpoint:
-            name: "localhost"
-            port: 3000
-            tlsname: ""
+        endpoint: "localhost:3000"
+        tlsname: ""
         collect_cluster_metrics: false
         collection_interval: 30s

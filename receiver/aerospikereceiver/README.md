@@ -18,10 +18,8 @@ Aerospike versions 4.9, 5.x, and 6.x are supported.
 
 Configuration parameters:
 
-- `endpoint` Map of Aerospike host name, port, and tls name to connect to.
-  - `name` Host name or address.
-  - `port` Host port number.
-  - `tlsname` Host tls name. Used by the client during TLS connections. See [Aerospike authentication](https://docs.aerospike.com/server/guide/security/tls#standard-authentication) for mor details.
+- `endpoint` (default localhost:3000): Aerospike host ex: 127.0.0.1:3000.
+- `tlsname` Endpoint tls name. Used by the client during TLS connections. See [Aerospike authentication](https://docs.aerospike.com/server/guide/security/tls#standard-authentication) for mor details.
 - `collect_cluster_metrics` (default false): Whether discovered peer nodes should be collected.
 - `collection_interval` (default = 60s): This receiver collects metrics on an interval. Valid time units are ns, us (or µs), ms, s, m, h.
 - `username` (Enterprise Edition only.)
@@ -33,10 +31,8 @@ Configuration parameters:
 ```yaml
 receivers:
     aerospike:
-        endpoint:
-            name: "localhost"
-            port: 3000
-            tlsname: ""
+        endpoint: "localhost:3000"
+        tlsname: ""
         collect_cluster_metrics: false
         collection_interval: 30s
 ```

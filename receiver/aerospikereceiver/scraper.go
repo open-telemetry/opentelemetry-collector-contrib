@@ -18,8 +18,11 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
+	as "github.com/aerospike/aerospike-client-go/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -56,6 +59,19 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		}
 	}
 
+	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
+	}
+
+	port, err := strconv.ParseInt(portStr, 10, 32)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", errBadPort, err)
+	}
+
+	ashost := as.NewHost(host, int(port))
+	ashost.TLSName = cfg.TLSName
+
 	sugaredLogger := params.Logger.Sugar()
 	return &aerospikeReceiver{
 		logger:   sugaredLogger,
@@ -63,7 +79,7 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		consumer: consumer,
 		clientFactory: func() (Aerospike, error) {
 			conf := &clientConfig{
-				host:                  &cfg.Endpoint,
+				host:                  ashost,
 				username:              cfg.Username,
 				password:              cfg.Password,
 				timeout:               cfg.Timeout,
