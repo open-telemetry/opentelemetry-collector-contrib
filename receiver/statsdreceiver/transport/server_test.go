@@ -102,7 +102,7 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			// Keep trying until we're timed out or got a result
 			assert.Eventually(t, func() bool {
-				len(transferChan) > 0
+				return len(transferChan) > 0
 			}, 10*time.Second, 500*time.Millisecond)
 
 			// Close the server connection, this will cause ListenAndServer to error out and the deferred wgListenAndServe.Done will fire
