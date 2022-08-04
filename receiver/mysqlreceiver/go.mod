@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
 	go.uber.org/zap v1.21.0

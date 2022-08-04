@@ -1,4 +1,0 @@
-change_type: enhancement
-component: datadogexporter
-note: Add host metadata tags to metrics on serverless environments
-issues: [12486]

@@ -4,8 +4,8 @@ go 1.17
 
 require (
 	github.com/aerospike/aerospike-client-go/v5 v5.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
 	go.opentelemetry.io/collector/pdata v0.57.2
