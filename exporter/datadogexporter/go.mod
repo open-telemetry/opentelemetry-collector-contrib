@@ -10,10 +10,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.4
 	github.com/aws/aws-sdk-go v1.44.67
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.57.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
@@ -48,7 +48,6 @@ require (
 	github.com/go-openapi/jsonreference v0.19.5 // indirect
 	github.com/go-openapi/swag v0.19.14 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/glog v1.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
@@ -67,7 +66,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.56.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2 // indirect
 	github.com/openshift/api v0.0.0-20210521075222-e273a339932a // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/outcaste-io/ristretto v0.2.0 // indirect
@@ -130,3 +129,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 // see https://github.com/go-chi/chi/issues/713
 // see https://github.com/DataDog/dd-trace-go/issues/1220
 replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/12934
+replace github.com/outcaste-io/ristretto => github.com/outcaste-io/ristretto v0.1.1-0.20220420003845-bd658a460d49

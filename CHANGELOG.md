@@ -4,6 +4,84 @@
 
 <!-- next version -->
 
+# v0.57.2
+
+## 🛑 Breaking changes 🛑
+- `healthcheckextension`: Remove deprecated `port` field from config. (#12668)
+- `processor/cumulativetodelta`: Removes the deprecated `metrics` config option.  Use `include`/`exclude` instead. (#12732)
+- `lokiexporter`: Deprecate the `format` option (#12897)
+- `metricstransformprocessor`: Remove deprecated `metric_name` settings option (#12737)
+- `pkg/stanza/fileconsumer`: Unexport several fields that are meant for internal usage only (#12793)
+- `pkg/stanza/fileconsumer`: Rename fileconsumer.Input to fileconsumer.Manager (#12876)
+- `prometheusremotewriteexporter`: Export `target_info` not `target` for resource attributes (#12079)
+- `pkg/translator/signalfx`: Remove no longer necessary prom compatible configuration from `FromTranslator` (#12671)
+- `signalfxexporter`: Remove no longer necessary feature gate for prom compatible metrics (#12671)
+- `zookeeperreceiver`: Remove direction for metrics. The feature gate: receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#12772) (#12184)
+  - `zookeeper` metrics:
+    - `zookeeper.packet.count` will become:
+      - `zookeeper.packet.received.count`
+      - `zookeeper.packet.sent.count`
+
+### 🚀 New components 🚀
+- `chronyreceiver`: This will add in support for measuring tracking data from `chronyd` (#11789)
+
+### 💡 Enhancements 💡
+- `datadogexporter`: Add host metadata tags to metrics on serverless environments (#12486)
+- `observer`: Add observer.Endpoint.ID to Env() (#12751)
+- `aerospikereceiver`: Scrape nodes in parallel when in collect_cluster_metrics mode. (#11563)
+- `coralogixexporter`: Add logs client to coralogixexporter (#12601)
+- `awscontainerinsightreceiver`: Pod Detection changes to support Containerd runtime in K8s (#12638)
+- `dockerstatsreceiver`: Enable a featuregate for the new implementation of scrape. Change the units in the new implementation to align to semantic convention. (#9794)
+  This allows the new implementation of scrape to be used via a featuregate.
+  It also updates the tests, which now test for expected descriptions and units in the new implementation.
+  
+- `healthcheckextension`: Use `confighttp.HTTPServerSettings` to allow tls and auth. (#12668)
+- `demo`: Add connection time out for client in examples/demo/client (#12431)
+- `prometheusexporter`: Export target_info metrics with the resource attributes. (#8265)
+- `resourcedetectionprocessor`: update Azure resource detector to save "name" from Azure metadata API in azure.vm.name attribute (#12779)
+- `pkg/telemetryquerylanguage`: Adds standard contexts to the module that should be used when interacting with OTLP traces, metrics, and logs. (#12589)
+- `pkg/telemetryquerylanguage`: Adds a set of otel functions to the telemetryquerylanguage module. (#12754)
+- `pkg/telemetryquerylanguage`: Adds a set of common functions to the telemetryquerylanguage module. (#12739)
+- `cumulativetodeltaprocessor`: Cumulative Histogram metrics will now be converted to delta temporality and are no longer skipped. (#12423)
+  This means that consumers who currently rely on Histograms being skipped would need to ensure they are excluded via config.
+- `dockerstatsreceiver`: Initial PR for onboarding dockerstats onto mdatagen scraping. (#9794)
+  Additionally appends the internal docker client to allow options (bug fix).
+- `mongodbreceiver`: Enhance mongodbreceiver by adding new metrics (#12672)
+- `chronyreceiver`: Added internal chrony client (#11789)
+  -| Added an internal client for the receiver with modifications of the upstream client to fit the collector
+- `receivercreator`: add per-receiver `resource_attribute` and validate endpoint type keys on global (#11766)
+- `pkg/translator/signalfx`: Optimize ToMetrics to emit datapoints under the same metric when same name and type. (#12902)
+- `sqlqueryreceiver`: Add static_attributes optional configuration to allow adding attributes/tags to queried metrics. (#11868)
+
+### 🧰 Bug fixes 🧰
+- `spanmetricsprocessor`: Fix panic caused by race condition when accessing span attributes. (#12644)
+- `awsxrayexporter`: Stop dropping exception in aws xray events for non error codes (#12643)
+- `signalfxexporter`: use azure.vm.name instead of host.name to build azure resource id (#12779)
+- `otelcontribcol`: Enabled multi-arch build for local development container builds (#11873)
+- `receiver/hostmetrics`: Do not throw scraping errors if conntrack metrics collection is disabled (#12799)
+- `kubeletstatsreceiver`: Fetch metadata from initContainers (#12887)
+- `metricstransformprocessor`: Fix logic in merging exponential histogram. (#12865)
+- `resourcedetectionprocessor`: Add back `host.name` attribute when running on GKE (#12354)
+- `filelogreceiver`: Fix issue where checkpoints could be ignored if `start_at`` was set to `end`` (#12769)
+- `pkg/stanza`: Stop readerFactory from returning an error when creating an unsafeReader (#12766)
+  This bug caused the filelog receiver to crash when the collector was restarted and the logs were being read from the end of the file
+- `prometheusreceiver`: Fix handling of timestamps to prevent reset when a new datapoint is recorded (#12746)
+- `exporter/prometheusremotewrite`: Fix a panic when a histogram does not have any buckets (#12777)
+- `signalfxexporter`: fix invalid response error message (#12654)
+- `skywalkingreceiver`: Add extra link attributes from skywalking ref. (#12651)
+- `spanmetricsprocessor`: Modifies spanmetrics processor to handle negative durations without crashing. Related to open-telemetry/opentelemetry-js-contrib#1013 (#7250)
+  Sets negative durations to count towards the smallest histogram bucket.
+- `splunkhecexporter`: use proper config flags to configure content length of gzip buffers for metrics and traces (#12906)
+
+
+# v0.57.1
+
+This version has been skipped.
+
+# v0.57.0
+
+This version has been skipped.
+
 # v0.56.0
 
 ## 🛑 Breaking changes 🛑
