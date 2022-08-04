@@ -29,18 +29,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 )
-
-type SignalConfig struct {
-	Queries []string `mapstructure:"queries"`
-}
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs    SignalConfig `mapstructure:"logs"`
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
+	tqlconfig.Config `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)

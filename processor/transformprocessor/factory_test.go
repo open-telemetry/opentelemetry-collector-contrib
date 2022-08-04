@@ -18,6 +18,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -38,14 +39,16 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{},
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
-		},
-		Logs: SignalConfig{
-			Queries: []string{},
+		Config: tqlconfig.Config{
+			Traces: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Metrics: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Logs: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))

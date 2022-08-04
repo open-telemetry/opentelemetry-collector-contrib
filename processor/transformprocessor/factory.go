@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -48,14 +49,16 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Logs: SignalConfig{
-			Queries: []string{},
-		},
-		Traces: SignalConfig{
-			Queries: []string{},
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
+		Config: tqlconfig.Config{
+			Logs: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Traces: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Metrics: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
 		},
 	}
 }

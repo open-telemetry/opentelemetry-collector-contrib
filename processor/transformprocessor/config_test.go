@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -38,22 +39,24 @@ func TestLoadingConfig(t *testing.T) {
 	p0 := cfg.Processors[config.NewComponentID(typeStr)]
 	assert.Equal(t, p0, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{
-				`set(name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
+		Config: tqlconfig.Config{
+			Traces: tqlconfig.SignalConfig{
+				Queries: []string{
+					`set(name, "bear") where attributes["http.path"] == "/animal"`,
+					`keep_keys(attributes, "http.method", "http.path")`,
+				},
 			},
-		},
-		Metrics: SignalConfig{
-			Queries: []string{
-				`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
+			Metrics: tqlconfig.SignalConfig{
+				Queries: []string{
+					`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
+					`keep_keys(attributes, "http.method", "http.path")`,
+				},
 			},
-		},
-		Logs: SignalConfig{
-			Queries: []string{
-				`set(body, "bear") where attributes["http.path"] == "/animal"`,
-				`keep_keys(attributes, "http.method", "http.path")`,
+			Logs: tqlconfig.SignalConfig{
+				Queries: []string{
+					`set(body, "bear") where attributes["http.path"] == "/animal"`,
+					`keep_keys(attributes, "http.method", "http.path")`,
+				},
 			},
 		},
 	})
