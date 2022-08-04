@@ -176,10 +176,9 @@ func (m *metricPostgresqlBackends) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -187,7 +186,6 @@ func (m *metricPostgresqlBackends) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -232,7 +230,7 @@ func (m *metricPostgresqlBlocksRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue string) {
+func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, sourceAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -240,8 +238,6 @@ func (m *metricPostgresqlBlocksRead) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("table", tableAttributeValue)
 	dp.Attributes().InsertString("source", sourceAttributeValue)
 }
 
@@ -284,10 +280,9 @@ func (m *metricPostgresqlCommits) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -295,7 +290,6 @@ func (m *metricPostgresqlCommits) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -337,10 +331,9 @@ func (m *metricPostgresqlDbSize) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -348,7 +341,6 @@ func (m *metricPostgresqlDbSize) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -393,7 +385,7 @@ func (m *metricPostgresqlOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue string) {
+func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -401,8 +393,6 @@ func (m *metricPostgresqlOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("table", tableAttributeValue)
 	dp.Attributes().InsertString("operation", operationAttributeValue)
 }
 
@@ -445,10 +435,9 @@ func (m *metricPostgresqlRollbacks) init() {
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -456,7 +445,6 @@ func (m *metricPostgresqlRollbacks) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -501,7 +489,7 @@ func (m *metricPostgresqlRows) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue string) {
+func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, stateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -509,8 +497,6 @@ func (m *metricPostgresqlRows) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("table", tableAttributeValue)
 	dp.Attributes().InsertString("state", stateAttributeValue)
 }
 
@@ -598,6 +584,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithPostgresqlDatabase sets provided value as "postgresql.database" attribute for current resource.
+func WithPostgresqlDatabase(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.database", val)
+	}
+}
+
+// WithPostgresqlTable sets provided value as "postgresql.table" attribute for current resource.
+func WithPostgresqlTable(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.table", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
@@ -657,38 +657,38 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue AttributeSource) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue.String())
+func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
+	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String())
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
-func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
-func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
+func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
-func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
+func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -17,7 +17,6 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -25,16 +24,16 @@ import (
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 )
 
 type client interface {
 	Close() error
-	getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error)
-	getBackends(ctx context.Context, databases []string) ([]MetricStat, error)
-	getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error)
-	getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error)
-	getBlocksReadByTable(ctx context.Context) ([]MetricStat, error)
+	getDatabaseStats(ctx context.Context, databases []string) (map[string]databaseStats, error)
+	getBackends(ctx context.Context, databases []string) (map[string]int64, error)
+	getDatabaseSize(ctx context.Context, databases []string) (map[string]int64, error)
+	getDatabaseTableMetrics(ctx context.Context, db string) (map[string]tableStats, error)
+	getBlocksReadByTable(ctx context.Context, db string) (map[string]tableIOStats, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -116,31 +115,96 @@ func (c *postgreSQLClient) Close() error {
 	return c.client.Close()
 }
 
-type MetricStat struct {
+type databaseStats struct {
+	transactionCommitted int64
+	transactionRollback  int64
+}
+
+func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[string]databaseStats, error) {
+	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
+	rows, err := c.client.QueryContext(ctx, query)
+	var errs error
+	dbStats := map[string]databaseStats{}
+	for rows.Next() {
+		var datname string
+		var transactionCommitted, transactionRollback int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+			continue
+		}
+		if datname != "" {
+			dbStats[datname] = databaseStats{
+				transactionCommitted: transactionCommitted,
+				transactionRollback:  transactionRollback,
+			}
+		}
+	}
+	return dbStats, errs
+}
+
+// getBackends returns a map of database names to the number of active connections
+func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[string]int64, error) {
+	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ars := map[string]int64{}
+	var errors error
+	for rows.Next() {
+		var datname string
+		var count int64
+		err = rows.Scan(&datname, &count)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		if datname != "" {
+			ars[datname] = count
+		}
+	}
+	return ars, errors
+}
+
+func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[string]int64, error) {
+	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	sizes := map[string]int64{}
+	var errors error
+	for rows.Next() {
+		var datname string
+		var size int64
+		err = rows.Scan(&datname, &size)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		if datname != "" {
+			sizes[datname] = size
+		}
+	}
+	return sizes, errors
+}
+
+// tableStats contains a result for a row of the getDatabaseTableMetrics result
+type tableStats struct {
 	database string
 	table    string
-	stats    map[string]string
+	live     int64
+	dead     int64
+	inserts  int64
+	upd      int64
+	del      int64
+	hotUpd   int64
 }
 
-func (c *postgreSQLClient) getCommitsAndRollbacks(ctx context.Context, databases []string) ([]MetricStat, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
-
-	return c.collectStatsFromQuery(ctx, query, true, false, "xact_commit", "xact_rollback")
-}
-
-func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) ([]MetricStat, error) {
-	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
-
-	return c.collectStatsFromQuery(ctx, query, true, false, "count")
-}
-
-func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) ([]MetricStat, error) {
-	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
-
-	return c.collectStatsFromQuery(ctx, query, true, false, "db_size")
-}
-
-func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]MetricStat, error) {
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[string]tableStats, error) {
 	query := `SELECT schemaname || '.' || relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
@@ -150,10 +214,47 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context) ([]Metri
 	n_tup_hot_upd AS hot_upd
 	FROM pg_stat_user_tables;`
 
-	return c.collectStatsFromQuery(ctx, query, false, true, "live", "dead", "ins", "upd", "del", "hot_upd")
+	ts := map[string]tableStats{}
+	var errors error
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var table string
+		var live, dead, ins, upd, del, hotUpd int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		ts[tableKey(db, table)] = tableStats{
+			database: db,
+			table:    table,
+			live:     live,
+			inserts:  ins,
+			upd:      upd,
+			del:      del,
+			hotUpd:   hotUpd,
+		}
+	}
+	return ts, errors
 }
 
-func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricStat, error) {
+type tableIOStats struct {
+	database  string
+	table     string
+	heapRead  int64
+	heapHit   int64
+	idxRead   int64
+	idxHit    int64
+	toastRead int64
+	toastHit  int64
+	tidxRead  int64
+	tidxHit   int64
+}
+
+func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[string]tableIOStats, error) {
 	query := `SELECT schemaname || '.' || relname AS table, 
 	coalesce(heap_blks_read, 0) AS heap_read, 
 	coalesce(heap_blks_hit, 0) AS heap_hit, 
@@ -165,77 +266,34 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context) ([]MetricSt
 	coalesce(tidx_blks_hit, 0) AS tidx_hit 
 	FROM pg_statio_user_tables;`
 
-	return c.collectStatsFromQuery(ctx, query, false, true, "heap_read", "heap_hit", "idx_read", "idx_hit", "toast_read", "toast_hit", "tidx_read", "tidx_hit")
-}
-
-func (c *postgreSQLClient) collectStatsFromQuery(ctx context.Context, query string, includeDatabase bool, includeTable bool, orderedFields ...string) ([]MetricStat, error) {
+	tios := map[string]tableIOStats{}
+	var errors error
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	errors := scrapererror.ScrapeErrors{}
-	metricStats := []MetricStat{}
 	for rows.Next() {
-		rowFields := make([]interface{}, 0)
-
-		// Build a list of addresses that rows.Scan will load column data into
-		if includeDatabase {
-			var val string
-			rowFields = append(rowFields, &val)
+		var table string
+		var heapRead, heapHit, idxRead, idxHit, toastRead, toastHit, tidxRead, tidxHit int64
+		err = rows.Scan(&table, &heapRead, &heapHit, &idxRead, &idxHit, &toastRead, &toastHit, &tidxRead, &tidxHit)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
 		}
-		if includeTable {
-			var val string
-			rowFields = append(rowFields, &val)
+		tios[tableKey(db, table)] = tableIOStats{
+			database:  db,
+			table:     table,
+			heapRead:  heapRead,
+			heapHit:   heapHit,
+			idxRead:   idxRead,
+			idxHit:    idxHit,
+			toastRead: toastRead,
+			toastHit:  toastHit,
+			tidxRead:  tidxRead,
+			tidxHit:   tidxHit,
 		}
-		for range orderedFields {
-			var val string
-			rowFields = append(rowFields, &val)
-		}
-
-		if err := rows.Scan(rowFields...); err != nil {
-			return nil, err
-		}
-
-		database := c.database
-		if includeDatabase {
-			v, err := convertInterfaceToString(rowFields[0])
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			database = v
-			rowFields = rowFields[1:]
-		}
-		table := ""
-		if includeTable {
-			v, err := convertInterfaceToString(rowFields[0])
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			table = v
-			rowFields = rowFields[1:]
-		}
-
-		stats := map[string]string{}
-		for idx, val := range rowFields {
-			v, err := convertInterfaceToString(val)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			stats[orderedFields[idx]] = v
-		}
-
-		metricStats = append(metricStats, MetricStat{
-			database: database,
-			table:    table,
-			stats:    stats,
-		})
 	}
-	return metricStats, errors.Combine()
+	return tios, errors
 }
 
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
@@ -278,9 +336,6 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 	return baseQuery + ";"
 }
 
-func convertInterfaceToString(input interface{}) (string, error) {
-	if val, ok := input.(*string); ok {
-		return *val, nil
-	}
-	return "", errors.New("issue converting interface into string")
+func tableKey(database, table string) string {
+	return fmt.Sprintf("%s|%s", database, table)
 }

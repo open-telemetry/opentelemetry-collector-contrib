@@ -1,20 +1,33 @@
 name: postgresqlreceiver
 
-attributes:
-  database:
-    description: The name of the database.
-  table:
+resource_attributes:
+  postgresql.database:
+    description: The name of the database being monitored
+    type: string
+  postgresql.table:
     description: The schema name followed by the table name.
+    type: string
+
+attributes:
   source:
     description: The block read source type.
-    enum: [ heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit ]  
+    enum:
+      [
+        heap_read,
+        heap_hit,
+        idx_read,
+        idx_hit,
+        toast_read,
+        toast_hit,
+        tidx_read,
+        tidx_hit,
+      ]
   operation:
     description: The database operation.
-    enum: [ ins, upd, del, hot_upd ]
+    enum: [ins, upd, del, hot_upd]
   state:
     description: The tuple (row) state.
-    enum: [ dead, live ]
-
+    enum: [dead, live]
 
 metrics:
   postgresql.blocks_read:
@@ -25,7 +38,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [ database, table, source ]
+    attributes: [source]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -34,7 +47,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [ database ]
+    attributes: []
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -43,7 +56,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-    attributes: [ database ]
+    attributes: []
   postgresql.backends:
     enabled: true
     description: The number of backends.
@@ -52,7 +65,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-    attributes: [ database ]
+    attributes: []
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
@@ -61,7 +74,7 @@ metrics:
       value_type: int
       monotonic: false
       aggregation: cumulative
-    attributes: [ database, table, state ]
+    attributes: [state]
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -70,7 +83,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [ database, table, operation ]
+    attributes: [operation]
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
@@ -79,4 +92,4 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
-    attributes: [ database ]
+    attributes: []
