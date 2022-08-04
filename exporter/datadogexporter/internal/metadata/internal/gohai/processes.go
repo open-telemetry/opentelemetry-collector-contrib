@@ -21,13 +21,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// GetPayload builds a payload of processes metadata collected from gohai.
+// GetProcessesPayload builds a payload of processes metadata collected from gohai.
 func GetProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload {
 
 	// Get processes metadata from gohai
 	proc, err := new(processes.Processes).Collect()
 	if err != nil {
-		logger.Warn("Failed to retrieve processes metadata: ", zap.Error(err))
+		logger.Warn("Failed to retrieve processes metadata", zap.Error(err))
 		return nil
 	}
 

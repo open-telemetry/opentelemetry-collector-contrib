@@ -11,13 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//go:build freebsd || netbsd || openbsd || solaris || dragonfly || windows
-// +build freebsd netbsd openbsd solaris dragonfly windows
+//go:build !linux && !darwin
+// +build !linux,!darwin
 
-package gohai
+package gohai // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
+
+import "go.uber.org/zap"
 
 // GetProcessesPayload currently just a stub.
-func GetProcessesPayload(hostname string) *ProcessesPayload {
+func GetProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload {
 
 	//unimplemented for misc platforms.
 	return &ProcessesPayload{}

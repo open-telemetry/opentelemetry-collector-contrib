@@ -24,6 +24,7 @@ require (
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 	k8s.io/apimachinery v0.24.3
 	k8s.io/client-go v0.24.3
+    github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc 
 )
 
 require (
@@ -31,7 +32,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.0 // indirect
-	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect

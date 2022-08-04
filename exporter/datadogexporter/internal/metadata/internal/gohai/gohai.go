@@ -24,6 +24,8 @@ import (
 )
 
 // GetPayload builds a payload of every metadata collected with gohai except processes metadata.
+// Parts of this are based on datadog-agent code
+// https://github.com/DataDog/datadog-agent/blob/94a28d9cee3f1c886b3866e8208be5b2a8c2c217/pkg/metadata/internal/gohai/gohai.go#L27-L32
 func GetPayload(logger *zap.Logger) Payload {
 	return Payload{
 		Gohai: MarshalledGohaiPayload{
@@ -39,35 +41,36 @@ func getGohaiInfo(logger *zap.Logger) *gohai {
 	if err == nil {
 		res.CPU = cpuPayload
 	} else {
-		logger.Error("Failed to retrieve cpu metadata", zap.Error(err))
+		logger.Warn("Failed to retrieve cpu metadata", zap.Error(err))
 	}
 
 	fileSystemPayload, err := new(filesystem.FileSystem).Collect()
 	if err == nil {
 		res.FileSystem = fileSystemPayload
 	} else {
-		logger.Error("Failed to retrieve filesystem metadata", zap.Error(err))
+		logger.Warn("Failed to retrieve filesystem metadata", zap.Error(err))
 	}
 
 	memoryPayload, err := new(memory.Memory).Collect()
 	if err == nil {
 		res.Memory = memoryPayload
 	} else {
-		logger.Error("Failed to retrieve memory metadata", zap.Error(err))
+		logger.Warn("Failed to retrieve memory metadata", zap.Error(err))
 	}
 
+	// in case of containerized environment , this would return pod id not node's ip
 	networkPayload, err := new(network.Network).Collect()
 	if err == nil {
 		res.Network = networkPayload
 	} else {
-		logger.Error("Failed to retrieve network metadata", zap.Error(err))
+		logger.Warn("Failed to retrieve network metadata", zap.Error(err))
 	}
 
 	platformPayload, err := new(platform.Platform).Collect()
 	if err == nil {
 		res.Platform = platformPayload
 	} else {
-		logger.Error("Failed to retrieve platform metadata", zap.Error(err))
+		logger.Warn("Failed to retrieve platform metadata", zap.Error(err))
 	}
 
 	return res
