@@ -335,7 +335,7 @@ func (s *receiver) getHostAuditLogs(groupID, hostname, logName, start, end strin
 func (s *receiver) sendLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && err != io.EOF {
-		s.log.Warn("Failed to retreive logs from: "+logName, zap.Error(err))
+		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {
@@ -348,7 +348,7 @@ func (s *receiver) sendLogs(r resourceInfo, logName string) {
 func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && err != io.EOF {
-		s.log.Warn("Failed to retreive audit logs: "+logName, zap.Error(err))
+		s.log.Warn("Failed to retrieve audit logs: "+logName, zap.Error(err))
 	}
 
 	for _, log := range logs {

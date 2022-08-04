@@ -43,7 +43,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `name` (required if enabled)
     - `collect_aduit_logs` (default false)
     - `include_clusters` (default empty)
-    - `exclude_clusters` (defualt empty)
+    - `exclude_clusters` (default empty)
 
 
 Examples:

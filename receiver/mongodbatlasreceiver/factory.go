@@ -93,7 +93,7 @@ func createCombinedLogReceiver(
 	var err error
 	recv := &combindedLogsReceiver{}
 
-	// If alerts is enabled create alerts reciever
+	// If alerts is enabled create alerts receiver
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
 		if err != nil {
