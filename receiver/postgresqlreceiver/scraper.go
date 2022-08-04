@@ -98,7 +98,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		dbSizeMap:   make(map[string]int64),
 		dbStats:     make(map[string]databaseStats),
 	}
-	p.retrieveDBMetrics(ctx, listClient, databases, r, errs)
+	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
@@ -109,8 +109,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		}
 		defer dbClient.Close()
 		p.recordDatabase(now, database, r)
-
-		p.collectTables(ctx, now, dbClient, database, errs)
+		p.collectTables(ctx, now, dbClient, database, &errs)
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -121,7 +120,7 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	listClient client,
 	databases []string,
 	r *dbRetrieval,
-	errs scrapererror.ScrapeErrors,
+	errs *scrapererror.ScrapeErrors,
 ) {
 	wg := &sync.WaitGroup{}
 
@@ -147,7 +146,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	p.mb.EmitForResource(metadata.WithPostgresqlDatabase(db))
 }
 
-func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs scrapererror.ScrapeErrors) {
+func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) {
 	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
 		errs.AddPartial(1, err)
@@ -191,7 +190,7 @@ func (p *postgreSQLScraper) retrieveDatabaseStats(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors scrapererror.ScrapeErrors,
+	errors *scrapererror.ScrapeErrors,
 ) {
 	defer wg.Done()
 	dbStats, err := client.getDatabaseStats(ctx, databases)
@@ -211,7 +210,7 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors scrapererror.ScrapeErrors,
+	errors *scrapererror.ScrapeErrors,
 ) {
 	defer wg.Done()
 	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
@@ -231,7 +230,7 @@ func (p *postgreSQLScraper) retrieveBackends(
 	client client,
 	databases []string,
 	r *dbRetrieval,
-	errors scrapererror.ScrapeErrors,
+	errors *scrapererror.ScrapeErrors,
 ) {
 	defer wg.Done()
 	activityByDB, err := client.getBackends(ctx, databases)
