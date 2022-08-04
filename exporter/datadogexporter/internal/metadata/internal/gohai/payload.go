@@ -28,35 +28,35 @@ type gohai struct {
 
 // Payload handles the JSON unmarshalling of the metadata payload
 // As weird as it sounds, in the v5 payload the value of the "gohai" field
-// is a JSON-formatted string. So this struct contains a MarshalledGohaiPayload
-// which will be marshalled as a JSON-formatted string.
+// is a JSON-formatted string. So this struct contains a MarshaledGohaiPayload
+// which will be marshaled as a JSON-formatted string.
 type Payload struct {
-	Gohai MarshalledGohaiPayload `json:"gohai"`
+	Gohai MarshaledGohaiPayload `json:"gohai"`
 }
 
-// MarshalledGohaiPayload contains the marshalled payload
-type MarshalledGohaiPayload struct {
+// MarshaledGohaiPayload contains the marshaled payload
+type MarshaledGohaiPayload struct {
 	gohai *gohai
 }
 
 // MarshalJSON implements the json.Marshaler interface.
 // It marshals the gohai struct twice (to a string) to comply with
 // the v5 payload format
-func (m MarshalledGohaiPayload) MarshalJSON() ([]byte, error) {
-	marshalledPayload, err := json.Marshal(m.gohai)
+func (m MarshaledGohaiPayload) MarshalJSON() ([]byte, error) {
+	marshaledPayload, err := json.Marshal(m.gohai)
 	if err != nil {
 		return []byte(""), err
 	}
-	doubleMarshalledPayload, err := json.Marshal(string(marshalledPayload))
+	doubleMarshaledPayload, err := json.Marshal(string(marshaledPayload))
 	if err != nil {
 		return []byte(""), err
 	}
-	return doubleMarshalledPayload, nil
+	return doubleMarshaledPayload, nil
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 // Unmarshals the passed bytes twice (first to a string, then to gohai.Gohai)
-func (m *MarshalledGohaiPayload) UnmarshalJSON(bytes []byte) error {
+func (m *MarshaledGohaiPayload) UnmarshalJSON(bytes []byte) error {
 	firstUnmarshall := ""
 	err := json.Unmarshal(bytes, &firstUnmarshall)
 	if err != nil {

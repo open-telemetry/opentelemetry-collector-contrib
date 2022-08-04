@@ -28,7 +28,7 @@ import (
 // https://github.com/DataDog/datadog-agent/blob/94a28d9cee3f1c886b3866e8208be5b2a8c2c217/pkg/metadata/internal/gohai/gohai.go#L27-L32
 func NewPayload(logger *zap.Logger) Payload {
 	return Payload{
-		Gohai: MarshalledGohaiPayload{
+		Gohai: MarshaledGohaiPayload{
 			gohai: newGohai(logger),
 		},
 	}
