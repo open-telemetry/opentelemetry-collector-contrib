@@ -5,7 +5,7 @@ change_type: enhancement
 component: k8sattributesprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Adds support for discovering Kubernetes ReplicaSet name"
+note: "Add support for discovering Kubernetes ReplicaSet name and ReplicaSet UID"
 
 # One or more tracking issues related to the change
 issues: [141]
