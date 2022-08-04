@@ -3,6 +3,7 @@ name: "CodeQL Analysis"
 on:
   push:
     branches: [main]
+  pull_request: # TODO - this line added for testing on PR. Remove this.
 
 jobs:
   CodeQL-Build:
@@ -23,9 +24,11 @@ jobs:
         with:
           languages: go
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
+      - name: Build Artifact
+        run: |
+          make otelcontribcol
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         timeout-minutes: 60
+
