@@ -8,6 +8,11 @@ on:
 jobs:
   CodeQL-Build:
     runs-on: ubuntu-latest
+    env:
+      # Force CodeQL to run the extraction on the files compiled by our custom
+      # build command, as opposed to letting the autobuilder figure it out.
+      # See: https://github.com/github/codeql-action/issues/1101#issuecomment-1157729589
+      CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
 
     steps:
       - name: Checkout repository
