@@ -1,6 +1,11 @@
 # Routing processor
 
-Routes logs, metrics or traces to specific exporters.
+
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [contrib]             |
 
 This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the trace information to specific exporters based on the value read.
 
@@ -50,3 +55,6 @@ The full list of settings exposed for this processor are documented [here](./con
 - [traces](./testdata/config_traces.yaml)
 
 [context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
