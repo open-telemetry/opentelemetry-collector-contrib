@@ -66,8 +66,8 @@ contrib.go.opencensus.io/exporter/stackdriver v0.13.13/go.mod h1:5pSSGY0Bhuk7waT
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.4 h1:cuBjW4kDHYj01QZXfEpHB2OFJ2mDorD8u2H1DECRjZc=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.4/go.mod h1:b+Y8gQ58Qg8QzCZERRU2yxs4f9QSXNG242ECOqEw82I=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.5-0.20220804200517-c595ccfb4c43 h1:wFvJmrXVfsglLwcVkNBXjzhI5u43frt0g4FPExIo1L0=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.5-0.20220804200517-c595ccfb4c43/go.mod h1:w8YgARcD4aNj6gMm2RZD2nErSOAQSUktsOXdFV6P6Hk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.4 h1:UlCxYSeY3a8FYR2Ni8SC8vxcb2MCTwBN8yDoy0AVGGU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.4/go.mod h1:d4ODYSOkLoLTyUyic8etLjC7Kzy13ZO2R+kdVi9ImQg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.4 h1:ZuSnzmTHyLCDJxeq5h785t8VcbRDX40+e5iVTSE4Y3Q=
