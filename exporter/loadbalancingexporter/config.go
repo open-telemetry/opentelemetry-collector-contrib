@@ -15,6 +15,8 @@
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
@@ -24,6 +26,7 @@ type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	Protocol                Protocol         `mapstructure:"protocol"`
 	Resolver                ResolverSettings `mapstructure:"resolver"`
+	Batch                   Batch            `mapstructure:"batch"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.
@@ -46,4 +49,16 @@ type StaticResolver struct {
 type DNSResolver struct {
 	Hostname string `mapstructure:"hostname"`
 	Port     string `mapstructure:"port"`
+}
+
+// Batch defines the configuration for the batch
+type Batch struct {
+	// Whether or not enable batch(default not enabled).
+	Enable bool `mapstructure:"enable"`
+
+	// Timeout sets the time after which a batch will be sent regardless of size.
+	Timeout time.Duration `mapstructure:"timeout"`
+
+	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
+	SendBatchSize int `mapstructure:"send_batch_size"`
 }

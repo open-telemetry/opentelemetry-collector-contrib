@@ -17,6 +17,7 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"time"
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
@@ -29,6 +30,10 @@ const (
 	typeStr = "loadbalancing"
 	// The stability level of the exporter.
 	stability = component.StabilityLevelBeta
+
+	defaultEnableBatch   = false
+	defaultSendBatchSize = 8192
+	defaultTimeout       = 200 * time.Millisecond
 )
 
 // NewFactory creates a factory for the exporter.
@@ -38,8 +43,8 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
+		component.WithLogsExporterAndStabilityLevel(createLogExporter, stability),
 	)
 }
 
@@ -52,6 +57,11 @@ func createDefaultConfig() config.Exporter {
 		Protocol: Protocol{
 			OTLP: *otlpDefaultCfg,
 		},
+		Batch: Batch{
+			Enable:        defaultEnableBatch,
+			Timeout:       defaultTimeout,
+			SendBatchSize: defaultSendBatchSize,
+		},
 	}
 }
 
@@ -59,6 +69,6 @@ func createTracesExporter(_ context.Context, params component.ExporterCreateSett
 	return newTracesExporter(params, cfg)
 }
 
-func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	return newLogsExporter(params, cfg)
 }
