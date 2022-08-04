@@ -56,13 +56,14 @@ var (
 	quantileValues = []float64{7, 8, 9}
 	quantiles      = getQuantiles(quantileBounds, quantileValues)
 
-	validIntGauge    = "valid_IntGauge"
-	validDoubleGauge = "valid_DoubleGauge"
-	validIntSum      = "valid_IntSum"
-	validSum         = "valid_Sum"
-	validHistogram   = "valid_Histogram"
-	validSummary     = "valid_Summary"
-	suffixedCounter  = "valid_IntSum_total"
+	validIntGauge       = "valid_IntGauge"
+	validDoubleGauge    = "valid_DoubleGauge"
+	validIntSum         = "valid_IntSum"
+	validSum            = "valid_Sum"
+	validHistogram      = "valid_Histogram"
+	validEmptyHistogram = "valid_empty_Histogram"
+	validSummary        = "valid_Summary"
+	suffixedCounter     = "valid_IntSum_total"
 
 	validIntGaugeDirty = "*valid_IntGauge$"
 
@@ -70,22 +71,24 @@ var (
 
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pmetric.Metric{
-		validIntGauge:    getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
-		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
-		validIntSum:      getIntSumMetric(validIntSum, lbs1, intVal1, time1),
-		suffixedCounter:  getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
-		validSum:         getSumMetric(validSum, lbs1, floatVal1, time1),
-		validHistogram:   getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
-		validSummary:     getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
+		validIntGauge:       getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
+		validDoubleGauge:    getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
+		validIntSum:         getIntSumMetric(validIntSum, lbs1, intVal1, time1),
+		suffixedCounter:     getIntSumMetric(suffixedCounter, lbs1, intVal1, time1),
+		validSum:            getSumMetric(validSum, lbs1, floatVal1, time1),
+		validHistogram:      getHistogramMetric(validHistogram, lbs1, time1, floatVal1, uint64(intVal1), bounds, buckets),
+		validEmptyHistogram: getHistogramMetricEmptyDataPoint(validEmptyHistogram, lbs1, time1),
+		validSummary:        getSummaryMetric(validSummary, lbs1, time1, floatVal1, uint64(intVal1), quantiles),
 	}
 	validMetrics2 = map[string]pmetric.Metric{
-		validIntGauge:      getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
-		validDoubleGauge:   getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
-		validIntSum:        getIntSumMetric(validIntSum, lbs2, intVal2, time2),
-		validSum:           getSumMetric(validSum, lbs2, floatVal2, time2),
-		validHistogram:     getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
-		validSummary:       getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
-		validIntGaugeDirty: getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
+		validIntGauge:       getIntGaugeMetric(validIntGauge, lbs2, intVal2, time2),
+		validDoubleGauge:    getDoubleGaugeMetric(validDoubleGauge, lbs2, floatVal2, time2),
+		validIntSum:         getIntSumMetric(validIntSum, lbs2, intVal2, time2),
+		validSum:            getSumMetric(validSum, lbs2, floatVal2, time2),
+		validHistogram:      getHistogramMetric(validHistogram, lbs2, time2, floatVal2, uint64(intVal2), bounds, buckets),
+		validEmptyHistogram: getHistogramMetricEmptyDataPoint(validEmptyHistogram, lbs2, time2),
+		validSummary:        getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
+		validIntGaugeDirty:  getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
 		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pcommon.NewMap(), 0, 0, 0,
 			pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.2, 0.3}),
 			pcommon.NewImmutableUInt64Slice([]uint64{1, 2})),
@@ -290,6 +293,17 @@ func getEmptyCumulativeHistogramMetric(name string) pmetric.Metric {
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeHistogram)
 	metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	return metric
+}
+
+func getHistogramMetricEmptyDataPoint(name string, attributes pcommon.Map, ts uint64) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	metric.SetDataType(pmetric.MetricDataTypeHistogram)
+	metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	dp := metric.Histogram().DataPoints().AppendEmpty()
+	attributes.CopyTo(dp.Attributes())
+	dp.SetTimestamp(pcommon.Timestamp(ts))
 	return metric
 }
 

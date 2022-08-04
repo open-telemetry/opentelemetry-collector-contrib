@@ -42,5 +42,4 @@ if [[ "${OWNERS}" =~ "${SENDER}" ]]; then
     exit 0
 fi
 
-gh issue comment ${ISSUE} --body "Pinging code owners: ${OWNERS}"
-
+gh issue comment ${ISSUE} --body "Pinging code owners: ${OWNERS}. See [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself."

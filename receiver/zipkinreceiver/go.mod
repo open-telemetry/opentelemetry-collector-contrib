@@ -8,10 +8,10 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.56.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
-	go.opentelemetry.io/collector/semconv v0.56.0
-	google.golang.org/protobuf v1.28.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/semconv v0.57.2
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

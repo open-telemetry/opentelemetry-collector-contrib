@@ -21,14 +21,12 @@ import (
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -69,62 +67,6 @@ func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
 	}
 }
 
-func TestScrapeNode(t *testing.T) {
-	testCases := []struct {
-		name        string
-		setupClient func() *mocks.Aerospike
-		expectedErr string
-	}{
-		{
-			name: "error response",
-			setupClient: func() *mocks.Aerospike {
-				client := &mocks.Aerospike{}
-				client.On("Info").Return(nil, as.ErrNetTimeout)
-				return client
-			},
-			expectedErr: as.ErrNetTimeout.Error(),
-		},
-		{
-			name: "empty response",
-			setupClient: func() *mocks.Aerospike {
-				client := &mocks.Aerospike{}
-				client.On("Info").Return(map[string]string{}, nil)
-				return client
-			},
-		},
-	}
-
-	logger, err := zap.NewDevelopment()
-	require.NoError(t, err)
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			client := tc.setupClient()
-			cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
-			require.NoError(t, err)
-
-			receiver, err := newAerospikeReceiver(
-				component.ReceiverCreateSettings{
-					TelemetrySettings: component.TelemetrySettings{
-						Logger: logger,
-					},
-				},
-				&Config{Endpoint: "localhost:3000"},
-				cs,
-			)
-			require.NoError(t, err)
-			errs := &scrapererror.ScrapeErrors{}
-			receiver.scrapeNode(client, pcommon.NewTimestampFromTime(time.Now().UTC()), errs)
-
-			if tc.expectedErr != "" {
-				assert.EqualError(t, errs.Combine(), tc.expectedErr)
-			}
-			client.AssertExpectations(t)
-			require.Equal(t, 0, receiver.mb.Emit().MetricCount())
-		})
-	}
-}
-
 func TestScrape_CollectClusterMetrics(t *testing.T) {
 	t.Parallel()
 
@@ -135,51 +77,64 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
-	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("Primary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270008"))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("Primary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("BB990C28F270008"))
+
+	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "30"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270008"))
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
-	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("Secondary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270009"))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("Secondary Node"))
+	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("BB990C28F270009"))
+
+	// require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "badval", metadata.AttributeNamespaceComponentData))
+	// expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270009"))
 
 	initialClient := mocks.NewAerospike(t)
-	initialClient.On("Info").Return(map[string]string{
-		"node":               "Primary Node",
-		"namespaces":         "test;bar",
-		"services":           "localhost:3001;localhost:3002;invalid",
-		"client_connections": "22",
-	}, nil)
-	initialClient.On("NamespaceInfo", "test").Return(map[string]string{
-		"name":            "test",
-		"memory_free_pct": "45",
-	}, nil)
-
-	initialClient.On("NamespaceInfo", "bar").Return(nil, errors.New("no such namespace"))
-	initialClient.On("Close").Return()
-
-	peerClient := mocks.NewAerospike(t)
-	peerClient.On("Info").Return(map[string]string{
-		"node":               "Secondary Node",
-		"namespaces":         "test",
-		"client_connections": "1",
+	initialClient.On("Info").Return(clusterInfo{
+		"BB990C28F270008": metricsMap{
+			"node":               "BB990C28F270008",
+			"client_connections": "22",
+		},
+		"BB990C28F270009": metricsMap{
+			"node":               "BB990C28F270009",
+			"client_connections": "1",
+		},
 	}, nil)
 
-	peerClient.On("NamespaceInfo", "test").Return(map[string]string{
-		"name":                   "test",
-		"memory_used_data_bytes": "128",
+	initialClient.On("NamespaceInfo").Return(namespaceInfo{
+		"BB990C28F270008": map[string]map[string]string{
+			"test": metricsMap{
+				"name":            "test",
+				"memory_free_pct": "45",
+			},
+			"bar": metricsMap{
+				"name":            "bar",
+				"memory_free_pct": "30",
+			},
+		},
+		"BB990C28F270009": map[string]map[string]string{
+			"test": metricsMap{
+				"name":                   "test",
+				"memory_used_data_bytes": "128",
+			},
+			"bar": metricsMap{
+				"name":                   "bar",
+				"memory_used_data_bytes": "badval",
+			},
+		},
 	}, nil)
-	peerClient.On("Close").Return()
 
-	clientFactory := func(host string, port int) (aerospike, error) {
+	initialClient.On("Close").Return(nil)
+
+	clientFactory := func(host string, port int) (Aerospike, error) {
 		switch fmt.Sprintf("%s:%d", host, port) {
 		case "localhost:3000":
 			return initialClient, nil
-		case "localhost:3001":
-			return peerClient, nil
 		case "localhost:3002":
 			return nil, errors.New("connection timeout")
 		}
@@ -191,18 +146,39 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 		port:          3000,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
-		logger:        logger,
+		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
 		},
 	}
 
+	require.NoError(t, receiver.start(context.Background(), componenttest.NewNopHost()))
+
 	actualMetrics, err := receiver.scrape(context.Background())
-	require.EqualError(t, err, "no such namespace; connection timeout; address invalid: missing port in address")
+	require.EqualError(t, err, "failed to parse int64 for AerospikeNamespaceMemoryUsage, value was badval: strconv.ParseInt: parsing \"badval\": invalid syntax")
 
 	expectedMetrics := expectedMB.Emit()
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 
+	require.NoError(t, receiver.shutdown(context.Background()))
+
 	initialClient.AssertExpectations(t)
-	peerClient.AssertExpectations(t)
+
+	receiverConnErr := &aerospikeReceiver{
+		host:          "localhost",
+		port:          3002,
+		clientFactory: clientFactory,
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
+		logger:        logger.Sugar(),
+		config: &Config{
+			CollectClusterMetrics: true,
+		},
+	}
+
+	initialClient.AssertNumberOfCalls(t, "Close", 1)
+
+	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	require.Equal(t, receiverConnErr.client, nil, "client should be set to nil because of connection error")
+
 }

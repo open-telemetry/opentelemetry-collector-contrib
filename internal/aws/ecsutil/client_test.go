@@ -47,7 +47,7 @@ func TestClient(t *testing.T) {
 
 func TestNewClientProvider(t *testing.T) {
 	baseURL, _ := url.Parse("http://localhost:8080")
-	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, componenttest.NewNopTelemetrySettings())
+	provider := NewClientProvider(*baseURL, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, provider)
 	_, ok := provider.(*defaultClientProvider)
 	require.True(t, ok)
@@ -59,7 +59,7 @@ func TestNewClientProvider(t *testing.T) {
 
 func TestDefaultClient(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
-	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, componenttest.NewNopTelemetrySettings())
+	client, err := defaultClient(*endpoint, confighttp.HTTPClientSettings{}, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 	require.NotNil(t, client.httpClient.Transport)
 	require.Equal(t, "http://localhost:8080", client.baseURL.String())
@@ -69,6 +69,7 @@ func TestBuildReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
 		baseURL:  *endpoint,
+		host:     componenttest.NewNopHost(),
 		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()
@@ -84,6 +85,7 @@ func TestBuildBadReq(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
 		baseURL:  *endpoint,
+		host:     componenttest.NewNopHost(),
 		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()
@@ -96,6 +98,7 @@ func TestGetBad(t *testing.T) {
 	endpoint, _ := url.Parse("http://localhost:8080")
 	p := &defaultClientProvider{
 		baseURL:  *endpoint,
+		host:     componenttest.NewNopHost(),
 		settings: componenttest.NewNopTelemetrySettings(),
 	}
 	cl, err := p.BuildClient()

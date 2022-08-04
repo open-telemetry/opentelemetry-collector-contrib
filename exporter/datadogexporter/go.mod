@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.17
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.23
+	github.com/DataDog/agent-payload/v5 v5.0.26
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.3
-	github.com/aws/aws-sdk-go v1.44.57
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.4
+	github.com/aws/aws-sdk-go v1.44.67
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.56.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.56.0
@@ -16,9 +16,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.56.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
-	go.opentelemetry.io/collector/semconv v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -57,7 +57,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -77,7 +77,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.6 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.7 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
@@ -102,7 +102,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220421151946-72621c1f0bd3 // indirect
 	google.golang.org/grpc v1.48.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
