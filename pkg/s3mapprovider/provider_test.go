@@ -17,6 +17,7 @@ package s3mapprovider
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -78,7 +79,7 @@ func (fp *testProvider) Retrieve(ctx context.Context, uri string, watcher confma
 	buffer := make([]byte, int(resp.ContentLength))
 	defer resp.Body.Close()
 	_, err = resp.Body.Read(buffer)
-	if err != io.EOF && err != nil {
+	if !errors.Is(err, io.EOF) && err != nil {
 		return confmap.Retrieved{}, fmt.Errorf("failed to read content from the downloaded config file via uri %q", uri)
 	}
 
@@ -142,7 +143,7 @@ func (fp *testInvalidProvider) Retrieve(ctx context.Context, uri string, watcher
 	buffer := make([]byte, int(resp.ContentLength))
 	defer resp.Body.Close()
 	_, err = resp.Body.Read(buffer)
-	if err != io.EOF && err != nil {
+	if !errors.Is(err, io.EOF) && err != nil {
 		return confmap.Retrieved{}, fmt.Errorf("failed to read content from the downloaded config file via uri %q", uri)
 	}
 
@@ -206,7 +207,7 @@ func (fp *testNonExistProvider) Retrieve(ctx context.Context, uri string, watche
 	buffer := make([]byte, int(resp.ContentLength))
 	defer resp.Body.Close()
 	_, err = resp.Body.Read(buffer)
-	if err != io.EOF && err != nil {
+	if !errors.Is(err, io.EOF) && err != nil {
 		return confmap.Retrieved{}, fmt.Errorf("failed to read content from the downloaded config file via uri %q", uri)
 	}
 
