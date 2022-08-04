@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/window
 go 1.17
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.57.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a

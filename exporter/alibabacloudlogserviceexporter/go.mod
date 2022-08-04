@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.37
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
 	go.opentelemetry.io/collector/pdata v0.57.2
