@@ -114,6 +114,7 @@
 - `templatequerylanguage`: TQL grammar now supports complex `where` expressions with `and`, `or` and parentheses (#10195)
 - `transformprocessor`: Add .string accessor to get hex string for trace_id and span_id (#11555)
 - `pkg/translator/jaeger`: Handle spans with own process (#10186)
+- `receiver/statsdreceiver`: Add OTLP v0.11 exponential histogram aggregator support. ()
 
 ### 🧰 Bug fixes 🧰
 - `cmd/chloggen`: Compare changelog to common ancestor with main (#12149)

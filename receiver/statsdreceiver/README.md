@@ -30,8 +30,8 @@ The Following settings are optional:
 
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"` and `"histogram"`.
 
-`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"` and `"summary"`. For `"gauge"`, it does not perform any aggregation.
-For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description(the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream. 
+`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
+For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description(the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an auto-scaling exponential histogram configured with only a maximum size, as shown in the example below.
 TODO: Add a new option to use a smoothed summary like Promethetheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
 
 Example:
@@ -47,8 +47,12 @@ receivers:
     timer_histogram_mapping:
       - statsd_type: "histogram"
         observer_type: "gauge"
+		histogram: 
+		  max_size: 100
       - statsd_type: "timing"
         observer_type: "gauge"
+		histogram: 
+		  max_size: 300
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
