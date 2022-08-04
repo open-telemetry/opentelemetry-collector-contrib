@@ -111,8 +111,8 @@ func (s *receiver) createProjectMap() (map[string]*Project, error) {
 	return projects, nil
 }
 
-// FilterHostName parses out the hostname from the specified cluster host
-func FilterHostName(s string) []string {
+// ParseHostName parses out the hostname from the specified cluster host
+func ParseHostName(s string) []string {
 	var hostnames []string
 
 	// first check to make sure string is of adequate size
@@ -169,10 +169,6 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 			// filter out any projects not specified in the config
 			fp := filterProjects(projects, cfgProjects)
 
-			if len(projects) < 1 {
-				return
-			}
-
 			// get clusters for each of the projects
 			for _, project := range fp {
 				resource.Org, resource.Project = *org, *project
@@ -217,7 +213,7 @@ func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*
 	clusters, err := s.client.GetClusters(ctx, r.Project.ID)
 	if err != nil {
 		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
-		return clusters, err
+		return nil, err
 	}
 
 	// check to include or exclude clusters
@@ -239,7 +235,7 @@ func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*
 
 func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
 	for _, cluster := range clusters {
-		hostnames := FilterHostName(cluster.ConnectionStrings.Standard)
+		hostnames := ParseHostName(cluster.ConnectionStrings.Standard)
 		for _, hostname := range hostnames {
 			r.Cluster = cluster
 			r.Hostname = hostname

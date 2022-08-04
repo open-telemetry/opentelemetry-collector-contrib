@@ -26,7 +26,7 @@ import (
 )
 
 func TestMongoeventToLogData(t *testing.T) {
-	mongoevent := model.GetTestEvent()
+	mongoevent := GetTestEvent()
 	r := resourceInfo{
 		Org:      mongodbatlas.Organization{Name: "Org"},
 		Project:  mongodbatlas.Project{Name: "Project"},
@@ -50,7 +50,7 @@ func TestMongoeventToLogData(t *testing.T) {
 }
 
 func TestUnknownSeverity(t *testing.T) {
-	mongoevent := model.GetTestEvent()
+	mongoevent := GetTestEvent()
 	mongoevent.Severity = "Unknown"
 	r := resourceInfo{
 		Org:      mongodbatlas.Organization{Name: "Org"},
@@ -69,7 +69,7 @@ func TestUnknownSeverity(t *testing.T) {
 }
 
 func TestMongoEventToAuditLogData(t *testing.T) {
-	mongoevent := model.GetTestAuditEvent()
+	mongoevent := GetTestAuditEvent()
 	r := resourceInfo{
 		Org:      mongodbatlas.Organization{Name: "Org"},
 		Project:  mongodbatlas.Project{Name: "Project"},
@@ -89,4 +89,39 @@ func TestMongoEventToAuditLogData(t *testing.T) {
 
 	ld = mongodbAuditEventToLogData(zap.NewNop(), mongoevent, r)
 	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+}
+
+func GetTestEvent() model.LogEntry {
+	return model.LogEntry{
+		Severity:   "I",
+		Component:  "NETWORK",
+		ID:         12312,
+		Context:    "context",
+		Message:    "Connection ended",
+		Attributes: map[string]interface{}{"connectionCount": 47, "connectionId": 9052, "remote": "192.168.253.105:59742", "id": "93a8f190-afd0-422d-9de6-f6c5e833e35f"},
+	}
+}
+
+func GetTestAuditEvent() model.AuditLog {
+	return model.AuditLog{
+		AuthType: "authtype",
+		ID: model.ID{
+			Type:   "type",
+			Binary: "binary",
+		},
+		Local: model.Address{
+			IP:   "Ip",
+			Port: 12345,
+		},
+		Remote: model.Address{
+			IP:   "Ip",
+			Port: 12345,
+		},
+		Result: 40,
+		Param: model.Param{
+			User:      "name",
+			Database:  "db",
+			Mechanism: "mechanism",
+		},
+	}
 }
