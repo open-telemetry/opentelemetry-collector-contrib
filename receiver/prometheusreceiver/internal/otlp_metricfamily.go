@@ -57,8 +57,6 @@ type metricGroup struct {
 	complexValue []*dataPoint
 }
 
-var pdataStaleFlags = pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)
-
 func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype, isMonotonic := convToMetricType(metadata.Type)
@@ -156,7 +154,7 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 	point := dest.AppendEmpty()
 
 	if pointIsStale {
-		point.SetFlags(pdataStaleFlags)
+		point.FlagsStruct().SetNoRecordedValue(true)
 	} else {
 		point.SetCount(uint64(mg.count))
 		point.SetSum(mg.sum)
@@ -194,7 +192,7 @@ func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest *pmetric.S
 	point := dest.AppendEmpty()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
-		point.SetFlags(pdataStaleFlags)
+		point.FlagsStruct().SetNoRecordedValue(true)
 	} else {
 		point.SetSum(mg.sum)
 		point.SetCount(uint64(mg.count))
@@ -239,7 +237,7 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest *pmetri
 	point.SetStartTimestamp(startTsNanos)
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
-		point.SetFlags(pdataStaleFlags)
+		point.FlagsStruct().SetNoRecordedValue(true)
 	} else {
 		point.SetDoubleVal(mg.value)
 	}
