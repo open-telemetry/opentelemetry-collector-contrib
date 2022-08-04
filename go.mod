@@ -154,7 +154,6 @@ require (
 	go.opentelemetry.io/collector v0.56.1-0.20220803125008-a585d0de68c4
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
-    github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 )
 
 require (
@@ -195,6 +194,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220718145016-ab6fb7ce8c9e // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.0 // indirect
+	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
 	github.com/DataDog/sketches-go v1.4.1 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect

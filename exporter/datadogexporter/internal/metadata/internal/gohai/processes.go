@@ -21,9 +21,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// GetProcessesPayload builds a payload of processes metadata collected from gohai.
-func GetProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload {
-
+// NewProcessesPayload builds a payload of processes metadata collected from gohai.
+func NewProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload {
 	// Get processes metadata from gohai
 	proc, err := new(processes.Processes).Collect()
 	if err != nil {
@@ -34,7 +33,6 @@ func GetProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload 
 	processesPayload := map[string]interface{}{
 		"snaps": []interface{}{proc},
 	}
-
 	return &ProcessesPayload{
 		Processes: processesPayload,
 		Meta: map[string]string{

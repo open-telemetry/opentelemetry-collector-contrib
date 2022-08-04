@@ -15,7 +15,7 @@ import (
 
 func TestGetPayload(t *testing.T) {
 	logger := zap.NewNop()
-	gohai := GetPayload(logger)
+	gohai := NewPayload(logger)
 	assert.NotNil(t, gohai.Gohai.gohai.CPU)
 	assert.NotNil(t, gohai.Gohai.gohai.FileSystem)
 	assert.NotNil(t, gohai.Gohai.gohai.Memory)

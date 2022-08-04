@@ -61,11 +61,13 @@ type HostMetadata struct {
 	// Tags includes the host tags
 	Tags *HostTags `json:"host-tags"`
 
-	//Gohai payload contains inventory of system information
+	// Payload contains inventory of system information provided by gohai
 	// this is embedded because of special serialization requirements
+	// the field `gohai` is JSON-formatted string
 	gohai.Payload
 
-	// Backend treats processes as resources
+	// Processes contains the process payload devired by gohai
+	// Because of legacy reasons this is called resources in datadog intake
 	Processes *gohai.ProcessesPayload `json:"resources"`
 }
 
@@ -150,8 +152,8 @@ func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig
 	hm.Flavor = params.BuildInfo.Command
 	hm.Version = params.BuildInfo.Version
 	hm.Tags.OTel = append(hm.Tags.OTel, pcfg.ConfigTags...)
-	hm.Payload = gohai.GetPayload(params.Logger)
-	hm.Processes = gohai.GetProcessesPayload(hm.Meta.Hostname, params.Logger)
+	hm.Payload = gohai.NewPayload(params.Logger)
+	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
 		ec2HostInfo := ec2.GetHostInfo(params.Logger)
