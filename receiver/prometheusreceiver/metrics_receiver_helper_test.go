@@ -195,7 +195,7 @@ func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus,
 			}
 		}
 		return true
-	}, 10*time.Second, 500*time.Millisecond)
+	}, 30*time.Second, 500*time.Millisecond)
 }
 
 func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
