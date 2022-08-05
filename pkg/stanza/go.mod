@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 
-go 1.17
+go 1.18
 
 require (
 	github.com/antonmedv/expr v1.9.0

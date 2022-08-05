@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/pierrec/lz4 v2.6.1+incompatible
