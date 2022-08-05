@@ -27,7 +27,7 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 | max_version |string| <no value> | MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)  |
 | reload_interval |[time-Duration](#time-Duration)| <no value> | ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)  |
 | insecure |bool| true | In gRPC when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure. In HTTP, this disables verifying the server's certificate chain and host name (InsecureSkipVerify in the tls Config). Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)  |
-| insecure_skip_verify |bool| <no value> | InsecureSkipVerify will enable TLS but not verify the certificate.  |
+| insecure_skip_verify |bool| false | InsecureSkipVerify will enable TLS but not verify the certificate.  |
 | server_name_override |string| <no value> | ServerName requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)  |
 
 ### metrics-MetricsSettings
@@ -96,13 +96,13 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-| enabled |bool| <no value> |  |
+| enabled |bool| false |  |
 
 ### redis-cmd-usec-MetricSettings
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-| enabled |bool| <no value> |  |
+| enabled |bool| false |  |
 
 ### redis-commands-MetricSettings
 
@@ -186,7 +186,7 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-| enabled |bool| <no value> |  |
+| enabled |bool| false |  |
 
 ### redis-memory-fragmentation-ratio-MetricSettings
 
@@ -252,7 +252,7 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-| enabled |bool| <no value> |  |
+| enabled |bool| false |  |
 
 ### redis-slaves-connected-MetricSettings
 

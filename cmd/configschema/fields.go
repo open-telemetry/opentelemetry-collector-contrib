@@ -130,9 +130,7 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 			f.Default = v.String()
 		}
 	case reflect.Bool:
-		if v.Bool() {
-			f.Default = v.Bool()
-		}
+		f.Default = v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if v.Int() != 0 {
 			if v.Type() == reflect.TypeOf(time.Duration(0)) {
