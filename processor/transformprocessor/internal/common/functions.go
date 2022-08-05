@@ -33,6 +33,7 @@ var registry = map[string]interface{}{
 	"replace_all_patterns": tqlotel.ReplaceAllPatterns,
 	"delete_key":           tqlotel.DeleteKey,
 	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
+	"split":                tqlotel.Split,
 }
 
 func Functions() map[string]interface{} {

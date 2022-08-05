@@ -130,6 +130,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.method", "get")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("flags", "A|B|C")
 			},
 		},
 		{
@@ -137,7 +138,43 @@ func TestProcess(t *testing.T) {
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("flags", "A|B|C")
 			},
+		},
+		{
+			query: `split(attributes["flags"], "|")`,
+			want: func(td plog.Logs) {
+				oldValue1, _ := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("flags")
+				newValue1 := pcommon.NewValueSlice()
+				newValue1.SliceVal().AppendEmpty().SetStringVal("A")
+				newValue1.SliceVal().AppendEmpty().SetStringVal("B")
+				newValue1.SliceVal().AppendEmpty().SetStringVal("C")
+				newValue1.CopyTo(oldValue1)
+				oldValue2, _ := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Get("flags")
+				newValue2 := pcommon.NewValueSlice()
+				newValue2.SliceVal().AppendEmpty().SetStringVal("C")
+				newValue2.SliceVal().AppendEmpty().SetStringVal("D")
+				newValue2.CopyTo(oldValue2)
+			},
+		},
+		{
+			query: `split(attributes["flags"], "|") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			want: func(td plog.Logs) {
+				oldValue, _ := td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("flags")
+				newValue := pcommon.NewValueSlice()
+				newValue.SliceVal().AppendEmpty().SetStringVal("A")
+				newValue.SliceVal().AppendEmpty().SetStringVal("B")
+				newValue.SliceVal().AppendEmpty().SetStringVal("C")
+				newValue.CopyTo(oldValue)
+			},
+		},
+		{
+			query: `split(attributes["not_exist_flags"], "|")`,
+			want:  func(td plog.Logs) { return },
+		},
+		{
+			query: `split(attributes, "|")`,
+			want:  func(td plog.Logs) { return },
 		},
 	}
 
@@ -180,6 +217,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().InsertString("http.method", "get")
 	log.Attributes().InsertString("http.path", "/health")
 	log.Attributes().InsertString("http.url", "http://localhost/health")
+	log.Attributes().InsertString("flags", "A|B|C")
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -189,4 +227,5 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().InsertString("http.method", "get")
 	log.Attributes().InsertString("http.path", "/health")
 	log.Attributes().InsertString("http.url", "http://localhost/health")
+	log.Attributes().InsertString("flags", "C|D")
 }
