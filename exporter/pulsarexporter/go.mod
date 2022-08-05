@@ -6,12 +6,12 @@ require (
 	github.com/apache/pulsar-client-go v0.8.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
-	go.opentelemetry.io/collector/semconv v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -37,7 +37,7 @@ require (
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/keybase/go-keychain v0.0.0-20190712205309-48d3d31d256d // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
@@ -75,7 +75,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
 	google.golang.org/grpc v1.48.0 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

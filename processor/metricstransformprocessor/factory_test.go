@@ -75,11 +75,6 @@ func TestCreateProcessors(t *testing.T) {
 			errorMessage: fmt.Sprintf("missing required field %q", IncludeFieldName),
 		},
 		{
-			configName:   "config_invalid_include_and_metricname.yaml",
-			succeed:      false,
-			errorMessage: fmt.Sprintf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType),
-		},
-		{
 			configName:   "config_invalid_matchtype.yaml",
 			succeed:      false,
 			errorMessage: fmt.Sprintf("%q must be in %q", MatchTypeFieldName, matchTypes),
@@ -161,8 +156,11 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	v1 := Config{
 		Transforms: []Transform{
 			{
-				MetricName: "mymetric",
-				Action:     Update,
+				MetricIncludeFilter: FilterConfig{
+					Include:   "mymetric",
+					MatchType: StrictMatchType,
+				},
+				Action: Update,
 				Operations: []Operation{
 					{
 						Action:   AddLabel,
@@ -178,8 +176,11 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	v2 := Config{
 		Transforms: []Transform{
 			{
-				MetricName: "mymetric",
-				Action:     Update,
+				MetricIncludeFilter: FilterConfig{
+					Include:   "mymetric",
+					MatchType: StrictMatchType,
+				},
+				Action: Update,
 				Operations: []Operation{
 					{
 						Action:   AddLabel,
@@ -201,9 +202,12 @@ func TestCreateProcessorsFilledData(t *testing.T) {
 
 	oCfg.Transforms = []Transform{
 		{
-			MetricName: "name",
-			Action:     Update,
-			NewName:    "new-name",
+			MetricIncludeFilter: FilterConfig{
+				Include:   "name",
+				MatchType: StrictMatchType,
+			},
+			Action:  Update,
+			NewName: "new-name",
 			Operations: []Operation{
 				{
 					Action:   AddLabel,

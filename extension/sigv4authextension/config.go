@@ -38,6 +38,7 @@ type Config struct {
 type AssumeRole struct {
 	ARN         string `mapstructure:"arn,omitempty"`
 	SessionName string `mapstructure:"session_name,omitempty"`
+	STSRegion   string `mapstructure:"sts_region,omitempty"`
 }
 
 // compile time check that the Config struct satisfies the config.Extension interface

@@ -3,16 +3,16 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzio
 go 1.17
 
 require (
-	github.com/hashicorp/go-hclog v1.2.1
+	github.com/hashicorp/go-hclog v1.2.2
 	github.com/jaegertracing/jaeger v1.36.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
-	go.opentelemetry.io/collector/semconv v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/zap v1.21.0
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/protobuf v1.28.1
 )
 
 require (
@@ -27,7 +27,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.15.8 // indirect
+	github.com/klauspost/compress v1.15.9 // indirect
 	github.com/knadh/koanf v1.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -36,7 +36,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.56.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect

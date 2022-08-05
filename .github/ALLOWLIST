@@ -29,7 +29,6 @@ internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
 pkg/translator/prometheusremotewrite
-pkg/translator/signalfx
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 testbed

@@ -3,24 +3,24 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/google
 go 1.17
 
 require (
-	cloud.google.com/go/spanner v1.34.1
+	cloud.google.com/go/spanner v1.36.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
+	go.opentelemetry.io/collector v0.57.2
 	go.uber.org/zap v1.21.0
-	google.golang.org/api v0.87.0
+	google.golang.org/api v0.90.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20220624142145-8cd45d7dbd1f
+	google.golang.org/genproto v0.0.0-20220706185917-7780775163c4
 	google.golang.org/grpc v1.48.0
 )
 
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/pdata v0.57.2
 )
 
 require (
@@ -66,6 +66,6 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220609144429-65e65417b02f // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 )

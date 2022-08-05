@@ -164,11 +164,12 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice,
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, len(dp.MExplicitBounds())+3)
-		for _, b := range dp.MExplicitBounds() {
-			keyHashParts = append(keyHashParts, b)
+		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+3)
+		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
+			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
-		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), dp.Flags())
+
+		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), flagsValue(dp.FlagsStruct()))
 		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewHistogramDataPointSlice()
@@ -182,7 +183,7 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]interface{}, 0, 4)
-		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), dp.Flags(), dp.Negative().Offset(),
+		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), flagsValue(dp.FlagsStruct()), dp.Negative().Offset(),
 			dp.Positive().Offset())
 		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
@@ -190,6 +191,13 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 		}
 		dp.MoveTo(dpsByAttrsAndTs[key].AppendEmpty())
 	}
+}
+
+func flagsValue(flags pmetric.MetricDataPointFlagsStruct) uint32 {
+	if flags.NoRecordedValue() {
+		return uint32(1)
+	}
+	return uint32(0)
 }
 
 func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
@@ -275,6 +283,7 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
+		counts := dp.BucketCounts().AsRaw()
 		for i := 1; i < dps.Len(); i++ {
 			if dps.At(i).Count() == 0 {
 				continue
@@ -288,11 +297,12 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 				dp.SetMax(dps.At(i).Max())
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
-			for b, bc := range dps.At(i).MBucketCounts() {
-				dp.MBucketCounts()[b] = dp.MBucketCounts()[b] + bc
+			for b := 0; b < dps.At(i).BucketCounts().Len(); b++ {
+				counts[b] += dps.At(i).BucketCounts().At(b)
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 		}
+		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
 	}
 }
 
@@ -301,6 +311,8 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
+		negatives := dp.Negative().BucketCounts().AsRaw()
+		positives := dp.Positive().BucketCounts().AsRaw()
 		for i := 1; i < dps.Len(); i++ {
 			if dps.At(i).Count() == 0 {
 				continue
@@ -313,13 +325,15 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 			if dp.HasMax() && dp.Max() < dps.At(i).Max() {
 				dp.SetMax(dps.At(i).Max())
 			}
-			for b, bc := range dps.At(i).Negative().MBucketCounts() {
-				dps.At(i).Negative().MBucketCounts()[b] = dps.At(i).Negative().MBucketCounts()[b] + bc
+			for b := 0; b < dps.At(i).Negative().BucketCounts().Len(); b++ {
+				negatives[b] += dps.At(i).Negative().BucketCounts().At(b)
 			}
-			for b, bc := range dps.At(i).Positive().MBucketCounts() {
-				dps.At(i).Positive().MBucketCounts()[b] = dps.At(i).Positive().MBucketCounts()[b] + bc
+			for b := 0; b < dps.At(i).Positive().BucketCounts().Len(); b++ {
+				positives[b] += dps.At(i).Positive().BucketCounts().At(b)
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
 		}
+		dp.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(negatives))
+		dp.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(positives))
 	}
 }

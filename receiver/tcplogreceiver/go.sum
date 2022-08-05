@@ -208,10 +208,10 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.etcd.io/bbolt v1.3.6 h1:/ecaJf0sk1l4l6V4awd65v2C3ILy7MSj+s/x1ADCIMU=
 go.opencensus.io v0.23.0 h1:gqCw0LfLxScz8irSi8exQc7fyQ0fKQU/qnC/X8+V/1M=
 go.opencensus.io v0.23.0/go.mod h1:XItmlyltB5F7CS4xOC1DcqMoFqwtC6OG2xF7mCv7P7E=
-go.opentelemetry.io/collector v0.56.0 h1:p9lLKYyWgX0PBdNP4EScZfMpk8XYSj+MuIhS0dSWzq8=
-go.opentelemetry.io/collector v0.56.0/go.mod h1:zYv4Ds01+96vPhYIwhYb3unemGriZ4OQBWeMT6JoVEQ=
-go.opentelemetry.io/collector/pdata v0.56.0 h1:JD8KjQ7dNZ441xMuVZVu5NRYmkA4vOYGV7w8tkCdyrE=
-go.opentelemetry.io/collector/pdata v0.56.0/go.mod h1:mYcCREWiIJyHss0dbU+GSiz2tmGZ6u09vtfkKTciog4=
+go.opentelemetry.io/collector v0.57.2 h1:/J7twI5BlIK3I4GfDfLhqPgfgSjnhiDesXf24bmrXYM=
+go.opentelemetry.io/collector v0.57.2/go.mod h1:9TwWyMRhbFNzaaGLtm/6poWNDJw+etvQMS6Fy+8/8Xs=
+go.opentelemetry.io/collector/pdata v0.57.2 h1:w2w3NE7/3WzHloT1xV5caRmifV3qt95gc5iJhO/Bues=
+go.opentelemetry.io/collector/pdata v0.57.2/go.mod h1:RU9I8lwBUxucwOsSYzHEcHi15M9QaX78hgQ2PRdSxV0=
 go.opentelemetry.io/otel v1.8.0 h1:zcvBFizPbpa1q7FehvFiHbQwGzmPILebO0tyqIR5Djg=
 go.opentelemetry.io/otel v1.8.0/go.mod h1:2pkj+iMj0o03Y+cW6/m8Y4WkRdYN3AvCXCnzRMp9yvM=
 go.opentelemetry.io/otel/metric v0.31.0 h1:6SiklT+gfWAwWUR0meEMxQBtihpiEs4c+vL9spDTqUs=
@@ -342,8 +342,8 @@ google.golang.org/protobuf v1.25.0/go.mod h1:9JNX74DMeImyA3h4bdi1ymwjUzf21/xIlba
 google.golang.org/protobuf v1.26.0-rc.1/go.mod h1:jlhhOSvTdKEhbULTjvd4ARK9grFBp09yW+WbY/TyQbw=
 google.golang.org/protobuf v1.26.0/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
 google.golang.org/protobuf v1.27.1/go.mod h1:9q0QmTI4eRPtz6boOQmLYwt+qCgq0jsYwAQnmE0givc=
-google.golang.org/protobuf v1.28.0 h1:w43yiav+6bVFTBQFZX0r7ipe9JQ1QsbMgHwbBziscLw=
-google.golang.org/protobuf v1.28.0/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
+google.golang.org/protobuf v1.28.1 h1:d0NfwRgPtno5B1Wa6L2DAG+KivqkdutMf1UhdNx175w=
+google.golang.org/protobuf v1.28.1/go.mod h1:HV8QOd/L58Z+nl8r43ehVNZIU/HEI6OcFqwMG9pJV4I=
 gopkg.in/asn1-ber.v1 v1.0.0-20181015200546-f715ec2f112d/go.mod h1:cuepJuh7vyXfUyUwEgHQXw849cJrilpS5NeIjOWESAw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

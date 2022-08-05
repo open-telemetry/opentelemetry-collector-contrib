@@ -36,23 +36,31 @@ type resourceEnhancer struct {
 
 func newResourceEnhancer(
 	resources resourceAttributes,
+	receiverAttributes map[string]string,
 	env observer.EndpointEnv,
 	endpoint observer.Endpoint,
 	nextConsumer consumer.Metrics,
 ) (*resourceEnhancer, error) {
 	attrs := map[string]string{}
 
-	// Precompute values that will be inserted for each resource object passed through.
-	for attr, expr := range resources[endpoint.Details.Type()] {
-		res, err := evalBackticksInConfigValue(expr, env)
-		if err != nil {
-			return nil, fmt.Errorf("failed processing resource attribute %q for endpoint %v: %w", attr, endpoint.ID, err)
-		}
+	for _, resource := range []map[string]string{resources[endpoint.Details.Type()], receiverAttributes} {
+		// Precompute values that will be inserted for each resource object passed through.
+		for attr, expr := range resource {
+			// If the attribute value is empty this signals to delete existing
+			if expr == "" {
+				delete(attrs, attr)
+				continue
+			}
 
-		// If the attribute value is empty user has likely removed the default value so skip it.
-		val := fmt.Sprint(res)
-		if val != "" {
-			attrs[attr] = val
+			res, err := evalBackticksInConfigValue(expr, env)
+			if err != nil {
+				return nil, fmt.Errorf("failed processing resource attribute %q for endpoint %v: %w", attr, endpoint.ID, err)
+			}
+
+			val := fmt.Sprint(res)
+			if val != "" {
+				attrs[attr] = val
+			}
 		}
 	}
 

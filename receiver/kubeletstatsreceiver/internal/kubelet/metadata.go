@@ -133,6 +133,12 @@ func (m *Metadata) getContainerID(podUID string, containerName string) (string, 
 					return stripContainerID(containerStatus.ContainerID), nil
 				}
 			}
+			for _, initContainerStatus := range pod.Status.InitContainerStatuses {
+				if containerName == initContainerStatus.Name {
+					return stripContainerID(initContainerStatus.ContainerID), nil
+				}
+			}
+
 		}
 	}
 
