@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
@@ -35,6 +36,7 @@ type clientRoundTripper struct {
 	log               *zap.Logger
 	retrySettings     exporterhelper.RetrySettings
 	isStopped         bool
+	mutex             sync.Mutex
 	shutdownChan      chan struct{}
 }
 
@@ -51,19 +53,33 @@ func newClientRoundTripper(
 	}
 }
 
+func (rt *clientRoundTripper) getIsStopped() bool {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	return rt.isStopped
+}
+
+func (rt *clientRoundTripper) setIsStopped(val bool) {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	rt.isStopped = val
+}
+
 func (rt *clientRoundTripper) Shutdown() error {
-	if rt.isStopped {
+	if rt.getIsStopped() {
 		return nil
 	}
 
-	rt.isStopped = true
+	rt.setIsStopped(true)
 	rt.shutdownChan <- struct{}{}
 	close(rt.shutdownChan)
 	return nil
 }
 
 func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if rt.isStopped {
+	if rt.getIsStopped() {
 		return nil, fmt.Errorf("request cancelled due to shutdown")
 	}
 

@@ -49,7 +49,7 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReciever(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
+func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
 	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	if err != nil {
 		return nil, err

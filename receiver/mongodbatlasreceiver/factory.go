@@ -16,6 +16,7 @@ package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -78,6 +79,10 @@ func createCombinedLogReceiver(
 	var err error
 	recv := &combindedLogsReceiver{}
 
+	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled {
+		return nil, errors.New("one of 'alerts' or 'logs' must be enabled")
+	}
+
 	// If alerts is enabled create alerts receiver
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
@@ -119,7 +124,7 @@ func getReceiver(params component.ReceiverCreateSettings, cfg *Config) (*receive
 	mongoDBReceiver, ok := receivers[cfg.ID().String()]
 	var err error
 	if !ok {
-		mongoDBReceiver, err = newMongoDBAtlasReciever(params, cfg)
+		mongoDBReceiver, err = newMongoDBAtlasReceiver(params, cfg)
 		receivers[cfg.ID().String()] = mongoDBReceiver
 	}
 

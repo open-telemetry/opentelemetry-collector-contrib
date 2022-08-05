@@ -19,10 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -97,7 +95,7 @@ func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 }
 
 func (s *receiver) createProjectMap() (map[string]*Project, error) {
-	if len(s.cfg.Logs.Projects) < 1 {
+	if len(s.cfg.Logs.Projects) == 0 {
 		return nil, errors.New("no projects specified")
 	}
 
@@ -111,12 +109,12 @@ func (s *receiver) createProjectMap() (map[string]*Project, error) {
 	return projects, nil
 }
 
-// ParseHostName parses out the hostname from the specified cluster host
-func ParseHostName(s string) []string {
+// parseHostName parses out the hostname from the specified cluster host
+func parseHostName(s string, logger *zap.Logger) []string {
 	var hostnames []string
 
-	// first check to make sure string is of adequate size
-	if len(s) < 1 {
+	// first check to make sure string is not empty
+	if s == "" {
 		return []string{}
 	}
 
@@ -124,22 +122,16 @@ func ParseHostName(s string) []string {
 	tmp := strings.Split(s, ",")
 	for _, t := range tmp {
 
-		u, err := url.Parse(t)
-		if err != nil {
-			fmt.Printf("Error parsing out %s", t)
-		}
+		h := strings.TrimPrefix(t, "mongodb://")
 
 		// separate hostname from scheme and port
-		host, _, err := net.SplitHostPort(u.Host)
+		host, _, err := net.SplitHostPort(h)
 		if err != nil {
-			// the scheme prefix was not added on to this string
-			// thus the hostname will have been placed under the "Scheme" field
-			hostnames = append(hostnames, u.Scheme)
-		} else {
-			// hostname parsed successfully
-			hostnames = append(hostnames, host)
+			logger.Error("Could not parse out hostname: " + host)
+			continue
 		}
-
+		// hostname parsed successfully
+		hostnames = append(hostnames, host)
 	}
 
 	return hostnames
@@ -235,7 +227,7 @@ func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*
 
 func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
 	for _, cluster := range clusters {
-		hostnames := ParseHostName(cluster.ConnectionStrings.Standard)
+		hostnames := parseHostName(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
 			r.Cluster = cluster
 			r.Hostname = hostname
