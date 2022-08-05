@@ -166,7 +166,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 
 func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
-		// This is the Server's pov as to what has been served to the reciever
+		// This is the Server's pov as to what has been served to the receiver
 		if len(mp.served) < len(targets) {
 			// If we don't have enough scrapes yet lets return false and wait for another tick
 			return false
@@ -621,7 +621,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	})
 
 	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      and when the reciever actually processes the http request response.
+	//      and when the receiver actually processes the http request response.
 	//      this is a eventually timeout,tick that just waits for some condition.
 	//      however the condition to wait for may be suboptimal and may need to be adjusted.
 	waitForScrapeResults(t, targets, mp, cms)
