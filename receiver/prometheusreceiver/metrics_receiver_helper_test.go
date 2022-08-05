@@ -56,7 +56,6 @@ type mockPrometheus struct {
 	accessIndex map[string]*atomic.Int32
 	wg          *sync.WaitGroup
 	srv         *httptest.Server
-	served      map[string]bool
 }
 
 func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockPrometheus {
@@ -72,7 +71,6 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 		endpoints:   endpoints,
 	}
 	srv := httptest.NewServer(mp)
-	mp.served = make(map[string]bool)
 	mp.srv = srv
 	return mp
 }
@@ -90,7 +88,6 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	pages := mp.endpoints[req.URL.Path]
 	if index >= len(pages) {
 		if index == len(pages) {
-			mp.served[req.URL.Path] = true
 			mp.wg.Done()
 		}
 		rw.WriteHeader(404)
@@ -166,11 +163,6 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 
 func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
-		// This is the Server's pov as to what has been served to the receiver
-		if len(mp.served) < len(targets) {
-			// If we don't have enough scrapes yet lets return false and wait for another tick
-			return false
-		}
 		// This is the receiver's pov as to what should have been collected from the server
 		metrics := cms.AllMetrics()
 		pResults := splitMetricsByTarget(metrics)
