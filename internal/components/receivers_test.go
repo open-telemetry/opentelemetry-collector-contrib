@@ -82,6 +82,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureeventhub",
+		},
+		{
 			receiver: "bigip",
 		},
 		{
