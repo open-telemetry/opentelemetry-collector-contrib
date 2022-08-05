@@ -39,7 +39,7 @@ func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 
 func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if containerType == ci.TypePod || info.Spec.Labels[containerNameLable] == infraContainerName {
+	if containerType == ci.TypePod || containerType == ci.TypeInfraContainer {
 		return metrics
 	}
 
@@ -71,6 +71,7 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 			metric.fields[ci.MetricName(containerType, ci.FSInodesfree)] = v.InodesFree
 		}
 
+		metric.cgroupPath = info.Name
 		metrics = append(metrics, metric)
 	}
 	return metrics

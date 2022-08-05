@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -33,7 +32,7 @@ const (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	view.Register(MetricViews()...)
+	_ = view.Register(MetricViews()...)
 
 	return component.NewExporterFactory(
 		typeStr,
