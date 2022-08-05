@@ -44,14 +44,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"span_duration\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: "at least one of \"services\", \"span_names\", \"span_duration\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
 		},
 		{
 			name: "log_properties",
