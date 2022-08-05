@@ -122,6 +122,7 @@ func (c *WatchClient) Start() {
 		DeleteFunc: c.handlePodDelete,
 	})
 	go c.informer.Run(c.stopCh)
+
 	c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
@@ -296,6 +297,19 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		parts := c.deploymentRegex.FindStringSubmatch(pod.Name)
 		if len(parts) == 2 {
 			tags[conventions.AttributeK8SDeploymentName] = parts[1]
+		}
+	}
+
+	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName {
+		for _, ref := range pod.OwnerReferences {
+			if ref.Kind == "ReplicaSet" {
+				if c.Rules.ReplicaSetID {
+					tags[conventions.AttributeK8SReplicaSetUID] = string(ref.UID)
+				}
+				if c.Rules.ReplicaSetName {
+					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
+				}
+			}
 		}
 	}
 
