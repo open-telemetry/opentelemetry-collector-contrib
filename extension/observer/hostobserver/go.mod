@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.57.2
@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect

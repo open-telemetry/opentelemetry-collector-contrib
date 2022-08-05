@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.5-0.20220804200517-c595ccfb4c43

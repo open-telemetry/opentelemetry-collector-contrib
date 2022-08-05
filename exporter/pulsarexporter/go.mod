@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/apache/pulsar-client-go v0.8.1
