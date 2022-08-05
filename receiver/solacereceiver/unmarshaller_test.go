@@ -902,7 +902,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 			&model_v1.SpanData_UserPropertyValue_ByteArrayValue{ByteArrayValue: []byte{1, 2, 3, 4}},
 			pcommon.ValueTypeBytes,
 			func(val pcommon.Value) {
-				assert.Equal(t, []byte{1, 2, 3, 4}, val.MBytesVal())
+				assert.Equal(t, []byte{1, 2, 3, 4}, val.BytesVal().AsRaw())
 			},
 		},
 		{

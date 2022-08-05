@@ -22,15 +22,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
 )
 
 type chronyScraper struct {
-	mb *metadata.MetricsBuilder
+	client chrony.Client
+	mb     *metadata.MetricsBuilder
 }
 
-func newScraper(ctx context.Context, cfg *Config, set component.ReceiverCreateSettings) *chronyScraper {
+func newScraper(ctx context.Context, client chrony.Client, cfg *Config, set component.ReceiverCreateSettings) *chronyScraper {
 	return &chronyScraper{
+		client: client,
 		mb: metadata.NewMetricsBuilder(cfg.MetricsSettings, set.BuildInfo,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),
 		),
@@ -38,5 +41,40 @@ func newScraper(ctx context.Context, cfg *Config, set component.ReceiverCreateSe
 }
 
 func (cs *chronyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	return pmetric.NewMetrics(), nil
+	data, err := cs.client.GetTrackingData(ctx)
+	if err != nil {
+		return pmetric.Metrics{}, err
+	}
+
+	now := pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())
+
+	cs.mb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
+	cs.mb.RecordNtpTimeCorrectionDataPoint(
+		now,
+		data.CurrentCorrection,
+		metadata.AttributeLeapStatus(data.LeapStatus+1),
+	)
+	cs.mb.RecordNtpTimeLastOffsetDataPoint(
+		now,
+		data.LastOffset,
+		metadata.AttributeLeapStatus(data.LeapStatus+1),
+	)
+	cs.mb.RecordNtpTimeRmsOffsetDataPoint(
+		now,
+		data.RMSOffset,
+		metadata.AttributeLeapStatus(data.LeapStatus+1),
+	)
+	cs.mb.RecordNtpFrequencyOffsetDataPoint(
+		now,
+		data.FreqPPM,
+		metadata.AttributeLeapStatus(data.LeapStatus+1),
+	)
+	cs.mb.RecordNtpSkewDataPoint(now, data.SkewPPM)
+	cs.mb.RecordNtpTimeRootDelayDataPoint(
+		now,
+		data.RootDelay,
+		metadata.AttributeLeapStatus(data.LeapStatus+1),
+	)
+
+	return cs.mb.Emit(), nil
 }

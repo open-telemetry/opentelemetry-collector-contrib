@@ -238,25 +238,25 @@ func isFirstFailedScrape(metrics []*pmetric.Metric) bool {
 		switch m.DataType() {
 		case pmetric.MetricDataTypeGauge:
 			for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
-				if !m.Gauge().DataPoints().At(i).Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+				if !m.Gauge().DataPoints().At(i).FlagsStruct().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeSum:
 			for i := 0; i < m.Sum().DataPoints().Len(); i++ {
-				if !m.Sum().DataPoints().At(i).Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+				if !m.Sum().DataPoints().At(i).FlagsStruct().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeHistogram:
 			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
-				if !m.Histogram().DataPoints().At(i).Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+				if !m.Histogram().DataPoints().At(i).FlagsStruct().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeSummary:
 			for i := 0; i < m.Summary().DataPoints().Len(); i++ {
-				if !m.Summary().DataPoints().At(i).Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+				if !m.Summary().DataPoints().At(i).FlagsStruct().NoRecordedValue() {
 					return false
 				}
 			}
@@ -458,21 +458,21 @@ func compareHistogramAttributes(attributes map[string]string) histogramPointComp
 
 func assertNumberPointFlagNoRecordedValue() numberPointComparator {
 	return func(t *testing.T, numberDataPoint *pmetric.NumberDataPoint) {
-		assert.True(t, numberDataPoint.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue),
+		assert.True(t, numberDataPoint.FlagsStruct().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
 
 func assertHistogramPointFlagNoRecordedValue() histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint *pmetric.HistogramDataPoint) {
-		assert.True(t, histogramDataPoint.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue),
+		assert.True(t, histogramDataPoint.FlagsStruct().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
 
 func assertSummaryPointFlagNoRecordedValue() summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint *pmetric.SummaryDataPoint) {
-		assert.True(t, summaryDataPoint.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue),
+		assert.True(t, summaryDataPoint.FlagsStruct().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
@@ -530,7 +530,7 @@ func compareHistogram(count uint64, sum float64, buckets []uint64) histogramPoin
 	return func(t *testing.T, histogramDataPoint *pmetric.HistogramDataPoint) {
 		assert.Equal(t, count, histogramDataPoint.Count(), "Histogram count value does not match")
 		assert.Equal(t, sum, histogramDataPoint.Sum(), "Histogram sum value does not match")
-		assert.Equal(t, buckets, histogramDataPoint.MBucketCounts(), "Histogram bucket count values do not match")
+		assert.Equal(t, buckets, histogramDataPoint.BucketCounts().AsRaw(), "Histogram bucket count values do not match")
 	}
 }
 

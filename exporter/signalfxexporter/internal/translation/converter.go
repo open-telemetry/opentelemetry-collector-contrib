@@ -24,7 +24,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -41,18 +40,6 @@ var (
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 )
-
-const prometheusCompatible = "exporter.signalfxexporter.PrometheusCompatible"
-
-var prometheusCompatibleGate = featuregate.Gate{
-	ID:          prometheusCompatible,
-	Enabled:     true,
-	Description: "Controls if conversion should follow prometheus compatibility for histograms and summaries.",
-}
-
-func init() {
-	featuregate.GetRegistry().MustRegister(prometheusCompatibleGate)
-}
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
@@ -82,7 +69,7 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
-		translator:         &signalfx.FromTranslator{PrometheusCompatible: featuregate.GetRegistry().IsEnabled(prometheusCompatible)},
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 

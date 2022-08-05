@@ -14,20 +14,25 @@
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/functions/tqlotel"
+)
+
 var registry = map[string]interface{}{
-	"TraceID":              traceID,
-	"SpanID":               spanID,
-	"IsMatch":              isMatch,
-	"keep_keys":            keepKeys,
-	"set":                  set,
-	"truncate_all":         truncateAll,
-	"limit":                limit,
-	"replace_match":        replaceMatch,
-	"replace_all_matches":  replaceAllMatches,
-	"replace_pattern":      replacePattern,
-	"replace_all_patterns": replaceAllPatterns,
-	"delete_key":           deleteKey,
-	"delete_matching_keys": deleteMatchingKeys,
+	"TraceID":              tqlotel.TraceID,
+	"SpanID":               tqlotel.SpanID,
+	"IsMatch":              tqlcommon.IsMatch,
+	"keep_keys":            tqlotel.KeepKeys,
+	"set":                  tqlcommon.Set,
+	"truncate_all":         tqlotel.TruncateAll,
+	"limit":                tqlotel.Limit,
+	"replace_match":        tqlcommon.ReplaceMatch,
+	"replace_all_matches":  tqlotel.ReplaceAllMatches,
+	"replace_pattern":      tqlcommon.ReplacePattern,
+	"replace_all_patterns": tqlotel.ReplaceAllPatterns,
+	"delete_key":           tqlotel.DeleteKey,
+	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
 }
 
 func DefaultFunctions() map[string]interface{} {

@@ -22,17 +22,22 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
 )
 
 const (
 	typeStr = "chrony"
+
+	// The stability level of the receiver.
+	stability = component.StabilityLevelAlpha
 )
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		newDefaultCongfig,
-		component.WithMetricsReceiver(newMetricsReceiver),
+		component.WithMetricsReceiver(newMetricsReceiver, stability),
 	)
 }
 
@@ -46,9 +51,13 @@ func newMetricsReceiver(
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)
 	}
 
+	chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
+	if err != nil {
+		return nil, err
+	}
 	scraper, err := scraperhelper.NewScraper(
 		typeStr,
-		newScraper(ctx, cfg, set).scrape,
+		newScraper(ctx, chronyc, cfg, set).scrape,
 	)
 	if err != nil {
 		return nil, err

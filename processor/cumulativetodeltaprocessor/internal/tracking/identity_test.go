@@ -43,6 +43,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 		StartTimestamp         pcommon.Timestamp
 		Attributes             pcommon.Map
 		MetricValueType        pmetric.NumberDataPointValueType
+		MetricField            string
 	}
 	tests := []struct {
 		name   string
@@ -72,6 +73,18 @@ func TestMetricIdentity_Write(t *testing.T) {
 			},
 			want: []string{"C" + SEPSTR + "B", "Y"},
 		},
+		{
+			name: "histogram sum",
+			fields: fields{
+				Resource:               resource,
+				InstrumentationLibrary: il,
+				Attributes:             attributes,
+				MetricDataType:         pmetric.MetricDataTypeHistogram,
+				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+				MetricField:            "bound_100",
+			},
+			want: []string{"D" + SEPSTR + "B", "bound_100"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -85,6 +98,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				StartTimestamp:         tt.fields.StartTimestamp,
 				Attributes:             tt.fields.Attributes,
 				MetricValueType:        tt.fields.MetricValueType,
+				MetricField:            tt.fields.MetricField,
 			}
 			b := &bytes.Buffer{}
 			mi.Write(b)
@@ -158,6 +172,34 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 			name: "histogram",
 			fields: fields{
 				MetricDataType: pmetric.MetricDataTypeHistogram,
+			},
+			want: true,
+		},
+		{
+			name: "none",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeNone,
+			},
+			want: false,
+		},
+		{
+			name: "gauge",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeGauge,
+			},
+			want: false,
+		},
+		{
+			name: "exponential_histogram",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeExponentialHistogram,
+			},
+			want: false,
+		},
+		{
+			name: "summary",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeSummary,
 			},
 			want: false,
 		},

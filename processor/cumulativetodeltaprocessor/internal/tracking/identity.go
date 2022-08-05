@@ -32,6 +32,13 @@ type MetricIdentity struct {
 	StartTimestamp         pcommon.Timestamp
 	Attributes             pcommon.Map
 	MetricValueType        pmetric.NumberDataPointValueType
+	MetricField            string
+}
+
+type HistogramIdentities struct {
+	CountIdentity    MetricIdentity
+	SumIdentity      MetricIdentity
+	BucketIdentities []MetricIdentity
 }
 
 const A = int32('A')
@@ -75,6 +82,11 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	})
 	b.WriteByte(SEP)
 	b.WriteString(strconv.FormatInt(int64(mi.StartTimestamp), 36))
+
+	if mi.MetricField != "" {
+		b.WriteByte(SEP)
+		b.WriteString(mi.MetricField)
+	}
 }
 
 func (mi *MetricIdentity) IsFloatVal() bool {
@@ -82,5 +94,5 @@ func (mi *MetricIdentity) IsFloatVal() bool {
 }
 
 func (mi *MetricIdentity) IsSupportedMetricType() bool {
-	return mi.MetricDataType == pmetric.MetricDataTypeSum
+	return mi.MetricDataType == pmetric.MetricDataTypeSum || mi.MetricDataType == pmetric.MetricDataTypeHistogram
 }

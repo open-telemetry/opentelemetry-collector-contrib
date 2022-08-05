@@ -1,5 +1,0 @@
-change_type: enhancement
-component: dockerstatsreceiver
-note: "Initial PR for onboarding dockerstats onto mdatagen scraping."
-issues: [9794]
-subtext: "Additionally appends the internal docker client to allow options (bug fix)."

@@ -52,7 +52,10 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
-	rule rule
+	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
+	// It can contain expr expressions for endpoint env value expansion
+	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	rule               rule
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -97,6 +100,14 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 
+	for endpointType := range cfg.ResourceAttributes {
+		switch endpointType {
+		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		default:
+			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
+		}
+	}
+
 	receiversCfg, err := componentParser.Sub(receiversConfigKey)
 	if err != nil {
 		return fmt.Errorf("unable to extract key %v: %w", receiversConfigKey, err)
@@ -121,6 +132,12 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		subreceiver.rule, err = newRule(subreceiver.Rule)
 		if err != nil {
 			return fmt.Errorf("subreceiver %q rule is invalid: %w", subreceiverKey, err)
+		}
+
+		for k, v := range subreceiver.ResourceAttributes {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("unsupported `resource_attributes` %q value %v in %s", k, v, subreceiverKey)
+			}
 		}
 
 		cfg.receiverTemplates[subreceiverKey] = subreceiver
