@@ -35,6 +35,10 @@ For logs:
   A match occurs if the record matches any expression in this given list.
 - `bodies`: Bodies defines a list of possible log bodies to match the logs against.
   A match occurs if the record matches any expression in this given list.
+- `min_severity`: MinSeverity defines the minimum severity with which a log record should match.
+  e.g. if this is "INFO", all log records with "INFO" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
+  If this option is specified, no logs with "DEFAULT" severity will be matched.
+  The list of valid severities that may be used for this option can be found [here](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity)
 
 For metrics:
 
@@ -91,18 +95,23 @@ processors:
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
-    logs/severity:
+    # Filter on severity text field
+    logs/severity_text:
       include:
         match_type: regexp
         severity_texts:
         - INFO[2-4]?
         - WARN[2-4]?
         - ERROR[2-4]?
+    # Filter out logs below INFO (no DEBUG or TRACE level logs)
+    logs/severity_number:
+      include:
+        min_severity: "INFO"
     logs/bodies:
       include:
         match_type: regexp
         bodies:
-        - ^IMPORTANT RECORD
+        - ^IMPORTANT RECORD    
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed

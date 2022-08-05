@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 // MatchConfig has two optional MatchProperties one to define what is processed
@@ -100,6 +101,10 @@ type MatchProperties struct {
 	// against.
 	LogSeverityTexts []string `mapstructure:"log_severity_texts"`
 
+	// LogMinSeverity is the lowest severity that may be matched.
+	// e.g. if this is plog.SeverityNumberINFO, INFO, WARN, ERROR, and FATAL logs will match.
+	LogMinSeverity plog.SeverityNumber `mapstructure:"log_min_severity"`
+
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
 	// This field is optional.
@@ -146,8 +151,10 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 && len(mp.LogSeverityTexts) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 &&
+		len(mp.Resources) == 0 && len(mp.LogBodies) == 0 &&
+		len(mp.LogSeverityTexts) == 0 && mp.LogMinSeverity == plog.SeverityNumberUNDEFINED {
+		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_min_severity" field must be specified`)
 	}
 
 	return nil

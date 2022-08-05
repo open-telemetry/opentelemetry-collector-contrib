@@ -1,0 +1,36 @@
+receivers:
+    nop:
+
+processors:
+    filter/include:
+        logs:
+            # any logs NOT matching filters are excluded from remainder of pipeline
+            # This filters out all logs below "INFO" level (the whole DEBUG and TRACE ranges)
+            include:
+                min_severity: "INFO"
+    filter/exclude:
+        logs:
+            # any logs matching filters are excluded from remainder of pipeline
+            # This will filter out the "ERROR" and "FATAL" ranges
+            exclude:
+                min_severity: "ERROR"
+
+    filter/includeexclude:
+        logs:
+            # if both include and exclude are specified, include filters are applied first
+            # the following will only allow records with severity in the "INFO" and "WARN" ranges to pass
+            include:
+                min_severity: "INFO"
+
+            exclude:
+                min_severity: "ERROR"
+
+exporters:
+    nop:
+
+service:
+    pipelines:
+        logs:
+            receivers: [nop]
+            processors: [filter/include, filter/exclude, filter/includeexclude]
+            exporters: [nop]
