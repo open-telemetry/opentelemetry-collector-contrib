@@ -186,6 +186,8 @@ type ExtractionRules struct {
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
+	ReplicaSetID       bool
+	ReplicaSetName     bool
 	Node               bool
 	StartTime          bool
 	ContainerID        bool
