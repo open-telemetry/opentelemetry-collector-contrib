@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package splunkhecreceiver
 
 import (
@@ -376,8 +375,7 @@ func internalSortMetricsAndLabels(metrics pmetric.MetricSlice) {
 	for k := 0; k < metrics.Len(); k++ {
 		m := metrics.At(k)
 		metricsMap[m.Name()] = m
-		switch m.DataType() {
-		case pmetric.MetricDataTypeGauge:
+		if m.DataType() == pmetric.MetricDataTypeGauge {
 			dps := m.Gauge().DataPoints()
 			for l := 0; l < dps.Len(); l++ {
 				dps.At(l).Attributes().Sort()

@@ -123,7 +123,7 @@ func azureID(attrs pcommon.Map, cloudAccount string) string {
 	}
 
 	var hostname string
-	if attr, ok := attrs.Get(conventions.AttributeHostName); ok {
+	if attr, ok := attrs.Get("azure.vm.name"); ok {
 		hostname = attr.StringVal()
 	}
 	if hostname == "" {

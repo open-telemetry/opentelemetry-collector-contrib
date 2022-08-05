@@ -24,6 +24,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -86,12 +87,8 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 		return err
 	}
 
-	storageClient, err := adapter.GetStorageClient(ctx, ltp.id, component.KindProcessor, host)
-	if err != nil {
-		return err
-	}
-
-	err = pipe.Start(adapter.GetPersister(storageClient))
+	// There is no need for this processor to use storage
+	err = pipe.Start(adapter.GetPersister(storage.NewNopClient()))
 	if err != nil {
 		return err
 	}

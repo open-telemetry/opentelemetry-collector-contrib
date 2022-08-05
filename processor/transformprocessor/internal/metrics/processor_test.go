@@ -86,13 +86,13 @@ func TestProcess(t *testing.T) {
 			},
 		},
 		{
-			query: []string{`set(metric.description, "Sum") where metric.type == "Sum"`},
+			query: []string{`set(metric.description, "Sum") where metric.type == METRIC_DATA_TYPE_SUM`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetDescription("Sum")
 			},
 		},
 		{
-			query: []string{`set(metric.aggregation_temporality, 1) where metric.aggregation_temporality == 0`},
+			query: []string{`set(metric.aggregation_temporality, AGGREGATION_TEMPORALITY_DELTA) where metric.aggregation_temporality == 0`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)

@@ -75,10 +75,7 @@ func createExtension(
 	e.Extension = extension{
 		ShutdownFunc: e.Shutdown,
 	}
-	e.EndpointsWatcher = &observer.EndpointsWatcher{
-		Endpointslister: e,
-		RefreshInterval: obsCfg.RefreshInterval,
-	}
+	e.EndpointsWatcher = observer.NewEndpointsWatcher(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)
 
 	return e, nil
 }

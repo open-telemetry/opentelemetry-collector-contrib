@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package statsreader // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 
 import (
@@ -61,7 +60,7 @@ func currentStatsStatement(args statementArgs) statsStatement {
 func intervalStatsStatement(args statementArgs) statsStatement {
 	stmt := currentStatsStatement(args)
 
-	if len(stmt.statement.Params) <= 0 {
+	if len(stmt.statement.Params) == 0 {
 		stmt.statement.Params = map[string]interface{}{}
 	}
 

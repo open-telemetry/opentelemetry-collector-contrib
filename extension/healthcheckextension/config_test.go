@@ -22,7 +22,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -44,8 +45,15 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t,
 		&Config{
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			TCPAddr: confignet.TCPAddr{
+			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: "localhost:13",
+				TLSSetting: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "/path/to/ca",
+						CertFile: "/path/to/cert",
+						KeyFile:  "/path/to/key",
+					},
+				},
 			},
 			CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
 			Path:                   "/",

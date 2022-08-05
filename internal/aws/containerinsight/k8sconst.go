@@ -11,17 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-// nolint:gocritic
+
 package containerinsight // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 
-//define constants that are used for EKS Container Insights only
+// define constants that are used for EKS Container Insights only
 const (
 	EKS            = "eks"
 	KubeSecurePort = "10250"
 	BearerToken    = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec to suppress lint error G101: Potential hardcoded credentials
 	CAFile         = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
-	//attribute names
+	// attribute names
 	Kubernetes       = "kubernetes"
 	K8sNamespace     = "Namespace"
 	PodIDKey         = "PodId"
@@ -38,7 +38,7 @@ const (
 	ContainerStatusReason          = "container_status_reason"
 	ContainerLastTerminationReason = "container_last_termination_reason"
 
-	//Pod Owners
+	// Pod Owners
 	ReplicaSet            = "ReplicaSet"
 	ReplicationController = "ReplicationController"
 	StatefulSet           = "StatefulSet"

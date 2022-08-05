@@ -30,8 +30,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTraceExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+		component.WithTracesExporter(createTraceExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -50,6 +51,11 @@ func createDefaultConfig() config.Exporter {
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
+
 		PrivateKey: "",
 		AppName:    "",
 	}
@@ -87,6 +93,29 @@ func createMetricsExporter(
 		cfg,
 		set,
 		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createLogsExporter(
+	_ context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.LogsExporter, error) {
+	oce, err := newLogsExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return exporterhelper.NewLogsExporter(
+		cfg,
+		set,
+		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

@@ -1,6 +1,11 @@
 # Metrics Transform Processor
 
-Supported pipeline types: metrics
+
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 ## Description
 
@@ -283,7 +288,7 @@ operations:
 # Web Service (*)/Total Delete Requests     iis.requests{http_method=delete}
 # Web Service (*)/Total Get Requests     >  iis.requests{http_method=get}
 # Web Service (*)/Total Post Requests       iis.requests{http_method=post}
-metric_names: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
+include: ^Web Service \(\*\)/Total (?P<http_method>.*) Requests$
 match_type: regexp
 action: combine
 new_name: iis.requests
@@ -337,3 +342,6 @@ Metric transform processor specific functionality
 * Scale value
 * Aggregate across label sets
 * Aggregate across label values
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

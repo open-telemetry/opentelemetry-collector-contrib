@@ -31,6 +31,10 @@ type endpointSink struct {
 	changed []observer.Endpoint
 }
 
+func (e *endpointSink) ID() observer.NotifyID {
+	return "endpointSink"
+}
+
 func (e *endpointSink) OnAdd(added []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()
@@ -57,5 +61,5 @@ func requireSink(t *testing.T, sink *endpointSink, f func() bool) {
 		sink.Lock()
 		defer sink.Unlock()
 		return f()
-	}, 1*time.Second, 100*time.Millisecond)
+	}, 2*time.Second, 100*time.Millisecond)
 }

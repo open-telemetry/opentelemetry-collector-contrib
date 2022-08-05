@@ -79,7 +79,7 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	headers["Authorization"] = "Bearer " + e.config.PrivateKey
 	e.metadata = metadata.New(headers)
 	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.GRPCClientSettings.WaitForReady),
+		grpc.WaitForReady(e.config.Metrics.WaitForReady),
 	}
 
 	return
