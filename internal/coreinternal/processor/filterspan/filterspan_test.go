@@ -61,36 +61,36 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 			errorString: "log_bodies should not be specified for trace spans",
 		},
 		{
-			name: "invalid_match_type",
-			property: filterconfig.MatchProperties{
-				Config:   *createConfig("wrong_match_type"),
-				Services: []string{"abc"},
-			},
-			errorString: "error creating service name filters: unrecognized match_type: 'wrong_match_type', valid types are: [regexp strict]",
-		},
-		{
-			name: "missing_match_type",
-			property: filterconfig.MatchProperties{
-				Services: []string{"abc"},
-			},
-			errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
-		},
-		{
-			name: "invalid_regexp_pattern_service",
-			property: filterconfig.MatchProperties{
-				Config:   *createConfig(filterset.Regexp),
-				Services: []string{"["},
-			},
-			errorString: "error creating service name filters: error parsing regexp: missing closing ]: `[`",
-		},
-		{
-			name: "invalid_regexp_pattern_span",
-			property: filterconfig.MatchProperties{
-				Config:    *createConfig(filterset.Regexp),
-				SpanNames: []string{"["},
-			},
-			errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
-		},
+		name: "invalid_match_type",
+		property: filterconfig.MatchProperties{
+		Config:   *createConfig("wrong_match_type"),
+		Services: []string{"abc"},
+	},
+		errorString: "error creating service name filters: unrecognized match_type: 'wrong_match_type', valid types are: [regexp strict]",
+	},
+	{
+		name: "missing_match_type",
+		property: filterconfig.MatchProperties{
+		Services: []string{"abc"},
+	},
+		errorString: "error creating service name filters: unrecognized match_type: '', valid types are: [regexp strict]",
+	},
+	{
+		name: "invalid_regexp_pattern_service",
+		property: filterconfig.MatchProperties{
+		Config:   *createConfig(filterset.Regexp),
+		Services: []string{"["},
+	},
+		errorString: "error creating service name filters: error parsing regexp: missing closing ]: `[`",
+	},
+	{
+		name: "invalid_regexp_pattern_span",
+		property: filterconfig.MatchProperties{
+		Config:    *createConfig(filterset.Regexp),
+		SpanNames: []string{"["},
+	},
+		errorString: "error creating span name filters: error parsing regexp: missing closing ]: `[`",
+	},
 	}
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
