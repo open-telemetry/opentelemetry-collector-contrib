@@ -161,7 +161,7 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus, cms *consumertest.MetricsSink) {
+func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
 		// This is the receiver's pov as to what should have been collected from the server
 		metrics := cms.AllMetrics()
@@ -616,7 +616,7 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	//      and when the receiver actually processes the http request response.
 	//      this is a eventually timeout,tick that just waits for some condition.
 	//      however the condition to wait for may be suboptimal and may need to be adjusted.
-	waitForScrapeResults(t, targets, mp, cms)
+	waitForScrapeResults(t, targets, cms)
 
 	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
 	mp.wg.Wait()
