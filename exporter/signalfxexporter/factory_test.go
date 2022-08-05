@@ -207,15 +207,15 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.network.operations.total new metric calculation
+	// system.disk.operations.total new metric calculation
 	dps, ok = metrics["system.disk.operations.total"]
-	require.True(t, ok, "system.network.operations.total metrics not found")
+	require.True(t, ok, "system.disk.operations.total metrics not found")
 	require.Len(t, dps, 4)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 
-	// system.network.io.total new metric calculation
+	// system.disk.io.total new metric calculation
 	dps, ok = metrics["system.disk.io.total"]
-	require.True(t, ok, "system.network.io.total metrics not found")
+	require.True(t, ok, "system.disk.io.total metrics not found")
 	require.Len(t, dps, 2)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 	for _, dp := range dps {

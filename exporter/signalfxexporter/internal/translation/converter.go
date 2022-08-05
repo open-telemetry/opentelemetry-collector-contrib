@@ -88,12 +88,12 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
-				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
 		}
 	}
 
+	sfxDataPoints = c.translateAndFilter(sfxDataPoints)
 	return c.datapointValidator.sanitizeDataPoints(sfxDataPoints)
 }
 
