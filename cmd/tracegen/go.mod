@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
 
-go 1.17
+go 1.18
 
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
