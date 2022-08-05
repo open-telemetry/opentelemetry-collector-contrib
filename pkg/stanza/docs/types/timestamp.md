@@ -6,12 +6,15 @@ To configure timestamp parsing, add a `timestamp` block in the parser's configur
 
 If a timestamp block is specified, the parser operator will perform the timestamp parsing _after_ performing its other parsing actions, but _before_ passing the entry to the specified output operator.
 
-| Field         | Default    | Description |
-| ---           | ---        | ---         |
-| `parse_from`  | required   | The [field](../types/field.md) from which the value will be parsed. |
-| `layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
-| `layout`      | required   | The exact layout of the timestamp to be parsed. |
-| `location`    | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
+| Field              | Default    | Description |
+| ---                | ---        | ---         |
+| `parse_from`       | required   | The [field](../types/field.md) from which the value will be parsed. |
+| `layout_type`      | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
+| `layout`           | required   | The exact layout of the timestamp to be parsed. |
+| `save_to`          | optional   | Optional [field](../types/field.md) to save custom formatted timestamp. |
+| `save_layout`      | optional   | The exact layout of the timestamp to be formatted. |
+| `save_layout_type` | `strptime` | The type of timestamp. Valid values are `strptime`, `gotime`, and `epoch`. |
+| `location`         | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 
 ### How to specify timestamp parsing parameters
 

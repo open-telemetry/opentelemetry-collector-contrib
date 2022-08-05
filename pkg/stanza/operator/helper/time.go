@@ -52,6 +52,11 @@ type TimeParser struct {
 	LayoutType string       `mapstructure:"layout_type,omitempty" json:"layout_type,omitempty" yaml:"layout_type,omitempty"`
 	Location   string       `mapstructure:"location,omitempty"    json:"location,omitempty"    yaml:"location,omitempty"`
 
+	// Optional field to save timestamp in custom layout
+	SaveTo         *entry.Field `mapstructure:"save_to,omitempty"          json:"save_to,omitempty"          yaml:"save_to,omitempty"`
+	SaveLayout     string       `mapstructure:"save_layout,omitempty"      json:"save_layout,omitempty"      yaml:"save_layout,omitempty"`
+	SaveLayoutType string       `mapstructure:"save_layout_type,omitempty" json:"save_layout_type,omitempty" yaml:"save_layout_type,omitempty"`
+
 	location *time.Location
 }
 
@@ -163,7 +168,59 @@ func (t *TimeParser) Parse(entry *entry.Entry) error {
 		return fmt.Errorf("unsupported layout type: %s", t.LayoutType)
 	}
 
+	if t.SaveTo != nil {
+		err := t.SaveFormatted(entry)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (t *TimeParser) SaveFormatted(entry *entry.Entry) error {
+	if t.SaveLayoutType == "" {
+		t.SaveLayoutType = StrptimeKey
+	}
+
+	var (
+		timeFormatted string
+		err           error
+	)
+
+	switch t.SaveLayoutType {
+	case NativeKey, GotimeKey:
+		timeFormatted = entry.Timestamp.Format(t.SaveLayout)
+	case StrptimeKey:
+		timeFormatted, err = strptime.Format(t.SaveLayout, entry.Timestamp)
+	case EpochKey:
+		switch t.SaveLayout {
+		case "s":
+			timeFormatted = strconv.FormatInt(entry.Timestamp.Unix(), 10)
+		case "ms":
+			timeFormatted = strconv.FormatInt(entry.Timestamp.UnixMilli(), 10)
+		case "us":
+			timeFormatted = strconv.FormatInt(entry.Timestamp.UnixMicro(), 10)
+		case "ns":
+			timeFormatted = strconv.FormatInt(entry.Timestamp.UnixNano(), 10)
+		case "s.ms":
+			sec := strconv.FormatInt(entry.Timestamp.Unix(), 10)
+			subSec := strconv.FormatInt(entry.Timestamp.UnixMilli()%1e3, 10)
+			timeFormatted = fmt.Sprintf("%s.%s", sec, subSec)
+		case "s.us":
+			sec := strconv.FormatInt(entry.Timestamp.Unix(), 10)
+			subSec := strconv.FormatInt(entry.Timestamp.UnixMicro()%1e6, 10)
+			timeFormatted = fmt.Sprintf("%s.%s", sec, subSec)
+		case "s.ns":
+			sec := strconv.FormatInt(entry.Timestamp.Unix(), 10)
+			subSec := strconv.FormatInt(entry.Timestamp.UnixMilli()%1e9, 10)
+			timeFormatted = fmt.Sprintf("%s.%s", sec, subSec)
+		}
+	}
+
+	entry.Set(t.SaveTo, timeFormatted)
+
+	return err
 }
 
 func (t *TimeParser) parseGotime(value interface{}) (time.Time, error) {
