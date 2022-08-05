@@ -1,7 +1,7 @@
 // Deprecated: prometheus_exec receiver is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51

@@ -1,7 +1,7 @@
 // Deprecated: fluentbit extension is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
 
-go 1.17
+go 1.18
 
 require (
 	github.com/davecgh/go-spew v1.1.1

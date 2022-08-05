@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50
