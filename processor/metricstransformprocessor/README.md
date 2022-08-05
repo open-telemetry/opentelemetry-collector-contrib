@@ -1,6 +1,11 @@
 # Metrics Transform Processor
 
-Supported pipeline types: metrics
+
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 ## Description
 
@@ -337,3 +342,6 @@ Metric transform processor specific functionality
 * Scale value
 * Aggregate across label sets
 * Aggregate across label values
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

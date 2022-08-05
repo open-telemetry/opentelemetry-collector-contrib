@@ -1,4 +1,0 @@
-change_type: enhancement
-component: healthcheckextension
-note: Use `confighttp.HTTPServerSettings` to allow tls and auth.
-issues: [12668]

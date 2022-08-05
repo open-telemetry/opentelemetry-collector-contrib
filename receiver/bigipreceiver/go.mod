@@ -10,7 +10,7 @@ require (
 	go.uber.org/zap v1.21.0
 )
 
-require github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+require github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect

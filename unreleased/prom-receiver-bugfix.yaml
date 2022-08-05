@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: prometheusreceiver
-note: Fix handling of timestamps to prevent reset when a new datapoint is recorded
-issues: [12746]
