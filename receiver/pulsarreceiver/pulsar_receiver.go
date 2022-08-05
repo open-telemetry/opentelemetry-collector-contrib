@@ -79,9 +79,8 @@ func (c *pulsarTracesConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			e := consumerTracesLoop(ctx, c)
-			if e != nil {
-				c.settings.Logger.Error("Consume tracesConsumer failed", zap.Error(e))
+			if e := consumerTracesLoop(ctx, c); e != nil {
+				c.settings.Logger.Error("consume traces loop occurs an error", zap.Error(e))
 			}
 		}()
 	}
@@ -103,14 +102,15 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 				c.settings.Logger.Info("exiting consume traces loop")
 				return err
 			}
+			c.settings.Logger.Error("failed to receive traces message from Pulsar, waiting for one second before retrying", zap.Error(err))
 			time.Sleep(time.Second)
-			c.settings.Logger.Error("failed to receive traces message from Pulsar", zap.Error(err))
 			continue
 		}
 
 		traces, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler traces message", zap.Error(err))
+			c.consumer.Ack(message)
 			return err
 		}
 
@@ -177,8 +177,7 @@ func (c *pulsarMetricsConsumer) Start(context.Context, component.Host) error {
 		c.consumer = _consumer
 
 		go func() {
-			e := consumeMetricsLoop(ctx, c)
-			if e != nil {
+			if e := consumeMetricsLoop(ctx, c); e != nil {
 				c.settings.Logger.Error("consume metrics loop occurs an error", zap.Error(e))
 			}
 		}()
@@ -202,14 +201,15 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 				return err
 			}
 
+			c.settings.Logger.Error("failed to receive metrics message from Pulsar, waiting for one second before retrying", zap.Error(err))
 			time.Sleep(time.Second)
-			c.settings.Logger.Error("failed to receive metrics messages from Pulsar", zap.Error(err))
 			continue
 		}
 
 		metrics, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler metrics message", zap.Error(err))
+			c.consumer.Ack(message)
 			return err
 		}
 
@@ -277,8 +277,7 @@ func (c *pulsarLogsConsumer) Start(context.Context, component.Host) error {
 	if err == nil {
 		c.consumer = _consumer
 		go func() {
-			e := consumeLogsLoop(ctx, c)
-			if e != nil {
+			if e := consumeLogsLoop(ctx, c); e != nil {
 				c.settings.Logger.Error("consume logs loop occurs an error", zap.Error(e))
 			}
 		}()
@@ -301,14 +300,15 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 				c.settings.Logger.Info("exiting consume traces loop canceled")
 				return err
 			}
+			c.settings.Logger.Error("failed to receive logs message from Pulsar, waiting for one second before retrying", zap.Error(err))
 			time.Sleep(time.Second)
-			c.settings.Logger.Error("failed to receive logs messages from Pulsar", zap.Error(err))
 			continue
 		}
 
 		logs, err := unmarshaler.Unmarshal(message.Payload())
 		if err != nil {
 			c.settings.Logger.Error("failed to unmarshaler logs message", zap.Error(err))
+			c.consumer.Ack(message)
 			return err
 		}
 
