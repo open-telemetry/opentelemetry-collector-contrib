@@ -12,9 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build integration
-// +build integration
-
 package postgresqlreceiver
 
 import (
@@ -37,9 +34,10 @@ import (
 type configFunc func(hostname string) *Config
 
 type testCase struct {
-	name         string
-	cfg          configFunc
-	expectedFile string
+	name                   string
+	cfg                    configFunc
+	expectedFile           string
+	emitResourceAttributes bool
 }
 
 func TestPostgreSQLIntegration(t *testing.T) {
