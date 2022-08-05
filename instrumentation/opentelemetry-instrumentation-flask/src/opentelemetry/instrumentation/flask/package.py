@@ -14,3 +14,5 @@
 
 
 _instruments = ("flask >= 1.0, < 3.0",)
+
+_supports_metrics = True

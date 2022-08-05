@@ -141,6 +141,7 @@ API
 """
 
 from logging import getLogger
+from timeit import default_timer
 from typing import Collection
 
 import flask
@@ -154,6 +155,7 @@ from opentelemetry.instrumentation.propagators import (
     get_global_response_propagator,
 )
 from opentelemetry.instrumentation.utils import _start_internal_or_server_span
+from opentelemetry.metrics import get_meter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, parse_excluded_urls
@@ -164,7 +166,6 @@ _ENVIRON_STARTTIME_KEY = "opentelemetry-flask.starttime_key"
 _ENVIRON_SPAN_KEY = "opentelemetry-flask.span_key"
 _ENVIRON_ACTIVATION_KEY = "opentelemetry-flask.activation_key"
 _ENVIRON_TOKEN = "opentelemetry-flask.token"
-
 
 _excluded_urls_from_env = get_excluded_urls("FLASK")
 
@@ -178,13 +179,26 @@ def get_default_span_name():
     return span_name
 
 
-def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
+def _rewrapped_app(
+    wsgi_app,
+    active_requests_counter,
+    duration_histogram,
+    response_hook=None,
+    excluded_urls=None,
+):
     def _wrapped_app(wrapped_app_environ, start_response):
         # We want to measure the time for route matching, etc.
         # In theory, we could start the span here and use
         # update_name later but that API is "highly discouraged" so
         # we better avoid it.
         wrapped_app_environ[_ENVIRON_STARTTIME_KEY] = _time_ns()
+        start = default_timer()
+        attributes = otel_wsgi.collect_request_attributes(wrapped_app_environ)
+        active_requests_count_attrs = (
+            otel_wsgi._parse_active_request_count_attrs(attributes)
+        )
+        duration_attrs = otel_wsgi._parse_duration_attrs(attributes)
+        active_requests_counter.add(1, active_requests_count_attrs)
 
         def _start_response(status, response_headers, *args, **kwargs):
             if flask.request and (
@@ -204,6 +218,11 @@ def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
                     otel_wsgi.add_response_attributes(
                         span, status, response_headers
                     )
+                    status_code = otel_wsgi._parse_status_code(status)
+                    if status_code is not None:
+                        duration_attrs[
+                            SpanAttributes.HTTP_STATUS_CODE
+                        ] = status_code
                     if (
                         span.is_recording()
                         and span.kind == trace.SpanKind.SERVER
@@ -223,13 +242,19 @@ def _rewrapped_app(wsgi_app, response_hook=None, excluded_urls=None):
                     response_hook(span, status, response_headers)
             return start_response(status, response_headers, *args, **kwargs)
 
-        return wsgi_app(wrapped_app_environ, _start_response)
+        result = wsgi_app(wrapped_app_environ, _start_response)
+        duration = max(round((default_timer() - start) * 1000), 0)
+        duration_histogram.record(duration, duration_attrs)
+        active_requests_counter.add(-1, active_requests_count_attrs)
+        return result
 
     return _wrapped_app
 
 
 def _wrapped_before_request(
-    request_hook=None, tracer=None, excluded_urls=None
+    request_hook=None,
+    tracer=None,
+    excluded_urls=None,
 ):
     def _before_request():
         if excluded_urls and excluded_urls.url_disabled(flask.request.url):
@@ -278,7 +303,9 @@ def _wrapped_before_request(
     return _before_request
 
 
-def _wrapped_teardown_request(excluded_urls=None):
+def _wrapped_teardown_request(
+    excluded_urls=None,
+):
     def _teardown_request(exc):
         # pylint: disable=E1101
         if excluded_urls and excluded_urls.url_disabled(flask.request.url):
@@ -290,7 +317,6 @@ def _wrapped_teardown_request(excluded_urls=None):
             # a way that doesn't run `before_request`, like when it is created
             # with `app.test_request_context`.
             return
-
         if exc is None:
             activation.__exit__(None, None, None)
         else:
@@ -310,6 +336,7 @@ class _InstrumentedFlask(flask.Flask):
     _tracer_provider = None
     _request_hook = None
     _response_hook = None
+    _meter_provider = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -317,8 +344,24 @@ class _InstrumentedFlask(flask.Flask):
         self._original_wsgi_app = self.wsgi_app
         self._is_instrumented_by_opentelemetry = True
 
+        meter = get_meter(
+            __name__, __version__, _InstrumentedFlask._meter_provider
+        )
+        duration_histogram = meter.create_histogram(
+            name="http.server.duration",
+            unit="ms",
+            description="measures the duration of the inbound HTTP request",
+        )
+        active_requests_counter = meter.create_up_down_counter(
+            name="http.server.active_requests",
+            unit="requests",
+            description="measures the number of concurrent HTTP requests that are currently in-flight",
+        )
+
         self.wsgi_app = _rewrapped_app(
             self.wsgi_app,
+            active_requests_counter,
+            duration_histogram,
             _InstrumentedFlask._response_hook,
             excluded_urls=_InstrumentedFlask._excluded_urls,
         )
@@ -367,6 +410,8 @@ class FlaskInstrumentor(BaseInstrumentor):
             if excluded_urls is None
             else parse_excluded_urls(excluded_urls)
         )
+        meter_provider = kwargs.get("meter_provider")
+        _InstrumentedFlask._meter_provider = meter_provider
         flask.Flask = _InstrumentedFlask
 
     def _uninstrument(self, **kwargs):
@@ -379,6 +424,7 @@ class FlaskInstrumentor(BaseInstrumentor):
         response_hook=None,
         tracer_provider=None,
         excluded_urls=None,
+        meter_provider=None,
     ):
         if not hasattr(app, "_is_instrumented_by_opentelemetry"):
             app._is_instrumented_by_opentelemetry = False
@@ -389,9 +435,25 @@ class FlaskInstrumentor(BaseInstrumentor):
                 if excluded_urls is not None
                 else _excluded_urls_from_env
             )
+            meter = get_meter(__name__, __version__, meter_provider)
+            duration_histogram = meter.create_histogram(
+                name="http.server.duration",
+                unit="ms",
+                description="measures the duration of the inbound HTTP request",
+            )
+            active_requests_counter = meter.create_up_down_counter(
+                name="http.server.active_requests",
+                unit="requests",
+                description="measures the number of concurrent HTTP requests that are currently in-flight",
+            )
+
             app._original_wsgi_app = app.wsgi_app
             app.wsgi_app = _rewrapped_app(
-                app.wsgi_app, response_hook, excluded_urls=excluded_urls
+                app.wsgi_app,
+                active_requests_counter,
+                duration_histogram,
+                response_hook,
+                excluded_urls=excluded_urls,
             )
 
             tracer = trace.get_tracer(__name__, __version__, tracer_provider)
