@@ -1,4 +1,0 @@
-change_type: bug_fix
-component: skywalkingreceiver
-note: Fix skywalking traceid and spanid convertion
-issues: [11562]

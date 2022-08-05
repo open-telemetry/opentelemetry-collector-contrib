@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudspannerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 
 import (
@@ -68,7 +67,7 @@ func (config *Config) Validate() error {
 			config.ID(), "cardinality_total_limit", config.CardinalityTotalLimit)
 	}
 
-	if len(config.Projects) <= 0 {
+	if len(config.Projects) == 0 {
 		return fmt.Errorf("%v missing required field %q or its value is empty", config.ID(), "projects")
 	}
 
@@ -86,7 +85,7 @@ func (project Project) Validate() error {
 		return errors.New(`field "project_id" is required and cannot be empty for project configuration`)
 	}
 
-	if len(project.Instances) <= 0 {
+	if len(project.Instances) == 0 {
 		return fmt.Errorf("field %q is required and cannot be empty for project configuration", "instances")
 	}
 
@@ -104,7 +103,7 @@ func (instance Instance) Validate() error {
 		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "instance_id")
 	}
 
-	if len(instance.Databases) <= 0 {
+	if len(instance.Databases) == 0 {
 		return fmt.Errorf("field %q is required and cannot be empty for instance configuration", "databases")
 	}
 

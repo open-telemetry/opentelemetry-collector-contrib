@@ -56,11 +56,13 @@ type Client struct {
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger) (*Client, error) {
+func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
 	client, err := docker.NewClientWithOpts(
-		docker.WithHost(config.Endpoint),
-		docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
-		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		append([]docker.Opt{
+			docker.WithHost(config.Endpoint),
+			docker.WithVersion(fmt.Sprintf("v%v", config.DockerAPIVersion)),
+			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+		}, opts...)...,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)

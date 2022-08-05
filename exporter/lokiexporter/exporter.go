@@ -37,6 +37,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
@@ -45,11 +46,12 @@ const (
 )
 
 type lokiExporter struct {
-	config   *Config
-	settings component.TelemetrySettings
-	client   *http.Client
-	wg       sync.WaitGroup
-	convert  func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
+	config       *Config
+	settings     component.TelemetrySettings
+	client       *http.Client
+	wg           sync.WaitGroup
+	convert      func(plog.LogRecord, pcommon.Resource) (*logproto.Entry, error)
+	tenantSource tenant.Source
 }
 
 func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
@@ -57,18 +59,51 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 		config:   config,
 		settings: settings,
 	}
-	if config.Format == "json" {
+
+	if config.Format != nil && *config.Format == "body" {
+		lokiexporter.settings.Logger.Warn("The `body` format for this exporter will be removed soon. Set the value explicitly to `json` instead.")
+	}
+
+	if config.Format == nil {
+		lokiexporter.settings.Logger.Warn("The format attribute wasn't specified and the current default, `body`, was applied. Set the value explicitly to `json` to be compatible with future versions of this exporter.")
+		formatBody := "body"
+		config.Format = &formatBody
+	}
+
+	if *config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 	} else {
 		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
 	}
+
+	if config.Tenant == nil {
+		config.Tenant = &Tenant{
+			Source: "static",
+
+			// this might be empty, which is fine, we handle empty later
+			Value: config.TenantID,
+		}
+	}
+
+	switch config.Tenant.Source {
+	case "static":
+		lokiexporter.tenantSource = &tenant.StaticTenantSource{
+			Value: config.Tenant.Value,
+		}
+	case "context":
+		lokiexporter.tenantSource = &tenant.ContextTenantSource{
+			Key: config.Tenant.Value,
+		}
+	case "attributes":
+		lokiexporter.tenantSource = &tenant.AttributeTenantSource{
+			Value: config.Tenant.Value,
+		}
+	}
+
 	return lokiexporter
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	l.wg.Add(1)
-	defer l.wg.Done()
-
 	pushReq, _ := l.logDataToLoki(ld)
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
@@ -89,8 +124,13 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
-	if len(l.config.TenantID) > 0 {
-		req.Header.Set("X-Scope-OrgID", l.config.TenantID)
+	tenant, err := l.tenantSource.GetTenant(ctx, ld)
+	if err != nil {
+		return consumererror.NewPermanent(fmt.Errorf("failed to determine the tenant: %w", err))
+	}
+
+	if len(tenant) > 0 {
+		req.Header.Set("X-Scope-OrgID", tenant)
 	}
 
 	resp, err := l.client.Do(req)
@@ -126,7 +166,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions(), l.settings)
+	client, err := l.config.HTTPClientSettings.ToClient(host, l.settings)
 	if err != nil {
 		return err
 	}
@@ -176,7 +216,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 						errors.New(
 							fmt.Sprint(
 								"failed to convert, dropping log",
-								zap.String("format", l.config.Format),
+								zap.String("format", *l.config.Format),
 								zap.Error(err),
 							),
 						),

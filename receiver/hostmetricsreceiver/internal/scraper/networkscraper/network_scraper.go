@@ -50,15 +50,23 @@ type scraper struct {
 	bootTime                             func() (uint64, error)
 	ioCounters                           func(bool) ([]net.IOCountersStat, error)
 	connections                          func(string) ([]net.ConnectionStat, error)
+	conntrack                            func() ([]net.FilterStat, error)
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newNetworkScraper creates a set of Network related metrics
 func newNetworkScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: net.IOCounters, connections: net.Connections}
-	scraper.emitMetricsWithDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID)
-	scraper.emitMetricsWithoutDirectionAttribute = featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID)
+	scraper := &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		bootTime:                             host.BootTime,
+		ioCounters:                           net.IOCounters,
+		connections:                          net.Connections,
+		conntrack:                            net.FilterCounters,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+	}
 
 	var err error
 
@@ -99,6 +107,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	}
 
 	err = s.recordNetworkConnectionsMetrics()
+	if err != nil {
+		errors.AddPartial(connectionsMetricsLen, err)
+	}
+
+	err = s.recordNetworkConntrackMetrics()
 	if err != nil {
 		errors.AddPartial(connectionsMetricsLen, err)
 	}

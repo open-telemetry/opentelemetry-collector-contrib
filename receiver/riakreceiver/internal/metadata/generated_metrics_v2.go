@@ -180,7 +180,7 @@ func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("request", pcommon.NewValueString(requestAttributeValue))
+	dp.Attributes().InsertString("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -231,7 +231,7 @@ func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("request", pcommon.NewValueString(requestAttributeValue))
+	dp.Attributes().InsertString("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -335,7 +335,7 @@ func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("operation", pcommon.NewValueString(operationAttributeValue))
+	dp.Attributes().InsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -388,7 +388,7 @@ func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("request", pcommon.NewValueString(requestAttributeValue))
+	dp.Attributes().InsertString("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

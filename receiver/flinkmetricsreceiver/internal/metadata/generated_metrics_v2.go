@@ -257,7 +257,7 @@ func (m *metricFlinkJobCheckpointCount) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("checkpoint", pcommon.NewValueString(checkpointAttributeValue))
+	dp.Attributes().InsertString("checkpoint", checkpointAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -663,7 +663,7 @@ func (m *metricFlinkJvmGcCollectionsCount) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
+	dp.Attributes().InsertString("name", garbageCollectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -716,7 +716,7 @@ func (m *metricFlinkJvmGcCollectionsTime) recordDataPoint(start pcommon.Timestam
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("name", pcommon.NewValueString(garbageCollectorNameAttributeValue))
+	dp.Attributes().InsertString("name", garbageCollectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1585,8 +1585,8 @@ func (m *metricFlinkOperatorRecordCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("name", pcommon.NewValueString(operatorNameAttributeValue))
-	dp.Attributes().Insert("record", pcommon.NewValueString(recordAttributeValue))
+	dp.Attributes().InsertString("name", operatorNameAttributeValue)
+	dp.Attributes().InsertString("record", recordAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1639,7 +1639,7 @@ func (m *metricFlinkOperatorWatermarkOutput) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("name", pcommon.NewValueString(operatorNameAttributeValue))
+	dp.Attributes().InsertString("name", operatorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1692,7 +1692,7 @@ func (m *metricFlinkTaskRecordCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("record", pcommon.NewValueString(recordAttributeValue))
+	dp.Attributes().InsertString("record", recordAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
