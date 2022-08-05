@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:

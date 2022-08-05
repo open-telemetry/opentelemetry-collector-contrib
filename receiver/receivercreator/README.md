@@ -56,7 +56,13 @@ config:
    endpoint: '`endpoint`:8080'
 ```
 
-**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+**receivers.resource_attributes**
+
+```yaml
+resource_attributes:
+  <endpoint type>:
+    <attribute>: <attribute value>
+```
 
 This setting controls what resource attributes are set on metrics emitted from the created receiver. These attributes can be set from [values in the endpoint](#rule-expressions) that was matched by the `rule`. These attributes vary based on the endpoint type. These defaults can be disabled by setting the attribute to be removed to an empty value. Note that the values can be dynamic and processed the same as in `config`.
 
@@ -97,6 +103,18 @@ None
 | k8s.node.uid       | \`uid\`           |
 
 See `redis/2` in [examples](#examples).
+
+
+**receivers.&lt;receiver_type/id&gt;.resource_attributes**
+
+```yaml
+receivers:
+  <receiver_type>:
+    resource_attributes:
+      <attribute>: <attribute string value>
+```
+
+Similar to the per-endpoint type `resource_attributes` described above but for individual receiver instances. Duplicate attribute entries (including the empty string) in this receiver-specific mapping take precedence. These attribute values also support expansion from endpoint environment content. At this time their values must be strings.
 
 ## Rule Expressions
 
@@ -195,6 +213,10 @@ receivers:
         config:
           metrics_path: '`"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/metrics"`'
           endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090`'
+        resource_attributes:
+          an.attribute: a.value
+          # Dynamic configuration values
+          app.version: '`labels["app_version"]`'
 
       redis/1:
         # If this rule matches an instance of this receiver will be started.
@@ -210,9 +232,13 @@ receivers:
         rule: type == "port" && port == 6379
 
       resource_attributes:
-        # Dynamic configuration values
-        service.name: '`pod.labels["service_name"]`'
-        app: '`pod.labels["app"]`'
+        # Dynamic configuration values, overwriting default attributes`
+        pod:
+          service.name: '`labels["service_name"]`'
+          app: '`labels["app"]`'
+        port:
+          service.name: '`pod.labels["service_name"]`'
+          app: '`pod.labels["app"]`'
   receiver_creator/2:
     # Name of the extensions to watch for endpoints to start and stop.
     watch_observers: [host_observer]
@@ -220,8 +246,8 @@ receivers:
       redis/on_host:
         # If this rule matches an instance of this receiver will be started.
         rule: type == "port" && port == 6379 && is_ipv6 == true
-    resource_attributes:
-      service.name: redis_on_host
+      resource_attributes:
+        service.name: redis_on_host
   receiver_creator/3:
     watch_observers: [k8s_observer]
     receivers:

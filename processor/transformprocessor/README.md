@@ -8,152 +8,147 @@
 | Warnings                 | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
 
 The transform processor modifies telemetry based on configuration using the [Telemetry Query Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/tql).
-It takes a list of queries which are performed in the order specified in the config.
+The processor takes a list of queries for each signal type and executes the queries against the incoming telemetry in the order specified in the config.  Each query can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
-Queries are composed of the following parts
-- Path expressions: Fields within the incoming data can be referenced using expressions composed of the names as defined
-in the OTLP protobuf definition. e.g., `status.code`, `attributes["http.method"]`, `trace_state["example_key"]`. If the path expression begins with
-`resource.` or `instrumentation_library.`, it will reference those values.  For metrics, `name`, `description`, `unit`, `type`, `is_monotonic`, and `aggregation_temporality` are accessed via `metric.`
-  - The name `instrumentation_library` within OpenTelemetry is currently under discussion and may be changed in the future.
-  - Metric data types are `None`, `Gauge`, `Sum`, `Histogram`, `ExponentialHistogram`, and `Summary`
-  - `aggregation_temporality` is converted to and from the [protobuf's numeric definition](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto#L291).  Interact with this field using 0, 1, or 2.
-  - Until the grammar can handle booleans, `is_monotic` is handled via strings the strings `"true"` and `"false"`.
-  - Hex String of traceid and spanid are handled using `trace_id.string`,`span_id.string` accessor.
-- Literals: Strings, ints, floats, bools, and nil can be referenced as literal values.  Byte slices can be references as a literal value via a hex string prefaced with `0x`, such as `0x0001`. 
-- Enums: Any enum in the OTLP protobuf can be used directly. For example, you can set the span kind like `set(kind, SPAN_KIND_UNSPECIFIED) where kind != SPAN_KIND_UNSPECIFIED`.  You can also use the literal int value if you desire. In addition, the grammar recognises `METRIC_DATA_TYPE_NONE`, `METRIC_DATA_TYPE_GAUGE`, `METRIC_DATA_TYPE_SUM`, `METRIC_DATA_TYPE_HISTOGRAM`, `METRIC_DATA_TYPE_EXPONENTIAL_HISTOGRAM`, and `METRIC_DATA_TYPE_SUMMARY` for `metric.type`
-- Function invocations: Functions can be invoked with arguments matching the function's expected arguments.  The literal nil cannot be used as a replacement for maps or slices in function calls.
-- Where clause: Telemetry to modify can be filtered by appending `where a <op> b`, with `a` and `b` being any of the above.  For more detailed Where clauses, see the [TQL Expression doc](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/tql#expressions).
+## Config
 
-Supported functions:
-- `SpanID(bytes)` - `bytes` is a byte slice of exactly 8 bytes. The function returns a SpanID from `bytes`. e.g., `SpanID(0x0000000000000000)`
+The transform processor allows configuring queries for traces, metrics, and logs. Each signal specifies a list of string queries that get passed to the TQL for interpretation.
 
-- `TraceID(bytes)` - `bytes` is a byte slice of exactly 16 bytes. The function returns a TraceID from `bytes`. e.g., `TraceID(0x00000000000000000000000000000000)`
+```yaml
+transform:
+  <traces|metrics|logs>:
+    queries:
+      - string
+      - string
+      - string
+```
 
-- `IsMatch(target, pattern)` - `target` is either a path expression to a telemetry field to retrieve or a literal string.  `pattern` is a regexp pattern. The function matches the target against the pattern, returning true if the match is successful and false otherwise.  If target is nil or not a string false is always returned. 
-
-- `set(target, value)` - `target` is a path expression to a telemetry field to set `value` into. `value` is any value type.
-e.g., `set(attributes["http.path"], "/foo")`, `set(name, attributes["http.route"])`, `set(trace_state["svc"], "example")`, `set(attributes["source"], trace_state["source"])`. If `value` resolves to `nil`, e.g.
-it references an unset map value, there will be no action.
-
-- `delete_key(target, key)` - `target` is a path expression to a map type field. `key` is a string that is a key in the map.  The key will be deleted from the map.  e.g., `delete_key(attributes, "http.request.header.authorization")`
-
-- `delete_matching_keys(target, pattern)` - `target` is a path expression to a map type field. `pattern` is a regex string.  All keys that match the pattern will be deleted from the map.  e.g., `delete_matching_keys(attributes, ".*\.header\.authorization")`
-
-- `keep_keys(target, string...)` - `target` is a path expression to a map type field. The map will be mutated to only contain
-the fields specified by the list of strings. e.g., `keep_keys(attributes, "http.method")`, `keep_keys(attributes, "http.method", "http.route")`
-
-- `truncate_all(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that all string values are truncated to the limit. e.g., `truncate_all(attributes, 100)` will truncate all string values in `attributes` such that all string values have less than or equal to 100 characters.  Non-string values are ignored.
-
-- `limit(target, limit)` - `target` is a path expression to a map type field. `limit` is a non-negative integer.  The map will be mutated such that the number of items does not exceed the limit. e.g., `limit(attributes, 100)` will limit `attributes` to no more than 100 items. Which items are dropped is random.
-
-- `replace_match(target, pattern, replacement)` - `target` is a path expression to a telemetry field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. If `target` matches `pattern` it will get replaced with `replacement`. e.g., `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
-
-- `replace_all_matches(target, pattern, replacement)` - `target` is a path expression to a map type field, `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match), and `replacement` is a string. Each string value in `target` that matches `pattern` will get replaced with `replacement`. e.g., `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
-
-- `replace_pattern(target, regex, replacement)` - `target` is a path expression to a telemetry field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
-
-- `replace_all_patterns(target, regex, replacement)` - `target` is a path expression to a map type field, `regex` is a regex string indicating a segment to replace, and `replacement` is a string. If one or more sections of `target` match `regex` they will get replaced with `replacement`. e.g., `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
-
-Metric only functions:
-- `convert_sum_to_gauge()` - Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum". 
-**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
-
-- `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Count" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`.
-**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk. 
-
-- `convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)` - Creates a new Sum metric out of incoming metrics of type "Summary" with a "Sum" Value. Noop for metrics that are not of type "Summary". The name for the new metric with be `<summary metric>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
-**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
-
-
-- `convert_gauge_to_sum(aggregation_temporality, is_monotonic)` - `aggregation_temporality` specifies the resultant metric's aggregation temporality. `aggregation_temporality` may be `"cumulative"` or `"delta"`. `is_monotonic` specifies the resultant metric's monotonicity. `is_monotonic` is a boolean. Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge". The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
-**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
-
-Supported where operations:
-- `==` - matches telemetry where the values are equal to each other
-- `!=` - matches telemetry where the values are not equal to each other
+## Example
 
 Example configuration:
 ```yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-
-exporters:
-  nop
-
-processors:
-  transform:
-    traces:
-      queries:
-        - set(status.code, 1) where attributes["http.path"] == "/health"
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
-        - set(name, attributes["http.route"])
-        - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
-        - limit(attributes, 100)
-        - limit(resource.attributes, 100)
-        - truncate_all(attributes, 4096)
-        - truncate_all(resource.attributes, 4096)
-    metrics:
-      queries:
-        - set(metric.description, "Sum") where metric.type == "Sum"
-        - keep_keys(resource.attributes, "host.name")
-        - limit(attributes, 100)
-        - truncate_all(attributes, 4096)
-        - truncate_all(resource.attributes, 4096)
-        - convert_sum_to_gauge() where metric.name == "system.processes.count"
-        - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
-    logs:
-      queries:
-        - set(severity_text, "FAIL") where body == "request failed"
-        - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
-        - set(body, attributes["http.route"])
-        - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
-service:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [transform]
-      exporters: [nop]
-    traces:
-      receivers: [otlp]
-      processors: [transform]
-      exporters: [nop]
+transform:
+  traces:
+    queries:
+      - set(status.code, 1) where attributes["http.path"] == "/health"
+      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region", "process.command_line")
+      - set(name, attributes["http.route"])
+      - replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")
+      - replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")
+      - limit(attributes, 100)
+      - limit(resource.attributes, 100)
+      - truncate_all(attributes, 4096)
+      - truncate_all(resource.attributes, 4096)
+  metrics:
+    queries:
+      - set(metric.description, "Sum") where metric.type == "Sum"
+      - keep_keys(resource.attributes, "host.name")
+      - limit(attributes, 100)
+      - truncate_all(attributes, 4096)
+      - truncate_all(resource.attributes, 4096)
+      - convert_sum_to_gauge() where metric.name == "system.processes.count"
+      - convert_gauge_to_sum("cumulative", false) where metric.name == "prometheus_metric"
+  logs:
+    queries:
+      - set(severity_text, "FAIL") where body == "request failed"
+      - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
+      - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+      - set(body, attributes["http.route"])
+      - keep_keys(resource.attributes, "service.name", "service.namespace", "cloud.region")
 ```
+## Grammar
 
-This processor will perform the operations in order for 
+You can learn more in-depth details on the capabilities and limitations of the Telemetry Query Language used by the transform processor by reading about its [grammar](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/tql#grammar).
 
-All spans
+## Contexts
 
-1) Set status code to OK for all spans with a path `/health`
-2) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
-3) Set `name` to the `http.route` attribute if it is set
-4) Replace the value of an attribute named `http.target` with `/user/{userId}/list/{listId}` if the value matched `/user/*/list/*`
-5) Update the value of an attribute named `process.command_line`, by replacing any substrings that match the regex `password\\=[^\\s]*(\\s?)` with `password=***`
-6) Limit all span attributes such that each span has no more than 100 attributes.
-7) Limit all resource attributes such that each resource no more than 100 attributes.
-8) Truncate all span attributes such that no string value has more than 4096 characters.
-9) Truncate all resource attributes such that no string value has more than 4096 characters.
+The transform processor utilizes the TQL's standard contexts for Traces, Metrics and Logs.  The contexts allow the TQL to interact with the underlying telemetry data in its pdata form.
 
-All metrics and their data points
+- [Traces Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/contexts/tqltraces)
+- [Metrics Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/contexts/tqlmetrics)
+- [Logs Context](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/contexts/tqllogs)
 
-1) Set metric description to "Sum" if the metric type is "Sum"
-2) Keep only the `host.name` resource attributes
-3) Limit all data point attributes such that each data point has no more than 100 attributes.
-4) Truncate all data point attributes such that no string value has more than 4096 characters.
-5) Truncate all resource attributes such that no string value has more than 4096 characters.
-6) Convert all metrics with name `system.processes.count` from a Sum to Gauge.
-7) Convert all metrics with name `prometheus_metric` from Gauge to a cumulative, non-monotonic Sum.
+## Supported functions:
 
-All logs
+Since the transform processor utilizes the TQL's contexts for Traces, Metrics, and Logs, it is able to utilize functions that expect pdata in addition to any common functions. These common functions can be used for any signal.
 
-1) Set severity text to FAIL if the body contains a string text "request failed"
-2) Replace any attribute value that matches `/user/*/list/*` with `/user/{userId}/list/{listId}`
-3) Update the value of any attribute, by replacing any substrings that match the regex `/account/\\d{4}` with `/account/{accountId}`
-4) Set `body` to the `http.route` attribute if it is set
-5) Keep only `service.name`, `service.namespace`, `cloud.region` resource attributes
+- [Common TQL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/functions/tqlcommon)
+- [Otel TQL functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/functions/tqlotel)
+
+In addition to TQL functions, the processor defines its own functions to help with transformations specific to this processor:
+
+**Metrics only functions**
+- [convert_sum_to_gauge](#convert_sum_to_gauge)
+- [convert_gauge_to_sum](#convert_gauge_to_sum)
+- [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
+- [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
+
+## convert_sum_to_gauge
+
+`convert_sum_to_gauge()`
+
+Converts incoming metrics of type "Sum" to type "Gauge", retaining the metric's datapoints. Noop for metrics that are not of type "Sum".
+
+**NOTE:** This function may cause a metric to break semantics for [Gauge metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge). Use at your own risk.
+
+Examples:
+
+- `convert_sum_to_gauge()`
+
+## convert_gauge_to_sum
+
+`convert_gauge_to_sum(aggregation_temporality, is_monotonic)`
+
+Converts incoming metrics of type "Gauge" to type "Sum", retaining the metric's datapoints and setting its aggregation temporality and monotonicity accordingly. Noop for metrics that are not of type "Gauge".
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) that specifies the resultant metric's aggregation temporality. `is_monotonic` is a boolean that specifies the resultant metric's monotonicity. 
+
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_gauge_to_sum("cumulative", false)`
+
+
+- `convert_gauge_to_sum("delta", true)`
+
+## convert_summary_count_val_to_sum
+
+`convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)`
+
+The `convert_summary_count_val_to_sum` function creates a new Sum metric from a Summary's count value.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<summary metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
+
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_summary_count_val_to_sum("delta", true)`
+
+
+- `convert_summary_count_val_to_sum("cumulative", false)`
+
+## convert_summary_sum_val_to_sum
+
+`convert_summary_sum_val_to_sum(aggregation_temporality, is_monotonic)`
+
+The `convert_summary_sum_val_to_sum` function creates a new Sum metric from a Summary's sum value.
+
+`aggregation_temporality` is a string (`"cumulative"` or `"delta"`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<summary metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics queries list.  Function conditions will apply.
+
+**NOTE:** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+
+Examples:
+
+- `convert_summary_sum_val_to_sum("delta", true)`
+
+
+- `convert_summary_sum_val_to_sum("cumulative", false)`
 
 ## Contributing
  <!-- markdown-link-check-disable-next-line -->

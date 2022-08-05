@@ -1,4 +1,0 @@
-change_type: breaking
-component: healthcheckextension
-note: Remove deprecated `port` field from config.
-issues: [12668]

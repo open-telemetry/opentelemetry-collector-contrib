@@ -55,7 +55,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			addr := testutil.GetAvailableLocalAddress(t)
+			addr := testutil.GetAvailableLocalNetworkAddress(t, tt.name)
+
 			svr, err := tt.buildServerFn(addr)
 			require.NoError(t, err)
 			require.NotNil(t, svr)
@@ -88,6 +89,12 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			assert.NoError(t, err)
 
 			mr.WaitAllOnMetricsProcessedCalls()
+
+			// Keep trying until we're timed out or got a result
+			assert.Eventually(t, func() bool {
+				mdd := mc.AllMetrics()
+				return len(mdd) > 0
+			}, 10*time.Second, 500*time.Millisecond)
 
 			err = svr.Close()
 			assert.NoError(t, err)
