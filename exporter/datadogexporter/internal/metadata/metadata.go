@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -96,9 +95,14 @@ type Meta struct {
 // metadataFromAttributes gets metadata info from attributes following
 // OpenTelemetry semantic conventions
 func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
+	return metadataFromAttributesWithRegistry(featuregate.GetRegistry(), attrs)
+}
+
+// metadataFromAttributesWithRegistry passes a registry explicitly to allow easier unit testing.
+func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pcommon.Map) *HostMetadata {
 	hm := &HostMetadata{Meta: &Meta{}, Tags: &HostTags{}}
 
-	var usePreviewHostnameLogic = featuregate.GetRegistry().IsEnabled(HostnamePreviewFeatureGate)
+	var usePreviewHostnameLogic = registry.IsEnabled(HostnamePreviewFeatureGate)
 	if src, ok := attributes.SourceFromAttributes(attrs, usePreviewHostnameLogic); ok && src.Kind == source.HostnameKind {
 		hm.InternalHostname = src.Identifier
 		hm.Meta.Hostname = src.Identifier
@@ -106,16 +110,17 @@ func metadataFromAttributes(attrs pcommon.Map) *HostMetadata {
 
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
-	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+	switch {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}

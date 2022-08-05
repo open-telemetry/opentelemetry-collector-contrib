@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -153,7 +152,7 @@ func endpointWithPort(endpoint string) string {
 func (lb *loadBalancerImp) removeExtraExporters(ctx context.Context, endpoints []string) {
 	for existing := range lb.exporters {
 		if !endpointFound(existing, endpoints) {
-			lb.exporters[existing].Shutdown(ctx)
+			_ = lb.exporters[existing].Shutdown(ctx)
 			delete(lb.exporters, existing)
 		}
 	}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package sapmreceiver
 
 import (
@@ -81,7 +80,7 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 func grpcFixture(t1 time.Time) *model.Batch {
 	traceID := model.TraceID{}
-	traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+	_ = traceID.Unmarshal([]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
 	parentSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
 	childSpanID := model.NewSpanID(binary.BigEndian.Uint64([]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
 
@@ -295,7 +294,9 @@ func TestReception(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, tt.args.config, sink)
-			defer sr.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sr.Shutdown(context.Background()))
+			}()
 
 			t.Log("Sending Sapm Request")
 			var resp *http.Response
@@ -359,7 +360,9 @@ func TestAccessTokenPassthrough(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 			sr := setupReceiver(t, config, sink)
-			defer sr.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sr.Shutdown(context.Background()))
+			}()
 
 			var resp *http.Response
 			resp, err := sendSapm(config.Endpoint, sapm, true, false, tt.token)

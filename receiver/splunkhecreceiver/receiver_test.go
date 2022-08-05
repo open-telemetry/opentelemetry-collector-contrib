@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package splunkhecreceiver
 
 import (
@@ -386,7 +385,9 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	r, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, sink)
 	require.NoError(t, err)
-	defer r.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start log reception")
@@ -555,7 +556,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 
 			if tt.metric {
 				exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
-				exporter.Start(context.Background(), nil)
+				assert.NoError(t, exporter.Start(context.Background(), nil))
 				assert.NoError(t, err)
 				rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, exporter)
 				assert.NoError(t, err)
@@ -567,7 +568,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				assert.NoError(t, err)
 			} else {
 				exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
-				exporter.Start(context.Background(), nil)
+				assert.NoError(t, exporter.Start(context.Background(), nil))
 				assert.NoError(t, err)
 				rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *config, exporter)
 				assert.NoError(t, err)
@@ -632,7 +633,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 			exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
-			exporter.Start(context.Background(), nil)
+			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			rcv, err := newLogsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
@@ -726,7 +727,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Endpoint = endServer.URL
 
 			exporter, err := factory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
-			exporter.Start(context.Background(), nil)
+			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			rcv, err := newMetricsReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg, exporter)
 			assert.NoError(t, err)
@@ -959,7 +960,9 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 
 			r := rcv.(*splunkReceiver)
 			assert.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-			defer r.Shutdown(context.Background())
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
 			w := httptest.NewRecorder()
 			r.handleRawReq(w, tt.req)
 

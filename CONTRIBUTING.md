@@ -114,9 +114,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@Aneurysm9](https://github.com/Aneurysm9)
-* [@mx-psi](https://github.com/mx-psi)
-* [@pmm-sumo](https://github.com/pmm-sumo)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
@@ -124,6 +121,8 @@ The following GitHub users are the currently available sponsors, either by being
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
+* [@Aneurysm9](https://github.com/Aneurysm9)
+* [@mx-psi](https://github.com/mx-psi)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -149,3 +148,33 @@ in general try to follow them.
   ensure that the exporter provides [zPages](https://opencensus.io/zpages/) and a standard set of metrics.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
   on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
+
+## Adding Labels via Comments
+
+In order to facilitate proper label usage and to empower Code Owners, you are able to add the following labels to issues via comments.
+
+| Label              | Generating Comment |
+|--------------------|--------------------|
+| `good first issue` | /good-first-issue  |
+| `help wanted`      | /help-wanted       |
+
+Currently, labels can only be created via comment, not deleted.  You must make a new comment; you cannot edit an existing comment.
+
+## Becoming a Code Owner
+
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+
+Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
+- The component was never assigned a Code Owner.
+- A previous Code Owner stepped down.
+- An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
+- The existing Code Owners are actively looking for new Code Owners to help.
+
+If you would like to help and become a Code Owner you must meet the following requirements:
+
+1. [Be a member of the OpenTelemetry organization.](https://github.com/open-telemetry/community/blob/main/community-membership.md#member)
+2. (Code Owner Discretion) It is best to have resolved an issue related to the component, contributed directly to the component, and/or review component PRs. How much interaction with the component is required before becoming a Code Owner is up to any existing Code Owners. 
+
+Code Ownership is ultimately up to the judgement of the existing Code Owners and Collector Contrib Maintainers. Meeting the above requirements is not a guarantee to be granted Code Ownership.
+
+To become a Code Owner, open a PR with the CODEOWNERS file modified, adding your GitHub username to the component's row. Be sure to tag the existing Code Owners, if any, within the PR to ensure they receive a notification.

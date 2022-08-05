@@ -190,13 +190,6 @@ func TestTracesSource(t *testing.T) {
 		},
 		{
 			attrs: map[string]interface{}{
-				semconv.AttributeContainerID: "containerID",
-			},
-			host: "containerID",
-			tags: []string{"version:latest", "command:otelcol"},
-		},
-		{
-			attrs: map[string]interface{}{
 				semconv.AttributeCloudProvider:      semconv.AttributeCloudProviderAWS,
 				semconv.AttributeCloudPlatform:      semconv.AttributeCloudPlatformAWSECS,
 				semconv.AttributeAWSECSTaskARN:      "example-task-ARN",

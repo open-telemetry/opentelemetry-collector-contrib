@@ -28,6 +28,8 @@ type TransformContext interface {
 
 type ExprFunc func(ctx TransformContext) interface{}
 
+type Enum int64
+
 type Getter interface {
 	Get(ctx TransformContext) interface{}
 }
@@ -41,12 +43,25 @@ type GetSetter interface {
 	Setter
 }
 
-type literal struct {
-	value interface{}
+type StandardGetSetter struct {
+	Getter func(ctx TransformContext) interface{}
+	Setter func(ctx TransformContext, val interface{})
 }
 
-func (l literal) Get(ctx TransformContext) interface{} {
-	return l.value
+func (path StandardGetSetter) Get(ctx TransformContext) interface{} {
+	return path.Getter(ctx)
+}
+
+func (path StandardGetSetter) Set(ctx TransformContext, val interface{}) {
+	path.Setter(ctx, val)
+}
+
+type Literal struct {
+	Value interface{}
+}
+
+func (l Literal) Get(ctx TransformContext) interface{} {
+	return l.Value
 }
 
 type exprGetter struct {
@@ -57,25 +72,33 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser) (Getter, error) {
+func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
-		return &literal{value: nil}, nil
+		return &Literal{Value: nil}, nil
 	}
 
 	if s := val.String; s != nil {
-		return &literal{value: *s}, nil
+		return &Literal{Value: *s}, nil
 	}
 	if f := val.Float; f != nil {
-		return &literal{value: *f}, nil
+		return &Literal{Value: *f}, nil
 	}
 	if i := val.Int; i != nil {
-		return &literal{value: *i}, nil
+		return &Literal{Value: *i}, nil
 	}
 	if b := val.Bool; b != nil {
-		return &literal{value: bool(*b)}, nil
+		return &Literal{Value: bool(*b)}, nil
 	}
 	if b := val.Bytes; b != nil {
-		return &literal{value: ([]byte)(*b)}, nil
+		return &Literal{Value: ([]byte)(*b)}, nil
+	}
+
+	if val.Enum != nil {
+		enum, err := enumParser(val.Enum)
+		if err != nil {
+			return nil, err
+		}
+		return &Literal{Value: int64(*enum)}, nil
 	}
 
 	if val.Path != nil {
@@ -86,7 +109,7 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the transformprocessor")
 	}
-	call, err := NewFunctionCall(*val.Invocation, functions, pathParser)
+	call, err := NewFunctionCall(*val.Invocation, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}

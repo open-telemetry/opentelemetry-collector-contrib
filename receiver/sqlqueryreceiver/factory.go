@@ -29,6 +29,6 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createReceiverFunc(sql.Open, newDbClient), stability),
+		component.WithMetricsReceiver(createReceiverFunc(sql.Open, newDbClient), stability),
 	)
 }

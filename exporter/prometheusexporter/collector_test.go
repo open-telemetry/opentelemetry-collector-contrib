@@ -15,6 +15,7 @@
 package prometheusexporter
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -320,6 +321,19 @@ func TestCollectMetrics(t *testing.T) {
 				j := 0
 				for m := range ch {
 					j++
+
+					if strings.Contains(m.Desc().String(), "fqName: \"test_space_target_info\"") {
+						pbMetric := io_prometheus_client.Metric{}
+						require.NoError(t, m.Write(&pbMetric))
+
+						labelsKeys := map[string]string{"job": "prod/testapp", "instance": "localhost:9090"}
+						for _, l := range pbMetric.Label {
+							require.Equal(t, labelsKeys[*l.Name], *l.Value)
+						}
+
+						continue
+					}
+
 					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
 					require.Contains(t, m.Desc().String(), "variableLabels: [label_1 label_2 job instance]")
 
@@ -350,7 +364,7 @@ func TestCollectMetrics(t *testing.T) {
 						require.Nil(t, pbMetric.Summary)
 					}
 				}
-				require.Equal(t, 1, j)
+				require.Equal(t, 2, j)
 			})
 		}
 	}

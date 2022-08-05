@@ -51,7 +51,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.

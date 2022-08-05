@@ -59,7 +59,7 @@ undocumented metrics types, including:
 * Statset
 
 More details can be found from the
-[prometheus text parser source code]( https://github.com/prometheus/prometheus/blob/master/pkg/textparse/interface.go#L82)
+[prometheus text parser source code](https://github.com/prometheus/prometheus/blob/afdd1357e008375e693a1b4c096f81b2358cb46f/model/textparse/interface.go#L25)
 
 ### Metric Grouping
 
@@ -92,31 +92,30 @@ on. It's important to understand how it works in order to implement the
 receiver properly.
 
 ### Major components of Prometheus Scrape package
+#### ScrapeManager
+[ScrapeManager](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/manager.go) is a component which loads the scrape_config, and manages the scraping tasks
 
-- **[ScrapeManager](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/manager.go):**
-the component which loads the scrape_config, and manages the scraping tasks
+#### ScrapePool
+[ScrapePool](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L154-L439) is an object which manages scrapes for a sets of targets
 
-- **[ScrapePool](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L154-L439):**
-an object which manages scrapes for a sets of targets
+#### Scraper
+[Scraper](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L506-L511) is a http client to fetch data from remote metrics endpoints
 
-- **[Scraper](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L506-L511):**
-a http client to fetch data from remote metrics endpoints
+#### Target
+[Target](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/target.go) is a remote metric endpoint, as well as related relabeling settings and other metadata
 
-- **[Target](https://github.com/prometheus/prometheus/blob/v2.9.2/scrape/target.go):**
-the remote metric endpoint, as well as related relabeling settings and other metadata
+#### TextParser
+[TextParser](https://github.com/prometheus/prometheus/tree/v2.9.2/pkg/textparse) is a DFA style streaming decoder/parser for prometheus text format
 
-- **[TextParser](https://github.com/prometheus/prometheus/tree/v2.9.2/pkg/textparse):**
-a DFA style streaming decoder/parser for prometheus text format
+#### Appendable
+[Appendable](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/manager.go#L37-L39) is used to acquire a storage appender instance at the beginning of each scrapeLoop run
 
-- **[Appendable](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/manager.go#L37-L39):**
-it is used to acquire a storage appender instance at the beginning of each scrapeLoop run
-
-- **[storage.Appender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95):**
-an abstraction of the metric storage which can be a filesystem, a database or a remote endpoint...etc. For the OpenTelemetry prometheus receiver, this is
+#### StorageAppender
+[StorageAppender](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/storage/interface.go#L86-L95) is an abstraction of the metric storage which can be a filesystem, a database or a remote endpoint...etc. For the OpenTelemetry prometheus receiver, this is
 also the interface we need to implement to provide a customized storage appender backed by a metrics sink.
 
-- **[ScrapeLoop](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L586-L1024):**
-the actual scrape pipeline which performs the main scraping and ingestion logic.
+#### ScrapeLoop
+[ScrapeLoop](https://github.com/prometheus/prometheus/blob/d3245f15022551c6fc8281766ea62db4d71e2747/scrape/scrape.go#L586-L1024) is the actual scrape pipeline which performs the main scraping and ingestion logic.
 
 ### Prometheus ScrapeLoop workflow explained
 Each scraping cycle is triggered by a configured interval, its workflow is as
@@ -127,7 +126,7 @@ shown in the flowchart below:
 It basically does the following things in turn:
 
   1. make a http call to fetch data from the binding [target](#target)'s metrics endpoint with [scraper](#scraper)
-  2. acquired a [storage appender](#storage-appender) instance with the [Appendable](#appendable) interface 
+  2. acquired a [storageAppender](#storageappender) instance with the [Appendable](#appendable) interface 
   3. feed the data to a textParser
   4. parse and feed metric data points to storage appender
   5. commit if success or rollback
@@ -688,4 +687,4 @@ will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 ### Others
 
 For any other Prometheus metrics types, they will be transformed into the
-OpenTelemetry [Gauge](#gauge) type.
+OpenTelemetry [Gauge](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#gauge) type.

@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -43,11 +44,15 @@ const (
 // * Google App Engine (GAE).
 // * Cloud Run.
 // * Cloud Functions.
-func NewDetector(_ component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &detector{detector: gcp.NewDetector()}, nil
+func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+	return &detector{
+		logger:   set.Logger,
+		detector: gcp.NewDetector(),
+	}, nil
 }
 
 type detector struct {
+	logger   *zap.Logger
 	detector gcpDetector
 }
 
@@ -56,7 +61,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	if !metadata.OnGCE() {
 		return res, "", nil
 	}
-	b := &resourceBuilder{attrs: res.Attributes()}
+	b := &resourceBuilder{logger: d.logger, attrs: res.Attributes()}
 	b.attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 	b.add(conventions.AttributeCloudAccountID, d.detector.ProjectID)
 
@@ -66,6 +71,8 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
 		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
 		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
+		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
+		b.addFallible(conventions.AttributeHostName, d.detector.GCEHostName)
 	case gcp.CloudRun:
 		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
@@ -106,8 +113,9 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 // resourceBuilder simplifies constructing resources using GCP detection
 // library functions.
 type resourceBuilder struct {
-	errs  []error
-	attrs pcommon.Map
+	logger *zap.Logger
+	errs   []error
+	attrs  pcommon.Map
 }
 
 func (r *resourceBuilder) add(key string, detect func() (string, error)) {
@@ -115,6 +123,15 @@ func (r *resourceBuilder) add(key string, detect func() (string, error)) {
 		r.attrs.InsertString(key, v)
 	} else {
 		r.errs = append(r.errs, err)
+	}
+}
+
+// addFallible adds a detect function whose failures should be ignored
+func (r *resourceBuilder) addFallible(key string, detect func() (string, error)) {
+	if v, err := detect(); err == nil {
+		r.attrs.InsertString(key, v)
+	} else {
+		r.logger.Info("Fallible detector failed. This attribute will not be available.", zap.String("key", key), zap.Error(err))
 	}
 }
 

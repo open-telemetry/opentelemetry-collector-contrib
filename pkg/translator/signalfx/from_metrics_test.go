@@ -78,7 +78,6 @@ func Test_FromMetrics(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		promCompatible    bool
 		metricsFn         func() pmetric.Metrics
 		wantSfxDataPoints []*sfxpb.DataPoint
 	}{
@@ -268,7 +267,7 @@ func Test_FromMetrics(t *testing.T) {
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("histogram_count", &sfxMetricTypeCumulativeCounter, labelMap, 16),
-				doubleSFxDataPoint("histogram", &sfxMetricTypeCumulativeCounter, labelMap, 100.0),
+				doubleSFxDataPoint("histogram_sum", &sfxMetricTypeCumulativeCounter, labelMap, 100.0),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
@@ -277,32 +276,6 @@ func Test_FromMetrics(t *testing.T) {
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
-			},
-		},
-		{
-			name:           "prometheus_histogram",
-			promCompatible: true,
-			metricsFn: func() pmetric.Metrics {
-				out := pmetric.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("prometheus_histogram")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-				initHistDP(m.Histogram().DataPoints().AppendEmpty())
-				return out
-			},
-			wantSfxDataPoints: []*sfxpb.DataPoint{
-				int64SFxDataPoint("prometheus_histogram_count", &sfxMetricTypeCumulativeCounter, labelMap, 16),
-				doubleSFxDataPoint("prometheus_histogram_sum", &sfxMetricTypeCumulativeCounter, labelMap, 100.0),
-				int64SFxDataPoint("prometheus_histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "1"}, labelMap), 4),
-				int64SFxDataPoint("prometheus_histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "2"}, labelMap), 6),
-				int64SFxDataPoint("prometheus_histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "4"}, labelMap), 9),
-				int64SFxDataPoint("prometheus_histogram_bucket", &sfxMetricTypeCumulativeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "+Inf"}, labelMap), 16),
 			},
 		},
 		{
@@ -319,7 +292,7 @@ func Test_FromMetrics(t *testing.T) {
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("delta_histogram_count", &sfxMetricTypeCounter, labelMap, 16),
-				doubleSFxDataPoint("delta_histogram", &sfxMetricTypeCounter, labelMap, 100.0),
+				doubleSFxDataPoint("delta_histogram_sum", &sfxMetricTypeCounter, labelMap, 100.0),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
@@ -328,32 +301,6 @@ func Test_FromMetrics(t *testing.T) {
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
-			},
-		},
-		{
-			name:           "delta_prometheus_histogram",
-			promCompatible: true,
-			metricsFn: func() pmetric.Metrics {
-				out := pmetric.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("delta_prometheus_histogram")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
-				initHistDP(m.Histogram().DataPoints().AppendEmpty())
-				return out
-			},
-			wantSfxDataPoints: []*sfxpb.DataPoint{
-				int64SFxDataPoint("delta_prometheus_histogram_count", &sfxMetricTypeCounter, labelMap, 16),
-				doubleSFxDataPoint("delta_prometheus_histogram_sum", &sfxMetricTypeCounter, labelMap, 100.0),
-				int64SFxDataPoint("delta_prometheus_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "1"}, labelMap), 4),
-				int64SFxDataPoint("delta_prometheus_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "2"}, labelMap), 6),
-				int64SFxDataPoint("delta_prometheus_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "4"}, labelMap), 9),
-				int64SFxDataPoint("delta_prometheus_histogram_bucket", &sfxMetricTypeCounter,
-					maps.MergeStringMaps(map[string]string{prometheusBucketDimensionKey: "+Inf"}, labelMap), 16),
 			},
 		},
 		{
@@ -373,7 +320,7 @@ func Test_FromMetrics(t *testing.T) {
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("no_bucket_histo_count", &sfxMetricTypeCumulativeCounter, labelMap, 2),
-				doubleSFxDataPoint("no_bucket_histo", &sfxMetricTypeCumulativeCounter, labelMap, 10),
+				doubleSFxDataPoint("no_bucket_histo_sum", &sfxMetricTypeCumulativeCounter, labelMap, 10),
 			},
 		},
 		{
@@ -399,7 +346,7 @@ func Test_FromMetrics(t *testing.T) {
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("summary_count", &sfxMetricTypeCumulativeCounter, labelMap, 111),
-				doubleSFxDataPoint("summary", &sfxMetricTypeCumulativeCounter, labelMap, 123.4),
+				doubleSFxDataPoint("summary_sum", &sfxMetricTypeCumulativeCounter, labelMap, 123.4),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
 					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.25"}, labelMap), 0),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
@@ -407,41 +354,6 @@ func Test_FromMetrics(t *testing.T) {
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
 					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.75"}, labelMap), 2),
 				doubleSFxDataPoint("summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "1"}, labelMap), 3),
-			},
-		},
-		{
-			name:           "prometheus_summaries",
-			promCompatible: true,
-			metricsFn: func() pmetric.Metrics {
-				out := pmetric.NewMetrics()
-				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-				m := ilm.Metrics().AppendEmpty()
-				m.SetName("prometheus_summary")
-				m.SetDataType(pmetric.MetricDataTypeSummary)
-				dp := m.Summary().DataPoints().AppendEmpty()
-				dp.SetTimestamp(ts)
-				dp.SetSum(123.4)
-				dp.SetCount(111)
-				qvs := dp.QuantileValues()
-				for i := 0; i < 4; i++ {
-					qv := qvs.AppendEmpty()
-					qv.SetQuantile(0.25 * float64(i+1))
-					qv.SetValue(float64(i))
-				}
-				attrMap.CopyTo(dp.Attributes())
-				return out
-			},
-			wantSfxDataPoints: []*sfxpb.DataPoint{
-				int64SFxDataPoint("prometheus_summary_count", &sfxMetricTypeCumulativeCounter, labelMap, 111),
-				doubleSFxDataPoint("prometheus_summary_sum", &sfxMetricTypeCumulativeCounter, labelMap, 123.4),
-				doubleSFxDataPoint("prometheus_summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.25"}, labelMap), 0),
-				doubleSFxDataPoint("prometheus_summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.5"}, labelMap), 1),
-				doubleSFxDataPoint("prometheus_summary_quantile", &sfxMetricTypeGauge,
-					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "0.75"}, labelMap), 2),
-				doubleSFxDataPoint("prometheus_summary_quantile", &sfxMetricTypeGauge,
 					maps.MergeStringMaps(map[string]string{quantileDimensionKey: "1"}, labelMap), 3),
 			},
 		},
@@ -462,15 +374,13 @@ func Test_FromMetrics(t *testing.T) {
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("empty_summary_count", &sfxMetricTypeCumulativeCounter, labelMap, 11),
-				doubleSFxDataPoint("empty_summary", &sfxMetricTypeCumulativeCounter, labelMap, 12.3),
+				doubleSFxDataPoint("empty_summary_sum", &sfxMetricTypeCumulativeCounter, labelMap, 12.3),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			from := &FromTranslator{
-				PrometheusCompatible: tt.promCompatible,
-			}
+			from := &FromTranslator{}
 			gotSfxDataPoints, err := from.FromMetrics(tt.metricsFn())
 			require.NoError(t, err)
 			// Sort SFx dimensions since they are built from maps and the order
