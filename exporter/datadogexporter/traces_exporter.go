@@ -23,7 +23,6 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
-	traceinfo "github.com/DataDog/datadog-agent/pkg/trace/info"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -59,7 +58,6 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
 		return nil, err
 	}
-	traceinfo.Version = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)
 	if err != nil {
@@ -74,6 +72,7 @@ func newTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 	acfg.Endpoints[0].APIKey = cfg.API.Key
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
+	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}

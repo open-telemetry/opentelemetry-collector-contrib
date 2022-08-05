@@ -81,7 +81,7 @@ func (c *client) pushMetricsData(
 	gzipWriter := c.zippers.Get().(*gzip.Writer)
 	defer c.zippers.Put(gzipWriter)
 
-	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
+	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	gzipWriter.Reset(gzipBuffer)
 
 	// Callback when each batch is to be sent.
@@ -127,7 +127,7 @@ func (c *client) pushTraceData(
 	gzipWriter := c.zippers.Get().(*gzip.Writer)
 	defer c.zippers.Put(gzipWriter)
 
-	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthLogs))
+	gzipBuffer := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthTraces))
 	gzipWriter.Reset(gzipBuffer)
 
 	// Callback when each batch is to be sent.

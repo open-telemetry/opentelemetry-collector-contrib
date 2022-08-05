@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsemfexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 
 import (
@@ -33,11 +32,12 @@ func getNamespace(rm *pmetric.ResourceMetrics, namespace string) string {
 	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
-		if svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeString && serviceNamespace.Type() == pcommon.ValueTypeString {
+		switch {
+		case svcNameOk && svcNsOk && serviceName.Type() == pcommon.ValueTypeString && serviceNamespace.Type() == pcommon.ValueTypeString:
 			namespace = fmt.Sprintf("%s/%s", serviceNamespace.StringVal(), serviceName.StringVal())
-		} else if svcNameOk && serviceName.Type() == pcommon.ValueTypeString {
+		case svcNameOk && serviceName.Type() == pcommon.ValueTypeString:
 			namespace = serviceName.StringVal()
-		} else if svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeString {
+		case svcNsOk && serviceNamespace.Type() == pcommon.ValueTypeString:
 			namespace = serviceNamespace.StringVal()
 		}
 	}
@@ -101,15 +101,16 @@ func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][
 	}
 
 	if dimensionRollupOption == zeroAndSingleDimensionRollup {
-		//"Zero" dimension rollup
+		// "Zero" dimension rollup
 		if len(labels) > 0 {
 			rollupDimensionArray = append(rollupDimensionArray, dimensionZero)
 		}
 	}
 	if dimensionRollupOption == zeroAndSingleDimensionRollup || dimensionRollupOption == singleDimensionRollupOnly {
-		//"One" dimension rollup
+		// "One" dimension rollup
 		for labelName := range labels {
-			dimSet := append(dimensionZero, labelName)
+			dimSet := dimensionZero
+			dimSet = append(dimSet, labelName)
 			sort.Strings(dimSet)
 			rollupDimensionArray = append(rollupDimensionArray, dimSet)
 		}

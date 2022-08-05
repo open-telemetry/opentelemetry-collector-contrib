@@ -167,6 +167,9 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`. HELP test_up The scraping was successful`,
 		`. TYPE test_up gauge`,
 		`test_up.instance="127.0.0.1:.*",job="otel-collector". 1 .*`,
+		`. HELP test_target_info Target metadata`,
+		`. TYPE test_target_info gauge`,
+		`test_target_info.http_scheme="http",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*". 1`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs

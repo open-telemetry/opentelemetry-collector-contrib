@@ -381,7 +381,7 @@ func (cp *childProcessCollector) fetchCPUUsage() {
 
 	// Calculate elapsed and process CPU time deltas in seconds
 	deltaElapsedTime := now.Sub(cp.lastElapsedTime).Seconds()
-	deltaCPUTime := times.Total() - cp.lastProcessTimes.Total()
+	deltaCPUTime := totalCPU(times) - totalCPU(cp.lastProcessTimes)
 	if deltaCPUTime < 0 {
 		// We sometimes get negative difference when the process is terminated.
 		deltaCPUTime = 0
@@ -449,7 +449,7 @@ func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
 
 		if elapsedDuration > 0 {
 			// Calculate average CPU usage since start of process
-			rc.CPUPercentAvg = cp.lastProcessTimes.Total() / elapsedDuration * 100.0
+			rc.CPUPercentAvg = totalCPU(cp.lastProcessTimes) / elapsedDuration * 100.0
 		}
 		rc.CPUPercentMax = cp.cpuPercentMax
 
@@ -470,4 +470,12 @@ func containsConfig(s []string) bool {
 		}
 	}
 	return false
+}
+
+// Copied from cpu.TimesStat.Total(), since that func is deprecated.
+func totalCPU(c *cpu.TimesStat) float64 {
+	total := c.User + c.System + c.Idle + c.Nice + c.Iowait + c.Irq +
+		c.Softirq + c.Steal + c.Guest + c.GuestNice
+
+	return total
 }

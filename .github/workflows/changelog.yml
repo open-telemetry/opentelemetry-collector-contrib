@@ -10,6 +10,11 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   changelog:
     runs-on: ubuntu-latest
@@ -23,7 +28,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.18
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package filtermatcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermatcher"
 
 import (
@@ -58,7 +57,8 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 				return nil, err
 			}
 
-			if config.MatchType == filterset.Regexp {
+			switch config.MatchType {
+			case filterset.Regexp:
 				if val.Type() != pcommon.ValueTypeString {
 					return nil, fmt.Errorf(
 						"%s=%s for %q only supports STRING, but found %s",
@@ -71,10 +71,11 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 					return nil, err
 				}
 				entry.StringFilter = filter
-			} else if config.MatchType == filterset.Strict {
+			case filterset.Strict:
 				entry.AttributeValue = &val
-			} else {
+			default:
 				return nil, filterset.NewUnrecognizedMatchTypeError(config.MatchType)
+
 			}
 		}
 

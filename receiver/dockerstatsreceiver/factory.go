@@ -22,18 +22,30 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/service/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
-	typeStr   = "docker_stats"
-	stability = component.StabilityLevelAlpha
+	typeStr        = "docker_stats"
+	stability      = component.StabilityLevelAlpha
+	useScraperV2ID = "receiver.dockerstats.useScraperV2"
 )
+
+func init() {
+	featuregate.GetRegistry().MustRegister(featuregate.Gate{
+		ID:          useScraperV2ID,
+		Description: "When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation.",
+		Enabled:     false,
+	})
+}
 
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiverAndStabilityLevel(createMetricsReceiver, stability))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -44,21 +56,28 @@ func createDefaultConfig() config.Receiver {
 		Endpoint:                  "unix:///var/run/docker.sock",
 		Timeout:                   5 * time.Second,
 		DockerAPIVersion:          defaultDockerAPIVersion,
+		MetricsConfig:             metadata.DefaultMetricsSettings(),
 	}
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params component.ReceiverCreateSettings,
 	config config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	dockerConfig := config.(*Config)
+	dsr := newReceiver(params, dockerConfig)
 
-	dsr, err := NewReceiver(ctx, params, dockerConfig, consumer)
+	scrapeFunc := dsr.scrape
+	if featuregate.GetRegistry().IsEnabled(useScraperV2ID) {
+		scrapeFunc = dsr.scrapeV2
+	}
+
+	scrp, err := scraperhelper.NewScraper(typeStr, scrapeFunc, scraperhelper.WithStart(dsr.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return dsr, nil
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scrp))
 }

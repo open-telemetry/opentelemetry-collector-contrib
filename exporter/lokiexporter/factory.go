@@ -35,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -52,7 +52,6 @@ func createDefaultConfig() config.Exporter {
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		TenantID:      "",
-		Format:        "body",
 		Labels: LabelsConfig{
 			Attributes:         map[string]string{},
 			ResourceAttributes: map[string]string{},

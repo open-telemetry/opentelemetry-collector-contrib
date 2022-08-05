@@ -31,15 +31,16 @@ import (
 )
 
 const (
-	AttributeRefType                  = "refType"
-	AttributeParentService            = "parent.service"
-	AttributeParentInstance           = "parent.service.instance"
-	AttributeParentEndpoint           = "parent.endpoint"
-	AttributeSkywalkingSpanID         = "sw8.span_id"
-	AttributeSkywalkingTraceID        = "sw8.trace_id"
-	AttributeSkywalkingSegmentID      = "sw8.segment_id"
-	AttributeSkywalkingParentSpanID   = "sw8.parent_span_id"
-	AttributeNetworkAddressUsedAtPeer = "network.AddressUsedAtPeer"
+	AttributeRefType                   = "refType"
+	AttributeParentService             = "parent.service"
+	AttributeParentInstance            = "parent.service.instance"
+	AttributeParentEndpoint            = "parent.endpoint"
+	AttributeSkywalkingSpanID          = "sw8.span_id"
+	AttributeSkywalkingTraceID         = "sw8.trace_id"
+	AttributeSkywalkingSegmentID       = "sw8.segment_id"
+	AttributeSkywalkingParentSpanID    = "sw8.parent_span_id"
+	AttributeSkywalkingParentSegmentID = "sw8.parent_segment_id"
+	AttributeNetworkAddressUsedAtPeer  = "network.AddressUsedAtPeer"
 )
 
 var otSpanTagsMapping = map[string]string{
@@ -191,6 +192,18 @@ func swReferencesToSpanLinks(refs []*agentV3.SegmentReference, dest ptrace.SpanL
 			{
 				Key:   AttributeRefType,
 				Value: ref.RefType.String(),
+			},
+			{
+				Key:   AttributeSkywalkingTraceID,
+				Value: ref.TraceId,
+			},
+			{
+				Key:   AttributeSkywalkingParentSegmentID,
+				Value: ref.ParentTraceSegmentId,
+			},
+			{
+				Key:   AttributeSkywalkingParentSpanID,
+				Value: strconv.Itoa(int(ref.ParentSpanId)),
 			},
 		}
 		swKvPairsToInternalAttributes(kvParis, link.Attributes())

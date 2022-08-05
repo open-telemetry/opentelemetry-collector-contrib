@@ -24,13 +24,13 @@ import (
 
 func Test_newComparisonEvaluator(t *testing.T) {
 	tests := []struct {
-		name string
-		cond *Comparison
-		item interface{}
+		name       string
+		comparison *Comparison
+		item       interface{}
 	}{
 		{
 			name: "literals match",
-			cond: &Comparison{
+			comparison: &Comparison{
 				Left: Value{
 					String: tqltest.Strp("hello"),
 				},
@@ -42,7 +42,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		},
 		{
 			name: "literals don't match",
-			cond: &Comparison{
+			comparison: &Comparison{
 				Left: Value{
 					String: tqltest.Strp("hello"),
 				},
@@ -54,7 +54,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression matches",
-			cond: &Comparison{
+			comparison: &Comparison{
 				Left: Value{
 					Path: &Path{
 						Fields: []Field{
@@ -73,7 +73,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 		},
 		{
 			name: "path expression not matches",
-			cond: &Comparison{
+			comparison: &Comparison{
 				Left: Value{
 					Path: &Path{
 						Fields: []Field{
@@ -91,32 +91,82 @@ func Test_newComparisonEvaluator(t *testing.T) {
 			item: "bear",
 		},
 		{
-			name: "no condition",
-			cond: nil,
+			name:       "no condition",
+			comparison: nil,
+		},
+
+		{
+			name: "compare Enum to int",
+			comparison: &Comparison{
+				Left: Value{
+					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
+				},
+				Right: Value{
+					Int: tqltest.Intp(0),
+				},
+				Op: "==",
+			},
+		},
+		{
+			name: "compare int to Enum",
+			comparison: &Comparison{
+				Left: Value{
+					Int: tqltest.Intp(2),
+				},
+				Op: "==",
+				Right: Value{
+					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_TWO")),
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newComparisonEvaluator(tt.cond, DefaultFunctionsForTests(), testParsePath)
+			evaluate, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.True(t, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
 			}))
 		})
 	}
+}
 
-	t.Run("invalid", func(t *testing.T) {
-		_, err := newComparisonEvaluator(&Comparison{
-			Left: Value{
-				String: tqltest.Strp("bear"),
+func Test_newConditionEvaluator_invalid(t *testing.T) {
+	tests := []struct {
+		name       string
+		comparison *Comparison
+	}{
+		{
+			name: "unknown operation",
+			comparison: &Comparison{
+				Left: Value{
+					String: tqltest.Strp("bear"),
+				},
+				Op: "<>",
+				Right: Value{
+					String: tqltest.Strp("cat"),
+				},
 			},
-			Op: "<>",
-			Right: Value{
-				String: tqltest.Strp("cat"),
+		},
+		{
+			name: "unknown Path",
+			comparison: &Comparison{
+				Left: Value{
+					Enum: (*EnumSymbol)(tqltest.Strp("SYMBOL_NOT_FOUND")),
+				},
+				Op: "==",
+				Right: Value{
+					String: tqltest.Strp("trash"),
+				},
 			},
-		}, DefaultFunctionsForTests(), testParsePath)
-		assert.Error(t, err)
-	})
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			assert.Error(t, err)
+		})
+	}
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
@@ -302,7 +352,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newBooleanExpressionEvaluator(tt.expr, DefaultFunctionsForTests(), testParsePath)
+			evaluate, err := newBooleanExpressionEvaluator(tt.expr, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: nil,

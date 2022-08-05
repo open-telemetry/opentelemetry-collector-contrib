@@ -23,6 +23,10 @@ This receiver supports MongoDB versions:
 - 4.0+
 - 5.0
 
+Mongodb recommends to set up a least privilege user (LPU) with a [`clusterMonitor` role](https://www.mongodb.com/docs/v5.0/reference/built-in-roles/#mongodb-authrole-clusterMonitor) in order to collect metrics. Please refer to [lpu.sh](./testdata/integration/scripts/lpu.sh) for an example of how to configure these permissions.
+
+Collecting metrics `mongodb.global_lock.time` and `mongodb.index.access.count` are only available for mongodb 4.0+.
+
 ## Configuration
 
 The following settings are optional:
