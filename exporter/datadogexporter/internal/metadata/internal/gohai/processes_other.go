@@ -19,7 +19,7 @@ package gohai // import "github.com/open-telemetry/opentelemetry-collector-contr
 import "go.uber.org/zap"
 
 // GetProcessesPayload currently just a stub.
-func NewProcessesPayload(hostname string, logger *zap.Logger) *ProcessesPayload {
+func NewProcessesPayload(_ string, _ *zap.Logger) *ProcessesPayload {
 	// unimplemented for misc platforms.
 	return &ProcessesPayload{}
 }
