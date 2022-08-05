@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
@@ -77,7 +78,9 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-
+	// JDS: The short sleep is enough to cause the flaky tests to fail consistently
+	fmt.Println("ServerHTTP:: received a request, lets sleep for 500 msecs to ensure there is a test failure")
+	time.Sleep(500 * time.Millisecond)
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -86,16 +89,32 @@ func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	index := int(iptr.Load())
 	iptr.Add(1)
 	pages := mp.endpoints[req.URL.Path]
+	// JDS: the waitgroup logic appears to be working correctly, this isn't a simple race due to waitgroup logic calling Done at the wrong time.
+	//      accessIndex for each requested endpoint is incrementing, requests are coming in and being served out
+	if index < len(pages) {
+		fmt.Printf("ServerHTTP:: req endpoint %v pages: %v index: %v page code: %v\n", req.URL.Path, len(pages), index, pages[index].code)
+	}
 	if index >= len(pages) {
+		fmt.Printf("ServerHTTP:: req endpoint %v pages: %v index: %v page code: %v\n", req.URL.Path, len(pages), index, "N/A")
 		if index == len(pages) {
+			// JDS: thise waitgroup Done() logic appears sound, basically calling Done() only after there are been enough access attempt to to account for the number of pages for each endpoint
+			//
+			fmt.Printf("ServerHTTP index >= pages for endpoint %v, call waitgroup Done()\n", req.URL.Path)
 			mp.wg.Done()
 		}
+		// JDS: This logic ensures the receiver under test gets a 404 response if there have been enough access attempts to account for all expected pages.
+		fmt.Printf("ServerHTTP:: response Status: %v\n", 404)
 		rw.WriteHeader(404)
 		return
 	}
 	if pages[index].useOpenMetrics {
 		rw.Header().Set("Content-Type", "application/openmetrics-text")
 	}
+	// JDS: and here the ServeHTTP is responding with the expected page data matching the accessIndex
+	//      this jives Done() logic above.
+	//      only possible race here is if the Done() is getting called too quickly relative to the write
+	//      but if that were true the Sleep before the Done call in this function  would not be a reproducer of the problem.
+	fmt.Printf("ServerHTTP:: response Status: %v\n", pages[index].code)
 	rw.WriteHeader(pages[index].code)
 	_, _ = rw.Write([]byte(pages[index].data))
 }
@@ -160,6 +179,39 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
+func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus, cms *consumertest.MetricsSink) {
+	assert.Eventually(t, func() bool {
+		fmt.Printf("waitForSscapeResults tick start\n")
+		result := true
+		metrics := cms.AllMetrics()
+		pResults := splitMetricsByTarget(metrics)
+		for _, target := range targets {
+			want := 0
+			name := target.name
+			if target.relabeledJob != "" {
+				name = target.relabeledJob
+			}
+			scrapes := pResults[name]
+			// JDS: count the number of pages we expect for a target endpoint
+			for _, p := range target.pages {
+				if p.code != 404 {
+					// JDS: only count target pages that are not 404, matching ServerHTTP response logic
+					want++
+				}
+
+			}
+			fmt.Printf("waitForSscapeResults target: %v has %v scrapes and wants %v\n", name, len(scrapes), want)
+			if len(scrapes) < want {
+				//JDS: If we don't have enough scrapes yet lets return false and wait for another tick
+				fmt.Printf("aborting waitForSscapeResults insufficient scrapes for target: %v\n", name)
+				result = false
+				break
+			}
+		}
+		return result
+	}, 20*time.Second, 500*time.Millisecond)
+
+}
 func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
 	want := 0
 	for _, p := range td.pages {
@@ -574,7 +626,6 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-
 	// verify state after shutdown is called
 	t.Cleanup(func() {
 		// verify state after shutdown is called
@@ -582,8 +633,15 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 		require.NoError(t, receiver.Shutdown(context.Background()))
 		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 	})
+
+	// JDS: So here is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
+	//      this is a eventually timeout,tick that just counts the number of valid status code scrapes and makes sure they match expected
+	fmt.Println("start waitForScrapeResults")
+	waitForScrapeResults(t, targets, mp, cms)
 	// wait for all provided data to be scraped
+	fmt.Println("call blocking waitgroup Wait()")
 	mp.wg.Wait()
+	fmt.Println("waitgroup Wait() finished")
 	metrics := cms.AllMetrics()
 
 	// split and store results by target name
