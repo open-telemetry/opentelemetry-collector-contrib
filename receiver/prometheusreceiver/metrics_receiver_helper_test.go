@@ -612,14 +612,14 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 	})
 
+	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
+	mp.wg.Wait()
+
 	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      and when the receiver actually processes the http request response.
+	//      and when the receiver actually processes the http request responses into metrics.
 	//      this is a eventually timeout,tick that just waits for some condition.
 	//      however the condition to wait for may be suboptimal and may need to be adjusted.
 	waitForScrapeResults(t, targets, cms)
-
-	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
-	mp.wg.Wait()
 
 	// This begins the processing of the scrapes collected by the receiver
 	metrics := cms.AllMetrics()
