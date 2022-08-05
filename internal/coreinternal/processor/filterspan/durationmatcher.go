@@ -15,6 +15,8 @@
 package filterspan // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterspan"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -22,21 +24,20 @@ import (
 
 type SpanDurationMatcher struct {
 	Operation string
-	Value     int64
+	Value     time.Duration
 }
 
 func (ma SpanDurationMatcher) Match(span ptrace.Span) bool {
-	duration := span.EndTimestamp().AsTime().Unix() - span.StartTimestamp().AsTime().Unix()
-
+	spanDuration := time.UnixMicro(span.EndTimestamp().AsTime().UnixMicro() - span.StartTimestamp().AsTime().UnixMicro())
 	switch ma.Operation {
 	case ">":
-		return duration > ma.Value
+		return spanDuration.UnixMicro() > ma.Value.Microseconds()
 	case "<":
-		return duration < ma.Value
+		return spanDuration.UnixMicro() < ma.Value.Microseconds()
 	case "<=":
-		return duration <= ma.Value
+		return spanDuration.UnixMicro() <= ma.Value.Microseconds()
 	case ">=":
-		return duration >= ma.Value
+		return spanDuration.UnixMicro() >= ma.Value.Microseconds()
 	}
 	return false
 }

@@ -16,6 +16,7 @@ package filterconfig // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
@@ -125,8 +126,8 @@ type MatchProperties struct {
 }
 
 type DurationProperties struct {
-	Operator string `mapstructure:"operator"`
-	Duration int64  `mapstructure:"duration"`
+	Operator string        `mapstructure:"operator"`
+	Duration time.Duration `mapstructure:"duration"`
 }
 
 // ValidateForSpans validates properties for spans.
