@@ -182,17 +182,45 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	return mp, pCfg, err
 }
 
-func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus) {
+func waitForScrapeResults(t *testing.T, targets []*testData, mp *mockPrometheus, cms *consumertest.MetricsSink) {
 	assert.Eventually(t, func() bool {
 		fmt.Printf("waitForSscapeResults tick start targets:%v served:%v\n", len(targets), len(mp.served))
-		result := false
-		if len(mp.served) >= len(targets) {
-			result = true
+		result := true
+		// JDS: This is the Server's pov as to what has been served to the reciever
+		if len(mp.served) < len(targets) {
+			result = false
+			return result
+		}
+		// JDS: This is what I think the receiver's pov as to what should have been collected from the server
+		metrics := cms.AllMetrics()
+		pResults := splitMetricsByTarget(metrics)
+		for _, target := range targets {
+			want := 0
+			name := target.name
+			if target.relabeledJob != "" {
+				name = target.relabeledJob
+			}
+			scrapes := pResults[name]
+			// JDS: count the number of pages we expect for a target endpoint
+			for _, p := range target.pages {
+				if p.code != 404 {
+					// JDS: only count target pages that are not 404, matching ServerHTTP response logic
+					want++
+				}
+
+			}
+			fmt.Printf("waitForSscapeResults target: %v has %v scrapes and wants %v\n", name, len(scrapes), want)
+			if len(scrapes) < want {
+				//JDS: If we don't have enough scrapes yet lets return false and wait for another tick
+				fmt.Printf("aborting waitForSscapeResults insufficient scrapes for target: %v\n", name)
+				result = false
+				return result
+			}
 		}
 		return result
 	}, 20*time.Second, 500*time.Millisecond)
-
 }
+
 func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
 	want := 0
 	for _, p := range td.pages {
@@ -616,9 +644,13 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	})
 
 	// JDS: So here is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
-	//      this is a eventually timeout,tick that just counts the number of valid status code scrapes and makes sure they match expected
+	//      this is a eventually timeout,tick that just waits for some condition.
+	//      however the condition to wait for is elusive there is a server pov concept of when its responded enough times
+	//      and then there is a receiver side concept of when when its collected enough responses
+	//      there is a potential race here that I'm not sure I have cleanly sorted out.
+	//      It looks like the receiver is getting server responses but they arent valid scrapes...and its not clear why that's true with the delayed response.
 	fmt.Println("start waitForScrapeResults")
-	waitForScrapeResults(t, targets, mp)
+	waitForScrapeResults(t, targets, mp, cms)
 	// wait for all provided data to be scraped
 	fmt.Println("call blocking waitgroup Wait()")
 	mp.wg.Wait()
