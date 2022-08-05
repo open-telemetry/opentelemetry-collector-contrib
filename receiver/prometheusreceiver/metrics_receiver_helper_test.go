@@ -160,7 +160,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		job := make(map[string]interface{})
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		job["scrape_interval"] = "100ms"
+		job["scrape_interval"] = "2s"
+		job["scrape_timeout"] = "1s"
 		job["static_configs"] = []map[string]interface{}{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
