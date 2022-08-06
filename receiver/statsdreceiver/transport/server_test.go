@@ -20,6 +20,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -89,7 +90,6 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			gc, err := tt.buildClientFn(host, port)
 			require.NoError(t, err)
 			require.NotNil(t, gc)
-
 			err = gc.SendMetric(client.Metric{
 				Name:  "test.metric",
 				Value: "42",
@@ -97,10 +97,15 @@ func Test_Server_ListenAndServe(t *testing.T) {
 			})
 			assert.NoError(t, err)
 			runtime.Gosched()
-
 			err = gc.Disconnect()
 			assert.NoError(t, err)
 
+			// Keep trying until we're timed out or got a result
+			assert.Eventually(t, func() bool {
+				return len(transferChan) > 0
+			}, 10*time.Second, 500*time.Millisecond)
+
+			// Close the server connection, this will cause ListenAndServer to error out and the deferred wgListenAndServe.Done will fire
 			err = srv.Close()
 			assert.NoError(t, err)
 

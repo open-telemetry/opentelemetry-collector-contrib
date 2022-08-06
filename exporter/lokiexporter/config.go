@@ -39,8 +39,11 @@ type Config struct {
 	// Labels defines how labels should be applied to log streams sent to Loki.
 	Labels LabelsConfig `mapstructure:"labels"`
 
-	// Allows you to choose the entry format in the exporter
-	Format string `mapstructure:"format"`
+	// Allows you to choose the entry format in the exporter.
+	// Deprecated: [v0.57.0] Only the JSON format will be supported in the future. If you rely on the
+	// "body" format and can't change to JSON, let us know before v0.59.0 by opening a GitHub issue
+	// and we'll work with you to find a solution.
+	Format *string `mapstructure:"format"`
 
 	// Tenant defines how to obtain the tenant ID
 	Tenant *Tenant `mapstructure:"tenant"`

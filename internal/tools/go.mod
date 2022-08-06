@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
 
-go 1.17
+go 1.18
 
 require (
 	github.com/client9/misspell v0.3.4
@@ -10,7 +10,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.14.0
-	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220502161954-e2bf744925c0
+	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220706175322-58de0d25b85c
 	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220502161954-e2bf744925c0

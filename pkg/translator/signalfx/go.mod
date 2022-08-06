@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
 
-go 1.17
+go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.uber.org/multierr v1.8.0
 )
 

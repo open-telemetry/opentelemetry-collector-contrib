@@ -36,16 +36,22 @@ const (
 
 // Observable is an interface that provides notification of endpoint changes.
 type Observable interface {
-	// TODO: Stopping.
 	// ListAndWatch provides initial state sync as well as change notification.
-	// notify.OnAdd will be called one or more times if there are endpoints discovered.
+	// notify. OnAdd will be called one or more times if there are endpoints discovered.
 	// (It would not be called if there are no endpoints present.) The endpoint synchronization
 	// happens asynchronously to this call.
 	ListAndWatch(notify Notify)
+
+	// Unsubscribe stops the previously registered Notify from receiving callback invocations.
+	Unsubscribe(notify Notify)
 }
+
+type NotifyID string
 
 // Notify is the callback for Observer events.
 type Notify interface {
+	// ID must be unique for each Notify implementer instance and is for registration purposes
+	ID() NotifyID
 	// OnAdd is called once or more initially for state sync as well as when further endpoints are added.
 	OnAdd(added []Endpoint)
 	// OnRemove is called when one or more endpoints are removed.

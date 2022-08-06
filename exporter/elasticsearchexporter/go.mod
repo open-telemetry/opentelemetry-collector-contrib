@@ -1,15 +1,15 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/elastic/go-elasticsearch/v7 v7.17.1
 	github.com/elastic/go-structform v0.0.10
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0

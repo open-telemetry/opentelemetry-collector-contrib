@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/vmware/govmomi v0.28.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
 )
@@ -21,7 +21,7 @@ require gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 
 require (
 	github.com/basgys/goxml2json v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 )
 

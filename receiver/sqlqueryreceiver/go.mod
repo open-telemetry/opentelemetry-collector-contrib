@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/SAP/go-hdb v0.106.1
@@ -12,8 +12,8 @@ require (
 	github.com/snowflakedb/gosnowflake v1.6.10
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.opentelemetry.io/otel/trace v1.8.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.21.0
@@ -41,7 +41,7 @@ require (
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
