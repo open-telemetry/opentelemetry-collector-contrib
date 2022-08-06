@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"time"
 
+	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 )
 
 type clickhouseExporter struct {
