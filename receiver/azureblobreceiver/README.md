@@ -1,5 +1,12 @@
 # Azure Blob Receiver
 
+| Status                   |             |
+| ------------------------ | ----------- |
+| Stability                |[development]|
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
+
+
 This receiver reads logs and trace data from [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/).
 
 ## Configuration
