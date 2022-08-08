@@ -300,14 +300,23 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName {
+	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName ||
+		c.Rules.DaemonSetUID || c.Rules.DaemonSetName {
 		for _, ref := range pod.OwnerReferences {
-			if ref.Kind == "ReplicaSet" {
+			switch ref.Kind {
+			case "ReplicaSet":
 				if c.Rules.ReplicaSetID {
 					tags[conventions.AttributeK8SReplicaSetUID] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
+				}
+			case "DaemonSet":
+				if c.Rules.DaemonSetUID {
+					tags[conventions.AttributeK8SDaemonSetUID] = string(ref.UID)
+				}
+				if c.Rules.DaemonSetName {
+					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
 			}
 		}
