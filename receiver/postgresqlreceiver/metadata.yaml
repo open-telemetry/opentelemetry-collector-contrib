@@ -18,16 +18,14 @@ attributes:
   source:
     description: The block read source type.
     enum:
-      [
-        heap_read,
-        heap_hit,
-        idx_read,
-        idx_hit,
-        toast_read,
-        toast_hit,
-        tidx_read,
-        tidx_hit,
-      ]
+      - heap_read
+      - heap_hit
+      - idx_read
+      - idx_hit
+      - toast_read
+      - toast_hit
+      - tidx_read
+      - tidx_hit
   operation:
     description: The database operation.
     enum: [ins, upd, del, hot_upd]
