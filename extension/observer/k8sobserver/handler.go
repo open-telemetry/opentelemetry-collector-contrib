@@ -15,7 +15,6 @@
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
 import (
-	"encoding/json"
 	"reflect"
 	"sync"
 
@@ -64,8 +63,6 @@ func (h *handler) OnAdd(objectInterface interface{}) {
 	default: // unsupported
 		return
 	}
-
-	h.logEndpointEvent("endpoints added", endpoints)
 
 	for _, endpoint := range endpoints {
 		h.endpoints.Store(endpoint.ID, endpoint)
@@ -126,21 +123,18 @@ func (h *handler) OnUpdate(oldObjectInterface, newObjectInterface interface{}) {
 	}
 
 	if len(removedEndpoints) > 0 {
-		h.logEndpointEvent("endpoints removed (via update)", removedEndpoints)
 		for _, endpoint := range removedEndpoints {
 			h.endpoints.Delete(endpoint.ID)
 		}
 	}
 
 	if len(updatedEndpoints) > 0 {
-		h.logEndpointEvent("endpoints changed (via update)", updatedEndpoints)
 		for _, endpoint := range updatedEndpoints {
 			h.endpoints.Store(endpoint.ID, endpoint)
 		}
 	}
 
 	if len(addedEndpoints) > 0 {
-		h.logEndpointEvent("endpoints added (via update)", addedEndpoints)
 		for _, endpoint := range addedEndpoints {
 			h.endpoints.Store(endpoint.ID, endpoint)
 		}
@@ -169,23 +163,8 @@ func (h *handler) OnDelete(objectInterface interface{}) {
 		return
 	}
 	if len(endpoints) != 0 {
-		h.logEndpointEvent("endpoints deleted", endpoints)
 		for _, endpoint := range endpoints {
 			h.endpoints.Delete(endpoint.ID)
 		}
-	}
-}
-
-func (h *handler) logEndpointEvent(msg string, endpoints []observer.Endpoint) {
-	if ce := h.logger.Check(zap.DebugLevel, msg); ce != nil {
-		var fields []zap.Field
-		for _, endpoint := range endpoints {
-			if env, err := endpoint.Env(); err == nil {
-				if marshaled, e := json.Marshal(env); e == nil {
-					fields = append(fields, zap.String(string(endpoint.ID), string(marshaled)))
-				}
-			}
-		}
-		ce.Write(fields...)
 	}
 }

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver
 
-go 1.17
+go 1.18
 
 require (
 	code.cloudfoundry.org/go-loggregator v7.4.0+incompatible

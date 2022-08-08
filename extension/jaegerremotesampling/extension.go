@@ -35,6 +35,7 @@ type jrsExtension struct {
 	telemetry component.TelemetrySettings
 
 	httpServer    component.Component
+	grpcServer    component.Component
 	samplingStore strategystore.StrategyStore
 
 	closers []func() error
@@ -91,12 +92,22 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 			return fmt.Errorf("error while creating the HTTP server: %w", err)
 		}
 		jrse.httpServer = httpServer
+		// then we start our own server interfaces, starting with the HTTP one
+		if err := jrse.httpServer.Start(ctx, host); err != nil {
+			return fmt.Errorf("error while starting the HTTP server: %w", err)
+		}
 	}
 
-	// then we start our own server interfaces, starting with the HTTP one
-	err := jrse.httpServer.Start(ctx, host)
-	if err != nil {
-		return fmt.Errorf("error while starting the HTTP server: %w", err)
+	if jrse.cfg.GRPCServerSettings != nil {
+		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerSettings, jrse.samplingStore)
+		if err != nil {
+			return fmt.Errorf("error while creating the gRPC server: %w", err)
+		}
+		jrse.grpcServer = grpcServer
+		// start our gRPC server interface
+		if err := jrse.grpcServer.Start(ctx, host); err != nil {
+			return fmt.Errorf("error while starting the gRPC server: %w", err)
+		}
 	}
 
 	return nil
@@ -104,8 +115,16 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 
 func (jrse *jrsExtension) Shutdown(ctx context.Context) error {
 	// we probably don't want to break whenever an error occurs, we want to continue and close the other resources
-	if err := jrse.httpServer.Shutdown(ctx); err != nil {
-		jrse.telemetry.Logger.Error("error while shutting down the HTTP server", zap.Error(err))
+	if jrse.httpServer != nil {
+		if err := jrse.httpServer.Shutdown(ctx); err != nil {
+			jrse.telemetry.Logger.Error("error while shutting down the HTTP server", zap.Error(err))
+		}
+	}
+
+	if jrse.grpcServer != nil {
+		if err := jrse.grpcServer.Shutdown(ctx); err != nil {
+			jrse.telemetry.Logger.Error("error while shutting down the gRPC server", zap.Error(err))
+		}
 	}
 
 	for _, closer := range jrse.closers {

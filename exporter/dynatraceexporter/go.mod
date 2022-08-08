@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/dynatrace-oss/dynatrace-metric-utils-go v0.5.0

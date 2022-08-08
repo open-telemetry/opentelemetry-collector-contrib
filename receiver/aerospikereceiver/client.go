@@ -170,7 +170,12 @@ func (c *defaultASClient) NamespaceInfo() namespaceInfo {
 		res[node] = map[string]map[string]string{}
 		for ns, stats := range namespaces {
 			// ns == "namespace/<namespaceName>"
-			nsName := strings.SplitN(ns, "/", 2)[1]
+			nsData := strings.SplitN(ns, "/", 2)
+			if len(nsData) < 2 {
+				c.logger.Warn("NamespaceInfo nsData len < 2")
+				continue
+			}
+			nsName := nsData[1]
 			res[node][nsName] = parseStats(ns, stats, ";")
 		}
 	}
@@ -207,7 +212,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %s", err)
+				logger.Errorf("mapNodeInfoFunc err: %w", err)
 			}
 
 			ns := nodeStats{
