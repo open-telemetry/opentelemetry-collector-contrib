@@ -114,7 +114,7 @@ processors:
       include:
         match_type: regexp
         bodies:
-        - ^IMPORTANT RECORD    
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed
