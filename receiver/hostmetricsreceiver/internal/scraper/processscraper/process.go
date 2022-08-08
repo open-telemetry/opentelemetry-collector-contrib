@@ -130,9 +130,9 @@ func parentPid(handle processHandle, pid int32) (int32, error) {
 		return -1, err
 	}
 
-	// if a process does not have a parent return the pid of the process as it's own parent
+	// if a process does not have a parent return 0
 	if parent == nil {
-		return pid, nil
+		return 0, nil
 	}
 
 	return parent.Pid, nil
