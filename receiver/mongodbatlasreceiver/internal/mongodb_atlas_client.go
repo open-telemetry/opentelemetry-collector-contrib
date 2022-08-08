@@ -215,6 +215,17 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	return orgs.Results, hasNext(orgs.Links), nil
 }
 
+// GetOneOrganization retrieves a single organization specified by orgID
+func (s *MongoDBAtlasClient) GetOneOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error) {
+	org, response, err := s.client.Organizations.Get(ctx, orgID)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return org, nil
+
+}
+
 // Projects returns a list of projects accessible within the provided organization
 func (s *MongoDBAtlasClient) Projects(
 	ctx context.Context,
@@ -235,6 +246,16 @@ func (s *MongoDBAtlasClient) Projects(
 		}
 	}
 	return allProjects, nil
+}
+
+// GetOneProject returns a single project specified by projectName
+func (s *MongoDBAtlasClient) GetOneProject(ctx context.Context, projectName string) (*mongodbatlas.Project, error) {
+	project, response, err := s.client.Projects.GetOneProjectByName(ctx, projectName)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return project, nil
 }
 
 func (s *MongoDBAtlasClient) getProjectsPage(

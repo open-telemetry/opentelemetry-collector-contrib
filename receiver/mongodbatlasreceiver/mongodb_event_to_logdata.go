@@ -61,7 +61,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resource
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("org", r.Org.Name)
+	resourceAttrs.InsertString("org", r.Org)
 	resourceAttrs.InsertString("project", r.Project.Name)
 	resourceAttrs.InsertString("cluster", r.Cluster.Name)
 	resourceAttrs.InsertString("hostname", r.Hostname)
@@ -122,7 +122,7 @@ func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo)
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("org", r.Org.Name)
+	resourceAttrs.InsertString("org", r.Org)
 	resourceAttrs.InsertString("project", r.Project.Name)
 	resourceAttrs.InsertString("cluster", r.Cluster.Name)
 	resourceAttrs.InsertString("hostname", r.Hostname)

@@ -28,7 +28,7 @@ import (
 func TestMongoeventToLogData(t *testing.T) {
 	mongoevent := GetTestEvent()
 	r := resourceInfo{
-		Org:      mongodbatlas.Organization{Name: "Org"},
+		Org:      "Org",
 		Project:  mongodbatlas.Project{Name: "Project"},
 		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
 		Hostname: "hostname",
@@ -53,7 +53,7 @@ func TestUnknownSeverity(t *testing.T) {
 	mongoevent := GetTestEvent()
 	mongoevent.Severity = "Unknown"
 	r := resourceInfo{
-		Org:      mongodbatlas.Organization{Name: "Org"},
+		Org:      "Org",
 		Project:  mongodbatlas.Project{Name: "Project"},
 		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
 		Hostname: "hostname",
@@ -71,7 +71,7 @@ func TestUnknownSeverity(t *testing.T) {
 func TestMongoEventToAuditLogData(t *testing.T) {
 	mongoevent := GetTestAuditEvent()
 	r := resourceInfo{
-		Org:      mongodbatlas.Organization{Name: "Org"},
+		Org:      "Org",
 		Project:  mongodbatlas.Project{Name: "Project"},
 		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
 		Hostname: "hostname",

@@ -40,7 +40,7 @@ type combindedLogsReceiver struct {
 }
 
 type resourceInfo struct {
-	Org      mongodbatlas.Organization
+	Org      string
 	Project  mongodbatlas.Project
 	Cluster  mongodbatlas.Cluster
 	Hostname string
@@ -94,21 +94,6 @@ func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 	return errs
 }
 
-func (s *receiver) createProjectMap() (map[string]*Project, error) {
-	if len(s.cfg.Logs.Projects) == 0 {
-		return nil, errors.New("no projects specified")
-	}
-
-	// create a map of Projects
-	projects := make(map[string]*Project)
-
-	for _, project := range s.cfg.Logs.Projects {
-		projects[project.Name] = project
-	}
-
-	return projects, nil
-}
-
 // parseHostName parses out the hostname from the specified cluster host
 func parseHostName(s string, logger *zap.Logger) []string {
 	var hostnames []string
@@ -140,43 +125,7 @@ func parseHostName(s string, logger *zap.Logger) []string {
 // KickoffReceiver spins off functionality of the receiver from the Start function
 func (s *receiver) KickoffReceiver(ctx context.Context) {
 	resource := resourceInfo{start: strconv.Itoa(int(time.Now().Unix())), end: ""}
-	cfgProjects, err := s.createProjectMap()
-	if err != nil {
-		s.log.Error("Failed to create project map", zap.Error(err))
-	}
-
 	for {
-		// reterive all organizations listed in the MongoDB client
-		orgs, err := s.client.Organizations(ctx)
-		if err != nil {
-			s.log.Error("Error retrieving organizations", zap.Error(err))
-		}
-		// get all projects listed for each of the organizations
-		for _, org := range orgs {
-			projects, err := s.client.Projects(ctx, org.ID)
-			if err != nil {
-				s.log.Error("Error retrieving projects", zap.Error(err))
-			}
-
-			// filter out any projects not specified in the config
-			fp := filterProjects(projects, cfgProjects)
-
-			// get clusters for each of the projects
-			for _, project := range fp {
-				resource.Org, resource.Project = *org, *project
-				clusters, err := s.processClusters(ctx, cfgProjects, &resource)
-				if err != nil {
-					s.log.Error("Failure to process Clusters", zap.Error(err))
-				}
-
-				if resource.end != "" {
-					resource.start = resource.end
-				}
-				resource.end = strconv.Itoa(int(time.Now().Unix()))
-				s.collectClusterLogs(clusters, cfgProjects, resource)
-			}
-		}
-
 		// collection interval loop,
 		select {
 		case <-ctx.Done():
@@ -184,24 +133,38 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 		case <-s.stopperChan:
 			return
 		case <-time.After(collectionInterval):
+		}
 
+		for _, p := range s.cfg.Logs.Projects {
+			project, err := s.client.GetOneProject(ctx, p.Name)
+			if err != nil {
+				s.log.Error("Error retrieving project", zap.Error(err))
+			}
+
+			org, err := s.client.GetOneOrganization(ctx, project.OrgID)
+			if err != nil {
+				s.log.Error("Error retrieving organization", zap.Error(err))
+			}
+			resource.Org = org.Name
+
+			// get clusters for each of the projects
+			resource.Project = *project
+			clusters, err := s.processClusters(ctx, *p, &resource)
+			if err != nil {
+				s.log.Error("Failure to process Clusters", zap.Error(err))
+			}
+
+			if resource.end != "" {
+				resource.start = resource.end
+			}
+			resource.end = strconv.Itoa(int(time.Now().Unix()))
+			s.collectClusterLogs(clusters, p, resource)
 		}
 	}
 }
 
-func filterProjects(projects []*mongodbatlas.Project, cfgProjects map[string]*Project) map[string]*mongodbatlas.Project {
-	fp := make(map[string]*mongodbatlas.Project)
-	for _, project := range projects {
-		if _, ok := cfgProjects[project.Name]; ok {
-			fp[project.Name] = project
-		}
-	}
-
-	return fp
-}
-
-func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*Project, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
-	include, exclude := cfgProjects[r.Project.Name].IncludeClusters, cfgProjects[r.Project.Name].ExcludeClusters
+func (s *receiver) processClusters(ctx context.Context, project Project, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
+	include, exclude := project.IncludeClusters, project.ExcludeClusters
 	clusters, err := s.client.GetClusters(ctx, r.Project.ID)
 	if err != nil {
 		s.log.Error("Failure to collect clusters from project: %w", zap.Error(err))
@@ -225,7 +188,7 @@ func (s *receiver) processClusters(ctx context.Context, cfgProjects map[string]*
 	}
 }
 
-func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjects map[string]*Project, r resourceInfo) {
+func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, project *Project, r resourceInfo) {
 	for _, cluster := range clusters {
 		hostnames := parseHostName(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
@@ -234,7 +197,7 @@ func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, cfgProjec
 			s.sendLogs(r, "mongodb.gz")
 			s.sendLogs(r, "mongos.gz")
 
-			if cfgProjects[r.Project.Name].EnableAuditLogs {
+			if project.EnableAuditLogs {
 				s.sendAuditLogs(r, "mongodb-audit-log.gz")
 				s.sendAuditLogs(r, "mongos-audit-log.gz")
 			}
