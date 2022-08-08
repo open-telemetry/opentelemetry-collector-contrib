@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/vmware/govmomi v0.28.0

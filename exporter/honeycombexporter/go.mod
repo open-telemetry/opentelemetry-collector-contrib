@@ -1,7 +1,7 @@
 // Deprecated: honeycombexporter exporter is deprecated and will be removed in future versions.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/google/go-cmp v0.5.8

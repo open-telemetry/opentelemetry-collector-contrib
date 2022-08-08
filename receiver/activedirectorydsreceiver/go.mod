@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2

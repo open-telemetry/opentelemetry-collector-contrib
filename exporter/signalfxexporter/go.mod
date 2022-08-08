@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
 
-go 1.17
+go 1.18
 
 require (
 	github.com/gobwas/glob v0.2.3

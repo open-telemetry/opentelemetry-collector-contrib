@@ -167,12 +167,18 @@ func stopObserver(t *testing.T, obvs *dockerObserver) {
 	assert.NoError(t, obvs.Shutdown(context.Background()))
 }
 
+var _ observer.Notify = (*mockNotifier)(nil)
+
 type mockNotifier struct {
 	sync.Mutex
 	endpointsMap map[observer.EndpointID]observer.Endpoint
 	addCount     int
 	removeCount  int
 	changeCount  int
+}
+
+func (m *mockNotifier) ID() observer.NotifyID {
+	return "mockNotifier"
 }
 
 func (m *mockNotifier) AddCount() int {

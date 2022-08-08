@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor
 
-go 1.17
+go 1.18
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
