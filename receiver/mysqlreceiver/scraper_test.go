@@ -56,7 +56,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
 	})
 
-	t.Run("Scrape has partial failure", func(t *testing.T) {
+	t.Run("scrape has partial failure", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Username = "otel"
 		cfg.Password = "otel"
