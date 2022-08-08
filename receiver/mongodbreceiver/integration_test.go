@@ -68,7 +68,7 @@ var (
 			Dockerfile: "Dockerfile.mongodb.4_0.lpu",
 		},
 		ExposedPorts: []string{"27317:27017"},
-		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
+		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(3 * time.Minute),
 	}
 	containerRequest5_0 = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
@@ -80,7 +80,7 @@ var (
 	}
 )
 
-func TestMongodbIntegration(t *testing.T) {
+func TestMongodbIntegrationBatchA(t *testing.T) {
 	t.Run("Running mongodb 2.6", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest2_6, setupScript)
@@ -195,6 +195,9 @@ func TestMongodbIntegration(t *testing.T) {
 		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
 	})
+}
+
+func TestIntegrationBatchB(t *testing.T) {
 	t.Run("Running mongodb 4.0 as LPU", func(t *testing.T) {
 		t.Parallel()
 		container := getContainer(t, containerRequest4_0LPU, LPUSetupScript)
@@ -223,7 +226,7 @@ func TestMongodbIntegration(t *testing.T) {
 		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 		require.Eventuallyf(t, func() bool {
 			return len(consumer.AllMetrics()) > 0
-		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		}, 3*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 		require.NoError(t, rcvr.Shutdown(context.Background()))
 
 		actualMetrics := consumer.AllMetrics()[0]
