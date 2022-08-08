@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -74,6 +75,19 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	})
+
+	t.Run("scrape returns nothing", func(t *testing.T) {
+		mockClient := new(MockClient)
+		mockClient.On("GetStats", "_local").Return(map[string]interface{}{}, nil)
+		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper.client = mockClient
+
+		_, err := scraper.scrape(context.Background())
+		require.Error(t, err)
+
+		partialScrapeErr := err.(scrapererror.PartialScrapeError)
+		require.True(t, partialScrapeErr.Failed > 0, "Expected scrape failures, but none were recorded!")
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
