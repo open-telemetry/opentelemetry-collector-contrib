@@ -17,6 +17,7 @@ package s3mapprovider
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -45,21 +46,6 @@ func NewTestProvider() confmap.Provider {
 	return &provider{client: &testClient{}}
 }
 
-// A s3 client mocking s3mapprovider works when the returned config file is invalid
-type testInvalidClient struct{}
-
-// Create a provider mocking s3mapprovider works when the returned config file is invalid
-func NewTestInvalidProvider() confmap.Provider {
-	return &provider{client: &testInvalidClient{}}
-}
-
-// Implement GetObject() for testClient when the returned config file is invalid
-func (client *testInvalidClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
-	// read local config file and return
-	f := []byte("wrong yaml:[")
-	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
-}
-
 // A s3 client mocking s3mapprovider works when there is no corresponding config file according to the given s3-uri
 type testNonExistClient struct{}
 
@@ -71,8 +57,25 @@ func NewTestNonExistProvider() confmap.Provider {
 // Implement GetObject() for testClient when there is no corresponding config file according to the given s3-uri
 func (client *testNonExistClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	// read local config file and return
-	f := []byte("wrong yaml:[")
+	f, err := ioutil.ReadFile("./testdata/nonexist-otel-config.yaml")
+	if err != nil {
+		return &s3.GetObjectOutput{}, err
+	}
 	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
+}
+
+// A s3 client mocking s3mapprovider works when the returned config file is invalid
+type testInvalidClient struct{}
+
+// Create a provider mocking s3mapprovider works when the returned config file is invalid
+func NewTestInvalidProvider() confmap.Provider {
+	return &provider{client: &testInvalidClient{}}
+}
+
+// Implement GetObject() for testClient when the returned config file is invalid
+func (client *testInvalidClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
+	// read local config file and return
+	return &s3.GetObjectOutput{}, fmt.Errorf("the downloaded config file")
 }
 
 func TestFunctionalityDownloadFileS3(t *testing.T) {

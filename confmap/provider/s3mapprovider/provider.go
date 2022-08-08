@@ -68,7 +68,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 	// Split the uri and get [BUCKET], [REGION], [KEY]
 	bucket, region, key, err := s3URISplit(uri)
 	if err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("%q uri is not valid s3-url", uri)
+		return confmap.Retrieved{}, fmt.Errorf("%q uri is not valid s3-url: %w", uri, err)
 	}
 
 	// s3 downloading
@@ -79,7 +79,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 		o.Region = region
 	})
 	if err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("file in S3 failed to fetch : uri %q", uri)
+		return confmap.Retrieved{}, fmt.Errorf("file in S3 failed to fetch uri %q: %w", uri, err)
 	}
 
 	// read config from response body
