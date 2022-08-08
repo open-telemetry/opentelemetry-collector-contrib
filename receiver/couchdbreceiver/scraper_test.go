@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -83,8 +84,9 @@ func TestScrape(t *testing.T) {
 		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.client = mockClient
 
-		_, err := scraper.scrape(context.Background())
+		metrics, err := scraper.scrape(context.Background())
 		require.Error(t, err)
+		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
 
 		partialScrapeErr := err.(scrapererror.PartialScrapeError)
 		require.True(t, partialScrapeErr.Failed > 0, "Expected scrape failures, but none were recorded!")
