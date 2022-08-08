@@ -3,9 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.11.0
-	github.com/aws/aws-sdk-go-v2/config v1.10.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter v0.57.2
@@ -158,7 +155,6 @@ require (
 	go.opentelemetry.io/collector v0.57.2
 	go.uber.org/multierr v1.8.0
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
@@ -226,7 +222,9 @@ require (
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/aws/aws-sdk-go v1.44.67 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.10.1 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.6.1 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.8.0 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.7.1 // indirect
@@ -236,6 +234,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.5.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.9.0 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.6.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.10.0 // indirect
 	github.com/aws/smithy-go v1.9.0 // indirect
@@ -573,6 +572,7 @@ require (
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	k8s.io/api v0.24.3 // indirect
