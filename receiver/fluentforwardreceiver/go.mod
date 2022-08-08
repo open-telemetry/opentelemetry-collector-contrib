@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tinylib/msgp v1.1.6
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.uber.org/zap v1.21.0
 
 )

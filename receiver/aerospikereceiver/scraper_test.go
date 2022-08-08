@@ -17,7 +17,6 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -131,19 +130,14 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	initialClient.On("Close").Return(nil)
 
-	clientFactory := func(host string, port int) (Aerospike, error) {
-		switch fmt.Sprintf("%s:%d", host, port) {
-		case "localhost:3000":
-			return initialClient, nil
-		case "localhost:3002":
-			return nil, errors.New("connection timeout")
-		}
-
-		return nil, errors.New("unexpected endpoint")
+	clientFactory := func() (Aerospike, error) {
+		return initialClient, nil
 	}
+	clientFactoryNeg := func() (Aerospike, error) {
+		return nil, errors.New("connection timeout")
+	}
+
 	receiver := &aerospikeReceiver{
-		host:          "localhost",
-		port:          3000,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
 		logger:        logger.Sugar(),
@@ -165,9 +159,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	initialClient.AssertExpectations(t)
 
 	receiverConnErr := &aerospikeReceiver{
-		host:          "localhost",
-		port:          3002,
-		clientFactory: clientFactory,
+		clientFactory: clientFactoryNeg,
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), component.NewDefaultBuildInfo()),
 		logger:        logger.Sugar(),
 		config: &Config{
@@ -180,5 +172,4 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	err = receiverConnErr.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	require.Equal(t, receiverConnErr.client, nil, "client should be set to nil because of connection error")
-
 }

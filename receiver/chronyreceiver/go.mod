@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50
 	github.com/stretchr/testify v1.8.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 	go.uber.org/multierr v1.8.0
 )
 

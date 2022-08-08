@@ -20,7 +20,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	metricsproto "go.opentelemetry.io/proto/otlp/metrics/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
@@ -68,9 +67,9 @@ func (path pathGetSetter) Set(ctx tql.TransformContext, val interface{}) {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_UNSPECIFIED),
-	"AGGREGATION_TEMPORALITY_DELTA":          tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA),
-	"AGGREGATION_TEMPORALITY_CUMULATIVE":     tql.Enum(metricsproto.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE),
+	"AGGREGATION_TEMPORALITY_UNSPECIFIED":    tql.Enum(pmetric.MetricAggregationTemporalityUnspecified),
+	"AGGREGATION_TEMPORALITY_DELTA":          tql.Enum(pmetric.MetricAggregationTemporalityDelta),
+	"AGGREGATION_TEMPORALITY_CUMULATIVE":     tql.Enum(pmetric.MetricAggregationTemporalityCumulative),
 	"FLAG_NONE":                              0,
 	"FLAG_NO_RECORDED_VALUE":                 1,
 	"METRIC_DATA_TYPE_NONE":                  tql.Enum(pmetric.MetricDataTypeNone),
@@ -599,13 +598,13 @@ func accessFlags() pathGetSetter {
 		getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
+				return flagsValue(ctx.GetItem().(pmetric.NumberDataPoint).FlagsStruct())
 			case pmetric.HistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
+				return flagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsStruct())
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
+				return flagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsStruct())
 			case pmetric.SummaryDataPoint:
-				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
+				return flagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsStruct())
 			}
 			return nil
 		},
@@ -613,16 +612,31 @@ func accessFlags() pathGetSetter {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					setFlagsValue(ctx.GetItem().(pmetric.NumberDataPoint).FlagsStruct(), newFlags)
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					setFlagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsStruct(), newFlags)
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					setFlagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsStruct(), newFlags)
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
+					setFlagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsStruct(), newFlags)
 				}
 			}
 		},
+	}
+}
+
+func flagsValue(flags pmetric.MetricDataPointFlagsStruct) int64 {
+	if flags.NoRecordedValue() {
+		return 1
+	}
+	return 0
+}
+
+func setFlagsValue(flags pmetric.MetricDataPointFlagsStruct, value int64) {
+	if value&1 != 0 {
+		flags.SetNoRecordedValue(true)
+	} else {
+		flags.SetNoRecordedValue(false)
 	}
 }
 
