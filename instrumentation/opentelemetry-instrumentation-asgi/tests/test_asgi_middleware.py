@@ -14,6 +14,7 @@
 
 import sys
 import unittest
+from timeit import default_timer
 from unittest import mock
 
 import opentelemetry.instrumentation.asgi as otel_asgi
@@ -24,6 +25,10 @@ from opentelemetry.instrumentation.propagators import (
     set_global_response_propagator,
 )
 from opentelemetry.sdk import resources
+from opentelemetry.sdk.metrics.export import (
+    HistogramDataPoint,
+    NumberDataPoint,
+)
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.test.asgitestutil import (
     AsgiTestBase,
@@ -34,7 +39,18 @@ from opentelemetry.trace import SpanKind, format_span_id, format_trace_id
 from opentelemetry.util.http import (
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    _active_requests_count_attrs,
+    _duration_attrs,
 )
+
+_expected_metric_names = [
+    "http.server.active_requests",
+    "http.server.duration",
+]
+_recommended_attrs = {
+    "http.server.active_requests": _active_requests_count_attrs,
+    "http.server.duration": _duration_attrs,
+}
 
 
 async def http_app(scope, receive, send):
@@ -521,6 +537,101 @@ class TestAsgiApplication(AsgiTestBase):
         outputs = self.get_all_output()
         self.validate_outputs(
             outputs, modifiers=[update_expected_hook_results]
+        )
+
+    def test_asgi_metrics(self):
+        app = otel_asgi.OpenTelemetryMiddleware(simple_asgi)
+        self.seed_app(app)
+        self.send_default_request()
+        self.seed_app(app)
+        self.send_default_request()
+        self.seed_app(app)
+        self.send_default_request()
+        metrics_list = self.memory_metrics_reader.get_metrics_data()
+        number_data_point_seen = False
+        histogram_data_point_seen = False
+        self.assertTrue(len(metrics_list.resource_metrics) != 0)
+        for resource_metric in metrics_list.resource_metrics:
+            self.assertTrue(len(resource_metric.scope_metrics) != 0)
+            for scope_metric in resource_metric.scope_metrics:
+                self.assertTrue(len(scope_metric.metrics) != 0)
+                for metric in scope_metric.metrics:
+                    self.assertIn(metric.name, _expected_metric_names)
+                    data_points = list(metric.data.data_points)
+                    self.assertEqual(len(data_points), 1)
+                    for point in data_points:
+                        if isinstance(point, HistogramDataPoint):
+                            self.assertEqual(point.count, 3)
+                            histogram_data_point_seen = True
+                        if isinstance(point, NumberDataPoint):
+                            number_data_point_seen = True
+                        for attr in point.attributes:
+                            self.assertIn(
+                                attr, _recommended_attrs[metric.name]
+                            )
+        self.assertTrue(number_data_point_seen and histogram_data_point_seen)
+
+    def test_basic_metric_success(self):
+        app = otel_asgi.OpenTelemetryMiddleware(simple_asgi)
+        self.seed_app(app)
+        start = default_timer()
+        self.send_default_request()
+        duration = max(round((default_timer() - start) * 1000), 0)
+        expected_duration_attributes = {
+            "http.method": "GET",
+            "http.host": "127.0.0.1",
+            "http.scheme": "http",
+            "http.flavor": "1.0",
+            "net.host.port": 80,
+            "http.status_code": 200,
+        }
+        expected_requests_count_attributes = {
+            "http.method": "GET",
+            "http.host": "127.0.0.1",
+            "http.scheme": "http",
+            "http.flavor": "1.0",
+        }
+        metrics_list = self.memory_metrics_reader.get_metrics_data()
+        for resource_metric in metrics_list.resource_metrics:
+            for scope_metrics in resource_metric.scope_metrics:
+                for metric in scope_metrics.metrics:
+                    for point in list(metric.data.data_points):
+                        if isinstance(point, HistogramDataPoint):
+                            self.assertDictEqual(
+                                expected_duration_attributes,
+                                dict(point.attributes),
+                            )
+                            self.assertEqual(point.count, 1)
+                            self.assertAlmostEqual(
+                                duration, point.sum, delta=5
+                            )
+                        elif isinstance(point, NumberDataPoint):
+                            self.assertDictEqual(
+                                expected_requests_count_attributes,
+                                dict(point.attributes),
+                            )
+                            self.assertEqual(point.value, 0)
+
+    def test_no_metric_for_websockets(self):
+        self.scope = {
+            "type": "websocket",
+            "http_version": "1.1",
+            "scheme": "ws",
+            "path": "/",
+            "query_string": b"",
+            "headers": [],
+            "client": ("127.0.0.1", 32767),
+            "server": ("127.0.0.1", 80),
+        }
+        app = otel_asgi.OpenTelemetryMiddleware(simple_asgi)
+        self.seed_app(app)
+        self.send_input({"type": "websocket.connect"})
+        self.send_input({"type": "websocket.receive", "text": "ping"})
+        self.send_input({"type": "websocket.disconnect"})
+        self.get_all_output()
+        metrics_list = self.memory_metrics_reader.get_metrics_data()
+        self.assertEqual(
+            len(metrics_list.resource_metrics[0].scope_metrics), 0
         )
 
 
