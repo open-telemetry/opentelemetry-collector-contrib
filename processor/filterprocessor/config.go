@@ -178,8 +178,8 @@ type LogMatchProperties struct {
 }
 
 // validate checks that the LogMatchProperties is valid
-func (l LogMatchProperties) validate() error {
-	return l.MinSeverity.validate()
+func (lmp LogMatchProperties) validate() error {
+	return lmp.MinSeverity.validate()
 }
 
 // isEmpty returns true if the properties is "empty" (meaning, there are no filters specified)

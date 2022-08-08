@@ -17,8 +17,9 @@ package filterconfig // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"errors"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 // MatchConfig has two optional MatchProperties one to define what is processed
