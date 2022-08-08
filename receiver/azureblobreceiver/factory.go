@@ -20,9 +20,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"	
+	"go.opentelemetry.io/collector/consumer"
 
-	"go.opentelemetry.io/collector/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
 
 const (
@@ -43,14 +43,14 @@ type blobReceiverFactory struct {
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
 	f := &blobReceiverFactory{
-		receivers: sharedcomponent.NewSharedComponents()
+		receivers: sharedcomponent.NewSharedComponents(),
 	}
 
-	return component.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithTraces(f.createTracesReceiver),
-		component.WithLogs(f.createLogsReceiver))
+		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, component.StabilityLevelBeta),
+		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
@@ -84,36 +84,30 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
-	receiver, err := f.getReceiver(set, cfg)
+	receiver := f.getReceiver(set, cfg)
+	receiver.(TracesDataConsumer).SetNextTracesConsumer(nextConsumer)
 
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	return receiver, nil
 }
 
 func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver) (component.Receiver, error) {
+	cfg config.Receiver) component.Receiver {
 
-	r := receivers.GetOrAdd(cfg, func() component.Component {
+	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
 
 		if !ok {
-			return nil, errUnexpectedConfigurationType
+			set.Logger.Error(errUnexpectedConfigurationType.Error())
+			return nil
 		}
 
-		var err error
-
-		f.receiver, err = NewReceiver(*receiverConfig, set)
-
-		if err != nil {
-			set.Logger.Error(err.Error())
-			return nil, err
-		}
-
+		return NewReceiver(*receiverConfig, set)
 	})
 
-	return f.receiver, nil
+	return r
 }
