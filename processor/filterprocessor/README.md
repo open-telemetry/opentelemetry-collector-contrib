@@ -36,9 +36,9 @@ For logs:
 - `bodies`: Bodies defines a list of possible log bodies to match the logs against.
   A match occurs if the record matches any expression in this given list.
 - `min_severity`: MinSeverity defines the minimum severity with which a log record should match.
-  e.g. if this is "INFO", all log records with "INFO" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
-  If this option is specified, no logs with "DEFAULT" severity will be matched.
+  e.g. if this is "WARN", all log records with "WARN" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
   The list of valid severities that may be used for this option can be found [here](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity)
+  By default, logs with undefined severity are not matched.
 - `match_undefined_severity`: MatchUndefinedSeverity defines whether to match logs with undefined severity or not when using the `min_severity` matching option. If `min_severity` is not specified, this option does nothing. If `match_undefined_severity` is set to true, log records with no severity will be matched. If set to false, log records with no severity will not be matched.
 
 For metrics:
