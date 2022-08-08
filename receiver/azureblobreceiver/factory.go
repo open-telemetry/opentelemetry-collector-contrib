@@ -49,8 +49,8 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, component.StabilityLevelBeta),
-		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, component.StabilityLevelBeta))
+		component.WithTracesReceiver(f.createTracesReceiver, component.StabilityLevelBeta),
+		component.WithLogsReceiver(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
@@ -71,6 +71,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 	receiver, err := f.getReceiver(set, cfg)
 
 	if err != nil {
+		set.Logger.Error(err.Error())
 		return nil, err
 	}
 
@@ -84,20 +85,21 @@ func (f *blobReceiverFactory) createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (component.TracesReceiver, error) {
 
-	receiver := f.getReceiver(set, cfg)
-	receiver.(TracesDataConsumer).SetNextTracesConsumer(nextConsumer)
+	receiver, err := f.getReceiver(set, cfg)
 
-	// if err != nil {
-	// 	return nil, err
-	// }
+	if err != nil {
+		set.Logger.Error(err.Error())
+		return nil, err
+	}
 
 	return receiver, nil
 }
 
 func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
-	cfg config.Receiver) component.Receiver {
+	cfg config.Receiver) (component.Receiver, error) {
 
+	var err error
 	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
 
@@ -105,9 +107,10 @@ func (f *blobReceiverFactory) getReceiver(
 			set.Logger.Error(errUnexpectedConfigurationType.Error())
 			return nil
 		}
-
-		return NewReceiver(*receiverConfig, set)
+		var receiver component.Receiver
+		receiver, err = NewReceiver(*receiverConfig, set)
+		return receiver
 	})
 
-	return r
+	return r, err
 }
