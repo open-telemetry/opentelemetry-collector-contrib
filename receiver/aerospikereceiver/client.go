@@ -15,6 +15,7 @@
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"sync"
@@ -45,13 +46,13 @@ type Aerospike interface {
 }
 
 type clientConfig struct {
-	host                  string
-	port                  int
+	host                  *as.Host
 	username              string
 	password              string
 	timeout               time.Duration
 	logger                *zap.SugaredLogger
 	collectClusterMetrics bool
+	tls                   *tls.Config
 }
 
 type nodeGetter interface {
@@ -68,7 +69,7 @@ type defaultASClient struct {
 type nodeGetterFactoryFunc func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error)
 
 func nodeGetterFactory(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
-	hosts := []*as.Host{as.NewHost(cfg.host, cfg.port)}
+	hosts := []*as.Host{cfg.host}
 
 	if cfg.collectClusterMetrics {
 		cluster, err := cluster.NewCluster(policy, hosts)
@@ -95,6 +96,11 @@ func newASClient(cfg *clientConfig, ngf nodeGetterFactoryFunc) (*defaultASClient
 	if authEnabled {
 		policy.User = cfg.username
 		policy.Password = cfg.password
+	}
+
+	if cfg.tls != nil {
+		// enable TLS
+		policy.TlsConfig = cfg.tls
 	}
 
 	cluster, err := ngf(cfg, policy, authEnabled)
@@ -164,7 +170,12 @@ func (c *defaultASClient) NamespaceInfo() namespaceInfo {
 		res[node] = map[string]map[string]string{}
 		for ns, stats := range namespaces {
 			// ns == "namespace/<namespaceName>"
-			nsName := strings.SplitN(ns, "/", 2)[1]
+			nsData := strings.SplitN(ns, "/", 2)
+			if len(nsData) < 2 {
+				c.logger.Warn("NamespaceInfo nsData len < 2")
+				continue
+			}
+			nsName := nsData[1]
 			res[node][nsName] = parseStats(ns, stats, ";")
 		}
 	}
@@ -201,7 +212,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %s", err)
+				logger.Errorf("mapNodeInfoFunc err: %w", err)
 			}
 
 			ns := nodeStats{

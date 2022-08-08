@@ -15,6 +15,7 @@ package cluster // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	as "github.com/aerospike/aerospike-client-go/v5"
@@ -74,6 +75,13 @@ func _newConnNode(policy *as.ClientPolicy, host *as.Host, authEnabled bool, conn
 	if err != nil {
 		return nil, err
 	}
+
+	for k := range m {
+		if strings.HasPrefix(strings.ToUpper(k), "ERROR:") {
+			return nil, as.ErrNotAuthenticated
+		}
+	}
+
 	name := m["node"]
 
 	res := connNode{
@@ -96,6 +104,12 @@ func (n *connNode) RequestInfo(_ *as.InfoPolicy, commands ...string) (map[string
 
 	if err != nil {
 		return nil, err
+	}
+
+	for k := range res {
+		if strings.HasPrefix(strings.ToUpper(k), "ERROR:") {
+			return nil, as.ErrNotAuthenticated
+		}
 	}
 
 	return res, nil

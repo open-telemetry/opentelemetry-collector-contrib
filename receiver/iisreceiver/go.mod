@@ -1,12 +1,12 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver
 
-go 1.17
+go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.1-0.20220803125008-a585d0de68c4
-	go.opentelemetry.io/collector/pdata v0.56.1-0.20220803125008-a585d0de68c4
+	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector/pdata v0.57.2
 )
 
 require (
@@ -16,7 +16,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.8.0 // indirect

@@ -128,6 +128,7 @@ processor/spanprocessor/                             @open-telemetry/collector-c
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu
 
+receiver/azureeventhubreceiver/                      @open-telemetry/collector-contrib-approvers @atoulme @djaglowski
 receiver/activedirectorydsreceiver/                  @open-telemetry/collector-contrib-approvers @djaglowski @binaryfissiongames
 receiver/aerospikereceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @antonblock
 receiver/apachereceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski

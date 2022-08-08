@@ -135,6 +135,5 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		knownFiles:    make([]*Reader, 0, 10),
 		seenPaths:     make(map[string]struct{}, 100),
-		queuedMatches: make([]string, 0),
 	}, nil
 }
