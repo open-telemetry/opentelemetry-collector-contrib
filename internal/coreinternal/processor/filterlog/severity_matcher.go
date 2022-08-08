@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package filterlog
+package filterlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterlog"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
