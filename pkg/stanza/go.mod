@@ -12,7 +12,7 @@ require (
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 	golang.org/x/text v0.3.7

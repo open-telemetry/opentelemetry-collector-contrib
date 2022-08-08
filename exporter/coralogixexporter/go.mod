@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2
 	go.opentelemetry.io/collector/pdata v0.57.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd
 	google.golang.org/grpc v1.48.0
 )

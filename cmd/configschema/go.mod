@@ -79,7 +79,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.70 // indirect
+	github.com/aws/aws-sdk-go v1.44.71 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.11.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.10.1 // indirect
@@ -549,7 +549,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
 	golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26 // indirect
