@@ -20,8 +20,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/collector/consumer"	
+
+	"go.opentelemetry.io/collector/internal/sharedcomponent"
 )
 
 const (
@@ -36,18 +37,20 @@ var (
 )
 
 type blobReceiverFactory struct {
-	receiver component.Receiver
+	receivers *sharedcomponent.SharedComponents
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
-	f := &blobReceiverFactory{}
+	f := &blobReceiverFactory{
+		receivers: sharedcomponent.NewSharedComponents()
+	}
 
-	return receiverhelper.NewFactory(
+	return component.NewFactory(
 		typeStr,
 		f.createDefaultConfig,
-		receiverhelper.WithTraces(f.createTracesReceiver),
-		receiverhelper.WithLogs(f.createLogsReceiver))
+		component.WithTraces(f.createTracesReceiver),
+		component.WithLogs(f.createLogsReceiver))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
@@ -94,8 +97,7 @@ func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver) (component.Receiver, error) {
 
-	if f.receiver == nil {
-
+	r := receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
 
 		if !ok {
@@ -111,7 +113,7 @@ func (f *blobReceiverFactory) getReceiver(
 			return nil, err
 		}
 
-	}
+	})
 
 	return f.receiver, nil
 }
