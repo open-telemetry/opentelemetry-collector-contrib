@@ -29,6 +29,7 @@ import (
 
 type processMetadata struct {
 	pid        int32
+	parentPid  int32
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
@@ -50,6 +51,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
 	opts := make([]metadata.ResourceMetricsOption, 0, 6)
 	opts = append(opts,
 		metadata.WithProcessPid(int64(m.pid)),
+		metadata.WithProcessParentPid(int64(m.parentPid)),
 		metadata.WithProcessExecutableName(m.executable.name),
 		metadata.WithProcessExecutablePath(m.executable.path),
 	)
@@ -88,6 +90,7 @@ type processHandle interface {
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
 	CreateTime() (int64, error)
+	Parent() (*process.Process, error)
 }
 
 type gopsProcessHandles struct {
@@ -113,4 +116,24 @@ func getProcessHandlesInternal() (processHandles, error) {
 	}
 
 	return &gopsProcessHandles{handles: processes}, nil
+}
+
+func parentPid(handle processHandle, pid int32) (int32, error) {
+	// special case for pid 0
+	if pid == 0 {
+		return 0, nil
+	}
+	parent, err := handle.Parent()
+
+	if err != nil {
+		// return pid of -1 along with error for all other problems retrieving parent pid
+		return -1, err
+	}
+
+	// if a process does not have a parent return 0
+	if parent == nil {
+		return 0, nil
+	}
+
+	return parent.Pid, nil
 }
