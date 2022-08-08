@@ -39,6 +39,7 @@ For logs:
   e.g. if this is "INFO", all log records with "INFO" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
   If this option is specified, no logs with "DEFAULT" severity will be matched.
   The list of valid severities that may be used for this option can be found [here](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity)
+- `match_undefined_severity`: MatchUndefinedSeverity defines whether to match logs with undefined severity or not when using the `min_severity` matching option. If `min_severity` is not specified, this option does nothing. If `match_undefined_severity` is set to true, log records with no severity will be matched. If set to false, log records with no severity will not be matched.
 
 For metrics:
 
@@ -104,9 +105,11 @@ processors:
         - WARN[2-4]?
         - ERROR[2-4]?
     # Filter out logs below INFO (no DEBUG or TRACE level logs)
+    # log records
     logs/severity_number:
       include:
         min_severity: "INFO"
+        match_undefined_severity: true
     logs/bodies:
       include:
         match_type: regexp

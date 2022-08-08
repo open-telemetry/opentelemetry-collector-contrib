@@ -167,6 +167,11 @@ type LogMatchProperties struct {
 	// this field is case-insensitive ("INFO" == "info")
 	MinSeverity logSeverity `mapstructure:"min_severity"`
 
+	// MatchUndefinedSeverity lets logs records with "unknown" severity match.
+	// This is only applied if MinSeverity is set.
+	// If MinSeverity is not set, this field is ignored, as fields are not matched based on severity.
+	MatchUndefinedSeverity bool `mapstructure:"match_undefined_severity"`
+
 	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
 	LogBodies []string `mapstructure:"bodies"`
@@ -190,11 +195,12 @@ func (lmp LogMatchProperties) matchProperties() *filterconfig.MatchProperties {
 		Config: filterset.Config{
 			MatchType: filterset.MatchType(lmp.LogMatchType),
 		},
-		Resources:        lmp.ResourceAttributes,
-		Attributes:       lmp.RecordAttributes,
-		LogSeverityTexts: lmp.SeverityTexts,
-		LogBodies:        lmp.LogBodies,
-		LogMinSeverity:   lmp.MinSeverity.severityNumber(),
+		Resources:                 lmp.ResourceAttributes,
+		Attributes:                lmp.RecordAttributes,
+		LogSeverityTexts:          lmp.SeverityTexts,
+		LogBodies:                 lmp.LogBodies,
+		LogMinSeverity:            lmp.MinSeverity.severityNumber(),
+		LogMatchUndefinedSeverity: lmp.MatchUndefinedSeverity,
 	}
 }
 

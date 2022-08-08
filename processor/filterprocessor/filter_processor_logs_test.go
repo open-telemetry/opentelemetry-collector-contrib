@@ -514,6 +514,18 @@ var (
 			},
 		},
 		{
+			name: "includeMinSeverityFATAL+undefined",
+			inc: &LogMatchProperties{
+				LogMatchType:           Regexp,
+				MinSeverity:            logSeverity("FATAL"),
+				MatchUndefinedSeverity: true,
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
 			name: "excludeMinSeverityINFO",
 			exc: &LogMatchProperties{
 				LogMatchType: Regexp,
@@ -534,6 +546,18 @@ var (
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
 				{"log4"},
+			},
+		},
+		{
+			name: "excludeMinSeverityINFO+undefined",
+			exc: &LogMatchProperties{
+				LogMatchType:           Regexp,
+				MinSeverity:            logSeverity("INFO"),
+				MatchUndefinedSeverity: true,
+			},
+			inLogs: testResourceLogs(inLogForSeverityNumber),
+			outLN: [][]string{
+				{"log1"},
 			},
 		},
 	}

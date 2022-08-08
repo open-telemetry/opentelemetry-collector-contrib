@@ -105,6 +105,12 @@ type MatchProperties struct {
 	// e.g. if this is plog.SeverityNumberINFO, INFO, WARN, ERROR, and FATAL logs will match.
 	LogMinSeverity plog.SeverityNumber `mapstructure:"log_min_severity"`
 
+	// LogMatchUndefinedSeverity controls whether logs with "undefined" severity matches.
+	// If this is true, entries with undefined severity will match.
+	// This field is only applicable if LogMinSeverity is specified;
+	// If LogMinSeverity is not specified, this field does nothing.
+	LogMatchUndefinedSeverity bool `mapstructure:"log_match_undefined_severity"`
+
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
 	// This field is optional.

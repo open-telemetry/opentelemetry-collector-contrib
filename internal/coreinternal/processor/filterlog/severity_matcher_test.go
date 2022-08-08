@@ -10,10 +10,11 @@ import (
 
 func TestSeverityMatcher_MatchLogRecord(t *testing.T) {
 	testCases := []struct {
-		name          string
-		minSeverity   plog.SeverityNumber
-		inputSeverity plog.SeverityNumber
-		matches       bool
+		name           string
+		minSeverity    plog.SeverityNumber
+		matchUndefined bool
+		inputSeverity  plog.SeverityNumber
+		matches        bool
 	}{
 		{
 			name:          "INFO matches if TRACE is min",
@@ -57,11 +58,18 @@ func TestSeverityMatcher_MatchLogRecord(t *testing.T) {
 			inputSeverity: plog.SeverityNumberUNDEFINED,
 			matches:       false,
 		},
+		{
+			name:           "UNDEFINED matches if matchUndefined is true",
+			minSeverity:    plog.SeverityNumberUNDEFINED,
+			matchUndefined: true,
+			inputSeverity:  plog.SeverityNumberUNDEFINED,
+			matches:        false,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			matcher := newSeverityNumberMatcher(tc.minSeverity)
+			matcher := newSeverityNumberMatcher(tc.minSeverity, tc.matchUndefined)
 
 			r := pcommon.NewResource()
 			i := pcommon.NewInstrumentationScope()

@@ -80,7 +80,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 
 	var severityNumberMatcher Matcher
 	if mp.LogMinSeverity != plog.SeverityNumberUNDEFINED {
-		severityNumberMatcher = newSeverityNumberMatcher(mp.LogMinSeverity)
+		severityNumberMatcher = newSeverityNumberMatcher(mp.LogMinSeverity, mp.LogMatchUndefinedSeverity)
 	}
 
 	return &propertiesMatcher{

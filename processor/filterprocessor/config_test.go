@@ -445,7 +445,8 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 // TestLoadingConfigMinSeverityNumberLogs tests loading testdata/config_logs_min_severity.yaml
 func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		MinSeverity: logSeverity("INFO"),
+		MinSeverity:            logSeverity("INFO"),
+		MatchUndefinedSeverity: true,
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
