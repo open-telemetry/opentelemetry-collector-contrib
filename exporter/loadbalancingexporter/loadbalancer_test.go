@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -85,8 +84,9 @@ func TestLoadBalancerStart(t *testing.T) {
 
 	// test
 	res := p.Start(context.Background(), componenttest.NewNopHost())
-	defer p.Shutdown(context.Background())
-
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 	// verify
 	assert.Nil(t, res)
 }
@@ -218,7 +218,7 @@ func TestAddMissingExporters(t *testing.T) {
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
-	}))
+	}, component.StabilityLevelInDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
@@ -252,7 +252,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
-	}))
+	}, component.StabilityLevelInDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint

@@ -35,7 +35,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
@@ -80,6 +82,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureeventhub",
+		},
+		{
 			receiver: "bigip",
 		},
 		{
@@ -94,6 +99,14 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "cloudfoundry",
 			skipLifecyle: true, // Requires UAA (auth) endpoint to run
+		},
+		{
+			receiver: "chrony",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["chrony"].CreateDefaultConfig().(*chronyreceiver.Config)
+				cfg.Endpoint = "udp://localhost:323"
+				return cfg
+			},
 		},
 		{
 			receiver: "collectd",
@@ -204,6 +217,14 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "otlp",
+		},
+		{
+			receiver: "otlpjsonfile",
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["otlpjsonfile"].CreateDefaultConfig().(*otlpjsonfilereceiver.Config)
+				cfg.Include = []string{"/tmp/*.log"}
+				return cfg
+			},
 		},
 		{
 			receiver:     "podman_stats",
@@ -321,6 +342,10 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "vcenter",
+		},
+		{
+			receiver:     "solace",
+			skipLifecyle: true, // Requires a solace broker to connect to
 		},
 	}
 

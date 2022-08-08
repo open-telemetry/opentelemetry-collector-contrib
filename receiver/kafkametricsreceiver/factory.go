@@ -25,6 +25,7 @@ import (
 
 const (
 	typeStr           = "kafkametrics"
+	stability         = component.StabilityLevelBeta
 	defaultBroker     = "localhost:9092"
 	defaultGroupMatch = ".*"
 	defaultTopicMatch = "^[^_].*$"
@@ -36,7 +37,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

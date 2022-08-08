@@ -76,7 +76,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 			"Checkpoint pages/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, val)
 			},
-			"Lazy Writes/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+			"Lazy writes/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, val)
 			},
 			"Page life expectancy": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {

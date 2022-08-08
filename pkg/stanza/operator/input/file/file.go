@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -29,7 +29,7 @@ type toBodyFunc func([]byte) interface{}
 type Input struct {
 	helper.InputOperator
 
-	fileConsumer *fileconsumer.Input
+	fileConsumer *fileconsumer.Manager
 
 	toBody         toBodyFunc
 	preEmitOptions []preEmitOption

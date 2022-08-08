@@ -16,12 +16,13 @@ package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
+	as "github.com/aerospike/aerospike-client-go/v5"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -36,20 +37,28 @@ import (
 type aerospikeReceiver struct {
 	config        *Config
 	consumer      consumer.Metrics
-	host          string // host/IP of configured Aerospike node
-	port          int    // port of configured Aerospike node
 	clientFactory clientFactoryFunc
+	client        Aerospike
 	mb            *metadata.MetricsBuilder
-	logger        *zap.Logger
+	logger        *zap.SugaredLogger
 }
 
 // clientFactoryFunc creates an Aerospike connection to the given host and port
-type clientFactoryFunc func(host string, port int) (aerospike, error)
+type clientFactoryFunc func() (Aerospike, error)
 
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
 // If the host or port can't be parsed from endpoint, an error is returned.
 func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
+	var err error
+	var tlsCfg *tls.Config
+	if cfg.TLS != nil {
+		tlsCfg, err = cfg.TLS.LoadTLSConfig()
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err)
+		}
+	}
+
 	host, portStr, err := net.SplitHostPort(cfg.Endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", errBadEndpoint, err)
@@ -60,90 +69,86 @@ func newAerospikeReceiver(params component.ReceiverCreateSettings, cfg *Config, 
 		return nil, fmt.Errorf("%w: %s", errBadPort, err)
 	}
 
+	ashost := as.NewHost(host, int(port))
+	ashost.TLSName = cfg.TLSName
+
+	sugaredLogger := params.Logger.Sugar()
 	return &aerospikeReceiver{
-		logger:   params.Logger,
+		logger:   sugaredLogger,
 		config:   cfg,
 		consumer: consumer,
-		clientFactory: func(host string, port int) (aerospike, error) {
-			return newASClient(host, port, cfg.Username, cfg.Password, cfg.Timeout, params.Logger)
+		clientFactory: func() (Aerospike, error) {
+			conf := &clientConfig{
+				host:                  ashost,
+				username:              cfg.Username,
+				password:              cfg.Password,
+				timeout:               cfg.Timeout,
+				logger:                sugaredLogger,
+				collectClusterMetrics: cfg.CollectClusterMetrics,
+				tls:                   tlsCfg,
+			}
+			return newASClient(
+				conf,
+				nodeGetterFactory,
+			)
 		},
-		host: host,
-		port: int(port),
-		mb:   metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
+		mb: metadata.NewMetricsBuilder(cfg.Metrics, params.BuildInfo),
 	}, nil
+}
+
+func (r *aerospikeReceiver) start(_ context.Context, _ component.Host) error {
+	r.logger.Debug("executing start")
+
+	client, err := r.clientFactory()
+	if err != nil {
+		client = nil
+		r.logger.Warn("initial client creation failed: %w", err) //  .Sugar().Warnf("initial client creation failed: %w", err)
+	}
+
+	r.client = client
+	return nil
+}
+
+func (r *aerospikeReceiver) shutdown(_ context.Context) error {
+	r.logger.Debug("executing close")
+	if r.client != nil {
+		r.client.Close()
+	}
+	return nil
 }
 
 // scrape scrapes both Node and Namespace metrics from the provided Aerospike node.
 // If CollectClusterMetrics is true, it then scrapes every discovered node
 func (r *aerospikeReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	r.logger.Debug("beginning scrape")
 	errs := &scrapererror.ScrapeErrors{}
-	now := pcommon.NewTimestampFromTime(time.Now().UTC())
-	client, err := r.clientFactory(r.host, r.port)
-	if err != nil {
-		return pmetric.NewMetrics(), fmt.Errorf("failed to connect: %w", err)
-	}
-	defer client.Close()
 
-	info, err := client.Info()
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("failed to get INFO: %s", err.Error()))
-		return r.mb.Emit(), err
-	}
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-
-	if r.config.CollectClusterMetrics {
-		r.logger.Debug("Collecting peer nodes")
-		for _, n := range strings.Split(info["services"], ";") {
-			r.scrapeDiscoveredNode(n, now, errs)
+	if r.client == nil {
+		var err error
+		r.logger.Debug("client is nil, attempting to create a new client")
+		r.client, err = r.clientFactory()
+		if err != nil {
+			r.client = nil
+			addPartialIfError(errs, fmt.Errorf("client creation failed: %w", err))
+			return r.mb.Emit(), errs.Combine()
 		}
 	}
+
+	now := pcommon.NewTimestampFromTime(time.Now().UTC())
+	client := r.client
+
+	info := client.Info()
+	for _, nodeInfo := range info {
+		r.emitNode(nodeInfo, now, errs)
+	}
+	r.scrapeNamespaces(client, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
 }
 
-// scrapeNode collects metrics from a single Aerospike node
-func (r *aerospikeReceiver) scrapeNode(client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	info, err := client.Info()
-	if err != nil {
-		errs.AddPartial(0, err)
-		return
-	}
-
-	r.emitNode(info, now, errs)
-	r.scrapeNamespaces(info, client, now, errs)
-}
-
-// scrapeDiscoveredNode connects to a discovered Aerospike node and scrapes it using that connection
-//
-// If unable to parse the endpoint or connect, that error is logged and we return early
-func (r *aerospikeReceiver) scrapeDiscoveredNode(endpoint string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	host, portStr, err := net.SplitHostPort(endpoint)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadEndpoint, err))
-		errs.Add(err)
-		return
-	}
-	port, err := strconv.ParseInt(portStr, 10, 32)
-	if err != nil {
-		r.logger.Warn(fmt.Sprintf("%s: %s", errBadPort, err))
-		errs.Add(err)
-		return
-	}
-
-	nClient, err := r.clientFactory(host, int(port))
-	if err != nil {
-		r.logger.Warn(err.Error())
-		errs.Add(err)
-		return
-	}
-	defer nClient.Close()
-
-	r.scrapeNode(nClient, now, errs)
-}
-
 // emitNode records node metrics and emits the resource. If statistics are missing in INFO, nothing is recorded
 func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debugf("emitNode len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		case "client_connections":
@@ -170,29 +175,27 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNodeName(info["node"]))
+	r.logger.Debug("finished emitNode")
 }
 
 // scrapeNamespaces records metrics for all namespaces on a node
 // The given client is used to collect namespace metrics, which is connected to a single node
-func (r *aerospikeReceiver) scrapeNamespaces(info map[string]string, client aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	namespaces := strings.Split(info["namespaces"], ";")
-	for _, n := range namespaces {
-		if n == "" {
-			continue
+func (r *aerospikeReceiver) scrapeNamespaces(client Aerospike, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debug("scraping namespaces")
+	nInfo := client.NamespaceInfo()
+	r.logger.Debugf("scrapeNamespaces len(nInfo): %v", len(nInfo))
+	for node, nsMap := range nInfo {
+		for nsName, nsStats := range nsMap {
+			nsStats["node"] = node
+			nsStats["name"] = nsName
+			r.emitNamespace(nsStats, now, errs)
 		}
-		nInfo, err := client.NamespaceInfo(n)
-		if err != nil {
-			r.logger.Warn(fmt.Sprintf("failed getting namespace %s: %s", n, err.Error()))
-			errs.AddPartial(0, err)
-			continue
-		}
-		nInfo["node"] = info["node"]
-		r.emitNamespace(nInfo, now, errs)
 	}
 }
 
 // emitNamespace emits a namespace resource with its name as resource attribute
 func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	r.logger.Debugf("emitNamespace len(info): %v", len(info))
 	for k, v := range info {
 		switch k {
 		// Capacity
@@ -236,10 +239,60 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBackground, metadata.AttributeScanResultComplete))
 		case "scan_udf_bg_error":
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBackground, metadata.AttributeScanResultError))
+
+		// 'Delete' transactions
+		case "client_delete_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultError))
+		case "client_delete_filtered_out":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultFilteredOut))
+		case "client_delete_not_found":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultNotFound))
+		case "client_delete_success":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultSuccess))
+		case "client_delete_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeDelete, metadata.AttributeTransactionResultTimeout))
+
+		// 'Read' transactions
+		case "client_read_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeRead, metadata.AttributeTransactionResultError))
+		case "client_read_filtered_out":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeRead, metadata.AttributeTransactionResultFilteredOut))
+		case "client_read_not_found":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeRead, metadata.AttributeTransactionResultNotFound))
+		case "client_read_success":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeRead, metadata.AttributeTransactionResultSuccess))
+		case "client_read_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeRead, metadata.AttributeTransactionResultTimeout))
+
+		// UDF transactions
+		case "client_udf_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeUdf, metadata.AttributeTransactionResultError))
+		case "client_udf_filtered_out":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeUdf, metadata.AttributeTransactionResultFilteredOut))
+		case "client_udf_not_found":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeUdf, metadata.AttributeTransactionResultNotFound))
+		case "client_udf_success":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeUdf, metadata.AttributeTransactionResultSuccess))
+		case "client_udf_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeUdf, metadata.AttributeTransactionResultTimeout))
+
+		// 'Write' transactions
+		case "client_write_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeWrite, metadata.AttributeTransactionResultError))
+		case "client_write_filtered_out":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeWrite, metadata.AttributeTransactionResultFilteredOut))
+		case "client_write_not_found":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeWrite, metadata.AttributeTransactionResultNotFound))
+		case "client_write_success":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeWrite, metadata.AttributeTransactionResultSuccess))
+		case "client_write_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceTransactionCountDataPoint(now, v, metadata.AttributeTransactionTypeWrite, metadata.AttributeTransactionResultTimeout))
+
 		}
 	}
 
 	r.mb.EmitForResource(metadata.WithAerospikeNamespace(info["name"]), metadata.WithAerospikeNodeName(info["node"]))
+	r.logger.Debug("finished emitNamespace")
 }
 
 // addPartialIfError adds a partial error if the given error isn't nil

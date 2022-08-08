@@ -25,6 +25,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "parquet"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelInDevelopment
 )
 
 type Config struct {
@@ -37,9 +39,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {

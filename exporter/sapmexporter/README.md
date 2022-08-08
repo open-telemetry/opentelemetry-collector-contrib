@@ -1,10 +1,14 @@
 # SAPM Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | traces    |
+| Distributions            | [contrib] |
+
 The SAPM exporter builds on the Jaeger proto and adds additional batching on top. This allows
 the collector to export traces from multiples nodes/services in a single batch. The SAPM proto
 and some useful related utilities can be found [here](https://github.com/signalfx/sapm-proto/).
-
-Supported pipeline types: traces
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),
@@ -60,3 +64,6 @@ with detailed sample configurations [here](testdata/config.yaml).
 
 This exporter also offers proxy support as documented
 [here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter#proxy-support).
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

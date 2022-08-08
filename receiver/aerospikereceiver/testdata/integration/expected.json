@@ -1,571 +1,906 @@
 {
     "resourceMetrics": [
-        {
-            "resource": {
-                "attributes": [
-                    {
-                        "key": "aerospike.node.name",
-                        "value": {
-                            "stringValue": "BB9020011AC4202"
-                        }
-                    }
-                ]
-            },
-            "instrumentationLibraryMetrics": [
+       {
+          "resource": {
+             "attributes": [
                 {
-                    "instrumentationLibrary": {
-                        "name": "otelcol/aerospikereceiver",
-                        "version": "latest"
-                    },
-                    "metrics": [
-                        {
-                            "name": "aerospike.node.connection.count",
-                            "description": "Number of connections opened and closed to the node",
-                            "unit": "{connections}",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "fabric"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "close"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "fabric"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "open"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "48"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "heartbeat"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "open"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "2"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "heartbeat"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "close"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "client"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "open"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "75"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "client"
-                                                }
-                                            },
-                                            {
-                                                "key": "operation",
-                                                "value": {
-                                                    "stringValue": "close"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "74"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        },
-                        {
-                            "name": "aerospike.node.connection.open",
-                            "description": "Current number of open connections to the node",
-                            "unit": "{connections}",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "client"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "1"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "heartbeat"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "2"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "fabric"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "48"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
-                            }
-                        },
-                        {
-                            "name": "aerospike.node.memory.free",
-                            "description": "Percentage of the node's memory which is still free",
-                            "unit": "%",
-                            "gauge": {
-                                "dataPoints": [
-                                    {
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "76"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
+                   "key": "aerospike.node.name",
+                   "value": {
+                      "stringValue": "BB9020011AC4202"
+                   }
                 }
-            ]
-        },
-        {
-            "resource": {
-                "attributes": [
-                    {
-                        "key": "aerospike.namespace",
-                        "value": {
-                            "stringValue": "test"
-                        }
-                    },
-                    {
-                        "key": "aerospike.node.name",
-                        "value": {
-                            "stringValue": "BB9020011AC4202"
-                        }
-                    }
-                ]
-            },
-            "instrumentationLibraryMetrics": [
+             ]
+          },
+          "scopeMetrics": [
+             {
+                "metrics": [
+                   {
+                      "description": "Number of connections opened and closed to the node",
+                      "name": "aerospike.node.connection.count",
+                      "sum": {
+                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                         "dataPoints": [
+                            {
+                               "asInt": "2",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "heartbeat"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "open"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "heartbeat"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "close"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "12",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "client"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "close"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "48",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "fabric"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "open"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "13",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "client"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "open"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "fabric"
+                                     }
+                                  },
+                                  {
+                                     "key": "operation",
+                                     "value": {
+                                        "stringValue": "close"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ],
+                         "isMonotonic": true
+                      },
+                      "unit": "{connections}"
+                   },
+                   {
+                      "description": "Current number of open connections to the node",
+                      "name": "aerospike.node.connection.open",
+                      "sum": {
+                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                         "dataPoints": [
+                            {
+                               "asInt": "2",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "heartbeat"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "48",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "fabric"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "1",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "client"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ]
+                      },
+                      "unit": "{connections}"
+                   },
+                   {
+                      "description": "Percentage of the node's memory which is still free",
+                      "gauge": {
+                         "dataPoints": [
+                            {
+                               "asInt": "66",
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ]
+                      },
+                      "name": "aerospike.node.memory.free",
+                      "unit": "%"
+                   }
+                ],
+                "scope": {
+                   "name": "otelcol/aerospikereceiver",
+                   "version": "latest"
+                }
+             }
+          ]
+       },
+       {
+          "resource": {
+             "attributes": [
                 {
-                    "instrumentationLibrary": {
-                        "name": "otelcol/aerospikereceiver",
-                        "version": "latest"
-                    },
-                    "metrics": [
-                        {
-                            "name": "aerospike.namespace.disk.available",
-                            "description": "Minimum percentage of contiguous disk space free to the namespace across all devices",
-                            "unit": "%",
-                            "gauge": {
-                                "dataPoints": [
-                                    {
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "99"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "aerospike.namespace.memory.free",
-                            "description": "Percentage of the namespace's memory which is still free",
-                            "unit": "%",
-                            "gauge": {
-                                "dataPoints": [
-                                    {
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "100"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "name": "aerospike.namespace.memory.usage",
-                            "description": "Memory currently used by each component of the namespace",
-                            "unit": "By",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "component",
-                                                "value": {
-                                                    "stringValue": "index"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "component",
-                                                "value": {
-                                                    "stringValue": "data"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "component",
-                                                "value": {
-                                                    "stringValue": "secondary_index"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "component",
-                                                "value": {
-                                                    "stringValue": "set_index"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
-                            }
-                        },
-                        {
-                            "name": "aerospike.namespace.scan.count",
-                            "description": "Number of scan operations performed on the namespace",
-                            "unit": "{scans}",
-                            "sum": {
-                                "dataPoints": [
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "aggregation"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "abort"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "ops_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "abort"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "aggregation"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "error"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "udf_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "complete"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "udf_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "abort"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "basic"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "complete"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "ops_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "error"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "ops_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "complete"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "aggregation"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "complete"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "basic"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "error"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "basic"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "abort"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    },
-                                    {
-                                        "attributes": [
-                                            {
-                                                "key": "type",
-                                                "value": {
-                                                    "stringValue": "udf_background"
-                                                }
-                                            },
-                                            {
-                                                "key": "result",
-                                                "value": {
-                                                    "stringValue": "error"
-                                                }
-                                            }
-                                        ],
-                                        "startTimeUnixNano": "1655995353437739197",
-                                        "timeUnixNano": "1655995368443399008",
-                                        "asInt": "0"
-                                    }
-                                ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                                "isMonotonic": true
-                            }
-                        }
-                    ]
+                   "key": "aerospike.namespace",
+                   "value": {
+                      "stringValue": "test"
+                   }
+                },
+                {
+                   "key": "aerospike.node.name",
+                   "value": {
+                      "stringValue": "BB9020011AC4202"
+                   }
                 }
-            ]
-        }
+             ]
+          },
+          "scopeMetrics": [
+             {
+                "metrics": [
+                   {
+                      "description": "Minimum percentage of contiguous disk space free to the namespace across all devices",
+                      "gauge": {
+                         "dataPoints": [
+                            {
+                               "asInt": "98",
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ]
+                      },
+                      "name": "aerospike.namespace.disk.available",
+                      "unit": "%"
+                   },
+                   {
+                      "description": "Percentage of the namespace's memory which is still free",
+                      "gauge": {
+                         "dataPoints": [
+                            {
+                               "asInt": "96",
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ]
+                      },
+                      "name": "aerospike.namespace.memory.free",
+                      "unit": "%"
+                   },
+                   {
+                      "description": "Memory currently used by each component of the namespace",
+                      "name": "aerospike.namespace.memory.usage",
+                      "sum": {
+                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                         "dataPoints": [
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "component",
+                                     "value": {
+                                        "stringValue": "secondary_index"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "32059712",
+                               "attributes": [
+                                  {
+                                     "key": "component",
+                                     "value": {
+                                        "stringValue": "index"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "component",
+                                     "value": {
+                                        "stringValue": "set_index"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "6512129",
+                               "attributes": [
+                                  {
+                                     "key": "component",
+                                     "value": {
+                                        "stringValue": "data"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ]
+                      },
+                      "unit": "By"
+                   },
+                   {
+                      "description": "Number of scan operations performed on the namespace",
+                      "name": "aerospike.namespace.scan.count",
+                      "sum": {
+                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                         "dataPoints": [
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "ops_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "abort"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "abort"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "aggregation"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "abort"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "aggregation"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "complete"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "basic"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "abort"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "complete"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "ops_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "basic"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "aggregation"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "ops_background"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "complete"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "basic"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "complete"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ],
+                         "isMonotonic": true
+                      },
+                      "unit": "{scans}"
+                   },
+                   {
+                      "description": "Number of transactions performed on the namespace",
+                      "name": "aerospike.namespace.transaction.count",
+                      "sum": {
+                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                         "dataPoints": [
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "delete"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "not_found"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "write"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "read"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "success"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "write"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "filtered_out"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "filtered_out"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "delete"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "success"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "write"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "timeout"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "write"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "success"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "read"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "udf"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "timeout"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "delete"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "timeout"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "read"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "filtered_out"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "read"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "not_found"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "read"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "timeout"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "delete"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "error"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            },
+                            {
+                               "asInt": "0",
+                               "attributes": [
+                                  {
+                                     "key": "type",
+                                     "value": {
+                                        "stringValue": "delete"
+                                     }
+                                  },
+                                  {
+                                     "key": "result",
+                                     "value": {
+                                        "stringValue": "filtered_out"
+                                     }
+                                  }
+                               ],
+                               "startTimeUnixNano": "1657031521609814454",
+                               "timeUnixNano": "1657031536620935803"
+                            }
+                         ],
+                         "isMonotonic": true
+                      },
+                      "unit": "{transactions}"
+                   }
+                ],
+                "scope": {
+                   "name": "otelcol/aerospikereceiver",
+                   "version": "latest"
+                }
+             }
+          ]
+       }
     ]
-}
+ }
+ 

@@ -28,6 +28,7 @@ import (
 
 const (
 	typeStr                      = "aerospike"
+	stability                    = component.StabilityLevelAlpha
 	defaultEndpoint              = "localhost:3000"
 	defaultTimeout               = 20 * time.Second
 	defaultCollectClusterMetrics = false
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver),
+		component.WithMetricsReceiver(createMetricsReceiver, stability),
 	)
 }
 
@@ -55,7 +56,12 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	scraper, err := scraperhelper.NewScraper(typeStr, receiver.scrape)
+	scraper, err := scraperhelper.NewScraper(
+		typeStr,
+		receiver.scrape,
+		scraperhelper.WithStart(receiver.start),
+		scraperhelper.WithShutdown(receiver.shutdown),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package containertest // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest"
 
 import (
@@ -94,7 +93,7 @@ func New(t *testing.T) *Containers {
 // if called from New() but can also be called manually if needed. It is idempotent.
 func (c *Containers) Cleanup() {
 	for _, con := range c.runningContainers {
-		c.RemoveContainer(con)
+		_ = c.RemoveContainer(con)
 	}
 	if err := c.cli.Close(); err != nil {
 		c.t.Logf("failed closing Docker connection: %v", err)

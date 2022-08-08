@@ -339,10 +339,9 @@ func trimWhitespaces(data []byte) []byte {
 	// TrimLeft to strip EOF whitespaces in case of using $ in regex
 	// For some reason newline and carriage return are being moved to beginning of next log
 	// TrimRight to strip all whitespaces from the end of log
-	// returns nil if log is empty
 	token := bytes.TrimLeft(bytes.TrimRight(data, "\r\n\t "), "\r\n")
-	if len(token) == 0 {
-		return nil
+	if token == nil {
+		return []byte{}
 	}
 	return token
 }

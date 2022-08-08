@@ -4,7 +4,7 @@
 | ------------------------ |-----------|
 | Stability                | [beta]    |
 | Supported pipeline types | metrics   |
-| Distributions            |           |
+| Distributions            | [contrib] |
 
 The `active_directory_ds` receiver scrapes metric relating to an Active Directory domain controller using the Windows Performance Counters.
 
@@ -19,7 +19,7 @@ receivers:
   active_directory_ds:
     collection_interval: 10s
     metrics:
-      # Disable the active_directory.ds.replication.network.io metric from being emitted 
+      # Disable the active_directory.ds.replication.network.io metric from being emitted
       active_directory.ds.replication.network.io: false
 ```
 
@@ -30,3 +30,4 @@ The full list of settings exposed for this receiver are documented [here](./conf
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

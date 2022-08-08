@@ -154,20 +154,6 @@ func TestLoadingFullConfig(t *testing.T) {
 				},
 			},
 		},
-		{
-			configFile: "config_deprecated.yaml",
-			filterName: config.NewComponentID(typeStr),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Transforms: []Transform{
-					{
-						MetricName: "old_name",
-						Action:     Update,
-						NewName:    "new_name",
-					},
-				},
-			},
-		},
 	}
 
 	for _, test := range tests {

@@ -37,6 +37,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "signalfx"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 
 	defaultHTTPTimeout = time.Second * 5
 )
@@ -46,9 +48,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
-		component.WithTracesExporter(createTracesExporter),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
+		component.WithTracesExporter(createTracesExporter, stability),
 	)
 }
 

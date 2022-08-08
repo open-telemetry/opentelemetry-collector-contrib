@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package spanmetricsprocessor
 
 import (
@@ -34,6 +33,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"google.golang.org/grpc/metadata"
 
@@ -162,7 +162,7 @@ func TestConfigureLatencyBounds(t *testing.T) {
 	// Verify
 	assert.NoError(t, err)
 	assert.NotNil(t, p)
-	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000, maxDurationMs}, p.latencyBounds)
+	assert.Equal(t, []float64{0.000003, 0.003, 3, 3000}, p.latencyBounds)
 }
 
 func TestProcessorCapabilities(t *testing.T) {
@@ -186,28 +186,32 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 		name              string
 		consumeMetricsErr error
 		consumeTracesErr  error
-		wantErrMsg        string
 	}{
 		{
-			name:              "metricsExporter error",
-			consumeMetricsErr: fmt.Errorf("metricsExporter error"),
-			wantErrMsg:        "metricsExporter error",
+			name:              "ConsumeMetrics error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
 		},
 		{
-			name:             "nextConsumer error",
-			consumeTracesErr: fmt.Errorf("nextConsumer error"),
-			wantErrMsg:       "nextConsumer error",
+			name:             "ConsumeTraces error",
+			consumeTracesErr: fmt.Errorf("consume traces error"),
+		},
+		{
+			name:              "ConsumeMetrics and ConsumeTraces error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
+			consumeTracesErr:  fmt.Errorf("consume traces error"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
+			logger := zap.NewNop()
+
 			mexp := &mocks.MetricsExporter{}
 			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
 
 			tcon := &mocks.TracesConsumer{}
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(tc.consumeTracesErr)
 
-			p := newProcessorImp(mexp, tcon, nil, cumulative, t)
+			p := newProcessorImp(mexp, tcon, nil, cumulative, logger)
 
 			traces := buildSampleTrace()
 
@@ -216,7 +220,17 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			err := p.ConsumeTraces(ctx, traces)
 
 			// Verify
-			assert.EqualError(t, err, tc.wantErrMsg)
+			require.Error(t, err)
+			switch {
+			case tc.consumeMetricsErr != nil && tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error()+"; "+tc.consumeTracesErr.Error())
+			case tc.consumeMetricsErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error())
+			case tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeTracesErr.Error())
+			default:
+				assert.Fail(t, "expected at least one error")
+			}
 		})
 	}
 }
@@ -256,9 +270,19 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
+		{
+			// Consumptions with improper timestamps
+			name:                   "Test bad consumptions (Delta).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyBadMetricsOkay,
+			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
 	}
 
 	for _, tc := range testcases {
+		// Since parallelism is enabled in these tests, to avoid flaky behavior,
+		// instantiate a copy of the test case for t.Run's closure to use.
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 			mexp := &mocks.MetricsExporter{}
@@ -266,12 +290,14 @@ func TestProcessorConsumeTraces(t *testing.T) {
 
 			// Mocked metric exporter will perform validation on metrics, during p.ConsumeTraces()
 			mexp.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				return tc.verifier(t, input)
+				return assert.Eventually(t, func() bool {
+					return tc.verifier(t, input)
+				}, 10*time.Second, time.Millisecond*100)
 			})).Return(nil)
 			tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 			defaultNullValue := "defaultNullValue"
-			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, t)
+			p := newProcessorImp(mexp, tcon, &defaultNullValue, tc.aggregationTemporality, zaptest.NewLogger(t))
 
 			for _, traces := range tc.traces {
 				// Test
@@ -293,8 +319,7 @@ func TestMetricKeyCache(t *testing.T) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, t)
-
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(t))
 	traces := buildSampleTrace()
 
 	// Test
@@ -307,14 +332,18 @@ func TestMetricKeyCache(t *testing.T) {
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	assert.Eventually(t, func() bool {
+		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
 	err = p.ConsumeTraces(ctx, traces)
-	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
-
 	require.NoError(t, err)
+
+	// 2 key was cached, other keys were evicted and cleaned after the processing
+	assert.Eventually(t, func() bool {
+		return assert.Len(t, p.metricKeyToDimensions.Keys(), DimensionsCacheSize)
+	}, 10*time.Second, time.Millisecond*100)
 }
 
 func BenchmarkProcessorConsumeTraces(b *testing.B) {
@@ -326,18 +355,18 @@ func BenchmarkProcessorConsumeTraces(b *testing.B) {
 	tcon.On("ConsumeTraces", mock.Anything, mock.Anything).Return(nil)
 
 	defaultNullValue := "defaultNullValue"
-	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, b)
+	p := newProcessorImp(mexp, tcon, &defaultNullValue, cumulative, zaptest.NewLogger(b))
 
 	traces := buildSampleTrace()
 
 	// Test
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
 	for n := 0; n < b.N; n++ {
-		p.ConsumeTraces(ctx, traces)
+		assert.NoError(b, p.ConsumeTraces(ctx, traces))
 	}
 }
 
-func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, tb testing.TB) *processorImp {
+func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, defaultNullValue *string, temporality string, logger *zap.Logger) *processorImp {
 	defaultNotInSpanAttrVal := "defaultNotInSpanAttrVal"
 	// use size 2 for LRU cache for testing purpose
 	metricKeyToDimensions, err := cache.NewCache(DimensionsCacheSize)
@@ -345,7 +374,7 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 		panic(err)
 	}
 	return &processorImp{
-		logger:          zaptest.NewLogger(tb),
+		logger:          logger,
 		config:          Config{AggregationTemporality: temporality},
 		metricsExporter: mexp,
 		nextConsumer:    tcon,
@@ -380,6 +409,10 @@ func newProcessorImp(mexp *mocks.MetricsExporter, tcon *mocks.TracesConsumer, de
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
 func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, 1)
+}
+
+func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+	return true // Validating no exception
 }
 
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
@@ -451,7 +484,13 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 		assert.Equal(t, sampleLatency*float64(numCumulativeConsumptions), dp.Sum(), "Should be a 11ms latency measurement, multiplied by the number of stateful accumulations.")
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 
-		// Verify bucket counts. Firstly, find the bucket index where the 11ms latency should belong in.
+		// Verify bucket counts.
+
+		// The bucket counts should be 1 greater than the explicit bounds as documented in:
+		// https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto.
+		assert.Equal(t, dp.ExplicitBounds().Len()+1, dp.BucketCounts().Len())
+
+		// Find the bucket index where the 11ms latency should belong in.
 		var foundLatencyIndex int
 		for foundLatencyIndex = 0; foundLatencyIndex < dp.ExplicitBounds().Len(); foundLatencyIndex++ {
 			if dp.ExplicitBounds().At(foundLatencyIndex) > sampleLatency {
@@ -509,6 +548,16 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	// Service/operation/kind should be a unique metric.
 	assert.False(t, seenMetricIDs[mID])
 	seenMetricIDs[mID] = true
+}
+
+func buildBadSampleTrace() ptrace.Traces {
+	badTrace := buildSampleTrace()
+	span := badTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	now := time.Now()
+	// Flipping timestamp for a bad duration
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+	return badTrace
 }
 
 // buildSampleTrace builds the following trace:
@@ -774,7 +823,7 @@ func TestSanitize(t *testing.T) {
 	require.Equal(t, "key_0test", sanitize("0test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test", sanitize("test", cfg.skipSanitizeLabel))
 	require.Equal(t, "test__", sanitize("test_/", cfg.skipSanitizeLabel))
-	//testcases with skipSanitizeLabel flag turned on
+	// testcases with skipSanitizeLabel flag turned on
 	cfg.skipSanitizeLabel = true
 	require.Equal(t, "", sanitize("", cfg.skipSanitizeLabel), "")
 	require.Equal(t, "_test", sanitize("_test", cfg.skipSanitizeLabel))

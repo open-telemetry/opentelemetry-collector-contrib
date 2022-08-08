@@ -11,6 +11,7 @@ attributes:
     enum: [read, write]
 
 metrics:
+# produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   system.disk.io:
     enabled: true
     description: Disk bytes transferred.
@@ -20,7 +21,27 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
-
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.io.read:
+    enabled: true
+    description: Disk bytes read.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.io.write:
+    enabled: true
+    description: Disk bytes written.
+    unit: By
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   system.disk.operations:
     enabled: true
     description: Disk operations count.
@@ -30,6 +51,26 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.operations.read:
+    enabled: true
+    description: Disk reads count.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.operations.write:
+    enabled: true
+    description: Disk writes count.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
 
   system.disk.io_time:
     enabled: true
@@ -40,7 +81,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device]
-
+# produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   system.disk.operation_time:
     enabled: true
     description: Time spent in disk operations.
@@ -50,6 +91,26 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.operation_time.read:
+    enabled: true
+    description: Time spent in disk reads.
+    unit: s
+    sum:
+      value_type: double
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.operation_time.write:
+    enabled: true
+    description: Time spent in disk writes.
+    unit: s
+    sum:
+      value_type: double
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
 
   system.disk.weighted_io_time:
     enabled: true
@@ -70,8 +131,18 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: [device]
-
+# produced when receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   system.disk.merged:
+    enabled: true
+    description: The number of disk reads/writes merged into single physical disk access operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device, direction]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.merged.read:
     enabled: true
     description: The number of disk reads merged into single physical disk access operations.
     unit: "{operations}"
@@ -79,4 +150,14 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
-    attributes: [device, direction]
+    attributes: [device]
+# produced when receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  system.disk.merged.write:
+    enabled: true
+    description: The number of disk writes merged into single physical disk access operations.
+    unit: "{operations}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]

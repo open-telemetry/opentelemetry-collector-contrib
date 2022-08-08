@@ -31,7 +31,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "googlecloudpubsub"
+	typeStr = "googlecloudpubsub"
+	// The stability level of the exporter.
+	stability      = component.StabilityLevelBeta
 	defaultTimeout = 12 * time.Second
 )
 
@@ -40,9 +42,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 var exporters = map[*Config]*pubsubExporter{}

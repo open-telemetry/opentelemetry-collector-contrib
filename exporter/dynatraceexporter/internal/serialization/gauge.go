@@ -17,12 +17,14 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
+	"go.uber.org/zap"
+
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
+func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {
 	var metricOption dtMetric.MetricOption
 
 	switch dp.ValueType() {
@@ -49,4 +51,33 @@ func serializeGauge(name, prefix string, dims dimensions.NormalizedDimensionList
 	}
 
 	return dm.Serialize()
+}
+
+func serializeGauge(logger *zap.Logger, prefix string, metric pmetric.Metric, defaultDimensions dimensions.NormalizedDimensionList, staticDimensions dimensions.NormalizedDimensionList, metricLines []string) []string {
+	points := metric.Gauge().DataPoints()
+
+	for i := 0; i < points.Len(); i++ {
+		dp := points.At(i)
+
+		line, err := serializeGaugePoint(
+			metric.Name(),
+			prefix,
+			makeCombinedDimensions(defaultDimensions, dp.Attributes(), staticDimensions),
+			dp,
+		)
+
+		if err != nil {
+			logger.Warn(
+				"Error serializing gauge data point",
+				zap.String("name", metric.Name()),
+				zap.String("value-type", dp.ValueType().String()),
+				zap.Error(err),
+			)
+		}
+
+		if line != "" {
+			metricLines = append(metricLines, line)
+		}
+	}
+	return metricLines
 }

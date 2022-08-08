@@ -31,17 +31,26 @@ type portpair struct {
 	last  string
 }
 
-// GetAvailableLocalAddress finds an available local port and returns an endpoint
+// GetAvailableLocalAddress finds an available local port on tcp network and returns an endpoint
 // describing it. The port is available for opening when this function returns
 // provided that there is no race by some other code to grab the same port
 // immediately.
 func GetAvailableLocalAddress(t testing.TB) string {
+	return GetAvailableLocalNetworkAddress(t, "tcp")
+}
+
+// GetAvailableLocalNetworkAddress finds an available local port on specified network and returns an endpoint
+// describing it. The port is available for opening when this function returns
+// provided that there is no race by some other code to grab the same port
+// immediately.
+func GetAvailableLocalNetworkAddress(t testing.TB, network string) string {
 	// Retry has been added for windows as net.Listen can return a port that is not actually available. Details can be
 	// found in https://github.com/docker/for-win/issues/3171 but to summarize Hyper-V will reserve ranges of ports
 	// which do not show up under the "netstat -ano" but can only be found by
 	// "netsh interface ipv4 show excludedportrange protocol=tcp".  We'll use []exclusions to hold those ranges and
 	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
 	var exclusions []portpair
+
 	portFound := false
 	if runtime.GOOS == "windows" {
 		exclusions = getExclusionsList(t)
@@ -49,7 +58,7 @@ func GetAvailableLocalAddress(t testing.TB) string {
 
 	var endpoint string
 	for !portFound {
-		endpoint = findAvailableAddress(t)
+		endpoint = findAvailableAddress(t, network)
 		_, port, err := net.SplitHostPort(endpoint)
 		require.NoError(t, err)
 		portFound = true
@@ -66,15 +75,30 @@ func GetAvailableLocalAddress(t testing.TB) string {
 	return endpoint
 }
 
-func findAvailableAddress(t testing.TB) string {
-	ln, err := net.Listen("tcp", "localhost:0")
-	require.NoError(t, err, "Failed to get a free local port")
-	// There is a possible race if something else takes this same port before
-	// the test uses it, however, that is unlikely in practice.
-	defer func() {
-		assert.NoError(t, ln.Close())
-	}()
-	return ln.Addr().String()
+func findAvailableAddress(t testing.TB, network string) string {
+	switch network {
+	// net.Listen supported network strings
+	case "tcp", "tcp4", "tcp6", "unix", "unixpacket":
+		ln, err := net.Listen(network, "localhost:0")
+		require.NoError(t, err, "Failed to get a free local port")
+		// There is a possible race if something else takes this same port before
+		// the test uses it, however, that is unlikely in practice.
+		defer func() {
+			assert.NoError(t, ln.Close())
+		}()
+		return ln.Addr().String()
+	// net.ListenPacket supported network strings
+	case "udp", "udp4", "udp6", "unixgram":
+		ln, err := net.ListenPacket(network, "localhost:0")
+		require.NoError(t, err, "Failed to get a free local port")
+		// There is a possible race if something else takes this same port before
+		// the test uses it, however, that is unlikely in practice.
+		defer func() {
+			assert.NoError(t, ln.Close())
+		}()
+		return ln.LocalAddr().String()
+	}
+	return ""
 }
 
 // Get excluded ports on Windows from the command: netsh interface ipv4 show excludedportrange protocol=tcp

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusremotewriteexporter
 
 import (
@@ -370,6 +369,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
+	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
+
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
@@ -469,6 +470,13 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:            &histogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 12,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "valid_empty_histogram_case",
+			metrics:            &emptyDataPointHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 6,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -743,7 +751,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
-		//disable sanitizeLabel flag
+		// disable sanitizeLabel flag
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)

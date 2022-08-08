@@ -93,6 +93,32 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, []config.Type{"mock_observer"}, r1.WatchObservers)
 }
 
+func TestInvalidResourceAttributeEndpointType(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.Nil(t, err)
+
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
+	require.EqualError(t, err, "error reading receivers configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	require.Nil(t, cfg)
+}
+
+func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.Nil(t, err)
+
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
+	require.EqualError(t, err, "error reading receivers configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	require.Nil(t, cfg)
+}
+
 type nopWithEndpointConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	Endpoint                string `mapstructure:"endpoint"`
@@ -105,6 +131,7 @@ type nopWithEndpointFactory struct {
 type nopWithEndpointReceiver struct {
 	component.Component
 	consumer.Metrics
+	component.ReceiverCreateSettings
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
@@ -120,11 +147,12 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateSettings,
+	rcs component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component: mockComponent{},
-		Metrics:   nextConsumer,
+		Component:              mockComponent{},
+		Metrics:                nextConsumer,
+		ReceiverCreateSettings: rcs,
 	}, nil
 }

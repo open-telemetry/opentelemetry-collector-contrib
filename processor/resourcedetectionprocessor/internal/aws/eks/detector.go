@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package eks // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 
 import (
@@ -70,7 +69,7 @@ func NewDetector(set component.ProcessorCreateSettings, _ internal.DetectorConfi
 func (detector *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	res := pcommon.NewResource()
 
-	//Check if running on EKS.
+	// Check if running on EKS.
 	isEKS, err := isEKS(ctx, detector.utils)
 	if !isEKS {
 		detector.logger.Debug("Unable to identify EKS environment", zap.Error(err))

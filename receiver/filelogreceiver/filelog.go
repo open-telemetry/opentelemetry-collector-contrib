@@ -24,11 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
-const typeStr = "filelog"
+const (
+	typeStr   = "filelog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for filelog receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements stanza.LogReceiverType

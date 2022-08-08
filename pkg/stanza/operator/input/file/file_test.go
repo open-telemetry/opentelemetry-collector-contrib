@@ -407,8 +407,11 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 // we don't read any entries that were in the file before startup
 func TestStartAtEnd(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
+		pollInterval = cfg.PollInterval.Raw()
 	}, nil)
 
 	temp := openTemp(t, tempDir)
@@ -419,7 +422,7 @@ func TestStartAtEnd(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	expectNoMessages(t, logReceived)
 
@@ -433,8 +436,11 @@ func TestStartAtEnd(t *testing.T) {
 // beginning
 func TestStartAtEndNewFile(t *testing.T) {
 	t.Parallel()
+
+	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
+		pollInterval = cfg.PollInterval.Raw()
 	}, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -442,7 +448,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 		require.NoError(t, operator.Stop())
 	}()
 
-	time.Sleep(2 * operator.fileConsumer.PollInterval)
+	time.Sleep(2 * pollInterval)
 
 	temp := openTemp(t, tempDir)
 	writeString(t, temp, "testlog1\ntestlog2\n")
@@ -752,91 +758,4 @@ func TestManyLogsDelivered(t *testing.T) {
 		waitForMessage(t, logReceived, message)
 	}
 	expectNoMessages(t, logReceived)
-}
-
-func TestEncodings(t *testing.T) {
-	t.Parallel()
-	cases := []struct {
-		name     string
-		contents []byte
-		encoding string
-		expected [][]byte
-	}{
-		{
-			"Nop",
-			[]byte{0xc5, '\n'},
-			"",
-			[][]byte{{0xc5}},
-		},
-		{
-			"InvalidUTFReplacement",
-			[]byte{0xc5, '\n'},
-			"utf8",
-			[][]byte{{0xef, 0xbf, 0xbd}},
-		},
-		{
-			"ValidUTF8",
-			[]byte("foo\n"),
-			"utf8",
-			[][]byte{[]byte("foo")},
-		},
-		{
-			"ChineseCharacter",
-			[]byte{230, 138, 152, '\n'}, // 折\n
-			"utf8",
-			[][]byte{{230, 138, 152}},
-		},
-		{
-			"SmileyFaceUTF16",
-			[]byte{216, 61, 222, 0, 0, 10}, // 😀\n
-			"utf-16be",
-			[][]byte{{240, 159, 152, 128}},
-		},
-		{
-			"SmileyFaceNewlineUTF16",
-			[]byte{216, 61, 222, 0, 0, 10, 0, 102, 0, 111, 0, 111}, // 😀\nfoo
-			"utf-16be",
-			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
-		},
-		{
-			"SmileyFaceNewlineUTF16LE",
-			[]byte{61, 216, 0, 222, 10, 0, 102, 0, 111, 0, 111, 0}, // 😀\nfoo
-			"utf-16le",
-			[][]byte{{240, 159, 152, 128}, {102, 111, 111}},
-		},
-		{
-			"ChineseCharacterBig5",
-			[]byte{167, 233, 10}, // 折\n
-			"big5",
-			[][]byte{{230, 138, 152}},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			operator, receivedEntries, tempDir := newTestFileOperator(t, func(cfg *Config) {
-				cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: tc.encoding}
-			}, nil)
-
-			// Popualte the file
-			temp := openTemp(t, tempDir)
-			_, err := temp.Write(tc.contents)
-			require.NoError(t, err)
-
-			require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
-			defer func() {
-				require.NoError(t, operator.Stop())
-			}()
-
-			for _, expected := range tc.expected {
-				select {
-				case entry := <-receivedEntries:
-					require.Equal(t, expected, []byte(entry.Body.(string)))
-				case <-time.After(500 * time.Millisecond):
-					require.FailNow(t, "Timed out waiting for entry to be read")
-				}
-			}
-		})
-	}
 }
