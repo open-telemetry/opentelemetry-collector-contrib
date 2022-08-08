@@ -13,6 +13,4 @@ issues: [8028]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  1. add performance guide.
-  2. add more SQL example.
+subtext:
