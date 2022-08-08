@@ -133,6 +133,7 @@ func assertProcessResourceAttributesExist(t *testing.T, resourceMetrics pmetric.
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommand)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessCommandLine)
 		internal.AssertContainsAttribute(t, attr, conventions.AttributeProcessOwner)
+		internal.AssertContainsAttribute(t, attr, "process.parent_pid")
 	}
 }
 
@@ -310,6 +311,11 @@ func (p *processHandleMock) CreateTime() (int64, error) {
 	return args.Get(0).(int64), args.Error(1)
 }
 
+func (p *processHandleMock) Parent() (*process.Process, error) {
+	args := p.MethodCalled("Parent")
+	return args.Get(0).(*process.Process), args.Error(1)
+}
+
 func newDefaultHandleMock() *processHandleMock {
 	handleMock := &processHandleMock{}
 	handleMock.On("Username").Return("username", nil)
@@ -318,6 +324,7 @@ func newDefaultHandleMock() *processHandleMock {
 	handleMock.On("Times").Return(&cpu.TimesStat{}, nil)
 	handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, nil)
 	handleMock.On("IOCounters").Return(&process.IOCountersStat{}, nil)
+	handleMock.On("Parent").Return(&process.Process{Pid: 2}, nil)
 	return handleMock
 }
 
@@ -460,6 +467,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		memoryInfoError error
 		ioCountersError error
 		createTimeError error
+		parentPidError  error
 		expectedError   string
 	}
 
@@ -506,6 +514,11 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError:   `error reading disk usage for process "test" (pid 1): err7`,
 		},
 		{
+			name:           "Parent PID Error",
+			parentPidError: errors.New("err8"),
+			expectedError:  `error reading parent pid for process "test" (pid 1): err8`,
+		},
+		{
 			name:            "Multiple Errors",
 			cmdlineError:    errors.New("err2"),
 			usernameError:   errors.New("err3"),
@@ -548,6 +561,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("MemoryInfo").Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("IOCounters").Return(&process.IOCountersStat{}, test.ioCountersError)
 			handleMock.On("CreateTime").Return(int64(0), test.createTimeError)
+			handleMock.On("Parent").Return(&process.Process{Pid: 2}, test.parentPidError)
 
 			scraper.getProcessHandles = func() (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
