@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	gokitlog "github.com/go-kit/log"
 	promcfg "github.com/prometheus/prometheus/config"
@@ -77,7 +78,6 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 func (mp *mockPrometheus) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
-
 	iptr, ok := mp.accessIndex[req.URL.Path]
 	if !ok {
 		rw.WriteHeader(404)
@@ -138,7 +138,8 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 		job := make(map[string]interface{})
 		job["job_name"] = tds[i].name
 		job["metrics_path"] = metricPaths[i]
-		job["scrape_interval"] = "100ms"
+		job["scrape_interval"] = "1s"
+		job["scrape_timeout"] = "500ms"
 		job["static_configs"] = []map[string]interface{}{{"targets": []string{u.Host}}}
 		jobs = append(jobs, job)
 	}
@@ -158,6 +159,35 @@ func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, er
 	}
 	pCfg, err := promcfg.Load(string(cfg), false, gokitlog.NewNopLogger())
 	return mp, pCfg, err
+}
+
+func waitForScrapeResults(t *testing.T, targets []*testData, cms *consumertest.MetricsSink) {
+	assert.Eventually(t, func() bool {
+		// This is the receiver's pov as to what should have been collected from the server
+		metrics := cms.AllMetrics()
+		pResults := splitMetricsByTarget(metrics)
+		for _, target := range targets {
+			want := 0
+			name := target.name
+			if target.relabeledJob != "" {
+				name = target.relabeledJob
+			}
+			scrapes := pResults[name]
+			// count the number of pages we expect for a target endpoint
+			for _, p := range target.pages {
+				if p.code != 404 {
+					// only count target pages that are not 404, matching mock ServerHTTP func response logic
+					want++
+				}
+
+			}
+			if len(scrapes) < want {
+				// If we don't have enough scrapes yet lets return false and wait for another tick
+				return false
+			}
+		}
+		return true
+	}, 30*time.Second, 500*time.Millisecond)
 }
 
 func verifyNumValidScrapeResults(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
@@ -574,7 +604,6 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
-
 	// verify state after shutdown is called
 	t.Cleanup(func() {
 		// verify state after shutdown is called
@@ -582,10 +611,18 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 		require.NoError(t, receiver.Shutdown(context.Background()))
 		assert.Len(t, flattenTargets(receiver.scrapeManager.TargetsAll()), 0, "expected scrape manager to have no targets")
 	})
-	// wait for all provided data to be scraped
-	mp.wg.Wait()
-	metrics := cms.AllMetrics()
 
+	// waitgroup Wait() is strictly from a server POV indicating the sufficient number and type of requests have been seen
+	mp.wg.Wait()
+
+	// Note:waitForScrapeResult is an attempt to address a possible race between waitgroup Done() being called in the ServerHTTP function
+	//      and when the receiver actually processes the http request responses into metrics.
+	//      this is a eventually timeout,tick that just waits for some condition.
+	//      however the condition to wait for may be suboptimal and may need to be adjusted.
+	waitForScrapeResults(t, targets, cms)
+
+	// This begins the processing of the scrapes collected by the receiver
+	metrics := cms.AllMetrics()
 	// split and store results by target name
 	pResults := splitMetricsByTarget(metrics)
 	lres, lep := len(pResults), len(mp.endpoints)
