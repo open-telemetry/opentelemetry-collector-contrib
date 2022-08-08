@@ -213,14 +213,14 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-1. v0.57.0, July 2022:
+1. v0.58.0, Aug 2022:
 
 - The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
 - The old metrics with `direction` attribute are deprecated with a warning.
 - `receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
 - `receiver.kubeletstatsreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
 
-2. v0.58.0, August 2022:
+2. v0.59.0, August 2022:
 
 - The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
 - `receiver.kubeletstatsreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
