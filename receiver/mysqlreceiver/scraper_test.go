@@ -65,7 +65,7 @@ func TestScrape(t *testing.T) {
 		scraper := newMySQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile: "global_stats_partial",
-			innodbStatsFile: "empty",
+			innodbStatsFile: "innodb_stats_empty",
 		}
 
 		actualMetrics, scrapeErr := scraper.scrape(context.Background())
