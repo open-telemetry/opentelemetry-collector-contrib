@@ -32,7 +32,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 	expected := &Config{
 		ExtensionSettings:  config.NewExtensionSettings(config.NewComponentID(typeStr)),
 		HTTPServerSettings: &confighttp.HTTPServerSettings{Endpoint: ":5778"},
-		GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{Endpoint: ":14250"}},
+		GRPCServerSettings: &configgrpc.GRPCServerSettings{NetAddr: confignet.NetAddr{
+			Endpoint:  ":14250",
+			Transport: "tcp",
+		}},
 	}
 
 	// test
