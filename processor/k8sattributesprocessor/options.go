@@ -102,6 +102,10 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ReplicaSetName = true
 			case conventions.AttributeK8SReplicaSetUID:
 				p.rules.ReplicaSetID = true
+			case conventions.AttributeK8SDaemonSetName:
+				p.rules.DaemonSetName = true
+			case conventions.AttributeK8SDaemonSetUID:
+				p.rules.DaemonSetUID = true
 			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			case conventions.AttributeContainerID:
