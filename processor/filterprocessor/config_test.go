@@ -753,6 +753,11 @@ func TestLogSeverity_severityNumber(t *testing.T) {
 			sev:  logSeverity("unknown"),
 			num:  plog.SeverityNumberUNDEFINED,
 		},
+		{
+			name: "Numeric Severity",
+			sev:  logSeverity("9"),
+			num:  plog.SeverityNumberINFO,
+		},
 	}
 
 	for _, tc := range testCases {
