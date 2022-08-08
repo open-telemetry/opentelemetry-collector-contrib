@@ -407,7 +407,7 @@ func (m *metricRedisCmdCalls) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("cmd", pcommon.NewValueString(cmdAttributeValue))
+	dp.Attributes().InsertString("cmd", cmdAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -460,7 +460,7 @@ func (m *metricRedisCmdUsec) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("cmd", pcommon.NewValueString(cmdAttributeValue))
+	dp.Attributes().InsertString("cmd", cmdAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -715,7 +715,7 @@ func (m *metricRedisCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().InsertString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -766,7 +766,7 @@ func (m *metricRedisDbAvgTTL) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("db", pcommon.NewValueString(dbAttributeValue))
+	dp.Attributes().InsertString("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -817,7 +817,7 @@ func (m *metricRedisDbExpires) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("db", pcommon.NewValueString(dbAttributeValue))
+	dp.Attributes().InsertString("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -868,7 +868,7 @@ func (m *metricRedisDbKeys) recordDataPoint(start pcommon.Timestamp, ts pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("db", pcommon.NewValueString(dbAttributeValue))
+	dp.Attributes().InsertString("db", dbAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1719,7 +1719,7 @@ func (m *metricRedisRole) recordDataPoint(start pcommon.Timestamp, ts pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("role", pcommon.NewValueString(roleAttributeValue))
+	dp.Attributes().InsertString("role", roleAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

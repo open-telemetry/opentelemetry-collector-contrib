@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -53,8 +52,8 @@ func newStaticResolver(endpoints []string) (*staticResolver, error) {
 }
 
 func (r *staticResolver) start(ctx context.Context) error {
-	r.resolve(ctx) // right now, this can't fail
-	return nil
+	_, err := r.resolve(ctx) // right now, this can't fail
+	return err
 }
 
 func (r *staticResolver) shutdown(ctx context.Context) error {

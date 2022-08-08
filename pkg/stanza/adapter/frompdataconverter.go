@@ -245,7 +245,7 @@ func valueToInterface(value pcommon.Value) interface{} {
 	case pcommon.ValueTypeInt:
 		return value.IntVal()
 	case pcommon.ValueTypeBytes:
-		return value.MBytesVal()
+		return value.BytesVal().AsRaw()
 	case pcommon.ValueTypeMap:
 		return value.MapVal().AsRaw()
 	case pcommon.ValueTypeSlice:

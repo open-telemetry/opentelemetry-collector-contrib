@@ -74,7 +74,8 @@ type ExtractConfig struct {
 	//
 	// Metadata fields supported right now are,
 	//   k8s.pod.name, k8s.pod.uid, k8s.deployment.name,
-	//   k8s.node.name, k8s.namespace.name and k8s.pod.start_time
+	//   k8s.node.name, k8s.namespace.name, k8s.pod.start_time,
+	//   k8s.replicaset.name, and k8s.replicaset.uid
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
