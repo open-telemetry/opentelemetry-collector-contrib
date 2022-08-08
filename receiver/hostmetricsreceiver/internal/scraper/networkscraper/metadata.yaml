@@ -20,17 +20,39 @@ attributes:
 metrics:
   system.network.packets:
     enabled: true
-    description: The number of packets transferred.
+    description: The number of packets transferred. (Deprecated)
     unit: "{packets}"
     sum:
       value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.packets.transmit:
+    enabled: true
+    description: The number of packets transmitted.
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.packets.receive:
+    enabled: true
+    description: The number of packets received.
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
 
   system.network.dropped:
     enabled: true
-    description: The number of packets dropped.
+    description: The number of packets dropped. (Deprecated)
     unit: "{packets}"
     sum:
       value_type: int
@@ -38,9 +60,31 @@ metrics:
       monotonic: true
     attributes: [device, direction]
 
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.dropped.transmit:
+    enabled: true
+    description: The number of packets dropped on transmit.
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.dropped.receive:
+    enabled: true
+    description: The number of packets dropped on receive.
+    unit: "{packets}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
   system.network.errors:
     enabled: true
-    description: The number of errors encountered.
+    description: The number of errors encountered. (Deprecated)
     unit: "{errors}"
     sum:
       value_type: int
@@ -48,15 +92,59 @@ metrics:
       monotonic: true
     attributes: [device, direction]
 
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.errors.transmit:
+    enabled: true
+    description: The number of errors encountered on transmit.
+    unit: "{errors}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.errors.receive:
+    enabled: true
+    description: The number of errors encountered on receive.
+    unit: "{errors}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
   system.network.io:
     enabled: true
-    description: The number of bytes transmitted and received.
+    description: The number of bytes transmitted and received. (Deprecated)
     unit: "By"
     sum:
       value_type: int
       aggregation: cumulative
       monotonic: true
     attributes: [device, direction]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.io.transmit:
+    enabled: true
+    description: The number of bytes transmitted.
+    unit: "By"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
+
+# produced when receiver.hostmetricsreceiver.removeDirectionAttributeNetworkMetrics feature gate is enabled
+  system.network.io.receive:
+    enabled: true
+    description: The number of bytes received.
+    unit: "By"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: true
+    attributes: [device]
 
   system.network.connections:
     enabled: true

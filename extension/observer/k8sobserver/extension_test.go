@@ -16,7 +16,6 @@ package k8sobserver
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,21 +32,16 @@ const (
 	servicePortEnv = "KUBERNETES_SERVICE_PORT"
 )
 
-func mockServiceHost(c *Config) func() {
+func mockServiceHost(t testing.TB, c *Config) {
 	c.AuthType = k8sconfig.AuthTypeNone
-	host, port := os.Getenv(serviceHostEnv), os.Getenv(servicePortEnv)
-	os.Setenv(serviceHostEnv, "mock")
-	os.Setenv(servicePortEnv, "12345")
-	return func() {
-		os.Setenv(serviceHostEnv, host)
-		os.Setenv(servicePortEnv, port)
-	}
+	t.Setenv(serviceHostEnv, "mock")
+	t.Setenv(servicePortEnv, "12345")
 }
 
 func TestNewExtension(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	defer mockServiceHost(config)()
+	mockServiceHost(t, config)
 
 	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -57,7 +51,7 @@ func TestNewExtension(t *testing.T) {
 func TestExtensionObservePods(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	defer mockServiceHost(config)()
+	mockServiceHost(t, config)
 
 	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
@@ -117,7 +111,7 @@ func TestExtensionObservePods(t *testing.T) {
 func TestExtensionObserveNodes(t *testing.T) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
-	defer mockServiceHost(config)()
+	mockServiceHost(t, config)
 
 	ext, err := newObserver(config, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

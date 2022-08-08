@@ -9,6 +9,7 @@ on:
 jobs:
   setup-environment:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
     outputs:
       stabilitytest_matrix: ${{ steps.splitstabilitytest.outputs.stabilitytest_matrix}}
     steps:
@@ -18,33 +19,20 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
-      - name: Cache Tools
-        id: tool-cache
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-tool-binaries
-        with:
-          path: /home/runner/go/bin
-          key: v1-tools-${{ runner.os }}-${{ hashFiles('./internal/tools/go.mod') }}
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - name: Install dependencies
-        if: steps.module-cache.outputs.hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Install Tools
-        if: steps.tool-cache.outputs.cache-hit != 'true'
+        if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Split Stability Jobs
         id: splitstabilitytest
@@ -64,20 +52,21 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.17
-      - name: Setup Go Environment
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
       - name: Cache Go
-        id: module-cache
+        id: go-cache
         uses: actions/cache@v3
-        env:
-          cache-name: cache-go-modules
         with:
           path: |
-            /home/runner/go/pkg/mod
-            /home/runner/.cache/go-build
-          key: v1-go-pkg-mod-${{ runner.os }}-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: stability-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+      - name: Install Dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Install Tools
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make install-tools
       - name: Run Stability Tests
         run: make stability-tests
         env:
@@ -89,7 +78,7 @@ jobs:
       - name: Upload Test Results
         if: ${{ success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: stability-test-results
           path: stabilitytest_results.tar

@@ -15,11 +15,10 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
-	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 )
 
 // metadataStore keeps track of required caches exposed by informers.
@@ -32,13 +31,13 @@ type metadataStore struct {
 }
 
 // setupStore tracks metadata of services, jobs and replicasets.
-func (ms *metadataStore) setupStore(o runtime.Object, store cache.Store) {
-	switch o.(type) {
-	case *corev1.Service:
+func (ms *metadataStore) setupStore(kind schema.GroupVersionKind, store cache.Store) {
+	switch kind {
+	case gvk.Service:
 		ms.services = store
-	case *batchv1.Job:
+	case gvk.Job:
 		ms.jobs = store
-	case *appsv1.ReplicaSet:
+	case gvk.ReplicaSet:
 		ms.replicaSets = store
 	}
 }

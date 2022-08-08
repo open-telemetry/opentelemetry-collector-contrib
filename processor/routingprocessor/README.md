@@ -22,6 +22,7 @@ The following settings can be optionally configured:
 - `attribute_source` defines where to look for the attribute in `from_attribute`. The allowed values are:
   - `context` (the default) - to search the [context][context_docs], which includes HTTP headers
   - `resource` - to search the resource attributes.
+- `drop_resource_routing_attribute` - controls whether to remove the resource attribute used for routing. This is only relevant if AttributeSource is set to resource.
 - `default_exporters` contains the list of exporters to use when a more specific record can't be found in the routing table.
 
 Example:
@@ -48,4 +49,4 @@ The full list of settings exposed for this processor are documented [here](./con
 - [metrics](./testdata/config_metrics.yaml)
 - [traces](./testdata/config_traces.yaml)
 
-[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/context.md
+[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md

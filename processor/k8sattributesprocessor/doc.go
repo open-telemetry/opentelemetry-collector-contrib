@@ -49,11 +49,9 @@
 //   - k8s.pod.uid
 //   - k8s.pod.start_time
 //   - k8s.deployment.name
-//   - k8s.cluster.name
 //   - k8s.node.name
-// Not all the attributes are guaranteed to be added. For example `k8s.cluster.name` usually is not provided by k8s API,
-// so likely it won't be set as an attribute.
-
+// Not all the attributes are guaranteed to be added.
+//
 // The following container level attributes require additional attributes to identify a particular container in a pod:
 //   1. Container spec attributes - will be set only if container identifying attribute `k8s.container.name` is set
 //      as a resource attribute (similar to all other attributes, pod has to be identified as well):
@@ -62,35 +60,64 @@
 //   2. Container status attributes - in addition to pod identifier and `k8s.container.name` attribute, these attributes
 //     require identifier of a particular container run set as `k8s.container.restart_count` in resource attributes:
 //     - container.id
-
-//The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
-//The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
-//This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
-//Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
-//key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
-//The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
 //
-//A few examples to use this config are as follows:
-//annotations:
-//  - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
-//	  key: annotation-one
-//	  from: pod
-//  - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
-//	  key: annotation-two
-//	  regex: field=(?P<value>.+)
-//	  from: namespace
-//labels:
-//  - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
-//	  key: label1
-//	  from: namespace
-//  - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
-//	  key: label2
-//	  regex: field=(?P<value>.+)
-//	  from: pod
-
+// The k8sattributesprocessor can be used for automatic tagging of spans, metrics and logs with k8s labels and annotations from pods and namespaces.
+// The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace annotations/labels is configured via "annotations"  and "labels" keys.
+// This config represents a list of annotations/labels that are extracted from pods/namespaces and added to spans, metrics and logs.
+// Each item is specified as a config of tag_name (representing the tag name to tag the spans with),
+// key (representing the key used to extract value) and from (representing the kubernetes object used to extract the value).
+// The "from" field has only two possible values "pod" and "namespace" and defaults to "pod" if none is specified.
+//
+// A few examples to use this config are as follows:
+// annotations:
+//   - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
+//	   key: annotation-one
+//	   from: pod
+//   - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+//	   key: annotation-two
+//	   regex: field=(?P<value>.+)
+//	   from: namespace
+// labels:
+//   - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
+//     key: label1
+//	   from: namespace
+//   - tag_name: l2 # extracts value of label from pods with key `label1` with regexp and inserts it as a tag with key `l2`
+//	   key: label2
+//	   regex: field=(?P<value>.+)
+//	   from: pod
+//
 // RBAC
 //
-// TODO: mention the required RBAC rules.
+// The k8sattributesprocessor needs `get`, `watch` and `list` permissions on both `pods` and `namespaces` resources, for all namespaces and pods included in the configured filters.
+// Here is an example of a `ClusterRole` to give a `ServiceAccount` the necessary permissions for all pods and namespaces in the cluster (replace `<OTEL_COL_NAMESPACE>` with a namespace where collector is deployed):
+//
+//      apiVersion: v1
+//      kind: ServiceAccount
+//      metadata:
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRole
+//      metadata:
+//        name: otel-collector
+//      rules:
+//      - apiGroups: [""]
+//        resources: ["pods", "namespaces"]
+//        verbs: ["get", "watch", "list"]
+//      ---
+//      apiVersion: rbac.authorization.k8s.io/v1
+//      kind: ClusterRoleBinding
+//      metadata:
+//        name: otel-collector
+//      subjects:
+//      - kind: ServiceAccount
+//        name: collector
+//        namespace: <OTEL_COL_NAMESPACE>
+//      roleRef:
+//        kind: ClusterRole
+//        name: otel-collector
+//        apiGroup: rbac.authorization.k8s.io
 //
 // Config
 //
@@ -106,7 +133,6 @@
 //            - k8s.pod.name
 //            - k8s.pod.uid
 //            - k8s.deployment.name
-//            - k8s.cluster.name
 //            - k8s.namespace.name
 //            - k8s.node.name
 //            - k8s.pod.start_time

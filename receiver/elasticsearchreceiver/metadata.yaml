@@ -1,10 +1,14 @@
 name: elasticsearchreceiver
 
-attributes:
+resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.
+    type: string
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
+    type: string
+
+attributes:
   cache_name:
     description: The name of cache.
     enum:

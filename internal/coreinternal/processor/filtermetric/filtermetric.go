@@ -15,12 +15,12 @@
 package filtermetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
 
 import (
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
 
 type Matcher interface {
-	MatchMetric(metric pdata.Metric) (bool, error)
+	MatchMetric(metric pmetric.Metric) (bool, error)
 }
 
 // NewMatcher constructs a metric Matcher. If an 'expr' match type is specified,
@@ -40,7 +40,7 @@ func NewMatcher(config *MatchProperties) (Matcher, error) {
 // The default is to not skip. If include is defined, the metric must match or it will be skipped.
 // If include is not defined but exclude is, metric will be skipped if it matches exclude. Metric
 // is included if neither specified.
-func SkipMetric(include, exclude Matcher, metric pdata.Metric, logger *zap.Logger) bool {
+func SkipMetric(include, exclude Matcher, metric pmetric.Metric, logger *zap.Logger) bool {
 	if include != nil {
 		// A false (or an error) returned in this case means the metric should not be processed.
 		i, err := include.MatchMetric(metric)

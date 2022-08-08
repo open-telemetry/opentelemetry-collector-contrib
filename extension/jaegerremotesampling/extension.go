@@ -61,7 +61,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		}
 		ss, err := static.NewStrategyStore(opts, jrse.telemetry.Logger)
 		if err != nil {
-			return fmt.Errorf("failed to create the local file strategy store: %v", err)
+			return fmt.Errorf("failed to create the local file strategy store: %w", err)
 		}
 
 		// there's a Close function on the concrete type, which is not visible to us...
@@ -72,11 +72,11 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	if jrse.cfg.Source.Remote != nil {
 		opts, err := jrse.cfg.Source.Remote.ToDialOptions(host, jrse.telemetry)
 		if err != nil {
-			return fmt.Errorf("error while setting up the remote sampling source: %v", err)
+			return fmt.Errorf("error while setting up the remote sampling source: %w", err)
 		}
 		conn, err := grpc.Dial(jrse.cfg.Source.Remote.Endpoint, opts...)
 		if err != nil {
-			return fmt.Errorf("error while connecting to the remote sampling source: %v", err)
+			return fmt.Errorf("error while connecting to the remote sampling source: %w", err)
 		}
 
 		jrse.samplingStore = grpcStore.NewConfigManager(conn)
@@ -88,7 +88,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	if jrse.cfg.HTTPServerSettings != nil {
 		httpServer, err := internal.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerSettings, jrse.samplingStore)
 		if err != nil {
-			return fmt.Errorf("error while creating the HTTP server: %v", err)
+			return fmt.Errorf("error while creating the HTTP server: %w", err)
 		}
 		jrse.httpServer = httpServer
 	}
@@ -96,7 +96,7 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	// then we start our own server interfaces, starting with the HTTP one
 	err := jrse.httpServer.Start(ctx, host)
 	if err != nil {
-		return fmt.Errorf("error while starting the HTTP server: %v", err)
+		return fmt.Errorf("error while starting the HTTP server: %w", err)
 	}
 
 	return nil

@@ -1,7 +1,7 @@
 # AWS Container Insights Receiver
 
 ## Overview
-AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights]((https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html)). CloudWatch Container Insights collect, aggregate, 
+AWS Container Insights Receiver (`awscontainerinsightreceiver`) is an AWS specific receiver that supports [CloudWatch Container Insights](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/ContainerInsights.html). CloudWatch Container Insights collect, aggregate, 
 and summarize metrics and logs from your containerized applications and microservices. Data are collected as as performance log events 
 using [embedded metric format](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format.html). From the EMF data, Amazon CloudWatch can create the aggregated CloudWatch metrics at the cluster, node, pod, task, and service level.
 

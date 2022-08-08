@@ -23,16 +23,16 @@ import (
 )
 
 // getHostTags gets the host tags extracted from the configuration.
-func getHostTags(t *config.TagsConfig) []string {
-	tags := t.Tags
+func getHostTags(c *config.Config) []string {
+	tags := c.HostMetadata.Tags
 
 	if len(tags) == 0 {
 		//lint:ignore SA1019 Will be removed when environment variable detection is removed
-		tags = strings.Split(t.EnvVarTags, " ") //nolint
+		tags = strings.Split(c.EnvVarTags, " ") //nolint
 	}
 
-	if t.Env != "none" {
-		tags = append(tags, fmt.Sprintf("env:%s", t.Env))
+	if c.Env != "none" {
+		tags = append(tags, fmt.Sprintf("env:%s", c.Env))
 	}
 	return tags
 }
@@ -41,10 +41,10 @@ func getHostTags(t *config.TagsConfig) []string {
 func newMetadataConfigfromConfig(cfg *config.Config) metadata.PusherConfig {
 	return metadata.PusherConfig{
 		ConfigHostname:      cfg.Hostname,
-		ConfigTags:          getHostTags(&cfg.TagsConfig),
+		ConfigTags:          getHostTags(cfg),
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
 		APIKey:              cfg.API.Key,
-		UseResourceMetadata: cfg.UseResourceMetadata,
+		UseResourceMetadata: cfg.HostMetadata.HostnameSource == config.HostnameSourceFirstResource,
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		TimeoutSettings:     cfg.TimeoutSettings,
 		RetrySettings:       cfg.RetrySettings,

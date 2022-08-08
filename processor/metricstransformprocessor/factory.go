@@ -196,13 +196,13 @@ func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterStrict{include: filterConfig.Include, matchLabels: matchers}, nil
+		return internalFilterStrict{include: filterConfig.Include, attrMatchers: matchers}, nil
 	case RegexpMatchType:
 		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return regexp.Compile(str) })
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: matchers}, nil
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), attrMatchers: matchers}, nil
 	}
 
 	return nil, fmt.Errorf("invalid match type: %v", filterConfig.MatchType)

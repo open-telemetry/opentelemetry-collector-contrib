@@ -19,7 +19,9 @@ import (
 	"strconv"
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -50,25 +52,25 @@ func (d *defaultClientFactory) getClient(c *Config, database string) (client, er
 }
 
 func newPostgreSQLScraper(
-	logger *zap.Logger,
+	settings component.ReceiverCreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
 	return &postgreSQLScraper{
-		logger:        logger,
+		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(config.Metrics),
+		mb:            metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
 	}
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
-func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
+func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
 	listClient, err := p.clientFactory.getClient(p.config, "")
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
-		return pdata.NewMetrics(), err
+		return pmetric.NewMetrics(), err
 	}
 	defer listClient.Close()
 
@@ -76,12 +78,12 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 		dbList, err := listClient.listDatabases(ctx)
 		if err != nil {
 			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			return pdata.NewMetrics(), err
+			return pmetric.NewMetrics(), err
 		}
 		databases = dbList
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 
 	var errors scrapererror.ScrapeErrors
 
@@ -107,7 +109,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pdata.Metrics, error) {
 
 func (p *postgreSQLScraper) collectBlockReads(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
 ) {
@@ -122,20 +124,25 @@ func (p *postgreSQLScraper) collectBlockReads(
 		return
 	}
 	for _, table := range blocksReadByTableMetrics {
-		for k, v := range table.stats {
-			i, err := p.parseInt(k, v)
+		for sourceKey, source := range metadata.MapAttributeSource {
+			value, ok := table.stats[sourceKey]
+			if !ok {
+				// Data isn't present, error was already logged at a lower level
+				continue
+			}
+			i, err := p.parseInt(sourceKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, k)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, source)
 		}
 	}
 }
 
 func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	errors scrapererror.ScrapeErrors,
 ) {
@@ -150,39 +157,39 @@ func (p *postgreSQLScraper) collectDatabaseTableMetrics(
 		return
 	}
 	for _, table := range databaseTableMetrics {
-		for _, key := range []string{"live", "dead"} {
-			value, ok := table.stats[key]
+		for stateKey, state := range metadata.MapAttributeState {
+			value, ok := table.stats[stateKey]
 			if !ok {
 				// Data isn't present, error was already logged at a lower level
 				continue
 			}
-			i, err := p.parseInt(key, value)
+			i, err := p.parseInt(stateKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, state)
 		}
 
-		for _, key := range []string{"ins", "upd", "del", "hot_upd"} {
-			value, ok := table.stats[key]
+		for opKey, op := range metadata.MapAttributeOperation {
+			value, ok := table.stats[opKey]
 			if !ok {
 				// Data isn't present, error was already logged at a lower level
 				continue
 			}
-			i, err := p.parseInt(key, value)
+			i, err := p.parseInt(opKey, value)
 			if err != nil {
 				errors.AddPartial(0, err)
 				continue
 			}
-			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, key)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, op)
 		}
 	}
 }
 
 func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
@@ -218,7 +225,7 @@ func (p *postgreSQLScraper) collectCommitsAndRollbacks(
 
 func (p *postgreSQLScraper) collectDatabaseSize(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,
@@ -247,7 +254,7 @@ func (p *postgreSQLScraper) collectDatabaseSize(
 
 func (p *postgreSQLScraper) collectBackends(
 	ctx context.Context,
-	now pdata.Timestamp,
+	now pcommon.Timestamp,
 	client client,
 	databases []string,
 	errors scrapererror.ScrapeErrors,

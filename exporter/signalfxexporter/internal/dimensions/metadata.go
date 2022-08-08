@@ -17,7 +17,6 @@ package dimensions // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 	"strings"
-	"sync/atomic"
 
 	"go.uber.org/multierr"
 
@@ -111,7 +110,6 @@ func (dc *DimensionClient) PushMetadata(metadata []*metadata.MetadataUpdate) err
 		dimensionUpdate := getDimensionUpdateFromMetadata(*m, dc.metricsConverter)
 
 		if dimensionUpdate.Name == "" || dimensionUpdate.Value == "" {
-			atomic.AddInt64(&dc.TotalInvalidDimensions, int64(1))
 			return fmt.Errorf("dimensionUpdate %v is missing Name or value, cannot send", dimensionUpdate)
 		}
 

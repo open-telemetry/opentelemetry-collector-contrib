@@ -17,7 +17,7 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"time"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -39,7 +39,7 @@ func NewRateLimiting(logger *zap.Logger, spansPerSecond int64) PolicyEvaluator {
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (r *rateLimiting) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, error) {
+func (r *rateLimiting) Evaluate(_ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	r.logger.Debug("Evaluating spans in rate-limiting filter")
 	currSecond := time.Now().Unix()
 	if r.currentSecond != currSecond {
@@ -47,7 +47,7 @@ func (r *rateLimiting) Evaluate(_ pdata.TraceID, trace *TraceData) (Decision, er
 		r.spansInCurrentSecond = 0
 	}
 
-	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount
+	spansInSecondIfSampled := r.spansInCurrentSecond + trace.SpanCount.Load()
 	if spansInSecondIfSampled < r.spansPerSecond {
 		r.spansInCurrentSecond = spansInSecondIfSampled
 		return Sampled, nil

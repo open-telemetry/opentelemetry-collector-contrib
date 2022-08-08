@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
 )
 
 const configFile = "config.yaml"
@@ -46,9 +48,25 @@ func TestLoadingFullConfig(t *testing.T) {
 		{
 			expCfg: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				Metrics: []string{
-					"metric1",
-					"metric2",
+				Include: MatchMetrics{
+					Metrics: []string{
+						"metric1",
+						"metric2",
+					},
+					Config: filterset.Config{
+						MatchType:    "strict",
+						RegexpConfig: nil,
+					},
+				},
+				Exclude: MatchMetrics{
+					Metrics: []string{
+						"metric3",
+						"metric4",
+					},
+					Config: filterset.Config{
+						MatchType:    "strict",
+						RegexpConfig: nil,
+					},
 				},
 				MaxStaleness: 10 * time.Second,
 			},
@@ -74,9 +92,27 @@ func TestValidateConfig(t *testing.T) {
 			succeed:    true,
 		},
 		{
+			configName:   "config_invalid_combo.yaml",
+			succeed:      false,
+			errorMessage: "metrics and include/exclude cannot be used at the same time",
+		},
+		{
+			configName:   "config_missing_match_type.yaml",
+			succeed:      false,
+			errorMessage: "match_type must be set if metrics are supplied",
+		},
+		{
 			configName:   "config_missing_name.yaml",
 			succeed:      false,
-			errorMessage: "metric names are missing",
+			errorMessage: "metrics must be supplied if match_type is set",
+		},
+		{
+			configName: "config_empty.yaml",
+			succeed:    true,
+		},
+		{
+			configName: "config_regexp.yaml",
+			succeed:    true,
 		},
 	}
 

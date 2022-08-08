@@ -1,0 +1,2 @@
+type: uri_parser
+on_error: "drop"

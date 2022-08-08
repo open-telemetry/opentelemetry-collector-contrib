@@ -17,12 +17,9 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -82,22 +79,6 @@ type DataSenderBase struct {
 func (dsb *DataSenderBase) GetEndpoint() net.Addr {
 	addr, _ := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", dsb.Host, dsb.Port))
 	return addr
-}
-
-func (dsb *DataSenderBase) ReportFatalError(err error) {
-	log.Printf("Fatal error reported: %v", err)
-}
-
-func (dsb *DataSenderBase) GetFactory(_ component.Kind, _ config.Type) component.Factory {
-	return nil
-}
-
-func (dsb *DataSenderBase) GetExtensions() map[config.ComponentID]component.Extension {
-	return nil
-}
-
-func (dsb *DataSenderBase) GetExporters() map[config.DataType]map[config.ComponentID]component.Exporter {
-	return nil
 }
 
 func (dsb *DataSenderBase) Flush() {
@@ -163,7 +144,7 @@ func (ote *otlpHTTPTraceDataSender) Start() error {
 	}
 
 	ote.Traces = exp
-	return exp.Start(context.Background(), ote)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // otlpHTTPMetricsDataSender implements MetricDataSender for OTLP/HTTP metrics exporter.
@@ -197,7 +178,7 @@ func (ome *otlpHTTPMetricsDataSender) Start() error {
 	}
 
 	ome.Metrics = exp
-	return exp.Start(context.Background(), ome)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // otlpHTTPLogsDataSender implements LogsDataSender for OTLP/HTTP logs exporter.
@@ -231,7 +212,7 @@ func (olds *otlpHTTPLogsDataSender) Start() error {
 	}
 
 	olds.Logs = exp
-	return exp.Start(context.Background(), olds)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 type otlpDataSender struct {
@@ -293,7 +274,7 @@ func (ote *otlpTraceDataSender) Start() error {
 	}
 
 	ote.Traces = exp
-	return exp.Start(context.Background(), ote)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // otlpMetricsDataSender implements MetricDataSender for OTLP metrics exporter.
@@ -327,7 +308,7 @@ func (ome *otlpMetricsDataSender) Start() error {
 	}
 
 	ome.Metrics = exp
-	return exp.Start(context.Background(), ome)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 // otlpLogsDataSender implements LogsDataSender for OTLP logs exporter.
@@ -361,5 +342,5 @@ func (olds *otlpLogsDataSender) Start() error {
 	}
 
 	olds.Logs = exp
-	return exp.Start(context.Background(), olds)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }

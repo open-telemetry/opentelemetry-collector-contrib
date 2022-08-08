@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
@@ -50,9 +50,9 @@ func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
 }
 
 // Unmarshal deserializes the records into cWMetrics and uses the
-// resourceMetricsBuilder to group them into a single pdata.Metrics.
+// resourceMetricsBuilder to group them into a single pmetric.Metrics.
 // Skips invalid cWMetrics received in the record and
-func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
+func (u Unmarshaler) Unmarshal(records [][]byte) (pmetric.Metrics, error) {
 	builders := make(map[resourceAttributes]*resourceMetricsBuilder)
 	for recordIndex, record := range records {
 		// Multiple metrics in each record separated by newline character
@@ -94,10 +94,10 @@ func (u Unmarshaler) Unmarshal(records [][]byte) (pdata.Metrics, error) {
 	}
 
 	if len(builders) == 0 {
-		return pdata.NewMetrics(), errInvalidRecords
+		return pmetric.NewMetrics(), errInvalidRecords
 	}
 
-	md := pdata.NewMetrics()
+	md := pmetric.NewMetrics()
 	for _, builder := range builders {
 		builder.Build(md.ResourceMetrics().AppendEmpty())
 	}

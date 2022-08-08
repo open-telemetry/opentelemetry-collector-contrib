@@ -17,8 +17,8 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 )
 
 // ScraperFactory can create a MetricScraper.
@@ -28,13 +28,9 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, logger *zap.Logger, cfg Config) (scraperhelper.Scraper, error)
+	CreateMetricsScraper(ctx context.Context, settings component.ReceiverCreateSettings, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.
 type Config interface {
-}
-
-// ConfigSettings provides common settings for scraper configuration.
-type ConfigSettings struct {
 }

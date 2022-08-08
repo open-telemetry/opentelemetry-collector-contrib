@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -37,26 +37,32 @@ type Config struct {
 	ServiceName      string
 
 	// OTLP config
-	Endpoint string
-	Insecure bool
-	UseHTTP  bool
-	Headers  HeaderValue
+	Endpoint           string
+	Insecure           bool
+	UseHTTP            bool
+	Headers            KeyValue
+	ResourceAttributes KeyValue
 }
 
-type HeaderValue map[string]string
+type KeyValue map[string]string
 
-var _ flag.Value = (*HeaderValue)(nil)
+var _ flag.Value = (*KeyValue)(nil)
 
-func (v *HeaderValue) String() string {
+func (v *KeyValue) String() string {
 	return ""
 }
 
-func (v *HeaderValue) Set(s string) error {
+func (v *KeyValue) Set(s string) error {
 	kv := strings.SplitN(s, "=", 2)
 	if len(kv) != 2 {
-		return fmt.Errorf("value should be of the format key=value")
+		return fmt.Errorf("value should be of the format key=\"value\"")
 	}
-	(*v)[kv[0]] = kv[1]
+	val := kv[1]
+	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
+		return fmt.Errorf("value should be a string wrapped in double quotes")
+	}
+
+	(*v)[kv[0]] = val[1 : len(val)-1]
 	return nil
 }
 
@@ -78,6 +84,11 @@ func (c *Config) Flags(fs *flag.FlagSet) {
 	c.Headers = make(map[string]string)
 	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=value."+
 		"Flag may be repeated to set multiple headers (e.g -otlp-header key1=value1 -otlp-header key2=value2)")
+
+	// custom resource attributes
+	c.ResourceAttributes = make(map[string]string)
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\"."+
+		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=\"value1\" -otlp-attributes key2=\"value2\")")
 }
 
 // Run executes the test scenario.
@@ -97,7 +108,8 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 
 	wg := sync.WaitGroup{}
-	var running uint32 = 1
+	running := atomic.NewBool(true)
+
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
@@ -105,7 +117,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			propagateContext: c.PropagateContext,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
-			running:          &running,
+			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
 		}
@@ -114,7 +126,7 @@ func Run(c *Config, logger *zap.Logger) error {
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
-		atomic.StoreUint32(&running, 0)
+		running.Store(false)
 	}
 	wg.Wait()
 	return nil

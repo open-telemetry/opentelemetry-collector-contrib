@@ -216,13 +216,11 @@ func (d *dockerObserver) updateEndpointsByContainerID(listener observer.Notify, 
 			// If it does not exist already, it is a new endpoint. Add it.
 			if existingEndpoint, ok := existingEndpointsMap[e.ID]; !ok {
 				addedEndpoints = append(addedEndpoints, e)
-			} else {
+			} else if !reflect.DeepEqual(existingEndpoint, e) {
 				// if it already exists, see if it's equal.
 				// if it's not equal, update it
 				// if its equal, no-op.
-				if !reflect.DeepEqual(existingEndpoint, e) {
-					updatedEndpoints = append(updatedEndpoints, e)
-				}
+				updatedEndpoints = append(updatedEndpoints, e)
 			}
 		}
 

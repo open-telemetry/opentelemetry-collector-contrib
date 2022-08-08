@@ -1,6 +1,10 @@
 # Attributes Processor
 
-Supported pipeline types: traces, logs, metrics.
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The attributes processor modifies attributes of a span, log, or metric. Please refer to
 [config.go](./config.go) for the config spec.
@@ -46,8 +50,11 @@ For the actions `insert`, `update` and `upsert`,
 - key: <key>
   action: {insert, update, upsert}
   # FromContext specifies the context value to use to populate the attribute value. 
-  # The context values would be searched in receiver's transport protocol additional information
-  # like GRPC Metadata or HTTP Headers. 
+  # If the key is prefixed with `metadata.`, the values are searched
+  # in the receiver's transport protocol additional information like gRPC Metadata or HTTP Headers. 
+  # If the key is prefixed with `auth.`, the values are searched
+  # in the authentication information set by the server authenticator. 
+  # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
@@ -166,13 +173,13 @@ if the input data should be included or excluded from the processor. To configur
 this option, under `include` and/or `exclude` at least `match_type` and one of the following
 is required:
 - For spans, one of `services`, `span_names`, `attributes`, `resources`, or `libraries` must be specified
-with a non-empty value for a valid configuration. The `log_names`, `log_bodies`, `expressions`, `resource_attributes` and
+with a non-empty value for a valid configuration. The `log_bodies`, `log_severity_texts`, `expressions`, `resource_attributes` and
 `metric_names` fields are invalid.
-- For logs, one of `log_names`, `log_bodies`, `attributes`, `resources`, or `libraries` must be specified with a
+- For logs, one of `log_bodies`, `log_severity_texts`, `attributes`, `resources`, or `libraries` must be specified with a
 non-empty value for a valid configuration. The `span_names`, `metric_names`, `expressions`, `resource_attributes`,
 and `services` fields are invalid.
 - For metrics, one of `metric_names`, `resources` must be specified
-with a valid non-empty value for a valid configuration. The `span_names`, `log_names`, `log_bodies` and
+with a valid non-empty value for a valid configuration. The `span_names`, `log_bodies`, `log_severity_texts` and
 `services` fields are invalid.
 
 
@@ -214,14 +221,14 @@ attributes:
       # This is an optional field.
       span_names: [<item1>, ..., <itemN>]
 
-      # The log name must match at least one of the items.
-      # This is an optional field.
-      log_names: [<item1>, ..., <itemN>]
-
       # The log body must match at least one of the items.
       # Currently only string body types are supported.
       # This is an optional field.
       log_bodies: [<item1>, ..., <itemN>]
+
+      # The log severity text must match at least one of the items.
+      # This is an optional field.
+      log_severity_texts: [<item1>, ..., <itemN>]
 
       # The metric name must match at least one of the items.
       # This is an optional field.
@@ -253,3 +260,7 @@ regexp:
   # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
   cachemaxnumentries: <int>
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

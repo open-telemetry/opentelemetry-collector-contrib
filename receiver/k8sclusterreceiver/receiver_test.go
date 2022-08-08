@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package k8sclusterreceiver
 
 import (
@@ -31,8 +32,10 @@ import (
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
@@ -41,11 +44,12 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r, err := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	require.NoError(t, err)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -88,10 +92,11 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
+	r, err := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
+	require.NoError(t, err)
 
 	createPods(t, client, 1)
 
@@ -108,11 +113,12 @@ func TestReceiverWithManyResources(t *testing.T) {
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r, err := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	require.NoError(t, err)
 
 	numPods := 1000
 	numQuotas := 2
@@ -144,11 +150,12 @@ func TestReceiverWithMetadata(t *testing.T) {
 	require.NoError(t, err)
 	defer tt.Shutdown(context.Background())
 
-	client := fake.NewSimpleClientset()
+	client := newFakeClientWithAllResources()
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r := setupReceiver(client, nil, next, 10*time.Second, tt)
+	r, err := setupReceiver(client, nil, next, 10*time.Second, tt)
+	require.NoError(t, err)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -196,7 +203,7 @@ func setupReceiver(
 	osQuotaClient quotaclientset.Interface,
 	consumer consumer.Metrics,
 	initialSyncTimeout time.Duration,
-	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
+	tt obsreporttest.TestTelemetry) (*kubernetesReceiver, error) {
 
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
@@ -211,8 +218,12 @@ func setupReceiver(
 		Distribution:               distribution,
 	}
 
-	rw := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport, config.AllocatableTypesToReport, initialSyncTimeout)
-	rw.dataCollector.SetupMetadataStore(&corev1.Service{}, &testutils.MockStore{})
+	rw, err := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport,
+		config.AllocatableTypesToReport, initialSyncTimeout)
+	if err != nil {
+		return nil, err
+	}
+	rw.dataCollector.SetupMetadataStore(gvk.Service, &testutils.MockStore{})
 
 	return &kubernetesReceiver{
 		resourceWatcher: rw,
@@ -224,5 +235,53 @@ func setupReceiver(
 			Transport:              "http",
 			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
 		}),
+	}, nil
+}
+
+func newFakeClientWithAllResources() *fake.Clientset {
+	client := fake.NewSimpleClientset()
+	client.Resources = []*v1.APIResourceList{
+		{
+			GroupVersion: "v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.Pod),
+				gvkToAPIResource(gvk.Node),
+				gvkToAPIResource(gvk.Namespace),
+				gvkToAPIResource(gvk.ReplicationController),
+				gvkToAPIResource(gvk.ResourceQuota),
+				gvkToAPIResource(gvk.Service),
+			},
+		},
+		{
+			GroupVersion: "apps/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.DaemonSet),
+				gvkToAPIResource(gvk.Deployment),
+				gvkToAPIResource(gvk.ReplicaSet),
+				gvkToAPIResource(gvk.StatefulSet),
+			},
+		},
+		{
+			GroupVersion: "batch/v1",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.Job),
+				gvkToAPIResource(gvk.CronJob),
+			},
+		},
+		{
+			GroupVersion: "autoscaling/v2beta2",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+			},
+		},
+	}
+	return client
+}
+
+func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
+	return v1.APIResource{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
 	}
 }

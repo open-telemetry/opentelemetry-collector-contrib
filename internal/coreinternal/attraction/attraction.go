@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/client"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterhelper"
@@ -162,7 +162,7 @@ type attributeAction struct {
 	// The reason is attributes processor will most likely be commonly used
 	// and could impact performance.
 	Action         Action
-	AttributeValue *pdata.Value
+	AttributeValue *pcommon.Value
 }
 
 // AttrProc is an attribute processor.
@@ -273,7 +273,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 }
 
 // Process applies the AttrProc to an attribute map.
-func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata.Map) {
+func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcommon.Map) {
 	for _, action := range ap.actions {
 		// TODO https://go.opentelemetry.io/collector/issues/296
 		// Do benchmark testing between having action be of type string vs integer.
@@ -281,7 +281,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata
 		// and could impact performance.
 		switch action.Action {
 		case DELETE:
-			attrs.Delete(action.Key)
+			attrs.Remove(action.Key)
 		case INSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
@@ -310,18 +310,49 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pdata
 	}
 }
 
-func getAttributeValueFromContext(ctx context.Context, key string) (pdata.Value, bool) {
-	ci := client.FromContext(ctx)
-	vals := ci.Metadata.Get(key)
+func getAttributeValueFromContext(ctx context.Context, key string) (pcommon.Value, bool) {
+	const (
+		metadataPrefix = "metadata."
+		authPrefix     = "auth."
+	)
 
-	if len(vals) == 0 {
-		return pdata.Value{}, false
+	ci := client.FromContext(ctx)
+	var vals []string
+
+	switch {
+	case strings.HasPrefix(key, metadataPrefix):
+		mdKey := strings.TrimPrefix(key, metadataPrefix)
+		vals = ci.Metadata.Get(mdKey)
+	case strings.HasPrefix(key, authPrefix):
+		if ci.Auth == nil {
+			return pcommon.Value{}, false
+		}
+
+		attrName := strings.TrimPrefix(key, authPrefix)
+		attr := ci.Auth.GetAttribute(attrName)
+
+		switch a := attr.(type) {
+		case string:
+			return pcommon.NewValueString(a), true
+		case []string:
+			vals = a
+		default:
+			// TODO: Warn about unexpected attribute types.
+			return pcommon.Value{}, false
+		}
+	default:
+		// Fallback to metadata for backwards compatibility.
+		vals = ci.Metadata.Get(key)
 	}
 
-	return pdata.NewValueString(strings.Join(vals, ";")), true
+	if len(vals) == 0 {
+		return pcommon.Value{}, false
+	}
+
+	return pcommon.NewValueString(strings.Join(vals, ";")), true
 }
 
-func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.Map) (pdata.Value, bool) {
+func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pcommon.Map) (pcommon.Value, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
 		return *action.AttributeValue, true
@@ -334,23 +365,23 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 	return attrs.Get(action.FromAttribute)
 }
 
-func hashAttribute(action attributeAction, attrs pdata.Map) {
+func hashAttribute(action attributeAction, attrs pcommon.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		sha1Hasher(value)
 	}
 }
 
-func convertAttribute(logger *zap.Logger, action attributeAction, attrs pdata.Map) {
+func convertAttribute(logger *zap.Logger, action attributeAction, attrs pcommon.Map) {
 	if value, exists := attrs.Get(action.Key); exists {
 		convertValue(logger, action.Key, action.ConvertedType, value)
 	}
 }
 
-func extractAttributes(action attributeAction, attrs pdata.Map) {
+func extractAttributes(action attributeAction, attrs pcommon.Map) {
 	value, found := attrs.Get(action.Key)
 
 	// Extracting values only functions on strings.
-	if !found || value.Type() != pdata.ValueTypeString {
+	if !found || value.Type() != pcommon.ValueTypeString {
 		return
 	}
 

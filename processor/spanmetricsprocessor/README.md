@@ -96,7 +96,7 @@ processors:
         default: GET
       - name: http.status_code
     dimensions_cache_size: 1000
-    aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"     
+    aggregation_temporality: "AGGREGATION_TEMPORALITY_CUMULATIVE"     
 
 exporters:
   jaeger:

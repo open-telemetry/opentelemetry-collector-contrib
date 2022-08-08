@@ -688,4 +688,4 @@ will produce an OpenTelemetry Summary with Snapshot set to `nil`.
 ### Others
 
 For any other Prometheus metrics types, they will be transformed into the
-OpenTelemetry [Gauge](#gague) type.
+OpenTelemetry [Gauge](#gauge) type.

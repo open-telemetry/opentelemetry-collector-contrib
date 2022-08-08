@@ -10,7 +10,8 @@ The configuration fields are as follows:
   * `arn`: **Optional**. The Amazon Resource Name (ARN) of a role to assume
   * `session_name`: **Optional**. The name of a role session
 * `region`: **Optional**. The AWS region for AWS Sigv4
-    * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
+    * Note that this is **required** when a role to assume is also provided
+    * Also note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note that an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to

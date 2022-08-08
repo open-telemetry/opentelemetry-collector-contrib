@@ -18,13 +18,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 var (
-	ec2Resource = func() pdata.Resource {
-		res := pdata.NewResource()
+	ec2Resource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
@@ -32,8 +32,8 @@ var (
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()
-	ec2WithHost = func() pdata.Resource {
-		res := pdata.NewResource()
+	ec2WithHost = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
@@ -42,30 +42,30 @@ var (
 		attr.InsertString(conventions.AttributeHostName, "localhost")
 		return res
 	}()
-	ec2PartialResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	ec2PartialResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()
-	gcpResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	gcpResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		attr.InsertString(conventions.AttributeHostID, "i-abcd")
 		return res
 	}()
-	gcpPartialResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	gcpPartialResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
 		return res
 	}()
-	azureResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	azureResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attrs := res.Attributes()
 		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
@@ -77,8 +77,8 @@ var (
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
 		return res
 	}()
-	azureScalesetResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	azureScalesetResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attrs := res.Attributes()
 		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
@@ -91,8 +91,8 @@ var (
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
 		return res
 	}()
-	azureMissingCloudAcct = func() pdata.Resource {
-		res := pdata.NewResource()
+	azureMissingCloudAcct = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attrs := res.Attributes()
 		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
@@ -102,8 +102,8 @@ var (
 		attrs.InsertString("azure.resourcegroup.name", "myResourcegroupName")
 		return res
 	}()
-	azureMissingResourceGroup = func() pdata.Resource {
-		res := pdata.NewResource()
+	azureMissingResourceGroup = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attrs := res.Attributes()
 		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
@@ -113,8 +113,8 @@ var (
 		attrs.InsertString("azure.vm.size", "42")
 		return res
 	}()
-	azureMissingHostName = func() pdata.Resource {
-		res := pdata.NewResource()
+	azureMissingHostName = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attrs := res.Attributes()
 		attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureVM)
@@ -125,14 +125,14 @@ var (
 		attrs.InsertString("azure.vm.size", "42")
 		return res
 	}()
-	hostResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	hostResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeHostName, "localhost")
 		return res
 	}()
-	unknownResource = func() pdata.Resource {
-		res := pdata.NewResource()
+	unknownResource = func() pcommon.Resource {
+		res := pcommon.NewResource()
 		attr := res.Attributes()
 		attr.InsertString(conventions.AttributeCloudProvider, "unknown")
 		attr.InsertString(conventions.AttributeCloudAccountID, "1234")
@@ -143,7 +143,7 @@ var (
 
 func TestResourceToHostID(t *testing.T) {
 	type args struct {
-		res pdata.Resource
+		res pcommon.Resource
 	}
 	tests := []struct {
 		name string
@@ -153,7 +153,7 @@ func TestResourceToHostID(t *testing.T) {
 	}{
 		{
 			name: "nil resource",
-			args: args{pdata.NewResource()},
+			args: args{pcommon.NewResource()},
 			want: HostID{},
 			ok:   false,
 		},
@@ -258,10 +258,10 @@ func TestResourceToHostID(t *testing.T) {
 }
 
 func TestAzureID(t *testing.T) {
-	attrs := pdata.NewMap()
-	attrs.Insert("azure.resourcegroup.name", pdata.NewValueString("myResourceGroup"))
-	attrs.Insert("azure.vm.scaleset.name", pdata.NewValueString("myScalesetName"))
-	attrs.Insert(conventions.AttributeHostName, pdata.NewValueString("myScalesetName_1"))
+	attrs := pcommon.NewMap()
+	attrs.Insert("azure.resourcegroup.name", pcommon.NewValueString("myResourceGroup"))
+	attrs.Insert("azure.vm.scaleset.name", pcommon.NewValueString("myScalesetName"))
+	attrs.Insert(conventions.AttributeHostName, pcommon.NewValueString("myScalesetName_1"))
 	id := azureID(attrs, "myCloudAccount")
 	expected := "mycloudaccount/myresourcegroup/microsoft.compute/virtualmachinescalesets/myscalesetname/virtualmachines/1"
 	assert.Equal(t, expected, id)

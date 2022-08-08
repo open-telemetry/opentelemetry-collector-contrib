@@ -145,7 +145,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	if sr.collectorHTTPEnabled() {
 		cln, cerr := sr.config.CollectorHTTPSettings.ToListener()
 		if cerr != nil {
-			return fmt.Errorf("failed to bind to Collector address %q: %v",
+			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				sr.config.CollectorHTTPSettings.Endpoint, cerr)
 		}
 
@@ -168,14 +168,14 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 	if sr.collectorGRPCEnabled() {
 		opts, err := sr.config.CollectorGRPCServerSettings.ToServerOption(host, sr.settings.TelemetrySettings)
 		if err != nil {
-			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %v", err)
+			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
 
 		sr.grpc = grpc.NewServer(opts...)
 		gaddr := sr.collectorGRPCAddr()
 		gln, gerr := net.Listen("tcp", gaddr)
 		if gerr != nil {
-			return fmt.Errorf("failed to bind to gRPC address %q: %v", gaddr, gerr)
+			return fmt.Errorf("failed to bind to gRPC address %q: %w", gaddr, gerr)
 		}
 
 		sr.segmentReportService = &traceSegmentReportService{sr: sr}

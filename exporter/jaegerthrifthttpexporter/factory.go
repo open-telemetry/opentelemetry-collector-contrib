@@ -57,7 +57,7 @@ func createTracesExporter(
 	_, err := url.ParseRequestURI(expCfg.HTTPClientSettings.Endpoint)
 	if err != nil {
 		// TODO: Improve error message, see #215
-		err = fmt.Errorf("%q config requires a valid \"endpoint\": %v", expCfg.ID().String(), err)
+		err = fmt.Errorf("%q config requires a valid \"endpoint\": %w", expCfg.ID().String(), err)
 		return nil, err
 	}
 

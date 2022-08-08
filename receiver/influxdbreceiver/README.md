@@ -1,8 +1,12 @@
 # InfluxDB Receiver
 
-This receiver accepts metrics data as [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
-Supported pipeline types: metrics
+This receiver accepts metrics data as [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/).
 
 Write endpoints exist at `/write` (InfluxDB 1.x compatibility) and `/api/v2/write` (InfluxDB 2.x compatibility).
 Write query parameters `db`/`rp` (InfluxDB 1.x) and `org`/`bucket` (InfluxDB 2.x) are ignored.
@@ -69,3 +73,6 @@ prometheus,quantile=0.9  rpc_duration_seconds=9001
 prometheus,quantile=0.99 rpc_duration_seconds=76656
 prometheus               rpc_duration_seconds_count=1.7560473e+07,rpc_duration_seconds_sum=2693
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

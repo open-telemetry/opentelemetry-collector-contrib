@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,12 @@ func TestCreateProcessors(t *testing.T) {
 		}, {
 			configName: "config_logs_record_attributes_regexp.yaml",
 			succeed:    true,
+		}, {
+			configName: "config_traces.yaml",
+			succeed:    true,
+		}, {
+			configName: "config_traces_invalid.yaml",
+			succeed:    false,
 		},
 	}
 
@@ -87,13 +94,22 @@ func TestCreateProcessors(t *testing.T) {
 				factory := NewFactory()
 
 				tp, tErr := factory.CreateTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-				// Not implemented error
-				assert.NotNil(t, tErr)
-				assert.Nil(t, tp)
-
 				mp, mErr := factory.CreateMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
-				assert.Equal(t, test.succeed, mp != nil)
-				assert.Equal(t, test.succeed, mErr == nil)
+				if strings.Contains(test.configName, "traces") {
+					assert.Equal(t, test.succeed, tp != nil)
+					assert.Equal(t, test.succeed, tErr == nil)
+
+					assert.NotNil(t, mp)
+					assert.Nil(t, mErr)
+				} else {
+					// Should not break configs with no trace data
+					assert.NotNil(t, tp)
+					assert.Nil(t, tErr)
+
+					assert.Equal(t, test.succeed, mp != nil)
+					assert.Equal(t, test.succeed, mErr == nil)
+				}
+
 			})
 		}
 	}

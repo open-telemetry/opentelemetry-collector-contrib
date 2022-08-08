@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
@@ -22,7 +23,9 @@ import (
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -40,6 +43,18 @@ var (
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 )
 
+const prometheusCompatible = "exporter.signalfxexporter.PrometheusCompatible"
+
+var prometheusCompatibleGate = featuregate.Gate{
+	ID:          prometheusCompatible,
+	Enabled:     true,
+	Description: "Controls if conversion should follow prometheus compatibility for histograms and summaries.",
+}
+
+func init() {
+	featuregate.GetRegistry().MustRegister(prometheusCompatibleGate)
+}
+
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
@@ -47,6 +62,7 @@ type MetricsConverter struct {
 	metricTranslator   *MetricTranslator
 	filterSet          *dpfilters.FilterSet
 	datapointValidator *datapointValidator
+	translator         *signalfx.FromTranslator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -67,13 +83,14 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:         &signalfx.FromTranslator{PrometheusCompatible: featuregate.GetRegistry().IsEnabled(prometheusCompatible)},
 	}, nil
 }
 
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPoint {
+func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -84,7 +101,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
@@ -128,7 +145,7 @@ func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 // resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
+func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
 	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
@@ -138,7 +155,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.Value) bool {
+	res.Attributes().Range(func(k string, val pcommon.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true

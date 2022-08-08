@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	api_v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -303,43 +303,12 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		tags[tagNodeName] = pod.Spec.NodeName
 	}
 
-	if c.Rules.Cluster {
-		clusterName := pod.GetClusterName()
-		if clusterName != "" {
-			tags[conventions.AttributeK8SClusterName] = clusterName
-		}
-	}
-
 	for _, r := range c.Rules.Labels {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		if r.From == MetadataFromPod || r.From == "" {
-			if r.KeyRegex != nil {
-				for k, v := range pod.Labels {
-					if r.KeyRegex.MatchString(k) && v != "" {
-						name := fmt.Sprintf("k8s.pod.labels.%s", k)
-						tags[name] = v
-					}
-				}
-			} else if v, ok := pod.Labels[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
-			}
-		}
+		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
 	}
 
 	for _, r := range c.Rules.Annotations {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		if r.From == MetadataFromPod || r.From == "" {
-			if r.KeyRegex != nil {
-				for k, v := range pod.Annotations {
-					if r.KeyRegex.MatchString(k) && v != "" {
-						name := fmt.Sprintf("k8s.pod.annotations.%s", k)
-						tags[name] = v
-					}
-				}
-			} else if v, ok := pod.Annotations[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
-			}
-		}
+		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags
 }
@@ -390,50 +359,14 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromNamespace {
-			if r.KeyRegex != nil {
-				for k, v := range namespace.Labels {
-					if r.KeyRegex.MatchString(k) && v != "" {
-						name := fmt.Sprintf("k8s.namespace.labels.%s", k)
-						tags[name] = v
-					}
-				}
-			} else if v, ok := namespace.Labels[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
-			}
-		}
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, "k8s.namespace.labels.%s")
 	}
 
 	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromNamespace {
-			if r.KeyRegex != nil {
-				for k, v := range namespace.Annotations {
-					if r.KeyRegex.MatchString(k) && v != "" {
-						name := fmt.Sprintf("k8s.namespace.annotations.%s", k)
-						tags[name] = v
-					}
-				}
-			} else if v, ok := namespace.Annotations[r.Key]; ok {
-				tags[r.Name] = c.extractField(v, r)
-			}
-		}
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, "k8s.namespace.annotations.%s")
 	}
 
 	return tags
-}
-
-func (c *WatchClient) extractField(v string, r FieldExtractionRule) string {
-	// Check if a subset of the field should be extracted with a regular expression
-	// instead of the whole field.
-	if r.Regex == nil {
-		return v
-	}
-
-	matches := r.Regex.FindStringSubmatch(v)
-	if len(matches) == 2 {
-		return matches[1]
-	}
-	return ""
 }
 
 func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {

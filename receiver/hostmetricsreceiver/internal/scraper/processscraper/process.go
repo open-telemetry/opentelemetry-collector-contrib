@@ -25,7 +25,7 @@ import (
 
 // processMetadata stores process related metadata along
 // with the process handle, and provides a function to
-// initialize a pdata.Resource with the metadata
+// initialize a pcommon.Resource with the metadata
 
 type processMetadata struct {
 	pid        int32
@@ -46,8 +46,8 @@ type commandMetadata struct {
 	commandLineSlice []string
 }
 
-func (m *processMetadata) resourceOptions() []metadata.ResourceOption {
-	opts := make([]metadata.ResourceOption, 0, 6)
+func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
+	opts := make([]metadata.ResourceMetricsOption, 0, 6)
 	opts = append(opts,
 		metadata.WithProcessPid(int64(m.pid)),
 		metadata.WithProcessExecutableName(m.executable.name),

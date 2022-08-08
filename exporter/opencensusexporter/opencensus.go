@@ -24,7 +24,8 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
@@ -150,7 +151,7 @@ func newMetricsExporter(ctx context.Context, cfg *Config, settings component.Tel
 	return oce, nil
 }
 
-func (oce *ocExporter) pushTraces(_ context.Context, td pdata.Traces) error {
+func (oce *ocExporter) pushTraces(_ context.Context, td ptrace.Traces) error {
 	// Get first available trace Client.
 	tClient, ok := <-oce.tracesClients
 	if !ok {
@@ -199,7 +200,7 @@ func (oce *ocExporter) pushTraces(_ context.Context, td pdata.Traces) error {
 	return nil
 }
 
-func (oce *ocExporter) pushMetrics(_ context.Context, md pdata.Metrics) error {
+func (oce *ocExporter) pushMetrics(_ context.Context, md pmetric.Metrics) error {
 	// Get first available mClient.
 	mClient, ok := <-oce.metricsClients
 	if !ok {

@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -54,22 +53,6 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), recorded
 }
 
-func stashEnv() []string {
-	env := os.Environ()
-	os.Clearenv()
-
-	return env
-}
-
-func restoreEnv(env []string) {
-	os.Clearenv()
-
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		os.Setenv(p[0], p[1])
-	}
-}
-
 func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
 	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
 	f1 = getEC2Region
@@ -90,13 +73,10 @@ func tearDownMock(
 
 // fetch region value from environment variable
 func TestRegionFromEnv(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
 	logger, recordedLogs := logSetup()
 	region := "us-east-100"
 
-	os.Setenv("AWS_REGION", region)
+	t.Setenv("AWS_REGION", region)
 
 	expectedSession, err := session.NewSession()
 	assert.NoError(t, err, "expectedSession should be created")
@@ -140,11 +120,8 @@ func TestRegionFromConfig(t *testing.T) {
 }
 
 func TestRegionFromECS(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
-	os.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
-	os.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafile.txt")
+	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
+	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafile.txt")
 
 	logger, recordedLogs := logSetup()
 
@@ -166,11 +143,8 @@ func TestRegionFromECS(t *testing.T) {
 }
 
 func TestRegionFromECSInvalidArn(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
-	os.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
-	os.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileInvalidArn.txt")
+	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
+	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileInvalidArn.txt")
 
 	logger, recordedLogs := logSetup()
 
@@ -239,19 +213,14 @@ func TestNoRegion(t *testing.T) {
 
 // getRegionFromECSMetadata() returns an error if ECS metadata related env is not set
 func TestNoECSMetadata(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
 	_, err := getRegionFromECSMetadata()
 	assert.EqualError(t, err, "ECS metadata endpoint is inaccessible", "expected error")
 }
 
 // getRegionFromECSMetadata() throws an error when ECS metadata file cannot be parsed as valid JSON
 func TestInvalidECSMetadata(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
-	os.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
-	os.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileinvalid.txt")
+	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
+	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileinvalid.txt")
 
 	_, err := getRegionFromECSMetadata()
 	assert.EqualError(t, err,
@@ -261,11 +230,8 @@ func TestInvalidECSMetadata(t *testing.T) {
 
 // getRegionFromECSMetadata() throws an error and returns an empty string when ECS metadata file cannot be opened
 func TestMissingECSMetadataFile(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
-	os.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
-	os.Setenv(ecsMetadataFileEnvVar, "testdata/doesntExist.txt")
+	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
+	t.Setenv(ecsMetadataFileEnvVar, "testdata/doesntExist.txt")
 
 	_, err := getRegionFromECSMetadata()
 	assert.Regexp(t,
@@ -275,9 +241,6 @@ func TestMissingECSMetadataFile(t *testing.T) {
 }
 
 func TestLoadEnvConfigCreds(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
 	cases := struct {
 		Env map[string]string
 		Val credentials.Value
@@ -294,7 +257,7 @@ func TestLoadEnvConfigCreds(t *testing.T) {
 	}
 
 	for k, v := range cases.Env {
-		os.Setenv(k, v)
+		t.Setenv(k, v)
 	}
 	cfg, err := newAWSSession("", "", zap.NewNop())
 	assert.NoError(t, err, "Expect no error")
@@ -316,32 +279,23 @@ func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
 }
 
 func TestGetProxyAddressFromEnvVariable(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
+	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
 
 	assert.Equal(t, os.Getenv(httpsProxyEnvVar), getProxyAddress(""), "Expect function return value should be same with Environment value")
 }
 
 func TestGetProxyAddressFromConfigFile(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
 	const expectedAddr = "https://127.0.0.1:8888"
 
 	assert.Equal(t, expectedAddr, getProxyAddress("https://127.0.0.1:8888"), "Expect function return value should be same with input value")
 }
 
 func TestGetProxyAddressWhenNotExist(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
 	assert.Equal(t, "", getProxyAddress(""), "Expect function return value to be empty")
 }
 
 func TestGetProxyAddressPriority(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-	os.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
+	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
 
 	assert.Equal(t, "https://127.0.0.1:9999", getProxyAddress("https://127.0.0.1:9999"), "Expect function return value to be same with input")
 }
@@ -375,24 +329,18 @@ func TestGetSTSRegionalEndpoint(t *testing.T) {
 }
 
 func TestNewSessionCreationFailed(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
 	// manipulate env vars so that session.NewSession() fails
-	os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
 
 	_, err := newAWSSession("", "dontCare", zap.NewNop())
 	assert.Error(t, err, "expected failure")
 }
 
 func TestGetSTSCredsFailed(t *testing.T) {
-	env := stashEnv()
-	defer restoreEnv(env)
-
 	// manipulate env vars so that session.NewSession() fails
-	os.Setenv("AWS_SDK_LOAD_CONFIG", "true")
-	os.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
+	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
+	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "invalid")
 
 	_, err := newAWSSession("ROLEARN", "us-west-2", zap.NewNop())
 	assert.Error(t, err, "expected failure")

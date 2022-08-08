@@ -29,7 +29,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestTcp(t *testing.T) {
@@ -87,14 +87,14 @@ func TestLoadConfig(t *testing.T) {
 
 func testdataConfigYamlAsMap() *TCPLogConfig {
 	return &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				WorkerCount: 1,
 			},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"listen_address": "0.0.0.0:29018",
 		},
 	}
@@ -103,11 +103,11 @@ func testdataConfigYamlAsMap() *TCPLogConfig {
 func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
+		Input: adapter.InputConfig{
 			"max_buffer_size": "0.1.0.1-",
 		},
 	}

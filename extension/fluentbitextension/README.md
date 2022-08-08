@@ -1,5 +1,10 @@
 # Deprecated FluentBit Subprocess Extension
 
+| Status                   |                   |
+| ------------------------ |-------------------|
+| Stability                | [deprecated]      |
+| Distributions            | [contrib]         |
+
 This extension has been deprecated due to security concerns around the ability to specify the execution of
 any arbitrary processes via its configuration. See [#6721](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/6721) for additional details.
 
@@ -91,3 +96,6 @@ service:
       exporters: [mymetricsexporter]
   extensions: [health_check, zpages, fluentbit, pprof]
 ```
+
+[deprecated]:https://github.com/open-telemetry/opentelemetry-collector#deprecated
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

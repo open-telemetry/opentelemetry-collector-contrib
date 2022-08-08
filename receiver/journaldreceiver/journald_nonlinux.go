@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 const typeStr = "journald"
@@ -39,17 +39,17 @@ func NewFactory() component.ReceiverFactory {
 }
 
 type JournaldConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	adapter.BaseConfig `mapstructure:",squash"`
+	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 func createDefaultConfig() config.Receiver {
 	return &JournaldConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{},
+		Input: adapter.InputConfig{},
 	}
 }
 

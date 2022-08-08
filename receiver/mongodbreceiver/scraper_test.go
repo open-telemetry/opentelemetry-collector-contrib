@@ -24,7 +24,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -37,8 +38,20 @@ func TestNewMongodbScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	require.NotEmpty(t, scraper.config.hostlist())
+}
+
+func TestScraperLifecycle(t *testing.T) {
+	now := time.Now()
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, scraper.shutdown(context.Background()))
+
+	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
 }
 
 func TestScrape(t *testing.T) {
@@ -64,7 +77,7 @@ func TestScrape(t *testing.T) {
 	scraper := mongodbScraper{
 		client:       fc,
 		config:       cfg,
-		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 		logger:       zap.NewNop(),
 		mongoVersion: mongo40,
 	}
@@ -76,7 +89,7 @@ func TestScrape(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(actualMetrics, expectedMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
 }
 
 func TestScrapeNoClient(t *testing.T) {
@@ -96,7 +109,7 @@ func TestScrapeNoClient(t *testing.T) {
 func TestGlobalLockTimeOldFormat(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Metrics = metadata.DefaultMetricsSettings()
-	scraper := newMongodbScraper(zap.NewNop(), cfg)
+	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 	mong26, err := version.NewVersion("2.6")
 	require.NoError(t, err)
 	scraper.mongoVersion = mong26
@@ -115,12 +128,11 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 		},
 	}
 
-	now := pdata.NewTimestampFromTime(time.Now())
+	now := pcommon.NewTimestampFromTime(time.Now())
 	scraper.recordGlobalLockTime(now, doc, scrapererror.ScrapeErrors{})
 	expectedValue := (int64(116749+14340) / 1000)
 
-	metrics := pdata.NewMetricSlice()
-	scraper.mb.EmitAdmin(metrics)
+	metrics := scraper.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
 	require.Equal(t, expectedValue, collectedValue)
 }

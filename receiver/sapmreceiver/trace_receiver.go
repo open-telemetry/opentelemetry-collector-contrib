@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package sapmreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver"
 
 import (
@@ -88,7 +89,7 @@ func (sr *sapmReceiver) handleRequest(req *http.Request) error {
 	// pass the trace data to the next consumer
 	err = sr.nextConsumer.ConsumeTraces(ctx, td)
 	if err != nil {
-		err = fmt.Errorf("error passing trace data to next consumer: %v", err.Error())
+		err = fmt.Errorf("error passing trace data to next consumer: %w", err)
 	}
 
 	sr.obsrecv.EndTracesOp(ctx, "protobuf", td.SpanCount(), err)
@@ -155,6 +156,10 @@ func (sr *sapmReceiver) HTTPHandlerFunc(rw http.ResponseWriter, req *http.Reques
 
 // Start starts the sapmReceiver's server.
 func (sr *sapmReceiver) Start(_ context.Context, host component.Host) error {
+	// server.Handler will be nil on initial call, otherwise noop.
+	if sr.server != nil && sr.server.Handler != nil {
+		return nil
+	}
 	// set up the listener
 	ln, err := sr.config.HTTPServerSettings.ToListener()
 	if err != nil {

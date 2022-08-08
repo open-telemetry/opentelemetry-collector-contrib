@@ -23,7 +23,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -170,7 +172,7 @@ func TestResourceProcessorError(t *testing.T) {
 	require.Nil(t, rlp)
 }
 
-func generateTraceData(attributes map[string]string) pdata.Traces {
+func generateTraceData(attributes map[string]string) ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	if attributes == nil {
 		return td
@@ -183,7 +185,7 @@ func generateTraceData(attributes map[string]string) pdata.Traces {
 	return td
 }
 
-func generateMetricData(attributes map[string]string) pdata.Metrics {
+func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	md := testdata.GenerateMetricsOneMetricNoResource()
 	if attributes == nil {
 		return md
@@ -196,7 +198,7 @@ func generateMetricData(attributes map[string]string) pdata.Metrics {
 	return md
 }
 
-func generateLogData(attributes map[string]string) pdata.Logs {
+func generateLogData(attributes map[string]string) plog.Logs {
 	ld := testdata.GenerateLogsOneLogRecordNoResource()
 	if attributes == nil {
 		return ld

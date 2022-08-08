@@ -1,5 +1,11 @@
 # AWS ECS Container Metrics Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 ## Overview
 
 AWS ECS Container Metrics Receiver (`awsecscontainermetrics`) reads task metadata and [docker stats](https://docs.docker.com/engine/api/v1.30/#operation/ContainerStats) from [Amazon ECS Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html), and generates resource usage metrics (such as CPU, memory, network, and disk) from them. To get the full list of metrics, see the [Available Metrics](#available-metrics) section below.
@@ -361,3 +367,6 @@ service:
 ## Reference
 1. [Setup OpenTelemetry Collector on Amazon ECS](https://aws-otel.github.io/docs/setup/ecs)
 2. [Getting Started with ECS Container Metrics Receiver in the OpenTelemetry Collector](https://aws-otel.github.io/docs/components/ecs-metrics-receiver)
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

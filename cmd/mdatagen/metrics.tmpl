@@ -4,7 +4,7 @@ package {{ .Package }}
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Type is the component type name.
@@ -13,14 +13,14 @@ const Type config.Type = "{{ .Name }}"
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
 	Name() string
-	New() pdata.Metric
-	Init(metric pdata.Metric)
+	New() pmetric.Metric
+	Init(metric pmetric.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
 	name string
-	initFunc func(pdata.Metric)
+	initFunc func(pmetric.Metric)
 }
 
 // Name returns the metric name.
@@ -29,14 +29,14 @@ func (m *metricImpl) Name() string {
 }
 
 // New creates a metric object preinitialized.
-func (m *metricImpl) New() pdata.Metric {
-	metric := pdata.NewMetric()
+func (m *metricImpl) New() pmetric.Metric {
+	metric := pmetric.NewMetric()
 	m.Init(metric)
 	return metric
 }
 
 // Init initializes the provided metric object.
-func (m *metricImpl) Init(metric pdata.Metric) {
+func (m *metricImpl) Init(metric pmetric.Metric) {
 	m.initFunc(metric)
 }
 
@@ -72,11 +72,11 @@ var Metrics = &metricStruct{
 	{{- range $name, $metric := .Metrics }}
 	&metricImpl{
 		"{{ $name }}",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("{{ $name }}")
 			metric.SetDescription("{{ $metric.Description }}")
 			metric.SetUnit("{{ $metric.Unit }}")
-			metric.SetDataType(pdata.MetricDataType{{ $metric.Data.Type }})
+			metric.SetDataType(pmetric.MetricDataType{{ $metric.Data.Type }})
 			{{- if $metric.Data.HasMonotonic }}
 			metric.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 			{{- end }}

@@ -64,7 +64,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	rConfig := config.(*Config)
-	zms, err := newZookeeperMetricsScraper(params.Logger, rConfig)
+	zms, err := newZookeeperMetricsScraper(params, rConfig)
 	if err != nil {
 		return nil, err
 	}

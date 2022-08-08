@@ -19,28 +19,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestNewMetricDataType(t *testing.T) {
-	metricDataType := NewMetricDataType(pdata.MetricDataTypeGauge, pdata.MetricAggregationTemporalityDelta, true)
+	metricDataType := NewMetricDataType(pmetric.MetricDataTypeGauge, pmetric.MetricAggregationTemporalityDelta, true)
 
 	require.NotNil(t, metricDataType)
-	assert.Equal(t, metricDataType.MetricDataType(), pdata.MetricDataTypeGauge)
-	assert.Equal(t, metricDataType.AggregationTemporality(), pdata.MetricAggregationTemporalityDelta)
+	assert.Equal(t, metricDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
+	assert.Equal(t, metricDataType.AggregationTemporality(), pmetric.MetricAggregationTemporalityDelta)
 	assert.True(t, metricDataType.IsMonotonic())
 }
 
 func TestMetricValueDataType_MetricDataType(t *testing.T) {
-	valueDataType := metricValueDataType{dataType: pdata.MetricDataTypeGauge}
+	valueDataType := metricValueDataType{dataType: pmetric.MetricDataTypeGauge}
 
-	assert.Equal(t, valueDataType.MetricDataType(), pdata.MetricDataTypeGauge)
+	assert.Equal(t, valueDataType.MetricDataType(), pmetric.MetricDataTypeGauge)
 }
 
 func TestMetricValueDataType_AggregationTemporality(t *testing.T) {
-	valueDataType := metricValueDataType{aggregationTemporality: pdata.MetricAggregationTemporalityDelta}
+	valueDataType := metricValueDataType{aggregationTemporality: pmetric.MetricAggregationTemporalityDelta}
 
-	assert.Equal(t, valueDataType.AggregationTemporality(), pdata.MetricAggregationTemporalityDelta)
+	assert.Equal(t, valueDataType.AggregationTemporality(), pmetric.MetricAggregationTemporalityDelta)
 }
 
 func TestMetricValueDataType_IsMonotonic(t *testing.T) {

@@ -1,14 +1,18 @@
 # Loki Exporter
 
-Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
-Supported pipeline types: logs
+Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 
 ## Getting Started
 
 The following settings are required:
 
-- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: http://loki:3100/loki/api/v1/push).
+- `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
   
 - `labels.{attributes/resource}` (no default): Either a map of attributes or resource names to valid Loki label names 
   (must match "^[a-zA-Z_][a-zA-Z0-9_]*$") allowed to be added as labels to Loki log streams. 
@@ -84,3 +88,6 @@ Several helper files are leveraged to provide additional capabilities automatica
 
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [Queuing and retry settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

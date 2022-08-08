@@ -322,11 +322,11 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	mzr.serializer = zipkin_proto3.SpanSerializer{}
 
 	// Run the Zipkin receiver to "receive spans upload from a client application"
-	port := testutil.GetAvailablePort(t)
+	addr := testutil.GetAvailableLocalAddress(t)
 	recvCfg := &zipkinreceiver.Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName("zipkin", "receiver")),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: fmt.Sprintf(":%d", port),
+			Endpoint: addr,
 		},
 	}
 	zi, err := zipkinreceiver.NewFactory().CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), recvCfg, zexp)
@@ -337,7 +337,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	t.Cleanup(func() { require.NoError(t, zi.Shutdown(context.Background())) })
 
 	// Let the receiver receive "uploaded Zipkin spans from a Java client application"
-	_, _ = http.Post(fmt.Sprintf("http://localhost:%d", port), "", strings.NewReader(zipkinSpansJSONJavaLibrary))
+	_, _ = http.Post("http://"+addr, "", strings.NewReader(zipkinSpansJSONJavaLibrary))
 
 	// Use the mock zipkin reporter to ensure all expected spans in a single batch. Since Flush waits for
 	// server response there is no need for further synchronization.

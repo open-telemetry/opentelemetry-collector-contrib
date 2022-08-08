@@ -33,14 +33,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 const (
@@ -62,9 +61,9 @@ func TestNew(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "nil nextConsumer",
+			name:    "nil next Consumer",
 			args:    args{},
-			wantErr: componenterror.ErrNilNextConsumer,
+			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "happy path",
@@ -403,7 +402,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := pdata.NewMapFromRaw(map[string]interface{}{
+	expected := pcommon.NewMapFromRaw(map[string]interface{}{
 		"cache_hit":            true,
 		"ping_count":           25,
 		"timeout":              12.3,

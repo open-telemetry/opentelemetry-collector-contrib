@@ -454,7 +454,7 @@ metrics:
     description: Swap usage
     extended_documentation: Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
     unit: KiBy
-    attributes: [direction]
+    attributes: [memory_state]
     gauge:
       value_type: double
   mongodbatlas.system.paging.usage.average:
@@ -462,7 +462,7 @@ metrics:
     description: Swap usage
     extended_documentation: Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED
     unit: KiBy
-    attributes: [direction]
+    attributes: [memory_state]
     gauge:
       value_type: double
   mongodbatlas.system.paging.io.max:

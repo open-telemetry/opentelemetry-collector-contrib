@@ -21,7 +21,6 @@ import (
 	"context"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -29,14 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
-
-func newTmpDir(t *testing.T) string {
-	dir, err := os.MkdirTemp("", "podman-tests")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return dir
-}
 
 func TestNewPodmanConnectionUnsupported(t *testing.T) {
 	logger := zap.NewNop()
@@ -46,8 +37,7 @@ func TestNewPodmanConnectionUnsupported(t *testing.T) {
 }
 
 func TestNewPodmanConnectionUnix(t *testing.T) {
-	tmpDir := newTmpDir(t)
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	socketPath := filepath.Join(tmpDir, "test.sock")
 	l, err := net.Listen("unix", socketPath)

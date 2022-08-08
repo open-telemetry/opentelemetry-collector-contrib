@@ -25,8 +25,8 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/go-playground/validator/v10/non-standard/validators"
 	en_translations "github.com/go-playground/validator/v10/translations/en"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type metricName string
@@ -52,24 +52,24 @@ func (mn attributeName) RenderUnexported() (string, error) {
 // ValueType defines an attribute value type.
 type ValueType struct {
 	// ValueType is type of the metric number, options are "double", "int".
-	ValueType pdata.ValueType
+	ValueType pcommon.ValueType
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *ValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "":
-		mvt.ValueType = pdata.ValueTypeEmpty
+		mvt.ValueType = pcommon.ValueTypeEmpty
 	case "string":
-		mvt.ValueType = pdata.ValueTypeString
+		mvt.ValueType = pcommon.ValueTypeString
 	case "int":
-		mvt.ValueType = pdata.ValueTypeInt
+		mvt.ValueType = pcommon.ValueTypeInt
 	case "double":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeDouble
 	case "bool":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBool
 	case "bytes":
-		mvt.ValueType = pdata.ValueTypeDouble
+		mvt.ValueType = pcommon.ValueTypeBytes
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -78,21 +78,21 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 
 // String returns capitalized name of the ValueType.
 func (mvt ValueType) String() string {
-	return strings.Title(strings.ToLower(mvt.ValueType.String()))
+	return strings.Title(strings.ToLower(mvt.ValueType.String())) // nolint SA1019
 }
 
 // Primitive returns name of primitive type for the ValueType.
 func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
-	case pdata.ValueTypeString:
+	case pcommon.ValueTypeString:
 		return "string"
-	case pdata.ValueTypeInt:
+	case pcommon.ValueTypeInt:
 		return "int64"
-	case pdata.ValueTypeDouble:
+	case pcommon.ValueTypeDouble:
 		return "float64"
-	case pdata.ValueTypeBool:
+	case pcommon.ValueTypeBool:
 		return "bool"
-	case pdata.ValueTypeBytes:
+	case pcommon.ValueTypeBytes:
 		return "[]byte"
 	default:
 		return ""
@@ -117,8 +117,6 @@ type metric struct {
 	Sum *sum `yaml:"sum"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `yaml:"gauge"`
-	// Histogram stores metadata for histogram metric type
-	Histogram *histogram `yaml:"histogram"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName
@@ -130,9 +128,6 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
-	}
-	if m.Histogram != nil {
-		return m.Histogram
 	}
 	return nil
 }
@@ -177,13 +172,18 @@ type templateContext struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := filemapprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	if err != nil {
+		return metadata{}, err
+	}
+
+	m, err := cp.AsConf()
 	if err != nil {
 		return metadata{}, err
 	}
 
 	var md metadata
-	if err := cp.Map.UnmarshalExact(&md); err != nil {
+	if err := m.UnmarshalExact(&md); err != nil {
 		return metadata{}, err
 	}
 
@@ -197,7 +197,7 @@ func loadMetadata(filePath string) (metadata, error) {
 func validateMetadata(out metadata) error {
 	v := validator.New()
 	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
-		return fmt.Errorf("failed registering notblank validator: %v", err)
+		return fmt.Errorf("failed registering notblank validator: %w", err)
 	}
 
 	// Provides better validation error messages.
@@ -210,7 +210,7 @@ func validateMetadata(out metadata) error {
 	}
 
 	if err := en_translations.RegisterDefaultTranslations(v, tr); err != nil {
-		return fmt.Errorf("failed registering translations: %v", err)
+		return fmt.Errorf("failed registering translations: %w", err)
 	}
 
 	if err := v.RegisterTranslation("nosuchattribute", tr, func(ut ut.Translator) error {
@@ -219,13 +219,14 @@ func validateMetadata(out metadata) error {
 		t, _ := ut.T("nosuchattribute", fe.Field())
 		return t
 	}); err != nil {
-		return fmt.Errorf("failed registering nosuchattribute: %v", err)
+		return fmt.Errorf("failed registering nosuchattribute: %w", err)
 	}
 
 	v.RegisterStructValidation(metricValidation, metric{})
 
 	if err := v.Struct(&out); err != nil {
-		if verr, ok := err.(validator.ValidationErrors); ok {
+		var verr validator.ValidationErrors
+		if errors.As(err, &verr) {
 			m := verr.Translate(tr)
 			buf := strings.Builder{}
 			buf.WriteString("error validating struct:\n")
@@ -234,7 +235,7 @@ func validateMetadata(out metadata) error {
 			}
 			return errors.New(buf.String())
 		}
-		return fmt.Errorf("unknown validation error: %v", err)
+		return fmt.Errorf("unknown validation error: %w", err)
 	}
 
 	// Set metric data interface.
@@ -246,16 +247,13 @@ func validateMetadata(out metadata) error {
 		if v.Gauge != nil {
 			dataTypesSet++
 		}
-		if v.Histogram != nil {
-			dataTypesSet++
-		}
 		if dataTypesSet == 0 {
 			return fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge, histogram", k)
+				"one of the following has to be specified: sum, gauge", k)
 		}
 		if dataTypesSet > 1 {
 			return fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge, histogram", k)
+				"only one of the following has to be specified: sum, gauge", k)
 		}
 	}
 

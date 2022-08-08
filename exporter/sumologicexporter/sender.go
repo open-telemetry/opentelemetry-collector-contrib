@@ -24,7 +24,9 @@ import (
 	"net/http"
 	"strings"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 )
 
@@ -37,12 +39,12 @@ type appendResponse struct {
 
 // metricPair represents information required to send one metric to the Sumo Logic
 type metricPair struct {
-	attributes pdata.Map
-	metric     pdata.Metric
+	attributes pcommon.Map
+	metric     pmetric.Metric
 }
 
 type sender struct {
-	logBuffer           []pdata.LogRecord
+	logBuffer           []plog.LogRecord
 	metricBuffer        []metricPair
 	config              *Config
 	client              *http.Client
@@ -55,7 +57,7 @@ type sender struct {
 
 const (
 	logKey string = "log"
-	// maxBufferSize defines size of the logBuffer (maximum number of pdata.LogRecord entries)
+	// maxBufferSize defines size of the logBuffer (maximum number of plog.LogRecord entries)
 	maxBufferSize int = 1024 * 1024
 
 	headerContentType     string = "Content-Type"
@@ -167,12 +169,12 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
-func (s *sender) logToText(record pdata.LogRecord) string {
+func (s *sender) logToText(record plog.LogRecord) string {
 	return record.Body().AsString()
 }
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
-func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
+func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
 	data.orig.Upsert(logKey, record.Body())
 
@@ -187,12 +189,12 @@ func (s *sender) logToJSON(record pdata.LogRecord) (string, error) {
 // sendLogs sends log records from the logBuffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
-func (s *sender) sendLogs(ctx context.Context, flds fields) ([]pdata.LogRecord, error) {
+func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, error) {
 	var (
 		body           strings.Builder
 		errs           error
-		droppedRecords []pdata.LogRecord
-		currentRecords []pdata.LogRecord
+		droppedRecords []plog.LogRecord
+		currentRecords []plog.LogRecord
 	)
 
 	for _, record := range s.logBuffer {
@@ -355,7 +357,7 @@ func (s *sender) cleanLogsBuffer() {
 
 // batchLog adds log to the logBuffer and flushes them if logBuffer is full to avoid overflow
 // returns list of log records which were not sent successfully
-func (s *sender) batchLog(ctx context.Context, log pdata.LogRecord, metadata fields) ([]pdata.LogRecord, error) {
+func (s *sender) batchLog(ctx context.Context, log plog.LogRecord, metadata fields) ([]plog.LogRecord, error) {
 	s.logBuffer = append(s.logBuffer, log)
 
 	if s.countLogs() >= maxBufferSize {

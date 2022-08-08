@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -29,15 +31,25 @@ func futureDefaultConfig() *Config {
 		TimeoutSettings: exporterhelper.TimeoutSettings{
 			Timeout: 15 * time.Second,
 		},
+		API: APIConfig{
+			Site: "datadoghq.com",
+		},
+		TagsConfig: TagsConfig{
+			Env: "none",
+		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://api.datadoghq.com",
+			},
 			SendMonotonic: true,
 			DeltaTTL:      3600,
 			Quantiles:     true,
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:             false,
 				InstrumentationLibraryMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags:   false,
 			},
 			HistConfig: HistogramConfig{
 				Mode:         "distributions",
@@ -46,10 +58,19 @@ func futureDefaultConfig() *Config {
 			SumConfig: SumConfig{
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
+			},
 		},
 		Traces: TracesConfig{
-			SampleRate:      1,
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
 			IgnoreResources: []string{},
+		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: HostnameSourceFirstResource,
 		},
 		SendMetadata:        true,
 		UseResourceMetadata: true,
@@ -61,7 +82,7 @@ func futureDefaultConfig() *Config {
 // explicitly on configuration instead.
 func errUsedEnvVar(settingName, envVarName string) error {
 	return fmt.Errorf(
-		"%q will not default to %q's value starting on v0.50.0. Set %s: ${%s} to remove this warning",
+		"%q will not default to %q's value in a future minor version. Set %s: ${%s} to remove this warning",
 		settingName,
 		envVarName,
 		settingName,
@@ -93,7 +114,7 @@ func tagsDiffer(cfgTags []string, futureTags []string) bool {
 // warnUseOfEnvVars returns warnings related to automatic environment variable detection.
 // Right now, we automatically get the value for e.g. the API key from DD_API_KEY, even if
 // the user is not doing `api.key: ${DD_API_KEY}`. We are going to remove this functionality.
-func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
+func warnUseOfEnvVars(configMap *confmap.Conf, cfg *Config) (warnings []error) {
 	// We don't see the raw YAML contents from our exporter so, to compare with the new default,
 	// we unmarshal the config map on the future default config and compare the two structs.
 	// Any differences will be due to the change in default configuration.
@@ -137,8 +158,8 @@ func warnUseOfEnvVars(configMap *config.Map, cfg *Config) (warnings []error) {
 	if cfg.Traces.Endpoint != futureCfg.Traces.Endpoint {
 		warnings = append(warnings, errUsedEnvVar("traces.endpoint", "DD_APM_URL"))
 	}
-	if tagsDiffer(cfg.GetHostTags(), futureCfg.GetHostTags()) {
-		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value starting on v0.50.0. Use 'env' configuration source instead to remove this warning"))
+	if tagsDiffer(cfg.getHostTags(), futureCfg.getHostTags()) {
+		warnings = append(warnings, fmt.Errorf("\"tags\" will not default to \"DD_TAGS\"'s value in a future minor version. Use 'env' configuration source instead to remove this warning"))
 	}
 
 	if len(warnings) > 0 {

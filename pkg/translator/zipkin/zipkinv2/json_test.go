@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestJSONUnmarshaler_UnmarshalTraces(t *testing.T) {
@@ -46,7 +46,7 @@ func TestJSONEncoder_EncodeTraces(t *testing.T) {
 }
 
 func TestJSONEncoder_EncodeTracesError(t *testing.T) {
-	invalidTD := pdata.NewTraces()
+	invalidTD := ptrace.NewTraces()
 	// Add one span with empty trace ID.
 	invalidTD.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	marshaler := NewJSONTracesMarshaler()

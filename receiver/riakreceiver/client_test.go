@@ -111,7 +111,8 @@ func TestGetStatsDetails(t *testing.T) {
 
 		// Setup test server
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write(data)
+			_, err := w.Write(data)
+			require.NoError(t, err)
 		}))
 		defer ts.Close()
 

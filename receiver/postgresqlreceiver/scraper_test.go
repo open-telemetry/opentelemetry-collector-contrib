@@ -22,8 +22,8 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -34,11 +34,11 @@ func TestUnsuccessfulScrape(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = "fake:11111"
 
-	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, &defaultClientFactory{})
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &defaultClientFactory{})
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(pdata.NewMetrics(), actualMetrics))
+	require.NoError(t, scrapertest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 }
 
 func TestScraper(t *testing.T) {
@@ -47,7 +47,7 @@ func TestScraper(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
-	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, factory)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, factory)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
-	scraper := newPostgreSQLScraper(zap.NewNop(), cfg, &factory)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)

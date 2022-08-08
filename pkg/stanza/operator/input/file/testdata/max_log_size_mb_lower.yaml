@@ -1,0 +1,2 @@
+type: file_input
+max_log_size: 1mib

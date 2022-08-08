@@ -17,7 +17,7 @@ package attributes // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"fmt"
 
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 type systemAttributes struct {

@@ -17,6 +17,7 @@ package filestorage
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -56,9 +57,13 @@ func TestLoadConfig(t *testing.T) {
 			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "all_settings")),
 			Directory:         ".",
 			Compaction: &CompactionConfig{
-				Directory:          ".",
-				OnStart:            true,
-				MaxTransactionSize: 2048,
+				Directory:                  ".",
+				OnStart:                    true,
+				OnRebound:                  true,
+				MaxTransactionSize:         2048,
+				ReboundTriggerThresholdMiB: 16,
+				ReboundNeededThresholdMiB:  128,
+				CheckInterval:              time.Second * 5,
 			},
 			Timeout: 2 * time.Second,
 		},
@@ -72,7 +77,7 @@ func TestHandleNonExistingDirectoryWithAnError(t *testing.T) {
 
 	err := cfg.Validate()
 	require.Error(t, err)
-	require.EqualError(t, err, "directory must exist: stat /not/a/dir: no such file or directory")
+	require.True(t, strings.HasPrefix(err.Error(), "directory must exist: "))
 }
 
 func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
@@ -82,6 +87,7 @@ func TestHandleProvidingFilePathAsDirWithAnError(t *testing.T) {
 	file, err := os.CreateTemp("", "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
+		require.NoError(t, file.Close())
 		require.NoError(t, os.Remove(file.Name()))
 	})
 
