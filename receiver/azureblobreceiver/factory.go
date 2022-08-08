@@ -55,9 +55,9 @@ func NewFactory() component.ReceiverFactory {
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		LogsContainerName:   logsContainerName,
-		TracesContainerName: tracesContainerName,
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Logs:             LogsConfig{ContainerName: logsContainerName},
+		Traces:           TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
