@@ -152,7 +152,9 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
 
 		// Errors with 4xx status code (excluding 429) should not be retried
-		if resp.StatusCode >= http.StatusBadRequest && resp.StatusCode < http.StatusTooManyRequests {
+		if resp.StatusCode >= http.StatusBadRequest &&
+			resp.StatusCode < http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests {
 			return consumererror.NewPermanent(err)
 		}
 
