@@ -5,17 +5,25 @@ receivers:
 processors:
   batch:
     send_batch_size: 100000
-    timeout: 2s
+    timeout: 5s
   memory_limiter:
     check_interval: 2s
     limit_mib: 1800
     spike_limit_mib: 500
-
+  resourcedetection/system:
+    detectors: ["system"]
+    system:
+      hostname_sources: ["os"]
+  resource:
+    attributes:
+      - key: service.name
+        value: "clickhouse-exporter"
+        action: upsert
 exporters:
   clickhouse:
-    dsn: tcp://clickhouse:9000?database=default
+    dsn: tcp://clickhouse:9000/default
     ttl_days: 3
-    timeout: 5s
+    timeout: 10s
     sending_queue:
       queue_size: 100
     retry_on_failure:
@@ -35,5 +43,5 @@ service:
   pipelines:
     logs:
       receivers: [ fluentforward ]
-      processors: [ memory_limiter, batch ]
+      processors: [ memory_limiter, resourcedetection/system, resource, batch ]
       exporters: [ clickhouse ]
