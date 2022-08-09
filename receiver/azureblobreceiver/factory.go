@@ -104,13 +104,18 @@ func (f *blobReceiverFactory) getReceiver(
 		receiverConfig, ok := cfg.(*Config)
 
 		if !ok {
-			set.Logger.Error(errUnexpectedConfigurationType.Error())
+			err = errUnexpectedConfigurationType
 			return nil
 		}
+
 		var receiver component.Receiver
 		receiver, err = NewReceiver(*receiverConfig, set)
 		return receiver
 	})
 
-	return r, err
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Unwrap(), err
 }
