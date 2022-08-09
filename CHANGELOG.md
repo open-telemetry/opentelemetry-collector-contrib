@@ -59,6 +59,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#1127](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1127))
 - Add metric instrumentation for WSGI
   ([#1128](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1128))
+- Add metric instrumentation for Urllib3
+  ([#1198](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1198))
 - `opentelemetry-instrumentation-aio-pika` added RabbitMQ aio-pika module instrumentation.
   ([#1095](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1095))
 - `opentelemetry-instrumentation-requests` Restoring metrics in requests

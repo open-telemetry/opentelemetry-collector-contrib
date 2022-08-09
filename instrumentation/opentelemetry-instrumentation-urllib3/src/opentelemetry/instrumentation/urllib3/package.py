@@ -14,3 +14,5 @@
 
 
 _instruments = ("urllib3 >= 1.0.0, < 2.0.0",)
+
+_supports_metrics = True
