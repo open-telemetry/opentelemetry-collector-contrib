@@ -106,6 +106,10 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.DaemonSetName = true
 			case conventions.AttributeK8SDaemonSetUID:
 				p.rules.DaemonSetUID = true
+			case conventions.AttributeK8SStatefulSetName:
+				p.rules.StatefulSetName = true
+			case conventions.AttributeK8SStatefulSetUID:
+				p.rules.StatefulSetUID = true
 			case conventions.AttributeK8SJobName:
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:
