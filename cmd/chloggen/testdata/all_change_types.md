@@ -16,7 +16,7 @@
 - `exporter/old`: Deprecate old (#12348)
 
 ### 🚀 New components 🚀
-- `exporter/new`: Add new exporter ... (#12349)
+- `exporter/new`: Add new exporter ... (#12333, #12349)
 
 ### 💡 Enhancements 💡
 - `receiver/foo`: Add some bar (#12345)

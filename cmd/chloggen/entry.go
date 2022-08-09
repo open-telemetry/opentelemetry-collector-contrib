@@ -23,7 +23,8 @@ type Entry struct {
 	ChangeType string `yaml:"change_type"`
 	Component  string `yaml:"component"`
 	Note       string `yaml:"note"`
-	Issues     []int  `yaml:"issues"`
+	GithubNums []int  `yaml:"github_nums"`
+	Issues     []int  `yaml:"issues"` // Deprecated, but still usable
 	SubText    string `yaml:"subtext"`
 }
 
@@ -55,26 +56,31 @@ func (e Entry) Validate() error {
 		return fmt.Errorf("specify a 'note'")
 	}
 
-	if len(e.Issues) == 0 {
-		return fmt.Errorf("specify one or more issues #'s")
+	if len(e.GithubNums)+len(e.Issues) == 0 {
+		return fmt.Errorf("specify one or more 'github_nums'")
 	}
 
 	return nil
 }
 
 func (e Entry) String() string {
-	issueStrs := make([]string, 0, len(e.Issues))
-	for _, issue := range e.Issues {
-		issueStrs = append(issueStrs, fmt.Sprintf("#%d", issue))
-	}
-	issueStr := strings.Join(issueStrs, ", ")
-
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("- `%s`: %s (%s)", e.Component, e.Note, issueStr))
+	sb.WriteString(fmt.Sprintf("- `%s`: %s (%s)", e.Component, e.Note, e.numString()))
 	if e.SubText != "" {
 		sb.WriteString("\n  ")
 		lines := strings.Split(strings.ReplaceAll(e.SubText, "\r\n", "\n"), "\n")
 		sb.WriteString(strings.Join(lines, "\n  "))
 	}
 	return sb.String()
+}
+
+func (e Entry) numString() string {
+	numStrs := make([]string, 0, len(e.GithubNums)+len(e.Issues))
+	for _, num := range e.GithubNums {
+		numStrs = append(numStrs, fmt.Sprintf("#%d", num))
+	}
+	for _, issue := range e.Issues {
+		numStrs = append(numStrs, fmt.Sprintf("#%d", issue))
+	}
+	return strings.Join(numStrs, ", ")
 }

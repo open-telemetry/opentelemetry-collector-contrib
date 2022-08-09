@@ -116,7 +116,29 @@ func TestValidateE2E(t *testing.T) {
 			wantErr: "specify a 'note'",
 		},
 		{
-			name: "missing_issue",
+			name: "pr_without_issue",
+			entries: func() []*Entry {
+				return append(getSampleEntries(), &Entry{
+					ChangeType: bugFix,
+					Component:  "receiver/foo",
+					Note:       "Add some bar",
+					GithubNums: []int{123},
+				})
+			}(),
+		},
+		{
+			name: "issue_without_pr",
+			entries: func() []*Entry {
+				return append(getSampleEntries(), &Entry{
+					ChangeType: bugFix,
+					Component:  "receiver/foo",
+					Note:       "Add some bar",
+					Issues:     []int{123},
+				})
+			}(),
+		},
+		{
+			name: "no_pr_or_issue",
 			entries: func() []*Entry {
 				return append(getSampleEntries(), &Entry{
 					ChangeType: bugFix,
@@ -125,7 +147,7 @@ func TestValidateE2E(t *testing.T) {
 					Issues:     []int{},
 				})
 			}(),
-			wantErr: "specify one or more issues #'s",
+			wantErr: "specify one or more 'github_nums'",
 		},
 		{
 			name: "all_invalid",
@@ -272,7 +294,7 @@ func deprecationEntry() *Entry {
 		ChangeType: deprecation,
 		Component:  "exporter/old",
 		Note:       "Deprecate old",
-		Issues:     []int{12348},
+		GithubNums: []int{12348},
 	}
 }
 
@@ -281,6 +303,7 @@ func newComponentEntry() *Entry {
 		ChangeType: newComponent,
 		Component:  "exporter/new",
 		Note:       "Add new exporter ...",
+		GithubNums: []int{12333},
 		Issues:     []int{12349},
 	}
 }

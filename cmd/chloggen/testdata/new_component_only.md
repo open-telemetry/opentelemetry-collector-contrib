@@ -5,7 +5,7 @@
 # v0.45.0
 
 ### 🚀 New components 🚀
-- `exporter/new`: Add new exporter ... (#12349)
+- `exporter/new`: Add new exporter ... (#12333, #12349)
 
 
 ## v0.44.0
