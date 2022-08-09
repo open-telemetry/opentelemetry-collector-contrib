@@ -293,10 +293,10 @@ func TestParserCSV(t *testing.T) {
 				{
 					Attributes: map[string]interface{}{
 						"columns": "name	age	height	number",
-						"name":   "stanza dev",
-						"age":    "1",
-						"height": "400",
-						"number": "555-555-5555",
+						"name":    "stanza dev",
+						"age":     "1",
+						"height":  "400",
+						"number":  "555-555-5555",
 					},
 					Body: "stanza dev	1	400	555-555-5555",
 				},
