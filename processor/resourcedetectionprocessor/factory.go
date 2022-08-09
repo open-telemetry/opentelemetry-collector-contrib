@@ -85,9 +85,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(f.createTracesProcessor, stability),
-		component.WithMetricsProcessorAndStabilityLevel(f.createMetricsProcessor, stability),
-		component.WithLogsProcessorAndStabilityLevel(f.createLogsProcessor, stability))
+		component.WithTracesProcessor(f.createTracesProcessor, stability),
+		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
+		component.WithLogsProcessor(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.

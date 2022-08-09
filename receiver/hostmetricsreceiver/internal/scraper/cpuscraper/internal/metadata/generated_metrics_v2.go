@@ -108,8 +108,8 @@ func (m *metricSystemCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("cpu", pcommon.NewValueString(cpuAttributeValue))
-	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().InsertString("cpu", cpuAttributeValue)
+	dp.Attributes().InsertString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -160,8 +160,8 @@ func (m *metricSystemCPUUtilization) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("cpu", pcommon.NewValueString(cpuAttributeValue))
-	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().InsertString("cpu", cpuAttributeValue)
+	dp.Attributes().InsertString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

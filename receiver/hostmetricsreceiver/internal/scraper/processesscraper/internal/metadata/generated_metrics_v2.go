@@ -128,7 +128,7 @@ func (m *metricSystemProcessesCount) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("status", pcommon.NewValueString(statusAttributeValue))
+	dp.Attributes().InsertString("status", statusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

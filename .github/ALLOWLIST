@@ -19,6 +19,7 @@ examples/demo/server
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
+extension/sigv4authextension
 extension/storage
 internal/common
 internal/containertest
@@ -28,7 +29,6 @@ internal/tools
 pkg/batchperresourceattr
 pkg/experimentalmetricmetadata
 pkg/translator/prometheusremotewrite
-pkg/translator/signalfx
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 testbed

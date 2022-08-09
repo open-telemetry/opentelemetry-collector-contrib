@@ -60,7 +60,17 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 		settings: settings,
 	}
 
-	if config.Format == "json" {
+	if config.Format != nil && *config.Format == "body" {
+		lokiexporter.settings.Logger.Warn("The `body` format for this exporter will be removed soon. Set the value explicitly to `json` instead.")
+	}
+
+	if config.Format == nil {
+		lokiexporter.settings.Logger.Warn("The format attribute wasn't specified and the current default, `body`, was applied. Set the value explicitly to `json` to be compatible with future versions of this exporter.")
+		formatBody := "body"
+		config.Format = &formatBody
+	}
+
+	if *config.Format == "json" {
 		lokiexporter.convert = lokiexporter.convertLogToJSONEntry
 	} else {
 		lokiexporter.convert = lokiexporter.convertLogBodyToEntry
@@ -140,6 +150,14 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 			line = scanner.Text()
 		}
 		err = fmt.Errorf("HTTP %d %q: %s", resp.StatusCode, http.StatusText(resp.StatusCode), line)
+
+		// Errors with 4xx status code (excluding 429) should not be retried
+		if resp.StatusCode >= http.StatusBadRequest &&
+			resp.StatusCode < http.StatusInternalServerError &&
+			resp.StatusCode != http.StatusTooManyRequests {
+			return consumererror.NewPermanent(err)
+		}
+
 		return consumererror.NewLogs(err, ld)
 	}
 
@@ -156,7 +174,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient(host.GetExtensions(), l.settings)
+	client, err := l.config.HTTPClientSettings.ToClient(host, l.settings)
 	if err != nil {
 		return err
 	}
@@ -206,7 +224,7 @@ func (l *lokiExporter) logDataToLoki(ld plog.Logs) (pr *logproto.PushRequest, nu
 						errors.New(
 							fmt.Sprint(
 								"failed to convert, dropping log",
-								zap.String("format", l.config.Format),
+								zap.String("format", *l.config.Format),
 								zap.Error(err),
 							),
 						),
