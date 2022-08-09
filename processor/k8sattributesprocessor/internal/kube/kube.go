@@ -183,6 +183,8 @@ type FieldFilter struct {
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
 	Deployment         bool
+	DaemonSetUID       bool
+	DaemonSetName      bool
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
