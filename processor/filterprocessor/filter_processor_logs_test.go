@@ -492,7 +492,9 @@ var (
 			name: "includeMinSeverityINFO",
 			inc: &LogMatchProperties{
 				LogMatchType: Regexp,
-				MinSeverity:  logSeverity("INFO"),
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("INFO"),
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
@@ -504,7 +506,9 @@ var (
 			name: "includeMinSeverityDEBUG",
 			inc: &LogMatchProperties{
 				LogMatchType: Regexp,
-				MinSeverity:  logSeverity("DEBUG"),
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("DEBUG"),
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
@@ -516,9 +520,11 @@ var (
 		{
 			name: "includeMinSeverityFATAL+undefined",
 			inc: &LogMatchProperties{
-				LogMatchType:           Regexp,
-				MinSeverity:            logSeverity("FATAL"),
-				MatchUndefinedSeverity: true,
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min:            logSeverity("FATAL"),
+					MatchUndefined: true,
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
@@ -529,7 +535,9 @@ var (
 			name: "excludeMinSeverityINFO",
 			exc: &LogMatchProperties{
 				LogMatchType: Regexp,
-				MinSeverity:  logSeverity("INFO"),
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("INFO"),
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
@@ -541,7 +549,9 @@ var (
 			name: "excludeMinSeverityTRACE",
 			exc: &LogMatchProperties{
 				LogMatchType: Regexp,
-				MinSeverity:  logSeverity("TRACE"),
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min: logSeverity("TRACE"),
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{
@@ -551,9 +561,11 @@ var (
 		{
 			name: "excludeMinSeverityINFO+undefined",
 			exc: &LogMatchProperties{
-				LogMatchType:           Regexp,
-				MinSeverity:            logSeverity("INFO"),
-				MatchUndefinedSeverity: true,
+				LogMatchType: Regexp,
+				SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+					Min:            logSeverity("INFO"),
+					MatchUndefined: true,
+				},
 			},
 			inLogs: testResourceLogs(inLogForSeverityNumber),
 			outLN: [][]string{

@@ -185,16 +185,8 @@ type LogMatchProperties struct {
 	// against.
 	SeverityTexts []string `mapstructure:"severity_texts"`
 
-	// MinSeverity is the minimum severity needed for the log record to match.
-	// This corresponds to the short names specified here:
-	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity
-	// this field is case-insensitive ("INFO" == "info")
-	MinSeverity logSeverity `mapstructure:"min_severity"`
-
-	// MatchUndefinedSeverity lets logs records with "unknown" severity match.
-	// This is only applied if MinSeverity is set.
-	// If MinSeverity is not set, this field is ignored, as fields are not matched based on severity.
-	MatchUndefinedSeverity bool `mapstructure:"match_undefined_severity"`
+	// SeverityNumberProperties defines how to match against a log record's SeverityNumber, if defined.
+	SeverityNumberProperties *LogSeverityNumberMatchProperties `mapstructure:"severity_number"`
 
 	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
@@ -203,29 +195,58 @@ type LogMatchProperties struct {
 
 // validate checks that the LogMatchProperties is valid
 func (lmp LogMatchProperties) validate() error {
-	return lmp.MinSeverity.validate()
+	if lmp.SeverityNumberProperties != nil {
+		return lmp.SeverityNumberProperties.validate()
+	}
+	return nil
 }
 
 // isEmpty returns true if the properties is "empty" (meaning, there are no filters specified)
 // if this is the case, the filter should be ignored.
 func (lmp LogMatchProperties) isEmpty() bool {
 	return len(lmp.ResourceAttributes) == 0 && len(lmp.RecordAttributes) == 0 &&
-		len(lmp.SeverityTexts) == 0 && len(lmp.LogBodies) == 0 && lmp.MinSeverity == ""
+		len(lmp.SeverityTexts) == 0 && len(lmp.LogBodies) == 0 &&
+		lmp.SeverityNumberProperties == nil
 }
 
 // matchProperties converts the LogMatchProperties to a corresponding filterconfig.MatchProperties
 func (lmp LogMatchProperties) matchProperties() *filterconfig.MatchProperties {
-	return &filterconfig.MatchProperties{
+	mp := &filterconfig.MatchProperties{
 		Config: filterset.Config{
 			MatchType: filterset.MatchType(lmp.LogMatchType),
 		},
-		Resources:                 lmp.ResourceAttributes,
-		Attributes:                lmp.RecordAttributes,
-		LogSeverityTexts:          lmp.SeverityTexts,
-		LogBodies:                 lmp.LogBodies,
-		LogMinSeverity:            lmp.MinSeverity.severityNumber(),
-		LogMatchUndefinedSeverity: lmp.MatchUndefinedSeverity,
+		Resources:        lmp.ResourceAttributes,
+		Attributes:       lmp.RecordAttributes,
+		LogSeverityTexts: lmp.SeverityTexts,
+		LogBodies:        lmp.LogBodies,
 	}
+
+	// Include SeverityNumberProperties if defined
+	if lmp.SeverityNumberProperties != nil {
+		mp.LogSeverityNumber = &filterconfig.LogSeverityNumberMatchProperties{
+			Min:            lmp.SeverityNumberProperties.Min.severityNumber(),
+			MatchUndefined: lmp.SeverityNumberProperties.MatchUndefined,
+		}
+	}
+
+	return mp
+}
+
+type LogSeverityNumberMatchProperties struct {
+	// Min is the minimum severity needed for the log record to match.
+	// This corresponds to the short names specified here:
+	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity
+	// this field is case-insensitive ("INFO" == "info")
+	Min logSeverity `mapstructure:"min"`
+
+	// MatchUndefined lets logs records with "unknown" severity match.
+	// If MinSeverity is not set, this field is ignored, as fields are not matched based on severity.
+	MatchUndefined bool `mapstructure:"match_undefined"`
+}
+
+// validate checks that the LogMatchProperties is valid
+func (lmp LogSeverityNumberMatchProperties) validate() error {
+	return lmp.Min.validate()
 }
 
 var _ config.Processor = (*Config)(nil)

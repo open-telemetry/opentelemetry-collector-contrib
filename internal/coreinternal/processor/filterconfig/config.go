@@ -102,15 +102,8 @@ type MatchProperties struct {
 	// against.
 	LogSeverityTexts []string `mapstructure:"log_severity_texts"`
 
-	// LogMinSeverity is the lowest severity that may be matched.
-	// e.g. if this is plog.SeverityNumberINFO, INFO, WARN, ERROR, and FATAL logs will match.
-	LogMinSeverity plog.SeverityNumber `mapstructure:"log_min_severity"`
-
-	// LogMatchUndefinedSeverity controls whether logs with "undefined" severity matches.
-	// If this is true, entries with undefined severity will match.
-	// This field is only applicable if LogMinSeverity is specified;
-	// If LogMinSeverity is not specified, this field does nothing.
-	LogMatchUndefinedSeverity bool `mapstructure:"log_match_undefined_severity"`
+	// LogSeverityNumber defines how to match against a log record's SeverityNumber, if defined.
+	LogSeverityNumber *LogSeverityNumberMatchProperties `mapstructure:"log_severity_number"`
 
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
@@ -144,6 +137,10 @@ func (mp *MatchProperties) ValidateForSpans() error {
 		return errors.New("log_severity_texts should not be specified for trace spans")
 	}
 
+	if mp.LogSeverityNumber != nil {
+		return errors.New("log_severity_number should not be specified for trace spans")
+	}
+
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
 		len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
 		return errors.New(`at least one of "services", "span_names", "attributes", "libraries" or "resources" field must be specified`)
@@ -160,8 +157,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 
 	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 &&
 		len(mp.Resources) == 0 && len(mp.LogBodies) == 0 &&
-		len(mp.LogSeverityTexts) == 0 && mp.LogMinSeverity == plog.SeverityNumberUNDEFINED {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_min_severity" field must be specified`)
+		len(mp.LogSeverityTexts) == 0 && mp.LogSeverityNumber == nil {
+		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
 	}
 
 	return nil
@@ -189,4 +186,15 @@ type InstrumentationLibrary struct {
 	//  1        <blank> no
 	//  1        1       yes
 	Version *string `mapstructure:"version"`
+}
+
+// LogSeverityNumberMatchProperties defines how to match based on a log record's SeverityNumber field.
+type LogSeverityNumberMatchProperties struct {
+	// Min is the lowest severity that may be matched.
+	// e.g. if this is plog.SeverityNumberINFO, INFO, WARN, ERROR, and FATAL logs will match.
+	Min plog.SeverityNumber `mapstructure:"min"`
+
+	// MatchUndefined controls whether logs with "undefined" severity matches.
+	// If this is true, entries with undefined severity will match.
+	MatchUndefined bool `mapstructure:"match_undefined"`
 }

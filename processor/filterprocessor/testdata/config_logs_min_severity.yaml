@@ -8,14 +8,16 @@ processors:
             # This filters out all logs below "INFO" level (the whole DEBUG and TRACE ranges)
             # Logs with no defined severity will also be matched.
             include:
-                min_severity: "INFO"
-                match_undefined_severity: true
+                severity_number:
+                    min: "INFO"
+                    match_undefined: true
     filter/exclude:
         logs:
             # any logs matching filters are excluded from remainder of pipeline
             # This will filter out the "ERROR" and "FATAL" ranges
             exclude:
-                min_severity: "ERROR"
+                severity_number:
+                    min: "ERROR"
 
     filter/includeexclude:
         logs:
@@ -23,11 +25,13 @@ processors:
             # the following will only allow records with severity in the "INFO" and "WARN" ranges to pass,
             # as well as logs with undefined severity
             include:
-                min_severity: "INFO"
-                match_undefined_severity: true
+                severity_number:
+                    min: "INFO"
+                    match_undefined: true
 
             exclude:
-                min_severity: "ERROR"
+                severity_number:
+                    min: "ERROR"
 
 exporters:
     nop:
