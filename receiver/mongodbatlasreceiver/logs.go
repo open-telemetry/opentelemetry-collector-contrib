@@ -23,20 +23,25 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 )
 
-// combindedLogsReceiver wraps alerts and log receivers in a single log receiver to be consumed by the factory
-type combindedLogsReceiver struct {
-	alerts *alertsReceiver
-	logs   *receiver
+type logsReceiver struct {
+	log         *zap.Logger
+	cfg         *Config
+	client      *internal.MongoDBAtlasClient
+	consumer    consumer.Logs
+	stopperChan chan struct{}
+	wg          sync.WaitGroup
 }
 
 type resourceInfo struct {
@@ -52,46 +57,33 @@ type resourceInfo struct {
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-// Starts up the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
-	var errs error
-
-	// If we have an alerts receiver start alerts collection
-	if c.alerts != nil {
-		if err := c.alerts.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
-		}
+func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*logsReceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+	if err != nil {
+		return nil, err
 	}
-
-	// If we have a logging receiver start log collection
-	if c.logs != nil {
-		if err := c.logs.Start(ctx, host); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	return errs
+	recv := &logsReceiver{log: settings.Logger, cfg: cfg, client: client, stopperChan: make(chan struct{})}
+	return recv, nil
 }
 
-// Shutsdown the combined MongoDB Atlas Logs and Alert Receiver
-func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
-	var errs error
+// Log receiver logic
+func (s *logsReceiver) Start(ctx context.Context, host component.Host) error {
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.collect(ctx)
+	}()
+	return nil
+}
 
-	// If we have an alerts receiver shutdown alerts collection
-	if c.alerts != nil {
-		if err := c.alerts.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
+func (s *logsReceiver) Shutdown(ctx context.Context) error {
+	close(s.stopperChan)
+	s.wg.Wait()
+	return s.shutdown(ctx)
+}
 
-	// If we have a logging receiver shutdown log collection
-	if c.logs != nil {
-		if err := c.logs.Shutdown(ctx); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-	}
-
-	return errs
+func (s *logsReceiver) shutdown(context.Context) error {
+	return s.client.Shutdown()
 }
 
 // parseHostName parses out the hostname from the specified cluster host
@@ -123,7 +115,7 @@ func parseHostName(s string, logger *zap.Logger) []string {
 }
 
 // KickoffReceiver spins off functionality of the receiver from the Start function
-func (s *receiver) KickoffReceiver(ctx context.Context) {
+func (s *logsReceiver) collect(ctx context.Context) {
 	resource := resourceInfo{start: strconv.Itoa(int(time.Now().Unix())), end: ""}
 	for {
 		// collection interval loop,
@@ -163,7 +155,7 @@ func (s *receiver) KickoffReceiver(ctx context.Context) {
 	}
 }
 
-func (s *receiver) processClusters(ctx context.Context, project Project, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
+func (s *logsReceiver) processClusters(ctx context.Context, project Project, r *resourceInfo) ([]mongodbatlas.Cluster, error) {
 	include, exclude := project.IncludeClusters, project.ExcludeClusters
 	clusters, err := s.client.GetClusters(ctx, r.Project.ID)
 	if err != nil {
@@ -188,7 +180,7 @@ func (s *receiver) processClusters(ctx context.Context, project Project, r *reso
 	}
 }
 
-func (s *receiver) collectClusterLogs(clusters []mongodbatlas.Cluster, project *Project, r resourceInfo) {
+func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, project *Project, r resourceInfo) {
 	for _, cluster := range clusters {
 		hostnames := parseHostName(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
@@ -224,7 +216,7 @@ func createStringSet(in []string) map[string]struct{} {
 	return list
 }
 
-func (s *receiver) getHostLogs(groupID, hostname, logName, start, end string) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName, start, end string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
@@ -254,7 +246,7 @@ func (s *receiver) getHostLogs(groupID, hostname, logName, start, end string) ([
 	}
 }
 
-func (s *receiver) getHostAuditLogs(groupID, hostname, logName, start, end string) ([]model.AuditLog, error) {
+func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName, start, end string) ([]model.AuditLog, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
@@ -284,7 +276,7 @@ func (s *receiver) getHostAuditLogs(groupID, hostname, logName, start, end strin
 	}
 }
 
-func (s *receiver) sendLogs(r resourceInfo, logName string) {
+func (s *logsReceiver) sendLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
@@ -300,7 +292,7 @@ func (s *receiver) sendLogs(r resourceInfo, logName string) {
 	}
 }
 
-func (s *receiver) sendAuditLogs(r resourceInfo, logName string) {
+func (s *logsReceiver) sendAuditLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve audit logs: "+logName, zap.Error(err))

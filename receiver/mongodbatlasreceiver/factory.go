@@ -35,9 +35,6 @@ const (
 	defaultAlertsEnabled = false
 )
 
-// receivers is a mapping of receiver ID to a receiver that is shared between metrics and log scraping
-var receivers = make(map[string]*receiver)
-
 // NewFactory creates a factory for MongoDB Atlas receiver
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
@@ -55,7 +52,7 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
 	cfg := rConf.(*Config)
-	recv, err := getReceiver(params, cfg)
+	recv, err := newMongoDBAtlasReceiver(params, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
 	}
@@ -93,7 +90,7 @@ func createCombinedLogReceiver(
 
 	// If logs is enabled create logs receiver
 	if cfg.Logs.Enabled {
-		recv.logs, err = getReceiver(params, cfg)
+		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
 		}
@@ -117,16 +114,4 @@ func createDefaultConfig() config.Receiver {
 			Projects: []*Project{},
 		},
 	}
-}
-
-// getReceiver ensures we only create a single receiver per receiver ID because it is shared between logs and metrics
-func getReceiver(params component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
-	mongoDBReceiver, ok := receivers[cfg.ID().String()]
-	var err error
-	if !ok {
-		mongoDBReceiver, err = newMongoDBAtlasReceiver(params, cfg)
-		receivers[cfg.ID().String()] = mongoDBReceiver
-	}
-
-	return mongoDBReceiver, err
 }

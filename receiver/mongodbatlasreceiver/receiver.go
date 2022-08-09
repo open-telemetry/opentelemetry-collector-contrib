@@ -18,12 +18,10 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -38,9 +36,7 @@ type receiver struct {
 	client      *internal.MongoDBAtlasClient
 	lastRun     time.Time
 	mb          *metadata.MetricsBuilder
-	consumer    consumer.Logs
 	stopperChan chan struct{}
-	wg          sync.WaitGroup
 }
 
 type timeconstraints struct {
@@ -239,20 +235,4 @@ func (s *receiver) extractProcessDiskMetrics(
 		)
 	}
 	return nil
-}
-
-// Log receiver logic
-func (s *receiver) Start(ctx context.Context, host component.Host) error {
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		s.KickoffReceiver(ctx)
-	}()
-	return nil
-}
-
-func (s *receiver) Shutdown(ctx context.Context) error {
-	close(s.stopperChan)
-	s.wg.Wait()
-	return s.shutdown(ctx)
 }
