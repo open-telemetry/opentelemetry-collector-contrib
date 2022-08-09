@@ -133,7 +133,19 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var numDPs int
 	for i := 0; i < in.Len(); i++ {
-		numDPs += 2 + in.At(i).BucketCounts().Len()
+		histDP := in.At(i)
+		numDPs += 1 + histDP.BucketCounts().Len()
+		if histDP.HasSum() {
+			numDPs++
+		}
+
+		if histDP.HasMin() {
+			numDPs++
+		}
+
+		if histDP.HasMax() {
+			numDPs++
+		}
 	}
 	dps := newDpsBuilder(numDPs)
 
@@ -146,10 +158,25 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 		count := int64(histDP.Count())
 		countDP.Value.IntValue = &count
 
-		sumName := name + "_sum"
-		sumDP := dps.appendPoint(sumName, mt, ts, dims)
-		sum := histDP.Sum()
-		sumDP.Value.DoubleValue = &sum
+		if histDP.HasSum() {
+			sumDP := dps.appendPoint(name+"_sum", mt, ts, dims)
+			sum := histDP.Sum()
+			sumDP.Value.DoubleValue = &sum
+		}
+
+		if histDP.HasMin() {
+			// Min is always a gauge.
+			minDP := dps.appendPoint(name+"_min", &sfxMetricTypeGauge, ts, dims)
+			min := histDP.Min()
+			minDP.Value.DoubleValue = &min
+		}
+
+		if histDP.HasMax() {
+			// Max is always a gauge.
+			maxDP := dps.appendPoint(name+"_max", &sfxMetricTypeGauge, ts, dims)
+			max := histDP.Max()
+			maxDP.Value.DoubleValue = &max
+		}
 
 		bounds := histDP.ExplicitBounds()
 		counts := histDP.BucketCounts()
