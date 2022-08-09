@@ -386,8 +386,8 @@ clean:
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
 
-.PHONY: docs
-docs:
+.PHONY: genconfigdocs
+genconfigdocs:
 	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
 .PHONY: generate-all-labels

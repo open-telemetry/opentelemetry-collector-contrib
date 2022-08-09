@@ -126,9 +126,7 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 			err = refl(f, reflect.New(e.Elem()), dr)
 		}
 	case reflect.String:
-		if v.String() != "" {
-			f.Default = v.String()
-		}
+		f.Default = v.String()
 	case reflect.Bool:
 		f.Default = v.Bool()
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -140,9 +138,7 @@ func handleKind(v reflect.Value, f *Field, dr DirResolver) (err error) {
 			}
 		}
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		if v.Uint() != 0 {
-			f.Default = v.Uint()
-		}
+		f.Default = v.Uint()
 	}
 	return
 }

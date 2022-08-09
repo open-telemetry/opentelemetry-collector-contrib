@@ -10,9 +10,9 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
 | collection_interval |[time-Duration](#time-Duration)| 10s |  |
-| endpoint |string| <no value> | Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.  |
+| endpoint |string|  | Endpoint configures the address for this network connection. For TCP and UDP networks, the address has the form "host:port". The host must be a literal IP address, or a host name that can be resolved to IP addresses. The port must be a literal port number or a service name. If the host is a literal IPv6 address it must be enclosed in square brackets, as in "[2001:db8::1]:80" or "[fe80::1%zone]:80". The zone specifies the scope of the literal IPv6 address as defined in RFC 4007.  |
 | transport |string| tcp | Transport to use. Known protocols are "tcp", "tcp4" (IPv4-only), "tcp6" (IPv6-only), "udp", "udp4" (IPv4-only), "udp6" (IPv6-only), "ip", "ip4" (IPv4-only), "ip6" (IPv6-only), "unix", "unixgram" and "unixpacket".  |
-| password |string| <no value> | Optional password. Must match the password specified in the requirepass server configuration option.  |
+| password |string|  | Optional password. Must match the password specified in the requirepass server configuration option.  |
 | tls |[tls-TLSClientSetting](#tls-TLSClientSetting)| <no value> | TLSClientSetting contains TLS configurations that are specific to client connections in addition to the common configurations. This should be used by components configuring TLS client connections.  |
 | metrics |[metrics-MetricsSettings](#metrics-MetricsSettings)| <no value> | MetricsSettings provides settings for redisreceiver metrics.  |
 
@@ -20,15 +20,15 @@ of config.ReceiverSettings, and extend it with more fields if needed.
 
 | Name | Field Info | Default | Docs |
 | ---- | --------- | ------- | ---- |
-| ca_file |string| <no value> | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)  |
-| cert_file |string| <no value> | Path to the TLS cert to use for TLS required connections. (optional)  |
-| key_file |string| <no value> | Path to the TLS key to use for TLS required connections. (optional)  |
-| min_version |string| <no value> | MinVersion sets the minimum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)  |
-| max_version |string| <no value> | MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)  |
+| ca_file |string|  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA. (optional)  |
+| cert_file |string|  | Path to the TLS cert to use for TLS required connections. (optional)  |
+| key_file |string|  | Path to the TLS key to use for TLS required connections. (optional)  |
+| min_version |string|  | MinVersion sets the minimum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)  |
+| max_version |string|  | MaxVersion sets the maximum TLS version that is acceptable. If not set, refer to crypto/tls for defaults. (optional)  |
 | reload_interval |[time-Duration](#time-Duration)| <no value> | ReloadInterval specifies the duration after which the certificate will be reloaded If not set, it will never be reloaded (optional)  |
 | insecure |bool| true | In gRPC when set to true, this is used to disable the client transport security. See https://godoc.org/google.golang.org/grpc#WithInsecure. In HTTP, this disables verifying the server's certificate chain and host name (InsecureSkipVerify in the tls Config). Please refer to https://godoc.org/crypto/tls#Config for more information. (optional, default false)  |
 | insecure_skip_verify |bool| false | InsecureSkipVerify will enable TLS but not verify the certificate.  |
-| server_name_override |string| <no value> | ServerName requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)  |
+| server_name_override |string|  | ServerName requested by client for virtual hosting. This sets the ServerName in the TLSConfig. Please refer to https://godoc.org/crypto/tls#Config for more information. (optional)  |
 
 ### metrics-MetricsSettings
 

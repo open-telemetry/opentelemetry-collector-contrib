@@ -21,7 +21,7 @@ import (
 )
 
 func tableTemplate() (*template.Template, error) {
-	return template.New("table").Funcs(
+	return template.New("table").Option("missingkey=zero").Funcs(
 		template.FuncMap{
 			"join":            join,
 			"mkAnchor":        mkAnchor,
