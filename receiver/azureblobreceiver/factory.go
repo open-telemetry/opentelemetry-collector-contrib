@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
-
+	consumer "go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 )
 
@@ -37,12 +37,15 @@ var (
 )
 
 type blobReceiverFactory struct {
-	receiver component.Receiver
+	receivers *sharedcomponent.SharedComponents
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
 func NewFactory() component.ReceiverFactory {
-	f := &blobReceiverFactory{}
+	f := &blobReceiverFactory{
+		receivers: sharedcomponent.NewSharedComponents(),
+	}
+
 	return component.NewReceiverFactory(
 		typeStr,
 		f.createDefaultConfig,
@@ -129,6 +132,6 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 		return nil, err
 	}
 
-	return NewBlobEventHandler(cfg.EventHubEndPoint, cfg.LogsContainerName, cfg.TracesContainerName, bc, logger),
+	return NewBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }
