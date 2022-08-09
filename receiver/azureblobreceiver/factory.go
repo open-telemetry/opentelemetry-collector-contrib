@@ -109,7 +109,7 @@ func (f *blobReceiverFactory) getReceiver(
 		}
 
 		var receiver component.Receiver
-		receiver, err = NewReceiver(*receiverConfig, set)
+		receiver, err = newReceiver(*receiverConfig, set)
 		return receiver
 	})
 

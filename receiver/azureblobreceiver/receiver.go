@@ -32,7 +32,7 @@ func (b *blobReceiver) Shutdown(ctx context.Context) error {
 }
 
 // Returns a new instance of the log receiver
-func NewReceiver(config Config, set component.ReceiverCreateSettings) (component.Receiver, error) {
+func newReceiver(config Config, set component.ReceiverCreateSettings) (component.Receiver, error) {
 	blobReceiver := &blobReceiver{}
 
 	return blobReceiver, nil
