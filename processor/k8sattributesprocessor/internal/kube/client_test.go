@@ -461,6 +461,12 @@ func TestExtractionRules(t *testing.T) {
 					Name:       "auth-daemonset",
 					UID:        "c94d3814-2253-427a-ab13-2cf609e4dafa",
 				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "pi",
+					UID:        "59f27ac1-5c71-42e5-abe9-2c499d603706",
+				},
 			},
 		},
 		Spec: api_v1.PodSpec{
@@ -518,6 +524,22 @@ func TestExtractionRules(t *testing.T) {
 		},
 		attributes: map[string]string{
 			"k8s.daemonset.name": "auth-daemonset",
+		},
+	}, {
+		name: "jobUID",
+		rules: ExtractionRules{
+			JobUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
+		},
+	}, {
+		name: "jobName",
+		rules: ExtractionRules{
+			JobName: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.name": "pi",
 		},
 	}, {
 		name: "metadata",
