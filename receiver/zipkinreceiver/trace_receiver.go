@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -212,7 +211,7 @@ func (zr *zipkinReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = obsrecv.StartTracesOp(ctx)
 
 	pr := processBodyIfNecessary(r)
-	slurp, _ := ioutil.ReadAll(pr)
+	slurp, _ := io.ReadAll(pr)
 	if c, ok := pr.(io.Closer); ok {
 		_ = c.Close()
 	}

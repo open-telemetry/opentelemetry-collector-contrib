@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"net"
 	"net/http"
@@ -72,7 +72,7 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 
 			return &http.Response{
 				StatusCode: code,
-				Body:       ioutil.NopCloser(bytes.NewBufferString(body)),
+				Body:       io.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
 		}),
@@ -183,7 +183,7 @@ type CapturingData struct {
 }
 
 func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 
 	if c.checkCompression {
 		if len(body) > minCompressionLen && r.Header.Get("Content-Encoding") != "gzip" {
@@ -1305,7 +1305,7 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 	require.NoError(t, err)
 	defer z.Close()
 
-	p, err := ioutil.ReadAll(z)
+	p, err := io.ReadAll(z)
 	require.NoError(t, err)
 
 	for _, e := range expected {

@@ -17,8 +17,8 @@ package zipkinv1
 import (
 	"encoding/binary"
 	"encoding/json"
-	"io/ioutil"
 	"math"
+	"os"
 	"sort"
 	"testing"
 
@@ -44,7 +44,7 @@ func compareTraceData(t *testing.T, got []traceData, want []traceData) {
 }
 
 func TestV1ThriftToTraces(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var zSpans []*zipkincore.Span
@@ -57,7 +57,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 }
 
 func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
@@ -83,7 +83,7 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 }
 
 func TestV1ThriftToOCProto(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
@@ -97,7 +97,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(b, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span

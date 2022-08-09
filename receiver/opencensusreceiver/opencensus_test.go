@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -108,7 +107,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf("Error reading response from trace grpc-gateway, %v", err)
 	}
@@ -282,7 +281,7 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "sock")
+	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

@@ -16,7 +16,6 @@ package fileexporter
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -40,7 +39,7 @@ func TestFileTracesExporter(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
 	unmarshaler := ptrace.NewJSONUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
@@ -68,7 +67,7 @@ func TestFileMetricsExporter(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
 	unmarshaler := pmetric.NewJSONUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
@@ -96,7 +95,7 @@ func TestFileLogsExporter(t *testing.T) {
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
 	unmarshaler := plog.NewJSONUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
@@ -116,7 +115,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 
 // tempFileName provides a temporary file name for testing.
 func tempFileName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "*.json")
+	tmpfile, err := os.CreateTemp("", "*.json")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

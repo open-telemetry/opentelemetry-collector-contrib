@@ -16,7 +16,7 @@ package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -106,7 +106,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 			c.settings.Logger.Warn("Failed to close response body", zap.Error(closeErr))
 		}
 	}()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response body %w", err)
 	}

@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -125,7 +125,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to scrape from the exporter: %v", err)
 	}
-	prometheusExporterScrape, err := ioutil.ReadAll(res.Body)
+	prometheusExporterScrape, err := io.ReadAll(res.Body)
 	res.Body.Close()
 	if err != nil {
 		t.Fatal(err)
