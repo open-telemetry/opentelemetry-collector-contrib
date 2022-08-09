@@ -14,6 +14,7 @@ issues: [12960]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
+ This move has been hidden behind a featuregate. Please see https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations for more information transitioning. 
  This affects the following metrics.
  - postgresql.blocks_read
  - postgresql.commits
