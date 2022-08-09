@@ -186,9 +186,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
-	}()
+	defer p.Shutdown(context.Background())
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
