@@ -185,6 +185,8 @@ type ExtractionRules struct {
 	Deployment         bool
 	DaemonSetUID       bool
 	DaemonSetName      bool
+	JobUID             bool
+	JobName            bool
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
