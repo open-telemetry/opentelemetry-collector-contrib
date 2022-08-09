@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.13
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.5-0.20220804200517-c595ccfb4c43
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.5
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.57.2
@@ -25,8 +25,8 @@ require (
 	cloud.google.com/go/logging v1.4.2 // indirect
 	cloud.google.com/go/monitoring v1.5.0 // indirect
 	cloud.google.com/go/trace v1.2.0 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.4 // indirect
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.4 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.8.5 // indirect
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.32.5 // indirect
 	github.com/aws/aws-sdk-go v1.44.70 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26 // indirect
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect

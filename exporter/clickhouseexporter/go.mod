@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	go.opentelemetry.io/collector v0.57.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 
 )
 

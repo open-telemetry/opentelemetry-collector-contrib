@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -122,7 +122,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -224,7 +224,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -245,7 +245,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -271,7 +271,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -332,7 +332,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -465,7 +465,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -530,7 +530,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
