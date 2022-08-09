@@ -16,7 +16,7 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
-	"strconv"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -64,6 +64,13 @@ func newPostgreSQLScraper(
 	}
 }
 
+type dbRetrieval struct {
+	sync.RWMutex
+	activityMap map[databaseName]int64
+	dbSizeMap   map[databaseName]int64
+	dbStats     map[databaseName]databaseStats
+}
+
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
@@ -85,213 +92,146 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	var errors scrapererror.ScrapeErrors
-
-	p.collectCommitsAndRollbacks(ctx, now, listClient, databases, errors)
-	p.collectDatabaseSize(ctx, now, listClient, databases, errors)
-	p.collectBackends(ctx, now, listClient, databases, errors)
+	var errs scrapererror.ScrapeErrors
+	r := &dbRetrieval{
+		activityMap: make(map[databaseName]int64),
+		dbSizeMap:   make(map[databaseName]int64),
+		dbStats:     make(map[databaseName]databaseStats),
+	}
+	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
 		dbClient, err := p.clientFactory.getClient(p.config, database)
 		if err != nil {
-			errors.Add(err)
+			errs.Add(err)
 			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
 			continue
 		}
 		defer dbClient.Close()
-
-		p.collectBlockReads(ctx, now, dbClient, errors)
-		p.collectDatabaseTableMetrics(ctx, now, dbClient, errors)
+		p.recordDatabase(now, database, r)
+		p.collectTables(ctx, now, dbClient, database, &errs)
 	}
 
-	return p.mb.Emit(), errors.Combine()
+	return p.mb.Emit(), errs.Combine()
 }
 
-func (p *postgreSQLScraper) collectBlockReads(
+func (p *postgreSQLScraper) retrieveDBMetrics(
 	ctx context.Context,
-	now pcommon.Timestamp,
-	client client,
-	errors scrapererror.ScrapeErrors,
+	listClient client,
+	databases []string,
+	r *dbRetrieval,
+	errs *scrapererror.ScrapeErrors,
 ) {
-	blocksReadByTableMetrics, err := client.getBlocksReadByTable(ctx)
+	wg := &sync.WaitGroup{}
+
+	wg.Add(3)
+	go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
+	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
+	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
+
+	wg.Wait()
+}
+
+func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval) {
+	if activeConnections, ok := r.activityMap[databaseName(db)]; ok {
+		p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
+	}
+	if size, ok := r.dbSizeMap[databaseName(db)]; ok {
+		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
+	}
+	if stats, ok := r.dbStats[databaseName(db)]; ok {
+		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
+		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback, db)
+	}
+}
+
+func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) {
+	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching blocks read by table", zap.Error(err))
-		errors.AddPartial(0, err)
+		errs.AddPartial(1, err)
 	}
 
-	// Metrics can be partially collected (non-nil) even if there were partial errors reported
-	if blocksReadByTableMetrics == nil {
-		return
+	tableMetrics, err := dbClient.getDatabaseTableMetrics(ctx, db)
+	if err != nil {
+		errs.AddPartial(1, err)
 	}
-	for _, table := range blocksReadByTableMetrics {
-		for sourceKey, source := range metadata.MapAttributeSource {
-			value, ok := table.stats[sourceKey]
-			if !ok {
-				// Data isn't present, error was already logged at a lower level
-				continue
-			}
-			i, err := p.parseInt(sourceKey, value)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, i, table.database, table.table, source)
+
+	for tableKey, tm := range tableMetrics {
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, db, tm.table, metadata.AttributeStateDead)
+		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, db, tm.table, metadata.AttributeStateLive)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, db, tm.table, metadata.AttributeOperationIns)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, db, tm.table, metadata.AttributeOperationDel)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, db, tm.table, metadata.AttributeOperationUpd)
+		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, db, tm.table, metadata.AttributeOperationHotUpd)
+		br, ok := blockReads[tableKey]
+		if ok {
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, db, br.table, metadata.AttributeSourceHeapRead)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, db, br.table, metadata.AttributeSourceHeapHit)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, db, br.table, metadata.AttributeSourceIdxRead)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, db, br.table, metadata.AttributeSourceIdxHit)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, db, br.table, metadata.AttributeSourceToastHit)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, db, br.table, metadata.AttributeSourceToastRead)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, db, br.table, metadata.AttributeSourceTidxRead)
+			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, db, br.table, metadata.AttributeSourceTidxHit)
 		}
 	}
 }
 
-func (p *postgreSQLScraper) collectDatabaseTableMetrics(
+func (p *postgreSQLScraper) retrieveDatabaseStats(
 	ctx context.Context,
-	now pcommon.Timestamp,
-	client client,
-	errors scrapererror.ScrapeErrors,
-) {
-	databaseTableMetrics, err := client.getDatabaseTableMetrics(ctx)
-	if err != nil {
-		p.logger.Error("Errors encountered while fetching database table metrics", zap.Error(err))
-		errors.AddPartial(0, err)
-	}
-
-	// Metrics can be partially collected (non-nil) even if there were partial errors reported
-	if databaseTableMetrics == nil {
-		return
-	}
-	for _, table := range databaseTableMetrics {
-		for stateKey, state := range metadata.MapAttributeState {
-			value, ok := table.stats[stateKey]
-			if !ok {
-				// Data isn't present, error was already logged at a lower level
-				continue
-			}
-			i, err := p.parseInt(stateKey, value)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlRowsDataPoint(now, i, table.database, table.table, state)
-		}
-
-		for opKey, op := range metadata.MapAttributeOperation {
-			value, ok := table.stats[opKey]
-			if !ok {
-				// Data isn't present, error was already logged at a lower level
-				continue
-			}
-			i, err := p.parseInt(opKey, value)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlOperationsDataPoint(now, i, table.database, table.table, op)
-		}
-	}
-}
-
-func (p *postgreSQLScraper) collectCommitsAndRollbacks(
-	ctx context.Context,
-	now pcommon.Timestamp,
+	wg *sync.WaitGroup,
 	client client,
 	databases []string,
-	errors scrapererror.ScrapeErrors,
+	r *dbRetrieval,
+	errors *scrapererror.ScrapeErrors,
 ) {
-	xactMetrics, err := client.getCommitsAndRollbacks(ctx, databases)
+	defer wg.Done()
+	dbStats, err := client.getDatabaseStats(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching commits and rollbacks", zap.Error(err))
-		errors.AddPartial(0, err)
-	}
-
-	// Metrics can be partially collected (non-nil) even if there were partial errors reported
-	if xactMetrics == nil {
+		errors.AddPartial(1, err)
 		return
 	}
-	for _, metric := range xactMetrics {
-		commitValue := metric.stats["xact_commit"]
-		if i, err := p.parseInt("xact_commit", commitValue); err != nil {
-			errors.AddPartial(0, err)
-			continue
-		} else {
-			p.mb.RecordPostgresqlCommitsDataPoint(now, i, metric.database)
-		}
-
-		rollbackValue := metric.stats["xact_rollback"]
-		if i, err := p.parseInt("xact_rollback", rollbackValue); err != nil {
-			errors.AddPartial(0, err)
-			continue
-		} else {
-			p.mb.RecordPostgresqlRollbacksDataPoint(now, i, metric.database)
-		}
-	}
+	r.Lock()
+	r.dbStats = dbStats
+	r.Unlock()
 }
 
-func (p *postgreSQLScraper) collectDatabaseSize(
+func (p *postgreSQLScraper) retrieveDatabaseSize(
 	ctx context.Context,
-	now pcommon.Timestamp,
+	wg *sync.WaitGroup,
 	client client,
 	databases []string,
-	errors scrapererror.ScrapeErrors,
+	r *dbRetrieval,
+	errors *scrapererror.ScrapeErrors,
 ) {
-	databaseSizeMetric, err := client.getDatabaseSize(ctx, databases)
+	defer wg.Done()
+	databaseSizeMetrics, err := client.getDatabaseSize(ctx, databases)
 	if err != nil {
 		p.logger.Error("Errors encountered while fetching database size", zap.Error(err))
-		errors.AddPartial(0, err)
-	}
-
-	// Metrics can be partially collected (non-nil) even if there were partial errors reported
-	if databaseSizeMetric == nil {
+		errors.AddPartial(1, err)
 		return
 	}
-	for _, metric := range databaseSizeMetric {
-		for k, v := range metric.stats {
-			i, err := p.parseInt(k, v)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlDbSizeDataPoint(now, i, metric.database)
-		}
-	}
+	r.Lock()
+	r.dbSizeMap = databaseSizeMetrics
+	r.Unlock()
 }
 
-func (p *postgreSQLScraper) collectBackends(
+func (p *postgreSQLScraper) retrieveBackends(
 	ctx context.Context,
-	now pcommon.Timestamp,
+	wg *sync.WaitGroup,
 	client client,
 	databases []string,
-	errors scrapererror.ScrapeErrors,
+	r *dbRetrieval,
+	errors *scrapererror.ScrapeErrors,
 ) {
-	backendsMetric, err := client.getBackends(ctx, databases)
+	defer wg.Done()
+	activityByDB, err := client.getBackends(ctx, databases)
 	if err != nil {
-		p.logger.Error("Errors encountered while fetching backends", zap.Error(err))
-		errors.AddPartial(0, err)
-	}
-
-	// Metrics can be partially collected (non-nil) even if there were partial errors reported
-	if backendsMetric == nil {
+		errors.AddPartial(1, err)
 		return
 	}
-	for _, metric := range backendsMetric {
-		for k, v := range metric.stats {
-			i, err := p.parseInt(k, v)
-			if err != nil {
-				errors.AddPartial(0, err)
-				continue
-			}
-			p.mb.RecordPostgresqlBackendsDataPoint(now, i, metric.database)
-		}
-	}
-}
-
-// parseInt converts string to int64.
-func (p *postgreSQLScraper) parseInt(key, value string) (int64, error) {
-	i, err := strconv.ParseInt(value, 10, 64)
-	if err != nil {
-		p.logger.Info(
-			"invalid value",
-			zap.String("expectedType", "int"),
-			zap.String("key", key),
-			zap.String("value", value),
-		)
-		return 0, err
-	}
-	return i, nil
+	r.Lock()
+	r.activityMap = activityByDB
+	r.Unlock()
 }
