@@ -67,9 +67,9 @@ func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 
 func getConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		ConnectionString:    goodConnectionString,
-		LogsContainerName:   logsContainerName,
-		TracesContainerName: tracesContainerName,
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		ConnectionString: goodConnectionString,
+		Logs:             LogsConfig{ContainerName: logsContainerName},
+		Traces:           TracesConfig{ContainerName: tracesContainerName},
 	}
 }

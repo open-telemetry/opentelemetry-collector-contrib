@@ -46,15 +46,15 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithTracesReceiverAndStabilityLevel(f.createTracesReceiver, component.StabilityLevelBeta),
-		component.WithLogsReceiverAndStabilityLevel(f.createLogsReceiver, component.StabilityLevelBeta))
+		component.WithTracesReceiver(f.createTracesReceiver, component.StabilityLevelBeta),
+		component.WithLogsReceiver(f.createLogsReceiver, component.StabilityLevelBeta))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() config.Receiver {
 	return &Config{
-		ReceiverSettings:    config.NewReceiverSettings(config.NewComponentID(typeStr)),
-		LogsContainerName:   logsContainerName,
-		TracesContainerName: tracesContainerName,
+		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+		Logs:             LogsConfig{ContainerName: logsContainerName},
+		Traces:           TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
@@ -99,31 +99,27 @@ func (f *blobReceiverFactory) getReceiver(
 	set component.ReceiverCreateSettings,
 	cfg config.Receiver) (component.Receiver, error) {
 
-	if f.receiver == nil {
-
+	var err error
+	r := f.receivers.GetOrAdd(cfg, func() component.Component {
 		receiverConfig, ok := cfg.(*Config)
 
 		if !ok {
-			return nil, errUnexpectedConfigurationType
+			err = errUnexpectedConfigurationType
+			return nil
 		}
 
-		blobEventHandler, err := f.getBlobEventHandler(receiverConfig, set.Logger)
-
+		var blobEventHandler BlobEventHandler
+		blobEventHandler, err = f.getBlobEventHandler(receiverConfig, set.Logger)
 		if err != nil {
-			set.Logger.Error(err.Error())
-			return nil, err
+			return nil
 		}
 
-		f.receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
+		var receiver component.Receiver
+		receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
+		return receiver
+	})
 
-		if err != nil {
-			set.Logger.Error(err.Error())
-			return nil, err
-		}
-
-	}
-
-	return f.receiver, nil
+	return r, err
 }
 
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {

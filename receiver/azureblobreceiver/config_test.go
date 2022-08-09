@@ -47,10 +47,10 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			ReceiverSettings:    config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "2")),
-			ConnectionString:    goodConnectionString,
-			LogsContainerName:   logsContainerName,
-			TracesContainerName: tracesContainerName,
+			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "2")),
+			ConnectionString: goodConnectionString,
+			Logs:             LogsConfig{ContainerName: logsContainerName},
+			Traces:           TracesConfig{ContainerName: tracesContainerName},
 		},
 		receiver)
 }

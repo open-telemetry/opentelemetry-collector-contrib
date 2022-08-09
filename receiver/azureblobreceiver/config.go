@@ -20,8 +20,20 @@ import (
 
 type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	ConnectionString        string `mapstructure:"connection_string"`
-	EventHubEndPoint        string `mapstructure:"event_hub_end_point"`
-	LogsContainerName       string `mapstructure:"logs_container_name"`
-	TracesContainerName     string `mapstructure:"traces_container_name"`
+	ConnectionString        string         `mapstructure:"connection_string"`
+	EventHub                EventHubConfig `mapstructure:"event_hub"`
+	Logs                    LogsConfig     `mapstructure:"logs"`
+	Traces                  TracesConfig   `mapstructure:"traces"`
+}
+
+type EventHubConfig struct {
+	EndPoint string `mapstructure:"end_point"`
+}
+
+type LogsConfig struct {
+	ContainerName string `mapstructure:"container_name"`
+}
+
+type TracesConfig struct {
+	ContainerName string `mapstructure:"container_name"`
 }
