@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -132,7 +132,7 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
 
-	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
+	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
@@ -193,7 +193,7 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 		assert.NoError(t, rcvr.Shutdown(context.Background()))
 	}()
 
-	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
+	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))

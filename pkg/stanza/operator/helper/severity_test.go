@@ -16,7 +16,7 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"testing"
@@ -556,7 +556,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 }
 
 func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
@@ -570,7 +570,7 @@ func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
 }
 
 func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}

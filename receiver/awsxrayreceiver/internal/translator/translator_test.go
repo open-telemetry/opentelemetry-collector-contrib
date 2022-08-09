@@ -17,7 +17,7 @@ package translator
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -841,7 +841,7 @@ func TestTranslation(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		content, err := ioutil.ReadFile(tc.samplePath)
+		content, err := os.ReadFile(tc.samplePath)
 		assert.NoError(t, err, tc.testCase+": can not read raw segment")
 		assert.True(t, len(content) > 0, tc.testCase+": content length is 0")
 

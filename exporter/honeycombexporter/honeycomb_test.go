@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,7 +49,7 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 			return
 		}
 		defer req.Body.Close()
-		b, err := ioutil.ReadAll(uncompressed)
+		b, err := io.ReadAll(uncompressed)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return

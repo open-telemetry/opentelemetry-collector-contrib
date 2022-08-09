@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -347,7 +346,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	require.Equal(t, zipkin_proto3.SpanSerializer{}.ContentType(), contentType)
 	// Finally we need to inspect the output
-	gotBytes, err := ioutil.ReadAll(buf)
+	gotBytes, err := io.ReadAll(buf)
 	require.NoError(t, err)
 
 	_, err = zipkin_proto3.ParseSpans(gotBytes, false)
