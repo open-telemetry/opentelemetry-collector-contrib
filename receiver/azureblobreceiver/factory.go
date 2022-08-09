@@ -123,7 +123,11 @@ func (f *blobReceiverFactory) getReceiver(
 		return receiver
 	})
 
-	return r, err
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Unwrap(), err
 }
 
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
