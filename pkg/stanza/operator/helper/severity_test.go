@@ -41,8 +41,9 @@ type severityTestCase struct {
 // These tests ensure that users may build a mapping that
 // maps values into any of the predefined keys.
 // For example, this ensures that users can do this:
-//   mapping:
-//     warn3: warn_three
+//
+//	mapping:
+//	  warn3: warn_three
 func validMappingKeyCases() []severityTestCase {
 	aliasedMapping := map[string]entry.Severity{
 		"trace":  entry.Trace,

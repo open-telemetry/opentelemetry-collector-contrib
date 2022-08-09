@@ -561,9 +561,10 @@ func buildBadSampleTrace() ptrace.Traces {
 }
 
 // buildSampleTrace builds the following trace:
-//   service-a/ping (server) ->
-//     service-a/ping (client) ->
-//       service-b/ping (server)
+//
+//	service-a/ping (server) ->
+//	  service-a/ping (client) ->
+//	    service-b/ping (server)
 func buildSampleTrace() ptrace.Traces {
 	traces := ptrace.NewTraces()
 

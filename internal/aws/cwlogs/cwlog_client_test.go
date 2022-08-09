@@ -77,9 +77,7 @@ func (svc *mockCloudWatchLogsClient) DescribeLogStreams(input *cloudwatchlogs.De
 	return args.Get(0).(*cloudwatchlogs.DescribeLogStreamsOutput), args.Error(1)
 }
 
-//
 // Tests
-//
 var previousSequenceToken = "0000"
 var expectedNextSequenceToken = "1111"
 var logGroup = "logGroup"
