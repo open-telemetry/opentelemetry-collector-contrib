@@ -5,7 +5,7 @@ change_type: bug_fix
 component: mongodbreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Partial scraper errors are fixed with metrics version support added
+note: Fix partial scraper errors not being reported
 
 # One or more tracking issues related to the change
 issues: [13108]
