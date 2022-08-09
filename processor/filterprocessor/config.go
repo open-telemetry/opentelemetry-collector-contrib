@@ -98,6 +98,33 @@ type LogMatchProperties struct {
 	// RecordAttributes defines a list of possible record attributes to match logs against.
 	// A match occurs if any record attribute matches at least one expression in this given list.
 	RecordAttributes []filterconfig.Attribute `mapstructure:"record_attributes"`
+
+	// SeverityTexts is a list of strings that the LogRecord's severity text field must match
+	// against.
+	SeverityTexts []string `mapstructure:"severity_texts"`
+
+	// LogBodies is a list of strings that the LogRecord's body field must match
+	// against.
+	LogBodies []string `mapstructure:"bodies"`
+}
+
+// isEmpty returns true if the properties is "empty" (meaning, there are no filters specified)
+// if this is the case, the filter should be ignored.
+func (lmp LogMatchProperties) isEmpty() bool {
+	return len(lmp.ResourceAttributes) == 0 && len(lmp.RecordAttributes) == 0 && len(lmp.SeverityTexts) == 0 && len(lmp.LogBodies) == 0
+}
+
+// matchProperties converts the LogMatchProperties to a corresponding filterconfig.MatchProperties
+func (lmp LogMatchProperties) matchProperties() *filterconfig.MatchProperties {
+	return &filterconfig.MatchProperties{
+		Config: filterset.Config{
+			MatchType: filterset.MatchType(lmp.LogMatchType),
+		},
+		Resources:        lmp.ResourceAttributes,
+		Attributes:       lmp.RecordAttributes,
+		LogSeverityTexts: lmp.SeverityTexts,
+		LogBodies:        lmp.LogBodies,
+	}
 }
 
 var _ config.Processor = (*Config)(nil)

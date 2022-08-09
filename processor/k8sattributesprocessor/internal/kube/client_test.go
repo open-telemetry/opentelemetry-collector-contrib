@@ -448,6 +448,20 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: map[string]string{
 				"annotation1": "av1",
 			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "auth-service-66f5996c7c",
+					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+				{
+					APIVersion: "apps/v1",
+					Kind:       "DaemonSet",
+					Name:       "auth-daemonset",
+					UID:        "c94d3814-2253-427a-ab13-2cf609e4dafa",
+				},
+			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
@@ -472,6 +486,38 @@ func TestExtractionRules(t *testing.T) {
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
+		},
+	}, {
+		name: "replicasetId",
+		rules: ExtractionRules{
+			ReplicaSetID: true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+		},
+	}, {
+		name: "replicasetName",
+		rules: ExtractionRules{
+			ReplicaSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.name": "auth-service-66f5996c7c",
+		},
+	}, {
+		name: "daemonsetUID",
+		rules: ExtractionRules{
+			DaemonSetUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
+		},
+	}, {
+		name: "daemonsetName",
+		rules: ExtractionRules{
+			DaemonSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.name": "auth-daemonset",
 		},
 	}, {
 		name: "metadata",
