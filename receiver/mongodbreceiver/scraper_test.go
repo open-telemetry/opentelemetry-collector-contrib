@@ -141,7 +141,7 @@ func TestGlobalLockTimeOldFormat(t *testing.T) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-	scraper.recordGlobalLockTime(now, doc, scrapererror.ScrapeErrors{})
+	scraper.recordGlobalLockTime(now, doc, &scrapererror.ScrapeErrors{})
 	expectedValue := (int64(116749+14340) / 1000)
 
 	metrics := scraper.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
