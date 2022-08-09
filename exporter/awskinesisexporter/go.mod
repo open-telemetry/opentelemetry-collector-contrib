@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.70
+	github.com/aws/aws-sdk-go v1.44.72
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.57.2
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 )
 
 require (

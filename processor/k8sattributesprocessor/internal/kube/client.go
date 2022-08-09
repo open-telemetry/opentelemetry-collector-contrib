@@ -300,14 +300,39 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName {
+	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName ||
+		c.Rules.DaemonSetUID || c.Rules.DaemonSetName ||
+		c.Rules.JobUID || c.Rules.JobName ||
+		c.Rules.StatefulSetUID || c.Rules.StatefulSetName {
 		for _, ref := range pod.OwnerReferences {
-			if ref.Kind == "ReplicaSet" {
+			switch ref.Kind {
+			case "ReplicaSet":
 				if c.Rules.ReplicaSetID {
 					tags[conventions.AttributeK8SReplicaSetUID] = string(ref.UID)
 				}
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
+				}
+			case "DaemonSet":
+				if c.Rules.DaemonSetUID {
+					tags[conventions.AttributeK8SDaemonSetUID] = string(ref.UID)
+				}
+				if c.Rules.DaemonSetName {
+					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
+				}
+			case "StatefulSet":
+				if c.Rules.StatefulSetUID {
+					tags[conventions.AttributeK8SStatefulSetUID] = string(ref.UID)
+				}
+				if c.Rules.StatefulSetName {
+					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
+				}
+			case "Job":
+				if c.Rules.JobUID {
+					tags[conventions.AttributeK8SJobUID] = string(ref.UID)
+				}
+				if c.Rules.JobName {
+					tags[conventions.AttributeK8SJobName] = ref.Name
 				}
 			}
 		}

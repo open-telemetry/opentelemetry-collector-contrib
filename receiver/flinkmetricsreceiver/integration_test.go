@@ -20,7 +20,7 @@ package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -187,7 +187,7 @@ func (ws waitStrategy) waitFor(ctx context.Context, _ string) error {
 				continue
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				continue
 			}

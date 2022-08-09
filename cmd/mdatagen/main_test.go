@@ -15,7 +15,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -84,7 +84,7 @@ func Test_runContents(t *testing.T) {
 			tmpdir := t.TempDir()
 
 			metadataFile := filepath.Join(tmpdir, "metadata.yaml")
-			require.NoError(t, ioutil.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
+			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
 			err := run(metadataFile, tt.args.useExpGen)
 
@@ -102,10 +102,10 @@ func Test_runContents(t *testing.T) {
 				actualDocumentation := filepath.Join(tmpdir, "documentation.md")
 				require.FileExists(t, actualDocumentation)
 				if tt.expectedDocumentation != "" {
-					expectedFileBytes, err := ioutil.ReadFile(tt.expectedDocumentation)
+					expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
 					require.NoError(t, err)
 
-					actualFileBytes, err := ioutil.ReadFile(actualDocumentation)
+					actualFileBytes, err := os.ReadFile(actualDocumentation)
 					require.NoError(t, err)
 
 					require.Equal(t, expectedFileBytes, actualFileBytes)

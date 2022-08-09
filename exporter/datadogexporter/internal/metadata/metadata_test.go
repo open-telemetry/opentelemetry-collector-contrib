@@ -17,7 +17,7 @@ package metadata
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -264,7 +264,7 @@ func TestPushMetadata(t *testing.T) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
 		var recvMetadata HostMetadata

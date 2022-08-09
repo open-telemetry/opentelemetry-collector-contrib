@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"go/format"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -130,7 +129,7 @@ func generateMetrics(ymlDir string, thisDir string, md metadata, useExpGen bool)
 		}
 	}
 	outputFilepath := filepath.Join(outputDir, outputFile)
-	if err := ioutil.WriteFile(outputFilepath, formatted, 0600); err != nil {
+	if err := os.WriteFile(outputFilepath, formatted, 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFilepath, err)
 	}
 
@@ -157,7 +156,7 @@ func generateDocumentation(ymlDir string, thisDir string, md metadata, useExpGen
 	}
 
 	outputFile := filepath.Join(ymlDir, "documentation.md")
-	if err := ioutil.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
+	if err := os.WriteFile(outputFile, buf.Bytes(), 0600); err != nil {
 		return fmt.Errorf("failed writing %q: %w", outputFile, err)
 	}
 

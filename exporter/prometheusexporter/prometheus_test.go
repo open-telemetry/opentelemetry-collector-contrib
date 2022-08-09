@@ -17,7 +17,7 @@ package prometheusexporter
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -142,7 +142,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 		}
-		blob, _ := ioutil.ReadAll(res.Body)
+		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
 			`# HELP test_metric_1_this_one_there_where Extra ones`,
@@ -176,7 +176,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	if g, w := res.StatusCode, 200; g != w {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 	}
-	blob, _ := ioutil.ReadAll(res.Body)
+	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
 }
@@ -221,7 +221,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 		}
-		blob, _ := ioutil.ReadAll(res.Body)
+		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
 			`# HELP test_metric_1_this_one_there_where Extra ones`,
@@ -251,7 +251,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	if g, w := res.StatusCode, 200; g != w {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 	}
-	blob, _ := ioutil.ReadAll(res.Body)
+	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
 }
@@ -297,7 +297,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 		}
-		blob, _ := ioutil.ReadAll(res.Body)
+		blob, _ := io.ReadAll(res.Body)
 		_ = res.Body.Close()
 		want := []string{
 			`# HELP test_metric_1_this_one_there_where Extra ones`,
@@ -327,7 +327,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	if g, w := res.StatusCode, 200; g != w {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 	}
-	blob, _ := ioutil.ReadAll(res.Body)
+	blob, _ := io.ReadAll(res.Body)
 	_ = res.Body.Close()
 	require.Emptyf(t, string(blob), "Metrics did not expire")
 }
@@ -375,7 +375,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
 	}
 
-	blob, _ := ioutil.ReadAll(rsp.Body)
+	blob, _ := io.ReadAll(rsp.Body)
 	_ = rsp.Body.Close()
 
 	want := []string{

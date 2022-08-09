@@ -17,7 +17,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -72,7 +72,7 @@ func testMetricConversion(t *testing.T, metricFile int, expectedName string, exp
 }
 
 func readTestdataMetric(i int) dotnet.Metric {
-	bytes, err := ioutil.ReadFile(testdataMetricFname(i))
+	bytes, err := os.ReadFile(testdataMetricFname(i))
 	if err != nil {
 		panic(err)
 	}

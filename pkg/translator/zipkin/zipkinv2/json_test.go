@@ -15,7 +15,7 @@
 package zipkinv2
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestJSONUnmarshaler_UnmarshalTraces(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/zipkin_v2_single.json")
+	data, err := os.ReadFile("testdata/zipkin_v2_single.json")
 	require.NoError(t, err)
 	decoder := NewJSONTracesUnmarshaler(false)
 	td, err := decoder.UnmarshalTraces(data)

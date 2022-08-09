@@ -16,7 +16,7 @@ package dockerstatsreceiver
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -234,7 +234,7 @@ func TestZeroValueStats(t *testing.T) {
 }
 
 func statsJSON(t *testing.T) *dtypes.StatsJSON {
-	statsRaw, err := ioutil.ReadFile(filepath.Join("testdata", "stats.json"))
+	statsRaw, err := os.ReadFile(filepath.Join("testdata", "stats.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -248,7 +248,7 @@ func statsJSON(t *testing.T) *dtypes.StatsJSON {
 }
 
 func containerJSON(t *testing.T) docker.Container {
-	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
+	containerRaw, err := os.ReadFile(filepath.Join("testdata", "container.json"))
 	if err != nil {
 		t.Fatal(err)
 	}

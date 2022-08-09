@@ -16,14 +16,14 @@ package golden // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // ReadMetrics reads a pmetric.Metrics from the specified file
 func ReadMetrics(filePath string) (pmetric.Metrics, error) {
-	expectedFileBytes, err := ioutil.ReadFile(filePath)
+	expectedFileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return pmetric.Metrics{}, err
 	}
@@ -46,5 +46,5 @@ func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
 		return err
 	}
 	b = append(b, []byte("\n")...)
-	return ioutil.WriteFile(filePath, b, 0600)
+	return os.WriteFile(filePath, b, 0600)
 }

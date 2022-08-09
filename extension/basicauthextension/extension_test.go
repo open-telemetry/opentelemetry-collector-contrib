@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -59,7 +58,7 @@ var (
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
+	f, err := os.CreateTemp("", ".htpasswd")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
@@ -160,7 +159,7 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 
 func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
+	f, err := os.CreateTemp("", ".htpasswd")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 

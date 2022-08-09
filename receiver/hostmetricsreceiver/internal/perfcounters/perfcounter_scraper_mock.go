@@ -85,12 +85,12 @@ func (obj mockPerfDataObjectError) GetValues(counterNames ...string) ([]*Counter
 //
 // Example Usage:
 //
-// s := NewMockPerfCounterScraper(map[string]map[string][]int64{
-//     "Object1": map[string][]int64{
-//         "Counter1": []int64{1, 2},
-//         "Counter2": []int64{4},
-//     },
-// })
+//	s := NewMockPerfCounterScraper(map[string]map[string][]int64{
+//	    "Object1": map[string][]int64{
+//	        "Counter1": []int64{1, 2},
+//	        "Counter2": []int64{4},
+//	    },
+//	})
 //
 // s.scrape().GetObject("Object1").GetValues("Counter1", "Counter2")
 //

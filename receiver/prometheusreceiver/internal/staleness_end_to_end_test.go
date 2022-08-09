@@ -17,7 +17,7 @@ package internal_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -91,7 +91,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	prweUploads := make(chan *prompb.WriteRequest)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
-		payload, rerr := ioutil.ReadAll(req.Body)
+		payload, rerr := io.ReadAll(req.Body)
 		if err != nil {
 			panic(rerr)
 		}
@@ -140,7 +140,7 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
 	_, err = confFile.Write([]byte(cfg))
