@@ -224,6 +224,30 @@ func TestExporter_pushLogData(t *testing.T) {
 				return outLogs
 			},
 		},
+		{
+			name:             "bad request",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusBadRequest,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				require.True(t, consumererror.IsPermanent(err))
+			},
+		},
+		{
+			name:             "too many requests",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusTooManyRequests,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				var e consumererror.Logs
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -11,14 +11,24 @@ These are the metrics available for this scraper.
 | **mongodb.cache.operations** | The number of cache operations of the instance. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
 | **mongodb.collection.count** | The number of collections. | {collections} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.connection.count** | The number of connections. | {connections} | Sum(Int) | <ul> <li>database</li> <li>connection_type</li> </ul> |
+| **mongodb.cursor.count** | The number of open cursors maintained for clients. | {cursors} | Sum(Int) | <ul> </ul> |
+| **mongodb.cursor.timeout.count** | The number of cursors that have timed out. | {cursors} | Sum(Int) | <ul> </ul> |
 | **mongodb.data.size** | The size of the collection. Data compression does not affect this value. | By | Sum(Int) | <ul> <li>database</li> </ul> |
+| **mongodb.database.count** | The number of existing databases. | {databases} | Sum(Int) | <ul> </ul> |
+| **mongodb.document.operation.count** | The number of document operations executed. | {documents} | Sum(Int) | <ul> <li>database</li> <li>operation</li> </ul> |
 | **mongodb.extent.count** | The number of extents. | {extents} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.global_lock.time** | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
+| **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |
 | **mongodb.index.count** | The number of indexes. | {indexes} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.index.size** | Sum of the space allocated to all indexes in the database, including free index space. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.memory.usage** | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
+| **mongodb.network.io.receive** | The number of bytes received. | By | Sum(Int) | <ul> </ul> |
+| **mongodb.network.io.transmit** | The number of by transmitted. | By | Sum(Int) | <ul> </ul> |
+| **mongodb.network.request.count** | The number of requests received by the server. | {requests} | Sum(Int) | <ul> </ul> |
 | **mongodb.object.count** | The number of objects. | {objects} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.operation.count** | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **mongodb.operation.time** | The total time spent performing operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **mongodb.session.count** | The total number of active sessions. | {sessions} | Sum(Int) | <ul> </ul> |
 | **mongodb.storage.size** | The total amount of storage allocated to this collection. If collection data is compressed it reflects the compressed size. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
@@ -40,6 +50,7 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| collection | The name of a collection. |  |
 | connection_type (type) | The status of the connection. | active, available, current |
 | database | The name of a database. |  |
 | memory_type (type) | The type of memory used. | resident, virtual |

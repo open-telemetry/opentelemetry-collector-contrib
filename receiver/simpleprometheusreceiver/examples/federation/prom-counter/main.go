@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package main
 
 import (
@@ -63,7 +62,9 @@ func main() {
 	meter := initMeter()
 	// logging
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 	logger.Info("Start Prometheus metrics app")
 	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
 	if err != nil {

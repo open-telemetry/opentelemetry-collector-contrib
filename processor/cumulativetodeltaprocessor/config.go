@@ -30,10 +30,6 @@ type Config struct {
 	// MaxStaleness is the total time a state entry will live past the time it was last seen. Set to 0 to retain state indefinitely.
 	MaxStaleness time.Duration `mapstructure:"max_staleness"`
 
-	// Deprecated: List of cumulative metrics to convert to delta.
-	// Cannot be used with Include/Exclude.
-	Metrics []string `mapstructure:"metrics"`
-
 	// Include specifies a filter on the metrics that should be converted.
 	// Exclude specifies a filter on the metrics that should not be converted.
 	// If neither `include` nor `exclude` are set, all metrics will be converted.
@@ -53,9 +49,6 @@ var _ config.Processor = (*Config)(nil)
 // Validate checks whether the input configuration has all of the required fields for the processor.
 // An error is returned if there are any invalid inputs.
 func (config *Config) Validate() error {
-	if len(config.Metrics) > 0 && (len(config.Include.Metrics) > 0 || len(config.Exclude.Metrics) > 0) {
-		return fmt.Errorf("metrics and include/exclude cannot be used at the same time")
-	}
 	if (len(config.Include.Metrics) > 0 && len(config.Include.MatchType) == 0) ||
 		(len(config.Exclude.Metrics) > 0 && len(config.Exclude.MatchType) == 0) {
 		return fmt.Errorf("match_type must be set if metrics are supplied")
