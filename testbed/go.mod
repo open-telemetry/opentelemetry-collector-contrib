@@ -32,7 +32,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/atomic v1.9.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	golang.org/x/text v0.3.7
 )
 
