@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	cloud.google.com/go/compute v1.6.1
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.4
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.5
 	github.com/aws/aws-sdk-go v1.44.70
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.13.1
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.57.2
 	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	k8s.io/apimachinery v0.24.3
 	k8s.io/client-go v0.24.3
 )
