@@ -17,7 +17,6 @@ package elasticexporter
 import (
 	"context"
 	"encoding/pem"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -144,7 +143,7 @@ func newRecorder(t *testing.T) (*transporttest.RecorderTransport, *Config) {
 	t.Cleanup(srv.Close)
 
 	// Write the server's self-signed certificate to a file to test the exporter's TLS config.
-	certfile, err := ioutil.TempFile("", "otel-elastic-cacert")
+	certfile, err := os.CreateTemp("", "otel-elastic-cacert")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.Remove(certfile.Name()) })
 	err = pem.Encode(certfile, &pem.Block{

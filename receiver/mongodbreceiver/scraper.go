@@ -76,12 +76,12 @@ func (s *mongodbScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mongoVersion = version
 	}
 
-	var errors scrapererror.ScrapeErrors
-	s.collectMetrics(ctx, errors)
-	return s.mb.Emit(), errors.Combine()
+	errs := &scrapererror.ScrapeErrors{}
+	s.collectMetrics(ctx, errs)
+	return s.mb.Emit(), errs.Combine()
 }
 
-func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		s.logger.Error("Failed to fetch database names", zap.Error(err))
@@ -91,11 +91,11 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
-	s.collectAdminDatabase(ctx, now, errors)
-	s.collectTopStats(ctx, now, errors)
+	s.collectAdminDatabase(ctx, now, errs)
+	s.collectTopStats(ctx, now, errs)
 
 	for _, dbName := range dbNames {
-		s.collectDatabase(ctx, now, dbName, errors)
+		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
 		if err != nil {
 			s.logger.Error("Failed to fetch collection names", zap.Error(err))
@@ -107,86 +107,86 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errors scrapererror
 		mongo40, _ := version.NewVersion("4.0")
 		if s.mongoVersion.GreaterThanOrEqual(mongo40) {
 			for _, collectionName := range collectionNames {
-				s.collectIndexStats(ctx, now, dbName, collectionName, errors)
+				s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 			}
 		}
 	}
 }
 
-func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 	} else {
-		s.recordDBStats(now, dbStats, databaseName, errors)
+		s.recordDBStats(now, dbStats, databaseName, errs)
 	}
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
-	s.recordNormalServerStats(now, serverStatus, databaseName, errors)
+	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 
 	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
-	s.recordAdminStats(now, serverStatus, errors)
+	s.recordAdminStats(now, serverStatus, errs)
 	s.mb.EmitForResource()
 }
 
-func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	topStats, err := s.client.TopStats(ctx)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
-	s.recordOperationTime(now, topStats, errors)
+	s.recordOperationTime(now, topStats, errs)
 	s.mb.EmitForResource()
 }
 
-func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
-	s.recordIndexStats(now, indexStats, databaseName, collectionName, errors)
+	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
 	s.mb.EmitForResource()
 }
 
-func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	s.recordCollections(now, doc, dbName, errors)
-	s.recordDataSize(now, doc, dbName, errors)
-	s.recordExtentCount(now, doc, dbName, errors)
-	s.recordIndexSize(now, doc, dbName, errors)
-	s.recordIndexCount(now, doc, dbName, errors)
-	s.recordObjectCount(now, doc, dbName, errors)
-	s.recordStorageSize(now, doc, dbName, errors)
+func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordCollections(now, doc, dbName, errs)
+	s.recordDataSize(now, doc, dbName, errs)
+	s.recordExtentCount(now, doc, dbName, errs)
+	s.recordIndexSize(now, doc, dbName, errs)
+	s.recordIndexCount(now, doc, dbName, errs)
+	s.recordObjectCount(now, doc, dbName, errs)
+	s.recordStorageSize(now, doc, dbName, errs)
 }
 
-func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errors scrapererror.ScrapeErrors) {
-	s.recordConnections(now, doc, dbName, errors)
-	s.recordDocumentOperations(now, doc, dbName, errors)
-	s.recordMemoryUsage(now, doc, dbName, errors)
+func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordConnections(now, doc, dbName, errs)
+	s.recordDocumentOperations(now, doc, dbName, errs)
+	s.recordMemoryUsage(now, doc, dbName, errs)
 }
 
-func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errors scrapererror.ScrapeErrors) {
-	s.recordCacheOperations(now, document, errors)
-	s.recordCursorCount(now, document, errors)
-	s.recordCursorTimeoutCount(now, document, errors)
-	s.recordGlobalLockTime(now, document, errors)
-	s.recordNetworkCount(now, document, errors)
-	s.recordOperations(now, document, errors)
-	s.recordSessionCount(now, document, errors)
+func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
+	s.recordCacheOperations(now, document, errs)
+	s.recordCursorCount(now, document, errs)
+	s.recordCursorTimeoutCount(now, document, errs)
+	s.recordGlobalLockTime(now, document, errs)
+	s.recordNetworkCount(now, document, errs)
+	s.recordOperations(now, document, errs)
+	s.recordSessionCount(now, document, errs)
 }
 
-func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errors scrapererror.ScrapeErrors) {
-	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errors)
+func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
 }

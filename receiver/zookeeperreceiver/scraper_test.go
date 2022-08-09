@@ -19,8 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -375,7 +375,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename str
 	require.NoError(t, err)
 
 	for {
-		out, err := ioutil.ReadFile(filepath.Join("testdata", filename))
+		out, err := os.ReadFile(filepath.Join("testdata", filename))
 		require.NoError(t, err)
 
 		_, err = conn.Write(out)

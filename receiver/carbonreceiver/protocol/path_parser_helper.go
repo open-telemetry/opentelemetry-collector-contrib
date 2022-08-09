@@ -26,7 +26,7 @@ import (
 // PathParser implements the code needed to handle only the <metric_path> part of
 // a Carbon metric line:
 //
-// 	<metric_path> <metric_value> <metric_timestamp>
+//	<metric_path> <metric_value> <metric_timestamp>
 //
 // See https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol,
 // for more information.
@@ -88,7 +88,8 @@ func NewParser(pathParser PathParser) (Parser, error) {
 // https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 //
 // The expected line is a text line in the following format:
-// 	"<metric_path> <metric_value> <metric_timestamp>"
+//
+//	"<metric_path> <metric_value> <metric_timestamp>"
 //
 // The <metric_path> is where there are variations that require selection
 // of specialized parsers to handle them, but include the metric name and

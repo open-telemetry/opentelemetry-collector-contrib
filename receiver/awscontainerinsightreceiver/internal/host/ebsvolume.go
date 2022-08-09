@@ -191,7 +191,7 @@ func (e *ebsVolume) getEBSVolumeID(devName string) string {
 	return ""
 }
 
-//extract the ebs volume id used by kubernetes cluster
+// extract the ebs volume id used by kubernetes cluster
 func (e *ebsVolume) extractEbsIDsUsedByKubernetes() map[string]string {
 	ebsVolumeIDs := make(map[string]string)
 

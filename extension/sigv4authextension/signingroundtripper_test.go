@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -70,7 +69,7 @@ func TestRoundTrip(t *testing.T) {
 				assert.Equal(t, awsSDKInfo, r.Header.Get("User-Agent"))
 
 				reqBody := r.Body
-				content, err := ioutil.ReadAll(reqBody)
+				content, err := io.ReadAll(reqBody)
 
 				assert.NoError(t, err)
 				assert.Equal(t, body, string(content))

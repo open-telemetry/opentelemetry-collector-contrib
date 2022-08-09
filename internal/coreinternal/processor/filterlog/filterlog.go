@@ -28,7 +28,8 @@ import (
 // Matcher is an interface that allows matching a log record against a
 // configuration of a match.
 // TODO: Modify Matcher to invoke both the include and exclude properties so
-//  calling processors will always have the same logic.
+//
+//	calling processors will always have the same logic.
 type Matcher interface {
 	MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }
