@@ -1411,7 +1411,7 @@ func (m *metricK8sNodeNetworkErrorsReceive) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1464,7 +1464,7 @@ func (m *metricK8sNodeNetworkErrorsTransmit) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1571,7 +1571,7 @@ func (m *metricK8sNodeNetworkIoReceive) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1624,7 +1624,7 @@ func (m *metricK8sNodeNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2272,7 +2272,7 @@ func (m *metricK8sPodNetworkErrorsReceive) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2325,7 +2325,7 @@ func (m *metricK8sPodNetworkErrorsTransmit) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2432,7 +2432,7 @@ func (m *metricK8sPodNetworkIoReceive) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2485,7 +2485,7 @@ func (m *metricK8sPodNetworkIoTransmit) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("interface", pcommon.NewValueString(interfaceAttributeValue))
+	dp.Attributes().InsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
