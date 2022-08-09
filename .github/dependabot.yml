@@ -51,10 +51,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/awsprometheusremotewriteexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/awsxrayexporter"
     schedule:
       interval: "weekly"
@@ -83,10 +79,6 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
-    directory: "/exporter/elasticexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
     directory: "/exporter/elasticsearchexporter"
     schedule:
       interval: "weekly"
@@ -104,10 +96,6 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/exporter/googlecloudpubsubexporter"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: "gomod"
-    directory: "/exporter/honeycombexporter"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
