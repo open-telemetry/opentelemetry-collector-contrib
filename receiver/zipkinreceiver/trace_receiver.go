@@ -157,7 +157,8 @@ func (zr *zipkinReceiver) Shutdown(context.Context) error {
 // a compression such as "gzip", "deflate", "zlib", is found, the body will
 // be uncompressed accordingly or return the body untouched if otherwise.
 // Clients such as Zipkin-Java do this behavior e.g.
-//    send "Content-Encoding":"gzip" of the JSON content.
+//
+//	send "Content-Encoding":"gzip" of the JSON content.
 func processBodyIfNecessary(req *http.Request) io.Reader {
 	switch req.Header.Get("Content-Encoding") {
 	default:
