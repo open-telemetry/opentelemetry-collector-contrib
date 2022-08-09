@@ -302,7 +302,8 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.ReplicaSetID || c.Rules.ReplicaSetName ||
 		c.Rules.DaemonSetUID || c.Rules.DaemonSetName ||
-		c.Rules.JobUID || c.Rules.JobName {
+		c.Rules.JobUID || c.Rules.JobName ||
+		c.Rules.StatefulSetUID || c.Rules.StatefulSetName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -318,6 +319,13 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 				}
 				if c.Rules.DaemonSetName {
 					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
+				}
+			case "StatefulSet":
+				if c.Rules.StatefulSetUID {
+					tags[conventions.AttributeK8SStatefulSetUID] = string(ref.UID)
+				}
+				if c.Rules.StatefulSetName {
+					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
 				if c.Rules.JobUID {

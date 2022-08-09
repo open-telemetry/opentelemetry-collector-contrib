@@ -192,6 +192,8 @@ type ExtractionRules struct {
 	PodUID             bool
 	ReplicaSetID       bool
 	ReplicaSetName     bool
+	StatefulSetUID     bool
+	StatefulSetName    bool
 	Node               bool
 	StartTime          bool
 	ContainerID        bool
