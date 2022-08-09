@@ -16,7 +16,6 @@ package postgresqlreceiver
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -96,34 +95,36 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 type mockClientFactory struct{ mock.Mock }
 type mockClient struct{ mock.Mock }
 
+var _ client = &mockClient{}
+
 func (m *mockClient) Close() error {
 	args := m.Called()
 	return args.Error(0)
 }
 
-func (m *mockClient) getCommitsAndRollbacks(_ context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	args := m.Called(databases)
-	return args.Get(0).([]MetricStat), args.Error(1)
+	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
 }
 
-func (m *mockClient) getBackends(_ context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName]int64, error) {
 	args := m.Called(databases)
-	return args.Get(0).([]MetricStat), args.Error(1)
+	return args.Get(0).(map[databaseName]int64), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) ([]MetricStat, error) {
+func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) (map[databaseName]int64, error) {
 	args := m.Called(databases)
-	return args.Get(0).([]MetricStat), args.Error(1)
+	return args.Get(0).(map[databaseName]int64), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(_ context.Context) ([]MetricStat, error) {
-	args := m.Called()
-	return args.Get(0).([]MetricStat), args.Error(1)
+func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string) (map[tableIdentifier]tableStats, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[tableIdentifier]tableStats), args.Error(1)
 }
 
-func (m *mockClient) getBlocksReadByTable(_ context.Context) ([]MetricStat, error) {
-	args := m.Called()
-	return args.Get(0).([]MetricStat), args.Error(1)
+func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
 }
 
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
@@ -154,90 +155,77 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
 
-		commitsAndRollbacks := []MetricStat{}
-		dbSize := []MetricStat{}
-		backends := []MetricStat{}
+		commitsAndRollbacks := map[databaseName]databaseStats{}
+		dbSize := map[databaseName]int64{}
+		backends := map[databaseName]int64{}
 
 		for idx, db := range databases {
-			commitsAndRollbacks = append(commitsAndRollbacks, MetricStat{
-				database: db,
-				stats: map[string]string{
-					"xact_commit":   fmt.Sprintf("%d", idx+1),
-					"xact_rollback": fmt.Sprintf("%d", idx+2),
-				},
-			})
-			dbSize = append(dbSize, MetricStat{
-				database: db,
-				stats:    map[string]string{"db_size": fmt.Sprintf("%d", idx+4)},
-			})
-			backends = append(backends, MetricStat{
-				database: db,
-				stats:    map[string]string{"count": fmt.Sprintf("%d", idx+3)},
-			})
+			commitsAndRollbacks[databaseName(db)] = databaseStats{
+				transactionCommitted: int64(idx + 1),
+				transactionRollback:  int64(idx + 2),
+			}
+			dbSize[databaseName(db)] = int64(idx + 4)
+			backends[databaseName(db)] = int64(idx + 3)
 		}
 
-		m.On("getCommitsAndRollbacks", databases).Return(commitsAndRollbacks, nil)
+		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 	} else {
-		tableMetrics := []MetricStat{}
-		tableMetrics = append(tableMetrics, MetricStat{
-			database: database,
-			table:    "public.table1",
-			stats: map[string]string{
-				"live":    fmt.Sprintf("%d", index+7),
-				"dead":    fmt.Sprintf("%d", index+8),
-				"ins":     fmt.Sprintf("%d", index+39),
-				"upd":     fmt.Sprintf("%d", index+40),
-				"del":     fmt.Sprintf("%d", index+41),
-				"hot_upd": fmt.Sprintf("%d", index+42),
+		table1 := "public.table1"
+		table2 := "public.table2"
+		tableMetrics := map[tableIdentifier]tableStats{
+			tableKey(database, table1): {
+				database: database,
+				table:    table1,
+				live:     int64(index + 7),
+				dead:     int64(index + 8),
+				inserts:  int64(index + 39),
+				upd:      int64(index + 40),
+				del:      int64(index + 41),
+				hotUpd:   int64(index + 42),
 			},
-		})
+			tableKey(database, table2): {
+				database: database,
+				table:    table2,
+				live:     int64(index + 9),
+				dead:     int64(index + 10),
+				inserts:  int64(index + 43),
+				upd:      int64(index + 44),
+				del:      int64(index + 45),
+				hotUpd:   int64(index + 46),
+			},
+		}
 
-		tableMetrics = append(tableMetrics, MetricStat{
-			database: database,
-			table:    "public.table2",
-			stats: map[string]string{
-				"live":    fmt.Sprintf("%d", index+9),
-				"dead":    fmt.Sprintf("%d", index+10),
-				"ins":     fmt.Sprintf("%d", index+43),
-				"upd":     fmt.Sprintf("%d", index+44),
-				"del":     fmt.Sprintf("%d", index+45),
-				"hot_upd": fmt.Sprintf("%d", index+46),
+		blocksMetrics := map[tableIdentifier]tableIOStats{
+			tableKey(database, table1): {
+				database:  database,
+				table:     table1,
+				heapRead:  int64(index + 19),
+				heapHit:   int64(index + 20),
+				idxRead:   int64(index + 21),
+				idxHit:    int64(index + 22),
+				toastRead: int64(index + 23),
+				toastHit:  int64(index + 24),
+				tidxRead:  int64(index + 25),
+				tidxHit:   int64(index + 26),
 			},
-		})
-		m.On("getDatabaseTableMetrics").Return(tableMetrics, nil)
+			tableKey(database, table2): {
+				database:  database,
+				table:     table2,
+				heapRead:  int64(index + 27),
+				heapHit:   int64(index + 28),
+				idxRead:   int64(index + 29),
+				idxHit:    int64(index + 30),
+				toastRead: int64(index + 31),
+				toastHit:  int64(index + 32),
+				tidxRead:  int64(index + 33),
+				tidxHit:   int64(index + 34),
+			},
+		}
 
-		blocksMetrics := []MetricStat{}
-		blocksMetrics = append(blocksMetrics, MetricStat{
-			database: database,
-			table:    "public.table1",
-			stats: map[string]string{
-				"heap_read":  fmt.Sprintf("%d", index+19),
-				"heap_hit":   fmt.Sprintf("%d", index+20),
-				"idx_read":   fmt.Sprintf("%d", index+21),
-				"idx_hit":    fmt.Sprintf("%d", index+22),
-				"toast_read": fmt.Sprintf("%d", index+23),
-				"toast_hit":  fmt.Sprintf("%d", index+24),
-				"tidx_read":  fmt.Sprintf("%d", index+25),
-				"tidx_hit":   fmt.Sprintf("%d", index+26),
-			},
-		})
+		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
+		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
-		blocksMetrics = append(blocksMetrics, MetricStat{
-			database: database,
-			table:    "public.table2",
-			stats: map[string]string{
-				"heap_read":  fmt.Sprintf("%d", index+27),
-				"heap_hit":   fmt.Sprintf("%d", index+28),
-				"idx_read":   fmt.Sprintf("%d", index+29),
-				"idx_hit":    fmt.Sprintf("%d", index+30),
-				"toast_read": fmt.Sprintf("%d", index+31),
-				"toast_hit":  fmt.Sprintf("%d", index+32),
-				"tidx_read":  fmt.Sprintf("%d", index+33),
-				"tidx_hit":   fmt.Sprintf("%d", index+34),
-			},
-		})
-		m.On("getBlocksReadByTable").Return(blocksMetrics, nil)
 	}
 }
