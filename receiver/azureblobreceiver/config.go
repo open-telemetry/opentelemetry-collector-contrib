@@ -27,7 +27,7 @@ type Config struct {
 }
 
 type EventHubConfig struct {
-	EndPoint string `mapstructure:"end_point"`
+	EndPoint string `mapstructure:"endpoint"`
 }
 
 type LogsConfig struct {
