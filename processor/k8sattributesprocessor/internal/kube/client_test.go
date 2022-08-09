@@ -455,6 +455,24 @@ func TestExtractionRules(t *testing.T) {
 					Name:       "auth-service-66f5996c7c",
 					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
 				},
+				{
+					APIVersion: "apps/v1",
+					Kind:       "DaemonSet",
+					Name:       "auth-daemonset",
+					UID:        "c94d3814-2253-427a-ab13-2cf609e4dafa",
+				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "pi",
+					UID:        "59f27ac1-5c71-42e5-abe9-2c499d603706",
+				},
+				{
+					APIVersion: "apps/v1",
+					Kind:       "StatefulSet",
+					Name:       "pi-statefulset",
+					UID:        "03755eb1-6175-47d5-afd5-05cfc30244d7",
+				},
 			},
 		},
 		Spec: api_v1.PodSpec{
@@ -496,6 +514,54 @@ func TestExtractionRules(t *testing.T) {
 		},
 		attributes: map[string]string{
 			"k8s.replicaset.name": "auth-service-66f5996c7c",
+		},
+	}, {
+		name: "daemonsetUID",
+		rules: ExtractionRules{
+			DaemonSetUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
+		},
+	}, {
+		name: "daemonsetName",
+		rules: ExtractionRules{
+			DaemonSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.name": "auth-daemonset",
+		},
+	}, {
+		name: "jobUID",
+		rules: ExtractionRules{
+			JobUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
+		},
+	}, {
+		name: "jobName",
+		rules: ExtractionRules{
+			JobName: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.name": "pi",
+		},
+	}, {
+		name: "statefulsetUID",
+		rules: ExtractionRules{
+			StatefulSetUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
+		},
+	}, {
+		name: "jobName",
+		rules: ExtractionRules{
+			StatefulSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.statefulset.name": "pi-statefulset",
 		},
 	}, {
 		name: "metadata",

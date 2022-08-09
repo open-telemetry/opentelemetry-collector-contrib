@@ -140,29 +140,29 @@ func (m *mockClient) Close() error {
 	return args.Error(0)
 }
 
-func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (map[string]databaseStats, error) {
+func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	args := m.Called(databases)
-	return args.Get(0).(map[string]databaseStats), args.Error(1)
+	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
 }
 
-func (m *mockClient) getBackends(_ context.Context, databases []string) (map[string]int64, error) {
+func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName]int64, error) {
 	args := m.Called(databases)
-	return args.Get(0).(map[string]int64), args.Error(1)
+	return args.Get(0).(map[databaseName]int64), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) (map[string]int64, error) {
+func (m *mockClient) getDatabaseSize(_ context.Context, databases []string) (map[databaseName]int64, error) {
 	args := m.Called(databases)
-	return args.Get(0).(map[string]int64), args.Error(1)
+	return args.Get(0).(map[databaseName]int64), args.Error(1)
 }
 
-func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string) (map[string]tableStats, error) {
+func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database string) (map[tableIdentifier]tableStats, error) {
 	args := m.Called(ctx, database)
-	return args.Get(0).(map[string]tableStats), args.Error(1)
+	return args.Get(0).(map[tableIdentifier]tableStats), args.Error(1)
 }
 
-func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[string]tableIOStats, error) {
+func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
 	args := m.Called(ctx, database)
-	return args.Get(0).(map[string]tableIOStats), args.Error(1)
+	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
 }
 
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
@@ -193,17 +193,17 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
 
-		commitsAndRollbacks := map[string]databaseStats{}
-		dbSize := map[string]int64{}
-		backends := map[string]int64{}
+		commitsAndRollbacks := map[databaseName]databaseStats{}
+		dbSize := map[databaseName]int64{}
+		backends := map[databaseName]int64{}
 
 		for idx, db := range databases {
-			commitsAndRollbacks[db] = databaseStats{
+			commitsAndRollbacks[databaseName(db)] = databaseStats{
 				transactionCommitted: int64(idx + 1),
 				transactionRollback:  int64(idx + 2),
 			}
-			dbSize[db] = int64(idx + 4)
-			backends[db] = int64(idx + 3)
+			dbSize[databaseName(db)] = int64(idx + 4)
+			backends[databaseName(db)] = int64(idx + 3)
 		}
 
 		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
@@ -212,7 +212,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"
-		tableMetrics := map[string]tableStats{
+		tableMetrics := map[tableIdentifier]tableStats{
 			tableKey(database, table1): {
 				database: database,
 				table:    table1,
@@ -235,7 +235,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 			},
 		}
 
-		blocksMetrics := map[string]tableIOStats{
+		blocksMetrics := map[tableIdentifier]tableIOStats{
 			tableKey(database, table1): {
 				database:  database,
 				table:     table1,

@@ -101,9 +101,9 @@ func newPostgreSQLScraper(
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap map[string]int64
-	dbSizeMap   map[string]int64
-	dbStats     map[string]databaseStats
+	activityMap map[databaseName]int64
+	dbSizeMap   map[databaseName]int64
+	dbStats     map[databaseName]databaseStats
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -129,9 +129,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs scrapererror.ScrapeErrors
 	r := &dbRetrieval{
-		activityMap: make(map[string]int64),
-		dbSizeMap:   make(map[string]int64),
-		dbStats:     make(map[string]databaseStats),
+		activityMap: make(map[databaseName]int64),
+		dbSizeMap:   make(map[databaseName]int64),
+		dbStats:     make(map[databaseName]databaseStats),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -168,26 +168,27 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 }
 
 func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval) {
+	dbName := databaseName(db)
 	if p.emitMetricsWithResourceAttributes {
-		if activeConnections, ok := r.activityMap[db]; ok {
+		if activeConnections, ok := r.activityMap[dbName]; ok {
 			p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
 		}
-		if size, ok := r.dbSizeMap[db]; ok {
+		if size, ok := r.dbSizeMap[dbName]; ok {
 			p.mb.RecordPostgresqlDbSizeDataPointWithoutDatabase(now, size)
 		}
-		if stats, ok := r.dbStats[db]; ok {
+		if stats, ok := r.dbStats[dbName]; ok {
 			p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
 			p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
 		}
 		p.mb.EmitForResource(metadata.WithPostgresqlDatabase(db))
 	} else {
-		if activeConnections, ok := r.activityMap[db]; ok {
+		if activeConnections, ok := r.activityMap[dbName]; ok {
 			p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
 		}
-		if size, ok := r.dbSizeMap[db]; ok {
+		if size, ok := r.dbSizeMap[dbName]; ok {
 			p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
 		}
-		if stats, ok := r.dbStats[db]; ok {
+		if stats, ok := r.dbStats[dbName]; ok {
 			p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
 			p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback, db)
 		}

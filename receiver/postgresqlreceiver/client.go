@@ -27,13 +27,21 @@ import (
 	"go.uber.org/multierr"
 )
 
+// databaseName is a name that refers to a database so that it can be uniquely referred to later
+// i.e. database1
+type databaseName string
+
+// tableIdentifier is an identifier that contains both the database and table separated by a "|"
+// i.e. database1|table2
+type tableIdentifier string
+
 type client interface {
 	Close() error
-	getDatabaseStats(ctx context.Context, databases []string) (map[string]databaseStats, error)
-	getBackends(ctx context.Context, databases []string) (map[string]int64, error)
-	getDatabaseSize(ctx context.Context, databases []string) (map[string]int64, error)
-	getDatabaseTableMetrics(ctx context.Context, db string) (map[string]tableStats, error)
-	getBlocksReadByTable(ctx context.Context, db string) (map[string]tableIOStats, error)
+	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
+	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
+	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
+	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -120,14 +128,14 @@ type databaseStats struct {
 	transactionRollback  int64
 }
 
-func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[string]databaseStats, error) {
+func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback FROM pg_stat_database", databases, false)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	var errs error
-	dbStats := map[string]databaseStats{}
+	dbStats := map[databaseName]databaseStats{}
 	for rows.Next() {
 		var datname string
 		var transactionCommitted, transactionRollback int64
@@ -137,7 +145,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 			continue
 		}
 		if datname != "" {
-			dbStats[datname] = databaseStats{
+			dbStats[databaseName(datname)] = databaseStats{
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
 			}
@@ -147,14 +155,14 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 }
 
 // getBackends returns a map of database names to the number of active connections
-func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[string]int64, error) {
+func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, count(*) as count from pg_stat_activity", databases, true)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	ars := map[string]int64{}
+	ars := map[databaseName]int64{}
 	var errors error
 	for rows.Next() {
 		var datname string
@@ -165,20 +173,20 @@ func (c *postgreSQLClient) getBackends(ctx context.Context, databases []string) 
 			continue
 		}
 		if datname != "" {
-			ars[datname] = count
+			ars[databaseName(datname)] = count
 		}
 	}
 	return ars, errors
 }
 
-func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[string]int64, error) {
+func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error) {
 	query := filterQueryByDatabases("SELECT datname, pg_database_size(datname) FROM pg_catalog.pg_database WHERE datistemplate = false", databases, false)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	sizes := map[string]int64{}
+	sizes := map[databaseName]int64{}
 	var errors error
 	for rows.Next() {
 		var datname string
@@ -189,7 +197,7 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 			continue
 		}
 		if datname != "" {
-			sizes[datname] = size
+			sizes[databaseName(datname)] = size
 		}
 	}
 	return sizes, errors
@@ -207,7 +215,7 @@ type tableStats struct {
 	hotUpd   int64
 }
 
-func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[string]tableStats, error) {
+func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
 	query := `SELECT schemaname || '.' || relname AS table,
 	n_live_tup AS live,
 	n_dead_tup AS dead,
@@ -217,7 +225,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_hot_upd AS hot_upd
 	FROM pg_stat_user_tables;`
 
-	ts := map[string]tableStats{}
+	ts := map[tableIdentifier]tableStats{}
 	var errors error
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
@@ -257,7 +265,7 @@ type tableIOStats struct {
 	tidxHit   int64
 }
 
-func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[string]tableIOStats, error) {
+func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error) {
 	query := `SELECT schemaname || '.' || relname AS table, 
 	coalesce(heap_blks_read, 0) AS heap_read, 
 	coalesce(heap_blks_hit, 0) AS heap_hit, 
@@ -269,7 +277,7 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 	coalesce(tidx_blks_hit, 0) AS tidx_hit 
 	FROM pg_statio_user_tables;`
 
-	tios := map[string]tableIOStats{}
+	tios := map[tableIdentifier]tableIOStats{}
 	var errors error
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
@@ -339,6 +347,6 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 	return baseQuery + ";"
 }
 
-func tableKey(database, table string) string {
-	return fmt.Sprintf("%s|%s", database, table)
+func tableKey(database, table string) tableIdentifier {
+	return tableIdentifier(fmt.Sprintf("%s|%s", database, table))
 }

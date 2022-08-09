@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+        with:
+          path: opentelemetry-collector-contrib
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
@@ -31,6 +33,7 @@ jobs:
             ~/.cache/go-build
           key: prometheus-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
       - run: make otelcontribcol
+        working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
         uses: actions/checkout@v3
         with:
@@ -38,7 +41,7 @@ jobs:
           path: compliance
           ref: f0482884578bac67b053e3eaa1ca7f783d146557 
       - name: Copy binary to compliance directory
-        run: mkdir compliance/remote_write_sender/bin && cp ./bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
+        run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
       - name: Run compliance tests
         run: go test --tags=compliance -run "TestRemoteWrite/otel/.+" -v ./
         working-directory: compliance/remote_write_sender
