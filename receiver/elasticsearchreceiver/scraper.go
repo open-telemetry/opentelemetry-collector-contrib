@@ -188,6 +188,26 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.PrimaryRejections)
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
 
+		r.mb.RecordElasticsearchNodeClusterStateQueueCommittedDataPoint(now, info.Discovery.ClusterStateQueue.Committed)
+		r.mb.RecordElasticsearchNodeClusterStateQueuePendingDataPoint(now, info.Discovery.ClusterStateQueue.Pending)
+
+		r.mb.RecordElasticsearchNodeClusterPublishedStatesCompatibleDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs)
+		r.mb.RecordElasticsearchNodeClusterPublishedStatesIncompatibleDataPoint(now, info.Discovery.PublishedClusterStates.IncompatibleDiffs)
+		r.mb.RecordElasticsearchNodeClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
+
+		for csuName, csuInfo := range info.Discovery.ClusterStateUpdate {
+			r.mb.RecordElasticsearchNodeClusterStateUpdateCountDataPoint(now, csuInfo.Count, csuName)
+			r.mb.RecordElasticsearchNodeClusterStateUpdateComputationTimeDataPoint(now, csuInfo.ComputationTimeMillis, csuName)
+			r.mb.RecordElasticsearchNodeClusterStateUpdateNotificationTimeDataPoint(now, csuInfo.NotificationTimeMillis, csuName)
+
+			if csuName != metadata.AttributeClusterStateUpdateTypeUnchanged {
+				r.mb.RecordElasticsearchNodeClusterStateUpdateContextConstructionTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, csuName)
+				r.mb.RecordElasticsearchNodeClusterStateUpdateCommitTimeDataPoint(now, csuInfo.CommitTimeMillis, csuName)
+				r.mb.RecordElasticsearchNodeClusterStateUpdateCompletionTimeDataPoint(now, csuInfo.CompletionTimeMillis, csuName)
+				r.mb.RecordElasticsearchNodeClusterStateUpdateMasterApplyTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, csuName)
+			}
+		}
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}

@@ -13,6 +13,9 @@
 // limitations under the License.
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
+import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
+)
 
 // NodeStats represents a response from elasticsearch's /_nodes/stats endpoint.
 // The struct is not exhaustive; It does not provide all values returned by elasticsearch,
@@ -35,6 +38,48 @@ type NodeStatsNodesInfo struct {
 	FS                    FSStats                        `json:"fs"`
 	OS                    OSStats                        `json:"os"`
 	IndexingPressure      IndexingPressure               `json:"indexing_pressure"`
+	Discovery             Discovery                      `json:"discovery"`
+}
+
+type Discovery struct {
+	ClusterStateQueue       DiscoveryClusterStateQueue                                                       `json:"cluster_state_queue"`
+	SerializedClusterStates map[string]DiscoverySerializedClusterStatesStats                                 `json:"serialized_cluster_states"`
+	PublishedClusterStates  DiscoveryPublishedClusterStates                                                  `json:"published_cluster_states"`
+	ClusterStateUpdate      map[metadata.AttributeClusterStateUpdateType]DiscoveryClusterStateUpdateStatsAll `json:"cluster_state_update"`
+}
+
+type DiscoveryClusterStateQueue struct {
+	Total     int64 `json:"total"`
+	Pending   int64 `json:"pending"`
+	Committed int64 `json:"committed"`
+}
+
+type DiscoverySerializedClusterStatesStats struct {
+	Count                int64 `json:"count"`
+	UncompressedSizeInBy int64 `json:"uncompressed_size_in_bytes"`
+	CompressedSizeInBy   int64 `json:"compressed_size_in_bytes"`
+}
+
+type DiscoveryPublishedClusterStates struct {
+	FullStates        int64 `json:"full_states"`
+	IncompatibleDiffs int64 `json:"incompatible_diffs"`
+	CompatibleDiffs   int64 `json:"compatible_diffs"`
+}
+
+type DiscoveryClusterStateUpdateStatsBase struct {
+	Count                 int64 `json:"count"`
+	ComputationTimeMillis int64 `json:"computation_time_millis"`
+	PublicationTimeMillis int64 `json:"publication_time_millis"`
+}
+
+type DiscoveryClusterStateUpdateStatsAll struct {
+	DiscoveryClusterStateUpdateStatsBase
+
+	ContextConstructionTimeMillis int64 `json:"context_construction_time_millis"`
+	CommitTimeMillis              int64 `json:"commit_time_millis"`
+	CompletionTimeMillis          int64 `json:"completion_time_millis"`
+	MasterApplyTimeMillis         int64 `json:"master_apply_time_millis"`
+	NotificationTimeMillis        int64 `json:"notification_time_millis"`
 }
 
 type IndexingPressure struct {
