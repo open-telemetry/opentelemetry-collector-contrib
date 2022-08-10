@@ -14,7 +14,6 @@
 #
 
 cmd/configschema
-confmap/provider/s3mapprovider
 examples/demo/client
 examples/demo/server
 exporter/parquetexporter
