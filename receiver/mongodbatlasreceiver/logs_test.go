@@ -50,6 +50,7 @@ func TestDefaultLoggingConfig(t *testing.T) {
 	cfg.SetIDName("LoggingID")
 	params := componenttest.NewNopReceiverCreateSettings()
 	ctx := context.Background()
+	cfg.Logs.Enabled = true
 
 	receiver, err := createCombinedLogReceiver(
 		ctx,
@@ -65,4 +66,21 @@ func TestDefaultLoggingConfig(t *testing.T) {
 
 	err = receiver.Shutdown(ctx)
 	require.NoError(t, err)
+}
+
+func TestNoLoggingEnabled(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetIDName("LoggingID")
+	params := componenttest.NewNopReceiverCreateSettings()
+	ctx := context.Background()
+
+	receiver, err := createCombinedLogReceiver(
+		ctx,
+		params,
+		cfg,
+		consumertest.NewNop(),
+	)
+	require.Error(t, err)
+	require.Nil(t, receiver, "receiver creation failed")
 }
