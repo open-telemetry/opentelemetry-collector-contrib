@@ -17,6 +17,7 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"

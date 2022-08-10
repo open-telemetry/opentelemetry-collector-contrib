@@ -54,7 +54,14 @@ func TestReadFieldsWithDefaults(t *testing.T) {
 }
 
 func TestReadFieldsWithoutDefaults(t *testing.T) {
-	testReadFields(t, testStruct{}, map[string]interface{}{})
+	testReadFields(t, testStruct{}, map[string]interface{}{
+		"one":           "",
+		"three":         uint64(0),
+		"four":          false,
+		"name":          "",
+		"person_ptr":    "",
+		"person_struct": "",
+	})
 }
 
 func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{}) {
@@ -132,8 +139,9 @@ func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{})
 	assert.Equal(t, "slice", persons.Kind)
 	assert.Equal(t, 1, len(persons.Fields))
 	assert.Equal(t, &Field{
-		Name: "name",
-		Kind: "string",
+		Name:    "name",
+		Kind:    "string",
+		Default: "",
 	}, getFieldByName(persons.Fields, "name"))
 
 	personPtrs := getFieldByName(root.Fields, "person_ptrs")
@@ -141,8 +149,9 @@ func testReadFields(t *testing.T, s testStruct, defaults map[string]interface{})
 	assert.Equal(t, "slice", personPtrs.Kind)
 	assert.Equal(t, 1, len(personPtrs.Fields))
 	assert.Equal(t, &Field{
-		Name: "name",
-		Kind: "string",
+		Name:    "name",
+		Kind:    "string",
+		Default: "",
 	}, getFieldByName(personPtrs.Fields, "name"))
 
 	tls := getFieldByName(root.Fields, "tls")
