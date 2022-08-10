@@ -79,6 +79,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/popularityfilterprocessor v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor v0.57.2
@@ -807,6 +808,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reso
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor => ./processor/routingprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor => ./processor/spanmetricsprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/popularityfilterprocessor => ./processor/popularityfilterprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor => ./processor/spanprocessor/
 

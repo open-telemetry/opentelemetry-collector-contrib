@@ -97,6 +97,9 @@ func TestDefaultProcessors(t *testing.T) {
 			processor: "probabilistic_sampler",
 		},
 		{
+			processor: "popularity_filter",
+		},
+		{
 			processor: "resourcedetection",
 		},
 		{

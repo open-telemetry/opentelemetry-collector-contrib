@@ -1,0 +1,18 @@
+receivers:
+  nop:
+
+processors:
+  batch:
+  batch/2:
+    timeout: 10s
+    tokens: 1000
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [popularityfilter/2]
+      exporters: [nop]
