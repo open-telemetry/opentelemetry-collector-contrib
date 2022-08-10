@@ -42,6 +42,12 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | **elasticsearch.node.fs.disk.available** | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.http.connections** | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.ingest.count** | Total number of documents ingested during the lifetime of this node. | {documents} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.ingest.current** | Total number of documents currently being ingested. | {documents} | Gauge(Int) | <ul> </ul> |
+| **elasticsearch.node.ingest.failed** | Total number of failed ingest operations during the lifetime of this node. | {documents} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.ingest.pipeline.count** | Total number of documents ingested during the lifetime of this node. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
+| **elasticsearch.node.ingest.pipeline.current** | Total number of documents currently being ingested by a pipeline. | {documents} | Gauge(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
+| **elasticsearch.node.ingest.pipeline.failed** | Total number of failed operations for the ingest pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
@@ -100,6 +106,7 @@ metrics:
 | fs_direction (direction) | The direction of filesystem IO. | read, write |
 | health_status (status) | The health status of the cluster. | green, yellow, red |
 | indexing_memory_state (state) | State of the indexing memory | current, total |
+| ingest_pipeline_name (name) | Name of the ingest pipeline. |  |
 | memory_pool_name (name) | The name of the JVM memory pool. |  |
 | memory_state (state) | State of the memory | free, used |
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |

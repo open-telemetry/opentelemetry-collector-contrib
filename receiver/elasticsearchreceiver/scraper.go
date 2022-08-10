@@ -208,6 +208,16 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			}
 		}
 
+		r.mb.RecordElasticsearchNodeIngestCountDataPoint(now, info.Ingest.Total.Count)
+		r.mb.RecordElasticsearchNodeIngestCurrentDataPoint(now, info.Ingest.Total.Current)
+		r.mb.RecordElasticsearchNodeIngestFailedDataPoint(now, info.Ingest.Total.Failed)
+
+		for ipName, ipInfo := range info.Ingest.Pipelines {
+			r.mb.RecordElasticsearchNodeIngestPipelineCountDataPoint(now, ipInfo.Count, ipName)
+			r.mb.RecordElasticsearchNodeIngestPipelineFailedDataPoint(now, ipInfo.Failed, ipName)
+			r.mb.RecordElasticsearchNodeIngestPipelineCurrentDataPoint(now, ipInfo.Current, ipName)
+		}
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}

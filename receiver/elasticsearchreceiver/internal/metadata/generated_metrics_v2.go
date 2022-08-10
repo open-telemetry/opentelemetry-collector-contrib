@@ -51,6 +51,12 @@ type MetricsSettings struct {
 	ElasticsearchNodeDocuments                                 MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable                           MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
 	ElasticsearchNodeHTTPConnections                           MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
+	ElasticsearchNodeIngestCount                               MetricSettings `mapstructure:"elasticsearch.node.ingest.count"`
+	ElasticsearchNodeIngestCurrent                             MetricSettings `mapstructure:"elasticsearch.node.ingest.current"`
+	ElasticsearchNodeIngestFailed                              MetricSettings `mapstructure:"elasticsearch.node.ingest.failed"`
+	ElasticsearchNodeIngestPipelineCount                       MetricSettings `mapstructure:"elasticsearch.node.ingest.pipeline.count"`
+	ElasticsearchNodeIngestPipelineCurrent                     MetricSettings `mapstructure:"elasticsearch.node.ingest.pipeline.current"`
+	ElasticsearchNodeIngestPipelineFailed                      MetricSettings `mapstructure:"elasticsearch.node.ingest.pipeline.failed"`
 	ElasticsearchNodeOpenFiles                                 MetricSettings `mapstructure:"elasticsearch.node.open_files"`
 	ElasticsearchNodeOperationsCompleted                       MetricSettings `mapstructure:"elasticsearch.node.operations.completed"`
 	ElasticsearchNodeOperationsTime                            MetricSettings `mapstructure:"elasticsearch.node.operations.time"`
@@ -183,6 +189,24 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchNodeHTTPConnections: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestCount: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestCurrent: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestFailed: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestPipelineCount: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestPipelineCurrent: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeIngestPipelineFailed: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeOpenFiles: MetricSettings{
@@ -2382,6 +2406,314 @@ func newMetricElasticsearchNodeHTTPConnections(settings MetricSettings) metricEl
 	return m
 }
 
+type metricElasticsearchNodeIngestCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.count metric with initial data.
+func (m *metricElasticsearchNodeIngestCount) init() {
+	m.data.SetName("elasticsearch.node.ingest.count")
+	m.data.SetDescription("Total number of documents ingested during the lifetime of this node.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeIngestCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestCount(settings MetricSettings) metricElasticsearchNodeIngestCount {
+	m := metricElasticsearchNodeIngestCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeIngestCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.current metric with initial data.
+func (m *metricElasticsearchNodeIngestCurrent) init() {
+	m.data.SetName("elasticsearch.node.ingest.current")
+	m.data.SetDescription("Total number of documents currently being ingested.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricElasticsearchNodeIngestCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestCurrent(settings MetricSettings) metricElasticsearchNodeIngestCurrent {
+	m := metricElasticsearchNodeIngestCurrent{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeIngestFailed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.failed metric with initial data.
+func (m *metricElasticsearchNodeIngestFailed) init() {
+	m.data.SetName("elasticsearch.node.ingest.failed")
+	m.data.SetDescription("Total number of failed ingest operations during the lifetime of this node.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeIngestFailed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestFailed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestFailed) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestFailed(settings MetricSettings) metricElasticsearchNodeIngestFailed {
+	m := metricElasticsearchNodeIngestFailed{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeIngestPipelineCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.pipeline.count metric with initial data.
+func (m *metricElasticsearchNodeIngestPipelineCount) init() {
+	m.data.SetName("elasticsearch.node.ingest.pipeline.count")
+	m.data.SetDescription("Total number of documents ingested during the lifetime of this node.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeIngestPipelineCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestPipelineCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestPipelineCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestPipelineCount(settings MetricSettings) metricElasticsearchNodeIngestPipelineCount {
+	m := metricElasticsearchNodeIngestPipelineCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeIngestPipelineCurrent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.pipeline.current metric with initial data.
+func (m *metricElasticsearchNodeIngestPipelineCurrent) init() {
+	m.data.SetName("elasticsearch.node.ingest.pipeline.current")
+	m.data.SetDescription("Total number of documents currently being ingested by a pipeline.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeIngestPipelineCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestPipelineCurrent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestPipelineCurrent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestPipelineCurrent(settings MetricSettings) metricElasticsearchNodeIngestPipelineCurrent {
+	m := metricElasticsearchNodeIngestPipelineCurrent{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeIngestPipelineFailed struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.ingest.pipeline.failed metric with initial data.
+func (m *metricElasticsearchNodeIngestPipelineFailed) init() {
+	m.data.SetName("elasticsearch.node.ingest.pipeline.failed")
+	m.data.SetDescription("Total number of failed operations for the ingest pipeline.")
+	m.data.SetUnit("{documents}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeIngestPipelineFailed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeIngestPipelineFailed) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeIngestPipelineFailed) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeIngestPipelineFailed(settings MetricSettings) metricElasticsearchNodeIngestPipelineFailed {
+	m := metricElasticsearchNodeIngestPipelineFailed{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricElasticsearchNodeOpenFiles struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -3846,6 +4178,12 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeDocuments                                 metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable                           metricElasticsearchNodeFsDiskAvailable
 	metricElasticsearchNodeHTTPConnections                           metricElasticsearchNodeHTTPConnections
+	metricElasticsearchNodeIngestCount                               metricElasticsearchNodeIngestCount
+	metricElasticsearchNodeIngestCurrent                             metricElasticsearchNodeIngestCurrent
+	metricElasticsearchNodeIngestFailed                              metricElasticsearchNodeIngestFailed
+	metricElasticsearchNodeIngestPipelineCount                       metricElasticsearchNodeIngestPipelineCount
+	metricElasticsearchNodeIngestPipelineCurrent                     metricElasticsearchNodeIngestPipelineCurrent
+	metricElasticsearchNodeIngestPipelineFailed                      metricElasticsearchNodeIngestPipelineFailed
 	metricElasticsearchNodeOpenFiles                                 metricElasticsearchNodeOpenFiles
 	metricElasticsearchNodeOperationsCompleted                       metricElasticsearchNodeOperationsCompleted
 	metricElasticsearchNodeOperationsTime                            metricElasticsearchNodeOperationsTime
@@ -3925,6 +4263,12 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeDocuments:                                 newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:                           newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
 		metricElasticsearchNodeHTTPConnections:                           newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
+		metricElasticsearchNodeIngestCount:                               newMetricElasticsearchNodeIngestCount(settings.ElasticsearchNodeIngestCount),
+		metricElasticsearchNodeIngestCurrent:                             newMetricElasticsearchNodeIngestCurrent(settings.ElasticsearchNodeIngestCurrent),
+		metricElasticsearchNodeIngestFailed:                              newMetricElasticsearchNodeIngestFailed(settings.ElasticsearchNodeIngestFailed),
+		metricElasticsearchNodeIngestPipelineCount:                       newMetricElasticsearchNodeIngestPipelineCount(settings.ElasticsearchNodeIngestPipelineCount),
+		metricElasticsearchNodeIngestPipelineCurrent:                     newMetricElasticsearchNodeIngestPipelineCurrent(settings.ElasticsearchNodeIngestPipelineCurrent),
+		metricElasticsearchNodeIngestPipelineFailed:                      newMetricElasticsearchNodeIngestPipelineFailed(settings.ElasticsearchNodeIngestPipelineFailed),
 		metricElasticsearchNodeOpenFiles:                                 newMetricElasticsearchNodeOpenFiles(settings.ElasticsearchNodeOpenFiles),
 		metricElasticsearchNodeOperationsCompleted:                       newMetricElasticsearchNodeOperationsCompleted(settings.ElasticsearchNodeOperationsCompleted),
 		metricElasticsearchNodeOperationsTime:                            newMetricElasticsearchNodeOperationsTime(settings.ElasticsearchNodeOperationsTime),
@@ -4053,6 +4397,12 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(ils.Metrics())
 	mb.metricElasticsearchNodeHTTPConnections.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestCount.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestCurrent.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestFailed.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestPipelineCount.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestPipelineCurrent.emit(ils.Metrics())
+	mb.metricElasticsearchNodeIngestPipelineFailed.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
 	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
@@ -4268,6 +4618,36 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pco
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeIngestCountDataPoint adds a data point to elasticsearch.node.ingest.count metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeIngestCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeIngestCurrentDataPoint adds a data point to elasticsearch.node.ingest.current metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestCurrentDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeIngestCurrent.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeIngestFailedDataPoint adds a data point to elasticsearch.node.ingest.failed metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestFailedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeIngestFailed.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeIngestPipelineCountDataPoint adds a data point to elasticsearch.node.ingest.pipeline.count metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestPipelineCountDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	mb.metricElasticsearchNodeIngestPipelineCount.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
+}
+
+// RecordElasticsearchNodeIngestPipelineCurrentDataPoint adds a data point to elasticsearch.node.ingest.pipeline.current metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestPipelineCurrentDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	mb.metricElasticsearchNodeIngestPipelineCurrent.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
+}
+
+// RecordElasticsearchNodeIngestPipelineFailedDataPoint adds a data point to elasticsearch.node.ingest.pipeline.failed metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeIngestPipelineFailedDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	mb.metricElasticsearchNodeIngestPipelineFailed.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.

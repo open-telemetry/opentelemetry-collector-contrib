@@ -103,6 +103,9 @@ attributes:
       - unchanged
       - success
       - failure
+  ingest_pipeline_name:
+    value: name
+    description: Name of the ingest pipeline.
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -622,4 +625,54 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.ingest.count:
+    description: Total number of documents ingested during the lifetime of this node.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.current:
+    description: Total number of documents currently being ingested.
+    unit: "{documents}"
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.failed:
+    description: Total number of failed ingest operations during the lifetime of this node.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.count:
+    description: Total number of documents ingested during the lifetime of this node.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.failed:
+    description: Total number of failed operations for the ingest pipeline.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.current:
+    description: Total number of documents currently being ingested by a pipeline.
+    unit: "{documents}"
+    gauge:
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
     enabled: true

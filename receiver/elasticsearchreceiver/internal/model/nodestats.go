@@ -39,6 +39,19 @@ type NodeStatsNodesInfo struct {
 	OS                    OSStats                        `json:"os"`
 	IndexingPressure      IndexingPressure               `json:"indexing_pressure"`
 	Discovery             Discovery                      `json:"discovery"`
+	Ingest                Ingest                         `json:"ingest"`
+}
+
+type Ingest struct {
+	Total     IngestTotalStats            `json:"total"`
+	Pipelines map[string]IngestTotalStats `json:"pipelines"`
+}
+
+type IngestTotalStats struct {
+	Count        int64 `json:"count"`
+	TimeInMillis int64 `json:"time_in_millis"`
+	Current      int64 `json:"current"`
+	Failed       int64 `json:"failed"`
 }
 
 type Discovery struct {
