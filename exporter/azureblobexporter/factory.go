@@ -51,7 +51,7 @@ func createTracesExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
-	return exporterhelper.NewTracesExporterWithContext(context.TODO(), set, cfg, onTraceData)
+	return exporterhelper.NewTracesExporter(cfg, set, onTraceData)
 }
 
 func createLogsExporter(
@@ -59,5 +59,5 @@ func createLogsExporter(
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
-	return exporterhelper.NewLogsExporterWithContext(context.TODO(), set, cfg, onLogData)
+	return exporterhelper.NewLogsExporter(cfg, set, onLogData)
 }
