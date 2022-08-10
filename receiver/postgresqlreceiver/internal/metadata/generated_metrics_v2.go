@@ -598,17 +598,17 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithPostgresqlDatabase sets provided value as "postgresql.database" attribute for current resource.
-func WithPostgresqlDatabase(val string) ResourceMetricsOption {
+// WithPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute for current resource.
+func WithPostgresqlDatabaseName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("postgresql.database", val)
+		rm.Resource().Attributes().UpsertString("postgresql.database.name", val)
 	}
 }
 
-// WithPostgresqlTable sets provided value as "postgresql.table" attribute for current resource.
-func WithPostgresqlTable(val string) ResourceMetricsOption {
+// WithPostgresqlTableName sets provided value as "postgresql.table.name" attribute for current resource.
+func WithPostgresqlTableName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("postgresql.table", val)
+		rm.Resource().Attributes().UpsertString("postgresql.table.name", val)
 	}
 }
 

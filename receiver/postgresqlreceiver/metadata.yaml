@@ -1,10 +1,10 @@
 name: postgresqlreceiver
 
 resource_attributes:
-  postgresql.database:
+  postgresql.database.name:
     description: The name of the database.
     type: string
-  postgresql.table:
+  postgresql.table.name:
     description: The schema name followed by the table name.
     type: string
 

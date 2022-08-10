@@ -29,8 +29,8 @@ metrics:
 
 | Name | Description | Type |
 | ---- | ----------- | ---- |
-| postgresql.database | The name of the database. | String |
-| postgresql.table | The schema name followed by the table name. | String |
+| postgresql.database.name | The name of the database. | String |
+| postgresql.table.name | The schema name followed by the table name. | String |
 
 ## Metric attributes
 

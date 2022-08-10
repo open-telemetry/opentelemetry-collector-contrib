@@ -180,7 +180,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 			p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
 			p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
 		}
-		p.mb.EmitForResource(metadata.WithPostgresqlDatabase(db))
+		p.mb.EmitForResource(metadata.WithPostgresqlDatabaseName(db))
 	} else {
 		if activeConnections, ok := r.activityMap[dbName]; ok {
 			p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
@@ -227,8 +227,8 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 			}
 			p.mb.EmitForResource(
-				metadata.WithPostgresqlDatabase(db),
-				metadata.WithPostgresqlTable(tm.table),
+				metadata.WithPostgresqlDatabaseName(db),
+				metadata.WithPostgresqlTableName(tm.table),
 			)
 		} else {
 			p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, db, tm.table, metadata.AttributeStateDead)
