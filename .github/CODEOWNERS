@@ -23,6 +23,7 @@ exporter/awskinesisexporter/                         @open-telemetry/collector-c
 exporter/awsprometheusremotewriteexporter/           @open-telemetry/collector-contrib-approvers @anuraaga @Aneurysm9 @alolita
 exporter/awsxrayexporter/                            @open-telemetry/collector-contrib-approvers @anuraaga
 exporter/azuremonitorexporter/                       @open-telemetry/collector-contrib-approvers @pcwiese
+exporter/azureblobexporter/                          @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 exporter/carbonexporter/                             @open-telemetry/collector-contrib-approvers @pjanotti
 exporter/clickhouseexporter/                         @open-telemetry/collector-contrib-approvers @hanjm @dmitryax
 exporter/coralogixexporter/                          @open-telemetry/collector-contrib-approvers @oded-dd @ofirshmuel
