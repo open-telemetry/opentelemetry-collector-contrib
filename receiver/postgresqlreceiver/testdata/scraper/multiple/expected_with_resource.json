@@ -4,7 +4,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
@@ -88,13 +88,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table1"
                         }
@@ -330,13 +330,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table2"
                         }
@@ -572,7 +572,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "open"
                         }
@@ -656,13 +656,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "open"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table1"
                         }
@@ -898,13 +898,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "open"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table2"
                         }
@@ -1140,7 +1140,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "telemetry"
                         }
@@ -1224,13 +1224,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "telemetry"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table1"
                         }
@@ -1466,13 +1466,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "telemetry"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table2"
                         }

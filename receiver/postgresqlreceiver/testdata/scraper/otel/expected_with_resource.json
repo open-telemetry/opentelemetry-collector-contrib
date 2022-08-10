@@ -4,7 +4,7 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
@@ -88,13 +88,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table2"
                         }
@@ -330,13 +330,13 @@
             "resource": {
                 "attributes": [
                     {
-                        "key": "postgresql.database",
+                        "key": "postgresql.database.name",
                         "value": {
                             "stringValue": "otel"
                         }
                     },
                     {
-                        "key": "postgresql.table",
+                        "key": "postgresql.table.name",
                         "value": {
                             "stringValue": "public.table1"
                         }
