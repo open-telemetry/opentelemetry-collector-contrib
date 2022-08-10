@@ -70,26 +70,26 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	var errors scrapererror.ScrapeErrors
+	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			addPartialIfError(errors, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue, r.cfg.serverName))
 		case "ConnsTotal":
-			addPartialIfError(errors, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue, r.cfg.serverName))
 		case "BusyWorkers":
-			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
 				metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
-			addPartialIfError(errors, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
+			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, r.cfg.serverName,
 				metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
-			addPartialIfError(errors, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
+			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue, r.cfg.serverName))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
-				errors.AddPartial(1, err)
+				errs.AddPartial(1, err)
 			} else {
 				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
@@ -101,12 +101,12 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	return r.mb.Emit(), errors.Combine()
+	return r.mb.Emit(), errs.Combine()
 }
 
-func addPartialIfError(errors scrapererror.ScrapeErrors, err error) {
+func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 	}
 }
 
