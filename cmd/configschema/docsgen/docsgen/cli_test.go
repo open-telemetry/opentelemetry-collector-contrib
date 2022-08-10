@@ -81,6 +81,7 @@ func TestHandleCLI_Single(t *testing.T) {
 }
 
 func TestHandleCLI_All(t *testing.T) {
+	t.Skip("this test takes > 5m when -race is used")
 	args := []string{"", "all"}
 	c := defaultComponents(t)
 	writer := &fakeFilesystemWriter{}
