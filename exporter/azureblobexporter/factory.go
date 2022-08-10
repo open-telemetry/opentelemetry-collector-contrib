@@ -31,18 +31,18 @@ const (
 
 // NewFactory returns a factory for Azure Blob exporter.
 func NewFactory() component.ExporterFactory {
-	return exporterhelper.NewFactory(
+	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		exporterhelper.WithTraces(createTracesExporter),
-		exporterhelper.WithLogs(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, component.StabilityLevelBeta),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelBeta))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings:    config.NewExporterSettings(config.NewComponentID(typeStr)),
-		LogsContainerName:   logsContainerName,
-		TracesContainerName: tracesContainerName,
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Logs:             LogsConfig{ContainerName: logsContainerName},
+		Traces:           TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 

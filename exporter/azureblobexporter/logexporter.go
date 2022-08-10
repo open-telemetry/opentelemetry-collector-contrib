@@ -17,9 +17,9 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func onLogData(context context.Context, logData pdata.Logs) error {
+func onLogData(context context.Context, logData plog.Logs) error {
 	return nil
 }

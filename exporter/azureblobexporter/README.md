@@ -1,17 +1,25 @@
 # Azure Blob Exporter
 
+| Status                   |             |
+| ------------------------ | ----------- |
+| Stability                |[development]|
+| Supported pipeline types | logs,traces |
+| Distributions            | [contrib]   |
+
 This exporter saves logs and trace data to [Azure Blob Storage](https://azure.microsoft.com/services/storage/blobs/).
 
 ## Configuration
 
 The following settings are required:
 
-- `connection_string` (no default): Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal.
+- `connection_string` (no default): Azure Blob Storage connection key, which can be found in the Azure Blob Storage resource on the Azure Portal. 
 
 The following settings can be optionally configured:
 
-- `logs_container_name` (default = "logs"): Name of the container where the exporter saves blobs with logs.
-- `traces_container_name` (default = "traces"): Name of the container where the exporter saves blobs with traces.
+- `logs:`
+  `  container_name:` (default = "logs"): Name of the container where the exporter saves blobs with logs.
+- `traces:`
+  `  container_name:` (default = "traces"): Name of the container where the exporter saves blobs with traces.
 
 Example:
 
