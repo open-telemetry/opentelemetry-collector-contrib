@@ -195,7 +195,7 @@ func (receiver *pubsubReceiver) handleLog(ctx context.Context, payload []byte, c
 	if err != nil {
 		return err
 	}
-	otlpData, err := receiver..UnmarshalLogs(payload)
+	otlpData, err := receiver.logsUnmarshaler.UnmarshalLogs(payload)
 	count := otlpData.LogRecordCount()
 	if err != nil {
 		return err
