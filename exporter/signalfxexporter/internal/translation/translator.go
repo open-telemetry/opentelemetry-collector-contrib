@@ -707,8 +707,14 @@ func aggregateDatapoints(
 				continue
 			}
 
+			// Need to ensure nil pointer case is covered. Match they're both nil, or they are set to the same
+			// value.
+			metricTypesMatch := (dpsToAggregate[0].MetricType == nil && dps[j].MetricType == nil) ||
+				(dpsToAggregate[0].MetricType != nil && dps[j].MetricType != nil &&
+				*dpsToAggregate[0].MetricType == *dps[j].MetricType)
+
 			// Datapoints match if they have same name, type, time, and source.
-			if *dpsToAggregate[0].MetricType == *dps[j].MetricType &&
+			if metricTypesMatch &&
 				dpsToAggregate[0].Timestamp == dps[j].Timestamp &&
 				dpsToAggregate[0].Source == dps[j].Source {
 
