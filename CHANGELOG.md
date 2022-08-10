@@ -57,7 +57,6 @@
 - `spanmetricsprocessor`: Fix panic caused by race condition when accessing span attributes. (#12644)
 - `awsxrayexporter`: Stop dropping exception in aws xray events for non error codes (#12643)
 - `signalfxexporter`: use azure.vm.name instead of host.name to build azure resource id (#12779)
-- `otelcontribcol`: Enabled multi-arch build for local development container builds (#11873)
 - `receiver/hostmetrics`: Do not throw scraping errors if conntrack metrics collection is disabled (#12799)
 - `kubeletstatsreceiver`: Fetch metadata from initContainers (#12887)
 - `metricstransformprocessor`: Fix logic in merging exponential histogram. (#12865)
