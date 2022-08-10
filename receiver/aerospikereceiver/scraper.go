@@ -240,31 +240,95 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 		case "scan_udf_bg_error":
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceScanCountDataPoint(now, v, metadata.AttributeScanTypeUdfBackground, metadata.AttributeScanResultError))
 
-			// Queries
+		// Pre Aerospike 6.0 query metrics. These were always done on secondary indexes, otherwise they were counted as a scan.
 		case "query_aggr_abort":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultAbort))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
 		case "query_aggr_complete":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultComplete))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
 		case "query_aggr_error":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeQueryResultError))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
 		case "query_basic_abort":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultAbort))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
 		case "query_basic_complete":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultComplete))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
 		case "query_basic_error":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeQueryResultError))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
 		case "query_ops_bg_abort":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultAbort))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
 		case "query_ops_bg_complete":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultComplete))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
 		case "query_ops_bg_error":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeQueryResultError))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
 		case "query_udf_bg_abort":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultAbort))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
 		case "query_udf_bg_complete":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultComplete))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
 		case "query_udf_bg_error":
-			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeQueryResultError))
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+
+		// PI queries
+		case "pi_query_aggr_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultAbort))
+		case "pi_query_aggr_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultComplete))
+		case "pi_query_aggr_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultError))
+		case "pi_query_long_basic_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultAbort))
+		case "pi_query_long_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultComplete))
+		case "pi_query_long_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultError))
+		case "pi_query_ops_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultAbort))
+		case "pi_query_ops_bg_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultComplete))
+		case "pi_query_ops_bg_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultError))
+		case "pi_query_short_basic_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultTimeout))
+		case "pi_query_short_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultComplete))
+		case "pi_query_short_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultError))
+		case "pi_query_udf_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultAbort))
+		case "pi_query_udf_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultComplete))
+		case "pi_query_udf_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypePrimary, metadata.AttributeQueryResultError))
+
+		// SI queries
+		case "si_query_aggr_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
+		case "si_query_aggr_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
+		case "si_query_aggr_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeAggregation, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+		case "si_query_long_basic_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
+		case "si_query_long_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
+		case "si_query_long_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeLongBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+		case "si_query_ops_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
+		case "si_query_ops_bg_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
+		case "si_query_ops_bg_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeOpsBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+		case "si_query_short_basic_timeout":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultTimeout))
+		case "si_query_short_basic_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
+		case "si_query_short_basic_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeShortBasic, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+		case "si_query_udf_bg_abort":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultAbort))
+		case "si_query_udf_bg_complete":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
+		case "si_query_udf_bg_error":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
 
 		// 'Delete' transactions
 		case "client_delete_error":

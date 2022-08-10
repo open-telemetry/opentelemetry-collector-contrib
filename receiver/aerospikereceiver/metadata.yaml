@@ -32,14 +32,21 @@ attributes:
       - abort
       - complete
       - error
+  index_type:
+    value: index
+    description: Type of index the operation was performed on
+    enum:
+      - primary
+      - secondary
   query_type:
     value: type
     description: Type of query operation performed on a namespace
     enum:
       - aggregation
-      - basic # removed in Aerospike server 6.0
-      - long
+      - basic
       - short
+      - long_basic
+      - short_basic
       - ops_background
       - udf_background
   query_result:
@@ -154,7 +161,7 @@ metrics:
     description: Number of query operations performed on the namespace
     unit: '{queries}'
     extended_documentation: Aggregate of Aerospike Metrics query_aggr_abort, query_aggr_complete, query_aggr_error, query_basic_abort, query_basic_complete, query_basic_error, query_ops_bg_abort, query_ops_bg_complete, query_ops_bg_error, query_udf_bg_abort, query_udf_bg_complete, query_udf_bg_error
-    attributes: [query_type, query_result]
+    attributes: [query_type, index_type, query_result]
     sum:
       value_type: int
       input_type: string

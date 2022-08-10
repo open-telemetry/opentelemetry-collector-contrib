@@ -118,6 +118,32 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"heartbeat": AttributeConnectionTypeHeartbeat,
 }
 
+// AttributeIndexType specifies the a value index_type attribute.
+type AttributeIndexType int
+
+const (
+	_ AttributeIndexType = iota
+	AttributeIndexTypePrimary
+	AttributeIndexTypeSecondary
+)
+
+// String returns the string representation of the AttributeIndexType.
+func (av AttributeIndexType) String() string {
+	switch av {
+	case AttributeIndexTypePrimary:
+		return "primary"
+	case AttributeIndexTypeSecondary:
+		return "secondary"
+	}
+	return ""
+}
+
+// MapAttributeIndexType is a helper map of string to AttributeIndexType attribute value.
+var MapAttributeIndexType = map[string]AttributeIndexType{
+	"primary":   AttributeIndexTypePrimary,
+	"secondary": AttributeIndexTypeSecondary,
+}
+
 // AttributeNamespaceComponent specifies the a value namespace_component attribute.
 type AttributeNamespaceComponent int
 
@@ -193,8 +219,9 @@ const (
 	_ AttributeQueryType = iota
 	AttributeQueryTypeAggregation
 	AttributeQueryTypeBasic
-	AttributeQueryTypeLong
 	AttributeQueryTypeShort
+	AttributeQueryTypeLongBasic
+	AttributeQueryTypeShortBasic
 	AttributeQueryTypeOpsBackground
 	AttributeQueryTypeUdfBackground
 )
@@ -206,10 +233,12 @@ func (av AttributeQueryType) String() string {
 		return "aggregation"
 	case AttributeQueryTypeBasic:
 		return "basic"
-	case AttributeQueryTypeLong:
-		return "long"
 	case AttributeQueryTypeShort:
 		return "short"
+	case AttributeQueryTypeLongBasic:
+		return "long_basic"
+	case AttributeQueryTypeShortBasic:
+		return "short_basic"
 	case AttributeQueryTypeOpsBackground:
 		return "ops_background"
 	case AttributeQueryTypeUdfBackground:
@@ -222,8 +251,9 @@ func (av AttributeQueryType) String() string {
 var MapAttributeQueryType = map[string]AttributeQueryType{
 	"aggregation":    AttributeQueryTypeAggregation,
 	"basic":          AttributeQueryTypeBasic,
-	"long":           AttributeQueryTypeLong,
 	"short":          AttributeQueryTypeShort,
+	"long_basic":     AttributeQueryTypeLongBasic,
+	"short_basic":    AttributeQueryTypeShortBasic,
 	"ops_background": AttributeQueryTypeOpsBackground,
 	"udf_background": AttributeQueryTypeUdfBackground,
 }
@@ -487,7 +517,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("component", pcommon.NewValueString(namespaceComponentAttributeValue))
+	dp.Attributes().InsertString("component", namespaceComponentAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -532,7 +562,7 @@ func (m *metricAerospikeNamespaceQueryCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryTypeAttributeValue string, queryResultAttributeValue string) {
+func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryTypeAttributeValue string, indexTypeAttributeValue string, queryResultAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -540,8 +570,9 @@ func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(queryTypeAttributeValue))
-	dp.Attributes().Insert("result", pcommon.NewValueString(queryResultAttributeValue))
+	dp.Attributes().InsertString("type", queryTypeAttributeValue)
+	dp.Attributes().InsertString("index", indexTypeAttributeValue)
+	dp.Attributes().InsertString("result", queryResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -594,8 +625,8 @@ func (m *metricAerospikeNamespaceScanCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(scanTypeAttributeValue))
-	dp.Attributes().Insert("result", pcommon.NewValueString(scanResultAttributeValue))
+	dp.Attributes().InsertString("type", scanTypeAttributeValue)
+	dp.Attributes().InsertString("result", scanResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -648,8 +679,8 @@ func (m *metricAerospikeNamespaceTransactionCount) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(transactionTypeAttributeValue))
-	dp.Attributes().Insert("result", pcommon.NewValueString(transactionResultAttributeValue))
+	dp.Attributes().InsertString("type", transactionTypeAttributeValue)
+	dp.Attributes().InsertString("result", transactionResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -702,8 +733,8 @@ func (m *metricAerospikeNodeConnectionCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(connectionTypeAttributeValue))
-	dp.Attributes().Insert("operation", pcommon.NewValueString(connectionOpAttributeValue))
+	dp.Attributes().InsertString("type", connectionTypeAttributeValue)
+	dp.Attributes().InsertString("operation", connectionOpAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -756,7 +787,7 @@ func (m *metricAerospikeNodeConnectionOpen) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("type", pcommon.NewValueString(connectionTypeAttributeValue))
+	dp.Attributes().InsertString("type", connectionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1001,12 +1032,12 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommo
 }
 
 // RecordAerospikeNamespaceQueryCountDataPoint adds a data point to aerospike.namespace.query.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceQueryCountDataPoint(ts pcommon.Timestamp, inputVal string, queryTypeAttributeValue AttributeQueryType, queryResultAttributeValue AttributeQueryResult) error {
+func (mb *MetricsBuilder) RecordAerospikeNamespaceQueryCountDataPoint(ts pcommon.Timestamp, inputVal string, queryTypeAttributeValue AttributeQueryType, indexTypeAttributeValue AttributeIndexType, queryResultAttributeValue AttributeQueryResult) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceQueryCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceQueryCount.recordDataPoint(mb.startTime, ts, val, queryTypeAttributeValue.String(), queryResultAttributeValue.String())
+	mb.metricAerospikeNamespaceQueryCount.recordDataPoint(mb.startTime, ts, val, queryTypeAttributeValue.String(), indexTypeAttributeValue.String(), queryResultAttributeValue.String())
 	return nil
 }
 
