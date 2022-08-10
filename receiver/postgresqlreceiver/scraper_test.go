@@ -92,6 +92,44 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
+func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel", "open", "telemetry"})
+
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = true
+	scraper.emitMetricsWithoutResourceAttributes = false
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_with_resource.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel"})
+
+	cfg := createDefaultConfig().(*Config)
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = true
+	scraper.emitMetricsWithoutResourceAttributes = false
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
 type mockClientFactory struct{ mock.Mock }
 type mockClient struct{ mock.Mock }
 
