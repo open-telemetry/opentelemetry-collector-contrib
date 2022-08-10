@@ -37,5 +37,8 @@ func (cfg *Config) Validate() error {
 	if err := cfg.ExporterSettings.Validate(); err != nil {
 		return fmt.Errorf("exporter settings are invalid :%w", err)
 	}
+	if err := collector.ValidateConfig(cfg.Config); err != nil {
+		return fmt.Errorf("googlecloud exporter settings are invalid :%w", err)
+	}
 	return nil
 }

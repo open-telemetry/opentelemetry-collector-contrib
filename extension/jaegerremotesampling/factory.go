@@ -45,7 +45,8 @@ func createDefaultConfig() config.Extension {
 		},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
-				Endpoint: ":14250",
+				Endpoint:  ":14250",
+				Transport: "tcp",
 			},
 		},
 		Source: Source{},

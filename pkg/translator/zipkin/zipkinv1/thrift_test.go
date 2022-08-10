@@ -17,8 +17,8 @@ package zipkinv1
 import (
 	"encoding/binary"
 	"encoding/json"
-	"io/ioutil"
 	"math"
+	"os"
 	"sort"
 	"testing"
 
@@ -28,7 +28,7 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
@@ -44,7 +44,7 @@ func compareTraceData(t *testing.T, got []traceData, want []traceData) {
 }
 
 func TestV1ThriftToTraces(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var zSpans []*zipkincore.Span
@@ -57,7 +57,7 @@ func TestV1ThriftToTraces(t *testing.T) {
 }
 
 func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_local_component.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
@@ -83,7 +83,7 @@ func TestZipkinThriftFallbackToLocalComponent(t *testing.T) {
 }
 
 func TestV1ThriftToOCProto(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
@@ -97,7 +97,7 @@ func TestV1ThriftToOCProto(t *testing.T) {
 }
 
 func BenchmarkV1ThriftToOCProto(b *testing.B) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_thrift_single_batch.json")
 	require.NoError(b, err, "Failed to load test data")
 
 	var ztSpans []*zipkincore.Span
@@ -491,10 +491,7 @@ func Test_bytesInt16ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt16ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt16ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt16ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -531,10 +528,7 @@ func Test_bytesInt32ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt32ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt32ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt32ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -571,10 +565,7 @@ func Test_bytesInt64ToInt64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesInt64ToInt64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesInt64ToInt64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesInt64ToInt64() = %v, want %v", got, tt.want)
 			}
@@ -611,10 +602,7 @@ func Test_bytesFloat64ToFloat64(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := bytesFloat64ToFloat64(tt.bytes)
-			if err != tt.wantErr {
-				t.Errorf("bytesFloat64ToFloat64() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			if got != tt.want {
 				t.Errorf("bytesFloat64ToFloat64() = %v, want %v", got, tt.want)
 			}

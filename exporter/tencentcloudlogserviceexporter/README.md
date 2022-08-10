@@ -1,5 +1,11 @@
 # TencentCloud LogService Exporter
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
+
 This exporter supports sending OpenTelemetry log data to [LogService](https://cloud.tencent.com/product/cls).
 
 # Configuration options:
@@ -45,3 +51,6 @@ service:
 
 - 2021-11-10 Change configuration item **endpoint** to **region**, by @wgliang
 - 2021-11-01 Initial implementation by @wgliang in #5722
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

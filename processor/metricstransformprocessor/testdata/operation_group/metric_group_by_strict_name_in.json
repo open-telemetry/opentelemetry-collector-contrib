@@ -1,0 +1,30 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "original",
+            "value": {
+              "stringValue": "label"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "name": "foo/metric",
+              "gauge": {}
+            },
+            {
+              "name": "bar/metric",
+              "gauge": {}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

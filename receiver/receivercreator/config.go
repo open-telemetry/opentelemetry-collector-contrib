@@ -19,6 +19,7 @@ import (
 
 	"github.com/spf13/cast"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -51,7 +52,10 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
-	rule rule
+	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
+	// It can contain expr expressions for endpoint env value expansion
+	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	rule               rule
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -86,7 +90,7 @@ type Config struct {
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
 }
 
-func (cfg *Config) Unmarshal(componentParser *config.Map) error {
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
 		// Nothing to do if there is no config given.
 		return nil
@@ -96,15 +100,23 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 		return err
 	}
 
+	for endpointType := range cfg.ResourceAttributes {
+		switch endpointType {
+		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		default:
+			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
+		}
+	}
+
 	receiversCfg, err := componentParser.Sub(receiversConfigKey)
 	if err != nil {
-		return fmt.Errorf("unable to extract key %v: %v", receiversConfigKey, err)
+		return fmt.Errorf("unable to extract key %v: %w", receiversConfigKey, err)
 	}
 
 	for subreceiverKey := range receiversCfg.ToStringMap() {
 		subreceiverSection, err := receiversCfg.Sub(subreceiverKey)
 		if err != nil {
-			return fmt.Errorf("unable to extract subreceiver key %v: %v", subreceiverKey, err)
+			return fmt.Errorf("unable to extract subreceiver key %v: %w", subreceiverKey, err)
 		}
 		cfgSection := cast.ToStringMap(subreceiverSection.Get(configKey))
 		subreceiver, err := newReceiverTemplate(subreceiverKey, cfgSection)
@@ -114,12 +126,18 @@ func (cfg *Config) Unmarshal(componentParser *config.Map) error {
 
 		// Unmarshals receiver_creator configuration like rule.
 		if err = subreceiverSection.Unmarshal(&subreceiver); err != nil {
-			return fmt.Errorf("failed to deserialize sub-receiver %q: %s", subreceiverKey, err)
+			return fmt.Errorf("failed to deserialize sub-receiver %q: %w", subreceiverKey, err)
 		}
 
 		subreceiver.rule, err = newRule(subreceiver.Rule)
 		if err != nil {
-			return fmt.Errorf("subreceiver %q rule is invalid: %v", subreceiverKey, err)
+			return fmt.Errorf("subreceiver %q rule is invalid: %w", subreceiverKey, err)
+		}
+
+		for k, v := range subreceiver.ResourceAttributes {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("unsupported `resource_attributes` %q value %v in %s", k, v, subreceiverKey)
+			}
 		}
 
 		cfg.receiverTemplates[subreceiverKey] = subreceiver

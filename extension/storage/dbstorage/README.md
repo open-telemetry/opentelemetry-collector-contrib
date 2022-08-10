@@ -1,5 +1,10 @@
 # Database Storage
 
+| Status                   |                  |
+| ------------------------ |------------------|
+| Stability                | [alpha]          |
+| Distributions            | [contrib]        |
+
 > :construction: This extension is in alpha. Configuration and functionality are subject to change.
 
 The Database Storage extension can persist state to a relational database. 
@@ -36,3 +41,6 @@ processors:
 exporters:
   nop:
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

@@ -24,7 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -122,19 +123,19 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func simpleLogs(count int) pdata.Logs {
-	logs := pdata.NewLogs()
+func simpleLogs(count int) plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
-		r.SetTimestamp(pdata.NewTimestampFromTime(time.Now()))
+		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		r.Attributes().InsertString("k", "v")
 	}
 	return logs
 }
 
-func mustPushLogsData(t *testing.T, exporter *clickhouseExporter, ld pdata.Logs) {
+func mustPushLogsData(t *testing.T, exporter *clickhouseExporter, ld plog.Logs) {
 	err := exporter.pushLogsData(context.TODO(), ld)
 	require.NoError(t, err)
 }

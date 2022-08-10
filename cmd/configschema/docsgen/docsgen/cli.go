@@ -17,9 +17,8 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
@@ -40,7 +39,7 @@ func CLI(factories component.Factories, dr configschema.DirResolver) {
 		panic(err)
 	}
 
-	handleCLI(factories, dr, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
+	handleCLI(factories, dr, tableTmpl, os.WriteFile, os.Stdout, os.Args...)
 }
 
 func handleCLI(
@@ -129,7 +128,7 @@ func writeConfigDoc(
 	if err != nil {
 		panic(err)
 	}
-	err = writeFile(path.Join(dir, mdFileName), mdBytes, 0644)
+	err = writeFile(filepath.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
 		panic(err)
 	}

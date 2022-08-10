@@ -79,6 +79,16 @@ func TestLoadConfig(t *testing.T) {
 					RateLimitingCfg: RateLimitingCfg{SpansPerSecond: 35},
 				},
 				{
+					Name:         "test-policy-8",
+					Type:         SpanCount,
+					SpanCountCfg: SpanCountCfg{MinSpans: 2},
+				},
+				{
+					Name:          "test-policy-9",
+					Type:          TraceState,
+					TraceStateCfg: TraceStateCfg{Key: "key3", Values: []string{"value1", "value2"}},
+				},
+				{
 					Name: "and-policy-1",
 					Type: And,
 					AndCfg: AndCfg{

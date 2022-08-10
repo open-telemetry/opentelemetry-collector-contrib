@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -30,11 +30,11 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -75,6 +75,8 @@ var (
 	errNextConsumerRespBody  = initJSONResponse(responseErrNextConsumer)
 	errLogsNotConfigured     = initJSONResponse(responseErrLogsNotConfigured)
 	errMetricsNotConfigured  = initJSONResponse(responseErrMetricsNotConfigured)
+
+	translator = &signalfx.ToTranslator{}
 )
 
 // sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
@@ -125,7 +127,11 @@ func (r *sfxReceiver) RegisterLogsConsumer(lc consumer.Logs) {
 // instance is created.
 func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 	if r.metricsConsumer == nil && r.logsConsumer == nil {
-		return componenterror.ErrNilNextConsumer
+		return component.ErrNilNextConsumer
+	}
+
+	if r.server != nil {
+		return nil
 	}
 
 	// set up the listener
@@ -193,7 +199,7 @@ func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, re
 		}
 	}
 
-	body, err := ioutil.ReadAll(bodyReader)
+	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errReadBodyRespBody, err)
 		return nil, false
@@ -208,7 +214,10 @@ func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWrite
 	}
 
 	resp.WriteHeader(http.StatusOK)
-	resp.Write(okRespBody)
+	_, err = resp.Write(okRespBody)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
+	}
 }
 
 func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Request) {
@@ -232,11 +241,11 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 
 	if len(msg.Datapoints) == 0 {
 		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
-		resp.Write(okRespBody)
+		_, _ = resp.Write(okRespBody)
 		return
 	}
 
-	md, err := signalfx.ToMetrics(msg.Datapoints)
+	md, err := translator.ToMetrics(msg.Datapoints)
 	if err != nil {
 		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
 	}
@@ -246,7 +255,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				res := rm.Resource()
-				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pdata.NewValueString(accessToken))
+				res.Attributes().Insert(splunk.SFxAccessTokenLabel, pcommon.NewValueString(accessToken))
 			}
 		}
 	}
@@ -278,11 +287,11 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if len(msg.Events) == 0 {
 		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
-		resp.Write(okRespBody)
+		_, _ = resp.Write(okRespBody)
 		return
 	}
 
-	ld := pdata.NewLogs()
+	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	signalFxV2EventsToLogRecords(msg.Events, sl.LogRecords())

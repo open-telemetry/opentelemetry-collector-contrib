@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestLoadParserConfig(t *testing.T) {
@@ -67,7 +67,7 @@ func TestLoadParserConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := config.NewMapFromStringMap(tt.cfgMap)
+			v := confmap.NewFromStringMap(tt.cfgMap)
 
 			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
 			err := LoadParserConfig(v, &got)

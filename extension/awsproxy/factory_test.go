@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -71,8 +70,8 @@ func TestFactory_CreateExtension(t *testing.T) {
 	cfg.ProxyConfig.Region = "us-east-2"
 
 	// Simplest way to get SDK to use fake credentials
-	os.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
 	ext, err := createExtension(ctx, componenttest.NewNopExtensionCreateSettings(), cfg)

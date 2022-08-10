@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -36,7 +36,7 @@ func TestNewTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 	require.NotNil(t, got)
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	ss := rs.ScopeSpans().AppendEmpty()
 	ss.Spans().AppendEmpty()

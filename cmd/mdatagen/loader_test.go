@@ -19,7 +19,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func Test_loadMetadata(t *testing.T) {
@@ -39,13 +40,21 @@ func Test_loadMetadata(t *testing.T) {
 					"enumAttribute": {
 						Description: "Attribute with a known set of values.",
 						Value:       "",
-						Enum:        []string{"red", "green", "blue"}},
+						Enum:        []string{"red", "green", "blue"},
+					},
 					"freeFormAttribute": {
 						Description: "Attribute that can take on any value.",
 						Value:       ""},
 					"freeFormAttributeWithValue": {
 						Description: "Attribute that has alternate value set.",
-						Value:       "state"}},
+						Value:       "state"},
+					"booleanValueType": {
+						Description: "Attribute with a boolean value.",
+						Value:       "0",
+						Type: ValueType{
+							ValueType: pcommon.ValueTypeBool,
+						},
+					}},
 				Metrics: map[metricName]metric{
 					"system.cpu.time": {
 						Enabled:               (func() *bool { t := true; return &t })(),
@@ -53,20 +62,20 @@ func Test_loadMetadata(t *testing.T) {
 						ExtendedDocumentation: "Additional information on CPU Time can be found [here](https://en.wikipedia.org/wiki/CPU_time).",
 						Unit:                  "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 							Aggregated:      Aggregated{Aggregation: "cumulative"},
 							Mono:            Mono{Monotonic: true},
 						},
-						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute"},
+						Attributes: []attributeName{"freeFormAttribute", "freeFormAttributeWithValue", "enumAttribute", "booleanValueType"},
 					},
 					"system.cpu.utilization": {
 						Enabled:     (func() *bool { f := false; return &f })(),
 						Description: "Percentage of CPU time broken down by different states.",
 						Unit:        "1",
 						Gauge: &gauge{
-							MetricValueType: MetricValueType{pdata.MetricValueTypeDouble},
+							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
 						},
-						Attributes: []attributeName{"enumAttribute"},
+						Attributes: []attributeName{"enumAttribute", "booleanValueType"},
 					},
 				},
 			},
@@ -83,7 +92,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "no_metric_type.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time doesn't have a metric type key, " +
-				"one of the following has to be specified: sum, gauge, histogram",
+				"one of the following has to be specified: sum, gauge",
 		},
 		{
 			name:    "no enabled",
@@ -96,7 +105,7 @@ func Test_loadMetadata(t *testing.T) {
 			yml:  "two_metric_types.yaml",
 			want: metadata{},
 			wantErr: "metric system.cpu.time has more than one metric type keys, " +
-				"only one of the following has to be specified: sum, gauge, histogram",
+				"only one of the following has to be specified: sum, gauge",
 		},
 		{
 			name: "no number types",

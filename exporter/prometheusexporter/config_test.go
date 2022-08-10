@@ -27,6 +27,7 @@ import (
 )
 
 func TestLoadConfig(t *testing.T) {
+
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -50,8 +51,8 @@ func TestLoadConfig(t *testing.T) {
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
-			SendTimestamps:    true,
-			MetricExpiration:  60 * time.Minute,
-			skipSanitizeLabel: false,
+			SendTimestamps:   true,
+			MetricExpiration: 60 * time.Minute,
 		})
+
 }

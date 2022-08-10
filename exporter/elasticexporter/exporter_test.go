@@ -17,7 +17,6 @@ package elasticexporter
 import (
 	"context"
 	"encoding/pem"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -27,14 +26,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.elastic.co/apm/transport/transporttest"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestTracesExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -43,7 +45,7 @@ func TestTracesExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	traces := pdata.NewTraces()
+	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans()
 	span := resourceSpans.AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("foobar")
@@ -62,7 +64,9 @@ func TestTracesExporter(t *testing.T) {
 func TestMetricsExporter(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
@@ -85,7 +89,9 @@ func TestMetricsExporter(t *testing.T) {
 func TestMetricsExporterSendError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -104,14 +110,14 @@ func TestMetricsExporterSendError(t *testing.T) {
 	assert.NoError(t, me.Shutdown(context.Background()))
 }
 
-func sampleMetrics() pdata.Metrics {
-	metrics := pdata.NewMetrics()
+func sampleMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics()
 	resourceMetrics.EnsureCapacity(2)
 	for i := 0; i < 2; i++ {
 		metric := resourceMetrics.AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foobar")
-		metric.SetDataType(pdata.MetricDataTypeGauge)
+		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		metric.Gauge().DataPoints().AppendEmpty().SetDoubleVal(123)
 	}
 	return metrics
@@ -137,7 +143,7 @@ func newRecorder(t *testing.T) (*transporttest.RecorderTransport, *Config) {
 	t.Cleanup(srv.Close)
 
 	// Write the server's self-signed certificate to a file to test the exporter's TLS config.
-	certfile, err := ioutil.TempFile("", "otel-elastic-cacert")
+	certfile, err := os.CreateTemp("", "otel-elastic-cacert")
 	require.NoError(t, err)
 	t.Cleanup(func() { os.Remove(certfile.Name()) })
 	err = pem.Encode(certfile, &pem.Block{

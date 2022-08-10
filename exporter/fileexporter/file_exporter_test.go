@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,14 +16,15 @@ package fileexporter
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -37,8 +38,8 @@ func TestFileTracesExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONTracesUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	unmarshaler := ptrace.NewJSONUnmarshaler()
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
@@ -65,8 +66,8 @@ func TestFileMetricsExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeMetrics(context.Background(), md))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONMetricsUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	unmarshaler := pmetric.NewJSONUnmarshaler()
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
@@ -93,8 +94,8 @@ func TestFileLogsExporter(t *testing.T) {
 	assert.NoError(t, fe.ConsumeLogs(context.Background(), ld))
 	assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := otlp.NewJSONLogsUnmarshaler()
-	buf, err := ioutil.ReadFile(fe.path)
+	unmarshaler := plog.NewJSONUnmarshaler()
+	buf, err := os.ReadFile(fe.path)
 	assert.NoError(t, err)
 	got, err := unmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
@@ -114,7 +115,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 
 // tempFileName provides a temporary file name for testing.
 func tempFileName(t *testing.T) string {
-	tmpfile, err := ioutil.TempFile("", "*.json")
+	tmpfile, err := os.CreateTemp("", "*.json")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

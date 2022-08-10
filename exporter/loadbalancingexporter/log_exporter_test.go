@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,7 +29,9 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -101,7 +102,9 @@ func TestLogExporterStart(t *testing.T) {
 
 			// test
 			res := p.Start(context.Background(), componenttest.NewNopHost())
-			defer p.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, p.Shutdown(context.Background()))
+			}()
 
 			// verify
 			require.Equal(t, tt.err, res)
@@ -145,7 +148,9 @@ func TestConsumeLogs(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -176,7 +181,9 @@ func TestConsumeLogsExporterNotFound(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -210,7 +217,9 @@ func TestConsumeLogsUnexpectedExporterType(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeLogs(context.Background(), simpleLogs())
@@ -239,11 +248,13 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	first := simpleLogs()
-	second := simpleLogWithID(pdata.NewTraceID([16]byte{2, 3, 4, 5}))
-	batch := pdata.NewLogs()
+	second := simpleLogWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	batch := plog.NewLogs()
 	firstTgt := batch.ResourceLogs().AppendEmpty()
 	first.ResourceLogs().At(0).CopyTo(firstTgt)
 	secondTgt := batch.ResourceLogs().AppendEmpty()
@@ -260,24 +271,24 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 func TestNoLogsInBatch(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
-		batch pdata.Logs
+		batch plog.Logs
 	}{
 		{
 			"no resource logs",
-			pdata.NewLogs(),
+			plog.NewLogs(),
 		},
 		{
 			"no instrumentation library logs",
-			func() pdata.Logs {
-				batch := pdata.NewLogs()
+			func() plog.Logs {
+				batch := plog.NewLogs()
 				batch.ResourceLogs().AppendEmpty()
 				return batch
 			}(),
 		},
 		{
 			"no logs",
-			func() pdata.Logs {
-				batch := pdata.NewLogs()
+			func() plog.Logs {
+				batch := plog.NewLogs()
 				batch.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 				return batch
 			}(),
@@ -285,7 +296,7 @@ func TestNoLogsInBatch(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pdata.InvalidTraceID(), res)
+			assert.Equal(t, pcommon.InvalidTraceID(), res)
 		})
 	}
 }
@@ -309,7 +320,9 @@ func TestLogsWithoutTraceID(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	err = p.ConsumeLogs(context.Background(), simpleLogWithoutID())
@@ -386,17 +399,18 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	lb.res = res
 	p.loadBalancer = lb
 
-	var counter1, counter2 int64
+	counter1 := atomic.NewInt64(0)
+	counter2 := atomic.NewInt64(0)
 	defaultExporters := map[string]component.Exporter{
-		"127.0.0.1": newMockLogsExporter(func(ctx context.Context, ld pdata.Logs) error {
-			atomic.AddInt64(&counter1, 1)
+		"127.0.0.1": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
+			counter1.Inc()
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
-		"127.0.0.2": newMockLogsExporter(func(ctx context.Context, ld pdata.Logs) error {
-			atomic.AddInt64(&counter2, 1)
+		"127.0.0.2": newMockLogsExporter(func(ctx context.Context, ld plog.Logs) error {
+			counter2.Inc()
 			return nil
 		},
 		),
@@ -405,7 +419,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// test
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 	// ensure using default exporters
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
@@ -427,7 +443,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				go p.ConsumeLogs(ctx, randomLogs())
+				go func() {
+					require.NoError(t, p.ConsumeLogs(ctx, randomLogs()))
+				}()
 			}
 		}
 	}(ctx)
@@ -446,20 +464,20 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	// verify
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
-	require.Greater(t, atomic.LoadInt64(&counter1), int64(0))
-	require.Greater(t, atomic.LoadInt64(&counter2), int64(0))
+	require.Greater(t, counter1.Load(), int64(0))
+	require.Greater(t, counter2.Load(), int64(0))
 }
 
-func randomLogs() pdata.Logs {
+func randomLogs() plog.Logs {
 	return simpleLogWithID(random())
 }
 
-func simpleLogs() pdata.Logs {
-	return simpleLogWithID(pdata.NewTraceID([16]byte{1, 2, 3, 4}))
+func simpleLogs() plog.Logs {
+	return simpleLogWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
-func simpleLogWithID(id pdata.TraceID) pdata.Logs {
-	logs := pdata.NewLogs()
+func simpleLogWithID(id pcommon.TraceID) plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty().SetTraceID(id)
@@ -467,8 +485,8 @@ func simpleLogWithID(id pdata.TraceID) pdata.Logs {
 	return logs
 }
 
-func simpleLogWithoutID() pdata.Logs {
-	logs := pdata.NewLogs()
+func simpleLogWithoutID() plog.Logs {
+	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.LogRecords().AppendEmpty()
@@ -478,18 +496,18 @@ func simpleLogWithoutID() pdata.Logs {
 
 type mockLogsExporter struct {
 	component.Component
-	ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error
+	consumelogsfn func(ctx context.Context, ld plog.Logs) error
 }
 
 func (e *mockLogsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld pdata.Logs) error {
-	if e.ConsumeLogsFn == nil {
+func (e *mockLogsExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+	if e.consumelogsfn == nil {
 		return nil
 	}
-	return e.ConsumeLogsFn(ctx, ld)
+	return e.consumelogsfn(ctx, ld)
 }
 
 type mockComponent struct {
@@ -497,17 +515,17 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func newMockLogsExporter(ConsumeLogsFn func(ctx context.Context, ld pdata.Logs) error) component.LogsExporter {
+func newMockLogsExporter(consumelogsfn func(ctx context.Context, ld plog.Logs) error) component.LogsExporter {
 	return &mockLogsExporter{
 		Component:     mockComponent{},
-		ConsumeLogsFn: ConsumeLogsFn,
+		consumelogsfn: consumelogsfn,
 	}
 }
 
 func newNopMockLogsExporter() component.LogsExporter {
 	return &mockLogsExporter{
 		Component: mockComponent{},
-		ConsumeLogsFn: func(ctx context.Context, ld pdata.Logs) error {
+		consumelogsfn: func(ctx context.Context, ld plog.Logs) error {
 			return nil
 		},
 	}

@@ -1,0 +1,4 @@
+type: retain
+fields:
+  - body.key
+  - body.nested2

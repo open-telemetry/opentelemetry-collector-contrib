@@ -29,6 +29,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "metricstransform"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -38,7 +40,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -75,12 +77,8 @@ func createMetricsProcessor(
 // An error is returned if there are any invalid inputs.
 func validateConfiguration(config *Config) error {
 	for _, transform := range config.Transforms {
-		if transform.MetricIncludeFilter.Include == "" && transform.MetricName == "" {
+		if transform.MetricIncludeFilter.Include == "" {
 			return fmt.Errorf("missing required field %q", IncludeFieldName)
-		}
-
-		if transform.MetricIncludeFilter.Include != "" && transform.MetricName != "" {
-			return fmt.Errorf("cannot supply both %q and %q, use %q with %q match type", IncludeFieldName, MetricNameFieldName, IncludeFieldName, StrictMatchType)
 		}
 
 		if transform.MetricIncludeFilter.MatchType != "" && !transform.MetricIncludeFilter.MatchType.isValid() {
@@ -145,11 +143,6 @@ func buildHelperConfig(config *Config, version string) ([]internalTransform, err
 	helperDataTransforms := make([]internalTransform, len(config.Transforms))
 	for i, t := range config.Transforms {
 
-		// for backwards compatibility, convert metric name to an include filter
-		if t.MetricName != "" {
-			t.MetricIncludeFilter = FilterConfig{Include: t.MetricName}
-			t.MetricName = ""
-		}
 		if t.MetricIncludeFilter.MatchType == "" {
 			t.MetricIncludeFilter.MatchType = StrictMatchType
 		}
@@ -196,13 +189,13 @@ func createFilter(filterConfig FilterConfig) (internalFilter, error) {
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterStrict{include: filterConfig.Include, matchLabels: matchers}, nil
+		return internalFilterStrict{include: filterConfig.Include, attrMatchers: matchers}, nil
 	case RegexpMatchType:
 		matchers, err := getMatcherMap(filterConfig.MatchLabels, func(str string) (StringMatcher, error) { return regexp.Compile(str) })
 		if err != nil {
 			return nil, err
 		}
-		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), matchLabels: matchers}, nil
+		return internalFilterRegexp{include: regexp.MustCompile(filterConfig.Include), attrMatchers: matchers}, nil
 	}
 
 	return nil, fmt.Errorf("invalid match type: %v", filterConfig.MatchType)

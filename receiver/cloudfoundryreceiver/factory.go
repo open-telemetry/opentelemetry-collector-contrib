@@ -28,6 +28,7 @@ import (
 
 const (
 	typeStr                  = "cloudfoundry"
+	stability                = component.StabilityLevelBeta
 	defaultUAAUsername       = "admin"
 	defaultRLPGatewayShardID = "opentelemetry"
 	defaultURL               = "https://localhost"
@@ -38,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {

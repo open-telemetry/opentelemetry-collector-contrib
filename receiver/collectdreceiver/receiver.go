@@ -19,14 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
 
@@ -52,7 +51,7 @@ func newCollectdReceiver(
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	r := &collectdReceiver{
@@ -74,7 +73,7 @@ func newCollectdReceiver(
 func (cdr *collectdReceiver) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := cdr.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %v", err))
+			host.ReportFatalError(fmt.Errorf("error starting collectd receiver: %w", err))
 		}
 	}()
 	return nil
@@ -95,7 +94,7 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		recordRequestErrors()
 		w.WriteHeader(http.StatusBadRequest)
@@ -125,7 +124,13 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return
 	}
-	w.Write([]byte("OK"))
+
+	_, err = w.Write([]byte("OK"))
+	if err != nil {
+		cdr.handleHTTPErr(w, err, "unable to write response")
+		return
+	}
+
 }
 
 func (cdr *collectdReceiver) defaultAttributes(req *http.Request) map[string]string {

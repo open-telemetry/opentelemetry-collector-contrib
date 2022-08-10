@@ -17,7 +17,6 @@ package datasenders // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -25,7 +24,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
@@ -59,16 +59,16 @@ var _ testbed.LogDataSender = (*FileLogK8sWriter)(nil)
 // |      regex: ^(?P<log>.*)$
 // |  `
 func NewFileLogK8sWriter(config string) *FileLogK8sWriter {
-	dir, err := ioutil.TempDir("", "namespace-*_test-pod_000011112222333344445555666677778888")
+	dir, err := os.MkdirTemp("", "namespace-*_test-pod_000011112222333344445555666677778888")
 	if err != nil {
 		panic("failed to create temp dir")
 	}
-	dir, err = ioutil.TempDir(dir, "*")
+	dir, err = os.MkdirTemp(dir, "*")
 	if err != nil {
 		panic("failed to create temp dir")
 	}
 
-	file, err := ioutil.TempFile(dir, "*.log")
+	file, err := os.CreateTemp(dir, "*.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -89,7 +89,7 @@ func (f *FileLogK8sWriter) Start() error {
 	return nil
 }
 
-func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error {
+func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs plog.Logs) error {
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		for j := 0; j < logs.ResourceLogs().At(i).ScopeLogs().Len(); j++ {
 			ills := logs.ResourceLogs().At(i).ScopeLogs().At(j)
@@ -104,7 +104,7 @@ func (f *FileLogK8sWriter) ConsumeLogs(_ context.Context, logs pdata.Logs) error
 	return nil
 }
 
-func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
+func (f *FileLogK8sWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 	sb := strings.Builder{}
 
 	// Timestamp
@@ -115,22 +115,22 @@ func (f *FileLogK8sWriter) convertLogToTextLine(lr pdata.LogRecord) []byte {
 	sb.WriteString(lr.SeverityText())
 	sb.WriteString(" ")
 
-	if lr.Body().Type() == pdata.ValueTypeString {
+	if lr.Body().Type() == pcommon.ValueTypeString {
 		sb.WriteString(lr.Body().StringVal())
 	}
 
-	lr.Attributes().Range(func(k string, v pdata.Value) bool {
+	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
 		switch v.Type() {
-		case pdata.ValueTypeString:
+		case pcommon.ValueTypeString:
 			sb.WriteString(v.StringVal())
-		case pdata.ValueTypeInt:
+		case pcommon.ValueTypeInt:
 			sb.WriteString(strconv.FormatInt(v.IntVal(), 10))
-		case pdata.ValueTypeDouble:
+		case pcommon.ValueTypeDouble:
 			sb.WriteString(strconv.FormatFloat(v.DoubleVal(), 'f', -1, 64))
-		case pdata.ValueTypeBool:
+		case pcommon.ValueTypeBool:
 			sb.WriteString(strconv.FormatBool(v.BoolVal()))
 		default:
 			panic("missing case")

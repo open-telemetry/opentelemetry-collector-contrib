@@ -42,7 +42,7 @@ func TestWALCreation_nonNilConfig(t *testing.T) {
 	pwal, err := newWAL(config, doNothingExportSink)
 	require.NotNil(t, pwal)
 	assert.Nil(t, err)
-	pwal.stop()
+	assert.NoError(t, pwal.stop())
 }
 
 func orderByLabelValueForEach(reqL []*prompb.WriteRequest) {

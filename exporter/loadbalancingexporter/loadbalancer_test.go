@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/model/pdata"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -84,8 +83,9 @@ func TestLoadBalancerStart(t *testing.T) {
 
 	// test
 	res := p.Start(context.Background(), componenttest.NewNopHost())
-	defer p.Shutdown(context.Background())
-
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 	// verify
 	assert.Nil(t, res)
 }
@@ -217,7 +217,7 @@ func TestAddMissingExporters(t *testing.T) {
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return newNopMockTracesExporter(), nil
-	}))
+	}, component.StabilityLevelInDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
@@ -251,7 +251,7 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 		_ config.Exporter,
 	) (component.TracesExporter, error) {
 		return nil, expectedErr
-	}))
+	}, component.StabilityLevelInDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
@@ -341,7 +341,14 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, err = p.Exporter(p.Endpoint(pdata.NewTraceID([16]byte{128, 128, 0, 0})))
+	_, err = p.Exporter(p.Endpoint([]byte{128, 128, 0, 0}))
+
+	// verify
+	assert.Error(t, err)
+
+	// test
+	// this service name will reach the endpoint-2 -- see the consistent hashing tests for more info
+	_, err = p.Exporter(p.Endpoint([]byte("get-recommendations-1")))
 
 	// verify
 	assert.Error(t, err)

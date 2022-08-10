@@ -37,7 +37,7 @@ type LimitedTLSClientSetting struct {
 // configuration is used with not taking a preconfigured http.Client as input, but only taking these specific options
 type LimitedHTTPClientSettings struct {
 	Endpoint   string                  `mapstructure:"endpoint"`
-	TLSSetting LimitedTLSClientSetting `mapstructure:"tls,omitempty"`
+	TLSSetting LimitedTLSClientSetting `mapstructure:"tls"`
 }
 
 type UAAConfig struct {
@@ -82,7 +82,7 @@ func validateURLOption(name string, value string) error {
 
 	_, err := url.Parse(value)
 	if err != nil {
-		return fmt.Errorf("failed to parse %s as url: %v", name, err)
+		return fmt.Errorf("failed to parse %s as url: %w", name, err)
 	}
 
 	return nil

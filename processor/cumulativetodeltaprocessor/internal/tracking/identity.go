@@ -18,19 +18,27 @@ import (
 	"bytes"
 	"strconv"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 type MetricIdentity struct {
-	Resource               pdata.Resource
-	InstrumentationLibrary pdata.InstrumentationScope
-	MetricDataType         pdata.MetricDataType
+	Resource               pcommon.Resource
+	InstrumentationLibrary pcommon.InstrumentationScope
+	MetricDataType         pmetric.MetricDataType
 	MetricIsMonotonic      bool
 	MetricName             string
 	MetricUnit             string
-	StartTimestamp         pdata.Timestamp
-	Attributes             pdata.Map
-	MetricValueType        pdata.MetricValueType
+	StartTimestamp         pcommon.Timestamp
+	Attributes             pcommon.Map
+	MetricValueType        pmetric.NumberDataPointValueType
+	MetricField            string
+}
+
+type HistogramIdentities struct {
+	CountIdentity    MetricIdentity
+	SumIdentity      MetricIdentity
+	BucketIdentities []MetricIdentity
 }
 
 const A = int32('A')
@@ -41,7 +49,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteRune(A + int32(mi.MetricDataType))
 	b.WriteByte(SEP)
 	b.WriteRune(A + int32(mi.MetricValueType))
-	mi.Resource.Attributes().Sort().Range(func(k string, v pdata.Value) bool {
+	mi.Resource.Attributes().Sort().Range(func(k string, v pcommon.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
@@ -65,7 +73,7 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	b.WriteByte(SEP)
 	b.WriteString(mi.MetricUnit)
 
-	mi.Attributes.Sort().Range(func(k string, v pdata.Value) bool {
+	mi.Attributes.Sort().Range(func(k string, v pcommon.Value) bool {
 		b.WriteByte(SEP)
 		b.WriteString(k)
 		b.WriteByte(':')
@@ -74,12 +82,17 @@ func (mi *MetricIdentity) Write(b *bytes.Buffer) {
 	})
 	b.WriteByte(SEP)
 	b.WriteString(strconv.FormatInt(int64(mi.StartTimestamp), 36))
+
+	if mi.MetricField != "" {
+		b.WriteByte(SEP)
+		b.WriteString(mi.MetricField)
+	}
 }
 
 func (mi *MetricIdentity) IsFloatVal() bool {
-	return mi.MetricValueType == pdata.MetricValueTypeDouble
+	return mi.MetricValueType == pmetric.NumberDataPointValueTypeDouble
 }
 
 func (mi *MetricIdentity) IsSupportedMetricType() bool {
-	return mi.MetricDataType == pdata.MetricDataTypeSum
+	return mi.MetricDataType == pmetric.MetricDataTypeSum || mi.MetricDataType == pmetric.MetricDataTypeHistogram
 }

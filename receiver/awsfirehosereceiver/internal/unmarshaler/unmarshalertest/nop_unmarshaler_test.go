@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestNewNopMetrics(t *testing.T) {
@@ -31,7 +31,7 @@ func TestNewNopMetrics(t *testing.T) {
 }
 
 func TestNewWithMetrics(t *testing.T) {
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().AppendEmpty()
 	unmarshaler := NewWithMetrics(metrics)
 	got, err := unmarshaler.Unmarshal(nil)

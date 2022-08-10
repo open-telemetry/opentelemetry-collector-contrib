@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -49,18 +50,18 @@ func runIndividualLogTestCase(t *testing.T, tt logTestCase, tp component.LogsPro
 	})
 }
 
-func generateLogData(resourceName string, attrs map[string]interface{}) pdata.Logs {
-	td := pdata.NewLogs()
+func generateLogData(resourceName string, attrs map[string]interface{}) plog.Logs {
+	td := plog.NewLogs()
 	res := td.ResourceLogs().AppendEmpty()
 	res.Resource().Attributes().InsertString("name", resourceName)
 	sl := res.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
-	pdata.NewMapFromRaw(attrs).CopyTo(lr.Attributes())
+	pcommon.NewMapFromRaw(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
 	return td
 }
 
-func sortLogAttributes(ld pdata.Logs) {
+func sortLogAttributes(ld plog.Logs) {
 	rss := ld.ResourceLogs()
 	for i := 0; i < rss.Len(); i++ {
 		rs := rss.At(i)
@@ -80,14 +81,14 @@ func sortLogAttributes(ld pdata.Logs) {
 func TestLogProcessor_NilEmptyData(t *testing.T) {
 	type nilEmptyTestCase struct {
 		name   string
-		input  pdata.Logs
-		output pdata.Logs
+		input  plog.Logs
+		output plog.Logs
 	}
 	testCases := []nilEmptyTestCase{
 		{
 			name:   "empty",
-			input:  pdata.NewLogs(),
-			output: pdata.NewLogs(),
+			input:  plog.NewLogs(),
+			output: plog.NewLogs(),
 		},
 		{
 			name:   "one-empty-resource-logs",

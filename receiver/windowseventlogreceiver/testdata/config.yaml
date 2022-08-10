@@ -1,0 +1,17 @@
+receivers:
+  windowseventlog:
+    start_at: end
+    channel: application
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    logs:
+      receivers: [windowseventlog]
+      processors: [nop]
+      exporters: [nop]

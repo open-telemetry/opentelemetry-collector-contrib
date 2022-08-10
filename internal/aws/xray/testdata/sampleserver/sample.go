@@ -26,12 +26,16 @@ func main() {
 	http.Handle("/", xray.Handler(
 		xray.NewFixedSegmentNamer("SampleServer"), http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte("Hello!"))
+				_, _ = w.Write([]byte("Hello!"))
 			},
 		),
 	))
 
-	go http.ListenAndServe(":8000", nil)
+	go func() {
+		if err := http.ListenAndServe(":8000", nil); err != nil {
+			panic(err)
+		}
+	}()
 	time.Sleep(time.Second)
 
 	resp, err := http.Get("http://localhost:8000")

@@ -17,11 +17,11 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
 	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 	"gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/translator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/sketches"
 )
 
@@ -79,9 +79,18 @@ func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInf
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo) ([]datadog.Metric, sketches.SketchSeriesList) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadog.Metric, sketches.SketchSeriesList) {
 	series := c.ms
 	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
+	if len(tags) == 0 {
+		return series, c.sl
+	}
+	for i := 0; i < len(series); i++ {
+		series[i].Tags = append(series[i].Tags, tags...)
+	}
+	for i := 0; i < len(c.sl); i++ {
+		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
+	}
 	return series, c.sl
 }
 

@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
@@ -45,8 +46,13 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	var metrics []*CAdvisorMetric
 
 	// Just a protection here, there is no Container level Net metrics
-	if (containerType == ci.TypePod && info.Spec.Labels[containerNameLable] != infraContainerName) || containerType == ci.TypeContainer {
+	if containerType == ci.TypePod || containerType == ci.TypeContainer {
 		return metrics
+	}
+
+	// Rename type to pod so the metric name prefix is pod_
+	if containerType == ci.TypeInfraContainer {
+		containerType = ci.TypePod
 	}
 
 	curStats := GetStats(info)

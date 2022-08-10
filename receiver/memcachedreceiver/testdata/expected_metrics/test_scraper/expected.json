@@ -4,7 +4,8 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/memcached"
+                  "name": "otelcol/memcachedreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

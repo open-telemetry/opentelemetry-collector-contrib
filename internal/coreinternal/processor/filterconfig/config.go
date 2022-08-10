@@ -52,19 +52,21 @@ type MatchConfig struct {
 // this requires all the properties to match for the inclusion/exclusion to
 // occur.
 // The following are examples of invalid configurations:
-//  attributes/bad1:
-//    # This is invalid because include is specified with neither services or
-//    # attributes.
-//    include:
-//    actions: ...
 //
-//  span/bad2:
-//    exclude:
-//    	# This is invalid because services, span_names and attributes have empty values.
-//      services:
-//      span_names:
-//      attributes:
-//    actions: ...
+//	attributes/bad1:
+//	  # This is invalid because include is specified with neither services or
+//	  # attributes.
+//	  include:
+//	  actions: ...
+//
+//	span/bad2:
+//	  exclude:
+//	  	# This is invalid because services, span_names and attributes have empty values.
+//	    services:
+//	    span_names:
+//	    attributes:
+//	  actions: ...
+//
 // Please refer to processor/attributesprocessor/testdata/config.yaml and
 // processor/spanprocessor/testdata/config.yaml for valid configurations.
 type MatchProperties struct {
@@ -90,14 +92,13 @@ type MatchProperties struct {
 	// This is an optional field.
 	SpanNames []string `mapstructure:"span_names"`
 
-	// LogNames is a list of strings that the LogRecord's name field must match
-	// against.
-	// Deprecated: the Name field is removed from the log data model.
-	LogNames []string `mapstructure:"log_names"`
-
 	// LogBodies is a list of strings that the LogRecord's body field must match
 	// against.
 	LogBodies []string `mapstructure:"log_bodies"`
+
+	// LogSeverityTexts is a list of strings that the LogRecord's severity text field must match
+	// against.
+	LogSeverityTexts []string `mapstructure:"log_severity_texts"`
 
 	// MetricNames is a list of strings to match metric name against.
 	// A match occurs if metric name matches at least one item in the list.
@@ -123,12 +124,12 @@ type MatchProperties struct {
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
-	if len(mp.LogNames) > 0 {
-		return errors.New("log_names should not be specified for trace spans")
-	}
-
 	if len(mp.LogBodies) > 0 {
 		return errors.New("log_bodies should not be specified for trace spans")
+	}
+
+	if len(mp.LogSeverityTexts) > 0 {
+		return errors.New("log_severity_texts should not be specified for trace spans")
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
@@ -145,8 +146,8 @@ func (mp *MatchProperties) ValidateForLogs() error {
 		return errors.New("neither services nor span_names should be specified for log records")
 	}
 
-	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 {
-		return errors.New(`at least one of "attributes", "libraries", "resources" or "log_bodies" field must be specified`)
+	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.LogBodies) == 0 && len(mp.LogSeverityTexts) == 0 {
+		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
 	}
 
 	return nil

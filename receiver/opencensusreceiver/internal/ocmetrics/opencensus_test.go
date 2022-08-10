@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -48,7 +49,9 @@ import (
 func TestReceiver_endToEnd(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
@@ -79,7 +82,9 @@ func TestReceiver_endToEnd(t *testing.T) {
 func TestExportMultiplexing(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
@@ -196,7 +201,9 @@ func TestExportMultiplexing(t *testing.T) {
 func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	metricSink := new(consumertest.MetricsSink)
 
@@ -255,8 +262,8 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 		}
 		if err = metricsClient.Send(&agentmetricspb.ExportMetricsServiceRequest{Node: n1}); err == nil {
 			t.Errorf("Iteration #%d: Unexpectedly succeeded in sending a message upstream. Connection must be in terminal state", i)
-		} else if g, w := err, io.EOF; g != w {
-			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, g, w)
+		} else if !errors.Is(err, io.EOF) {
+			t.Errorf("Iteration #%d:\nGot error %q\nWant error %q", i, err, io.EOF)
 		}
 	}
 
@@ -271,7 +278,9 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 	// This test used to be flaky on Windows. Skip if errors pop up again
 	tt, err := obsreporttest.SetupTelemetry()
 	require.NoError(t, err)
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	metricSink := new(consumertest.MetricsSink)
 

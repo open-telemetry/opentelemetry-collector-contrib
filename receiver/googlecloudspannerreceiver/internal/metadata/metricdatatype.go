@@ -14,21 +14,21 @@
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 
-import "go.opentelemetry.io/collector/model/pdata"
+import "go.opentelemetry.io/collector/pdata/pmetric"
 
 type MetricDataType interface {
-	MetricDataType() pdata.MetricDataType
-	AggregationTemporality() pdata.MetricAggregationTemporality
+	MetricDataType() pmetric.MetricDataType
+	AggregationTemporality() pmetric.MetricAggregationTemporality
 	IsMonotonic() bool
 }
 
 type metricValueDataType struct {
-	dataType               pdata.MetricDataType
-	aggregationTemporality pdata.MetricAggregationTemporality
+	dataType               pmetric.MetricDataType
+	aggregationTemporality pmetric.MetricAggregationTemporality
 	isMonotonic            bool
 }
 
-func NewMetricDataType(dataType pdata.MetricDataType, aggregationTemporality pdata.MetricAggregationTemporality,
+func NewMetricDataType(dataType pmetric.MetricDataType, aggregationTemporality pmetric.MetricAggregationTemporality,
 	isMonotonic bool) MetricDataType {
 	return metricValueDataType{
 		dataType:               dataType,
@@ -37,11 +37,11 @@ func NewMetricDataType(dataType pdata.MetricDataType, aggregationTemporality pda
 	}
 }
 
-func (metricValueDataType metricValueDataType) MetricDataType() pdata.MetricDataType {
+func (metricValueDataType metricValueDataType) MetricDataType() pmetric.MetricDataType {
 	return metricValueDataType.dataType
 }
 
-func (metricValueDataType metricValueDataType) AggregationTemporality() pdata.MetricAggregationTemporality {
+func (metricValueDataType metricValueDataType) AggregationTemporality() pmetric.MetricAggregationTemporality {
 	return metricValueDataType.aggregationTemporality
 }
 

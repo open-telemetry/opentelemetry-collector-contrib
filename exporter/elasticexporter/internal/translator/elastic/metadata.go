@@ -20,12 +20,12 @@ import (
 
 	"go.elastic.co/apm/model"
 	"go.elastic.co/fastjson"
-	"go.opentelemetry.io/collector/model/pdata"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
 // EncodeResourceMetadata encodes a metadata line from resource, writing to w.
-func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
+func EncodeResourceMetadata(resource pcommon.Resource, w *fastjson.Writer) (err error) {
 	var agent model.Agent
 	var service model.Service
 	var serviceNode model.ServiceNode
@@ -35,7 +35,7 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 	var k8sPod model.KubernetesPod
 	var labels model.IfaceMap
 
-	resource.Attributes().Range(func(k string, v pdata.Value) bool {
+	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
 		switch k {
 		case conventions.AttributeServiceName:
 			service.Name = cleanServiceName(v.StringVal())
@@ -98,14 +98,21 @@ func EncodeResourceMetadata(resource pdata.Resource, w *fastjson.Writer) {
 
 	w.RawString(`{"metadata":{`)
 	w.RawString(`"service":`)
-	service.MarshalFastJSON(w)
+	if err := service.MarshalFastJSON(w); err != nil {
+		return err
+	}
 	if system != (model.System{}) {
 		w.RawString(`,"system":`)
-		system.MarshalFastJSON(w)
+		if err := system.MarshalFastJSON(w); err != nil {
+			return err
+		}
 	}
 	if len(labels) > 0 {
 		w.RawString(`,"labels":`)
-		labels.MarshalFastJSON(w)
+		if err := labels.MarshalFastJSON(w); err != nil {
+			return err
+		}
 	}
 	w.RawString("}}\n")
+	return nil
 }

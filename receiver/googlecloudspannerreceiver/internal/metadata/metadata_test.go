@@ -14,7 +14,9 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/model/pdata"
+import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 const (
 	labelName       = "LabelName"
@@ -27,7 +29,7 @@ const (
 
 	metricName       = "metricName"
 	metricColumnName = "metricColumnName"
-	metricDataType   = pdata.MetricDataTypeGauge
+	metricDataType   = pmetric.MetricDataTypeGauge
 	metricUnit       = "metricUnit"
 	metricNamePrefix = "metricNamePrefix-"
 

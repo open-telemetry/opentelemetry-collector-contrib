@@ -17,13 +17,16 @@ package coralogixexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
-	typestr = "coralogix"
+	typeStr = "coralogix"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // Config defines by Coralogix.
@@ -33,8 +36,14 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
-	// The Coralogix logs ingress endpoint
+	// The Coralogix trace ingress endpoint
 	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+
+	// The Coralogix metrics ingress endpoint
+	Metrics configgrpc.GRPCClientSettings `mapstructure:"metrics"`
+
+	// The Coralogix logs ingress endpoint
+	Logs configgrpc.GRPCClientSettings `mapstructure:"logs"`
 
 	// Your Coralogix private key (sensitive) for authentication
 	PrivateKey string `mapstructure:"private_key"`
@@ -49,10 +58,18 @@ type Config struct {
 	SubSystem string `mapstructure:"subsystem_name"`
 }
 
+func isEmpty(endpoint string) bool {
+	if endpoint == "" || endpoint == "https://" || endpoint == "http://" {
+		return true
+	}
+	return false
+}
 func (c *Config) Validate() error {
-	// validate each parameter and return specific error
-	if c.GRPCClientSettings.Endpoint == "" || c.GRPCClientSettings.Endpoint == "https://" || c.GRPCClientSettings.Endpoint == "http://" {
-		return fmt.Errorf("`endpoint` not specified, please fix the configuration file")
+	// validate that atleast one endpoint is set up correctly
+	if isEmpty(c.GRPCClientSettings.Endpoint) &&
+		isEmpty(c.Metrics.Endpoint) &&
+		isEmpty(c.Logs.Endpoint) {
+		return fmt.Errorf("`endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
@@ -67,5 +84,6 @@ func (c *Config) Validate() error {
 	}
 	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
 	c.GRPCClientSettings.Headers["appName"] = c.AppName
+
 	return nil
 }

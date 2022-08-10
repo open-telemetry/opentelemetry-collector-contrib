@@ -19,29 +19,31 @@ import (
 	"strings"
 	"testing"
 
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestMetricIdentity_Write(t *testing.T) {
-	resource := pdata.NewResource()
+	resource := pcommon.NewResource()
 	resource.Attributes().InsertBool("resource", true)
 
-	il := pdata.NewInstrumentationScope()
+	il := pcommon.NewInstrumentationScope()
 	il.SetName("ilm_name")
 	il.SetVersion("ilm_version")
 
-	attributes := pdata.NewMap()
+	attributes := pcommon.NewMap()
 	attributes.InsertString("label", "value")
 	type fields struct {
-		Resource               pdata.Resource
-		InstrumentationLibrary pdata.InstrumentationScope
-		MetricDataType         pdata.MetricDataType
+		Resource               pcommon.Resource
+		InstrumentationLibrary pcommon.InstrumentationScope
+		MetricDataType         pmetric.MetricDataType
 		MetricIsMonotonic      bool
 		MetricName             string
 		MetricUnit             string
-		StartTimestamp         pdata.Timestamp
-		Attributes             pdata.Map
-		MetricValueType        pdata.MetricValueType
+		StartTimestamp         pcommon.Timestamp
+		Attributes             pcommon.Map
+		MetricValueType        pmetric.NumberDataPointValueType
+		MetricField            string
 	}
 	tests := []struct {
 		name   string
@@ -65,11 +67,23 @@ func TestMetricIdentity_Write(t *testing.T) {
 				Resource:               resource,
 				InstrumentationLibrary: il,
 				Attributes:             attributes,
-				MetricDataType:         pdata.MetricDataTypeSum,
-				MetricValueType:        pdata.MetricValueTypeInt,
+				MetricDataType:         pmetric.MetricDataTypeSum,
+				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
 				MetricIsMonotonic:      true,
 			},
 			want: []string{"C" + SEPSTR + "B", "Y"},
+		},
+		{
+			name: "histogram sum",
+			fields: fields{
+				Resource:               resource,
+				InstrumentationLibrary: il,
+				Attributes:             attributes,
+				MetricDataType:         pmetric.MetricDataTypeHistogram,
+				MetricValueType:        pmetric.NumberDataPointValueTypeInt,
+				MetricField:            "bound_100",
+			},
+			want: []string{"D" + SEPSTR + "B", "bound_100"},
 		},
 	}
 	for _, tt := range tests {
@@ -84,6 +98,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				StartTimestamp:         tt.fields.StartTimestamp,
 				Attributes:             tt.fields.Attributes,
 				MetricValueType:        tt.fields.MetricValueType,
+				MetricField:            tt.fields.MetricField,
 			}
 			b := &bytes.Buffer{}
 			mi.Write(b)
@@ -99,7 +114,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 
 func TestMetricIdentity_IsFloatVal(t *testing.T) {
 	type fields struct {
-		MetricValueType pdata.MetricValueType
+		MetricValueType pmetric.NumberDataPointValueType
 	}
 	tests := []struct {
 		name   string
@@ -109,14 +124,14 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 		{
 			name: "float",
 			fields: fields{
-				MetricValueType: pdata.MetricValueTypeDouble,
+				MetricValueType: pmetric.NumberDataPointValueTypeDouble,
 			},
 			want: true,
 		},
 		{
 			name: "int",
 			fields: fields{
-				MetricValueType: pdata.MetricValueTypeInt,
+				MetricValueType: pmetric.NumberDataPointValueTypeInt,
 			},
 			want: false,
 		},
@@ -124,10 +139,10 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mi := &MetricIdentity{
-				Resource:               pdata.NewResource(),
-				InstrumentationLibrary: pdata.NewInstrumentationScope(),
-				Attributes:             pdata.NewMap(),
-				MetricDataType:         pdata.MetricDataTypeSum,
+				Resource:               pcommon.NewResource(),
+				InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+				Attributes:             pcommon.NewMap(),
+				MetricDataType:         pmetric.MetricDataTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
 			if got := mi.IsFloatVal(); got != tt.want {
@@ -139,7 +154,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 
 func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 	type fields struct {
-		MetricDataType pdata.MetricDataType
+		MetricDataType pmetric.MetricDataType
 	}
 	tests := []struct {
 		name   string
@@ -149,14 +164,42 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 		{
 			name: "sum",
 			fields: fields{
-				MetricDataType: pdata.MetricDataTypeSum,
+				MetricDataType: pmetric.MetricDataTypeSum,
 			},
 			want: true,
 		},
 		{
 			name: "histogram",
 			fields: fields{
-				MetricDataType: pdata.MetricDataTypeHistogram,
+				MetricDataType: pmetric.MetricDataTypeHistogram,
+			},
+			want: true,
+		},
+		{
+			name: "none",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeNone,
+			},
+			want: false,
+		},
+		{
+			name: "gauge",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeGauge,
+			},
+			want: false,
+		},
+		{
+			name: "exponential_histogram",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeExponentialHistogram,
+			},
+			want: false,
+		},
+		{
+			name: "summary",
+			fields: fields{
+				MetricDataType: pmetric.MetricDataTypeSummary,
 			},
 			want: false,
 		},
@@ -164,9 +207,9 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mi := &MetricIdentity{
-				Resource:               pdata.NewResource(),
-				InstrumentationLibrary: pdata.NewInstrumentationScope(),
-				Attributes:             pdata.NewMap(),
+				Resource:               pcommon.NewResource(),
+				InstrumentationLibrary: pcommon.NewInstrumentationScope(),
+				Attributes:             pcommon.NewMap(),
 				MetricDataType:         tt.fields.MetricDataType,
 			}
 			if got := mi.IsSupportedMetricType(); got != tt.want {

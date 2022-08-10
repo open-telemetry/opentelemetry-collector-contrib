@@ -14,7 +14,10 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+import (
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 func (mtp *metricsTransformProcessor) ToggleScalarDataType(metric *metricspb.Metric) {
 	for _, ts := range metric.Timeseries {
@@ -37,5 +40,33 @@ func (mtp *metricsTransformProcessor) ToggleScalarDataType(metric *metricspb.Met
 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_GAUGE_INT64
 	case metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
 		metric.MetricDescriptor.Type = metricspb.MetricDescriptor_CUMULATIVE_INT64
+	}
+}
+
+// toggleScalarDataTypeOp translates the numeric value type to the opposite type, int -> double and double -> int.
+// Applicable to sum and gauge metrics only.
+func toggleScalarDataTypeOp(metric pmetric.Metric, f internalFilter) {
+	var dps pmetric.NumberDataPointSlice
+	switch metric.DataType() {
+	case pmetric.MetricDataTypeGauge:
+		dps = metric.Gauge().DataPoints()
+	case pmetric.MetricDataTypeSum:
+		dps = metric.Sum().DataPoints()
+	default:
+		return
+	}
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if !f.matchAttrs(dp.Attributes()) {
+			continue
+		}
+
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			dp.SetDoubleVal(float64(dp.IntVal()))
+		case pmetric.NumberDataPointValueTypeDouble:
+			dp.SetIntVal(int64(dp.DoubleVal()))
+		}
 	}
 }

@@ -23,7 +23,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 )
@@ -32,7 +33,7 @@ type logNameTest struct {
 	name   string
 	inc    *LogMatchProperties
 	exc    *LogMatchProperties
-	inLogs pdata.Logs
+	inLogs plog.Logs
 	outLN  [][]string // output Log names per Resource
 }
 
@@ -40,6 +41,8 @@ type logWithResource struct {
 	logNames           []string
 	resourceAttributes map[string]interface{}
 	recordAttributes   map[string]interface{}
+	severityText       string
+	body               string
 }
 
 var (
@@ -148,6 +151,44 @@ var (
 			resourceAttributes: map[string]interface{}{
 				"attr": "attr/val4",
 			},
+		},
+	}
+
+	inLogForSeverity = []logWithResource{
+		{
+			logNames:     []string{"log1"},
+			severityText: "DEBUG",
+		},
+		{
+			logNames:     []string{"log2"},
+			severityText: "DEBUG2",
+		},
+		{
+			logNames:     []string{"log3"},
+			severityText: "INFO",
+		},
+		{
+			logNames:     []string{"log4"},
+			severityText: "WARN",
+		},
+	}
+
+	inLogForBody = []logWithResource{
+		{
+			logNames: []string{"log1"},
+			body:     "This is a log body",
+		},
+		{
+			logNames: []string{"log2"},
+			body:     "This is also a log body",
+		},
+		{
+			logNames: []string{"log3"},
+			body:     "test1",
+		},
+		{
+			logNames: []string{"log4"},
+			body:     "test2",
 		},
 	}
 
@@ -332,6 +373,101 @@ var (
 				{"log5"},
 			},
 		},
+		{
+			name: "includeRecordSeverityStrict",
+			inc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG2"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name: "includeRecordSeverityRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"DEBUG[1-4]?"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityStrict",
+			exc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log2"},
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"^[DI]"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyStrict",
+			inc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyStrict",
+			exc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
 	}
 )
 
@@ -374,7 +510,9 @@ func TestFilterLogProcessor(t *testing.T) {
 				gotLogs := rLogs.At(i).ScopeLogs().At(0).LogRecords()
 				assert.Equal(t, len(wantOut), gotLogs.Len())
 				for idx := range wantOut {
-					assert.Equal(t, wantOut[idx], gotLogs.At(idx).Name())
+					val, ok := gotLogs.At(idx).Attributes().Get("name")
+					require.True(t, ok)
+					assert.Equal(t, wantOut[idx], val.AsString())
 				}
 			}
 			assert.NoError(t, flp.Shutdown(ctx))
@@ -382,37 +520,37 @@ func TestFilterLogProcessor(t *testing.T) {
 	}
 }
 
-func testResourceLogs(lwrs []logWithResource) pdata.Logs {
-	ld := pdata.NewLogs()
+func testResourceLogs(lwrs []logWithResource) plog.Logs {
+	ld := plog.NewLogs()
 
 	for i, lwr := range lwrs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
-		// Add resource level attribtues
-		pdata.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
+		// Add resource level attributes
+		pcommon.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
-			l.SetName(name)
-
-			// Add record level attribtues
-			for k := 0; k < ls.Len(); k++ {
-				pdata.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(ls.At(k).Attributes())
-			}
+			// Add record level attributes
+			pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(l.Attributes())
+			l.Attributes().InsertString("name", name)
+			// Set body & severity text
+			l.Body().SetStringVal(lwr.body)
+			l.SetSeverityText(lwr.severityText)
 		}
 	}
 	return ld
 }
 
 func TestNilResourceLogs(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rls.AppendEmpty()
 	requireNotPanicsLogs(t, logs)
 }
 
 func TestNilILL(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
 	ills := rl.ScopeLogs()
@@ -421,7 +559,7 @@ func TestNilILL(t *testing.T) {
 }
 
 func TestNilLog(t *testing.T) {
-	logs := pdata.NewLogs()
+	logs := plog.NewLogs()
 	rls := logs.ResourceLogs()
 	rl := rls.AppendEmpty()
 	ills := rl.ScopeLogs()
@@ -431,7 +569,7 @@ func TestNilLog(t *testing.T) {
 	requireNotPanicsLogs(t, logs)
 }
 
-func requireNotPanicsLogs(t *testing.T, logs pdata.Logs) {
+func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)

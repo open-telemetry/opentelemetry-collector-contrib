@@ -10,6 +10,8 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **process.cpu.time** | Total CPU seconds broken down by different states. | s | Sum(Double) | <ul> <li>state</li> </ul> |
 | **process.disk.io** | Disk bytes transferred. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
+| **process.disk.io.read** | Disk bytes read. | By | Sum(Int) | <ul> </ul> |
+| **process.disk.io.write** | Disk bytes written. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.physical_usage** | The amount of physical memory in use. | By | Sum(Int) | <ul> </ul> |
 | **process.memory.virtual_usage** | Virtual memory size. | By | Sum(Int) | <ul> </ul> |
 
@@ -31,11 +33,12 @@ metrics:
 | process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | String |
 | process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | String |
 | process.owner | The username of the user that owns the process. | String |
+| process.parent_pid | Parent Process identifier (PPID). | Int |
 | process.pid | Process identifier (PID). | Int |
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| direction | Direction of flow of bytes (read or write). |
-| state | Breakdown of CPU usage by type. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | Direction of flow of bytes (read or write). | read, write |
+| state | Breakdown of CPU usage by type. | system, user, wait |

@@ -18,13 +18,12 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -43,7 +42,7 @@ func (mfs *mockFileSystem) Open(path string) (io.ReadCloser, error) {
 		return nil, errors.New("file not found")
 	}
 	mfs.path = path
-	f := ioutil.NopCloser(strings.NewReader(mfs.contents))
+	f := io.NopCloser(strings.NewReader(mfs.contents))
 	return f, nil
 }
 
@@ -95,7 +94,7 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 	mfs := &mockFileSystem{exists: true, contents: xrayConf}
 	d := Detector{fs: mfs}
 
-	want := pdata.NewResource()
+	want := pcommon.NewResource()
 	attr := want.Attributes()
 	attr.InsertString("cloud.provider", "aws")
 	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")

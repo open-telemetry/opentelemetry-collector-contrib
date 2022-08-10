@@ -17,6 +17,7 @@ package influxdbexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "influxdb"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // Config defines configuration for the InfluxDB exporter.

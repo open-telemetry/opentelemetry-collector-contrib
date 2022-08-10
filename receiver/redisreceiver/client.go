@@ -48,5 +48,5 @@ func (c *redisClient) delimiter() string {
 
 // Retrieve Redis INFO. We retrieve all of the 'sections'.
 func (c *redisClient) retrieveInfo() (string, error) {
-	return c.client.Info().Result()
+	return c.client.Info("all").Result()
 }

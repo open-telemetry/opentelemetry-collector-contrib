@@ -1,6 +1,10 @@
 # Filter Processor
 
-Supported pipeline types: logs, metrics
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | metrics, logs, traces |
+| Distributions            | [core], [contrib]     |
 
 The filter processor can be configured to include or exclude:
 
@@ -8,8 +12,9 @@ The filter processor can be configured to include or exclude:
 - metrics based on metric name in the case of the `strict` or `regexp` match types,
   or based on other metric attributes in the case of the `expr` match type.
   Please refer to [config.go](./config.go) for the config spec.
+- Spans based on span names, and resource attributes, all with full regex support
 
-It takes a pipeline type, of which `logs` and `metrics` are supported, followed
+It takes a pipeline type, of which `logs` `metrics`, and `traces` are supported, followed
 by an action:
 
 - `include`: Any names NOT matching filters are excluded from remainder of pipeline
@@ -26,6 +31,10 @@ For logs:
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `severity_texts`: SeverityTexts defines a list of possible severity texts to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `bodies`: Bodies defines a list of possible log bodies to match the logs against.
+  A match occurs if the record matches any expression in this given list.
 
 For metrics:
 
@@ -42,7 +51,7 @@ This processor uses [re2 regex][re2_regex] for regex syntax.
 
 [re2_regex]: https://github.com/google/re2/wiki/Syntax
 
-More details can found at [include/exclude metrics](../README.md#includeexclude-metrics).
+More details can found at [include/exclude metrics](../attributesprocessor/README.md#includeexclude-filtering).
 
 Examples:
 
@@ -71,15 +80,29 @@ processors:
           - Key: host.name
             Value: just_this_one_hostname
     logs/regexp:
+      include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
     logs/regexp_record:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
+    logs/severity:
+      include:
+        match_type: regexp
+        severity_texts:
+        - INFO[2-4]?
+        - WARN[2-4]?
+        - ERROR[2-4]?
+    logs/bodies:
+      include:
+        match_type: regexp
+        bodies:
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed
@@ -204,3 +227,44 @@ processors:
 ```
 
 In case the no metric names are provided, `matric_names` being empty, the filtering is only done at resource level.
+
+### Filter Spans from Traces
+
+* This pipeline is able to drop spans and whole traces 
+* Note: If this drops a parent span, it does not search out it's children leading to a missing Span in your trace visualization
+
+See the documentation in the [attribute processor](../attributesprocessor/README.md) for syntax
+
+For spans, one of Services, SpanNames, Attributes, Resources or Libraries must be specified with a
+non-empty value for a valid configuration.
+
+```yaml
+processors:
+  filter:
+    spans:
+      include:
+        match_type: strict
+        services:
+          - app_3
+      exclude:
+        match_type: regexp
+        services:
+          - app_1
+          - app_2
+        span_names:
+          - hello_world
+          - hello/world
+        attributes:
+          - Key: container.name
+            Value: (app_container_1|app_container_2)
+        libraries:
+          - Name: opentelemetry
+            Version: 0.0-beta
+        resources:
+          - Key: container.host
+            Value: (localhost|127.0.0.1)
+```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

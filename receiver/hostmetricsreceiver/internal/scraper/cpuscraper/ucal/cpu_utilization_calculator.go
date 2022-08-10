@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/shirou/gopsutil/v3/cpu"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 var ErrTimeStatNotFound = errors.New("cannot find TimesStat for cpu")
@@ -46,7 +46,7 @@ type CPUUtilizationCalculator struct {
 // CalculateAndRecord calculates the cpu utilization for the different cpu states comparing previously
 // stored []cpu.TimesStat and time.Time and current []cpu.TimesStat and current time.Time
 // If no previous data is stored it will return empty slice of CPUUtilization and no error
-func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pdata.Timestamp, CPUUtilization)) error {
+func (c *CPUUtilizationCalculator) CalculateAndRecord(now pcommon.Timestamp, cpuTimes []cpu.TimesStat, recorder func(pcommon.Timestamp, CPUUtilization)) error {
 	if c.previousCPUTimes != nil {
 		for _, previousCPUTime := range c.previousCPUTimes {
 			currentCPUTime, err := cpuTimeForCPU(previousCPUTime.CPU, cpuTimes)
@@ -63,7 +63,7 @@ func (c *CPUUtilizationCalculator) CalculateAndRecord(now pdata.Timestamp, cpuTi
 
 // cpuUtilization calculates the difference between 2 cpu.TimesStat using spent time between them
 func cpuUtilization(timeStart cpu.TimesStat, timeEnd cpu.TimesStat) CPUUtilization {
-	elapsedSeconds := timeEnd.Total() - timeStart.Total()
+	elapsedSeconds := totalCPU(timeEnd) - totalCPU(timeStart)
 	if elapsedSeconds <= 0 {
 		return CPUUtilization{CPU: timeStart.CPU}
 	}
@@ -89,4 +89,12 @@ func cpuTimeForCPU(cpuNum string, times []cpu.TimesStat) (cpu.TimesStat, error) 
 		}
 	}
 	return cpu.TimesStat{}, fmt.Errorf("cpu %s : %w", cpuNum, ErrTimeStatNotFound)
+}
+
+// Copied from cpu.TimesStat.Total(), since that func is deprecated.
+func totalCPU(c cpu.TimesStat) float64 {
+	total := c.User + c.System + c.Idle + c.Nice + c.Iowait + c.Irq +
+		c.Softirq + c.Steal + c.Guest + c.GuestNice
+
+	return total
 }

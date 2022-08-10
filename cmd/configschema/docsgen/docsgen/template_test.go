@@ -12,11 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
+//go:build !windows
+// +build !windows
+
 package docsgen
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -35,7 +39,7 @@ func TestTableTemplate(t *testing.T) {
 }
 
 func testDataField(t *testing.T) *configschema.Field {
-	jsonBytes, err := ioutil.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
+	jsonBytes, err := os.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
 	require.NoError(t, err)
 	field := configschema.Field{}
 	err = json.Unmarshal(jsonBytes, &field)

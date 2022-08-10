@@ -4,7 +4,7 @@ package metadata
 
 import (
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // Type is the component type name.
@@ -13,14 +13,14 @@ const Type config.Type = "kafkametricsreceiver"
 // MetricIntf is an interface to generically interact with generated metric.
 type MetricIntf interface {
 	Name() string
-	New() pdata.Metric
-	Init(metric pdata.Metric)
+	New() pmetric.Metric
+	Init(metric pmetric.Metric)
 }
 
 // Intentionally not exposing this so that it is opaque and can change freely.
 type metricImpl struct {
 	name     string
-	initFunc func(pdata.Metric)
+	initFunc func(pmetric.Metric)
 }
 
 // Name returns the metric name.
@@ -29,14 +29,14 @@ func (m *metricImpl) Name() string {
 }
 
 // New creates a metric object preinitialized.
-func (m *metricImpl) New() pdata.Metric {
-	metric := pdata.NewMetric()
+func (m *metricImpl) New() pmetric.Metric {
+	metric := pmetric.NewMetric()
 	m.Init(metric)
 	return metric
 }
 
 // Init initializes the provided metric object.
-func (m *metricImpl) Init(metric pdata.Metric) {
+func (m *metricImpl) Init(metric pmetric.Metric) {
 	m.initFunc(metric)
 }
 
@@ -94,101 +94,101 @@ func (m *metricStruct) ByName(n string) MetricIntf {
 var Metrics = &metricStruct{
 	&metricImpl{
 		"kafka.brokers",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.brokers")
 			metric.SetDescription("Number of brokers in the cluster.")
 			metric.SetUnit("{brokers}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.consumer_group.lag",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.consumer_group.lag")
 			metric.SetDescription("Current approximate lag of consumer group at partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.consumer_group.lag_sum",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.consumer_group.lag_sum")
 			metric.SetDescription("Current approximate sum of consumer group lag across all partitions of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.consumer_group.members",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.consumer_group.members")
 			metric.SetDescription("Count of members in the consumer group")
 			metric.SetUnit("{members}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.consumer_group.offset",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.consumer_group.offset")
 			metric.SetDescription("Current offset of the consumer group at partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.consumer_group.offset_sum",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.consumer_group.offset_sum")
 			metric.SetDescription("Sum of consumer group offset across partitions of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.partition.current_offset",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.partition.current_offset")
 			metric.SetDescription("Current offset of partition of topic.")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.partition.oldest_offset",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.partition.oldest_offset")
 			metric.SetDescription("Oldest offset of partition of topic")
 			metric.SetUnit("1")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.partition.replicas",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.partition.replicas")
 			metric.SetDescription("Number of replicas for partition of topic")
 			metric.SetUnit("{replicas}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.partition.replicas_in_sync",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.partition.replicas_in_sync")
 			metric.SetDescription("Number of synchronized replicas of partition")
 			metric.SetUnit("{replicas}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 	&metricImpl{
 		"kafka.topic.partitions",
-		func(metric pdata.Metric) {
+		func(metric pmetric.Metric) {
 			metric.SetName("kafka.topic.partitions")
 			metric.SetDescription("Number of partitions in topic.")
 			metric.SetUnit("{partitions}")
-			metric.SetDataType(pdata.MetricDataTypeGauge)
+			metric.SetDataType(pmetric.MetricDataTypeGauge)
 		},
 	},
 }

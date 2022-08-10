@@ -69,8 +69,8 @@ These are the metrics available for this scraper.
 | **mongodbatlas.system.network.io.max** | System Network IO Aggregate of MongoDB Metrics MAX_SYSTEM_NETWORK_OUT, MAX_SYSTEM_NETWORK_IN | By/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.io.average** | Swap IO Aggregate of MongoDB Metrics SWAP_IO_IN, SWAP_IO_OUT | {pages}/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
 | **mongodbatlas.system.paging.io.max** | Swap IO Aggregate of MongoDB Metrics MAX_SWAP_IO_IN, MAX_SWAP_IO_OUT | {pages}/s | Gauge(Double) | <ul> <li>direction</li> </ul> |
-| **mongodbatlas.system.paging.usage.average** | Swap usage Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
-| **mongodbatlas.system.paging.usage.max** | Swap usage Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>direction</li> </ul> |
+| **mongodbatlas.system.paging.usage.average** | Swap usage Aggregate of MongoDB Metrics SWAP_USAGE_FREE, SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
+| **mongodbatlas.system.paging.usage.max** | Swap usage Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED | KiBy | Gauge(Double) | <ul> <li>memory_state</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -97,27 +97,27 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| assert_type | MongoDB assertion type |
-| btree_counter_type | Database index effectiveness |
-| cache_direction | Whether read into or written from |
-| cache_status | Cache status |
-| cluster_role | Whether process is acting as replica or primary |
-| cpu_state | CPU state |
-| cursor_state | Whether cursor is open or timed out |
-| direction | Network traffic direction |
-| disk_direction | Measurement type for disk operation |
-| disk_status | Disk measurement type |
-| document_status | Status of documents in the database |
-| execution_type | Type of command |
-| global_lock_state | Which queue is locked |
-| memory_issue_type | Type of memory issue encountered |
-| memory_state | Memory usage type |
-| memory_status | Memory measurement type |
-| object_type | MongoDB object type |
-| operation | Type of database operation |
-| oplog_type | Oplog type |
-| scanned_type | Objects or indexes scanned during query |
-| storage_status | Views on database size |
-| ticket_type | Type of ticket available |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| assert_type | MongoDB assertion type | regular, warning, msg, user |
+| btree_counter_type | Database index effectiveness | accesses, hits, misses |
+| cache_direction | Whether read into or written from | read_into, written_from |
+| cache_status | Cache status | dirty, used |
+| cluster_role | Whether process is acting as replica or primary | primary, replica |
+| cpu_state | CPU state | kernel, user, nice, iowait, irq, softirq, guest, steal |
+| cursor_state | Whether cursor is open or timed out | timed_out, open |
+| direction | Network traffic direction | receive, transmit |
+| disk_direction | Measurement type for disk operation | read, write, total |
+| disk_status | Disk measurement type | free, used |
+| document_status | Status of documents in the database | returned, inserted, updated, deleted |
+| execution_type | Type of command | reads, writes, commands |
+| global_lock_state | Which queue is locked | current_queue_total, current_queue_readers, current_queue_writers |
+| memory_issue_type | Type of memory issue encountered | extra_info, global_accesses_not_in_memory, exceptions_thrown |
+| memory_state | Memory usage type | resident, virtual, mapped, computed, shared, free, used |
+| memory_status | Memory measurement type | available, buffers, cached, free, shared, used |
+| object_type | MongoDB object type | collection, index, extent, object, view, storage, data |
+| operation | Type of database operation | cmd, query, update, delete, getmore, insert, scan_and_order |
+| oplog_type | Oplog type | slave_lag_master_time, master_time, master_lag_time_diff |
+| scanned_type | Objects or indexes scanned during query | index_items, objects |
+| storage_status | Views on database size | total, data_size, index_size, data_size_wo_system |
+| ticket_type | Type of ticket available | available_reads, available_writes |

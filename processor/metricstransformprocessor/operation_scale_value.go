@@ -14,7 +14,10 @@
 
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
-import metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+import (
+	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+)
 
 func (mtp *metricsTransformProcessor) scaleValueOp(metric *metricspb.Metric, op internalOperation) {
 	for _, ts := range metric.Timeseries {
@@ -25,6 +28,32 @@ func (mtp *metricsTransformProcessor) scaleValueOp(metric *metricspb.Metric, op 
 			case metricspb.MetricDescriptor_GAUGE_DOUBLE, metricspb.MetricDescriptor_CUMULATIVE_DOUBLE:
 				dp.Value = &metricspb.Point_DoubleValue{DoubleValue: dp.GetDoubleValue() * op.configOperation.Scale}
 			}
+		}
+	}
+}
+
+// scaleValueOp scales a numeric metric value. Applicable to sum and gauge metrics only.
+func scaleValueOp(metric pmetric.Metric, op internalOperation, f internalFilter) {
+	var dps pmetric.NumberDataPointSlice
+	switch metric.DataType() {
+	case pmetric.MetricDataTypeGauge:
+		dps = metric.Gauge().DataPoints()
+	case pmetric.MetricDataTypeSum:
+		dps = metric.Sum().DataPoints()
+	default:
+		return
+	}
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if !f.matchAttrs(dp.Attributes()) {
+			continue
+		}
+		switch dp.ValueType() {
+		case pmetric.NumberDataPointValueTypeInt:
+			dp.SetIntVal(int64(float64(dp.IntVal()) * op.configOperation.Scale))
+		case pmetric.NumberDataPointValueTypeDouble:
+			dp.SetDoubleVal(dp.DoubleVal() * op.configOperation.Scale)
 		}
 	}
 }

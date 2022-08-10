@@ -133,7 +133,7 @@ func Get(logger *zap.Logger, options ...Option) *K8sClient {
 
 	mu.Lock()
 	if optionsToK8sClient[strOptions] == nil {
-		//construct the k8s client
+		// construct the k8s client
 		k8sClient := new(K8sClient)
 		err := k8sClient.init(logger, options...)
 		if err == nil {

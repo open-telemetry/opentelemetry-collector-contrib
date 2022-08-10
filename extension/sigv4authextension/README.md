@@ -1,15 +1,21 @@
 # Authenticator - Sigv4
 
+| Status                   |                      |
+| ------------------------ |----------------------|
+| Stability                | [beta]               |
+| Distributions            | [contrib]            |
+
 This extension provides Sigv4 authentication for making requests to AWS services. For more information on the Sigv4 process, please look [here](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html).
 
 ## Configuration
 
 The configuration fields are as follows:
 
-* `assume_role`: Specifies the configuration needed to assume a role
-  * `arn`: **Optional**. The Amazon Resource Name (ARN) of a role to assume
+* `assume_role`: **Optional**. Specifies the configuration needed to assume a role
+  * `arn`: The Amazon Resource Name (ARN) of a role to assume
   * `session_name`: **Optional**. The name of a role session
-* `region`: **Optional**. The AWS region for AWS Sigv4
+  * `sts_region`: The AWS region where STS is used to assumed the configured role
+* `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
@@ -21,6 +27,7 @@ extensions:
   sigv4auth:
     assume_role:
       arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
+      sts_region: "us-east-1"
 
 receivers:
   hostmetrics:
@@ -45,3 +52,6 @@ service:
 ## Notes
 
 * The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials)
+
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

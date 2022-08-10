@@ -17,7 +17,6 @@ package filelogreceiver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,18 +24,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+
 	"github.com/observiq/nanojack"
-	"github.com/open-telemetry/opentelemetry-log-collection/entry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -58,14 +60,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("filelog")])
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
-	cfg := testdataConfigYamlAsMap()
-	cfg.Input["include"] = "not an array"
+	cfg := testdataConfigYaml()
+	cfg.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -84,11 +86,11 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataConfigYamlAsMap()
+	cfg := testdataConfigYaml()
 	cfg.Converter.MaxFlushCount = 10
 	cfg.Converter.FlushInterval = time.Millisecond
 
-	converter := stanza.NewConverter()
+	converter := adapter.NewConverter()
 	converter.Start()
 	defer converter.Stop()
 
@@ -100,12 +102,12 @@ func TestReadStaticFile(t *testing.T) {
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
-	// Build the expected set by using stanza.Converter to translate entries
+	// Build the expected set by using adapter.Converter to translate entries
 	// to pdata Logs.
-	queueEntry := func(t *testing.T, c *stanza.Converter, msg string, severity entry.Severity) {
+	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		e.Severity = severity
 		e.AddAttribute("file_name", "simple.log")
 		require.NoError(t, c.Batch([]*entry.Entry{e}))
@@ -168,12 +170,12 @@ type rotationTest struct {
 func (rt *rotationTest) Run(t *testing.T) {
 	t.Parallel()
 
-	tempDir := newTempDir(t)
+	tempDir := t.TempDir()
 
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataRotateTestYamlAsMap(tempDir)
+	cfg := rotationTestConfig(tempDir)
 	cfg.Converter.MaxFlushCount = 1
 	cfg.Converter.FlushInterval = time.Millisecond
 
@@ -185,7 +187,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := stanza.NewConverter()
+	converter := adapter.NewConverter()
 	converter.Start()
 
 	var wg sync.WaitGroup
@@ -202,11 +204,11 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// Build the expected set by converting entries to pdata Logs...
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		logger.Print(fmt.Sprintf("2020-08-25 %s", msg))
+		logger.Printf("2020-08-25 %s", msg)
 		time.Sleep(time.Millisecond)
 	}
 
@@ -221,7 +223,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	converter.Stop()
 }
 
-func consumeNLogsFromConverter(ch <-chan pdata.Logs, count int, wg *sync.WaitGroup) {
+func consumeNLogsFromConverter(ch <-chan plog.Logs, count int, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	n := 0
@@ -249,59 +251,46 @@ func newRotatingLogger(t *testing.T, tempDir string, maxLines, maxBackups int, c
 	return log.New(rotator, "", 0)
 }
 
-func newTempDir(t *testing.T) string {
-	tempDir, err := ioutil.TempDir("", "")
-	require.NoError(t, err)
-
-	t.Logf("Temp Dir: %s", tempDir)
-
-	t.Cleanup(func() {
-		os.RemoveAll(tempDir)
-	})
-
-	return tempDir
-}
-
 func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordCount() == expected }
 }
 
-func testdataConfigYamlAsMap() *FileLogConfig {
+func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: stanza.OperatorConfigs{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
 					"severity": map[string]interface{}{
-						"parse_from": "body.sev",
+						"parse_from": "attributes.sev",
 					},
 					"timestamp": map[string]interface{}{
 						"layout":     "%Y-%m-%d",
-						"parse_from": "body.time",
+						"parse_from": "attributes.time",
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
+			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 100,
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Input: stanza.InputConfig{
-			"include": []interface{}{
-				"testdata/simple.log",
-			},
-			"start_at": "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig("file_input")
+			c.Include = []string{"testdata/simple.log"}
+			c.StartAt = "beginning"
+			return *c
+		}(),
 	}
 }
 
-func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
+func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators: stanza.OperatorConfigs{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<ts>\\d{4}-\\d{2}-\\d{2}) (?P<msg>[^\n]+)",
@@ -311,16 +300,15 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{},
+			Converter: adapter.ConverterConfig{},
 		},
-		Input: stanza.InputConfig{
-			"type": "file_input",
-			"include": []interface{}{
-				fmt.Sprintf("%s/*", tempDir),
-			},
-			"include_file_name": false,
-			"poll_interval":     "10ms",
-			"start_at":          "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig("file_input")
+			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
+			c.StartAt = "beginning"
+			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.IncludeFileName = false
+			return *c
+		}(),
 	}
 }

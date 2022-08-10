@@ -78,7 +78,9 @@ func initProvider() func() {
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithEndpoint(otelAgentAddr),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(ctx, traceClient)
+	sctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
+	traceExp, err := otlptrace.New(sctx, traceClient)
 	handleErr(err, "Failed to create the collector trace exporter")
 
 	res, err := resource.New(ctx,
@@ -101,7 +103,7 @@ func initProvider() func() {
 	)
 
 	// set global propagator to tracecontext (the default is no-op).
-	otel.SetTextMapPropagator(propagation.TraceContext{})
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 	otel.SetTracerProvider(tracerProvider)
 
 	return func() {
@@ -128,7 +130,7 @@ func main() {
 	defer shutdown()
 
 	tracer := otel.Tracer("demo-client-tracer")
-	meter := global.MeterProvider().Meter("demo-client-meter")
+	meter := global.Meter("demo-client-meter")
 
 	method, _ := baggage.NewMember("method", "repl")
 	client, _ := baggage.NewMember("client", "cli")

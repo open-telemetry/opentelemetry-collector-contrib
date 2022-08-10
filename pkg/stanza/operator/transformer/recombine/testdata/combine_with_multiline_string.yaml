@@ -1,0 +1,2 @@
+type: recombine
+combine_with: "line1\nLINE2"

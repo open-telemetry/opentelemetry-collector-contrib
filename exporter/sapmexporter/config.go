@@ -52,6 +52,9 @@ type Config struct {
 	// Disable GZip compression.
 	DisableCompression bool `mapstructure:"disable_compression"`
 
+	// Log detailed response from trace ingest.
+	LogDetailedResponse bool `mapstructure:"log_detailed_response"`
+
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.

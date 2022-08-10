@@ -1,0 +1,16 @@
+receivers:
+  expvar:
+    endpoint: "#$%^&*()_"
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [expvar]
+      processors: [nop]
+      exporters: [nop]

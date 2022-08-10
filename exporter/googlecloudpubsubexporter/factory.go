@@ -24,12 +24,16 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/model/otlp"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "googlecloudpubsub"
+	typeStr = "googlecloudpubsub"
+	// The stability level of the exporter.
+	stability      = component.StabilityLevelBeta
 	defaultTimeout = 12 * time.Second
 )
 
@@ -38,9 +42,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 var exporters = map[*Config]*pubsubExporter{}
@@ -55,9 +59,9 @@ func ensureExporter(params component.ExporterCreateSettings, pCfg *Config) *pubs
 		userAgent:        strings.ReplaceAll(pCfg.UserAgent, "{{version}}", params.BuildInfo.Version),
 		ceSource:         fmt.Sprintf("/opentelemetry/collector/%s/%s", name, params.BuildInfo.Version),
 		config:           pCfg,
-		tracesMarshaler:  otlp.NewProtobufTracesMarshaler(),
-		metricsMarshaler: otlp.NewProtobufMetricsMarshaler(),
-		logsMarshaler:    otlp.NewProtobufLogsMarshaler(),
+		tracesMarshaler:  ptrace.NewProtoMarshaler(),
+		metricsMarshaler: pmetric.NewProtoMarshaler(),
+		logsMarshaler:    plog.NewProtoMarshaler(),
 	}
 	// we ignore the error here as the config is already validated with the same method
 	receiver.ceCompression, _ = pCfg.parseCompression()

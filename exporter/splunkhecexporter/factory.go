@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
@@ -31,7 +31,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "splunk_hec"
+	typeStr = "splunk_hec"
+	// The stability level of the exporter.
+	stability          = component.StabilityLevelBeta
 	defaultMaxIdleCons = 100
 	defaultHTTPTimeout = 10 * time.Second
 )
@@ -53,9 +55,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -70,9 +72,9 @@ func createDefaultConfig() config.Exporter {
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
 		DisableCompression:      false,
 		MaxConnections:          defaultMaxIdleCons,
-		MaxContentLengthLogs:    maxContentLengthLogsLimit,
-		MaxContentLengthMetrics: maxContentLengthMetricsLimit,
-		MaxContentLengthTraces:  maxContentLengthTracesLimit,
+		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
+		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
+		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

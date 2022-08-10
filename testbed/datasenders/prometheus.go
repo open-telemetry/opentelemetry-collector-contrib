@@ -57,7 +57,7 @@ func (pds *prometheusDataSender) Start() error {
 	}
 
 	pds.Metrics = exp
-	return exp.Start(context.Background(), pds)
+	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 func (pds *prometheusDataSender) GenConfigYAMLStr() string {

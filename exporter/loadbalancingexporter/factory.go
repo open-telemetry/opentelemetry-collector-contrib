@@ -26,17 +26,19 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "loadbalancing"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() component.ExporterFactory {
-	view.Register(MetricViews()...)
+	_ = view.Register(MetricViews()...)
 
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithLogsExporter(createLogExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -56,6 +58,6 @@ func createTracesExporter(_ context.Context, params component.ExporterCreateSett
 	return newTracesExporter(params, cfg)
 }
 
-func createLogExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
+func createLogsExporter(_ context.Context, params component.ExporterCreateSettings, cfg config.Exporter) (component.LogsExporter, error) {
 	return newLogsExporter(params, cfg)
 }

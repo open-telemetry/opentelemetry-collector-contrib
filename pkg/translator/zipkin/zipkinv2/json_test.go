@@ -15,16 +15,16 @@
 package zipkinv2
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestJSONUnmarshaler_UnmarshalTraces(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/zipkin_v2_single.json")
+	data, err := os.ReadFile("testdata/zipkin_v2_single.json")
 	require.NoError(t, err)
 	decoder := NewJSONTracesUnmarshaler(false)
 	td, err := decoder.UnmarshalTraces(data)
@@ -46,7 +46,7 @@ func TestJSONEncoder_EncodeTraces(t *testing.T) {
 }
 
 func TestJSONEncoder_EncodeTracesError(t *testing.T) {
-	invalidTD := pdata.NewTraces()
+	invalidTD := ptrace.NewTraces()
 	// Add one span with empty trace ID.
 	invalidTD.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	marshaler := NewJSONTracesMarshaler()

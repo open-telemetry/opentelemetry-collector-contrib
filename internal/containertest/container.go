@@ -93,7 +93,7 @@ func New(t *testing.T) *Containers {
 // if called from New() but can also be called manually if needed. It is idempotent.
 func (c *Containers) Cleanup() {
 	for _, con := range c.runningContainers {
-		c.RemoveContainer(con)
+		_ = c.RemoveContainer(con)
 	}
 	if err := c.cli.Close(); err != nil {
 		c.t.Logf("failed closing Docker connection: %v", err)

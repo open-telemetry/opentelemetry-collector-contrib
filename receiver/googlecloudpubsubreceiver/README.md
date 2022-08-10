@@ -1,5 +1,11 @@
 # Google Pubsub Receiver
 
+| Status                   |                       |
+| ------------------------ |-----------------------|
+| Stability                | [beta]                |
+| Supported pipeline types | traces, logs, metrics |
+| Distributions            | none                  |
+
 > ⚠️ This is a community-provided module. It has been developed and extensively tested at Collibra, but it is not officially supported by GCP.
  
 This receiver gets OTLP messages from a Google Cloud [Pubsub](https://cloud.google.com/pubsub) subscription.
@@ -14,6 +20,10 @@ The following configuration options are supported:
   a fallback, when no `content-type` attribute is present.
 * `compression` (Optional): The compression that will be used on received data from the subscription. When set it can 
   only be `gzip`. This will only be used as a fallback, when no `content-encoding` attribute is present.
+* `endpoint` (Optional): Override the default Pubsub Endpoint, useful when connecting to the PubSub emulator instance
+  or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
+* `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
+   emulator instance. Only has effect if Endpoint is not ""
 
 ```yaml
 receivers:
@@ -64,3 +74,5 @@ attributes.ce-type = "org.opentelemetry.otlp.traces.v1"
 AND
 attributes.content-type = "application/protobuf"
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta

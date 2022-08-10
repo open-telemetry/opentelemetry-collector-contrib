@@ -16,12 +16,10 @@ package datasource
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"cloud.google.com/go/spanner"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewDatabaseFromClient(t *testing.T) {
@@ -60,13 +58,7 @@ func TestNewDatabaseWithNoCredentialsFilePath(t *testing.T) {
 	ctx := context.Background()
 	databaseID := databaseID()
 
-	err := os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../testdata/serviceAccount.json")
-	require.NoError(t, err)
-
-	defer func() {
-		err = os.Unsetenv("GOOGLE_APPLICATION_CREDENTIALS")
-		require.NoError(t, err)
-	}()
+	t.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "../../testdata/serviceAccount.json")
 
 	database, err := NewDatabase(ctx, databaseID, "")
 

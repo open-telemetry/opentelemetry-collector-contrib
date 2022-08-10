@@ -1,8 +1,12 @@
 # Skywalking Receiver
 
-Receives trace data in [Skywalking](https://skywalking.apache.org/) format.
+| Status                   |               |
+| ------------------------ |---------------|
+| Stability                | [beta]        |
+| Supported pipeline types | traces        |
+| Distributions            | [contrib]     |
 
-Supported pipeline types: traces
+Receives trace data in [Skywalking](https://skywalking.apache.org/) format.
 
 ## ⚠️ Warning
 
@@ -34,3 +38,6 @@ service:
     traces:
       receivers: [skywalking]
 ```
+
+[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

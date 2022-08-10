@@ -51,6 +51,12 @@ func getAndSubPolicyEvaluator(logger *zap.Logger, cfg *AndSubPolicyCfg) (samplin
 	case Probabilistic:
 		pfCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(logger, pfCfg.HashSalt, pfCfg.SamplingPercentage), nil
+	case TraceState:
+		tsfCfg := cfg.TraceStateCfg
+		return sampling.NewTraceStateFilter(logger, tsfCfg.Key, tsfCfg.Values), nil
+	case SpanCount:
+		scfCfg := cfg.SpanCountCfg
+		return sampling.NewSpanCount(logger, scfCfg.MinSpans), nil
 	default:
 		return nil, fmt.Errorf("unknown sampling policy type %s", cfg.Type)
 	}

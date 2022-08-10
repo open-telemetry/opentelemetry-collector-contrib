@@ -22,9 +22,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/model/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -35,8 +36,8 @@ func TestNewDetector(t *testing.T) {
 }
 
 func TestDetectAzureAvailable(t *testing.T) {
-	mp := &MockProvider{}
-	mp.On("Metadata").Return(&ComputeMetadata{
+	mp := &azure.MockProvider{}
+	mp.On("Metadata").Return(&azure.ComputeMetadata{
 		Location:          "location",
 		Name:              "name",
 		VMID:              "vmID",
@@ -60,6 +61,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 		conventions.AttributeCloudRegion:    "location",
 		conventions.AttributeHostID:         "vmID",
 		conventions.AttributeCloudAccountID: "subscriptionID",
+		"azure.vm.name":                     "name",
 		"azure.vm.size":                     "vmSize",
 		"azure.resourcegroup.name":          "resourceGroup",
 		"azure.vm.scaleset.name":            "myScaleset",
@@ -70,8 +72,8 @@ func TestDetectAzureAvailable(t *testing.T) {
 }
 
 func TestDetectError(t *testing.T) {
-	mp := &MockProvider{}
-	mp.On("Metadata").Return(&ComputeMetadata{}, fmt.Errorf("mock error"))
+	mp := &azure.MockProvider{}
+	mp.On("Metadata").Return(&azure.ComputeMetadata{}, fmt.Errorf("mock error"))
 
 	detector := &Detector{provider: mp, logger: zap.NewNop()}
 	res, _, err := detector.Detect(context.Background())

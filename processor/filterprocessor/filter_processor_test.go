@@ -25,7 +25,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -36,7 +37,7 @@ type metricNameTest struct {
 	name               string
 	inc                *filtermetric.MatchProperties
 	exc                *filtermetric.MatchProperties
-	inMetrics          pdata.Metrics
+	inMetrics          pmetric.Metrics
 	outMN              [][]string // output Metric names per Resource
 	allMetricsFiltered bool
 }
@@ -378,20 +379,20 @@ func TestFilterMetricProcessor(t *testing.T) {
 	}
 }
 
-func testResourceMetrics(mwrs []metricWithResource) pdata.Metrics {
-	md := pdata.NewMetrics()
+func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
+	md := pmetric.NewMetrics()
 	now := time.Now()
 
 	for _, mwr := range mwrs {
 		rm := md.ResourceMetrics().AppendEmpty()
-		pdata.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
+		pcommon.NewMapFromRaw(mwr.resourceAttributes).CopyTo(rm.Resource().Attributes())
 		ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
-			m.SetDataType(pdata.MetricDataTypeGauge)
+			m.SetDataType(pmetric.MetricDataTypeGauge)
 			dp := m.Gauge().DataPoints().AppendEmpty()
-			dp.SetTimestamp(pdata.NewTimestampFromTime(now.Add(10 * time.Second)))
+			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(123)
 		}
 	}
@@ -446,8 +447,8 @@ func benchmarkFilter(b *testing.B, mp *filtermetric.MatchProperties) {
 	}
 }
 
-func metricSlice(numMetrics int) []pdata.Metrics {
-	var out []pdata.Metrics
+func metricSlice(numMetrics int) []pmetric.Metrics {
+	var out []pmetric.Metrics
 	for i := 0; i < numMetrics; i++ {
 		const size = 2
 		out = append(out, pdm(fmt.Sprintf("p%d_", i), size))
@@ -455,10 +456,10 @@ func metricSlice(numMetrics int) []pdata.Metrics {
 	return out
 }
 
-func pdm(prefix string, size int) pdata.Metrics {
+func pdm(prefix string, size int) pmetric.Metrics {
 	c := goldendataset.MetricsCfg{
-		MetricDescriptorType: pdata.MetricDataTypeGauge,
-		MetricValueType:      pdata.MetricValueTypeInt,
+		MetricDescriptorType: pmetric.MetricDataTypeGauge,
+		MetricValueType:      pmetric.NumberDataPointValueTypeInt,
 		MetricNamePrefix:     prefix,
 		NumILMPerResource:    size,
 		NumMetricsPerILM:     size,
@@ -471,14 +472,14 @@ func pdm(prefix string, size int) pdata.Metrics {
 }
 
 func TestNilResourceMetrics(t *testing.T) {
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rms.AppendEmpty()
 	requireNotPanics(t, metrics)
 }
 
 func TestNilILM(t *testing.T) {
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
 	ilms := rm.ScopeMetrics()
@@ -487,7 +488,7 @@ func TestNilILM(t *testing.T) {
 }
 
 func TestNilMetric(t *testing.T) {
-	metrics := pdata.NewMetrics()
+	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics()
 	rm := rms.AppendEmpty()
 	ilms := rm.ScopeMetrics()
@@ -497,7 +498,7 @@ func TestNilMetric(t *testing.T) {
 	requireNotPanics(t, metrics)
 }
 
-func requireNotPanics(t *testing.T, metrics pdata.Metrics) {
+func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	pcfg := cfg.(*Config)

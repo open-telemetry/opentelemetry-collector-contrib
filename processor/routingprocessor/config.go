@@ -15,6 +15,7 @@
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/config"
@@ -43,6 +44,11 @@ type Config struct {
 	// this processor will only use the first value.
 	// Required.
 	FromAttribute string `mapstructure:"from_attribute"`
+
+	// DropRoutingResourceAttribute controls whether to remove the resource attribute used for routing.
+	// This is only relevant if AttributeSource is set to resource.
+	// Optional.
+	DropRoutingResourceAttribute bool `mapstructure:"drop_resource_routing_attribute"`
 
 	// Table contains the routing table for this processor.
 	// Required.
@@ -74,6 +80,10 @@ func (c *Config) Validate() error {
 			"invalid attribute to read the route's value from: %w",
 			errNoMissingFromAttribute,
 		)
+	}
+
+	if c.AttributeSource != resourceAttributeSource && c.DropRoutingResourceAttribute {
+		return errors.New("using a different attribute source than 'attribute' and drop_resource_routing_attribute is set to true")
 	}
 
 	return nil

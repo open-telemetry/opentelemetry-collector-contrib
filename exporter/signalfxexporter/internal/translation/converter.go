@@ -22,7 +22,8 @@ import (
 	"unicode"
 
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
-	"go.opentelemetry.io/collector/model/pdata"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -47,6 +48,7 @@ type MetricsConverter struct {
 	metricTranslator   *MetricTranslator
 	filterSet          *dpfilters.FilterSet
 	datapointValidator *datapointValidator
+	translator         *signalfx.FromTranslator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -67,13 +69,14 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 
 // MetricsToSignalFxV2 converts the passed in MetricsData to SFx datapoints,
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
-func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPoint {
+func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
@@ -84,7 +87,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pdata.Metrics) []*sfxpb.DataPo
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := signalfx.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
@@ -128,7 +131,7 @@ func filterKeyChars(str string, nonAlphanumericDimChars string) string {
 // resourceToDimensions will return a set of dimension from the
 // resource attributes, including a cloud host id (AWSUniqueId, gcp_id, etc.)
 // if it can be constructed from the provided metadata.
-func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
+func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 	var dims []*sfxpb.Dimension
 
 	if hostID, ok := splunk.ResourceToHostID(res); ok && hostID.Key != splunk.HostIDKeyHost {
@@ -138,7 +141,7 @@ func resourceToDimensions(res pdata.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pdata.Value) bool {
+	res.Attributes().Range(func(k string, val pcommon.Value) bool {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true
@@ -294,7 +297,7 @@ func DatapointToString(dp *sfxpb.DataPoint) string {
 
 	var dimsStr string
 	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
+		dimsStr += dim.String()
 	}
 
 	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)

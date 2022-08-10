@@ -64,7 +64,7 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 		return nil, err
 	}
 	if err := nc.osSetenv(goPSUtilProcDirEnv, hostProc); err != nil {
-		return nil, fmt.Errorf("NodeCapacity cannot set goPSUtilProcDirEnv to %s: %v", hostProc, err)
+		return nil, fmt.Errorf("NodeCapacity cannot set goPSUtilProcDirEnv to %s: %w", hostProc, err)
 	}
 
 	nc.parseCPU()

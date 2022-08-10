@@ -10,6 +10,8 @@ These are the metrics available for this scraper.
 | ---- | ----------- | ---- | ---- | ---------- |
 | **system.paging.faults** | The number of page faults. | {faults} | Sum(Int) | <ul> <li>type</li> </ul> |
 | **system.paging.operations** | The number of paging operations. | {operations} | Sum(Int) | <ul> <li>direction</li> <li>type</li> </ul> |
+| **system.paging.operations.page_in** | The number of page_in operations. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
+| **system.paging.operations.page_out** | The number of page_out operations. | {operations} | Sum(Int) | <ul> <li>type</li> </ul> |
 | **system.paging.usage** | Swap (unix) or pagefile (windows) usage. | By | Sum(Int) | <ul> <li>device</li> <li>state</li> </ul> |
 | system.paging.utilization | Swap (unix) or pagefile (windows) utilization. | 1 | Gauge(Double) | <ul> <li>device</li> <li>state</li> </ul> |
 
@@ -24,9 +26,9 @@ metrics:
 
 ## Metric attributes
 
-| Name | Description |
-| ---- | ----------- |
-| device | Name of the page file. |
-| direction | Page In or Page Out. |
-| state | Breakdown of paging usage by type. |
-| type | Type of fault. |
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| device | Name of the page file. |  |
+| direction | Page In or Page Out. | page_in, page_out |
+| state | Breakdown of paging usage by type. | cached, free, used |
+| type | Type of fault. | major, minor |
