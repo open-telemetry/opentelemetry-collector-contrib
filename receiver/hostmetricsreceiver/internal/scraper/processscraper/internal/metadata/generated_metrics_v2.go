@@ -130,7 +130,7 @@ func (m *metricProcessCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().Insert("state", pcommon.NewValueString(stateAttributeValue))
+	dp.Attributes().InsertString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -183,7 +183,7 @@ func (m *metricProcessDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().InsertString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -504,6 +504,13 @@ func WithProcessExecutablePath(val string) ResourceMetricsOption {
 func WithProcessOwner(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertString("process.owner", val)
+	}
+}
+
+// WithProcessParentPid sets provided value as "process.parent_pid" attribute for current resource.
+func WithProcessParentPid(val int64) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertInt("process.parent_pid", val)
 	}
 }
 

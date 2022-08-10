@@ -393,13 +393,6 @@ metrics:
       value_type: int
       aggregation: cumulative
     attributes: []
-  vcenter.vm.cpu.utilization:
-    enabled: true
-    description: The CPU utilization of the virtual machine.
-    unit: "%"
-    gauge:
-      value_type: double
-    attributes: []
   vcenter.vm.disk.usage:
     enabled: true
     description: The amount of storage space used by the virtual machine.

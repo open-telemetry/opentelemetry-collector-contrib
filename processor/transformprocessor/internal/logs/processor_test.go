@@ -31,6 +31,9 @@ var (
 
 	TestObservedTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
 	TestObservedTimestamp = pcommon.NewTimestampFromTime(TestObservedTime)
+
+	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
 )
 
 func TestProcess(t *testing.T) {
@@ -89,6 +92,18 @@ func TestProcess(t *testing.T) {
 			query: `set(attributes["test"], "pass") where flags == 1`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(attributes["test"], "pass") where severity_number == SEVERITY_NUMBER_TRACE`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: `set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == 1`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetSeverityNumber(2)
 			},
 		},
 		{
@@ -159,6 +174,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
 	log.SetFlags(1)
+	log.SetSeverityNumber(1)
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))
 	log.Attributes().InsertString("http.method", "get")

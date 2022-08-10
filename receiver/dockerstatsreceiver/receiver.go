@@ -20,14 +20,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 const (
@@ -39,24 +38,18 @@ type receiver struct {
 	config   *Config
 	settings component.ReceiverCreateSettings
 	client   *docker.Client
+	mb       *metadata.MetricsBuilder
 }
 
-func NewReceiver(
-	_ context.Context,
-	set component.ReceiverCreateSettings,
-	config *Config,
-	nextConsumer consumer.Metrics,
-) (component.MetricsReceiver, error) {
-	recv := receiver{
+func newReceiver(set component.ReceiverCreateSettings, config *Config) *receiver {
+	if config.ProvidePerCoreCPUMetrics {
+		config.MetricsConfig.ContainerCPUUsagePercpu.Enabled = config.ProvidePerCoreCPUMetrics
+	}
+	return &receiver{
 		config:   config,
 		settings: set,
+		mb:       metadata.NewMetricsBuilder(config.MetricsConfig, set.BuildInfo),
 	}
-
-	scrp, err := scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithStart(recv.start))
-	if err != nil {
-		return nil, err
-	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *receiver) start(ctx context.Context, _ component.Host) error {
@@ -115,7 +108,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+		res.md.ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
 	return md, errs

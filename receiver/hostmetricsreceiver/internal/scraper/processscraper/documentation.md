@@ -33,6 +33,7 @@ metrics:
 | process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | String |
 | process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | String |
 | process.owner | The username of the user that owns the process. | String |
+| process.parent_pid | Parent Process identifier (PPID). | Int |
 | process.pid | Process identifier (PID). | Int |
 
 ## Metric attributes

@@ -373,7 +373,7 @@ func (m *metricIisNetworkFileCount) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().InsertString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -426,7 +426,7 @@ func (m *metricIisNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("direction", pcommon.NewValueString(directionAttributeValue))
+	dp.Attributes().InsertString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -479,7 +479,7 @@ func (m *metricIisRequestCount) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().Insert("request", pcommon.NewValueString(requestAttributeValue))
+	dp.Attributes().InsertString("request", requestAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

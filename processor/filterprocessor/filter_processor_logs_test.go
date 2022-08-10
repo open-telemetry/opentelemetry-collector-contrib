@@ -41,6 +41,8 @@ type logWithResource struct {
 	logNames           []string
 	resourceAttributes map[string]interface{}
 	recordAttributes   map[string]interface{}
+	severityText       string
+	body               string
 }
 
 var (
@@ -149,6 +151,44 @@ var (
 			resourceAttributes: map[string]interface{}{
 				"attr": "attr/val4",
 			},
+		},
+	}
+
+	inLogForSeverity = []logWithResource{
+		{
+			logNames:     []string{"log1"},
+			severityText: "DEBUG",
+		},
+		{
+			logNames:     []string{"log2"},
+			severityText: "DEBUG2",
+		},
+		{
+			logNames:     []string{"log3"},
+			severityText: "INFO",
+		},
+		{
+			logNames:     []string{"log4"},
+			severityText: "WARN",
+		},
+	}
+
+	inLogForBody = []logWithResource{
+		{
+			logNames: []string{"log1"},
+			body:     "This is a log body",
+		},
+		{
+			logNames: []string{"log2"},
+			body:     "This is also a log body",
+		},
+		{
+			logNames: []string{"log3"},
+			body:     "test1",
+		},
+		{
+			logNames: []string{"log4"},
+			body:     "test2",
 		},
 	}
 
@@ -333,6 +373,101 @@ var (
 				{"log5"},
 			},
 		},
+		{
+			name: "includeRecordSeverityStrict",
+			inc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG2"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log2"},
+				{"log3"},
+			},
+		},
+		{
+			name: "includeRecordSeverityRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"DEBUG[1-4]?"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityStrict",
+			exc: &LogMatchProperties{
+				LogMatchType:  Strict,
+				SeverityTexts: []string{"INFO", "DEBUG"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log2"},
+				{"log4"},
+			},
+		},
+		{
+			name: "excludeRecordSeverityRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType:  Regexp,
+				SeverityTexts: []string{"^[DI]"},
+			},
+			inLogs: testResourceLogs(inLogForSeverity),
+			outLN: [][]string{
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyStrict",
+			inc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
+		{
+			name: "includeRecordBodyRegexp",
+			inc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyStrict",
+			exc: &LogMatchProperties{
+				LogMatchType: Strict,
+				LogBodies:    []string{"test1", "test2", "no match"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log1"},
+				{"log2"},
+			},
+		},
+		{
+			name: "excludeRecordBodyRegexp",
+			exc: &LogMatchProperties{
+				LogMatchType: Regexp,
+				LogBodies:    []string{"^This"},
+			},
+			inLogs: testResourceLogs(inLogForBody),
+			outLN: [][]string{
+				{"log3"},
+				{"log4"},
+			},
+		},
 	}
 )
 
@@ -399,6 +534,9 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 			// Add record level attributes
 			pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(l.Attributes())
 			l.Attributes().InsertString("name", name)
+			// Set body & severity text
+			l.Body().SetStringVal(lwr.body)
+			l.SetSeverityText(lwr.severityText)
 		}
 	}
 	return ld

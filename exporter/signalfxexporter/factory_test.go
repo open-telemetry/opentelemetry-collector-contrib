@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -625,7 +624,7 @@ func TestDefaultCPUTranslations(t *testing.T) {
 func TestDefaultExcludes_translated(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	setDefaultExcludes(cfg)
+	require.NoError(t, setDefaultExcludes(cfg))
 
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
@@ -648,7 +647,7 @@ func TestDefaultExcludes_translated(t *testing.T) {
 func TestDefaultExcludes_not_translated(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	setDefaultExcludes(cfg)
+	require.NoError(t, setDefaultExcludes(cfg))
 
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
@@ -692,7 +691,7 @@ func testReadJSON(f string, v interface{}) error {
 		return err
 	}
 	defer func() { _ = file.Close() }()
-	bytes, err := ioutil.ReadAll(file)
+	bytes, err := io.ReadAll(file)
 	if err != nil {
 		return err
 	}

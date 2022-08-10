@@ -1,0 +1,20 @@
+receivers:
+  solace:
+    broker: [myHost:5671]
+    auth:
+      sasl_plain:
+        username: otel
+        password: otel01
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [solace]
+      processors: [nop]
+      exporters: [nop]

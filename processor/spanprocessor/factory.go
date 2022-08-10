@@ -50,6 +50,7 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
+//
 //	Move this to the error package that allows for span name and field to be specified.
 var (
 	errMissingRequiredField       = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\" or \"setStatus\" must be specified or \"spankind\" must be specified")
@@ -63,7 +64,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {

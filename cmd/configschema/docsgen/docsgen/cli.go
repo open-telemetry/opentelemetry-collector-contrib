@@ -17,7 +17,6 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -40,7 +39,7 @@ func CLI(factories component.Factories, dr configschema.DirResolver) {
 		panic(err)
 	}
 
-	handleCLI(factories, dr, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
+	handleCLI(factories, dr, tableTmpl, os.WriteFile, os.Stdout, os.Args...)
 }
 
 func handleCLI(

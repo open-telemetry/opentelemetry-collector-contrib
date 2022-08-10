@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package udppoller
 
 import (
@@ -126,7 +125,9 @@ func TestCloseStopsPoller(t *testing.T) {
 func TestSuccessfullyPollPacket(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestSuccessfullyPollPacket")
 
@@ -154,13 +155,15 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 		}
 	}, 10*time.Second, 5*time.Millisecond, "poller should return parsed segment")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, Transport, 1, 0))
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, Transport, 2, 0))
 }
 
 func TestIncompletePacketNoSeparator(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoSeparator")
 
@@ -189,7 +192,9 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 func TestIncompletePacketNoBody(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestIncompletePacketNoBody")
 
@@ -213,7 +218,9 @@ func TestIncompletePacketNoBody(t *testing.T) {
 func TestNonJsonHeader(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestNonJsonHeader")
 
@@ -242,7 +249,9 @@ func TestNonJsonHeader(t *testing.T) {
 func TestJsonInvalidHeader(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestJsonInvalidHeader")
 
@@ -277,7 +286,9 @@ func TestJsonInvalidHeader(t *testing.T) {
 func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestSocketReadIrrecoverableNetError")
 
@@ -312,7 +323,9 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 func TestSocketReadTimeOutNetError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestSocketReadTimeOutNetError")
 
@@ -348,7 +361,9 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 func TestSocketGenericReadError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	receiverID := config.NewComponentID("TestSocketGenericReadError")
 

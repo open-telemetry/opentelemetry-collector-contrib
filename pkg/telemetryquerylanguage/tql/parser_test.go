@@ -16,6 +16,7 @@ package tql
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,12 +24,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
+// This is not in tqltest because it depends on a type that's a member of TQL.
+func Booleanp(b Boolean) *Boolean {
+	return &b
+}
+
 func Test_parse(t *testing.T) {
 	tests := []struct {
+		name     string
 		query    string
 		expected *ParsedQuery
 	}{
 		{
+			name:  "invocation with string",
 			query: `set("foo")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -39,10 +47,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "invocation with float",
 			query: `met(1.2)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -53,10 +62,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "invocation with int",
 			query: `fff(12)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -67,11 +77,12 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
-			query: `set("foo", get(bear.honey))`,
+			name:  "complex invocation",
+			query: `set("foo", getSomething(bear.honey))`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
 					Function: "set",
@@ -81,7 +92,7 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							Invocation: &Invocation{
-								Function: "get",
+								Function: "getSomething",
 								Arguments: []Value{
 									{
 										Path: &Path{
@@ -100,10 +111,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "complex path",
 			query: `set(foo.attributes["bar"].cat, "dog")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -130,10 +142,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "where == clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -160,24 +173,31 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Comparison: &Comparison{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "==",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
+			name:  "where != clause",
 			query: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -204,24 +224,31 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Comparison: &Comparison{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "!=",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "!=",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
+			name:  "ignore extra spaces",
 			query: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -248,24 +275,31 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: &Condition{
-					Left: Value{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
+				WhereClause: &BooleanExpression{
+					Left: &Term{
+						Left: &BooleanValue{
+							Comparison: &Comparison{
+								Left: Value{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+								Op: "==",
+								Right: Value{
+									String: tqltest.Strp("fido"),
 								},
 							},
 						},
-					},
-					Op: "==",
-					Right: Value{
-						String: tqltest.Strp("fido"),
 					},
 				},
 			},
 		},
 		{
+			name:  "handle quotes",
 			query: `set("fo\"o")`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -276,10 +310,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "Invocation with boolean false",
 			query: `convert_gauge_to_sum("cumulative", false)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -293,10 +328,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "Invocation with boolean true",
 			query: `convert_gauge_to_sum("cumulative", true)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -310,10 +346,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "Invocation with bytes",
 			query: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -334,10 +371,11 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
 			},
 		},
 		{
+			name:  "Invocation with nil",
 			query: `set(attributes["test"], nil)`,
 			expected: &ParsedQuery{
 				Invocation: Invocation{
@@ -358,7 +396,32 @@ func Test_parse(t *testing.T) {
 						},
 					},
 				},
-				Condition: nil,
+				WhereClause: nil,
+			},
+		},
+		{
+			name:  "Invocation with Enum",
+			query: `set(attributes["test"], TEST_ENUM)`,
+			expected: &ParsedQuery{
+				Invocation: Invocation{
+					Function: "set",
+					Arguments: []Value{
+						{
+							Path: &Path{
+								Fields: []Field{
+									{
+										Name:   "attributes",
+										MapKey: tqltest.Strp("test"),
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
+						},
+					},
+				},
+				WhereClause: nil,
 			},
 		},
 	}
@@ -367,7 +430,7 @@ func Test_parse(t *testing.T) {
 		t.Run(tt.query, func(t *testing.T) {
 			parsed, err := parseQuery(tt.query)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, parsed)
+			assert.EqualValues(t, tt.expected, parsed)
 		})
 	}
 }
@@ -385,6 +448,15 @@ func Test_parse_failure(t *testing.T) {
 		`set(trace_id, TraceIDWrapper{not a hex string})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f})`,
 		`set(trace_id, TraceIDWrapper{0102030405060708090a0b0c0d0e0f1011})`,
+		`set("foo") where name = "fido"`,
+		`set("foo") where name or "fido"`,
+		`set("foo") where name and "fido"`,
+		`set("foo") where name and`,
+		`set("foo") where name or`,
+		`set("foo") where (`,
+		`set("foo") where )`,
+		`set("foo") where (name == "fido"))`,
+		`set("foo") where ((name == "fido")`,
 	}
 	for _, tt := range tests {
 		t.Run(tt, func(t *testing.T) {
@@ -406,4 +478,327 @@ func testParsePath(val *Path) (GetSetter, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("bad path %v", val)
+}
+
+// Helper for test cases where the WHERE clause is all that matters.
+// Parse string should start with `set(name, "test") where`...
+func setNameTest(b *BooleanExpression) *ParsedQuery {
+	return &ParsedQuery{
+		Invocation: Invocation{
+			Function: "set",
+			Arguments: []Value{
+				{
+					Path: &Path{
+						Fields: []Field{
+							{
+								Name: "name",
+							},
+						},
+					},
+				},
+				{
+					String: tqltest.Strp("test"),
+				},
+			},
+		},
+		WhereClause: b,
+	}
+}
+
+func Test_parseWhere(t *testing.T) {
+	tests := []struct {
+		query    string
+		expected *ParsedQuery
+	}{
+		{
+			query: `true`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+			}),
+		},
+		{
+			query: `true and false`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true and true and false`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+					Right: []*OpAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `true or false`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(true),
+					},
+				},
+				Right: []*OpOrTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and true or false`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								ConstExpr: Booleanp(true),
+							},
+						},
+					},
+				},
+				Right: []*OpOrTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `(false and true) or false`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						SubExpr: &BooleanExpression{
+							Left: &Term{
+								Left: &BooleanValue{
+									ConstExpr: Booleanp(false),
+								},
+								Right: []*OpAndBooleanValue{
+									{
+										Operator: "and",
+										Value: &BooleanValue{
+											ConstExpr: Booleanp(true),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*OpOrTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								ConstExpr: Booleanp(false),
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `false and (true or false)`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						ConstExpr: Booleanp(false),
+					},
+					Right: []*OpAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								SubExpr: &BooleanExpression{
+									Left: &Term{
+										Left: &BooleanValue{
+											ConstExpr: Booleanp(true),
+										},
+									},
+									Right: []*OpOrTerm{
+										{
+											Operator: "or",
+											Term: &Term{
+												Left: &BooleanValue{
+													ConstExpr: Booleanp(false),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `name != "foo" and name != "bar"`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						Comparison: &Comparison{
+							Left: Value{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							Op: "!=",
+							Right: Value{
+								String: tqltest.Strp("foo"),
+							},
+						},
+					},
+					Right: []*OpAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &BooleanValue{
+								Comparison: &Comparison{
+									Left: Value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: "!=",
+									Right: Value{
+										String: tqltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			query: `name == "foo" or name == "bar"`,
+			expected: setNameTest(&BooleanExpression{
+				Left: &Term{
+					Left: &BooleanValue{
+						Comparison: &Comparison{
+							Left: Value{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+							Op: "==",
+							Right: Value{
+								String: tqltest.Strp("foo"),
+							},
+						},
+					},
+				},
+				Right: []*OpOrTerm{
+					{
+						Operator: "or",
+						Term: &Term{
+							Left: &BooleanValue{
+								Comparison: &Comparison{
+									Left: Value{
+										Path: &Path{
+											Fields: []Field{
+												{
+													Name: "name",
+												},
+											},
+										},
+									},
+									Op: "==",
+									Right: Value{
+										String: tqltest.Strp("bar"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+	}
+
+	// create a test name that doesn't confuse vscode so we can rerun tests with one click
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
+			query := `set(name, "test") where ` + tt.query
+			parsed, err := parseQuery(query)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, parsed)
+		})
+	}
+}
+
+var testSymbolTable = map[EnumSymbol]Enum{
+	"TEST_ENUM":     0,
+	"TEST_ENUM_ONE": 1,
+	"TEST_ENUM_TWO": 2,
+}
+
+func testParseEnum(val *EnumSymbol) (*Enum, error) {
+	if val != nil {
+		if enum, ok := testSymbolTable[*val]; ok {
+			return &enum, nil
+		}
+		return nil, fmt.Errorf("enum symbol not found")
+	}
+	return nil, fmt.Errorf("enum symbol not provided")
 }

@@ -64,8 +64,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
-		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
+		component.WithMetricsExporter(f.createMetricsExporter, stability),
+		component.WithTracesExporter(f.createTracesExporter, stability),
 	)
 }
 

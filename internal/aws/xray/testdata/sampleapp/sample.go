@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package main
 
 import (
@@ -52,10 +51,16 @@ func main() {
 
 func ddbExpectedFailure(ctx context.Context) error {
 	err := xray.Capture(ctx, "DDB.DescribeExistingTableAndPutToMissingTable", func(ctx1 context.Context) error {
-		xray.AddAnnotation(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.Annotation", "anno")
-		xray.AddMetadata(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata", "meta")
+		err := xray.AddAnnotation(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.Annotation", "anno")
+		if err != nil {
+			return err
+		}
+		err = xray.AddMetadata(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.AddMetadata", "meta")
+		if err != nil {
+			return err
+		}
 
-		_, err := dynamo.DescribeTableWithContext(ctx1, &dynamodb.DescribeTableInput{
+		_, err = dynamo.DescribeTableWithContext(ctx1, &dynamodb.DescribeTableInput{
 			TableName: aws.String(existingTableName),
 		})
 		if err != nil {
