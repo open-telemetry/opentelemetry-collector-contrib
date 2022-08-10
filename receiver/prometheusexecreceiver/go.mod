@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.57.2
 	go.opentelemetry.io/collector/pdata v0.57.2
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.70 // indirect
+	github.com/aws/aws-sdk-go v1.44.72 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cncf/xds/go v0.0.0-20220314180256-7f1daf1720fc // indirect

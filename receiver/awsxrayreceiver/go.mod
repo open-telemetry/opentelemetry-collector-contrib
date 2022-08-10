@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.70
+	github.com/aws/aws-sdk-go v1.44.72
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.57.2
@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector v0.57.2
 	go.opentelemetry.io/collector/semconv v0.57.2
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 )
 
 require (
