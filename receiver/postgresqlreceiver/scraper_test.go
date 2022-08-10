@@ -16,6 +16,7 @@ package postgresqlreceiver
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -165,6 +166,11 @@ func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) 
 	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
 }
 
+func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	args := m.Called(ctx, database)
+	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -265,5 +271,24 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
 
+		index1 := fmt.Sprintf("%s_test1_pkey", database)
+		index2 := fmt.Sprintf("%s_test2_pkey", database)
+		indexStats := map[indexIdentifer]indexStat{
+			indexKey(database, table1, index1): {
+				database: database,
+				table:    table1,
+				index:    index1,
+				scans:    int64(index + 35),
+				size:     int64(index + 36),
+			},
+			indexKey(index2, table2, index2): {
+				database: database,
+				table:    table2,
+				index:    index2,
+				scans:    int64(index + 37),
+				size:     int64(index + 38),
+			},
+		}
+		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
 	}
 }
