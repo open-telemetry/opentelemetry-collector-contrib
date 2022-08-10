@@ -29,6 +29,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
@@ -36,9 +37,14 @@ import (
 
 type configFunc func(hostname string) *Config
 
+// cleanupFunc exists to allow integration test cases to clean any registries it had
+// to modify in order to change behavior of the integration test. i.e. featuregates
+type cleanupFunc func()
+
 type testCase struct {
 	name         string
 	cfg          configFunc
+	cleanup      cleanupFunc
 	expectedFile string
 }
 
@@ -86,6 +92,28 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.json"),
 		},
+		{
+			name: "with_resource_attributes",
+			cfg: func(hostname string) *Config {
+				featuregate.GetRegistry().MustApply(map[string]bool{
+					emitMetricsWithResourceAttributesFeatureGateID: true,
+				})
+				f := NewFactory()
+				cfg := f.CreateDefaultConfig().(*Config)
+				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
+				cfg.Databases = []string{}
+				cfg.Username = "otel"
+				cfg.Password = "otel"
+				cfg.Insecure = true
+				return cfg
+			},
+			cleanup: func() {
+				featuregate.GetRegistry().MustApply(map[string]bool{
+					emitMetricsWithResourceAttributesFeatureGateID: false,
+				})
+			},
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_with_resource_attributes.json"),
+		},
 	}
 
 	container := getContainer(t, testcontainers.ContainerRequest{
@@ -105,6 +133,9 @@ func TestPostgreSQLIntegration(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			if tc.cleanup != nil {
+				defer tc.cleanup()
+			}
 			expectedMetrics, err := golden.ReadMetrics(tc.expectedFile)
 			require.NoError(t, err)
 

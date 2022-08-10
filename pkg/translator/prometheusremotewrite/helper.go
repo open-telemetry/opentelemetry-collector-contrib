@@ -137,7 +137,9 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 }
 
 // timeSeries return a string signature in the form of:
-// 		TYPE-label1-value1- ...  -labelN-valueN
+//
+//	TYPE-label1-value1- ...  -labelN-valueN
+//
 // the label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
 func timeSeriesSignature(datatype string, labels *[]prompb.Label) string {

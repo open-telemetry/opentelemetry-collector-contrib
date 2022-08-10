@@ -17,7 +17,6 @@ package datasenders // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"strconv"
@@ -44,7 +43,7 @@ var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 // NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
 func NewFileLogWriter() *FileLogWriter {
-	file, err := ioutil.TempFile("", "perf-logs.log")
+	file, err := os.CreateTemp("", "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -147,7 +146,7 @@ func (f *FileLogWriter) GetEndpoint() net.Addr {
 }
 
 func NewLocalFileStorageExtension() map[string]string {
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		panic("failed to create temp storage dir")
 	}

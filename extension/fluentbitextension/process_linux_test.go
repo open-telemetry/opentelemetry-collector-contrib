@@ -16,7 +16,6 @@ package fluentbitextension
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -42,7 +41,7 @@ func setup(t *testing.T, conf *Config) (*processManager, **process.Process, func
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
-	mockScriptFile, err := ioutil.TempFile("", "mocksubproc")
+	mockScriptFile, err := os.CreateTemp("", "mocksubproc")
 	require.Nil(t, err)
 
 	cleanup := func() {

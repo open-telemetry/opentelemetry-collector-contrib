@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -99,7 +99,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
 	ctx := obsrecv.StartTracesOp(req.Context())
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}
