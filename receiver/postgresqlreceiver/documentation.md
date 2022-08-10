@@ -13,7 +13,7 @@ These are the metrics available for this scraper.
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
-| **postgresql.index.size** | The number of index scans on a table. | By | Gauge(Int) | <ul> </ul> |
+| **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |

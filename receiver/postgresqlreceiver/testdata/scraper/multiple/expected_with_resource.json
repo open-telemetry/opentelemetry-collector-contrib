@@ -610,12 +610,13 @@
                                         "asInt": "35"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [
@@ -673,12 +674,13 @@
                                         "asInt": "37"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [
@@ -1304,12 +1306,13 @@
                                         "asInt": "36"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [
@@ -1367,12 +1370,13 @@
                                         "asInt": "38"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [
@@ -1998,12 +2002,13 @@
                                         "asInt": "37"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [
@@ -2061,12 +2066,13 @@
                                         "asInt": "39"
                                     }
                                 ],
-                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
                             }
                         },
                         {
                             "name": "postgresql.index.size",
-                            "description": "The number of index scans on a table.",
+                            "description": "The size of the index on disk.",
                             "unit": "By",
                             "gauge": {
                                 "dataPoints": [

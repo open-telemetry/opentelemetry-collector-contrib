@@ -396,7 +396,7 @@ func (m *metricPostgresqlIndexScans) init() {
 	m.data.SetDescription("The number of index scans on a table.")
 	m.data.SetUnit("{scans}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
@@ -444,7 +444,7 @@ type metricPostgresqlIndexSize struct {
 // init fills postgresql.index.size metric with initial data.
 func (m *metricPostgresqlIndexSize) init() {
 	m.data.SetName("postgresql.index.size")
-	m.data.SetDescription("The number of index scans on a table.")
+	m.data.SetDescription("The size of the index on disk.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeGauge)
 }

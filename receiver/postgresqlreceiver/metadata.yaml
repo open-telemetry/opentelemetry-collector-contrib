@@ -88,12 +88,12 @@ metrics:
     enabled: true
     sum:
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
       value_type: int
     unit: "{scans}"
   postgresql.index.size:
     attributes: []
-    description: The number of index scans on a table.
+    description: The size of the index on disk.
     enabled: true
     gauge:
       value_type: int
