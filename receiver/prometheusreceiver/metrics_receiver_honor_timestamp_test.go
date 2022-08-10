@@ -164,11 +164,6 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-// This abstraction prevents skipped function from causing "unused" lint errors
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
 // valid testdata provided with explicit timestamps does not get honored.
 func TestHonorTimeStampsWithFalse(t *testing.T) {
