@@ -60,15 +60,15 @@ func New() confmap.Provider {
 	return &provider{client: s3.NewFromConfig(cfg)}
 }
 
-func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (confmap.Retrieved, error) {
+func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return confmap.Retrieved{}, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
+		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
 
 	// Split the uri and get [BUCKET], [REGION], [KEY]
 	bucket, region, key, err := s3URISplit(uri)
 	if err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("%q uri is not valid s3-url: %w", uri, err)
+		return nil, fmt.Errorf("%q uri is not valid s3-url: %w", uri, err)
 	}
 
 	// s3 downloading
@@ -79,7 +79,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 		o.Region = region
 	})
 	if err != nil {
-		return confmap.Retrieved{}, fmt.Errorf("file in S3 failed to fetch uri %q: %w", uri, err)
+		return nil, fmt.Errorf("file in S3 failed to fetch uri %q: %w", uri, err)
 	}
 
 	// read config from response body
@@ -88,7 +88,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 	var conf map[string]interface{}
 	err = dec.Decode(&conf)
 	if err != nil {
-		return confmap.Retrieved{}, err
+		return nil, err
 	}
 	return confmap.NewRetrieved(conf)
 }
