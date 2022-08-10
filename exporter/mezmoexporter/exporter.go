@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -172,7 +172,7 @@ func (m *mezmoExporter) sendLinesToMezmo(post string) (errs error) {
 	if res.StatusCode >= 400 {
 		m.log.Error(fmt.Sprintf("got http status (%s): %s", req.URL.Path, res.Status))
 		if checkLevel := m.log.Check(zap.DebugLevel, "http response"); checkLevel != nil {
-			responseBody, _ := ioutil.ReadAll(res.Body)
+			responseBody, _ := io.ReadAll(res.Body)
 			checkLevel.Write(zap.String("response", string(responseBody)))
 		}
 	}

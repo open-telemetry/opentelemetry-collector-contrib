@@ -18,7 +18,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"sort"
@@ -122,7 +122,7 @@ func (b *influxHTTPWriterBatch) flushAndClose(ctx context.Context) error {
 
 	if res, err := b.w.httpClient.Do(req); err != nil {
 		return err
-	} else if body, err := ioutil.ReadAll(res.Body); err != nil {
+	} else if body, err := io.ReadAll(res.Body); err != nil {
 		return err
 	} else if err = res.Body.Close(); err != nil {
 		return err

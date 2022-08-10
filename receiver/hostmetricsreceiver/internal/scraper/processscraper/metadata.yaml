@@ -6,6 +6,9 @@ resource_attributes:
   process.pid:
     description: Process identifier (PID).
     type: int
+  process.parent_pid:
+    description: Parent Process identifier (PPID).
+    type: int
   process.executable.name:
     description: >-
       The name of the process executable. On Linux based systems, can be set to the

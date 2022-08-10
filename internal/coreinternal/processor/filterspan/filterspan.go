@@ -29,7 +29,8 @@ import (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 // TODO: Modify Matcher to invoke both the include and exclude properties so
-//  calling processors will always have the same logic.
+//
+//	calling processors will always have the same logic.
 type Matcher interface {
 	MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }

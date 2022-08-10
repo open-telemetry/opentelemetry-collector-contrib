@@ -17,8 +17,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"hash/crc32"
 	"sort"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const maxPositions uint32 = 36000 // 360 degrees with two decimal places
@@ -49,10 +47,9 @@ func newHashRing(endpoints []string) *hashRing {
 }
 
 // endpointFor calculates which backend is responsible for the given traceID
-func (h *hashRing) endpointFor(traceID pcommon.TraceID) string {
-	b := traceID.Bytes()
+func (h *hashRing) endpointFor(identifier []byte) string {
 	hasher := crc32.NewIEEE()
-	hasher.Write(b[:])
+	hasher.Write(identifier)
 	hash := hasher.Sum32()
 	pos := hash % maxPositions
 

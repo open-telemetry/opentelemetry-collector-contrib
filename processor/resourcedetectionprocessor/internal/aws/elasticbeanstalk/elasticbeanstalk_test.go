@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -43,7 +42,7 @@ func (mfs *mockFileSystem) Open(path string) (io.ReadCloser, error) {
 		return nil, errors.New("file not found")
 	}
 	mfs.path = path
-	f := ioutil.NopCloser(strings.NewReader(mfs.contents))
+	f := io.NopCloser(strings.NewReader(mfs.contents))
 	return f, nil
 }
 
