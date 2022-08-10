@@ -60,7 +60,7 @@ func (bc *AzureBlobClient) ReadBlob(ctx context.Context, containerName string, b
 	return downloadedData, err
 }
 
-func NewBlobClient(connectionString string, logger *zap.Logger) (*AzureBlobClient, error) {
+func newBlobClient(connectionString string, logger *zap.Logger) (*AzureBlobClient, error) {
 	serviceClient, err := azblob.NewServiceClientFromConnectionString(connectionString, nil)
 	if err != nil {
 		return nil, err

@@ -32,7 +32,7 @@ func (_m *MockLogsDataConsumer) SetNextLogsConsumer(nextLogsConsumer consumer.Lo
 	_m.Called(nextLogsConsumer)
 }
 
-func NewMockLogsDataConsumer() *MockLogsDataConsumer {
+func newMockLogsDataConsumer() *MockLogsDataConsumer {
 	logsDataConsumer := &MockLogsDataConsumer{}
 	logsDataConsumer.On("ConsumeLogsJSON", mock.Anything, mock.Anything).Return(nil)
 	return logsDataConsumer

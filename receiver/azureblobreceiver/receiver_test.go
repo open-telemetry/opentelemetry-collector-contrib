@@ -69,5 +69,5 @@ func TestConsumeTracesJSON(t *testing.T) {
 func getBlobReceiver() (component.Receiver, error) {
 	set := componenttest.NewNopReceiverCreateSettings()
 	cfg := getConfig().(*Config)
-	return NewReceiver(*cfg, set, nil)
+	return newReceiver(*cfg, set, nil)
 }

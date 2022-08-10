@@ -28,7 +28,7 @@ const (
 )
 
 func TestNewBlobClient(t *testing.T) {
-	blobClient, err := NewBlobClient(goodConnectionString, zaptest.NewLogger(t))
+	blobClient, err := newBlobClient(goodConnectionString, zaptest.NewLogger(t))
 
 	require.NoError(t, err)
 	require.NotNil(t, blobClient)
@@ -36,7 +36,7 @@ func TestNewBlobClient(t *testing.T) {
 }
 
 func TestNewBlobClientError(t *testing.T) {
-	blobClient, err := NewBlobClient(badConnectionString, zaptest.NewLogger(t))
+	blobClient, err := newBlobClient(badConnectionString, zaptest.NewLogger(t))
 
 	assert.Error(t, err)
 	assert.Nil(t, blobClient)

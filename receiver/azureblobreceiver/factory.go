@@ -119,7 +119,7 @@ func (f *blobReceiverFactory) getReceiver(
 		}
 
 		var receiver component.Receiver
-		receiver, err = NewReceiver(*receiverConfig, set, blobEventHandler)
+		receiver, err = newReceiver(*receiverConfig, set, blobEventHandler)
 		return receiver
 	})
 
@@ -131,12 +131,12 @@ func (f *blobReceiverFactory) getReceiver(
 }
 
 func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logger) (BlobEventHandler, error) {
-	bc, err := NewBlobClient(cfg.ConnectionString, logger)
+	bc, err := newBlobClient(cfg.ConnectionString, logger)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
 	}
 
-	return NewBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
+	return newBlobEventHandler(cfg.EventHub.EndPoint, cfg.Logs.ContainerName, cfg.Traces.ContainerName, bc, logger),
 		nil
 }

@@ -34,7 +34,7 @@ var (
 )
 
 func TestNewBlobEventHandler(t *testing.T) {
-	blobClient := NewMockBlobClient()
+	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)
 
 	require.NotNil(t, blobEventHandler)
@@ -42,11 +42,11 @@ func TestNewBlobEventHandler(t *testing.T) {
 }
 
 func TestNewMessageHangdler(t *testing.T) {
-	blobClient := NewMockBlobClient()
+	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)
 
-	logsDataConsumer := NewMockLogsDataConsumer()
-	tracesDataConsumer := NewMockTracesDataConsumer()
+	logsDataConsumer := newMockLogsDataConsumer()
+	tracesDataConsumer := newMockTracesDataConsumer()
 	blobEventHandler.SetLogsDataConsumer(logsDataConsumer)
 	blobEventHandler.SetTracesDataConsumer(tracesDataConsumer)
 
@@ -69,6 +69,6 @@ func getEvent(eventData []byte) *eventhub.Event {
 }
 
 func getBlobEventHandler(tb testing.TB, blobClient BlobClient) *AzureBlobEventHandler {
-	blobEventHandler := NewBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
+	blobEventHandler := newBlobEventHandler(eventHubString, logsContainerName, tracesContainerName, blobClient, zaptest.NewLogger(tb))
 	return blobEventHandler
 }
