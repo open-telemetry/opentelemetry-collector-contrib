@@ -8,6 +8,9 @@
         },
         {
             "pattern": "http(s)?://example.com"
+        },
+        {
+            "pattern": "^#"
         }
     ],
     "aliveStatusCodes": [429, 200]
