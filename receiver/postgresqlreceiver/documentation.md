@@ -25,6 +25,13 @@ metrics:
     enabled: <true|false>
 ```
 
+## Resource attributes
+
+| Name | Description | Type |
+| ---- | ----------- | ---- |
+| postgresql.database.name | The name of the database. | String |
+| postgresql.table.name | The schema name followed by the table name. | String |
+
 ## Metric attributes
 
 | Name | Description | Values |
