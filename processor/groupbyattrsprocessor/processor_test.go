@@ -206,20 +206,20 @@ func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, a
 }
 
 // The "complex" use case has following input data:
-//  * Resource[Spans|Logs|Metrics] #1
-//    Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)
-//      * InstrumentationLibrary[Spans|Logs|Metrics] #1
-//          * [Span|Log] foo-1-1
-//            Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
-//          * Metric foo-1-1
-//            * DataPoint #1
-//              IntValue: 1
-//              Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
-//      * InstrumentationLibrary[Spans|Logs|Metrics] #M
-//        ...
-//    ...
-//   * Resource[Spans|Logs|Metrics] #N
-//      ...
+//   - Resource[Spans|Logs|Metrics] #1
+//     Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)
+//   - InstrumentationLibrary[Spans|Logs|Metrics] #1
+//   - [Span|Log] foo-1-1
+//     Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
+//   - Metric foo-1-1
+//   - DataPoint #1
+//     IntValue: 1
+//     Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
+//   - InstrumentationLibrary[Spans|Logs|Metrics] #M
+//     ...
+//     ...
+//   - Resource[Spans|Logs|Metrics] #N
+//     ...
 func TestComplexAttributeGrouping(t *testing.T) {
 	tests := []struct {
 		name                              string

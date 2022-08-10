@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.57.2
 	go.opentelemetry.io/otel v1.9.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 	gonum.org/v1/gonum v0.11.0
 )
 

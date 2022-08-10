@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -243,7 +243,7 @@ func TestScrapingError(t *testing.T) {
 }
 
 func clusterHealth(t *testing.T) *model.ClusterHealth {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	clusterHealth := model.ClusterHealth{}
@@ -253,7 +253,7 @@ func clusterHealth(t *testing.T) *model.ClusterHealth {
 }
 
 func nodeStats(t *testing.T) *model.NodeStats {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	nodeStats := model.NodeStats{}

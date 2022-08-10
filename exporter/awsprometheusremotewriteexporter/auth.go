@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -58,7 +57,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 			return nil, err
 		}
 
-		content, err := ioutil.ReadAll(reqBody)
+		content, err := io.ReadAll(reqBody)
 		reqBody.Close()
 		if err != nil {
 			return nil, err

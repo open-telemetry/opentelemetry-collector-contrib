@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/SAP/go-hdb v0.105.5
 	go.opentelemetry.io/collector v0.57.2
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
 )
 
 require (

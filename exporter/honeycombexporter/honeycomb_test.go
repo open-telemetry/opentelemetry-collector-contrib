@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -49,7 +49,7 @@ func testingServer(callback func(data []honeycombData)) *httptest.Server {
 			return
 		}
 		defer req.Body.Close()
-		b, err := ioutil.ReadAll(uncompressed)
+		b, err := io.ReadAll(uncompressed)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return

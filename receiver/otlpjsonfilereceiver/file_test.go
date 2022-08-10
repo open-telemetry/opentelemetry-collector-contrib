@@ -21,10 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -35,6 +31,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -71,8 +71,7 @@ func TestFileTracesReceiver(t *testing.T) {
 }
 
 func TestFileMetricsReceiver(t *testing.T) {
-	tempFolder, err := os.MkdirTemp("", "file")
-	assert.NoError(t, err)
+	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
@@ -98,8 +97,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 }
 
 func TestFileLogsReceiver(t *testing.T) {
-	tempFolder, err := os.MkdirTemp("", "file")
-	assert.NoError(t, err)
+	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
