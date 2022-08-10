@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -35,7 +36,7 @@ type clientRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
 	retrySettings     exporterhelper.RetrySettings
-	isStopped         bool
+	stopped           bool
 	mutex             sync.Mutex
 	shutdownChan      chan struct{}
 }
@@ -53,33 +54,33 @@ func newClientRoundTripper(
 	}
 }
 
-func (rt *clientRoundTripper) getIsStopped() bool {
+func (rt *clientRoundTripper) isStopped() bool {
 	rt.mutex.Lock()
 	defer rt.mutex.Unlock()
 
-	return rt.isStopped
+	return rt.stopped
 }
 
-func (rt *clientRoundTripper) setIsStopped(val bool) {
+func (rt *clientRoundTripper) stop() {
 	rt.mutex.Lock()
 	defer rt.mutex.Unlock()
 
-	rt.isStopped = val
+	rt.stopped = true
 }
 
 func (rt *clientRoundTripper) Shutdown() error {
-	if rt.getIsStopped() {
+	if rt.isStopped() {
 		return nil
 	}
 
-	rt.setIsStopped(true)
+	rt.stop()
 	rt.shutdownChan <- struct{}{}
 	close(rt.shutdownChan)
 	return nil
 }
 
 func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if rt.getIsStopped() {
+	if rt.isStopped() {
 		return nil, fmt.Errorf("request cancelled due to shutdown")
 	}
 
@@ -215,8 +216,8 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	return orgs.Results, hasNext(orgs.Links), nil
 }
 
-// GetOneOrganization retrieves a single organization specified by orgID
-func (s *MongoDBAtlasClient) GetOneOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error) {
+// GetOrganization retrieves a single organization specified by orgID
+func (s *MongoDBAtlasClient) GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error) {
 	org, response, err := s.client.Organizations.Get(ctx, orgID)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
@@ -248,8 +249,8 @@ func (s *MongoDBAtlasClient) Projects(
 	return allProjects, nil
 }
 
-// GetOneProject returns a single project specified by projectName
-func (s *MongoDBAtlasClient) GetOneProject(ctx context.Context, projectName string) (*mongodbatlas.Project, error) {
+// GetProject returns a single project specified by projectName
+func (s *MongoDBAtlasClient) GetProject(ctx context.Context, projectName string) (*mongodbatlas.Project, error) {
 	project, response, err := s.client.Projects.GetOneProjectByName(ctx, projectName)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
@@ -597,10 +598,10 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 }
 
 // GetLogs retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
-func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName, start, end string) (*bytes.Buffer, error) {
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, start, end time.Time) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
 
-	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: start, EndDate: end})
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: toUnixString(start), EndDate: toUnixString(end)})
 	if err != nil {
 		return nil, err
 	}
@@ -622,4 +623,8 @@ func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([
 	}
 
 	return clusters, nil
+}
+
+func toUnixString(t time.Time) string {
+	return strconv.Itoa(int(t.Unix()))
 }

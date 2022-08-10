@@ -21,7 +21,6 @@ import (
 	"errors"
 	"io"
 	"net"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -50,19 +49,19 @@ type resourceInfo struct {
 	Cluster  mongodbatlas.Cluster
 	Hostname string
 	LogName  string
-	start    string
-	end      string
+	start    time.Time
+	end      time.Time
 }
 
 // MongoDB Atlas Documentation reccommends a polling interval of 5  minutes: https://www.mongodb.com/docs/atlas/reference/api/logs/#logs
 const collectionInterval = time.Minute * 5
 
-func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*logsReceiver, error) {
+func newMongoDBAtlasLogsReceiver(settings component.ReceiverCreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
-	recv := &logsReceiver{log: settings.Logger, cfg: cfg, client: client, stopperChan: make(chan struct{})}
+	recv := &logsReceiver{log: settings.Logger, cfg: cfg, client: client, stopperChan: make(chan struct{}), consumer: consumer}
 	return recv, nil
 }
 
@@ -114,9 +113,9 @@ func parseHostName(s string, logger *zap.Logger) []string {
 	return hostnames
 }
 
-// KickoffReceiver spins off functionality of the receiver from the Start function
+// collect spins off functionality of the receiver from the Start function
 func (s *logsReceiver) collect(ctx context.Context) {
-	resource := resourceInfo{start: strconv.Itoa(int(time.Now().Unix())), end: ""}
+	resource := resourceInfo{start: time.Now()}
 	for {
 		// collection interval loop,
 		select {
@@ -128,16 +127,19 @@ func (s *logsReceiver) collect(ctx context.Context) {
 		}
 
 		for _, p := range s.cfg.Logs.Projects {
-			project, err := s.client.GetOneProject(ctx, p.Name)
+			project, err := s.client.GetProject(ctx, p.Name)
 			if err != nil {
-				s.log.Error("Error retrieving project", zap.Error(err))
+				s.log.Error("Error retrieving project "+p.Name+":", zap.Error(err))
+				continue
 			}
 
-			org, err := s.client.GetOneOrganization(ctx, project.OrgID)
+			org, err := s.client.GetOrganization(ctx, project.OrgID)
 			if err != nil {
 				s.log.Error("Error retrieving organization", zap.Error(err))
+				resource.Org = "unknown"
+			} else {
+				resource.Org = org.Name
 			}
-			resource.Org = org.Name
 
 			// get clusters for each of the projects
 			resource.Project = *project
@@ -146,10 +148,10 @@ func (s *logsReceiver) collect(ctx context.Context) {
 				s.log.Error("Failure to process Clusters", zap.Error(err))
 			}
 
-			if resource.end != "" {
+			if !resource.end.IsZero() {
 				resource.start = resource.end
 			}
-			resource.end = strconv.Itoa(int(time.Now().Unix()))
+			resource.end = time.Now()
 			s.collectClusterLogs(clusters, p, resource)
 		}
 	}
@@ -186,12 +188,12 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 		for _, hostname := range hostnames {
 			r.Cluster = cluster
 			r.Hostname = hostname
-			s.sendLogs(r, "mongodb.gz")
-			s.sendLogs(r, "mongos.gz")
+			s.collectLogs(r, "mongodb.gz")
+			s.collectLogs(r, "mongos.gz")
 
 			if project.EnableAuditLogs {
-				s.sendAuditLogs(r, "mongodb-audit-log.gz")
-				s.sendAuditLogs(r, "mongos-audit-log.gz")
+				s.collectAuditLogs(r, "mongodb-audit-log.gz")
+				s.collectAuditLogs(r, "mongos-audit-log.gz")
 			}
 		}
 	}
@@ -216,7 +218,7 @@ func createStringSet(in []string) map[string]struct{} {
 	return list
 }
 
-func (s *logsReceiver) getHostLogs(groupID, hostname, logName, start, end string) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, start, end time.Time) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
@@ -246,7 +248,7 @@ func (s *logsReceiver) getHostLogs(groupID, hostname, logName, start, end string
 	}
 }
 
-func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName, start, end string) ([]model.AuditLog, error) {
+func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string, start, end time.Time) ([]model.AuditLog, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, start, end)
 	if err != nil {
@@ -276,7 +278,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName, start, end s
 	}
 }
 
-func (s *logsReceiver) sendLogs(r resourceInfo, logName string) {
+func (s *logsReceiver) collectLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
@@ -292,7 +294,7 @@ func (s *logsReceiver) sendLogs(r resourceInfo, logName string) {
 	}
 }
 
-func (s *logsReceiver) sendAuditLogs(r resourceInfo, logName string) {
+func (s *logsReceiver) collectAuditLogs(r resourceInfo, logName string) {
 	logs, err := s.getHostAuditLogs(r.Project.ID, r.Hostname, logName, r.start, r.end)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve audit logs: "+logName, zap.Error(err))

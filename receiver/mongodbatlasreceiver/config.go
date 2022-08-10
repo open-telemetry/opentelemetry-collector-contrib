@@ -69,7 +69,7 @@ var (
 
 	// Logs Receiver Errors
 	errNoProjects    = errors.New("at least one 'project' must be specified")
-	errClusterConfig = errors.New("one of 'include_clusters' or 'exclude_clusters' must be specified")
+	errClusterConfig = errors.New("only one of 'include_clusters' or 'exclude_clusters' may be specified")
 )
 
 func (c *Config) Validate() error {

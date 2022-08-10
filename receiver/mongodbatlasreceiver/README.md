@@ -17,7 +17,7 @@ The MongoDB Atlas receiver takes the following parameters. `public_key` and
 "API Keys" tab of the MongoDB Atlas Project Access Manager. In the example
 below both values are being pulled from the environment.
 
-Retrieving logs requires a specified project to pull logs from. The `include_clusters` and `exclude_clusters` fields are for listing cluster Names in each specified project to exclude/include Clusters from the log collection. `exclude_clusters` will remove any specified clusters from the log collection, likewise  `include_clusters` will declare which clusters to include with log collection, and will exclude all other clusters. Specifying `exclude_clusters` and `include_clusters`, will result in a config error. When `exclude_clusters` and `include_clusters` fields are left empty, the receiver will collect from all clusters in the project.
+In order to collect logs, at least one project must be specified. By default, logs for all clusters within a project will be collected. Clusters can be limited using either the `include_clusters` or `exclude_clusters` setting.
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes. 
 
@@ -37,7 +37,7 @@ MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/l
     - `key_file`
     - `cert_file`
 - `logs`
-  - `enabled` (default true)
+  - `enabled` (default false)
   - `projects` (required if enabled)
     - `name` (required if enabled)
     - `collect_audit_logs` (default false)

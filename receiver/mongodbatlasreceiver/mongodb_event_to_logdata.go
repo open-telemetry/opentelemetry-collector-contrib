@@ -61,10 +61,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resource
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("org", r.Org)
-	resourceAttrs.InsertString("project", r.Project.Name)
-	resourceAttrs.InsertString("cluster", r.Cluster.Name)
-	resourceAttrs.InsertString("hostname", r.Hostname)
+	resourceAttrs.InsertString("mongodb_atlas.org", r.Org)
+	resourceAttrs.InsertString("mongodb_atlas.project", r.Project.Name)
+	resourceAttrs.InsertString("mongodb_atlas.cluster", r.Cluster.Name)
+	resourceAttrs.InsertString("mongodb_atlas.host.name", r.Hostname)
 
 	data, err := json.Marshal(e)
 	if err != nil {
@@ -122,10 +122,10 @@ func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo)
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("org", r.Org)
-	resourceAttrs.InsertString("project", r.Project.Name)
-	resourceAttrs.InsertString("cluster", r.Cluster.Name)
-	resourceAttrs.InsertString("hostname", r.Hostname)
+	resourceAttrs.InsertString("mongodb_atlas.org", r.Org)
+	resourceAttrs.InsertString("mongodb_atlas.project", r.Project.Name)
+	resourceAttrs.InsertString("mongodb_atlas.cluster", r.Cluster.Name)
+	resourceAttrs.InsertString("mongodb_atlas.host.name", r.Hostname)
 
 	data, err := json.Marshal(e)
 	if err != nil {

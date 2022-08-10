@@ -33,6 +33,7 @@ const (
 	stability            = component.StabilityLevelBeta
 	defaultGranularity   = "PT1M" // 1-minute, as per https://docs.atlas.mongodb.com/reference/api/process-measurements/
 	defaultAlertsEnabled = false
+	defaultLogsEnabled   = false
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
@@ -73,12 +74,12 @@ func createCombinedLogReceiver(
 ) (component.LogsReceiver, error) {
 	cfg := rConf.(*Config)
 
-	var err error
-	recv := &combindedLogsReceiver{}
-
 	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled {
 		return nil, errors.New("one of 'alerts' or 'logs' must be enabled")
 	}
+
+	var err error
+	recv := &combindedLogsReceiver{}
 
 	// If alerts is enabled create alerts receiver
 	if cfg.Alerts.Enabled {
@@ -90,11 +91,10 @@ func createCombinedLogReceiver(
 
 	// If logs is enabled create logs receiver
 	if cfg.Logs.Enabled {
-		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg)
+		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
 		if err != nil {
 			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
 		}
-		recv.logs.consumer = consumer
 	}
 
 	return recv, nil
@@ -110,7 +110,7 @@ func createDefaultConfig() config.Receiver {
 			Enabled: defaultAlertsEnabled,
 		},
 		Logs: LogConfig{
-			Enabled:  true,
+			Enabled:  defaultLogsEnabled,
 			Projects: []*Project{},
 		},
 	}
