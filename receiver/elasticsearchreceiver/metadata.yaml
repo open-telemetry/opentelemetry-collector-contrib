@@ -644,7 +644,7 @@ metrics:
     enabled: true
   elasticsearch.node.ingest.failed:
     description: Total number of failed ingest operations during the lifetime of this node.
-    unit: "{documents}"
+    unit: "{operation}"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -662,7 +662,7 @@ metrics:
     enabled: true
   elasticsearch.node.ingest.pipeline.failed:
     description: Total number of failed operations for the ingest pipeline.
-    unit: "{documents}"
+    unit: "{operation}"
     sum:
       monotonic: true
       aggregation: cumulative
@@ -675,4 +675,31 @@ metrics:
     gauge:
       value_type: int
     attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.script.compilations:
+    description: Total number of inline script compilations performed by the node.
+    unit: "{compilations}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.script.cache_evictions:
+    description: Total number of times the script cache has evicted old data.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.script.compilation_limit_triggered:
+    description: Total number of times the script compilation circuit breaker has limited inline script compilations.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: true

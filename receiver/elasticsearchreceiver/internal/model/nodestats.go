@@ -40,11 +40,18 @@ type NodeStatsNodesInfo struct {
 	IndexingPressure      IndexingPressure               `json:"indexing_pressure"`
 	Discovery             Discovery                      `json:"discovery"`
 	Ingest                Ingest                         `json:"ingest"`
+	Script                Script                         `json:"script"`
+}
+
+type Script struct {
+	Compilations              int64 `json:"compilations"`
+	CacheEvictions            int64 `json:"cache_evictions"`
+	CompilationLimitTriggered int64 `json:"compilation_limit_triggered"`
 }
 
 type Ingest struct {
-	Total     IngestTotalStats            `json:"total"`
-	Pipelines map[string]IngestTotalStats `json:"pipelines"`
+	Total     IngestTotalStats                    `json:"total"`
+	Pipelines map[string]IngestPipelineTotalStats `json:"pipelines"`
 }
 
 type IngestTotalStats struct {
@@ -52,6 +59,10 @@ type IngestTotalStats struct {
 	TimeInMillis int64 `json:"time_in_millis"`
 	Current      int64 `json:"current"`
 	Failed       int64 `json:"failed"`
+}
+
+type IngestPipelineTotalStats struct {
+	IngestTotalStats
 }
 
 type Discovery struct {

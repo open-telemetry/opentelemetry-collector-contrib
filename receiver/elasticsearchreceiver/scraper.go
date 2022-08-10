@@ -218,6 +218,10 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			r.mb.RecordElasticsearchNodeIngestPipelineCurrentDataPoint(now, ipInfo.Current, ipName)
 		}
 
+		r.mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(now, info.Script.CacheEvictions)
+		r.mb.RecordElasticsearchNodeScriptCompilationsDataPoint(now, info.Script.Compilations)
+		r.mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(now, info.Script.CompilationLimitTriggered)
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}

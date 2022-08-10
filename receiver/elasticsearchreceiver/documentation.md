@@ -44,13 +44,16 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.http.connections** | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.count** | Total number of documents ingested during the lifetime of this node. | {documents} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.current** | Total number of documents currently being ingested. | {documents} | Gauge(Int) | <ul> </ul> |
-| **elasticsearch.node.ingest.failed** | Total number of failed ingest operations during the lifetime of this node. | {documents} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.ingest.failed** | Total number of failed ingest operations during the lifetime of this node. | {operation} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.pipeline.count** | Total number of documents ingested during the lifetime of this node. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.ingest.pipeline.current** | Total number of documents currently being ingested by a pipeline. | {documents} | Gauge(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
-| **elasticsearch.node.ingest.pipeline.failed** | Total number of failed operations for the ingest pipeline. | {documents} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
+| **elasticsearch.node.ingest.pipeline.failed** | Total number of failed operations for the ingest pipeline. | {operation} | Sum(Int) | <ul> <li>ingest_pipeline_name</li> </ul> |
 | **elasticsearch.node.open_files** | The number of open file descriptors held by the node. | {files} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.operations.completed** | The number of operations completed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
 | **elasticsearch.node.operations.time** | Time spent on operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
+| **elasticsearch.node.script.cache_evictions** | Total number of times the script cache has evicted old data. | 1 | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.script.compilation_limit_triggered** | Total number of times the script compilation circuit breaker has limited inline script compilations. | 1 | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.script.compilations** | Total number of inline script compilations performed by the node. | {compilations} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.data_set.size** | Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.reserved.size** | A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.shards.size** | The size of the shards assigned to this node. | By | Sum(Int) | <ul> </ul> |
