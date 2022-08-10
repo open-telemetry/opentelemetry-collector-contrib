@@ -1,7 +1,7 @@
 # Elasticsearch Receiver
 
 | Status                   |           |
-| ------------------------ |-----------|
+|--------------------------|-----------|
 | Stability                | [beta]    |
 | Supported pipeline types | metrics   |
 | Distributions            | [contrib] |

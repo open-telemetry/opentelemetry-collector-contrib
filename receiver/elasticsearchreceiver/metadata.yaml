@@ -90,6 +90,12 @@ attributes:
     enum:
       - free
       - used
+  indexing_memory_state:
+    value: state
+    description: State of the indexing memory
+    enum:
+      - current
+      - total
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -462,9 +468,53 @@ metrics:
   elasticsearch.os.memory:
     description: Amount of physical memory.
     unit: By
-    sum:
-      monotonic: false
-      aggregation: cumulative
+    gauge:
       value_type: int
     attributes: [memory_state]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.coordinating:
+    description: Memory consumed, in bytes, by indexing requests in the coordinating stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.primary:
+    description: Memory consumed, in bytes, by indexing requests in the primary stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.replica:
+    description: Memory consumed, in bytes, by indexing requests in the primary stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.total.primary_rejections:
+    description: Cumulative number of indexing requests rejected in the primary stage.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.total.replica_rejections:
+    description: Number of indexing requests rejected in the replica stage.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.limit:
+    description: Configured memory limit, in bytes, for the indexing requests.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
     enabled: true

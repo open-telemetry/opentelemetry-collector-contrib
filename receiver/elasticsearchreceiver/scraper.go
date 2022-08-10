@@ -181,6 +181,13 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
+		r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
+		r.mb.RecordElasticsearchIndexingPressureMemoryPrimaryDataPoint(now, info.IndexingPressure.Memory.Current.PrimaryInBy)
+		r.mb.RecordElasticsearchIndexingPressureMemoryCoordinatingDataPoint(now, info.IndexingPressure.Memory.Current.CoordinatingInBy)
+		r.mb.RecordElasticsearchIndexingPressureMemoryReplicaDataPoint(now, info.IndexingPressure.Memory.Current.ReplicaInBy)
+		r.mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.PrimaryRejections)
+		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
+
 		r.mb.EmitForResource(metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
 			metadata.WithElasticsearchNodeName(info.Name))
 	}

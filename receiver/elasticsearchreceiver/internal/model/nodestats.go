@@ -34,6 +34,35 @@ type NodeStatsNodesInfo struct {
 	CircuitBreakerInfo    map[string]CircuitBreakerStats `json:"breakers"`
 	FS                    FSStats                        `json:"fs"`
 	OS                    OSStats                        `json:"os"`
+	IndexingPressure      IndexingPressure               `json:"indexing_pressure"`
+}
+
+type IndexingPressure struct {
+	Memory IndexingPressureMemory `json:"memory"`
+}
+
+type IndexingPressureMemory struct {
+	Current   IndexingPressureMemoryCurrentStats `json:"current"`
+	Total     IndexingPressureMemoryTotalStats   `json:"total"`
+	LimitInBy int64                              `json:"limit_in_bytes"`
+}
+
+type IndexingPressureMemoryCurrentStats struct {
+	IndexingPressureMemoryStats
+}
+
+type IndexingPressureMemoryTotalStats struct {
+	IndexingPressureMemoryStats
+	PrimaryRejections int64 `json:"primary_rejections"`
+	ReplicaRejections int64 `json:"replica_rejections"`
+}
+
+type IndexingPressureMemoryStats struct {
+	CombinedCoordinatingAndPrimaryInBy int64 `json:"combined_coordinating_and_primary_in_bytes"`
+	CoordinatingInBy                   int64 `json:"coordinating_in_bytes"`
+	PrimaryInBy                        int64 `json:"primary_in_bytes"`
+	ReplicaInBy                        int64 `json:"replica_in_bytes"`
+	AllInBy                            int64 `json:"all_in_bytes"`
 }
 
 type OSStats struct {
