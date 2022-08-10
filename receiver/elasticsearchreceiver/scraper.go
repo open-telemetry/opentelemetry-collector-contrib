@@ -64,10 +64,12 @@ func init() {
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
-	client   elasticsearchClient
-	settings component.TelemetrySettings
-	cfg      *Config
-	mb       *metadata.MetricsBuilder
+	client                               elasticsearchClient
+	settings                             component.TelemetrySettings
+	cfg                                  *Config
+	mb                                   *metadata.MetricsBuilder
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func newElasticSearchScraper(
@@ -75,9 +77,11 @@ func newElasticSearchScraper(
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		settings: settings.TelemetrySettings,
-		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		settings:                             settings.TelemetrySettings,
+		cfg:                                  cfg,
+		mb:                                   metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 }
 
@@ -121,8 +125,15 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
 		r.mb.RecordElasticsearchNodeDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
 
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		if r.emitMetricsWithDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		}
+
+		if r.emitMetricsWithoutDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoReceivedDataPoint(now, info.TransportStats.ReceivedBytes)
+			r.mb.RecordElasticsearchNodeClusterIoSentDataPoint(now, info.TransportStats.SentBytes)
+		}
 
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 
