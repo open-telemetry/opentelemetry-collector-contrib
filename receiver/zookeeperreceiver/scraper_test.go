@@ -290,8 +290,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				cfg.Metrics = tt.metricsSettings()
 			}
 
-			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute})
-			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute})
+			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute}))
+			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute}))
 			core, observedLogs := observer.New(zap.DebugLevel)
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = zap.New(core)

@@ -48,16 +48,17 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -65,16 +66,17 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -82,16 +84,17 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),

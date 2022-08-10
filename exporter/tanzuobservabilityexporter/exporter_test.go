@@ -236,9 +236,10 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
-		cfg,
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)
@@ -286,9 +287,10 @@ func consumeTraces(ptrace ptrace.Traces) ([]*span, error) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
-		cfg,
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)

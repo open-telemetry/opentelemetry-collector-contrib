@@ -27,7 +27,7 @@ import (
 )
 
 func TestLoadLegacyConfig(t *testing.T) {
-	defer setPdataFeatureGateForTest(false)()
+	defer setPdataFeatureGateForTest(t, false)()
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 	factory := NewFactory()

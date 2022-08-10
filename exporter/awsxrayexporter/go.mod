@@ -7,9 +7,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.57.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.57.2
-	go.opentelemetry.io/collector/pdata v0.57.2
-	go.opentelemetry.io/collector/semconv v0.57.2
+	go.opentelemetry.io/collector v0.58.0
+	go.opentelemetry.io/collector/pdata v0.58.0
+	go.opentelemetry.io/collector/semconv v0.58.0
 	go.uber.org/zap v1.22.0
 )
 

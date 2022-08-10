@@ -88,9 +88,10 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
@@ -112,9 +113,10 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewLogsExporter(
-		config,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.

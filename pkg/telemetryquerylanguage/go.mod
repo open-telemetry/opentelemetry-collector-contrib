@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0-alpha9
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/pdata v0.58.0
 	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/multierr v1.8.0
 )

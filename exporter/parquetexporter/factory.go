@@ -51,14 +51,15 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.consumeTraces,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -66,14 +67,15 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.consumeMetrics,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
@@ -81,14 +83,15 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := &parquetExporter{path: cfg.(*Config).Path}
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		fe.consumeLogs,
 		exporterhelper.WithStart(fe.start),
 		exporterhelper.WithShutdown(fe.shutdown),
