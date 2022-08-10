@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -61,7 +60,7 @@ type jaegerThriftHTTPSender struct {
 
 // start starts the exporter
 func (s *jaegerThriftHTTPSender) start(_ context.Context, host component.Host) (err error) {
-	s.client, err = s.config.HTTPClientSettings.ToClientWithHost(host, s.settings)
+	s.client, err = s.config.HTTPClientSettings.ToClient(host, s.settings)
 
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -97,7 +96,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode >= http.StatusBadRequest {

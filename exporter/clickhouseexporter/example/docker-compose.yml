@@ -13,7 +13,7 @@ services:
     container_name: otel
     command:
       - "--config=/etc/otel-collector-config.yml"
-      - "--set=service.telemetry.logs.level=DEBUG"
+      - "--set=service.telemetry.logs.level=INFO"
     volumes:
       - ./otel-collector-config.yml:/etc/otel-collector-config.yml
     ports:

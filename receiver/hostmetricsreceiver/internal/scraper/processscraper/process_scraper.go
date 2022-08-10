@@ -181,8 +181,14 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
+		parentPid, err := parentPid(handle, pid)
+		if err != nil {
+			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+		}
+
 		md := &processMetadata{
 			pid:        pid,
+			parentPid:  parentPid,
 			executable: executable,
 			command:    command,
 			username:   username,

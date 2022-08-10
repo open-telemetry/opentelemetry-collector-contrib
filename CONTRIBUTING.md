@@ -75,10 +75,14 @@ providing the following information:
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
   how the implementation might look like.
 
+Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
 
-Any component (receiver, processor, exporter, or extension) needs to implement the interfaces defined on the [core
-repository](https://github.com/open-telemetry/opentelemetry-collector). Familiarize yourself with the interface of the
-component that you want to write, and use existing implementations as reference.
+* Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
+* Provide a configuration structure which defines the configuration of the component
+* Provide the implementation which performs the component operation
+
+Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
+[Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
 *NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
 must be available to update or review their components when such changes happen, otherwise the component will be
@@ -114,9 +118,6 @@ and the rest of contributors.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@Aneurysm9](https://github.com/Aneurysm9)
-* [@mx-psi](https://github.com/mx-psi)
-* [@pmm-sumo](https://github.com/pmm-sumo)
 * [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
@@ -124,6 +125,8 @@ The following GitHub users are the currently available sponsors, either by being
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
+* [@Aneurysm9](https://github.com/Aneurysm9)
+* [@mx-psi](https://github.com/mx-psi)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 

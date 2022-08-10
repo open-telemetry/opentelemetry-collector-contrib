@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -126,7 +125,7 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 }
 
 func (exporter *logzioExporter) start(_ context.Context, host component.Host) error {
-	client, err := exporter.config.HTTPClientSettings.ToClientWithHost(host, exporter.settings)
+	client, err := exporter.config.HTTPClientSettings.ToClient(host, exporter.settings)
 	if err != nil {
 		return err
 	}
@@ -225,7 +224,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))

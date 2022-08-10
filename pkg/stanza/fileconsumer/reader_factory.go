@@ -47,7 +47,7 @@ func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 }
 
 func (f *readerFactory) unsafeReader() (*Reader, error) {
-	return f.newReaderBuilder().Unsafe().build()
+	return f.newReaderBuilder().build()
 }
 
 func (f *readerFactory) newFingerprint(file *os.File) (*Fingerprint, error) {
@@ -60,7 +60,6 @@ type readerBuilder struct {
 	fp       *Fingerprint
 	offset   int64
 	splitter *helper.Splitter
-	isUnsafe bool
 }
 
 func (f *readerFactory) newReaderBuilder() *readerBuilder {
@@ -87,11 +86,6 @@ func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
 	return b
 }
 
-func (b *readerBuilder) Unsafe() *readerBuilder {
-	b.isUnsafe = true
-	return b
-}
-
 func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
 		readerConfig: b.readerConfig,
@@ -114,6 +108,13 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		if err != nil {
 			b.Errorf("resolve attributes: %w", err)
 		}
+
+		// unsafeReader has the file set to nil, so don't try emending its offset.
+		if !b.fromBeginning {
+			if err := r.offsetToEnd(); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 	}
@@ -126,13 +127,6 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 			return nil, err
 		}
 		r.Fingerprint = fp
-	}
-
-	// unsafeReader has the file set to nil, so don't try emending its offset.
-	if !b.fromBeginning && !b.isUnsafe {
-		if err := r.offsetToEnd(); err != nil {
-			return nil, err
-		}
 	}
 
 	return r, nil

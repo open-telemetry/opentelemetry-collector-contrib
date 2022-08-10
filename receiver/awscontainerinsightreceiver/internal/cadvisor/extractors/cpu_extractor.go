@@ -37,13 +37,15 @@ func (c *CPUMetricExtractor) HasValue(info *cInfo.ContainerInfo) bool {
 
 func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
 	var metrics []*CAdvisorMetric
-	if info.Spec.Labels[containerNameLable] == infraContainerName {
+	// Skip infra container and handle node, pod, other containers in pod
+	if containerType == ci.TypeInfraContainer {
 		return metrics
 	}
 
 	// When there is more than one stats point, always use the last one
 	curStats := GetStats(info)
 	metric := newCadvisorMetric(containerType, c.logger)
+	metric.cgroupPath = info.Name
 	multiplier := float64(decimalToMillicores)
 	assignRateValueToField(&c.rateCalculator, metric.fields, ci.MetricName(containerType, ci.CPUTotal), info.Name, float64(curStats.Cpu.Usage.Total), curStats.Timestamp, multiplier)
 	assignRateValueToField(&c.rateCalculator, metric.fields, ci.MetricName(containerType, ci.CPUUser), info.Name, float64(curStats.Cpu.Usage.User), curStats.Timestamp, multiplier)

@@ -15,7 +15,6 @@
 package fileconsumer
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -135,7 +134,7 @@ func TestFinder(t *testing.T) {
 
 			for _, f := range files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				require.NoError(t, ioutil.WriteFile(f, []byte(filepath.Base(f)), 0000))
+				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
 			}
 
 			finder := Finder{include, exclude}

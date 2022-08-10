@@ -30,10 +30,11 @@ var (
 	ErrInvalidVersion = errors.New("invalid schema version")
 )
 
-//	The following status values define whether the transformer
-//	has to revert changes or update changes to the signal being modified
-//	These values match the Version.Compare out when performing:
-//		from.Compare(to) // ie: (1.0.0).Compare(1.2.1)
+// The following status values define whether the transformer
+// has to revert changes or update changes to the signal being modified
+// These values match the Version.Compare out when performing:
+//
+//	from.Compare(to) // ie: (1.0.0).Compare(1.2.1)
 const (
 	Update   int = -1 // From is less than To
 	NoChange int = 0  // From equals To

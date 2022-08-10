@@ -23,7 +23,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -61,7 +60,7 @@ func TestInvalidExclude(t *testing.T) {
 }
 
 func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := ioutil.TempFile(os.TempDir(), "testsock")
+	f, err := os.CreateTemp(os.TempDir(), "testsock")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +205,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err := cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("")),
+			Body: io.NopCloser(strings.NewReader("")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)
@@ -214,7 +213,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err = cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("{\"Networks\": 123}")),
+			Body: io.NopCloser(strings.NewReader("{\"Networks\": 123}")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)

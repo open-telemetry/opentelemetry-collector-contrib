@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -165,7 +164,7 @@ func getRegionFromECSMetadata() (string, error) {
 	ecsMetadataEnabled = strings.ToLower(ecsMetadataEnabled)
 	if ecsMetadataEnabled == "true" {
 		metadataFilePath := os.Getenv(ecsMetadataFileEnvVar)
-		metadata, err := ioutil.ReadFile(metadataFilePath)
+		metadata, err := os.ReadFile(metadataFilePath)
 		if err != nil {
 			return "", fmt.Errorf("unable to open ECS metadata file, path: %s, error: %w",
 				metadataFilePath, err)
