@@ -1,0 +1,572 @@
+{
+    "resourceMetrics": [
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "otel"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.backends",
+                            "description": "The number of backends.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "3"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.commits",
+                            "description": "The number of commits.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "1"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.db_size",
+                            "description": "The database disk usage.",
+                            "unit": "By",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "4"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        },
+                        {
+                            "name": "postgresql.rollbacks",
+                            "description": "The number of rollbacks.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "2"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "otel"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table2"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.blocks_read",
+                            "description": "The number of blocks read.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "27"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "28"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "29"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "30"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "32"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "31"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "33"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "34"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.operations",
+                            "description": "The number of db row operations.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "ins"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "43"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "del"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "45"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "44"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "hot_upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "46"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.rows",
+                            "description": "The number of rows in the database.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "dead"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "10"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "live"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "9"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "otel"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table1"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.blocks_read",
+                            "description": "The number of blocks read.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "19"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "heap_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "20"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "21"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "idx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "22"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "24"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "toast_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "23"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_read"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "25"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "tidx_hit"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "26"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.operations",
+                            "description": "The number of db row operations.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "ins"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "39"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "del"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "41"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "40"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "operation",
+                                                "value": {
+                                                    "stringValue": "hot_upd"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "42"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.rows",
+                            "description": "The number of rows in the database.",
+                            "unit": "1",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "dead"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "8"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "state",
+                                                "value": {
+                                                    "stringValue": "live"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1659730117884584000",
+                                        "timeUnixNano": "1659730117884734000",
+                                        "asInt": "7"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
