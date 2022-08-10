@@ -205,6 +205,7 @@ func TestDefaultReceivers(t *testing.T) {
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
 				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
+				cfg.Logs.Enabled = true
 				return cfg
 			},
 		},
