@@ -574,6 +574,134 @@
                     {
                         "key": "postgresql.database.name",
                         "value": {
+                            "stringValue": "otel"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table1"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "otel_test1_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "35"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "36"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "otel"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table2"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "otel_test2_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "37"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "38"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
                             "stringValue": "open"
                         }
                     }
@@ -1142,6 +1270,134 @@
                     {
                         "key": "postgresql.database.name",
                         "value": {
+                            "stringValue": "open"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table1"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "open_test1_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "36"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "37"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "open"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table2"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "open_test2_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "38"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "39"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
                             "stringValue": "telemetry"
                         }
                     }
@@ -1698,6 +1954,134 @@
                                     }
                                 ],
                                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "telemetry"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table1"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "telemetry_test1_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "37"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "38"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "resource": {
+                "attributes": [
+                    {
+                        "key": "postgresql.database.name",
+                        "value": {
+                            "stringValue": "telemetry"
+                        }
+                    },
+                    {
+                        "key": "postgresql.table.name",
+                        "value": {
+                            "stringValue": "public.table2"
+                        }
+                    },
+                    {
+                        "key": "postgresql.index.name",
+                        "value": {
+                            "stringValue": "telemetry_test2_pkey"
+                        }
+                    }
+                ]
+            },
+            "scopeMetrics": [
+                {
+                    "scope": {
+                        "name": "otelcol/postgresqlreceiver",
+                        "version": "latest"
+                    },
+                    "metrics": [
+                        {
+                            "name": "postgresql.index.scans",
+                            "description": "The number of index scans on a table.",
+                            "unit": "{scans}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "39"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.index.size",
+                            "description": "The size of the index on disk.",
+                            "unit": "By",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660164011292024000",
+                                        "timeUnixNano": "1660164011292184000",
+                                        "asInt": "40"
+                                    }
+                                ]
                             }
                         }
                     ]
