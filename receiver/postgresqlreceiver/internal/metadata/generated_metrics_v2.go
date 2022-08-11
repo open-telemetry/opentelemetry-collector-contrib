@@ -21,6 +21,8 @@ type MetricsSettings struct {
 	PostgresqlBlocksRead MetricSettings `mapstructure:"postgresql.blocks_read"`
 	PostgresqlCommits    MetricSettings `mapstructure:"postgresql.commits"`
 	PostgresqlDbSize     MetricSettings `mapstructure:"postgresql.db_size"`
+	PostgresqlIndexScans MetricSettings `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize  MetricSettings `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations MetricSettings `mapstructure:"postgresql.operations"`
 	PostgresqlRollbacks  MetricSettings `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows       MetricSettings `mapstructure:"postgresql.rows"`
@@ -38,6 +40,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlDbSize: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlIndexScans: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlIndexSize: MetricSettings{
 			Enabled: true,
 		},
 		PostgresqlOperations: MetricSettings{
@@ -376,6 +384,106 @@ func newMetricPostgresqlDbSize(settings MetricSettings) metricPostgresqlDbSize {
 	return m
 }
 
+type metricPostgresqlIndexScans struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.index.scans metric with initial data.
+func (m *metricPostgresqlIndexScans) init() {
+	m.data.SetName("postgresql.index.scans")
+	m.data.SetDescription("The number of index scans on a table.")
+	m.data.SetUnit("{scans}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlIndexScans) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlIndexScans) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlIndexScans) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlIndexScans(settings MetricSettings) metricPostgresqlIndexScans {
+	m := metricPostgresqlIndexScans{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlIndexSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.index.size metric with initial data.
+func (m *metricPostgresqlIndexSize) init() {
+	m.data.SetName("postgresql.index.size")
+	m.data.SetDescription("The size of the index on disk.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlIndexSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlIndexSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlIndexSize(settings MetricSettings) metricPostgresqlIndexSize {
+	m := metricPostgresqlIndexSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -551,6 +659,8 @@ type MetricsBuilder struct {
 	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
 	metricPostgresqlCommits    metricPostgresqlCommits
 	metricPostgresqlDbSize     metricPostgresqlDbSize
+	metricPostgresqlIndexScans metricPostgresqlIndexScans
+	metricPostgresqlIndexSize  metricPostgresqlIndexSize
 	metricPostgresqlOperations metricPostgresqlOperations
 	metricPostgresqlRollbacks  metricPostgresqlRollbacks
 	metricPostgresqlRows       metricPostgresqlRows
@@ -575,6 +685,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
 		metricPostgresqlCommits:    newMetricPostgresqlCommits(settings.PostgresqlCommits),
 		metricPostgresqlDbSize:     newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
+		metricPostgresqlIndexScans: newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:  newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
 		metricPostgresqlOperations: newMetricPostgresqlOperations(settings.PostgresqlOperations),
 		metricPostgresqlRollbacks:  newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
 		metricPostgresqlRows:       newMetricPostgresqlRows(settings.PostgresqlRows),
@@ -602,6 +714,13 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 func WithPostgresqlDatabaseName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertString("postgresql.database.name", val)
+	}
+}
+
+// WithPostgresqlIndexName sets provided value as "postgresql.index.name" attribute for current resource.
+func WithPostgresqlIndexName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.index.name", val)
 	}
 }
 
@@ -648,6 +767,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
+	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
+	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
@@ -688,6 +809,16 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp,
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
 func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+}
+
+// RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.
+func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlIndexSizeDataPoint adds a data point to postgresql.index.size metric.
+func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.

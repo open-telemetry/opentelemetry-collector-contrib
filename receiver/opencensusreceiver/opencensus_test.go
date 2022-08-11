@@ -438,7 +438,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -589,7 +589,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, componenttest.NewNopReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver(exporter.receiverID, "tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 

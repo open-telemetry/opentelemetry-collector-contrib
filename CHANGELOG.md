@@ -4,6 +4,67 @@
 
 <!-- next version -->
 
+# v0.58.0
+
+## 🛑 Breaking changes 🛑
+- `clickhouseexporter`: update table schema (#8028)
+  1. add ServiceName field as primary key.
+  2. use Map type for attribute, add secondary index.
+  
+- `postgresqlreceiver`: Moves metric attributes `table` and `database` to resource attributes. (#12960)
+  This move has been hidden behind a featuregate. Please see https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations for more information transitioning. 
+  This affects the following metrics.
+  - postgresql.blocks_read
+  - postgresql.commits
+  - postgresql.db_size
+  - postgresql.backends
+  - postgresql.operations
+  - postgresql.rollbacks
+  
+- `all`: Update minimum go version to 1.18 (#12918)
+
+### 🚩 Deprecations 🚩
+- `dotnetdiagnosticsreceiver`: Change status to unmaintained (#12757)
+
+### 🚀 New components 🚀
+- `azureblobreceiver`: Add a new component `azureblobreciver` (#8834)
+  Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
+- `azureeventhubreceiver`: New component to receive logs from Azure Event Hubs (#12786)
+- `headers_setter`: Add support for setting exporter headers from the upstream requests context (#5733, #7945, #4814)
+
+### 💡 Enhancements 💡
+- `filterprocessor`: Add ability to filter based on logs SeverityText and Body. (#9235)
+- `aerospikereceiver`: Support tls configuration. Add tls and tlsname config items. (#12770)
+- `datadogexporter`: Send host info when sending hostmetadata from datadogexporter (#12944)
+- `jaegerremotesampling`: extend jaegerremotesampling with remote sampling via gRPC (#6694)
+- `filterprocessor`: Add log filtering based on SeverityNumber (#12959)
+- `hostmetricsreceiver`: Add new resource attribute `process.parent_pid`.  The value of the attribute is the parent PID (#12290)
+- `k8sattributesprocessor`: Add support for discovering Kubernetes DaemonSet name and DaemonSet UID" (#141)
+- `k8sattributesprocessor`: Add support for discovering Kubernetes Job name and Job UID" (#141)
+- `k8sattributesprocessor`: Add support for discovering Kubernetes ReplicaSet name and ReplicaSet UID (#141)
+- `k8sattributesprocessor`: Add support for discovering Kubernetes StatefulSet name and StatefulSet UID" (#141)
+- `loadbalancingexporter`: Exporting trace pipelines based on Service name to avoid duplicate label svc + operation in collector hosts. (#12652)
+- `lokiexporter`: Don't retry on 4xx responses (excluding 429) from loki (#12930)
+- `observers`: Adds multiple observer.Notify subscriber support to observer.EndpointWatcher for multiple Endpoint event consumers. (#10830, #11541, #11544)
+- `filelogreceiver`: Process batches consecutively, rather than one per poll interval (#10285)
+- `postgresqlreceiver`: Client refactor to eventually support resource attributes. (#13087)
+- `postgresqlreceiver`: Adds Index Resource Attribute and Metrics Collection. (#13167)
+  This enhancement will only be enabled with the receiver.postgresql.emitMetricsWithResourceAttributes feature gate being enabled.
+- `pkg/translator/signalfx`: report Histogram min/max when present, do not report sum when not present (#13153)
+- `sigv4authextension`: Added separate region for STS for cross region auth (#12736)
+- `solacereceiver`: Adds topic destination as a new attribute to receiver's spans (#12640)
+- `pkg/telemetryquerylanguage`: Add Getter slices to the TQL parser, allowing them to be specified as function parameters. (#12476)
+
+### 🧰 Bug fixes 🧰
+- `aerospikereceiver`: Fix crash when connecting to an Aerospike server with authentication using a config with collect_cluster_metrics == false and no username or password. (#12979)
+- `apachereceiver`: Fix some partial errors not being correctly reported (#13133)
+- `couchdbreceiver`: Fix some partial errors not being correctly reported (#13007)
+- `signalfxreceiver`: log attempts to divide by zero at the debug level (#12969)
+- `mongodbreceiver`: Fix partial scraper errors not being reported (#13108)
+- `mysqlreceiver`: Fix some partial errors not being correctly reported (#13009)
+- `tailsamplingprocessor`: Fixing null pointer exception for span count sampling strategy. (#12745)
+
+
 # v0.57.2
 
 ## 🛑 Breaking changes 🛑

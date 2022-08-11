@@ -65,7 +65,9 @@ func (f factory) createLogsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		next,
 		transformer.processLogs,
@@ -84,7 +86,9 @@ func (f factory) createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		next,
 		transformer.processMetrics,
@@ -103,7 +107,9 @@ func (f factory) createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		next,
 		transformer.processTraces,

@@ -277,9 +277,9 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
 			registry := featuregate.GetRegistry()
-			registry.Apply(map[string]bool{
+			require.NoError(t, registry.Apply(map[string]bool{
 				enableHistogramSupportGateID: test.histogramSupportEnabled,
-			})
+			}))
 			// next stores the results of the filter metric processor
 			next := new(consumertest.MetricsSink)
 			cfg := &Config{

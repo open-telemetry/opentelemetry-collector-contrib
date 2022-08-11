@@ -169,7 +169,7 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice,
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
 
-		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), flagsValue(dp.FlagsStruct()))
+		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), flagsValue(dp.Flags()))
 		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewHistogramDataPointSlice()
@@ -183,7 +183,7 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]interface{}, 0, 4)
-		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), flagsValue(dp.FlagsStruct()), dp.Negative().Offset(),
+		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), flagsValue(dp.Flags()), dp.Negative().Offset(),
 			dp.Positive().Offset())
 		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {

@@ -33,18 +33,16 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func newTracesExporter(
-	config *Config,
-	params component.ExporterCreateSettings,
-) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := &jaegerThriftHTTPSender{
 		config:   config,
 		settings: params.TelemetrySettings,
 	}
 
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		params,
+		config,
 		s.pushTraceData,
 		exporterhelper.WithStart(s.start),
 	)

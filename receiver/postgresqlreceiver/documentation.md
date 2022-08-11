@@ -12,6 +12,8 @@ These are the metrics available for this scraper.
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
+| **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
@@ -30,6 +32,7 @@ metrics:
 | Name | Description | Type |
 | ---- | ----------- | ---- |
 | postgresql.database.name | The name of the database. | String |
+| postgresql.index.name | The name of the index on a table. | String |
 | postgresql.table.name | The schema name followed by the table name. | String |
 
 ## Metric attributes
