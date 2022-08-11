@@ -1,10 +1,10 @@
 ## Dotnet Diagnostics Receiver
 
-| Status                   |            |
-| ------------------------ |------------|
-| Stability                | [alpha]    |
-| Supported pipeline types | metrics    |
-| Distributions            | [contrib]  |
+| Status                   |                |
+| ------------------------ |----------------|
+| Stability                | [unmaintained] |
+| Supported pipeline types | metrics        |
+| Distributions            | [contrib]      |
 
 This receiver provides a capability similar to the
 [dotnet-counters](https://docs.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters)
@@ -106,15 +106,11 @@ service:
 This receiver is compatible with .NET Core 3.0 and later versions, running on Linux or
 macOS. Windows is not yet supported.
 
-#### Current Status
-
-This receiver is _beta_. It has been tested on macOS and Linux with .NET v3.1.
-
 #### External Resources
 
 https://github.com/dotnet/diagnostics/blob/master/documentation/design-docs/ipc-protocol.md
 
 https://github.com/Microsoft/perfview/blob/main/src/TraceEvent/EventPipe/EventPipeFormat.md
 
-[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
+[unmaintained]: https://github.com/open-telemetry/opentelemetry-collector#unmaintained
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
