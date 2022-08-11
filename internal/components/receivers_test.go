@@ -82,6 +82,9 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
 		},
 		{
+			receiver: "azureeventhub",
+		},
+		{
 			receiver: "bigip",
 		},
 		{
@@ -129,11 +132,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"include": []string{
-						filepath.Join(t.TempDir(), "*"),
-					},
-				}
+				cfg.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
 		},

@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -355,7 +354,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			rcv.handleDatapointReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -530,7 +529,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			rcv.handleEventReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -673,7 +672,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			rcv.handleDatapointReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -750,7 +749,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.handleEventReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string

@@ -17,7 +17,7 @@ package splunkhecexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"testing"
 	"time"
@@ -571,7 +571,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			md := tt.metricsDataFn()
 			cfg := tt.configFn()
 			gotMetrics := mapMetricToSplunkEvent(res, md, cfg, zap.NewNop())
-			encoder := json.NewEncoder(ioutil.Discard)
+			encoder := json.NewEncoder(io.Discard)
 			for i, want := range tt.wantSplunkMetrics {
 				assert.Equal(t, want, gotMetrics[i])
 				err := encoder.Encode(gotMetrics[i])

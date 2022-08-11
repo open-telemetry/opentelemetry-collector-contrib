@@ -4,6 +4,8 @@ This guide is specific to the transform processor.  All guidelines in [Collector
 
 ## New Functions
 
+If a new function is not specific to the transform processor it should be added to the [telemetry query language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage) instead.
+
 All new functions must be added via a new file.  Function files must start with `func_`.  Functions that are usable in multiple pipelines must be placed in `internal/common`.  Functions that are specific to a pipeline must be placed in `internal/<pipeline>`.
 
 New functions must update the appropriate registry.  For common functions, update the registry in `internal/common/functions.go`.  For pipeline-specific functions, update the registry in `internal/<pipeline>/functions.go`

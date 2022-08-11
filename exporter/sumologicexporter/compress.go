@@ -20,7 +20,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 )
 
 type compressor struct {
@@ -43,9 +42,9 @@ func newCompressor(format CompressEncodingType) (compressor, error) {
 
 	switch format {
 	case GZIPCompression:
-		writer = gzip.NewWriter(ioutil.Discard)
+		writer = gzip.NewWriter(io.Discard)
 	case DeflateCompression:
-		writer, err = flate.NewWriter(ioutil.Discard, flate.BestSpeed)
+		writer, err = flate.NewWriter(io.Discard, flate.BestSpeed)
 		if err != nil {
 			return compressor{}, err
 		}

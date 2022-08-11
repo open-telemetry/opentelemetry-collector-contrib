@@ -31,6 +31,10 @@ For logs:
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `severity_texts`: SeverityTexts defines a list of possible severity texts to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `bodies`: Bodies defines a list of possible log bodies to match the logs against.
+  A match occurs if the record matches any expression in this given list.
 
 For metrics:
 
@@ -76,15 +80,29 @@ processors:
           - Key: host.name
             Value: just_this_one_hostname
     logs/regexp:
+      include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
     logs/regexp_record:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
+    logs/severity:
+      include:
+        match_type: regexp
+        severity_texts:
+        - INFO[2-4]?
+        - WARN[2-4]?
+        - ERROR[2-4]?
+    logs/bodies:
+      include:
+        match_type: regexp
+        bodies:
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed

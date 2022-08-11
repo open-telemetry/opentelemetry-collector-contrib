@@ -108,7 +108,7 @@ func newObserver(config *Config, telemetrySettings component.TelemetrySettings) 
 	}
 	h := &handler{idNamespace: config.ID().String(), endpoints: &sync.Map{}, logger: telemetrySettings.Logger}
 	obs := &k8sObserver{
-		EndpointsWatcher:  &observer.EndpointsWatcher{Endpointslister: h, RefreshInterval: time.Second},
+		EndpointsWatcher:  observer.NewEndpointsWatcher(h, time.Second, telemetrySettings.Logger),
 		telemetry:         telemetrySettings,
 		podListerWatcher:  podListerWatcher,
 		nodeListerWatcher: nodeListerWatcher,

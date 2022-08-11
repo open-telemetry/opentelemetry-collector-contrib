@@ -1,15 +1,15 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/grobie/gomemcache v0.0.0-20180201122607-1f779c573665
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.57.2
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
-	go.uber.org/zap v1.21.0
+	go.opentelemetry.io/collector v0.58.0
+	go.opentelemetry.io/collector/pdata v0.58.0
+	go.uber.org/zap v1.22.0
 )
 
 require (
@@ -17,7 +17,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.0-beta.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/go-connections v0.4.1-0.20210727194412-58542c764a11 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -40,9 +40,9 @@ require (
 	github.com/rogpeppe/go-internal v1.6.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.8.0 // indirect
+	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.8.0 // indirect
+	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect

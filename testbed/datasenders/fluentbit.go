@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"strconv"
@@ -43,12 +42,12 @@ var _ testbed.LogDataSender = (*FluentBitFileLogWriter)(nil)
 // NewFluentBitFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
 func NewFluentBitFileLogWriter(host string, port int) *FluentBitFileLogWriter {
-	file, err := ioutil.TempFile("", "perf-logs.json")
+	file, err := os.CreateTemp("", "perf-logs.json")
 	if err != nil {
 		panic("failed to create temp file")
 	}
 
-	parsersFile, err := ioutil.TempFile("", "parsers.json")
+	parsersFile, err := os.CreateTemp("", "parsers.json")
 	if err != nil {
 		panic("failed to create temp file")
 	}

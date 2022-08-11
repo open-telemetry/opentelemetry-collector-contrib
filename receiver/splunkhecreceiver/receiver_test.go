@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -308,7 +307,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			r.handleReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -335,7 +334,7 @@ func Test_consumer_err(t *testing.T) {
 	r.handleReq(w, req)
 
 	resp := w.Result()
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
 	var bodyStr string
@@ -362,7 +361,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	r.handleReq(w, req)
 
 	resp := w.Result()
-	respBytes, err := ioutil.ReadAll(resp.Body)
+	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
 	var bodyStr string
@@ -564,7 +563,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.handleReq(w, req)
 				resp := w.Result()
-				_, err = ioutil.ReadAll(resp.Body)
+				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
 				exporter, err := factory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), exporterConfig)
@@ -576,7 +575,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.handleReq(w, req)
 				resp := w.Result()
-				_, err = ioutil.ReadAll(resp.Body)
+				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			}
 
@@ -618,7 +617,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			receivedSplunkLogs := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				body, err := ioutil.ReadAll(req.Body)
+				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
 				rw.WriteHeader(http.StatusAccepted)
 				receivedSplunkLogs <- body
@@ -668,7 +667,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.handleReq(w, req)
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -711,7 +710,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 			receivedSplunkMetrics := make(chan []byte)
 			endServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-				body, err := ioutil.ReadAll(req.Body)
+				body, err := io.ReadAll(req.Body)
 				assert.NoError(t, err)
 				rw.WriteHeader(http.StatusAccepted)
 				receivedSplunkMetrics <- body
@@ -762,7 +761,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.handleReq(w, req)
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -967,7 +966,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			r.handleRawReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -1008,7 +1007,7 @@ func BenchmarkHandleReq(b *testing.B) {
 		r.handleReq(w, req)
 
 		resp := w.Result()
-		_, err = ioutil.ReadAll(resp.Body)
+		_, err = io.ReadAll(resp.Body)
 		assert.NoError(b, err)
 	}
 }

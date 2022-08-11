@@ -149,9 +149,10 @@ func TestTracesSource(t *testing.T) {
 	assert := assert.New(t)
 	params := componenttest.NewNopExporterCreateSettings()
 	reg := featuregate.NewRegistry()
-	reg.Apply(map[string]bool{
+	reg.MustRegister(metadata.HostnamePreviewGate)
+	assert.NoError(reg.Apply(map[string]bool{
 		metadata.HostnamePreviewFeatureGate: true,
-	})
+	}))
 	f := newFactoryWithRegistry(reg)
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
