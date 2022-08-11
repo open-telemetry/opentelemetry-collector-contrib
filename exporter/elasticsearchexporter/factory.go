@@ -74,9 +74,10 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 	)

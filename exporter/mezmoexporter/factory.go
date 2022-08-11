@@ -64,9 +64,10 @@ func createLogsExporter(ctx context.Context, settings component.ExporterCreateSe
 
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
-	return exporterhelper.NewLogsExporter(
-		expCfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		settings,
+		expCfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

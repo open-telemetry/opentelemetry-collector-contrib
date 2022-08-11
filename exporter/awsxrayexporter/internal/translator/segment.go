@@ -270,13 +270,13 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 //
 // A trace ID unique identifier that connects all segments and subsegments
 // originating from a single client request.
-//  * A trace_id consists of three numbers separated by hyphens. For example,
-//    1-58406520-a006649127e371903a2de979. This includes:
-//  * The version number, that is, 1.
-//  * The time of the original request, in Unix epoch time, in 8 hexadecimal digits.
-//  * For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
-//    or 58406520 in hexadecimal.
-//  * A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
+//   - A trace_id consists of three numbers separated by hyphens. For example,
+//     1-58406520-a006649127e371903a2de979. This includes:
+//   - The version number, that is, 1.
+//   - The time of the original request, in Unix epoch time, in 8 hexadecimal digits.
+//   - For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
+//     or 58406520 in hexadecimal.
+//   - A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
 func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than

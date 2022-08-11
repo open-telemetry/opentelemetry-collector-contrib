@@ -28,10 +28,11 @@ const (
 
 // NewFactory creates a factory for ECSObserver extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
+		component.StabilityLevelBeta,
 	)
 }
 

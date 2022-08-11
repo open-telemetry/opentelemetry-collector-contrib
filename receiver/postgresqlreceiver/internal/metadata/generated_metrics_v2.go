@@ -598,6 +598,20 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithPostgresqlDatabaseName sets provided value as "postgresql.database.name" attribute for current resource.
+func WithPostgresqlDatabaseName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.database.name", val)
+	}
+}
+
+// WithPostgresqlTableName sets provided value as "postgresql.table.name" attribute for current resource.
+func WithPostgresqlTableName(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.table.name", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

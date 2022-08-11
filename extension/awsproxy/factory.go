@@ -34,10 +34,11 @@ const (
 
 // NewFactory creates a factory for awsproxy extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
 		createExtension,
+		component.StabilityLevelUndefined,
 	)
 }
 

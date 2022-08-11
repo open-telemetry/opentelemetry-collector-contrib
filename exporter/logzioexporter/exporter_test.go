@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -319,7 +318,7 @@ func gUnzipData(data []byte) (resData []byte, err error) {
 func TestPushTraceData(tester *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		recordedRequests, _ = ioutil.ReadAll(req.Body)
+		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{
@@ -353,7 +352,7 @@ func TestPushTraceData(tester *testing.T) {
 func TestPushLogsData(tester *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		recordedRequests, _ = ioutil.ReadAll(req.Body)
+		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
 	cfg := Config{

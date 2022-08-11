@@ -1,14 +1,14 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/mdatagen
 
-go 1.17
+go 1.18
 
 require (
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.57.2
-	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector v0.58.0
+	go.opentelemetry.io/collector/pdata v0.58.0
 )
 
 require (

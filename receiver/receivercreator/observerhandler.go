@@ -64,6 +64,10 @@ func (obs *observerHandler) shutdown() error {
 	return nil
 }
 
+func (obs *observerHandler) ID() observer.NotifyID {
+	return observer.NotifyID(obs.config.ID().String())
+}
+
 // OnAdd responds to endpoint add notifications.
 func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	obs.Lock()

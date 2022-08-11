@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -49,7 +50,9 @@ func TestMetricsTransformProcessor(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessor(
+				mtp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+					context.Background(),
+					componenttest.NewNopProcessorCreateSettings(),
 					&Config{
 						ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 					},
@@ -120,7 +123,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p.processMetrics)
+	mtp, _ := processorhelper.NewMetricsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &Config{}, consumertest.NewNop(), p.processMetrics)
 
 	b.ResetTimer()
 

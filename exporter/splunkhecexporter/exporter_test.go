@@ -17,7 +17,7 @@ package splunkhecexporter
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -109,7 +109,7 @@ func TestConsumeMetricsData(t *testing.T) {
 			name: "happy_path",
 			md:   smallBatch,
 			reqTestFunc: func(t *testing.T, r *http.Request) {
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -255,7 +255,7 @@ func TestConsumeLogsData(t *testing.T) {
 			name: "happy_path",
 			ld:   smallBatch,
 			reqTestFunc: func(t *testing.T, r *http.Request) {
-				body, err := ioutil.ReadAll(r.Body)
+				body, err := io.ReadAll(r.Body)
 				if err != nil {
 					t.Fatal(err)
 				}
