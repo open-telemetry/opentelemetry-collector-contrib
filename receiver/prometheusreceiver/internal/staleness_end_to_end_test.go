@@ -162,8 +162,10 @@ service:
 	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{confFile.Name()},
-			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{confFile.Name()},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
 		})
 	require.NoError(t, err)
 

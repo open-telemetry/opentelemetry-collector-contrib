@@ -61,7 +61,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -72,9 +72,10 @@ func createTracesExporter(
 	}
 
 	logDeprecation(set.Logger)
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exporter.pushTraceData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithRetry(eCfg.RetrySettings),

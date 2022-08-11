@@ -276,7 +276,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	addSample(tsMap, sample, labels, metric.DataType().String())
@@ -293,7 +293,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -305,7 +305,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -329,7 +329,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
 		}
-		if pt.FlagsStruct().NoRecordedValue() {
+		if pt.Flags().NoRecordedValue() {
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
@@ -342,7 +342,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	infBucket := &prompb.Sample{
 		Timestamp: time,
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
 		if pt.BucketCounts().Len() > 0 {
@@ -459,7 +459,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
@@ -470,7 +470,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.FlagsStruct().NoRecordedValue() {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
@@ -483,7 +483,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			Value:     qt.Value(),
 			Timestamp: time,
 		}
-		if pt.FlagsStruct().NoRecordedValue() {
+		if pt.Flags().NoRecordedValue() {
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)

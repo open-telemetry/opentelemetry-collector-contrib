@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.elastic.co/apm/transport/transporttest"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -40,8 +39,7 @@ func TestTracesExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := componenttest.NewNopExporterCreateSettings()
-	te, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), tt.ToExporterCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
@@ -70,8 +68,7 @@ func TestMetricsExporter(t *testing.T) {
 
 	factory := NewFactory()
 	recorder, cfg := newRecorder(t)
-	params := componenttest.NewNopExporterCreateSettings()
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), tt.ToExporterCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
@@ -98,8 +95,7 @@ func TestMetricsExporterSendError(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.APMServerURL = "http://testing.invalid"
 
-	params := componenttest.NewNopExporterCreateSettings()
-	me, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	me, err := factory.CreateMetricsExporter(context.Background(), tt.ToExporterCreateSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 
