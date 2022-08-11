@@ -7,10 +7,10 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.58.0
 	github.com/prometheus/prometheus v0.37.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/wal v1.1.7

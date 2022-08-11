@@ -4,10 +4,10 @@ go 1.18
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
@@ -33,7 +33,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.57.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.58.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.8.2 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect

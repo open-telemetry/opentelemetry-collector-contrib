@@ -8,9 +8,9 @@ require (
 	github.com/aws/aws-sdk-go v1.44.72
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.13.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
@@ -69,8 +69,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/onsi/gomega v1.10.3 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
