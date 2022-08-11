@@ -211,7 +211,7 @@ type FieldExtractionRule struct {
 	Name string
 	// Key is used to lookup k8s pod fields.
 	Key string
-	// KeyRegex is a regular expression used to extract a Key that matches the regex.
+	// KeyRegex is a regular expression(full length match) used to extract a Key that matches the regex.
 	KeyRegex             *regexp.Regexp
 	HasKeyRegexReference bool
 	// Regex is a regular expression used to extract a sub-part of a field value.
@@ -268,6 +268,19 @@ func (r *FieldExtractionRule) extractField(v string) string {
 		return matches[1]
 	}
 	return ""
+}
+
+// RegexpCompile make pattern fully anchored
+func RegexpCompile(pattern string) (*regexp.Regexp, error) {
+	return regexp.Compile("^(?:" + pattern + ")$")
+}
+
+func RegexpMustCompile(pattern string) *regexp.Regexp {
+	re, err := RegexpCompile(pattern)
+	if err != nil {
+		panic(err)
+	}
+	return re
 }
 
 // Associations represent a list of rules for Pod metadata associations with resources
