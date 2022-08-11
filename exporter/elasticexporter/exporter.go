@@ -45,7 +45,7 @@ func newElasticTracesExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM trace exporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(cfg, set, func(ctx context.Context, traces ptrace.Traces) error {
+	return exporterhelper.NewTracesExporterWithContext(context.TODO(), set, cfg, func(ctx context.Context, traces ptrace.Traces) error {
 		var errs error
 		resourceSpansSlice := traces.ResourceSpans()
 		for i := 0; i < resourceSpansSlice.Len(); i++ {
@@ -65,7 +65,7 @@ func newElasticMetricsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elastic APM metrics exporter: %w", err)
 	}
-	return exporterhelper.NewMetricsExporter(cfg, set, func(ctx context.Context, input pmetric.Metrics) error {
+	return exporterhelper.NewMetricsExporterWithContext(context.TODO(), set, cfg, func(ctx context.Context, input pmetric.Metrics) error {
 		var errs error
 		resourceMetricsSlice := input.ResourceMetrics()
 		for i := 0; i < resourceMetricsSlice.Len(); i++ {

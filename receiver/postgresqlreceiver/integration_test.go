@@ -95,9 +95,9 @@ func TestPostgreSQLIntegration(t *testing.T) {
 		{
 			name: "with_resource_attributes",
 			cfg: func(hostname string) *Config {
-				featuregate.GetRegistry().MustApply(map[string]bool{
+				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID: true,
-				})
+				}))
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
@@ -108,9 +108,9 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				return cfg
 			},
 			cleanup: func() {
-				featuregate.GetRegistry().MustApply(map[string]bool{
+				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID: false,
-				})
+				}))
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_all_with_resource_attributes.json"),
 		},
