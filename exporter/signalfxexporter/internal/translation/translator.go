@@ -503,8 +503,8 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 			}
 
 		case ActionAggregateMetric:
-			// NOTE: Metrics cannot be aggregated across Timestamp, MetricType, Metric or Source fields, so
-			// we need to confirm these match before aggregating.
+			// NOTE: Based on the usage of TranslateDataPoints we can assume that the datapoints batch []*sfxpb.DataPoint
+			// represents only one metric and all the datapoints can be aggregated together.
 			var dpsToAggregate []*sfxpb.DataPoint
 			var otherDps []*sfxpb.DataPoint
 			for i, dp := range processedDataPoints {
@@ -671,69 +671,9 @@ func (mp *MetricTranslator) translateDimension(orig string) string {
 	return orig
 }
 
-// aggregateDatapoints makes sure all Metrics with matching Timestamp, MetricType, Metric and Source fields
-// are aggregated.
-// NOTE: Assumes all input datapoints share metric name.
-func aggregateDatapoints(
-	dps []*sfxpb.DataPoint,
-	withoutDimensions []string,
-	aggregation AggregationMethod,
-) []*sfxpb.DataPoint {
-	if len(dps) == 0 {
-		return nil
-	}
-
-	var aggregatedDatapoints []*sfxpb.DataPoint
-
-	// For every data point, need to find every datapoint it matches, so all matches can be aggregated
-	// together. Datapoints can only be used once.
-	indexUsed := make([]bool, len(dps))
-	for i := range indexUsed {
-		indexUsed[i] = false
-	}
-
-	for i := 0; i < len(dps); i++ {
-		if indexUsed[i] {
-			continue
-		}
-
-		// Current datapoint will be used to find all of its matching datapoints.
-		dpsToAggregate := []*sfxpb.DataPoint{dps[i]}
-		indexUsed[i] = true
-
-		// Only need to check datapoints after current one to see if they match
-		for j := i + 1; j < len(dps); j++ {
-			if indexUsed[j] {
-				continue
-			}
-
-			// Need to ensure nil pointer case is covered. Match they're both nil, or they are set to the same
-			// value.
-			metricTypesMatch := (dpsToAggregate[0].MetricType == nil && dps[j].MetricType == nil) ||
-				(dpsToAggregate[0].MetricType != nil && dps[j].MetricType != nil &&
-				*dpsToAggregate[0].MetricType == *dps[j].MetricType)
-
-			// Datapoints match if they have same name, type, time, and source.
-			if metricTypesMatch &&
-				dpsToAggregate[0].Timestamp == dps[j].Timestamp &&
-				dpsToAggregate[0].Source == dps[j].Source {
-
-				dpsToAggregate = append(dpsToAggregate, dps[j])
-				indexUsed[j] = true
-			}
-		}
-
-		// Aggregate current matching set of datapoints. This will also take care of adding datapoints
-		// that didn't need to be aggregated (no matches found).
-		aggregatedDatapoints = append(aggregatedDatapoints,
-			aggregateMatchingDatapoints(dpsToAggregate, withoutDimensions, aggregation)...)
-	}
-	return aggregatedDatapoints
-}
-
 // aggregateMatchingDatapoints aggregates datapoints assuming that they have
 // the same Timestamp, MetricType, Metric and Source fields.
-func aggregateMatchingDatapoints(
+func aggregateDatapoints(
 	dps []*sfxpb.DataPoint,
 	withoutDimensions []string,
 	aggregation AggregationMethod,

@@ -77,7 +77,7 @@ func NewMetricsConverter(
 // returning those datapoints and the number of time series that had to be
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
-	var sfxDataPoints []*sfxpb.DataPoint
+	var sfxInitialDataPoints, sfxModifiedDataPoints []*sfxpb.DataPoint
 
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
@@ -88,13 +88,13 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
-				sfxDataPoints = append(sfxDataPoints, dps...)
+				sfxInitialDataPoints = append(sfxInitialDataPoints, dps...)
 			}
 		}
+		sfxModifiedDataPoints = append(sfxModifiedDataPoints, c.translateAndFilter(sfxInitialDataPoints)...)
 	}
 
-	sfxDataPoints = c.translateAndFilter(sfxDataPoints)
-	return c.datapointValidator.sanitizeDataPoints(sfxDataPoints)
+	return c.datapointValidator.sanitizeDataPoints(sfxModifiedDataPoints)
 }
 
 func (c *MetricsConverter) translateAndFilter(dps []*sfxpb.DataPoint) []*sfxpb.DataPoint {
