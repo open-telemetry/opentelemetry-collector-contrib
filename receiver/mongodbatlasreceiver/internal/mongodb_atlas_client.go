@@ -601,7 +601,8 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, start, end time.Time) (*bytes.Buffer, error) {
 	buf := bytes.NewBuffer([]byte{})
 
-	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, &mongodbatlas.DateRangetOptions{StartDate: toUnixString(start), EndDate: toUnixString(end)})
+	dateRange := &mongodbatlas.DateRangetOptions{StartDate: toUnixString(start), EndDate: toUnixString(end)}
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, dateRange)
 	if err != nil {
 		return nil, err
 	}

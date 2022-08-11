@@ -109,7 +109,7 @@ func TestValidate(t *testing.T) {
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*Project{
+					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
 							EnableAuditLogs: false,
@@ -128,11 +128,11 @@ func TestValidate(t *testing.T) {
 			expectedErr: errNoProjects.Error(),
 		},
 		{
-			name: "Invalid Project Config",
+			name: "Invalid ProjectConfig",
 			input: Config{
 				Logs: LogConfig{
 					Enabled: true,
-					Projects: []*Project{
+					Projects: []*ProjectConfig{
 						{
 							Name:            "Project1",
 							EnableAuditLogs: false,

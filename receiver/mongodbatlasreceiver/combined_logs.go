@@ -31,14 +31,12 @@ type combindedLogsReceiver struct {
 func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) error {
 	var errs error
 
-	// If we have an alerts receiver start alerts collection
 	if c.alerts != nil {
 		if err := c.alerts.Start(ctx, host); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
 
-	// If we have a logging receiver start log collection
 	if c.logs != nil {
 		if err := c.logs.Start(ctx, host); err != nil {
 			errs = multierror.Append(errs, err)
@@ -52,14 +50,12 @@ func (c *combindedLogsReceiver) Start(ctx context.Context, host component.Host) 
 func (c *combindedLogsReceiver) Shutdown(ctx context.Context) error {
 	var errs error
 
-	// If we have an alerts receiver shutdown alerts collection
 	if c.alerts != nil {
 		if err := c.alerts.Shutdown(ctx); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
 
-	// If we have a logging receiver shutdown log collection
 	if c.logs != nil {
 		if err := c.logs.Shutdown(ctx); err != nil {
 			errs = multierror.Append(errs, err)

@@ -81,7 +81,6 @@ func createCombinedLogReceiver(
 	var err error
 	recv := &combindedLogsReceiver{}
 
-	// If alerts is enabled create alerts receiver
 	if cfg.Alerts.Enabled {
 		recv.alerts, err = newAlertsReceiver(params.Logger, cfg.Alerts, consumer)
 		if err != nil {
@@ -89,7 +88,6 @@ func createCombinedLogReceiver(
 		}
 	}
 
-	// If logs is enabled create logs receiver
 	if cfg.Logs.Enabled {
 		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
 		if err != nil {
@@ -111,7 +109,7 @@ func createDefaultConfig() config.Receiver {
 		},
 		Logs: LogConfig{
 			Enabled:  defaultLogsEnabled,
-			Projects: []*Project{},
+			Projects: []*ProjectConfig{},
 		},
 	}
 }

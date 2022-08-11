@@ -27,15 +27,13 @@ import (
 
 func TestMongoeventToLogData(t *testing.T) {
 	mongoevent := GetTestEvent()
-	r := resourceInfo{
-		Org:      "Org",
-		Project:  mongodbatlas.Project{Name: "Project"},
-		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
-		Hostname: "hostname",
-		LogName:  "logname",
+	pc := ProjectContext{
+		orgName:   "Org",
+		Project:   mongodbatlas.Project{Name: "Project"},
+		projectID: "ID",
 	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), mongoevent, r)
+	ld := mongodbEventToLogData(zap.NewNop(), mongoevent, pc, "hostname", "clusterName", "logName")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	lr := rl.ScopeLogs().At(0)
@@ -45,22 +43,20 @@ func TestMongoeventToLogData(t *testing.T) {
 	assert.Equal(t, attrs.Len(), 9)
 
 	// Count attribute will not be present in the LogData
-	ld = mongodbEventToLogData(zap.NewNop(), mongoevent, r)
+	ld = mongodbEventToLogData(zap.NewNop(), mongoevent, pc, "hostname", "clusterName", "logName")
 	assert.Equal(t, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len(), 9)
 }
 
 func TestUnknownSeverity(t *testing.T) {
 	mongoevent := GetTestEvent()
 	mongoevent.Severity = "Unknown"
-	r := resourceInfo{
-		Org:      "Org",
-		Project:  mongodbatlas.Project{Name: "Project"},
-		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
-		Hostname: "hostname",
-		LogName:  "logname",
+	pc := ProjectContext{
+		orgName:   "Org",
+		Project:   mongodbatlas.Project{Name: "Project"},
+		projectID: "ID",
 	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), mongoevent, r)
+	ld := mongodbEventToLogData(zap.NewNop(), mongoevent, pc, "hostname", "clusterName", "logName")
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
@@ -70,15 +66,13 @@ func TestUnknownSeverity(t *testing.T) {
 
 func TestMongoEventToAuditLogData(t *testing.T) {
 	mongoevent := GetTestAuditEvent()
-	r := resourceInfo{
-		Org:      "Org",
-		Project:  mongodbatlas.Project{Name: "Project"},
-		Cluster:  mongodbatlas.Cluster{Name: "Cluster"},
-		Hostname: "hostname",
-		LogName:  "logname",
+	pc := ProjectContext{
+		orgName:   "Org",
+		Project:   mongodbatlas.Project{Name: "Project"},
+		projectID: "ID",
 	}
 
-	ld := mongodbAuditEventToLogData(zap.NewNop(), mongoevent, r)
+	ld := mongodbAuditEventToLogData(zap.NewNop(), mongoevent, pc, "hostname", "clusterName", "logName")
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	lr := rl.ScopeLogs().At(0)
@@ -87,7 +81,7 @@ func TestMongoEventToAuditLogData(t *testing.T) {
 	assert.Equal(t, resourceAttrs.Len(), 4)
 	assert.Equal(t, 12, attrs.Len())
 
-	ld = mongodbAuditEventToLogData(zap.NewNop(), mongoevent, r)
+	ld = mongodbAuditEventToLogData(zap.NewNop(), mongoevent, pc, "hostname", "clusterName", "logName")
 	assert.Equal(t, 12, ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
 }
 

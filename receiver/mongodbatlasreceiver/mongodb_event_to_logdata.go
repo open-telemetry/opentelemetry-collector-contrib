@@ -51,7 +51,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resourceInfo) plog.Logs {
+func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, pc ProjectContext, hostname, clusterName, logName string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -61,10 +61,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resource
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("mongodb_atlas.org", r.Org)
-	resourceAttrs.InsertString("mongodb_atlas.project", r.Project.Name)
-	resourceAttrs.InsertString("mongodb_atlas.cluster", r.Cluster.Name)
-	resourceAttrs.InsertString("mongodb_atlas.host.name", r.Hostname)
+	resourceAttrs.InsertString("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
 
 	data, err := json.Marshal(e)
 	if err != nil {
@@ -100,7 +100,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resource
 	attrs.InsertString("uuid.binary", e.ID.Binary)
 	attrs.InsertString("uuid.type", e.ID.Type)
 	attrs.InsertInt("result", int64(e.Result))
-	attrs.InsertString("log_name", r.LogName)
+	attrs.InsertString("log_name", logName)
 
 	if e.Param.User != "" {
 		attrs.InsertString("param.user", e.Param.User)
@@ -112,7 +112,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, r resource
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, pc ProjectContext, hostname, clusterName, logName string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -122,10 +122,10 @@ func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo)
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("mongodb_atlas.org", r.Org)
-	resourceAttrs.InsertString("mongodb_atlas.project", r.Project.Name)
-	resourceAttrs.InsertString("mongodb_atlas.cluster", r.Cluster.Name)
-	resourceAttrs.InsertString("mongodb_atlas.host.name", r.Hostname)
+	resourceAttrs.InsertString("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
 
 	data, err := json.Marshal(e)
 	if err != nil {
@@ -159,7 +159,7 @@ func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, r resourceInfo)
 	attrs.InsertString("component", e.Component)
 	attrs.InsertString("context", e.Context)
 	attrs.InsertInt("id", e.ID)
-	attrs.InsertString("log_name", r.LogName)
+	attrs.InsertString("log_name", logName)
 	attrs.InsertString("raw", string(data))
 
 	return ld

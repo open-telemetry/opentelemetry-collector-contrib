@@ -49,11 +49,11 @@ type AlertConfig struct {
 }
 
 type LogConfig struct {
-	Enabled  bool       `mapstructure:"enabled"`
-	Projects []*Project `mapstructure:"projects"`
+	Enabled  bool             `mapstructure:"enabled"`
+	Projects []*ProjectConfig `mapstructure:"projects"`
 }
 
-type Project struct {
+type ProjectConfig struct {
 	Name            string   `mapstructure:"name"`
 	ExcludeClusters []string `mapstructure:"exclude_clusters"`
 	IncludeClusters []string `mapstructure:"include_clusters"`
@@ -83,11 +83,11 @@ func (c *Config) Validate() error {
 }
 
 func (l *LogConfig) validate() error {
-	var errs error
 	if !l.Enabled {
 		return nil
 	}
 
+	var errs error
 	if len(l.Projects) == 0 {
 		errs = multierr.Append(errs, errNoProjects)
 	}
