@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/compute v1.6.1
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.5
-	github.com/aws/aws-sdk-go v1.44.72
+	github.com/aws/aws-sdk-go v1.44.73
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.13.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.57.2
