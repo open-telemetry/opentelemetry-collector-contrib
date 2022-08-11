@@ -147,4 +147,3 @@ metrics:
       aggregation: cumulative
       monotonic: false
       value_type: int 
-    
