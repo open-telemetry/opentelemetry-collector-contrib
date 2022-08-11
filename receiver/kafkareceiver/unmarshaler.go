@@ -77,7 +77,9 @@ func defaultMetricsUnmarshalers() map[string]MetricsUnmarshaler {
 
 func defaultLogsUnmarshalers() map[string]LogsUnmarshaler {
 	otlpPb := newPdataLogsUnmarshaler(plog.NewProtoUnmarshaler(), defaultEncoding)
+	direct := newDirectLogsUnmarshaler("direct")
 	return map[string]LogsUnmarshaler{
 		otlpPb.Encoding(): otlpPb,
+		direct.Encoding(): direct,
 	}
 }
