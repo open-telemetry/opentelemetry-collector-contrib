@@ -16,9 +16,9 @@ List of simple parsers:
 ### Complex Parsers
 
 Complex parsers differ from simple parsers in several ways.
-1. Parsing produces an object, typically containing multiple key/value pairs. The values contained within this object may be strings, ints, arrays, or further objects.
-2. By default, this parsed object will be merged onto the log entry's `attributes` field. In the case of collisions between keys, the newly parsed value will override the previous value. Alternately, [field](../types/field.md) to which the object is written can be configured using the `parse_to` setting.
-3. The configuration may "embed" certain followup operations. Generally, these embedded operations are equivalent to simple parsers. These embedded operations are applied immediately after the primary parsing operation, and only if the primary operation was successful. These operations are executed independently of each other. (e.g. failure to parse a timestamp will not prevent an attempt to parse severity.)
+1. Parsing produces multiple key/value pairs, where the values may be strings, ints, arrays, or objects.
+2. By default, these key/value pairs will be added to log entry's `attributes` field. In the case of collisions between keys, the newly parsed value will override the existing value. Alternately, the [field](../types/field.md) to which the object is written can be configured using the `parse_to` setting.
+3. The configuration may "embed" certain followup operations. Generally, these operations correlate to the simple parsers listed above. Embedded operations are applied immediately after the primary parsing operation, and only if the primary operation was successful. Each embedded operation is executed independently of the others. (e.g. failure to parse a timestamp will not prevent an attempt to parse severity.)
 
 The following examples illustrate how a `json_parser` may embed timestamp and severity parsers.
 
@@ -38,7 +38,7 @@ Consider a simple json log: `{"message":"foo", "ts":"2022-08-10", "sev":"INFO"}`
     parse_from: attributes.sev
 ```
 
-Note that when configuring embedded operations, the primary operation must be assumed to have already been completed. In the above example, the values specified in the `parse_from` fields have taken into account that the `json_parser` will write key/value pairs to `attributes`.
+Note that when configuring embedded operations, it is typically necessary to reference a field that was set by the primary operation. In the above example, the values specified in the `parse_from` fields have taken into account that the `json_parser` will write key/value pairs to `attributes`.
 
 List of complex parsers:
 - [`json_parser`](../operators/json_parser.md)
@@ -53,5 +53,3 @@ List of embeddable operations:
 - [`severity`](./severity.md)
 - [`trace`](./trace.md)
 - [`scope_name`](./scope_name.md)
-
-## TODO link to this doc from parsers & from receivers
