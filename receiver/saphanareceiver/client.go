@@ -122,13 +122,9 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}
-	if err = connector.SetTLSConfig(tls); err != nil {
-		return fmt.Errorf("error setting TLS config for SAP HANA connection: %w", err)
-	}
+	connector.SetTLSConfig(tls)
+	connector.SetApplicationName("OpenTelemetry Collector")
 
-	if err = connector.SetApplicationName("OpenTelemetry Collector"); err != nil {
-		return fmt.Errorf("error setting application name for SAP HANA connection: %w", err)
-	}
 	client := c.connectionFactory.getConnection(connector)
 
 	err = client.PingContext(ctx)
