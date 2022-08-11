@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcente
 go 1.18
 
 require (
-	github.com/vmware/govmomi v0.28.0
+	github.com/vmware/govmomi v0.29.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
 	go.uber.org/multierr v1.8.0
