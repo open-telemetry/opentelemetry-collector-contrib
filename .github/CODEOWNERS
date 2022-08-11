@@ -134,6 +134,7 @@ receiver/awscontainerinsightreceiver/                @open-telemetry/collector-c
 receiver/awsecscontainermetricsreceiver/             @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                        @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsxrayreceiver/                            @open-telemetry/collector-contrib-approvers @willarmiros
+receiver/azureblobreceiver/                          @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
 receiver/bigipreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                             @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/chronyreceiver/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy @jamesmoessis
