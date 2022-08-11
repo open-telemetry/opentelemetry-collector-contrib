@@ -598,13 +598,13 @@ func accessFlags() pathGetSetter {
 		getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.NumberDataPoint).FlagsStruct())
+				return flagsValue(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
 			case pmetric.HistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsStruct())
+				return flagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
 			case pmetric.ExponentialHistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsStruct())
+				return flagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
 			case pmetric.SummaryDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsStruct())
+				return flagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
 			}
 			return nil
 		},
@@ -612,13 +612,13 @@ func accessFlags() pathGetSetter {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.NumberDataPoint).FlagsStruct(), newFlags)
+					setFlagsValue(ctx.GetItem().(pmetric.NumberDataPoint).Flags(), newFlags)
 				case pmetric.HistogramDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsStruct(), newFlags)
+					setFlagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).Flags(), newFlags)
 				case pmetric.ExponentialHistogramDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsStruct(), newFlags)
+					setFlagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags(), newFlags)
 				case pmetric.SummaryDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsStruct(), newFlags)
+					setFlagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).Flags(), newFlags)
 				}
 			}
 		},

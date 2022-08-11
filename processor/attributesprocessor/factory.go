@@ -56,8 +56,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -78,15 +78,17 @@ func createTracesProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newSpanAttributesProcessor(params.Logger, attrProc, include, exclude).processTraces,
+		newSpanAttributesProcessor(set.Logger, attrProc, include, exclude).processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(
-	_ context.Context,
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
@@ -109,7 +111,9 @@ func createLogsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		newLogAttributesProcessor(set.Logger, attrProc, include, exclude).processLogs,
@@ -117,8 +121,8 @@ func createLogsProcessor(
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -143,9 +147,11 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(params.Logger, attrProc, include, exclude).processMetrics,
+		newMetricAttributesProcessor(set.Logger, attrProc, include, exclude).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

@@ -15,7 +15,7 @@
 package kubelet
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,11 +31,11 @@ type fakeRestClient struct {
 }
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/stats-summary.json")
+	return os.ReadFile("../../testdata/stats-summary.json")
 }
 
 func (f fakeRestClient) Pods() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/pods.json")
+	return os.ReadFile("../../testdata/pods.json")
 }
 
 func TestMetricAccumulator(t *testing.T) {

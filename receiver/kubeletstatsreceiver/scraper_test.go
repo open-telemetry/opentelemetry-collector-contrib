@@ -17,7 +17,7 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -487,12 +487,12 @@ func (f *fakeRestClient) StatsSummary() ([]byte, error) {
 	if f.statsSummaryFail {
 		return nil, errors.New("")
 	}
-	return ioutil.ReadFile("testdata/stats-summary.json")
+	return os.ReadFile("testdata/stats-summary.json")
 }
 
 func (f *fakeRestClient) Pods() ([]byte, error) {
 	if f.podsFail {
 		return nil, errors.New("")
 	}
-	return ioutil.ReadFile("testdata/pods.json")
+	return os.ReadFile("testdata/pods.json")
 }

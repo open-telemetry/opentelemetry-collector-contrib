@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -52,7 +51,7 @@ func (ar *MockAwsXrayDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics,
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
 	}
-	certs, err := ioutil.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
+	certs, err := os.ReadFile("../mockdatareceivers/mockawsxrayreceiver/server.crt")
 
 	if err != nil {
 		log.Fatalf("Failed to append %q to RootCAs: %v", "../mockdatareceivers/mockawsxrayreceiver/server.crt", err)

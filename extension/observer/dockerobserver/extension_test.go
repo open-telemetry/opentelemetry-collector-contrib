@@ -16,7 +16,7 @@ package dockerobserver
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -32,7 +32,7 @@ import (
 )
 
 func containerJSON(t *testing.T) dtypes.ContainerJSON {
-	containerRaw, err := ioutil.ReadFile(filepath.Join("testdata", "container.json"))
+	containerRaw, err := os.ReadFile(filepath.Join("testdata", "container.json"))
 	require.NoError(t, err)
 
 	var container dtypes.ContainerJSON
