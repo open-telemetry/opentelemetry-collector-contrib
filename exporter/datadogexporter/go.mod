@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.5
-	github.com/aws/aws-sdk-go v1.44.72
+	github.com/aws/aws-sdk-go v1.44.74
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.58.0
@@ -28,7 +28,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.6.1 // indirect
+	cloud.google.com/go/compute v1.8.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
@@ -97,14 +97,14 @@ require (
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
-	golang.org/x/net v0.0.0-20220412020605-290c469a71a5 // indirect
-	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
+	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
+	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20220421151946-72621c1f0bd3 // indirect
+	google.golang.org/genproto v0.0.0-20220804142021-4e6b2dfa6612 // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
