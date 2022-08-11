@@ -3,14 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphan
 go 1.18
 
 require (
-	github.com/SAP/go-hdb v0.105.5
-	go.opentelemetry.io/collector v0.58.0
-	go.uber.org/zap v1.22.0 // indirect
-)
-
-require (
+	github.com/SAP/go-hdb v0.107.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
+	github.com/stretchr/testify v1.8.0
+	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
+	go.uber.org/multierr v1.8.0
 )
 
 require (
@@ -36,6 +34,9 @@ require (
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
@@ -44,12 +45,6 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
-
-require (
-	github.com/stretchr/testify v1.8.0
-	go.uber.org/multierr v1.8.0
-	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest => ../../internal/scrapertest
