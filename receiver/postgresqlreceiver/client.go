@@ -35,6 +35,9 @@ type databaseName string
 // i.e. database1|table2
 type tableIdentifier string
 
+// indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
+type indexIdentifer string
+
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
@@ -42,6 +45,7 @@ type client interface {
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
+	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -307,6 +311,50 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 	return tios, errors
 }
 
+type indexStat struct {
+	index    string
+	table    string
+	database string
+	size     int64
+	scans    int64
+}
+
+func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	query := `SELECT relname, indexrelname,
+	pg_relation_size(indexrelid) AS index_size,
+	idx_scan
+	FROM pg_stat_user_indexes;`
+
+	stats := map[indexIdentifer]indexStat{}
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs []error
+	for rows.Next() {
+		var (
+			table, index          string
+			indexSize, indexScans int64
+		)
+		err := rows.Scan(&table, &index, &indexSize, &indexScans)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		stats[indexKey(database, table, index)] = indexStat{
+			index:    index,
+			table:    table,
+			database: database,
+			size:     indexSize,
+			scans:    indexScans,
+		}
+	}
+	return stats, multierr.Combine(errs...)
+}
+
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
 	query := `SELECT datname FROM pg_database
 	WHERE datistemplate = false;`
@@ -349,4 +397,8 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 
 func tableKey(database, table string) tableIdentifier {
 	return tableIdentifier(fmt.Sprintf("%s|%s", database, table))
+}
+
+func indexKey(database, table, index string) indexIdentifer {
+	return indexIdentifer(fmt.Sprintf("%s|%s|%s", database, table, index))
 }
