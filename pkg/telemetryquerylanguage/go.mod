@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryqu
 go 1.18
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-alpha9
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.58.0
