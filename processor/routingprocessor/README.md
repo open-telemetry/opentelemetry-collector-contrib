@@ -2,9 +2,9 @@
 
 Routes logs, metrics or traces to specific exporters.
 
-This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the trace information to specific exporters based on the value read.
+This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the signal information to specific exporters based on the value read.
 
-This processor *does not* let traces to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one.
+This processor *does not* let signals to continue through the pipeline and will emit a warning in case other processor(s) are defined after this one.
 Similarly, exporters defined as part of the pipeline are not authoritative: if you add an exporter to the pipeline, make sure you add it to this processor *as well*, otherwise it won't be used at all.
 All exporters defined as part of this processor *must also* be defined as part of the pipeline's exporters.
 
