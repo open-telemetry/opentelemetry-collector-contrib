@@ -24,6 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -134,20 +135,20 @@ func TestOnChange(t *testing.T) {
 	}
 
 	// test
-	counter := 0
+	counter := atomic.NewInt64(0)
 	res.onChange(func(endpoints []string) {
-		counter++
+		counter.Inc()
 	})
 	require.NoError(t, res.start(context.Background()))
 	defer func() {
 		require.NoError(t, res.shutdown(context.Background()))
 	}()
-	require.Equal(t, 1, counter)
+	require.Equal(t, int64(1), counter.Load())
 
 	// now, we run it with the same IPs being resolved, which shouldn't trigger a onChange call
 	_, err = res.resolve(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 1, counter)
+	require.Equal(t, int64(1), counter.Load())
 
 	// change what the resolver will resolve and trigger a resolution
 	resolve = []net.IPAddr{
@@ -156,7 +157,7 @@ func TestOnChange(t *testing.T) {
 	}
 	_, err = res.resolve(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, 2, counter)
+	assert.Equal(t, int64(2), counter.Load())
 }
 
 func TestEqualStringSlice(t *testing.T) {
@@ -191,7 +192,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
-	counter := 0
+	counter := atomic.NewInt64(0)
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -207,15 +208,15 @@ func TestPeriodicallyResolve(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter++
+				counter.Inc()
 			}()
 			// for second call, return the second result
-			if counter == 2 {
+			if counter.Load() == 2 {
 				return resolve[1], nil
 			}
 			// for subsequent calls, return the last result, because we need more two periodic results
 			// to confirm that it works as expected.
-			if counter >= 3 {
+			if counter.Load() >= 3 {
 				return resolve[2], nil
 			}
 
@@ -241,7 +242,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, counter, 3)
+	assert.GreaterOrEqual(t, counter.Load(), int64(3))
 	assert.Len(t, res.endpoints, 3)
 }
 
@@ -252,19 +253,19 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 
 	expectedErr := errors.New("some expected error")
 	wg := sync.WaitGroup{}
-	counter := 0
+	counter := atomic.NewInt64(0)
 	resolve := []net.IPAddr{{IP: net.IPv4(127, 0, 0, 1)}}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			counter++
+			counter.Inc()
 
 			// count down at most two times
-			if counter <= 2 {
+			if counter.Load() <= 2 {
 				wg.Done()
 			}
 
 			// for subsequent calls, return the error
-			if counter >= 2 {
+			if counter.Load() >= 2 {
 				return nil, expectedErr
 			}
 
@@ -285,7 +286,7 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, 2, counter)
+	assert.GreaterOrEqual(t, int64(2), counter.Load())
 	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 
