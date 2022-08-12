@@ -5,7 +5,7 @@ change_type: enhancement
 component: prometheusremotewrite
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support disabling tne generation of target info metric in cases where job/instance are not identifying to prevent target metric out of order errors.
+note: Support customization of target_info metric including the ability to disable it
 
 # One or more tracking issues related to the change
 issues: [12300]

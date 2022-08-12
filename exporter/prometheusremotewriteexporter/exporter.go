@@ -82,7 +82,7 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:    &cfg.HTTPClientSettings,
 		settings:          set.TelemetrySettings,
-		disableTargetInfo: cfg.DisableTargetInfoMetric,
+		disableTargetInfo: !cfg.TargetInfo.Enabled,
 	}
 	if cfg.WAL == nil {
 		return prwe, nil
