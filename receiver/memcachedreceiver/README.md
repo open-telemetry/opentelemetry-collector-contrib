@@ -68,20 +68,21 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-1. v0.56.0, July 2022:
+See this [tracking issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815) for more details.
+
+1. Phase 1, v0.56.0, July 2022:
 
 - The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- The old metrics with `direction` attribute are deprecated with a warning.
 - `receiver.memcachedreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
 - `receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
 
-2. v0.58.0, August 2022:
+2. Phase 2, version and date TBD:
 
 - The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
 - `receiver.memcachedreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
 - `receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
 
-3. v0.60.0, September 2022:
+3. Phase 3, version and date TBD:
 
 - The feature gates are removed.
 - The new metrics without `direction` attribute are always emitted.
