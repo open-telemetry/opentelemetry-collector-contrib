@@ -19,20 +19,42 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for aerospikereceiver metrics.
 type MetricsSettings struct {
-	AerospikeNamespaceDiskAvailable    MetricSettings `mapstructure:"aerospike.namespace.disk.available"`
-	AerospikeNamespaceMemoryFree       MetricSettings `mapstructure:"aerospike.namespace.memory.free"`
-	AerospikeNamespaceMemoryUsage      MetricSettings `mapstructure:"aerospike.namespace.memory.usage"`
-	AerospikeNamespaceQueryCount       MetricSettings `mapstructure:"aerospike.namespace.query.count"`
-	AerospikeNamespaceScanCount        MetricSettings `mapstructure:"aerospike.namespace.scan.count"`
-	AerospikeNamespaceTransactionCount MetricSettings `mapstructure:"aerospike.namespace.transaction.count"`
-	AerospikeNodeConnectionCount       MetricSettings `mapstructure:"aerospike.node.connection.count"`
-	AerospikeNodeConnectionOpen        MetricSettings `mapstructure:"aerospike.node.connection.open"`
-	AerospikeNodeMemoryFree            MetricSettings `mapstructure:"aerospike.node.memory.free"`
+	AerospikeNamespaceCompressedRatio                 MetricSettings `mapstructure:"aerospike.namespace.compressed.ratio"`
+	AerospikeNamespaceDiskAvailable                   MetricSettings `mapstructure:"aerospike.namespace.disk.available"`
+	AerospikeNamespaceGeojsonRegionQueryCells         MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query.cells"`
+	AerospikeNamespaceGeojsonRegionQueryFalsePositive MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query.false_positive"`
+	AerospikeNamespaceGeojsonRegionQueryPoints        MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query.points"`
+	AerospikeNamespaceGeojsonRegionQueryRequests      MetricSettings `mapstructure:"aerospike.namespace.geojson.region_query.requests"`
+	AerospikeNamespaceMemoryFree                      MetricSettings `mapstructure:"aerospike.namespace.memory.free"`
+	AerospikeNamespaceMemoryUsage                     MetricSettings `mapstructure:"aerospike.namespace.memory.usage"`
+	AerospikeNamespaceQueryCount                      MetricSettings `mapstructure:"aerospike.namespace.query.count"`
+	AerospikeNamespaceScanCount                       MetricSettings `mapstructure:"aerospike.namespace.scan.count"`
+	AerospikeNamespaceTransactionCount                MetricSettings `mapstructure:"aerospike.namespace.transaction.count"`
+	AerospikeNamespaceUncompressedPercentage          MetricSettings `mapstructure:"aerospike.namespace.uncompressed.percentage"`
+	AerospikeNodeConnectionCount                      MetricSettings `mapstructure:"aerospike.node.connection.count"`
+	AerospikeNodeConnectionOpen                       MetricSettings `mapstructure:"aerospike.node.connection.open"`
+	AerospikeNodeMemoryFree                           MetricSettings `mapstructure:"aerospike.node.memory.free"`
+	AerospikeNodeQueryTracked                         MetricSettings `mapstructure:"aerospike.node.query.tracked"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
+		AerospikeNamespaceCompressedRatio: MetricSettings{
+			Enabled: true,
+		},
 		AerospikeNamespaceDiskAvailable: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceGeojsonRegionQueryCells: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceGeojsonRegionQueryFalsePositive: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceGeojsonRegionQueryPoints: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNamespaceGeojsonRegionQueryRequests: MetricSettings{
 			Enabled: true,
 		},
 		AerospikeNamespaceMemoryFree: MetricSettings{
@@ -50,6 +72,9 @@ func DefaultMetricsSettings() MetricsSettings {
 		AerospikeNamespaceTransactionCount: MetricSettings{
 			Enabled: true,
 		},
+		AerospikeNamespaceUncompressedPercentage: MetricSettings{
+			Enabled: true,
+		},
 		AerospikeNodeConnectionCount: MetricSettings{
 			Enabled: true,
 		},
@@ -57,6 +82,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		AerospikeNodeMemoryFree: MetricSettings{
+			Enabled: true,
+		},
+		AerospikeNodeQueryTracked: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -394,6 +422,55 @@ var MapAttributeTransactionType = map[string]AttributeTransactionType{
 	"write":  AttributeTransactionTypeWrite,
 }
 
+type metricAerospikeNamespaceCompressedRatio struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.compressed.ratio metric with initial data.
+func (m *metricAerospikeNamespaceCompressedRatio) init() {
+	m.data.SetName("aerospike.namespace.compressed.ratio")
+	m.data.SetDescription("Measures the average compressed size to uncompressed size ratio for protocol message data in query responses to the client.")
+	m.data.SetUnit("{compressed/uncompressed}")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricAerospikeNamespaceCompressedRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceCompressedRatio) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceCompressedRatio) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceCompressedRatio(settings MetricSettings) metricAerospikeNamespaceCompressedRatio {
+	m := metricAerospikeNamespaceCompressedRatio{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricAerospikeNamespaceDiskAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -436,6 +513,210 @@ func (m *metricAerospikeNamespaceDiskAvailable) emit(metrics pmetric.MetricSlice
 
 func newMetricAerospikeNamespaceDiskAvailable(settings MetricSettings) metricAerospikeNamespaceDiskAvailable {
 	m := metricAerospikeNamespaceDiskAvailable{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricAerospikeNamespaceGeojsonRegionQueryCells struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.geojson.region_query.cells metric with initial data.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) init() {
+	m.data.SetName("aerospike.namespace.geojson.region_query.cells")
+	m.data.SetDescription("Number of cell coverings for query region queried")
+	m.data.SetUnit("{cells}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryCells) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceGeojsonRegionQueryCells(settings MetricSettings) metricAerospikeNamespaceGeojsonRegionQueryCells {
+	m := metricAerospikeNamespaceGeojsonRegionQueryCells{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricAerospikeNamespaceGeojsonRegionQueryFalsePositive struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.geojson.region_query.false_positive metric with initial data.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) init() {
+	m.data.SetName("aerospike.namespace.geojson.region_query.false_positive")
+	m.data.SetDescription("Number of points outside the region.")
+	m.data.SetUnit("{points}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryFalsePositive) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(settings MetricSettings) metricAerospikeNamespaceGeojsonRegionQueryFalsePositive {
+	m := metricAerospikeNamespaceGeojsonRegionQueryFalsePositive{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricAerospikeNamespaceGeojsonRegionQueryPoints struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.geojson.region_query.points metric with initial data.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) init() {
+	m.data.SetName("aerospike.namespace.geojson.region_query.points")
+	m.data.SetDescription("Number of points within the region.")
+	m.data.SetUnit("{points}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryPoints) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceGeojsonRegionQueryPoints(settings MetricSettings) metricAerospikeNamespaceGeojsonRegionQueryPoints {
+	m := metricAerospikeNamespaceGeojsonRegionQueryPoints{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricAerospikeNamespaceGeojsonRegionQueryRequests struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.geojson.region_query.requests metric with initial data.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) init() {
+	m.data.SetName("aerospike.namespace.geojson.region_query.requests")
+	m.data.SetDescription("Number of geojson queries on the system since the uptime of the node.")
+	m.data.SetUnit("{queries}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceGeojsonRegionQueryRequests) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceGeojsonRegionQueryRequests(settings MetricSettings) metricAerospikeNamespaceGeojsonRegionQueryRequests {
+	m := metricAerospikeNamespaceGeojsonRegionQueryRequests{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -708,6 +989,55 @@ func newMetricAerospikeNamespaceTransactionCount(settings MetricSettings) metric
 	return m
 }
 
+type metricAerospikeNamespaceUncompressedPercentage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.namespace.uncompressed.percentage metric with initial data.
+func (m *metricAerospikeNamespaceUncompressedPercentage) init() {
+	m.data.SetName("aerospike.namespace.uncompressed.percentage")
+	m.data.SetDescription("Measures the percentage of query responses to the client with uncompressed protocol message data.")
+	m.data.SetUnit("%")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricAerospikeNamespaceUncompressedPercentage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNamespaceUncompressedPercentage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNamespaceUncompressedPercentage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNamespaceUncompressedPercentage(settings MetricSettings) metricAerospikeNamespaceUncompressedPercentage {
+	m := metricAerospikeNamespaceUncompressedPercentage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricAerospikeNodeConnectionCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -864,23 +1194,81 @@ func newMetricAerospikeNodeMemoryFree(settings MetricSettings) metricAerospikeNo
 	return m
 }
 
+type metricAerospikeNodeQueryTracked struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills aerospike.node.query.tracked metric with initial data.
+func (m *metricAerospikeNodeQueryTracked) init() {
+	m.data.SetName("aerospike.node.query.tracked")
+	m.data.SetDescription("Number of queries tracked by the system.")
+	m.data.SetUnit("")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricAerospikeNodeQueryTracked) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricAerospikeNodeQueryTracked) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricAerospikeNodeQueryTracked) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricAerospikeNodeQueryTracked(settings MetricSettings) metricAerospikeNodeQueryTracked {
+	m := metricAerospikeNodeQueryTracked{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                          int                 // maximum observed number of metrics per resource.
-	resourceCapacity                         int                 // maximum observed number of resource attributes.
-	metricsBuffer                            pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                component.BuildInfo // contains version information
-	metricAerospikeNamespaceDiskAvailable    metricAerospikeNamespaceDiskAvailable
-	metricAerospikeNamespaceMemoryFree       metricAerospikeNamespaceMemoryFree
-	metricAerospikeNamespaceMemoryUsage      metricAerospikeNamespaceMemoryUsage
-	metricAerospikeNamespaceQueryCount       metricAerospikeNamespaceQueryCount
-	metricAerospikeNamespaceScanCount        metricAerospikeNamespaceScanCount
-	metricAerospikeNamespaceTransactionCount metricAerospikeNamespaceTransactionCount
-	metricAerospikeNodeConnectionCount       metricAerospikeNodeConnectionCount
-	metricAerospikeNodeConnectionOpen        metricAerospikeNodeConnectionOpen
-	metricAerospikeNodeMemoryFree            metricAerospikeNodeMemoryFree
+	startTime                                               pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                                         int                 // maximum observed number of metrics per resource.
+	resourceCapacity                                        int                 // maximum observed number of resource attributes.
+	metricsBuffer                                           pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                                               component.BuildInfo // contains version information
+	metricAerospikeNamespaceCompressedRatio                 metricAerospikeNamespaceCompressedRatio
+	metricAerospikeNamespaceDiskAvailable                   metricAerospikeNamespaceDiskAvailable
+	metricAerospikeNamespaceGeojsonRegionQueryCells         metricAerospikeNamespaceGeojsonRegionQueryCells
+	metricAerospikeNamespaceGeojsonRegionQueryFalsePositive metricAerospikeNamespaceGeojsonRegionQueryFalsePositive
+	metricAerospikeNamespaceGeojsonRegionQueryPoints        metricAerospikeNamespaceGeojsonRegionQueryPoints
+	metricAerospikeNamespaceGeojsonRegionQueryRequests      metricAerospikeNamespaceGeojsonRegionQueryRequests
+	metricAerospikeNamespaceMemoryFree                      metricAerospikeNamespaceMemoryFree
+	metricAerospikeNamespaceMemoryUsage                     metricAerospikeNamespaceMemoryUsage
+	metricAerospikeNamespaceQueryCount                      metricAerospikeNamespaceQueryCount
+	metricAerospikeNamespaceScanCount                       metricAerospikeNamespaceScanCount
+	metricAerospikeNamespaceTransactionCount                metricAerospikeNamespaceTransactionCount
+	metricAerospikeNamespaceUncompressedPercentage          metricAerospikeNamespaceUncompressedPercentage
+	metricAerospikeNodeConnectionCount                      metricAerospikeNodeConnectionCount
+	metricAerospikeNodeConnectionOpen                       metricAerospikeNodeConnectionOpen
+	metricAerospikeNodeMemoryFree                           metricAerospikeNodeMemoryFree
+	metricAerospikeNodeQueryTracked                         metricAerospikeNodeQueryTracked
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -895,18 +1283,25 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                buildInfo,
-		metricAerospikeNamespaceDiskAvailable:    newMetricAerospikeNamespaceDiskAvailable(settings.AerospikeNamespaceDiskAvailable),
-		metricAerospikeNamespaceMemoryFree:       newMetricAerospikeNamespaceMemoryFree(settings.AerospikeNamespaceMemoryFree),
-		metricAerospikeNamespaceMemoryUsage:      newMetricAerospikeNamespaceMemoryUsage(settings.AerospikeNamespaceMemoryUsage),
-		metricAerospikeNamespaceQueryCount:       newMetricAerospikeNamespaceQueryCount(settings.AerospikeNamespaceQueryCount),
-		metricAerospikeNamespaceScanCount:        newMetricAerospikeNamespaceScanCount(settings.AerospikeNamespaceScanCount),
-		metricAerospikeNamespaceTransactionCount: newMetricAerospikeNamespaceTransactionCount(settings.AerospikeNamespaceTransactionCount),
-		metricAerospikeNodeConnectionCount:       newMetricAerospikeNodeConnectionCount(settings.AerospikeNodeConnectionCount),
-		metricAerospikeNodeConnectionOpen:        newMetricAerospikeNodeConnectionOpen(settings.AerospikeNodeConnectionOpen),
-		metricAerospikeNodeMemoryFree:            newMetricAerospikeNodeMemoryFree(settings.AerospikeNodeMemoryFree),
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               buildInfo,
+		metricAerospikeNamespaceCompressedRatio: newMetricAerospikeNamespaceCompressedRatio(settings.AerospikeNamespaceCompressedRatio),
+		metricAerospikeNamespaceDiskAvailable:   newMetricAerospikeNamespaceDiskAvailable(settings.AerospikeNamespaceDiskAvailable),
+		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(settings.AerospikeNamespaceGeojsonRegionQueryCells),
+		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(settings.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
+		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(settings.AerospikeNamespaceGeojsonRegionQueryPoints),
+		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(settings.AerospikeNamespaceGeojsonRegionQueryRequests),
+		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(settings.AerospikeNamespaceMemoryFree),
+		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(settings.AerospikeNamespaceMemoryUsage),
+		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(settings.AerospikeNamespaceQueryCount),
+		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(settings.AerospikeNamespaceScanCount),
+		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(settings.AerospikeNamespaceTransactionCount),
+		metricAerospikeNamespaceUncompressedPercentage:          newMetricAerospikeNamespaceUncompressedPercentage(settings.AerospikeNamespaceUncompressedPercentage),
+		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(settings.AerospikeNodeConnectionCount),
+		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(settings.AerospikeNodeConnectionOpen),
+		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(settings.AerospikeNodeMemoryFree),
+		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(settings.AerospikeNodeQueryTracked),
 	}
 	for _, op := range options {
 		op(mb)
@@ -973,15 +1368,22 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/aerospikereceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricAerospikeNamespaceCompressedRatio.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceDiskAvailable.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceGeojsonRegionQueryCells.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceGeojsonRegionQueryPoints.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceGeojsonRegionQueryRequests.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryFree.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceMemoryUsage.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceQueryCount.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceScanCount.emit(ils.Metrics())
 	mb.metricAerospikeNamespaceTransactionCount.emit(ils.Metrics())
+	mb.metricAerospikeNamespaceUncompressedPercentage.emit(ils.Metrics())
 	mb.metricAerospikeNodeConnectionCount.emit(ils.Metrics())
 	mb.metricAerospikeNodeConnectionOpen.emit(ils.Metrics())
 	mb.metricAerospikeNodeMemoryFree.emit(ils.Metrics())
+	mb.metricAerospikeNodeQueryTracked.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -1001,6 +1403,16 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordAerospikeNamespaceCompressedRatioDataPoint adds a data point to aerospike.namespace.compressed.ratio metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceCompressedRatioDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for AerospikeNamespaceCompressedRatio, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceCompressedRatio.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
 func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -1008,6 +1420,46 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcom
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceDiskAvailable, value was %s: %w", inputVal, err)
 	}
 	mb.metricAerospikeNamespaceDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint adds a data point to aerospike.namespace.geojson.region_query.cells metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryCells, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceGeojsonRegionQueryCells.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint adds a data point to aerospike.namespace.geojson.region_query.false_positive metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryFalsePositive, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint adds a data point to aerospike.namespace.geojson.region_query.points metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryPoints, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceGeojsonRegionQueryPoints.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint adds a data point to aerospike.namespace.geojson.region_query.requests metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryRequests, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceGeojsonRegionQueryRequests.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 
@@ -1061,6 +1513,16 @@ func (mb *MetricsBuilder) RecordAerospikeNamespaceTransactionCountDataPoint(ts p
 	return nil
 }
 
+// RecordAerospikeNamespaceUncompressedPercentageDataPoint adds a data point to aerospike.namespace.uncompressed.percentage metric.
+func (mb *MetricsBuilder) RecordAerospikeNamespaceUncompressedPercentageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseFloat(inputVal, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse float64 for AerospikeNamespaceUncompressedPercentage, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNamespaceUncompressedPercentage.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
 // RecordAerospikeNodeConnectionCountDataPoint adds a data point to aerospike.node.connection.count metric.
 func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -1088,6 +1550,16 @@ func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Time
 		return fmt.Errorf("failed to parse int64 for AerospikeNodeMemoryFree, value was %s: %w", inputVal, err)
 	}
 	mb.metricAerospikeNodeMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordAerospikeNodeQueryTrackedDataPoint adds a data point to aerospike.node.query.tracked metric.
+func (mb *MetricsBuilder) RecordAerospikeNodeQueryTrackedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for AerospikeNodeQueryTracked, value was %s: %w", inputVal, err)
+	}
+	mb.metricAerospikeNodeQueryTracked.recordDataPoint(mb.startTime, ts, val)
 	return nil
 }
 

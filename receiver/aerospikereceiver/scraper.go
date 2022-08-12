@@ -171,6 +171,8 @@ func (r *aerospikeReceiver) emitNode(info map[string]string, now pcommon.Timesta
 			addPartialIfError(errs, r.mb.RecordAerospikeNodeConnectionCountDataPoint(now, v, metadata.AttributeConnectionTypeHeartbeat, metadata.AttributeConnectionOpOpen))
 		case "system_free_mem_pct":
 			addPartialIfError(errs, r.mb.RecordAerospikeNodeMemoryFreeDataPoint(now, v))
+		case "query_tracked":
+			addPartialIfError(errs, r.mb.RecordAerospikeNodeQueryTrackedDataPoint(now, v))
 		}
 	}
 
@@ -329,6 +331,18 @@ func (r *aerospikeReceiver) emitNamespace(info map[string]string, now pcommon.Ti
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultComplete))
 		case "si_query_udf_bg_error":
 			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceQueryCountDataPoint(now, v, metadata.AttributeQueryTypeUdfBackground, metadata.AttributeIndexTypeSecondary, metadata.AttributeQueryResultError))
+
+		// GeoJSON region queries
+		case "geo_region_query_cells":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(now, v))
+		case "geo_region_query_falsepos":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(now, v))
+		case "geo_region_query_points":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(now, v))
+		case "geo_region_query_reqs":
+			addPartialIfError(errs, r.mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(now, v))
+
+		// Compression
 
 		// 'Delete' transactions
 		case "client_delete_error":
