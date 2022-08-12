@@ -74,13 +74,37 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 		return func(ctx TransformContext) bool {
 			a := left.Get(ctx)
 			b := right.Get(ctx)
-			return a == b
+			return compare(a, b, EQ)
 		}, nil
 	case "!=":
 		return func(ctx TransformContext) bool {
 			a := left.Get(ctx)
 			b := right.Get(ctx)
-			return a != b
+			return compare(a, b, NE)
+		}, nil
+	case ">=":
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
+			return compare(a, b, GTE)
+		}, nil
+	case "<=":
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
+			return compare(a, b, LTE)
+		}, nil
+	case ">":
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
+			return compare(a, b, GT)
+		}, nil
+	case "<":
+		return func(ctx TransformContext) bool {
+			a := left.Get(ctx)
+			b := right.Get(ctx)
+			return compare(a, b, LT)
 		}, nil
 	}
 
