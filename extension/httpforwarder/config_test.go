@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//       http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,15 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package basicauthextension
+package httpforwarder
 
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,36 +30,28 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id          config.ComponentID
-		expected    config.Extension
-		expectedErr bool
+		id       config.ComponentID
+		expected config.Extension
 	}{
 		{
-			id:          config.NewComponentID(typeStr),
-			expectedErr: true,
+			id:       config.NewComponentID(typeStr),
+			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			id: config.NewComponentIDWithName(typeStr, "server"),
+			id: config.NewComponentIDWithName(typeStr, "1"),
 			expected: &Config{
 				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				Htpasswd: &HtpasswdSettings{
-					Inline: "username1:password1\nusername2:password2\n",
+				Ingress: confighttp.HTTPServerSettings{
+					Endpoint: "http://localhost:7070",
+				},
+				Egress: confighttp.HTTPClientSettings{
+					Endpoint: "http://target/",
+					Headers: map[string]string{
+						"otel_http_forwarder": "dev",
+					},
+					Timeout: 5 * time.Second,
 				},
 			},
-		},
-		{
-			id: config.NewComponentIDWithName(typeStr, "client"),
-			expected: &Config{
-				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
-				ClientAuth: &ClientAuthSettings{
-					Username: "username",
-					Password: "password",
-				},
-			},
-		},
-		{
-			id:          config.NewComponentIDWithName(typeStr, "both"),
-			expectedErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -69,10 +63,6 @@ func TestLoadConfig(t *testing.T) {
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalExtension(sub, cfg))
-			if tt.expectedErr {
-				assert.Error(t, cfg.Validate())
-				return
-			}
 			assert.NoError(t, cfg.Validate())
 			assert.Equal(t, tt.expected, cfg)
 		})
