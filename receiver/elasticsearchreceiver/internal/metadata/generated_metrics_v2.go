@@ -28,6 +28,8 @@ type MetricsSettings struct {
 	ElasticsearchNodeCacheMemoryUsage        MetricSettings `mapstructure:"elasticsearch.node.cache.memory.usage"`
 	ElasticsearchNodeClusterConnections      MetricSettings `mapstructure:"elasticsearch.node.cluster.connections"`
 	ElasticsearchNodeClusterIo               MetricSettings `mapstructure:"elasticsearch.node.cluster.io"`
+	ElasticsearchNodeClusterIoReceived       MetricSettings `mapstructure:"elasticsearch.node.cluster.io.received"`
+	ElasticsearchNodeClusterIoSent           MetricSettings `mapstructure:"elasticsearch.node.cluster.io.sent"`
 	ElasticsearchNodeDiskIoRead              MetricSettings `mapstructure:"elasticsearch.node.disk.io.read"`
 	ElasticsearchNodeDiskIoWrite             MetricSettings `mapstructure:"elasticsearch.node.disk.io.write"`
 	ElasticsearchNodeDocuments               MetricSettings `mapstructure:"elasticsearch.node.documents"`
@@ -96,6 +98,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchNodeClusterIo: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeClusterIoReceived: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeClusterIoSent: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeDiskIoRead: MetricSettings{
@@ -1076,6 +1084,108 @@ func (m *metricElasticsearchNodeClusterIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricElasticsearchNodeClusterIo(settings MetricSettings) metricElasticsearchNodeClusterIo {
 	m := metricElasticsearchNodeClusterIo{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeClusterIoReceived struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.cluster.io.received metric with initial data.
+func (m *metricElasticsearchNodeClusterIoReceived) init() {
+	m.data.SetName("elasticsearch.node.cluster.io.received")
+	m.data.SetDescription("The number of bytes received on the network for internal cluster communication.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeClusterIoReceived) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeClusterIoReceived) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeClusterIoReceived) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeClusterIoReceived(settings MetricSettings) metricElasticsearchNodeClusterIoReceived {
+	m := metricElasticsearchNodeClusterIoReceived{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeClusterIoSent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.cluster.io.sent metric with initial data.
+func (m *metricElasticsearchNodeClusterIoSent) init() {
+	m.data.SetName("elasticsearch.node.cluster.io.sent")
+	m.data.SetDescription("The number of bytes sent on the network for internal cluster communication.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeClusterIoSent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeClusterIoSent) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeClusterIoSent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeClusterIoSent(settings MetricSettings) metricElasticsearchNodeClusterIoSent {
+	m := metricElasticsearchNodeClusterIoSent{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2783,6 +2893,8 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeCacheMemoryUsage        metricElasticsearchNodeCacheMemoryUsage
 	metricElasticsearchNodeClusterConnections      metricElasticsearchNodeClusterConnections
 	metricElasticsearchNodeClusterIo               metricElasticsearchNodeClusterIo
+	metricElasticsearchNodeClusterIoReceived       metricElasticsearchNodeClusterIoReceived
+	metricElasticsearchNodeClusterIoSent           metricElasticsearchNodeClusterIoSent
 	metricElasticsearchNodeDiskIoRead              metricElasticsearchNodeDiskIoRead
 	metricElasticsearchNodeDiskIoWrite             metricElasticsearchNodeDiskIoWrite
 	metricElasticsearchNodeDocuments               metricElasticsearchNodeDocuments
@@ -2844,6 +2956,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeCacheMemoryUsage:        newMetricElasticsearchNodeCacheMemoryUsage(settings.ElasticsearchNodeCacheMemoryUsage),
 		metricElasticsearchNodeClusterConnections:      newMetricElasticsearchNodeClusterConnections(settings.ElasticsearchNodeClusterConnections),
 		metricElasticsearchNodeClusterIo:               newMetricElasticsearchNodeClusterIo(settings.ElasticsearchNodeClusterIo),
+		metricElasticsearchNodeClusterIoReceived:       newMetricElasticsearchNodeClusterIoReceived(settings.ElasticsearchNodeClusterIoReceived),
+		metricElasticsearchNodeClusterIoSent:           newMetricElasticsearchNodeClusterIoSent(settings.ElasticsearchNodeClusterIoSent),
 		metricElasticsearchNodeDiskIoRead:              newMetricElasticsearchNodeDiskIoRead(settings.ElasticsearchNodeDiskIoRead),
 		metricElasticsearchNodeDiskIoWrite:             newMetricElasticsearchNodeDiskIoWrite(settings.ElasticsearchNodeDiskIoWrite),
 		metricElasticsearchNodeDocuments:               newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
@@ -2954,6 +3068,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeCacheMemoryUsage.emit(ils.Metrics())
 	mb.metricElasticsearchNodeClusterConnections.emit(ils.Metrics())
 	mb.metricElasticsearchNodeClusterIo.emit(ils.Metrics())
+	mb.metricElasticsearchNodeClusterIoReceived.emit(ils.Metrics())
+	mb.metricElasticsearchNodeClusterIoSent.emit(ils.Metrics())
 	mb.metricElasticsearchNodeDiskIoRead.emit(ils.Metrics())
 	mb.metricElasticsearchNodeDiskIoWrite.emit(ils.Metrics())
 	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
@@ -3059,6 +3175,16 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
 	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+}
+
+// RecordElasticsearchNodeClusterIoReceivedDataPoint adds a data point to elasticsearch.node.cluster.io.received metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoReceivedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeClusterIoReceived.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeClusterIoSentDataPoint adds a data point to elasticsearch.node.cluster.io.sent metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoSentDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeClusterIoSent.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeDiskIoReadDataPoint adds a data point to elasticsearch.node.disk.io.read metric.
