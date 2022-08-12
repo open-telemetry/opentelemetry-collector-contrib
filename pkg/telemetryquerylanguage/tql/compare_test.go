@@ -32,6 +32,12 @@ var (
 	nilpt *bool    = nil
 )
 
+// This is one giant table-driven test that is designed to check almost all of the possibilities for
+// comparing two different kinds of items. Each test compares two objects of any type using all
+// of the comparison operators, and has a hand-constructed list of expected values.
+// The test is not *quite* exhaustive, but it does attempt to check every basic type against
+// every other basic type, and includes a pretty good set of tests on the pointers to all the
+// basic types as well.
 func Test_compare(t *testing.T) {
 	tests := []struct {
 		name string
@@ -47,6 +53,20 @@ func Test_compare(t *testing.T) {
 		{"identity float64", f64a, f64a, []bool{true, false, false, true, true, false}},
 		{"identity bytes", ba, ba, []bool{true, false, false, true, true, false}},
 		{"identity nil", nil, nil, []bool{true, false, false, true, true, false}},
+
+		{"identity string *string", sa, &sa, []bool{true, false, false, true, true, false}},
+		{"identity int *int", ia, &ia, []bool{true, false, false, true, true, false}},
+		{"identity int32 *int32", i32a, &i32a, []bool{true, false, false, true, true, false}},
+		{"identity int64 *int64", i64a, &i64a, []bool{true, false, false, true, true, false}},
+		{"identity float32 *float32", f32a, &f32a, []bool{true, false, false, true, true, false}},
+		{"identity float64 *float64", f64a, &f64a, []bool{true, false, false, true, true, false}},
+
+		{"identity *string string", &sa, sa, []bool{true, false, false, true, true, false}},
+		{"identity *int int", &ia, ia, []bool{true, false, false, true, true, false}},
+		{"identity *int32 int32", &i32a, i32a, []bool{true, false, false, true, true, false}},
+		{"identity *int64 int64", &i64a, i64a, []bool{true, false, false, true, true, false}},
+		{"identity *float32 float32", &f32a, f32a, []bool{true, false, false, true, true, false}},
+		{"identity *float64 float64", &f64a, f64a, []bool{true, false, false, true, true, false}},
 
 		{"diff strings", sa, sb, []bool{false, true, true, true, false, false}},
 		{"string bytes", sa, ba, []bool{false, true, false, false, false, false}},
@@ -72,6 +92,7 @@ func Test_compare(t *testing.T) {
 		{"true false", tb, ta, []bool{false, true, false, false, true, true}},
 		{"true true", ta, ta, []bool{true, false, false, true, true, false}},
 		{"false false", ta, ta, []bool{true, false, false, true, true, false}},
+		{"true *true", ta, &ta, []bool{true, false, false, true, true, false}},
 
 		{"bool string", ta, sa, []bool{false, true, false, false, false, false}},
 		{"bool int", ta, ia, []bool{false, true, false, false, false, false}},
@@ -153,6 +174,7 @@ func Test_compare(t *testing.T) {
 }
 
 // Benchmarks -- these benchmarks compare the performance of comparisons of a variety of data types.
+// It's not attempting to be exhaustive, but again, it hits most of the major types and combinations.
 // The summary is that they're pretty fast; all the calls to compare are 10 ns/op or less on a 2019 intel
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt(b *testing.B) {
