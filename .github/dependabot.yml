@@ -439,6 +439,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/resourcehasherprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/resourceprocessor"
     schedule:
       interval: "weekly"

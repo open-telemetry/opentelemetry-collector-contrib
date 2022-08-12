@@ -50,6 +50,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension v0.0.0-00010101000000-000000000000
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.52.0
@@ -59,7 +60,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.52.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.52.0
@@ -72,6 +73,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.52.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcehasherprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor v0.52.0
@@ -211,6 +213,7 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
+	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
@@ -366,7 +369,6 @@ require (
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/observiq/ctimefmt v1.0.0 // indirect
 	github.com/olivere/elastic v6.2.37+incompatible // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/lumigoauthextension v0.0.0-00010101000000-000000000000 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.52.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.52.0 // indirect
@@ -484,7 +486,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20220507011949-2cf3adece122 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
@@ -508,7 +510,7 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
 	gotest.tools/v3 v3.1.0 // indirect
 	k8s.io/api v0.24.0 // indirect
@@ -721,6 +723,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/metr
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ./processor/probabilisticsamplerprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor => ./processor/resourcedetectionprocessor/
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcehasherprocessor => ./processor/resourcehasherprocessor/
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor => ./processor/resourceprocessor/
 

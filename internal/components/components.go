@@ -93,6 +93,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcehasherprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourceprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
@@ -321,6 +322,7 @@ func Components() (component.Factories, error) {
 		metricsgenerationprocessor.NewFactory(),
 		probabilisticsamplerprocessor.NewFactory(),
 		resourcedetectionprocessor.NewFactory(),
+		resourcehasherprocessor.NewFactory(),
 		resourceprocessor.NewFactory(),
 		routingprocessor.NewFactory(),
 		tailsamplingprocessor.NewFactory(),
