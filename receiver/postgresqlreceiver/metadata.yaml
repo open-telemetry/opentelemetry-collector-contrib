@@ -55,6 +55,15 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database]
+  postgresql.database.count:
+    attributes: []
+    description: Number of user databases.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{databases}"
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -116,3 +125,29 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database]
+  postgresql.table.count:
+    attributes: []
+    description: Number of user tables in a database.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+  postgresql.table.size:
+    attributes: []
+    description: Disk space used by a table.
+    enabled: true
+    unit: By
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+  postgresql.table.vacuum.count:
+    attributes: []
+    description: Number of times a table has manually been vacuumed.
+    enabled: true
+    unit: "{vacuums}"
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int 
