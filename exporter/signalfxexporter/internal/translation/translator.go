@@ -671,7 +671,7 @@ func (mp *MetricTranslator) translateDimension(orig string) string {
 	return orig
 }
 
-// aggregateMatchingDatapoints aggregates datapoints assuming that they have
+// aggregateDatapoints aggregates datapoints assuming that they have
 // the same Timestamp, MetricType, Metric and Source fields.
 func aggregateDatapoints(
 	dps []*sfxpb.DataPoint,
