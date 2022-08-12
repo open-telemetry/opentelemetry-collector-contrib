@@ -78,9 +78,6 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		if len(data) == 0 {
-			logger.Warn("Log Entry raw data is empty" + logName + string(data))
-		}
 		lr.Body().SetStringVal(string(data))
 		// Since Audit Logs don't have a severity/level
 		// Set the "SeverityNumber" and "SeverityText" to INFO
@@ -137,9 +134,6 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		if len(data) == 0 {
-			logger.Warn(string(data))
-		}
 		lr.Body().SetStringVal(string(data))
 		// Set the "SeverityNumber" and "SeverityText" if a known type of
 		// severity is found.
