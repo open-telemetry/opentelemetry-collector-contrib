@@ -176,41 +176,41 @@ metrics:
       input_type: string
       monotonic: true
       aggregation: cumulative
-  aerospike.namespace.geojson.region_query.cells:
+  aerospike.namespace.geojson.region_query_cells:
     enabled: true
     description: Number of cell coverings for query region queried
     unit: '{cells}'
-    extended_documentation: Number of cell coverings for query region queried
+    extended_documentation: Number of cell coverings for query region queried. Aerospike metric geo_region_query_cells.
     sum:
       value_type: int
       input_type: string
       monotonic: true
       aggregation: cumulative
-  aerospike.namespace.geojson.region_query.false_positive:
+  aerospike.namespace.geojson.region_query_false_positive:
     enabled: true
     description: Number of points outside the region.
     unit: '{points}'
-    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos.
+    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_regio_query_falspos.
     sum:
       value_type: int
       input_type: string
       monotonic: true
       aggregation: cumulative
-  aerospike.namespace.geojson.region_query.points:
+  aerospike.namespace.geojson.region_query_points:
     enabled: true
     description: Number of points within the region.
     unit: '{points}'
-    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos.
+    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_points.
     sum:
       value_type: int
       input_type: string
       monotonic: true
       aggregation: cumulative
-  aerospike.namespace.geojson.region_query.requests:
+  aerospike.namespace.geojson.region_query_requests:
     enabled: true
     description: Number of geojson queries on the system since the uptime of the node.
     unit: '{queries}'
-    extended_documentation: Number of geojson queries on the system since the uptime of the node.
+    extended_documentation: Number of geojson queries on the system since the uptime of the node. Aerospike metric geo_region_query_reqs.
     sum:
       value_type: int
       input_type: string
