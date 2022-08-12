@@ -171,6 +171,11 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
 }
 
+func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*bgStat), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
