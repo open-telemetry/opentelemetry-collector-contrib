@@ -27,7 +27,7 @@ import (
 
 const (
 	// Number of log attributes to add to the plog.LogRecordSlice.
-	totalLogAttributes = 5
+	totalLogAttributes = 11
 
 	// Number of resource attributes to add to the plog.ResourceLogs.
 	totalResourceAttributes = 4
@@ -51,11 +51,10 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, pc ProjectContext, hostname, clusterName, logName string) plog.Logs {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
-	lr := sl.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
@@ -65,58 +64,57 @@ func mongodbAuditEventToLogData(logger *zap.Logger, e model.AuditLog, pc Project
 	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
 	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.InsertString("mongodb_atlas.log.name", logName)
 
-	data, err := json.Marshal(e)
-	if err != nil {
-		logger.Warn("failed to marshal", zap.Error(err))
-	}
-
-	t, err := time.Parse(layout, e.Timestamp.Date)
-	if err != nil {
-		logger.Warn("Time failed to parse correctly", zap.Error(err))
-	}
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
-	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	// Insert Raw Log message into Body of LogRecord
-	lr.Body().SetStringVal(string(data))
-
-	// Since Audit Logs don't have a severity/level
-	// Set the "SeverityNumber" and "SeverityText" to INFO
-	lr.SetSeverityNumber(plog.SeverityNumberINFO)
-	lr.SetSeverityText("INFO")
-
-	attrs := lr.Attributes()
-	attrs.EnsureCapacity(totalLogAttributes)
-
-	if e.AuthType != "" {
-		attrs.InsertString("authtype", e.AuthType)
-	}
-
-	attrs.InsertString("local.ip", e.Local.IP)
-	attrs.InsertInt("local.port", int64(e.Local.Port))
-	attrs.InsertString("remote.ip", e.Remote.IP)
-	attrs.InsertInt("remote.port", int64(e.Remote.Port))
-	attrs.InsertString("uuid.binary", e.ID.Binary)
-	attrs.InsertString("uuid.type", e.ID.Type)
-	attrs.InsertInt("result", int64(e.Result))
-	attrs.InsertString("log_name", logName)
-
-	if e.Param.User != "" {
-		attrs.InsertString("param.user", e.Param.User)
-		attrs.InsertString("param.database", e.Param.Database)
-		attrs.InsertString("param.mechanism", e.Param.Mechanism)
+	lr := sl.LogRecords().AppendEmpty()
+	for _, log := range logs {
+		data, err := json.Marshal(log)
+		if err != nil {
+			logger.Warn("failed to marshal", zap.Error(err))
+		}
+		t, err := time.Parse(layout, log.Timestamp.Date)
+		if err != nil {
+			logger.Warn("Time failed to parse correctly", zap.Error(err))
+		}
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		// Insert Raw Log message into Body of LogRecord
+		if len(data) == 0 {
+			logger.Warn("Log Entry raw data is empty" + logName + string(data))
+		}
+		lr.Body().SetStringVal(string(data))
+		// Since Audit Logs don't have a severity/level
+		// Set the "SeverityNumber" and "SeverityText" to INFO
+		lr.SetSeverityNumber(plog.SeverityNumberINFO)
+		lr.SetSeverityText("INFO")
+		attrs := lr.Attributes()
+		attrs.EnsureCapacity(totalLogAttributes)
+		if log.AuthType != "" {
+			attrs.InsertString("authtype", log.AuthType)
+		}
+		attrs.InsertString("local.ip", log.Local.IP)
+		attrs.InsertInt("local.port", int64(log.Local.Port))
+		attrs.InsertString("remote.ip", log.Remote.IP)
+		attrs.InsertInt("remote.port", int64(log.Remote.Port))
+		attrs.InsertString("uuid.binary", log.ID.Binary)
+		attrs.InsertString("uuid.type", log.ID.Type)
+		attrs.InsertInt("result", int64(log.Result))
+		attrs.InsertString("log_name", logName)
+		if log.Param.User != "" {
+			attrs.InsertString("param.user", log.Param.User)
+			attrs.InsertString("param.database", log.Param.Database)
+			attrs.InsertString("param.mechanism", log.Param.Mechanism)
+		}
 	}
 
 	return ld
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, pc ProjectContext, hostname, clusterName, logName string) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName, clusterName string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
-	lr := sl.LogRecords().AppendEmpty()
 
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
@@ -126,41 +124,40 @@ func mongodbEventToLogData(logger *zap.Logger, e model.LogEntry, pc ProjectConte
 	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
 	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.InsertString("mongodb_atlas.log.name", logName)
 
-	data, err := json.Marshal(e)
-	if err != nil {
-		logger.Warn("failed to marshal", zap.Error(err))
+	lr := sl.LogRecords().AppendEmpty()
+	for _, log := range logs {
+		data, err := json.Marshal(log)
+		if err != nil {
+			logger.Warn("failed to marshal", zap.Error(err))
+		}
+		t, err := time.Parse(layout, log.Timestamp.Date)
+		if err != nil {
+			logger.Warn("Time failed to parse correctly", zap.Error(err))
+		}
+		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
+		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		// Insert Raw Log message into Body of LogRecord
+		lr.Body().SetStringVal(string(data))
+		// Set the "SeverityNumber" and "SeverityText" if a known type of
+		// severity is found.
+		if severityNumber, ok := severityMap[log.Severity]; ok {
+			lr.SetSeverityNumber(severityNumber)
+			lr.SetSeverityText(log.Severity)
+		} else {
+			logger.Debug("unknown severity type", zap.String("type", log.Severity))
+		}
+		attrs := lr.Attributes()
+		attrs.EnsureCapacity(totalLogAttributes)
+		pcommon.NewMapFromRaw(log.Attributes).CopyTo(attrs)
+		attrs.InsertString("message", log.Message)
+		attrs.InsertString("component", log.Component)
+		attrs.InsertString("context", log.Context)
+		attrs.InsertInt("id", log.ID)
+		attrs.InsertString("log_name", logName)
+		attrs.InsertString("raw", string(data))
 	}
-
-	t, err := time.Parse(layout, e.Timestamp.Date)
-	if err != nil {
-		logger.Warn("Time failed to parse correctly", zap.Error(err))
-	}
-	lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
-	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-
-	// Insert Raw Log message into Body of LogRecord
-	lr.Body().SetStringVal(string(data))
-
-	// Set the "SeverityNumber" and "SeverityText" if a known type of
-	// severity is found.
-	if severityNumber, ok := severityMap[e.Severity]; ok {
-		lr.SetSeverityNumber(severityNumber)
-		lr.SetSeverityText(e.Severity)
-	} else {
-		logger.Debug("unknown severity type", zap.String("type", e.Severity))
-	}
-
-	attrs := lr.Attributes()
-	attrs.EnsureCapacity(totalLogAttributes)
-
-	pcommon.NewMapFromRaw(e.Attributes).CopyTo(attrs)
-	attrs.InsertString("message", e.Message)
-	attrs.InsertString("component", e.Component)
-	attrs.InsertString("context", e.Context)
-	attrs.InsertInt("id", e.ID)
-	attrs.InsertString("log_name", logName)
-	attrs.InsertString("raw", string(data))
 
 	return ld
 }
