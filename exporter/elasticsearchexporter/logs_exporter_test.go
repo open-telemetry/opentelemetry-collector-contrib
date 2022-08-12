@@ -39,6 +39,13 @@ func TestExporter_New(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, exporter)
 	}
+	successWithDeprecatedIndexOption := func(index string) validate {
+		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
+			require.Nil(t, err)
+			require.NotNil(t, exporter)
+			require.EqualValues(t, index, exporter.index)
+		}
+	}
 
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchLogsExporter, err error) {
@@ -83,7 +90,7 @@ func TestExporter_New(t *testing.T) {
 				cfg.Index = "foo-index"
 				cfg.Endpoints = []string{"test:9200"}
 			}),
-			want: success,
+			want: successWithDeprecatedIndexOption("foo-index"),
 		},
 		"create with cloudid": {
 			config: withDefaultConfig(func(cfg *Config) {

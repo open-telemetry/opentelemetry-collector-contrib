@@ -68,6 +68,8 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	var indexStr string
 	if cfg.Index != "" && cfg.Index != defaultLogsIndex {
 		indexStr = cfg.Index
+	} else {
+		indexStr = cfg.LogsIndex
 	}
 	esLogsExp := &elasticsearchLogsExporter{
 		logger:      logger,
