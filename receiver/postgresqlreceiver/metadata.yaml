@@ -59,7 +59,9 @@ metrics:
     attributes: []
     description: Number of user databases.
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: false
       value_type: int
     unit: "{databases}"
   postgresql.db_size:
@@ -127,7 +129,9 @@ metrics:
     attributes: []
     description: Number of user tables in a database.
     enabled: true
-    gauge:
+    sum:
+      aggregation: cumulative
+      monotonic: false
       value_type: int
   postgresql.table.size:
     attributes: []
@@ -145,5 +149,5 @@ metrics:
     unit: "{vacuums}"
     sum:
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
       value_type: int 

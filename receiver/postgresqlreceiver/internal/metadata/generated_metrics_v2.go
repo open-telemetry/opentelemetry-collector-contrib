@@ -358,14 +358,16 @@ func (m *metricPostgresqlDatabaseCount) init() {
 	m.data.SetName("postgresql.database.count")
 	m.data.SetDescription("Number of user databases.")
 	m.data.SetUnit("{databases}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
 func (m *metricPostgresqlDatabaseCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -373,14 +375,14 @@ func (m *metricPostgresqlDatabaseCount) recordDataPoint(start pcommon.Timestamp,
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricPostgresqlDatabaseCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricPostgresqlDatabaseCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -723,14 +725,16 @@ func (m *metricPostgresqlTableCount) init() {
 	m.data.SetName("postgresql.table.count")
 	m.data.SetDescription("Number of user tables in a database.")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
 func (m *metricPostgresqlTableCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.settings.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
@@ -738,14 +742,14 @@ func (m *metricPostgresqlTableCount) recordDataPoint(start pcommon.Timestamp, ts
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricPostgresqlTableCount) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricPostgresqlTableCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -824,7 +828,7 @@ func (m *metricPostgresqlTableVacuumCount) init() {
 	m.data.SetDescription("Number of times a table has manually been vacuumed.")
 	m.data.SetUnit("{vacuums}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
 
