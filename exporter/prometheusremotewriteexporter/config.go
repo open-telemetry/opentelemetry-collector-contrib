@@ -50,11 +50,7 @@ type Config struct {
 	WAL                         *WALConfig                   `mapstructure:"wal"`
 
 	// TargetInfo allows customizing the target_info metric
-<<<<<<< HEAD
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
-=======
-	TargetInfo TargetInfo `mapstructure:"target_info"`
->>>>>>> a8af36cf8 (cr: update config)
 }
 
 type TargetInfo struct {
