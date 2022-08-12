@@ -145,6 +145,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		defer dbClient.Close()
 		p.recordDatabase(now, database, r)
 		p.collectTables(ctx, now, dbClient, database, &errs)
+
+		if p.emitMetricsWithResourceAttributes {
+			p.collectIndexes(ctx, now, dbClient, database, &errs)
+		}
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -250,6 +254,30 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, db, br.table, metadata.AttributeSourceTidxHit)
 			}
 		}
+	}
+}
+
+func (p *postgreSQLScraper) collectIndexes(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *scrapererror.ScrapeErrors,
+) {
+	idxStats, err := client.getIndexStats(ctx, database)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for _, stat := range idxStats {
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
+		p.mb.EmitForResource(
+			metadata.WithPostgresqlDatabaseName(stat.database),
+			metadata.WithPostgresqlTableName(stat.table),
+			metadata.WithPostgresqlIndexName(stat.index),
+		)
 	}
 }
 

@@ -4,8 +4,8 @@ go 1.18
 
 require (
 	github.com/aws/aws-sdk-go v1.44.72
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0

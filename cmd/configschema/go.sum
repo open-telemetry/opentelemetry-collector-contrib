@@ -216,8 +216,8 @@ github.com/PuerkitoBio/urlesc v0.0.0-20160726150825-5bd2802263f2/go.mod h1:uGdko
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
 github.com/ReneKroon/ttlcache/v2 v2.11.0 h1:OvlcYFYi941SBN3v9dsDcC2N8vRxyHcCmJb3Vl4QMoM=
 github.com/ReneKroon/ttlcache/v2 v2.11.0/go.mod h1:mBxvsNY+BT8qLLd6CuAJubbKo6r0jh3nb5et22bbfGY=
-github.com/SAP/go-hdb v0.106.1 h1:u/pwpiBobIAu+LfhlLhc4tGq6KmdQVnQv3IYONRtyLs=
-github.com/SAP/go-hdb v0.106.1/go.mod h1:198ykfuonYvyg7dUUre4lQkokK/kUbhORXpRIuhrL2A=
+github.com/SAP/go-hdb v0.107.2 h1:Ww/57qges2EWykOFXUF1yBJ/YPDumSpX6y1sz9hAUXM=
+github.com/SAP/go-hdb v0.107.2/go.mod h1:EAlLPK5So38imnv2/aBADHZBjl76RVIWvu9Tkiu6LbY=
 github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2 h1:koK7z0nSsRiRiBWwa+E714Puh+DO+ZRdIyAXiXzL+lg=
 github.com/SermoDigital/jose v0.9.2-0.20161205224733-f6df55f235c2/go.mod h1:ARgCUhI1MHQH+ONky/PAtmVHQrP5JlGY0F3poXOp/fA=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
@@ -1962,7 +1962,8 @@ golang.org/x/exp v0.0.0-20191227195350-da58074b4299/go.mod h1:2RIsYlXP63K8oxa1u0
 golang.org/x/exp v0.0.0-20200119233911-0405dc783f0a/go.mod h1:2RIsYlXP63K8oxa1u096TMicItID8zy7Y6sNkU49FU4=
 golang.org/x/exp v0.0.0-20200207192155-f17229e696bd/go.mod h1:J/WKrq2StrnmMY6+EHIKF9dgMWnmCNThgcyBT1FY9mM=
 golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6/go.mod h1:3jZMyOhIsHpP37uCMkUooju7aAi5cS1Q23tOzKc+0MU=
-golang.org/x/exp v0.0.0-20220518171630-0b5c67f07fdf h1:oXVg4h2qJDd9htKxb5SCpFBHLipW6hXmL3qpUixS2jw=
+golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75 h1:x03zeu7B2B11ySp+daztnwM5oBJ/8wGUSqrwcw9L0RA=
+golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75/go.mod h1:Kr81I6Kryrl9sr8s2FK3vxD90NdsKWRuOIl2O4CvYbA=
 golang.org/x/image v0.0.0-20180708004352-c73c2afc3b81/go.mod h1:ux5Hcp/YLpHSI86hEcLt0YII63i6oz57MZXIpbrjZUs=
 golang.org/x/image v0.0.0-20190227222117-0694c2d4d067/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20190802002840-cff245a6509b/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
