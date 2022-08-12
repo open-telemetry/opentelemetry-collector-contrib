@@ -65,5 +65,28 @@ The following feature gates control the transition process:
 - **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
 - **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
 
+##### Transition schedule:
+
+See this [tracking issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815) for more details.
+
+1. Phase 1, v0.59.0, August 2022:
+
+- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
+- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
+- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
+
+2. Phase 2, version and date TBD:
+
+- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
+- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
+- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
+
+3. Phase 3, version and date TBD:
+
+- The feature gates are removed.
+- The new metrics without `direction` attribute are always emitted.
+- The deprecated metrics with `direction` attribute are no longer available.
+
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
