@@ -7,6 +7,9 @@ resource_attributes:
   postgresql.table.name:
     description: The schema name followed by the table name.
     type: string
+  postgresql.index.name:
+    description: The name of the index on a table.
+    type: string
 
 attributes:
   database:
@@ -79,6 +82,22 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [database, table, state]
+  postgresql.index.scans:
+    attributes: []
+    description: The number of index scans on a table.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{scans}"
+  postgresql.index.size:
+    attributes: []
+    description: The size of the index on disk.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
   postgresql.operations:
     enabled: true
     description: The number of db row operations.

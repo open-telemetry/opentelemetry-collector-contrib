@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.37.0
 	github.com/stretchr/testify v1.8.0

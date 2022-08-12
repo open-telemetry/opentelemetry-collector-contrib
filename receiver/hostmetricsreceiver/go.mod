@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/leoluk/perflib_exporter v0.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/shirou/gopsutil/v3 v3.22.7
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0

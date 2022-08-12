@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -342,9 +343,12 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
 
+	mu := sync.Mutex{}
 	var lastResolved []string
 	res.onChange(func(s []string) {
+		mu.Lock()
 		lastResolved = s
+		mu.Unlock()
 	})
 
 	resolverCh := make(chan struct{}, 1)
@@ -463,7 +467,9 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	<-consumeCh
 
 	// verify
+	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
+	mu.Unlock()
 	require.Greater(t, counter1.Load(), int64(0))
 	require.Greater(t, counter2.Load(), int64(0))
 }
