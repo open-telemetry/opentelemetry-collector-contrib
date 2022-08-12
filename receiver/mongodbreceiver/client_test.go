@@ -300,6 +300,10 @@ func loadAdminStatusAsMap() (bson.M, error) {
 	return loadTestFileAsMap("./testdata/admin.json")
 }
 
+func loadOnlyStorageEngineAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/onlyStorageEngine.json")
+}
+
 func loadTestFile(filePath string) (bson.D, error) {
 	var doc bson.D
 	testFile, err := os.ReadFile(filePath)
