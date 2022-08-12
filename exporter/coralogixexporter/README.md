@@ -23,60 +23,32 @@ exporters:
     # The Coralogix traces ingress endpoint
     endpoint: "tracing-ingress.coralogix.com:9443"
     metrics:
-      endpoint: "otel-metrics.coralogix.com"
+      endpoint: "otel-metrics.coralogix.com:443"
     logs:
-      endpoint: "otel-logs.coralogix.com"
+      endpoint: "otel-logs.coralogix.com:443"
 
     # Your Coralogix private key is sensitive
     private_key: "xxx"
 
-    # Traces emitted by this OpenTelemetry exporter should be tagged
-    # in Coralogix with the following application and subsystem names
+    # Traces, Metrics and Logs emitted by this OpenTelemetry exporter 
+    # should be tagged in Coralogix with the following application and subsystem names
     application_name: "MyBusinessEnvironment"
-    # Deprecated: [v0.47.0] SubSystem will remove in the next version
     subsystem_name: "MyBusinessSystem"
 
-    # Timeout is the timeout for every attempt to send data to the backend.
+    # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
 ```
 ### Coralogix's Endpoints 
-| Region  | Traces Endpoint                          | Metrics Endpoint                        |
-|---------|------------------------------------------|-----------------------------------------|
-| USA1    | `tracing-ingress.coralogix.us:9443`      | `https://otel-metrics.coralogix.us`      |
-| APAC1   | `tracing-ingress.app.coralogix.in:9443`  | `https://otel-metrics.coralogix.in`      |
-| APAC2   | `tracing-ingress.coralogixsg.com:9443`   | `https://otel-metrics.coralogixsg.com`   |
-| EUROPE1 | `tracing-ingress.coralogix.com:9443`     | `https://otel-metrics.coralogix.com`     |
-| EUROPE2 | `tracing-ingress.eu2.coralogix.com:9443` | `https://otel-metrics.eu2.coralogix.com` |
 
-## Trace Exporter
+Depending on your region, you might need to use a different endpoint. Here are the available Endpoints:
 
-### Timestamp
-Please pay attention to the timestamps that are being produced by the 
-receivers that are producing the traces being exported by the Coralogix
-exporter. Coralogix can only accept events which are not older than 24 hours.
-
-## Metrics
-
-Prometheus is currently the leading tool for metric collection, it’s easy to integrate and easy to use.
-
-```yaml
-exporters:
-  prometheusremotewrite:
-    # The Coralogix metrics ingress endpoint
-    endpoint: "https://prometheus-gateway.coralogix.com"
-
-    # Your Coralogix private key (sensitive)
-    # This token identifies you into your Coralogix account. 
-    # Your Coralogix private key is sensitive!
-    headers:
-      Authorization: "Bearer <Your Private Key>"
-      
-    # Mertrics emitted by this OpenTelemetry exporter should be tagged
-    # in Coralogix with the following application and subsystem names
-    external_labels:
-      appLabelName: "MyBusinessEnvironment"
-      subSystemLabelName: "MyBusinessSystem"
-```
+| Region  | Traces Endpoint                          | Metrics Endpoint                     | Logs Endpoint                     |
+|---------|------------------------------------------|------------------------------------- | --------------------------------- |
+| USA1    | `tracing-ingress.coralogix.us:9443`      | `otel-metrics.coralogix.us:443`      | `otel-logs.coralogix.us:443`      |
+| APAC1   | `tracing-ingress.app.coralogix.in:9443`  | `otel-metrics.coralogix.in:443`      | `otel-logs.coralogix.in:443`      | 
+| APAC2   | `tracing-ingress.coralogixsg.com:9443`   | `otel-metrics.coralogixsg.com:443`   | `otel-logs.coralogixsg.com:443`   |
+| EUROPE1 | `tracing-ingress.coralogix.com:9443`     | `otel-metrics.coralogix.com:443`     | `otel-logs.coralogix.com:443`     |
+| EUROPE2 | `tracing-ingress.eu2.coralogix.com:9443` | `otel-metrics.eu2.coralogix.com:443` | `otel-logs.eu2.coralogix.com:443` |
 
 ### Need help?
 We love to assist our customers, simply [book your implementation session](https://calendly.com/info-coralogix/implementation),
