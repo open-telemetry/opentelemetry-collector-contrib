@@ -50,7 +50,7 @@ type Config struct {
 	WAL                         *WALConfig                   `mapstructure:"wal"`
 
 	// TargetInfo allows customizing the target_info metric
-	TargetInfo TargetInfo `mapstructure:"target_info,omitempty"`
+	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
 }
 
 type TargetInfo struct {
@@ -91,7 +91,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("remote write consumer number can't be negative")
 	}
 	if cfg.TargetInfo == nil {
-		cfg.TargetInfo = TargetInfo{
+		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
 		}
 	}
