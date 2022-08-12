@@ -19,9 +19,8 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
+	"github.com/stretchr/testify/assert"
 )
 
 // This is not in tqltest because it depends on a type that's a member of TQL.
@@ -801,4 +800,42 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 		return nil, fmt.Errorf("enum symbol not found")
 	}
 	return nil, fmt.Errorf("enum symbol not provided")
+}
+
+// This test doesn't validate parser results, simply checks whether the parse succeeds or not.
+// It's a fast way to check a large range of possible syntaxes.
+func Test_parseQuery(t *testing.T) {
+	tests := []struct {
+		query   string
+		wantErr bool
+	}{
+		{`set(foo.attributes["bar"].cat, "dog")`, false},
+		{`set(foo.attributes["animal"], "dog") where animal == "cat"`, false},
+		{`drop() where service == "pinger" or foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`drop() where service == "pinger" or foo.attributes["verb"] == "GET" and foo.attributes["endpoint"] == "/x/alive"`, false},
+		{`drop() where animal > "cat"`, false},
+		{`drop() where animal >= "cat"`, false},
+		{`drop() where animal <= "cat"`, false},
+		{`drop() where animal < "cat"`, false},
+		{`drop() where animal =< "dog"`, true},
+		{`drop() where animal => "dog"`, true},
+		{`drop() where animal <> "dog"`, true},
+		{`drop() where animal = "dog"`, true},
+		{`drop() where animal`, true},
+		{`drop() where animal ==`, true},
+		{`drop() where ==`, true},
+		{`drop() where == animal`, true},
+		{`drop() where attributes["path"] == "/healthcheck"`, false},
+	}
+	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
+	for _, tt := range tests {
+		name := pat.ReplaceAllString(tt.query, "_")
+		t.Run(name, func(t *testing.T) {
+			_, err := parseQuery(tt.query)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("parseQuery(%s) error = %v, wantErr %v", tt.query, err, tt.wantErr)
+				return
+			}
+		})
+	}
 }

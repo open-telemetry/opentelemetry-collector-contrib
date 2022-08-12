@@ -202,7 +202,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},
-		{Name: `OpComparison`, Pattern: `==|!=`},
+		{Name: `OpComparison`, Pattern: `==|!=|>=|<=|>|<`},
 		{Name: `Boolean`, Pattern: `\b(true|false)\b`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
