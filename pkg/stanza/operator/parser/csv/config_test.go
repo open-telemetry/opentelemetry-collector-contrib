@@ -86,5 +86,5 @@ func TestConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("json_parser")
+	return NewConfig()
 }

@@ -49,7 +49,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: *udp.NewConfig("udp_input"),
+		Config: *udp.NewConfig(),
 	}
 }
 

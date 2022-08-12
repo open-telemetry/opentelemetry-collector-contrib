@@ -33,7 +33,7 @@ import (
 
 func TestInput(t *testing.T) {
 	basicConfig := func() *syslog.Config {
-		cfg := syslog.NewConfig("test_syslog_parser")
+		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
 	}
 
@@ -98,7 +98,7 @@ func InputTest(t *testing.T, cfg *Config, tc syslog.Case) {
 
 func TestSyslogIDs(t *testing.T) {
 	basicConfig := func() *syslog.BaseConfig {
-		cfg := syslog.NewConfig("test_syslog_parser")
+		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		cfg.Protocol = "RFC3164"
 		return &cfg.BaseConfig
 	}
@@ -128,18 +128,18 @@ func TestSyslogIDs(t *testing.T) {
 }
 
 func NewConfigWithTCP(syslogCfg *syslog.BaseConfig) *Config {
-	cfg := NewConfig("test_syslog")
+	cfg := NewConfigWithID("test_syslog")
 	cfg.BaseConfig = *syslogCfg
-	cfg.TCP = &tcp.NewConfig("test_syslog_tcp").BaseConfig
+	cfg.TCP = &tcp.NewConfigWithID("test_syslog_tcp").BaseConfig
 	cfg.TCP.ListenAddress = ":14201"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
 
 func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
-	cfg := NewConfig("test_syslog")
+	cfg := NewConfigWithID("test_syslog")
 	cfg.BaseConfig = *syslogCfg
-	cfg.UDP = &udp.NewConfig("test_syslog_udp").BaseConfig
+	cfg.UDP = &udp.NewConfigWithID("test_syslog_udp").BaseConfig
 	cfg.UDP.ListenAddress = ":12032"
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
