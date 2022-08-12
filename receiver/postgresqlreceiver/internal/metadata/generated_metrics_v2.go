@@ -17,15 +17,19 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for postgresqlreceiver metrics.
 type MetricsSettings struct {
-	PostgresqlBackends   MetricSettings `mapstructure:"postgresql.backends"`
-	PostgresqlBlocksRead MetricSettings `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits    MetricSettings `mapstructure:"postgresql.commits"`
-	PostgresqlDbSize     MetricSettings `mapstructure:"postgresql.db_size"`
-	PostgresqlIndexScans MetricSettings `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize  MetricSettings `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations MetricSettings `mapstructure:"postgresql.operations"`
-	PostgresqlRollbacks  MetricSettings `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows       MetricSettings `mapstructure:"postgresql.rows"`
+	PostgresqlBackends         MetricSettings `mapstructure:"postgresql.backends"`
+	PostgresqlBlocksRead       MetricSettings `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits          MetricSettings `mapstructure:"postgresql.commits"`
+	PostgresqlDatabaseCount    MetricSettings `mapstructure:"postgresql.database.count"`
+	PostgresqlDbSize           MetricSettings `mapstructure:"postgresql.db_size"`
+	PostgresqlIndexScans       MetricSettings `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize        MetricSettings `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations       MetricSettings `mapstructure:"postgresql.operations"`
+	PostgresqlRollbacks        MetricSettings `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows             MetricSettings `mapstructure:"postgresql.rows"`
+	PostgresqlTableCount       MetricSettings `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize        MetricSettings `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -37,6 +41,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlCommits: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlDatabaseCount: MetricSettings{
 			Enabled: true,
 		},
 		PostgresqlDbSize: MetricSettings{
@@ -55,6 +62,15 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlRows: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlTableCount: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlTableSize: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlTableVacuumCount: MetricSettings{
 			Enabled: true,
 		},
 	}
@@ -324,6 +340,57 @@ func (m *metricPostgresqlCommits) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlCommits(settings MetricSettings) metricPostgresqlCommits {
 	m := metricPostgresqlCommits{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlDatabaseCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.database.count metric with initial data.
+func (m *metricPostgresqlDatabaseCount) init() {
+	m.data.SetName("postgresql.database.count")
+	m.data.SetDescription("Number of user databases.")
+	m.data.SetUnit("{databases}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlDatabaseCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlDatabaseCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlDatabaseCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlDatabaseCount(settings MetricSettings) metricPostgresqlDatabaseCount {
+	m := metricPostgresqlDatabaseCount{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -647,23 +714,180 @@ func newMetricPostgresqlRows(settings MetricSettings) metricPostgresqlRows {
 	return m
 }
 
+type metricPostgresqlTableCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.table.count metric with initial data.
+func (m *metricPostgresqlTableCount) init() {
+	m.data.SetName("postgresql.table.count")
+	m.data.SetDescription("Number of user tables in a database.")
+	m.data.SetUnit("")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTableCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableCount(settings MetricSettings) metricPostgresqlTableCount {
+	m := metricPostgresqlTableCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.table.size metric with initial data.
+func (m *metricPostgresqlTableSize) init() {
+	m.data.SetName("postgresql.table.size")
+	m.data.SetDescription("Disk space used by a table.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableSize) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableSize) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableSize(settings MetricSettings) metricPostgresqlTableSize {
+	m := metricPostgresqlTableSize{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlTableVacuumCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.table.vacuum.count metric with initial data.
+func (m *metricPostgresqlTableVacuumCount) init() {
+	m.data.SetName("postgresql.table.vacuum.count")
+	m.data.SetDescription("Number of times a table has manually been vacuumed.")
+	m.data.SetUnit("{vacuums}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlTableVacuumCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlTableVacuumCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlTableVacuumCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlTableVacuumCount(settings MetricSettings) metricPostgresqlTableVacuumCount {
+	m := metricPostgresqlTableVacuumCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity            int                 // maximum observed number of metrics per resource.
-	resourceCapacity           int                 // maximum observed number of resource attributes.
-	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                  component.BuildInfo // contains version information
-	metricPostgresqlBackends   metricPostgresqlBackends
-	metricPostgresqlBlocksRead metricPostgresqlBlocksRead
-	metricPostgresqlCommits    metricPostgresqlCommits
-	metricPostgresqlDbSize     metricPostgresqlDbSize
-	metricPostgresqlIndexScans metricPostgresqlIndexScans
-	metricPostgresqlIndexSize  metricPostgresqlIndexSize
-	metricPostgresqlOperations metricPostgresqlOperations
-	metricPostgresqlRollbacks  metricPostgresqlRollbacks
-	metricPostgresqlRows       metricPostgresqlRows
+	startTime                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                  int                 // maximum observed number of metrics per resource.
+	resourceCapacity                 int                 // maximum observed number of resource attributes.
+	metricsBuffer                    pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                        component.BuildInfo // contains version information
+	metricPostgresqlBackends         metricPostgresqlBackends
+	metricPostgresqlBlocksRead       metricPostgresqlBlocksRead
+	metricPostgresqlCommits          metricPostgresqlCommits
+	metricPostgresqlDatabaseCount    metricPostgresqlDatabaseCount
+	metricPostgresqlDbSize           metricPostgresqlDbSize
+	metricPostgresqlIndexScans       metricPostgresqlIndexScans
+	metricPostgresqlIndexSize        metricPostgresqlIndexSize
+	metricPostgresqlOperations       metricPostgresqlOperations
+	metricPostgresqlRollbacks        metricPostgresqlRollbacks
+	metricPostgresqlRows             metricPostgresqlRows
+	metricPostgresqlTableCount       metricPostgresqlTableCount
+	metricPostgresqlTableSize        metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount metricPostgresqlTableVacuumCount
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -678,18 +902,22 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  buildInfo,
-		metricPostgresqlBackends:   newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBlocksRead: newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:    newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlDbSize:     newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlIndexScans: newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:  newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
-		metricPostgresqlOperations: newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlRollbacks:  newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:       newMetricPostgresqlRows(settings.PostgresqlRows),
+		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pmetric.NewMetrics(),
+		buildInfo:                        buildInfo,
+		metricPostgresqlBackends:         newMetricPostgresqlBackends(settings.PostgresqlBackends),
+		metricPostgresqlBlocksRead:       newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
+		metricPostgresqlCommits:          newMetricPostgresqlCommits(settings.PostgresqlCommits),
+		metricPostgresqlDatabaseCount:    newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:           newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
+		metricPostgresqlIndexScans:       newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:        newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
+		metricPostgresqlOperations:       newMetricPostgresqlOperations(settings.PostgresqlOperations),
+		metricPostgresqlRollbacks:        newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
+		metricPostgresqlRows:             newMetricPostgresqlRows(settings.PostgresqlRows),
+		metricPostgresqlTableCount:       newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
+		metricPostgresqlTableSize:        newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount: newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -766,12 +994,16 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlBackends.emit(ils.Metrics())
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
+	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
 	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
+	mb.metricPostgresqlTableCount.emit(ils.Metrics())
+	mb.metricPostgresqlTableSize.emit(ils.Metrics())
+	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -806,6 +1038,11 @@ func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp,
 	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
 }
 
+// RecordPostgresqlDatabaseCountDataPoint adds a data point to postgresql.database.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlDatabaseCount.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
 func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
@@ -834,6 +1071,21 @@ func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestam
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
 func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
 	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
+}
+
+// RecordPostgresqlTableCountDataPoint adds a data point to postgresql.table.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTableCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTableSizeDataPoint adds a data point to postgresql.table.size metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTableSize.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlTableVacuumCountDataPoint adds a data point to postgresql.table.vacuum.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlTableVacuumCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

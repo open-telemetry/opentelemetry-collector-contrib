@@ -21,4 +21,6 @@ CREATE INDEX otelindex ON test1(id);
 CREATE INDEX otel2index ON test2(id);
 
 -- Generating usage of index
+INSERT INTO test2 (id)
+VALUES(67);
 SELECT * FROM test2; 

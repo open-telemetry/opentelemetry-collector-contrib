@@ -143,12 +143,17 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 			continue
 		}
 		defer dbClient.Close()
-		p.recordDatabase(now, database, r)
-		p.collectTables(ctx, now, dbClient, database, &errs)
+		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
+
+		p.recordDatabase(now, database, r, numTables)
 
 		if p.emitMetricsWithResourceAttributes {
 			p.collectIndexes(ctx, now, dbClient, database, &errs)
 		}
+	}
+
+	if p.emitMetricsWithResourceAttributes {
+		p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -171,9 +176,10 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	wg.Wait()
 }
 
-func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval) {
+func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
 	dbName := databaseName(db)
 	if p.emitMetricsWithResourceAttributes {
+		p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
 		if activeConnections, ok := r.activityMap[dbName]; ok {
 			p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
 		}
@@ -199,7 +205,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 	}
 }
 
-func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) {
+func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) (numTables int64) {
 	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
 		errs.AddPartial(1, err)
@@ -218,6 +224,8 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.del, metadata.AttributeOperationDel)
 			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.upd, metadata.AttributeOperationUpd)
 			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
+			p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
+			p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
 
 			br, ok := blockReads[tableKey]
 			if ok {
@@ -255,6 +263,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			}
 		}
 	}
+	return int64(len(tableMetrics))
 }
 
 func (p *postgreSQLScraper) collectIndexes(
