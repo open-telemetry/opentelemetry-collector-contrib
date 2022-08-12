@@ -48,5 +48,22 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
+### Feature gate configurations
+
+#### Transition from metrics with "direction" attribute
+
+Some elasticsearch metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
+direction included in the metric name to adhere to the OpenTelemetry specification
+(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+
+- `elasticsearch.node.cluster.io` will become:
+  - `elasticsearch.node.cluster.io.received`
+  - `elasticsearch.node.cluster.io.sent`
+
+The following feature gates control the transition process:
+
+- **receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute**: controls if the new metrics without `direction` attribute are emitted by the receiver.
+- **receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute**: controls if the deprecated metrics with `direction` attribute are emitted by the receiver.
+
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
