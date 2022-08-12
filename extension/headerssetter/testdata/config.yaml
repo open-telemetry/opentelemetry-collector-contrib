@@ -1,23 +1,7 @@
-extensions:
-  headers_setter:
-    headers:
-      - key: X-Scope-OrgID
-        from_context: "tenant_id"
-      - key: User-ID
-        from_context: "user_id"
-
-# Data pipeline is required to load the config.
-receivers:
-  nop:
-processors:
-  nop:
-exporters:
-  nop:
-
-service:
-  extensions: [headers_setter]
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [nop]
+headers_setter:
+headers_setter/1:
+  headers:
+    - key: X-Scope-OrgID
+      from_context: "tenant_id"
+    - key: User-ID
+      from_context: "user_id"
