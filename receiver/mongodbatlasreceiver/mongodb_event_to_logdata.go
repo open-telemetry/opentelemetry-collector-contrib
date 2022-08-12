@@ -64,10 +64,9 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
 	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
-	resourceAttrs.InsertString("mongodb_atlas.log.name", logName)
 
-	lr := sl.LogRecords().AppendEmpty()
 	for _, log := range logs {
+		lr := sl.LogRecords().AppendEmpty()
 		data, err := json.Marshal(log)
 		if err != nil {
 			logger.Warn("failed to marshal", zap.Error(err))
@@ -124,10 +123,9 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
 	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
-	resourceAttrs.InsertString("mongodb_atlas.log.name", logName)
 
-	lr := sl.LogRecords().AppendEmpty()
 	for _, log := range logs {
+		lr := sl.LogRecords().AppendEmpty()
 		data, err := json.Marshal(log)
 		if err != nil {
 			logger.Warn("failed to marshal", zap.Error(err))
@@ -139,6 +137,9 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
+		if len(data) == 0 {
+			logger.Warn(string(data))
+		}
 		lr.Body().SetStringVal(string(data))
 		// Set the "SeverityNumber" and "SeverityText" if a known type of
 		// severity is found.
