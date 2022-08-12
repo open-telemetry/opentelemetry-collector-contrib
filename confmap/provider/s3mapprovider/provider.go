@@ -17,7 +17,6 @@ package s3mapprovider // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/url"
 	"regexp"
 	"strings"
@@ -55,7 +54,7 @@ func New() confmap.Provider {
 	// initialize the client
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Failed to load configurations to initialize an AWS SDK client, error: %w", err)
 	}
 	return &provider{client: s3.NewFromConfig(cfg)}
 }
