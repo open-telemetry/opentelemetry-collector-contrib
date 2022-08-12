@@ -17,12 +17,13 @@ package syslogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
-	syslogparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 const (
@@ -51,7 +52,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{},
+		Config: *syslog.NewConfig("syslog_input"),
 	}
 }
 
@@ -62,19 +63,35 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // SysLogConfig defines configuration for the syslog receiver
 type SysLogConfig struct {
+	syslog.Config      `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*SysLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := syslog.NewConfig("syslog_input")
-	inputCfg.BaseConfig = syslogparser.NewConfig("syslog_parser").BaseConfig
+	return &operator.Config{Builder: &logConfig.Config}, nil
+}
 
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
+func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
 	}
-	return &operator.Config{Builder: inputCfg}, nil
+
+	if componentParser.IsSet("tcp") {
+		cfg.TCP = CreateDefaultTCPConfigBase()
+	} else if componentParser.IsSet("udp") {
+		cfg.UDP = CreateDefaultUDPConfigBase()
+	}
+
+	return componentParser.UnmarshalExact(cfg)
+}
+
+func CreateDefaultTCPConfigBase() *tcp.BaseConfig {
+	return &tcp.NewConfig("tcp_input").BaseConfig
+}
+
+func CreateDefaultUDPConfigBase() *udp.BaseConfig {
+	return &udp.NewConfig("udp_input").BaseConfig
 }

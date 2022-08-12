@@ -1,25 +1,8 @@
-extensions:
-  jaegerremotesampling:
-    source:
-      remote:
-        endpoint: jaeger-collector:14250
-  jaegerremotesampling/1:
-    source:
-      reload_interval: 1s
-      file: /etc/otelcol/sampling_strategies.json
-
-service:
-  extensions: [jaegerremotesampling/1]
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [nop]
-
-# Data pipeline is required to load the config.
-receivers:
-  nop:
-processors:
-  nop:
-exporters:
-  nop:
+jaegerremotesampling:
+  source:
+    remote:
+      endpoint: jaeger-collector:14250
+jaegerremotesampling/1:
+  source:
+    reload_interval: 1s
+    file: /etc/otelcol/sampling_strategies.json
