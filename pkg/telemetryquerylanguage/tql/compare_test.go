@@ -87,6 +87,7 @@ func Test_compare(t *testing.T) {
 		{"bytes float32", ba, f32a, []bool{false, true, false, false, false, false}},
 		{"bytes float64", ba, f64a, []bool{false, true, false, false, false, false}},
 		{"bytes nil", ba, nil, []bool{false, true, false, false, false, false}},
+		{"bytes nilbytes", ba, bn, []bool{false, true, false, false, false, false}},
 
 		{"false true", ta, tb, []bool{false, true, true, true, false, false}},
 		{"true false", tb, ta, []bool{false, true, false, false, true, true}},
@@ -264,8 +265,25 @@ func BenchmarkCompareLTNil(b *testing.B) {
 	}
 }
 
-func BenchmarkCompareEQDiff(b *testing.B) {
+func BenchmarkCompareLTDiff(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		compare(sa, f64b, LT)
+	}
+}
+
+func compareEq(a any, b any, op compareOp) bool {
+	switch op {
+	case EQ:
+		return a == b
+	case NE:
+		return a != b
+	default:
+		return false
+	}
+}
+
+func BenchmarkCompareEQFunction(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		compareEq(sa, sb, EQ)
 	}
 }
