@@ -25,7 +25,7 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something first if we want to do that.
-func invalidComparison(string, op compareOp) bool {
+func invalidComparison(_ string, op compareOp) bool {
 	return op == NE
 }
 
