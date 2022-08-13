@@ -59,8 +59,8 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a tcp input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	BaseConfig         `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	BaseConfig         `mapstructure:",squash" yaml:",inline"`
 }
 
 // BaseConfig is the detailed configuration of a tcp input operator.
