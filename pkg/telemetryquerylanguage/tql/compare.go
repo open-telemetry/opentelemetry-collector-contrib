@@ -25,7 +25,7 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something first if we want to do that.
-func invalidComparison(s string, op compareOp) bool {
+func invalidComparison(string, op compareOp) bool {
 	return op == NE
 }
 
@@ -207,7 +207,7 @@ func compareInt64(a int64, b any, op compareOp) bool {
 	case int32:
 		return compareInt64s(a, int64(v), op)
 	case int64:
-		return compareInt64s(a, int64(v), op)
+		return compareInt64s(a, v, op)
 	case float32:
 		return compareFloat64s(float64(a), float64(v), op)
 	case float64:
@@ -226,7 +226,7 @@ func compareInt64(a int64, b any, op compareOp) bool {
 		if v == nil {
 			return op == NE
 		}
-		return compareInt64s(a, int64(*v), op)
+		return compareInt64s(a, *v, op)
 	case *float32:
 		if v == nil {
 			return op == NE

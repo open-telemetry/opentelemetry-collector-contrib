@@ -31,7 +31,8 @@ func valueFor(x any) Value {
 		var b Bytes = v
 		val.Bytes = &b
 	case string:
-		if v == "NAME" {
+		switch {
+		case v == "NAME":
 			// if the string is NAME construct a path of "name".
 			val.Path = &Path{
 				Fields: []Field{
@@ -40,10 +41,10 @@ func valueFor(x any) Value {
 					},
 				},
 			}
-		} else if strings.Contains(v, "ENUM") {
+		case strings.Contains(v, "ENUM"):
 			// if the string contains ENUM construct an EnumSymbol from it.
 			val.Enum = (*EnumSymbol)(tqltest.Strp(v))
-		} else {
+		default:
 			val.String = tqltest.Strp(v)
 		}
 	case float64:
