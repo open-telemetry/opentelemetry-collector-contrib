@@ -112,8 +112,27 @@ Booleans can be either:
 
 Operators determine how the two Values are compared.  The valid operators are:
 
-- Equal (`==`). Equal (`==`) checks if the left and right Values are equal, using Go's `==` operator.
-- Not Equal (`!=`).  Not Equal (`!=`) checks if the left and right Values are not equal, using Go's `!=` operator.
+- Equal (`==`). Tests if the left and right Values are equal (see the Comparison Rules below).
+- Not Equal (`!=`).  Tests if the left and right Values are not equal.
+- Less Than (`<`). Tests if left is less than right. For binary values, `false` is considered to be less than `true`.
+- Less Than (`<`). Tests if left is less than right.
+
+
+### Comparison Rules
+
+The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. In this table, `int` refers to all integer types (int, int32, int64), and `float` similarly refers to both `float32` and `float64`. If numeric values are of different types, they are compared as the most general instance required (so `int32` and `int64` are compared as `int64`, while `int64` and `float64` are compared as `float64`), In addition, pointers to `bool`, `int` types, `float` types, and `string` are compared by first dereferencing the pointer.
+
+Note that a nil pointer to a value type is *never* equal to a nil value or another nil pointer, but two nil values *are* considered to be equal.
+
+
+| base type | bool        | int                 | float               | string                          | Bytes                    | nil                    |
+| --------- | ----------- | ------------------- | ------------------- | ------------------------------- | ------------------------ | ---------------------- |
+| bool      | normal, T>F | false               | false               | false                           | false                    | false                  |
+| int       | false       | compared as largest | compared as float64 | false                           | false                    | false                  |
+| float     | false       | compared as float64 | compared as largest | false                           | false                    | false                  |
+| string    | false       | false               | false               | normal (compared as Go strings) | false                    | false                  |
+| Bytes     | false       | false               | false               | false                           | byte-for-byte comparison | false                  |
+| nil       | false       | false               | false               | false                           | false                    | true for equality only |
 
 ## Accessing signal telemetry
 
@@ -121,7 +140,7 @@ Access to signal telemetry is provided to TQL functions through a `TransformCont
 
 ### Getters and Setters
 
-Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted. 
+Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted.
 - [Paths](#paths).
 - [Enums](#enums).
 - [Literals](#literals).

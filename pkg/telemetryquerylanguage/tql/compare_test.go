@@ -271,6 +271,8 @@ func BenchmarkCompareLTDiff(b *testing.B) {
 	}
 }
 
+// this is only used for benchmarking, and is a rough equivalent of the original compare function
+// before adding LT, LTE, GTE, and GT.
 func compareEq(a any, b any, op compareOp) bool {
 	switch op {
 	case EQ:
