@@ -112,8 +112,11 @@ func Test_compare(t *testing.T) {
 		{"nil int64", nil, i64a, []bool{false, true, false, false, false, false}},
 		{"nil float32", nil, f32a, []bool{false, true, false, false, false, false}},
 		{"nil float64", nil, f64a, []bool{false, true, false, false, false, false}},
-		{"nil and nil bytes", nil, bn, []bool{false, true, false, false, false, false}},
+		{"nil and nil bytes", nil, bn, []bool{true, false, false, true, true, false}},
 		{"nil and empty string", nil, sn, []bool{false, true, false, false, false, false}},
+		{"nil and nilpf", nil, nilpf, []bool{true, false, false, true, true, false}},
+		{"nil and nilpi", nil, nilpi, []bool{true, false, false, true, true, false}},
+		{"nilpt and nil", nil, nilpi, []bool{true, false, false, true, true, false}},
 
 		{"diff ints", ia, ib, []bool{false, true, true, true, false, false}},
 		{"int string", ia, sa, []bool{false, true, false, false, false, false}},

@@ -122,7 +122,7 @@ Operators determine how the two Values are compared.  The valid operators are:
 
 The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. In this table, `int` refers to all integer types (int, int32, int64), and `float` similarly refers to both `float32` and `float64`. If numeric values are of different types, they are compared as the most general instance required (so `int32` and `int64` are compared as `int64`, while `int64` and `float64` are compared as `float64`), In addition, pointers to `bool`, `int` types, `float` types, and `string` are compared by first dereferencing the pointer.
 
-Note that a nil pointer to a value type is *never* equal to a nil value or another nil pointer, but two nil values *are* considered to be equal.
+Note that a nil pointer to a value type is equivalent (and therefore equal) to a nil value or another nil pointer. All nils compare equal even if they are of different base types (so a nil pointer to float64 is equal to a nil pointer to int32).
 
 
 | base type | bool        | int                 | float               | string                          | Bytes                    | nil                    |
