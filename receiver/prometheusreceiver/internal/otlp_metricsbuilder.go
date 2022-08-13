@@ -41,22 +41,23 @@ func isUsefulLabel(mType pmetric.MetricDataType, labelKey string) bool {
 }
 
 func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
-	labelName := ""
+	val := ""
 	switch metricType {
 	case pmetric.MetricDataTypeHistogram:
-		labelName = model.BucketLabel
+		val = labels.Get(model.BucketLabel)
+		if val == "" {
+			return 0, errEmptyLeLabel
+		}
 	case pmetric.MetricDataTypeSummary:
-		labelName = model.QuantileLabel
+		val = labels.Get(model.QuantileLabel)
+		if val == "" {
+			return 0, errEmptyQuantileLabel
+		}
 	default:
 		return 0, errNoBoundaryLabel
 	}
 
-	v := labels.Get(labelName)
-	if v == "" {
-		return 0, errEmptyBoundaryLabel
-	}
-
-	return strconv.ParseFloat(v, 64)
+	return strconv.ParseFloat(val, 64)
 }
 
 // convToMetricType returns the data type and if it is monotonic
