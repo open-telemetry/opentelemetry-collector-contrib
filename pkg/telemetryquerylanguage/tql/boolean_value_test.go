@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
+// valueFor is a test helper to eliminate a lot of tedium in writing tests of Comparisons.
 func valueFor(x any) Value {
 	val := Value{}
 	switch v := x.(type) {
@@ -64,6 +65,7 @@ func valueFor(x any) Value {
 	return val
 }
 
+// comparison is a test helper that constructs a Comparison object using valueFor
 func comparison(left any, right any, op string) *Comparison {
 	return &Comparison{
 		Left:  valueFor(left),
@@ -74,121 +76,12 @@ func comparison(left any, right any, op string) *Comparison {
 
 func Test_newComparisonEvaluator(t *testing.T) {
 	tests := []struct {
-		name       string
-		comparison *Comparison
-		item       interface{}
-	}{
-		{
-			name: "literals match",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Right: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Op: "==",
-			},
-		},
-		{
-			name: "literals don't match",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Right: Value{
-					String: tqltest.Strp("goodbye"),
-				},
-				Op: "!=",
-			},
-		},
-		{
-			name: "path expression matches",
-			comparison: &Comparison{
-				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				Right: Value{
-					String: tqltest.Strp("bear"),
-				},
-				Op: "==",
-			},
-			item: "bear",
-		},
-		{
-			name: "path expression not matches",
-			comparison: &Comparison{
-				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				Right: Value{
-					String: tqltest.Strp("cat"),
-				},
-				Op: "!=",
-			},
-			item: "bear",
-		},
-		{
-			name:       "no condition",
-			comparison: nil,
-		},
-
-		{
-			name: "compare Enum to int",
-			comparison: &Comparison{
-				Left: Value{
-					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
-				},
-				Right: Value{
-					Int: tqltest.Intp(0),
-				},
-				Op: "==",
-			},
-		},
-		{
-			name: "compare int to Enum",
-			comparison: &Comparison{
-				Left: Value{
-					Int: tqltest.Intp(2),
-				},
-				Op: "==",
-				Right: Value{
-					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_TWO")),
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
-			assert.NoError(t, err)
-			assert.True(t, evaluate(tqltest.TestTransformContext{
-				Item: tt.item,
-			}))
-		})
-	}
-}
-
-func Test_newComparisonEvaluatorExtended(t *testing.T) {
-	tests := []struct {
-		name   string
-		l      any
-		r      any
-		op     string
-		item   interface{}
-		expect bool
+		name string
+		l    any
+		r    any
+		op   string
+		item interface{}
+		want bool
 	}{
 		{"literals match", "hello", "hello", "==", nil, true},
 		{"literals don't match", "hello", "goodbye", "!=", nil, true},
@@ -218,7 +111,7 @@ func Test_newComparisonEvaluatorExtended(t *testing.T) {
 			comp := comparison(tt.l, tt.r, tt.op)
 			evaluate, err := newComparisonEvaluator(comp, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expect, evaluate(tqltest.TestTransformContext{
+			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
 			}))
 		})
