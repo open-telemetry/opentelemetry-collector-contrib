@@ -32,10 +32,12 @@ const (
 
 // NewFactory creates a factory for ECSTaskObserver extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 func createDefaultConfig() config.Extension {

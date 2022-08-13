@@ -16,14 +16,13 @@ package sigv4authextension
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -33,52 +32,34 @@ func TestLoadConfig(t *testing.T) {
 	t.Setenv("AWS_ACCESS_KEY_ID", awsCreds.AccessKeyID)
 	t.Setenv("AWS_SECRET_ACCESS_KEY", awsCreds.SecretAccessKey)
 
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config.yaml"), factories)
-
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(config.NewComponentID(typeStr).String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExtension(sub, cfg))
 
-	expected := factory.CreateDefaultConfig().(*Config)
-	expected.Region = "region"
-	expected.Service = "service"
-	expected.AssumeRole.SessionName = "role_session_name"
-
-	ext := cfg.Extensions[config.NewComponentID(typeStr)]
-	// Ensure creds are the same for load config test; tested in extension_test.go
-	expected.credsProvider = ext.(*Config).credsProvider
-	assert.Equal(t, expected, ext)
-
-	assert.Equal(t, 1, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentID(typeStr), cfg.Service.Extensions[0])
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, &Config{
+		ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+		Region:            "region",
+		Service:           "service",
+		AssumeRole: AssumeRole{
+			SessionName: "role_session_name",
+		},
+		// Ensure creds are the same for load config test; tested in extension_test.go
+		credsProvider: cfg.(*Config).credsProvider,
+	}, cfg)
 }
 
 func TestLoadConfigError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	tests := []struct {
-		name        string
-		expectedErr error
-	}{
-		{
-			"missing_credentials",
-			errBadCreds,
-		},
-	}
-	for _, testcase := range tests {
-		t.Run(testcase.name, func(t *testing.T) {
-			factory := NewFactory()
-			factories.Extensions[typeStr] = factory
-			cfg, _ := servicetest.LoadConfig(path.Join(".", "testdata", "config_bad.yaml"), factories)
-			extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, testcase.name)]
-			verr := extension.Validate()
-			require.ErrorIs(t, verr, testcase.expectedErr)
-		})
-
-	}
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "missing_credentials").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalExtension(sub, cfg))
+	assert.ErrorIs(t, cfg.Validate(), errBadCreds)
 }

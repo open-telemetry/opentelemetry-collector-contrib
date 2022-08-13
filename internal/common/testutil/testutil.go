@@ -137,10 +137,10 @@ func createExclusionsList(t testing.TB, exclusionsText string) []portpair {
 
 // Force the state of feature gate for a test
 // usage: defer SetFeatureGateForTest("gateName", true)()
-func SetFeatureGateForTest(gate string, enabled bool) func() {
+func SetFeatureGateForTest(t testing.TB, gate string, enabled bool) func() {
 	originalValue := featuregate.GetRegistry().IsEnabled(gate)
-	featuregate.GetRegistry().Apply(map[string]bool{gate: enabled})
+	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{gate: enabled}))
 	return func() {
-		featuregate.GetRegistry().Apply(map[string]bool{gate: originalValue})
+		require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{gate: originalValue}))
 	}
 }

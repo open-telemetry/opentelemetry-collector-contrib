@@ -5,27 +5,27 @@ go 1.18
 require (
 	cloud.google.com/go/spanner v1.36.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.57.2
+	go.opentelemetry.io/collector v0.58.0
 	go.uber.org/zap v1.22.0
-	google.golang.org/api v0.91.0
+	google.golang.org/api v0.92.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
 
 require (
-	google.golang.org/genproto v0.0.0-20220706185917-7780775163c4
+	google.golang.org/genproto v0.0.0-20220804142021-4e6b2dfa6612
 	google.golang.org/grpc v1.48.0
 )
 
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
-	go.opentelemetry.io/collector/pdata v0.57.2
+	go.opentelemetry.io/collector/pdata v0.58.0
 )
 
 require (
 	cloud.google.com/go v0.102.1 // indirect
-	cloud.google.com/go/compute v1.7.0 // indirect
+	cloud.google.com/go/compute v1.8.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect

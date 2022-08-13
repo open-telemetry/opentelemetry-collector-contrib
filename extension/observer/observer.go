@@ -50,13 +50,13 @@ type NotifyID string
 
 // Notify is the callback for Observer events.
 type Notify interface {
-	// ID must be unique for each Notify implementer instance and is for registration purposes
+	// ID must be unique for each Notify implementer instance and is for registration purposes.
 	ID() NotifyID
 	// OnAdd is called once or more initially for state sync as well as when further endpoints are added.
 	OnAdd(added []Endpoint)
 	// OnRemove is called when one or more endpoints are removed.
 	OnRemove(removed []Endpoint)
-	// OnChange is called when one ore more endpoints are modified but the identity is not changed
+	// OnChange is called when one or more endpoints are modified but the identity is not changed
 	// (e.g. labels).
 	OnChange(changed []Endpoint)
 }

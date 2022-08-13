@@ -23,16 +23,49 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
+const (
+	emitMetricsWithResourceAttributesFeatureGateID    = "receiver.postgresql.emitMetricsWithResourceAttributes"
+	emitMetricsWithoutResourceAttributesFeatureGateID = "receiver.postgresql.emitMetricsWithoutResourceAttributes"
+)
+
+var (
+	emitMetricsWithoutResourceAttributes = featuregate.Gate{
+		ID:      emitMetricsWithoutResourceAttributesFeatureGateID,
+		Enabled: true,
+		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
+			"gate controls emitting the old metrics without resource attributes. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithResourceAttributes = featuregate.Gate{
+		ID:      emitMetricsWithResourceAttributesFeatureGateID,
+		Enabled: false,
+		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
+			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
+			"gate controls emitting the new metrics with resource attributes. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutResourceAttributes)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithResourceAttributes)
+}
+
 type postgreSQLScraper struct {
-	logger        *zap.Logger
-	config        *Config
-	clientFactory postgreSQLClientFactory
-	mb            *metadata.MetricsBuilder
+	logger                               *zap.Logger
+	config                               *Config
+	clientFactory                        postgreSQLClientFactory
+	mb                                   *metadata.MetricsBuilder
+	emitMetricsWithoutResourceAttributes bool
+	emitMetricsWithResourceAttributes    bool
 }
 
 type postgreSQLClientFactory interface {
@@ -57,10 +90,12 @@ func newPostgreSQLScraper(
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
 	return &postgreSQLScraper{
-		logger:        settings.Logger,
-		config:        config,
-		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		logger:                               settings.Logger,
+		config:                               config,
+		clientFactory:                        clientFactory,
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		emitMetricsWithResourceAttributes:    featuregate.GetRegistry().IsEnabled(emitMetricsWithResourceAttributesFeatureGateID),
+		emitMetricsWithoutResourceAttributes: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutResourceAttributesFeatureGateID),
 	}
 }
 
@@ -108,8 +143,17 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 			continue
 		}
 		defer dbClient.Close()
-		p.recordDatabase(now, database, r)
-		p.collectTables(ctx, now, dbClient, database, &errs)
+		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
+
+		p.recordDatabase(now, database, r, numTables)
+
+		if p.emitMetricsWithResourceAttributes {
+			p.collectIndexes(ctx, now, dbClient, database, &errs)
+		}
+	}
+
+	if p.emitMetricsWithResourceAttributes {
+		p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -132,20 +176,36 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 	wg.Wait()
 }
 
-func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval) {
-	if activeConnections, ok := r.activityMap[databaseName(db)]; ok {
-		p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
-	}
-	if size, ok := r.dbSizeMap[databaseName(db)]; ok {
-		p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
-	}
-	if stats, ok := r.dbStats[databaseName(db)]; ok {
-		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
-		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback, db)
+func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
+	dbName := databaseName(db)
+	if p.emitMetricsWithResourceAttributes {
+		p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
+		if activeConnections, ok := r.activityMap[dbName]; ok {
+			p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
+		}
+		if size, ok := r.dbSizeMap[dbName]; ok {
+			p.mb.RecordPostgresqlDbSizeDataPointWithoutDatabase(now, size)
+		}
+		if stats, ok := r.dbStats[dbName]; ok {
+			p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
+			p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
+		}
+		p.mb.EmitForResource(metadata.WithPostgresqlDatabaseName(db))
+	} else {
+		if activeConnections, ok := r.activityMap[dbName]; ok {
+			p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
+		}
+		if size, ok := r.dbSizeMap[dbName]; ok {
+			p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
+		}
+		if stats, ok := r.dbStats[dbName]; ok {
+			p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted, db)
+			p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback, db)
+		}
 	}
 }
 
-func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) {
+func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *scrapererror.ScrapeErrors) (numTables int64) {
 	blockReads, err := dbClient.getBlocksReadByTable(ctx, db)
 	if err != nil {
 		errs.AddPartial(1, err)
@@ -157,23 +217,76 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	for tableKey, tm := range tableMetrics {
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, db, tm.table, metadata.AttributeStateDead)
-		p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, db, tm.table, metadata.AttributeStateLive)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, db, tm.table, metadata.AttributeOperationIns)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, db, tm.table, metadata.AttributeOperationDel)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, db, tm.table, metadata.AttributeOperationUpd)
-		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, db, tm.table, metadata.AttributeOperationHotUpd)
-		br, ok := blockReads[tableKey]
-		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, db, br.table, metadata.AttributeSourceHeapRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, db, br.table, metadata.AttributeSourceHeapHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, db, br.table, metadata.AttributeSourceIdxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, db, br.table, metadata.AttributeSourceIdxHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, db, br.table, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, db, br.table, metadata.AttributeSourceToastRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, db, br.table, metadata.AttributeSourceTidxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, db, br.table, metadata.AttributeSourceTidxHit)
+		if p.emitMetricsWithResourceAttributes {
+			p.mb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.dead, metadata.AttributeStateDead)
+			p.mb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.live, metadata.AttributeStateLive)
+			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.inserts, metadata.AttributeOperationIns)
+			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.del, metadata.AttributeOperationDel)
+			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.upd, metadata.AttributeOperationUpd)
+			p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
+			p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
+			p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
+
+			br, ok := blockReads[tableKey]
+			if ok {
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapRead, metadata.AttributeSourceHeapRead)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapHit, metadata.AttributeSourceHeapHit)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead, metadata.AttributeSourceIdxRead)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit, metadata.AttributeSourceIdxHit)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit, metadata.AttributeSourceToastHit)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastHit)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
+				p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
+			}
+			p.mb.EmitForResource(
+				metadata.WithPostgresqlDatabaseName(db),
+				metadata.WithPostgresqlTableName(tm.table),
+			)
+		} else {
+			p.mb.RecordPostgresqlRowsDataPoint(now, tm.dead, db, tm.table, metadata.AttributeStateDead)
+			p.mb.RecordPostgresqlRowsDataPoint(now, tm.live, db, tm.table, metadata.AttributeStateLive)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, tm.inserts, db, tm.table, metadata.AttributeOperationIns)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, tm.del, db, tm.table, metadata.AttributeOperationDel)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, tm.upd, db, tm.table, metadata.AttributeOperationUpd)
+			p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, db, tm.table, metadata.AttributeOperationHotUpd)
+
+			br, ok := blockReads[tableKey]
+			if ok {
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapRead, db, br.table, metadata.AttributeSourceHeapRead)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.heapHit, db, br.table, metadata.AttributeSourceHeapHit)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxRead, db, br.table, metadata.AttributeSourceIdxRead)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.idxHit, db, br.table, metadata.AttributeSourceIdxHit)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastHit, db, br.table, metadata.AttributeSourceToastHit)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.toastRead, db, br.table, metadata.AttributeSourceToastRead)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxRead, db, br.table, metadata.AttributeSourceTidxRead)
+				p.mb.RecordPostgresqlBlocksReadDataPoint(now, br.tidxHit, db, br.table, metadata.AttributeSourceTidxHit)
+			}
 		}
+	}
+	return int64(len(tableMetrics))
+}
+
+func (p *postgreSQLScraper) collectIndexes(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *scrapererror.ScrapeErrors,
+) {
+	idxStats, err := client.getIndexStats(ctx, database)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for _, stat := range idxStats {
+		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
+		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
+		p.mb.EmitForResource(
+			metadata.WithPostgresqlDatabaseName(stat.database),
+			metadata.WithPostgresqlTableName(stat.table),
+			metadata.WithPostgresqlIndexName(stat.index),
+		)
 	}
 }
 

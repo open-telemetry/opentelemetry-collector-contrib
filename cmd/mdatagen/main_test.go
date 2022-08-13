@@ -58,7 +58,7 @@ func Test_runContents(t *testing.T) {
 		args                  args
 		expectedDocumentation string
 		want                  string
-		wantErr               string
+		wantErr               bool
 	}{
 		{
 			name:                  "valid metadata",
@@ -76,7 +76,7 @@ func Test_runContents(t *testing.T) {
 			name:    "invalid yaml",
 			args:    args{"invalid", false},
 			want:    "",
-			wantErr: "cannot unmarshal",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -87,29 +87,28 @@ func Test_runContents(t *testing.T) {
 			require.NoError(t, os.WriteFile(metadataFile, []byte(tt.args.yml), 0600))
 
 			err := run(metadataFile, tt.args.useExpGen)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
-			if tt.wantErr != "" {
-				require.Regexp(t, tt.wantErr, err)
-			} else {
+			genFilePath := filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")
+			if tt.args.useExpGen {
+				genFilePath = filepath.Join(tmpdir, "internal/metadata/generated_metrics_v2.go")
+			}
+			require.FileExists(t, genFilePath)
+
+			actualDocumentation := filepath.Join(tmpdir, "documentation.md")
+			require.FileExists(t, actualDocumentation)
+			if tt.expectedDocumentation != "" {
+				expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
 				require.NoError(t, err)
 
-				genFilePath := filepath.Join(tmpdir, "internal/metadata/generated_metrics.go")
-				if tt.args.useExpGen {
-					genFilePath = filepath.Join(tmpdir, "internal/metadata/generated_metrics_v2.go")
-				}
-				require.FileExists(t, genFilePath)
+				actualFileBytes, err := os.ReadFile(actualDocumentation)
+				require.NoError(t, err)
 
-				actualDocumentation := filepath.Join(tmpdir, "documentation.md")
-				require.FileExists(t, actualDocumentation)
-				if tt.expectedDocumentation != "" {
-					expectedFileBytes, err := os.ReadFile(tt.expectedDocumentation)
-					require.NoError(t, err)
-
-					actualFileBytes, err := os.ReadFile(actualDocumentation)
-					require.NoError(t, err)
-
-					require.Equal(t, expectedFileBytes, actualFileBytes)
-				}
+				require.Equal(t, expectedFileBytes, actualFileBytes)
 			}
 		})
 	}

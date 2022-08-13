@@ -84,9 +84,10 @@ func createTracesExporter(
 
 	exporter := newTracesExporter(cfg, set.TelemetrySettings)
 
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exporter.pushTraceData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
