@@ -174,7 +174,12 @@ func compareString(a string, b any, op compareOp) bool {
 
 func compareByte(a []byte, b any, op compareOp) bool {
 	switch v := b.(type) {
+	case nil:
+		return op == NE
 	case []byte:
+		if v == nil {
+			return op == NE
+		}
 		return compareBytes(a, v, op)
 	default:
 		return invalidComparison("Bytes to non-Bytes", op)
@@ -277,12 +282,12 @@ func compare(a any, b any, op compareOp) bool {
 	if a == nil && b == nil {
 		return (op == EQ || op == LTE || op == GTE)
 	}
-	// otherwise if either is nil, they're definitely not equal.
-	if a == nil || b == nil {
-		return op == NE
-	}
 	// Anything else, we switch on the left side first.
 	switch v := a.(type) {
+	case nil:
+		// If a was nil, it means b wasn't and inequalities don't apply,
+		// so let's swap and give it the chance to get evaluated.
+		return compare(b, nil, op)
 	case bool:
 		return compareBool(v, b, op)
 	case int:
@@ -298,40 +303,43 @@ func compare(a any, b any, op compareOp) bool {
 	case string:
 		return compareString(v, b, op)
 	case []byte:
+		if v == nil {
+			return compare(b, nil, op)
+		}
 		return compareByte(v, b, op)
 	case *bool:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareBool(*v, b, op)
 	case *int:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareInt64(int64(*v), b, op)
 	case *int32:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareInt64(int64(*v), b, op)
 	case *int64:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareInt64(*v, b, op)
 	case *float32:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareFloat64(float64(*v), b, op)
 	case *float64:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareFloat64(*v, b, op)
 	case *string:
 		if v == nil {
-			return compare(nil, b, op)
+			return compare(b, nil, op)
 		}
 		return compareString(*v, b, op)
 	default:

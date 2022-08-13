@@ -47,8 +47,12 @@ func valueFor(x any) Value {
 		}
 	case float64:
 		val.Float = tqltest.Floatp(v)
+	case *float64:
+		val.Float = v
 	case int:
 		val.Int = tqltest.Intp(int64(v))
+	case *int64:
+		val.Int = v
 	case bool:
 		val.Bool = Booleanp(Boolean(v))
 	case nil:
@@ -207,7 +211,7 @@ func Test_newComparisonEvaluatorExtended(t *testing.T) {
 		{"not 'true' == true", "true", true, "==", nil, false},
 		{"[]byte('a') < []byte('b')", []byte("a"), []byte("b"), "<", nil, true},
 		{"nil == nil", nil, nil, "==", nil, true},
-		{"not nil == []byte(nil)", nil, []byte(nil), "==", nil, false},
+		{"nil == []byte(nil)", nil, []byte(nil), "==", nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

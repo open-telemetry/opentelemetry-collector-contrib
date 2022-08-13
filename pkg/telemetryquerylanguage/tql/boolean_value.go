@@ -64,7 +64,6 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 		return nil, err
 	}
 	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
-	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
 	}
