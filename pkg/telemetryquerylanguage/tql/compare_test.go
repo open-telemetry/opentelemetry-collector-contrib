@@ -179,7 +179,7 @@ func Test_compare(t *testing.T) {
 
 // Benchmarks -- these benchmarks compare the performance of comparisons of a variety of data types.
 // It's not attempting to be exhaustive, but again, it hits most of the major types and combinations.
-// The summary is that they're pretty fast; all the calls to compare are 10 ns/op or less on a 2019 intel
+// The summary is that they're pretty fast; all the calls to compare are 12 ns/op or less on a 2019 intel
 // mac pro laptop, and none of them have any allocations.
 func BenchmarkCompareEQInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
