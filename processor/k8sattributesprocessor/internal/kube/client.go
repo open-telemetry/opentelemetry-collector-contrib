@@ -61,7 +61,7 @@ type WatchClient struct {
 
 // Extract replicaset name from the pod name. Pod name is created using
 // format: [deployment-name]-[Random-String-For-ReplicaSet]
-var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]*$`)
+var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
 // New initializes a new k8s Client.
 func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace) (Client, error) {
