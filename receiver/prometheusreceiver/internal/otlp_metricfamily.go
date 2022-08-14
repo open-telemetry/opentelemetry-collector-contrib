@@ -154,7 +154,7 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 	point := dest.AppendEmpty()
 
 	if pointIsStale {
-		point.FlagsStruct().SetNoRecordedValue(true)
+		point.Flags().SetNoRecordedValue(true)
 	} else {
 		point.SetCount(uint64(mg.count))
 		point.SetSum(mg.sum)
@@ -192,7 +192,7 @@ func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest *pmetric.S
 	point := dest.AppendEmpty()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
-		point.FlagsStruct().SetNoRecordedValue(true)
+		point.Flags().SetNoRecordedValue(true)
 	} else {
 		point.SetSum(mg.sum)
 		point.SetCount(uint64(mg.count))
@@ -237,7 +237,7 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest *pmetri
 	point.SetStartTimestamp(startTsNanos)
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
-		point.FlagsStruct().SetNoRecordedValue(true)
+		point.Flags().SetNoRecordedValue(true)
 	} else {
 		point.SetDoubleVal(mg.value)
 	}

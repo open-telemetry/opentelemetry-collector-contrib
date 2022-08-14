@@ -55,7 +55,7 @@ func (wp *WavefrontParser) BuildParser() (protocol.Parser, error) {
 //
 // Each line received represents a Wavefront metric in the following format:
 //
-// 	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
+//	"<metricName> <metricValue> [<timestamp>] source=<source> [pointTags]"
 //
 // Detailed description of each element is available on the link above.
 func (wp *WavefrontParser) Parse(line string) (*metricspb.Metric, error) {

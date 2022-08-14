@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -186,6 +187,323 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		t.Run(test.filterID.String(), func(t *testing.T) {
 			cfg := cfg.Processors[test.filterID]
 			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigSeverityLogsStrict tests loading testdata/config_logs_severity_strict.yaml
+func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType:  Strict,
+		SeverityTexts: []string{"INFO"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType:  Strict,
+		SeverityTexts: []string{"DEBUG", "DEBUG2", "DEBUG3", "DEBUG4"},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_severity_strict.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigSeverityLogsRegexp tests loading testdata/config_logs_severity_regexp.yaml
+func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType:  Regexp,
+		SeverityTexts: []string{"INFO[2-4]?"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType:  Regexp,
+		SeverityTexts: []string{"DEBUG[2-4]?"},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_severity_regexp.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_strict.yaml
+func TestLoadingConfigBodyLogsStrict(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType: Strict,
+		LogBodies:    []string{"This is an important event"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType: Strict,
+		LogBodies:    []string{"This event is not important"},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_body_strict.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigBodyLogsStrict tests loading testdata/config_logs_body_regexp.yaml
+func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
+
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		LogMatchType: Regexp,
+		LogBodies:    []string{"^IMPORTANT:"},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		LogMatchType: Regexp,
+		LogBodies:    []string{"^MINOR:"},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_body_regexp.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+// TestLoadingConfigMinSeverityNumberLogs tests loading testdata/config_logs_min_severity.yaml
+func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
+	testDataLogPropertiesInclude := &LogMatchProperties{
+		SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+			Min:            logSeverity("INFO"),
+			MatchUndefined: true,
+		},
+	}
+
+	testDataLogPropertiesExclude := &LogMatchProperties{
+		SeverityNumberProperties: &LogSeverityNumberMatchProperties{
+			Min: logSeverity("ERROR"),
+		},
+	}
+
+	factories, err := componenttest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Processors[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_min_severity.yaml"), factories)
+
+	assert.Nil(t, err)
+	require.NotNil(t, cfg)
+
+	tests := []struct {
+		filterID config.ComponentID
+		expCfg   *Config
+	}{
+		{
+			filterID: config.NewComponentIDWithName("filter", "include"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "exclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+				Logs: LogFilters{
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		}, {
+			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
+			expCfg: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+				Logs: LogFilters{
+					Include: testDataLogPropertiesInclude,
+					Exclude: testDataLogPropertiesExclude,
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.filterID.String(), func(t *testing.T) {
+			cfg := cfg.Processors[test.filterID]
+			assert.Equal(t, test.expCfg, cfg)
+			assert.NoError(t, test.expCfg.Validate(), "Failed to validate config")
 		})
 	}
 }
@@ -394,6 +712,119 @@ func TestLoadingConfigExpr(t *testing.T) {
 		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
 			cfg := cfg.Processors[test.expCfg.ID()]
 			assert.Equal(t, test.expCfg, cfg)
+		})
+	}
+}
+
+func TestLogSeverity_severityNumber(t *testing.T) {
+	testCases := []struct {
+		name string
+		sev  logSeverity
+		num  plog.SeverityNumber
+	}{
+		{
+			name: "INFO severity",
+			sev:  logSeverity("INFO"),
+			num:  plog.SeverityNumberINFO,
+		},
+		{
+			name: "info severity",
+			sev:  logSeverity("info"),
+			num:  plog.SeverityNumberINFO,
+		},
+		{
+			name: "info3 severity",
+			sev:  logSeverity("info3"),
+			num:  plog.SeverityNumberINFO3,
+		},
+		{
+			name: "DEBUG severity",
+			sev:  logSeverity("DEBUG"),
+			num:  plog.SeverityNumberDEBUG,
+		},
+		{
+			name: "ERROR severity",
+			sev:  logSeverity("ERROR"),
+			num:  plog.SeverityNumberERROR,
+		},
+		{
+			name: "WARN severity",
+			sev:  logSeverity("WARN"),
+			num:  plog.SeverityNumberWARN,
+		},
+		{
+			name: "unknown severity",
+			sev:  logSeverity("unknown"),
+			num:  plog.SeverityNumberUNDEFINED,
+		},
+		{
+			name: "Numeric Severity",
+			sev:  logSeverity("9"),
+			num:  plog.SeverityNumberINFO,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			num := tc.sev.severityNumber()
+			require.Equal(t, tc.num, num)
+		})
+	}
+}
+
+func TestLogSeverity_severityValidate(t *testing.T) {
+	testCases := []struct {
+		name        string
+		sev         logSeverity
+		expectedErr error
+	}{
+		{
+			name: "INFO severity",
+			sev:  logSeverity("INFO"),
+		},
+		{
+			name: "info severity",
+			sev:  logSeverity("info"),
+		},
+		{
+			name: "info3 severity",
+			sev:  logSeverity("info3"),
+		},
+		{
+			name: "DEBUG severity",
+			sev:  logSeverity("DEBUG"),
+		},
+		{
+			name: "ERROR severity",
+			sev:  logSeverity("ERROR"),
+		},
+		{
+			name: "WARN severity",
+			sev:  logSeverity("WARN"),
+		},
+		{
+			name: "FATAL severity",
+			sev:  logSeverity("FATAL"),
+		},
+		{
+			name:        "unknown severity",
+			sev:         logSeverity("unknown"),
+			expectedErr: errInvalidSeverity,
+		},
+		{
+			name: "empty severity is valid",
+			sev:  logSeverity(""),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.sev.validate()
+			if tc.expectedErr != nil {
+				require.ErrorIs(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
 		})
 	}
 }

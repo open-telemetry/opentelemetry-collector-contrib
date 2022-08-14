@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +35,7 @@ import (
 )
 
 func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := ioutil.TempFile(os.TempDir(), "testsock")
+	f, err := os.CreateTemp(os.TempDir(), "testsock")
 	if err != nil {
 		t.Fatal(err)
 	}

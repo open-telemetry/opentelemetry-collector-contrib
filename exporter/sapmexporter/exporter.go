@@ -75,9 +75,10 @@ func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (c
 		return nil, err
 	}
 
-	te, err := exporterhelper.NewTracesExporter(
-		cfg,
+	te, err := exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),

@@ -16,7 +16,7 @@ package zipkinv1
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"testing"
@@ -35,7 +35,7 @@ import (
 )
 
 func TestSingleJSONV1BatchToTraces(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	td, err := NewJSONTracesUnmarshaler(false).UnmarshalTraces(blob)
@@ -44,7 +44,7 @@ func TestSingleJSONV1BatchToTraces(t *testing.T) {
 }
 
 func TestErrorSpanToTraces(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_error_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_error_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	_, err = NewJSONTracesUnmarshaler(false).UnmarshalTraces(blob)
@@ -146,7 +146,7 @@ func Test_hexTraceIDToOCTraceID(t *testing.T) {
 }
 
 func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_local_component.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_local_component.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	reqs, err := v1JSONBatchToOCProto(blob, false)
@@ -168,7 +168,7 @@ func TestZipkinJSONFallbackToLocalComponent(t *testing.T) {
 }
 
 func TestSingleJSONV1BatchToOCProto(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_single_batch.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_single_batch.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	parseStringTags := true // This test relies on parsing int/bool to the typed span attributes
@@ -179,7 +179,7 @@ func TestSingleJSONV1BatchToOCProto(t *testing.T) {
 }
 
 func TestMultipleJSONV1BatchesToOCProto(t *testing.T) {
-	blob, err := ioutil.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
+	blob, err := os.ReadFile("./testdata/zipkin_v1_multiple_batches.json")
 	require.NoError(t, err, "Failed to load test data")
 
 	var batches []interface{}

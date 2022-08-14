@@ -17,9 +17,9 @@ package elasticsearchreceiver
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -40,7 +40,7 @@ func TestCreateClientInvalidEndpoint(t *testing.T) {
 }
 
 func TestNodeStatsNoPassword(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -63,7 +63,7 @@ func TestNodeStatsNoPassword(t *testing.T) {
 }
 
 func TestNodeStatsNilNodes(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -87,7 +87,7 @@ func TestNodeStatsNilNodes(t *testing.T) {
 }
 
 func TestNodeStatsAuthentication(t *testing.T) {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	actualNodeStats := model.NodeStats{}
@@ -150,7 +150,7 @@ func TestNodeStatsBadAuthentication(t *testing.T) {
 }
 
 func TestClusterHealthNoPassword(t *testing.T) {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
@@ -174,7 +174,7 @@ func TestClusterHealthNoPassword(t *testing.T) {
 }
 
 func TestClusterHealthAuthentication(t *testing.T) {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	actualClusterHealth := model.ClusterHealth{}
@@ -282,9 +282,9 @@ func TestDoRequest404(t *testing.T) {
 // mockServer gives a mock elasticsearch server for testing; if username or password is included, they will be required for the client.
 // otherwise, authorization is ignored.
 func mockServer(t *testing.T, username, password string) *httptest.Server {
-	nodes, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodes, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
-	health, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	health, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	elasticsearchMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

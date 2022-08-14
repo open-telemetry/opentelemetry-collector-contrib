@@ -17,7 +17,7 @@ package translator
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -841,7 +841,7 @@ func TestTranslation(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		content, err := ioutil.ReadFile(tc.samplePath)
+		content, err := os.ReadFile(tc.samplePath)
 		assert.NoError(t, err, tc.testCase+": can not read raw segment")
 		assert.True(t, len(content) > 0, tc.testCase+": content length is 0")
 
@@ -979,12 +979,14 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 // abbrev. as exp) and actual ResourceSpans (abbrev. as act):
 // 1. clears the resource attributes on both exp and act, after verifying
 // .  both sets are the same.
-// 2. clears the span attributes of all the
-//    spans on both exp and act, after going through all the spans
+//  2. clears the span attributes of all the
+//     spans on both exp and act, after going through all the spans
+//
 // .  on both exp and act and verify that all the attributes match.
-// 3. similarly, for all the events and their attributes within a span,
-//    this function performs the same equality verification, then clears
-//    up all the attribute.
+//  3. similarly, for all the events and their attributes within a span,
+//     this function performs the same equality verification, then clears
+//     up all the attribute.
+//
 // The reason for doing so is just to be able to use deep equal via assert.Equal()
 func compare2ResourceSpans(t *testing.T, testCase string, exp, act *ptrace.ResourceSpans) {
 	assert.Equal(t, exp.ScopeSpans().Len(),

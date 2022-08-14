@@ -17,7 +17,6 @@ package signalfxexporter // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"strings"
@@ -93,7 +92,7 @@ func (s *sfxEventClient) pushLogsData(ctx context.Context, ld plog.Logs) (int, e
 	}
 
 	defer func() {
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}()
 

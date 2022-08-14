@@ -20,7 +20,7 @@ package docsgen
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -39,7 +39,7 @@ func TestTableTemplate(t *testing.T) {
 }
 
 func testDataField(t *testing.T) *configschema.Field {
-	jsonBytes, err := ioutil.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
+	jsonBytes, err := os.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
 	require.NoError(t, err)
 	field := configschema.Field{}
 	err = json.Unmarshal(jsonBytes, &field)

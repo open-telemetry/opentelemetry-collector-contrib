@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -89,9 +88,10 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		exporter.pushTraceData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
@@ -113,9 +113,10 @@ func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings)
 		return nil, err
 	}
 	config.checkAndWarnDeprecatedOptions(exporter.logger)
-	return exporterhelper.NewLogsExporter(
-		config,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		exporter.pushLogData,
 		exporterhelper.WithStart(exporter.start),
 		// disable since we rely on http.Client timeout logic.
@@ -225,7 +226,7 @@ func (exporter *logzioExporter) export(ctx context.Context, url string, request 
 
 	defer func() {
 		// Discard any remaining response body when we are done reading.
-		io.CopyN(ioutil.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
+		io.CopyN(io.Discard, resp.Body, maxHTTPResponseReadBytes) // nolint:errcheck
 		resp.Body.Close()
 	}()
 	exporter.logger.Debug(fmt.Sprintf("Response status code: %d", resp.StatusCode))

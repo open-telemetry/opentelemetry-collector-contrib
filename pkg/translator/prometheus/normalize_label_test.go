@@ -24,7 +24,7 @@ import (
 
 func TestSanitize(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(dropSanitizationGate.ID, false)()
+	defer testutil.SetFeatureGateForTest(t, dropSanitizationGate.ID, false)()
 
 	require.Equal(t, "", NormalizeLabel(""), "")
 	require.Equal(t, "key_test", NormalizeLabel("_test"))
@@ -36,7 +36,7 @@ func TestSanitize(t *testing.T) {
 
 func TestSanitizeDropSanitization(t *testing.T) {
 
-	defer testutil.SetFeatureGateForTest(dropSanitizationGate.ID, true)()
+	defer testutil.SetFeatureGateForTest(t, dropSanitizationGate.ID, true)()
 
 	require.Equal(t, "", NormalizeLabel(""))
 	require.Equal(t, "_test", NormalizeLabel("_test"))

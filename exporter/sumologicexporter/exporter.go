@@ -75,9 +75,10 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -97,9 +98,10 @@ func newMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
