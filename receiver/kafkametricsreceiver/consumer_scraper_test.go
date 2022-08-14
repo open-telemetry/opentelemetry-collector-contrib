@@ -22,6 +22,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -62,7 +63,7 @@ func TestConsumerScraper_createConsumerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 }
@@ -72,7 +73,7 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.Scrape(context.Background())
@@ -84,7 +85,7 @@ func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Shutdown(context.Background())
@@ -102,7 +103,7 @@ func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 		return nil, fmt.Errorf("new cluster admin failed")
 	}
 	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.Scrape(context.Background())
@@ -113,7 +114,7 @@ func TestConsumerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
 	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	cs, err := createConsumerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Start(context.Background(), nil)
@@ -126,7 +127,7 @@ func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T)
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{
 		TopicMatch: "[",
-	}, sc, zap.NewNop())
+	}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, cs)
 }
@@ -137,7 +138,7 @@ func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T)
 	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{
 		GroupMatch: "[",
-	}, sc, zap.NewNop())
+	}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.Error(t, err)
 	assert.Nil(t, cs)
 }
@@ -151,7 +152,7 @@ func TestConsumerScraper_scrape(t *testing.T) {
 		clusterAdmin: newMockClusterAdmin(),
 		topicFilter:  filter,
 		groupFilter:  filter,
-		mb:           metadata.NewMetricsBuilder(config.Metrics),
+		mb:           metadata.NewMetricsBuilder(config.Metrics, component.NewDefaultBuildInfo()),
 	}
 	md, err := cs.scrape(context.Background())
 	assert.NoError(t, err)
@@ -170,7 +171,7 @@ func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
-		mb:           metadata.NewMetricsBuilder(config.Metrics),
+		mb:           metadata.NewMetricsBuilder(config.Metrics, component.NewDefaultBuildInfo()),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
@@ -219,7 +220,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
-		mb:           metadata.NewMetricsBuilder(config.Metrics),
+		mb:           metadata.NewMetricsBuilder(config.Metrics, component.NewDefaultBuildInfo()),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)
@@ -238,7 +239,7 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
-		mb:           metadata.NewMetricsBuilder(config.Metrics),
+		mb:           metadata.NewMetricsBuilder(config.Metrics, component.NewDefaultBuildInfo()),
 	}
 	_, err := cs.scrape(context.Background())
 	assert.Error(t, err)

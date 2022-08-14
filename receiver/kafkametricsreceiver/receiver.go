@@ -34,7 +34,7 @@ const (
 	consumersScraperName   = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, component.BuildInfo, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -65,7 +65,7 @@ var newMetricsReceiver = func(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params.Logger)
+			s, err := s(ctx, config, params.BuildInfo, sc, params.Logger)
 			if err != nil {
 				return nil, err
 			}

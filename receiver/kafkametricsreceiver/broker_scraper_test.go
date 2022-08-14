@@ -21,6 +21,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -64,7 +65,7 @@ func TestBrokerScraper_Name(t *testing.T) {
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	bs, err := createBrokerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }
@@ -72,7 +73,7 @@ func TestBrokerScraper_createBrokerScraper(t *testing.T) {
 func TestBrokerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	bs, err := createBrokerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	assert.NoError(t, bs.Start(context.Background(), nil))
@@ -83,7 +84,7 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	bs, err := createBrokerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	_, err = bs.Scrape(context.Background())
@@ -95,7 +96,7 @@ func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
 		return nil, fmt.Errorf("new client failed")
 	}
 	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, zap.NewNop())
+	bs, err := createBrokerScraper(context.Background(), Config{}, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	err = bs.Shutdown(context.Background())
@@ -110,7 +111,7 @@ func TestBrokerScraper_scrape(t *testing.T) {
 		client: client,
 		logger: zap.NewNop(),
 		config: *config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics),
+		mb:     metadata.NewMetricsBuilder(config.Metrics, component.NewDefaultBuildInfo()),
 	}
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
@@ -124,7 +125,7 @@ func TestBrokersScraper_createBrokerScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	config := createDefaultConfig().(*Config)
-	bs, err := createBrokerScraper(context.Background(), *config, sc, zap.NewNop())
+	bs, err := createBrokerScraper(context.Background(), *config, component.NewDefaultBuildInfo(), sc, zap.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }

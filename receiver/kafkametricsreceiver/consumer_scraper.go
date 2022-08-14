@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -122,8 +123,8 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	md := pmetric.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(instrumentationLibName)
+	//ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	//ilm.Scope().SetName(instrumentationLibName)
 	for _, group := range consumerGroups {
 		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
@@ -165,11 +166,11 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	s.mb.Emit(ilm.Metrics())
+	s.mb.Emit()
 	return md, scrapeError
 }
 
-func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
+func createConsumerScraper(_ context.Context, cfg Config, buildInfo component.BuildInfo, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)
@@ -184,7 +185,7 @@ func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.C
 		topicFilter:  topicFilter,
 		config:       cfg,
 		saramaConfig: saramaConfig,
-		mb:           metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:           metadata.NewMetricsBuilder(cfg.Metrics, buildInfo),
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),

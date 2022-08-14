@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -69,8 +70,8 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	md := pmetric.NewMetrics()
-	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
-	ilm.Scope().SetName(instrumentationLibName)
+	//ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	//ilm.Scope().SetName(instrumentationLibName)
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
 			continue
@@ -109,11 +110,11 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	s.mb.Emit(ilm.Metrics())
+	s.mb.Emit()
 	return md, scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
+func createTopicsScraper(_ context.Context, cfg Config, buildInfo component.BuildInfo, saramaConfig *sarama.Config, logger *zap.Logger) (scraperhelper.Scraper, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
@@ -123,7 +124,7 @@ func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Con
 		topicFilter:  topicFilter,
 		saramaConfig: saramaConfig,
 		config:       cfg,
-		mb:           metadata.NewMetricsBuilder(cfg.Metrics),
+		mb:           metadata.NewMetricsBuilder(cfg.Metrics, buildInfo),
 	}
 	return scraperhelper.NewScraper(
 		s.Name(),
