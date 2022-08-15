@@ -100,10 +100,6 @@ func createTracesExporter(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch traces exporter: %w", err)
 	}
-	return exporterhelper.NewTracesExporter(
-		cfg,
-		set,
-		exporter.pushTraceData,
-		exporterhelper.WithShutdown(exporter.Shutdown),
-	)
+	return exporterhelper.NewTracesExporterWithContext(ctx, set, cfg, exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown))
 }
