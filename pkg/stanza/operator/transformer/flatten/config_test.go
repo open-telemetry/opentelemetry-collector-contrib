@@ -128,5 +128,5 @@ func configFromFileViaMapstructure(file string) (*Config, error) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("flatten")
+	return NewConfig()
 }

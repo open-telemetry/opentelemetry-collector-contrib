@@ -33,6 +33,8 @@ import (
 )
 
 const (
+	operatorType = "tcp_input"
+
 	// minMaxLogSize is the minimal size which can be used for buffering
 	// TCP input
 	minMaxLogSize = 64 * 1024
@@ -43,13 +45,18 @@ const (
 )
 
 func init() {
-	operator.Register("tcp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfig creates a new TCP input config with default values
-func NewConfig(operatorID string) *Config {
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Multiline: helper.NewMultilineConfig(),
 			Encoding:  helper.NewEncodingConfig(),

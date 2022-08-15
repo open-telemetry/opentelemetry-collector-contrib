@@ -28,7 +28,7 @@ import (
 var testHeader = "name,sev,msg"
 
 func newTestParser(t *testing.T) *Parser {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	op, err := cfg.Build(testutil.Logger(t))
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func newTestParser(t *testing.T) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -44,7 +44,7 @@ func TestParserBuildFailure(t *testing.T) {
 }
 
 func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	cfg.FieldDelimiter = ";;"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -53,7 +53,7 @@ func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 }
 
 func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Header = "testheader"
 	cfg.HeaderAttribute = "testheader"
 	_, err := cfg.Build(testutil.Logger(t))
@@ -615,7 +615,7 @@ func TestParserCSV(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -858,7 +858,7 @@ cc""",dddd,eeee`,
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.ParseTo = entry.NewBodyField()
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
@@ -881,7 +881,7 @@ cc""",dddd,eeee`,
 
 func TestParserCSVInvalidJSONInput(t *testing.T) {
 	t.Run("basic", func(t *testing.T) {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
@@ -901,7 +901,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 
 func TestBuildParserCSV(t *testing.T) {
 	newBasicParser := func() *Config {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Header = "name,position,number"
 		cfg.FieldDelimiter = ","
