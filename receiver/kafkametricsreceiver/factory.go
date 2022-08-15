@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 const (
@@ -47,6 +49,7 @@ func createDefaultConfig() config.Receiver {
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,
 		ClientID:                  defaultClientID,
+		Metrics:                   metadata.DefaultMetricsSettings(),
 	}
 }
 
