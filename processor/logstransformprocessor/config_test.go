@@ -19,25 +19,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factories.Processors[typeStr] = NewFactory()
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NoError(t, err)
-	assert.NotNil(t, cfg)
-
-	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)], &Config{
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NoError(t, config.UnmarshalProcessor(cm, cfg))
+	assert.Equal(t, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.ReceiverSettings{},
@@ -59,5 +56,5 @@ func TestLoadConfig(t *testing.T) {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-	})
+	}, cfg)
 }
