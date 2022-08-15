@@ -78,7 +78,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, DefaultFunctions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 			assert.NoError(t, err)
 			evaluate(tqlmetrics.MetricTransformContext{
 				InstrumentationScope: pcommon.NewInstrumentationScope(),
