@@ -14,4 +14,4 @@
 
 package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 
-//go:generate mdatagen --experimental-gen metadata.yaml
+//go:generate mdatagen metadata.yaml
