@@ -50,8 +50,7 @@ func newMongodbScraper(settings component.ReceiverCreateSettings, config *Config
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
 	c, err := NewClient(ctx, s.config, s.logger)
 	if err != nil {
-		s.logger.Warn("Initial client creation failed: %w", zap.Error(err))
-		return fmt.Errorf("initial client creation failed: %w", err)
+		return fmt.Errorf("create mongo client: %w", err)
 	}
 	s.client = c
 	return nil
