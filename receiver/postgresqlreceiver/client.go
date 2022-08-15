@@ -41,6 +41,7 @@ type indexIdentifer string
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
@@ -359,6 +360,71 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+type bgStat struct {
+	checkpointsReq       int64
+	checkpointsScheduled int64
+	checkpointWriteTime  int64
+	checkpointSyncTime   int64
+	bgWrites             int64
+	backendWrites        int64
+	bufferBackendWrites  int64
+	bufferFsyncWrites    int64
+	bufferCheckpoints    int64
+	buffersAllocated     int64
+	maxWritten           int64
+}
+
+func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	query := `SELECT 
+	checkpoints_req AS checkpoint_req,
+	checkpoints_timed AS checkpoint_scheduled,
+	checkpoint_write_time AS checkpoint_duration_write,
+	checkpoint_sync_time AS checkpoint_duration_sync,
+	buffers_clean AS bg_writes,
+	buffers_backend AS backend_writes,
+	buffers_backend_fsync AS buffers_written_fsync,
+	buffers_checkpoint AS buffers_checkpoints,
+	buffers_alloc AS buffers_allocated,
+	maxwritten_clean AS maxwritten_count
+	FROM pg_stat_bgwriter;`
+
+	row := c.client.QueryRowContext(ctx, query)
+	var (
+		checkpointsReq, checkpointsScheduled               int64
+		checkpointSyncTime, checkpointWriteTime            int64
+		bgWrites, bufferCheckpoints, bufferAllocated       int64
+		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
+	)
+	err := row.Scan(
+		&checkpointsReq,
+		&checkpointsScheduled,
+		&checkpointWriteTime,
+		&checkpointSyncTime,
+		&bgWrites,
+		&bufferBackendWrites,
+		&bufferFsyncWrites,
+		&bufferCheckpoints,
+		&bufferAllocated,
+		&maxWritten,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &bgStat{
+		checkpointsReq:       checkpointsReq,
+		checkpointsScheduled: checkpointsScheduled,
+		checkpointWriteTime:  checkpointWriteTime,
+		checkpointSyncTime:   checkpointSyncTime,
+		bgWrites:             bgWrites,
+		backendWrites:        bufferBackendWrites,
+		bufferBackendWrites:  bufferBackendWrites,
+		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferCheckpoints:    bufferCheckpoints,
+		buffersAllocated:     bufferAllocated,
+		maxWritten:           maxWritten,
+	}, nil
 }
 
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
