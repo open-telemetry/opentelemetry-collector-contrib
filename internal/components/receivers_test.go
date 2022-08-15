@@ -34,6 +34,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
@@ -80,6 +81,9 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "awsxray",
 			skipLifecyle: true, // Requires AWS endpoint to check identity to run
+		},
+		{
+			receiver: "azureeventhub",
 		},
 		{
 			receiver: "bigip",
@@ -129,11 +133,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"include": []string{
-						filepath.Join(t.TempDir(), "*"),
-					},
-				}
+				cfg.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
 		},
@@ -308,12 +308,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"tcp": map[string]interface{}{
-						"listen_address": "0.0.0.0:0",
-					},
-					"protocol": "rfc5424",
-				}
+				cfg.TCP = &tcpop.NewConfig("tcp_input").BaseConfig
+				cfg.TCP.ListenAddress = "0.0.0.0:0"
+				cfg.Protocol = "rfc5424"
 				return cfg
 			},
 		},

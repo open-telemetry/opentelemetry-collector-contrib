@@ -30,7 +30,7 @@ const (
 
 // NewFactory creates a factory for the Sigv4 Authenticator extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension)
+	return component.NewExtensionFactoryWithStabilityLevel(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
 }
 
 // createDefaultConfig() creates a Config struct with default values.

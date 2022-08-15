@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,7 +15,7 @@ package flatten
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -89,7 +89,7 @@ func TestGoldenConfig(t *testing.T) {
 }
 
 func configFromFileViaYaml(file string) (*Config, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
@@ -103,7 +103,7 @@ func configFromFileViaYaml(file string) (*Config, error) {
 }
 
 func configFromFileViaMapstructure(file string) (*Config, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}

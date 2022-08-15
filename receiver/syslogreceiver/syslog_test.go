@@ -31,10 +31,13 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/syslog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 func TestSyslogWithTcp(t *testing.T) {
-	testSyslog(t, testdataConfigYamlAsMap())
+	testSyslog(t, testdataConfigYaml())
 }
 
 func TestSyslogWithUdp(t *testing.T) {
@@ -51,7 +54,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.Input["tcp"] != nil {
+	if cfg.Config.TCP != nil {
 		conn, err = net.Dial("tcp", "0.0.0.0:29018")
 		require.NoError(t, err)
 	} else {
@@ -94,10 +97,10 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID(typeStr)])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID(typeStr)])
 }
 
-func testdataConfigYamlAsMap() *SysLogConfig {
+func testdataConfigYaml() *SysLogConfig {
 	return &SysLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -107,12 +110,13 @@ func testdataConfigYamlAsMap() *SysLogConfig {
 				WorkerCount:   1,
 			},
 		},
-		Input: adapter.InputConfig{
-			"tcp": map[string]interface{}{
-				"listen_address": "0.0.0.0:29018",
-			},
-			"protocol": "rfc5424",
-		},
+		Config: func() syslog.Config {
+			c := syslog.NewConfig("syslog_input")
+			c.TCP = &tcp.NewConfig("tcp_input").BaseConfig
+			c.TCP.ListenAddress = "0.0.0.0:29018"
+			c.Protocol = "rfc5424"
+			return *c
+		}(),
 	}
 }
 
@@ -126,12 +130,13 @@ func testdataUDPConfig() *SysLogConfig {
 				WorkerCount:   1,
 			},
 		},
-		Input: adapter.InputConfig{
-			"udp": map[string]interface{}{
-				"listen_address": "0.0.0.0:29018",
-			},
-			"protocol": "rfc5424",
-		},
+		Config: func() syslog.Config {
+			c := syslog.NewConfig("syslog_input")
+			c.UDP = &udp.NewConfig("udp_input").BaseConfig
+			c.UDP.ListenAddress = "0.0.0.0:29018"
+			c.Protocol = "rfc5424"
+			return *c
+		}(),
 	}
 }
 
@@ -143,12 +148,12 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{
-			"tcp": map[string]interface{}{
-				"max_buffer_size": "0.1.0.1-",
-			},
-			"protocol": "rfc5424",
-		},
+		Config: func() syslog.Config {
+			c := syslog.NewConfig("syslog_input")
+			c.TCP = &tcp.NewConfig("tcp_input").BaseConfig
+			c.Protocol = "fake"
+			return *c
+		}(),
 	}
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")

@@ -99,10 +99,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(pmetric.NewMetricDataPointFlags()),
-			newVal: int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
+			orig:   int64(0),
+			newVal: int64(1),
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				datapoint.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -312,7 +312,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 func createNumberDataPointTelemetry(valueType pmetric.NumberDataPointValueType) pmetric.NumberDataPoint {
 	numberDataPoint := pmetric.NewNumberDataPoint()
-	numberDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	numberDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	numberDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 
@@ -374,10 +373,10 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(pmetric.NewMetricDataPointFlags()),
-			newVal: int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
+			orig:   int64(0),
+			newVal: int64(1),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				datapoint.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -639,7 +638,6 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 func createHistogramDataPointTelemetry() pmetric.HistogramDataPoint {
 	histogramDataPoint := pmetric.NewHistogramDataPoint()
-	histogramDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	histogramDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	histogramDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	histogramDataPoint.SetCount(2)
@@ -707,10 +705,10 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(pmetric.NewMetricDataPointFlags()),
-			newVal: int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
+			orig:   int64(0),
+			newVal: int64(1),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				datapoint.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -1062,7 +1060,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoint {
 	expoHistogramDataPoint := pmetric.NewExponentialHistogramDataPoint()
-	expoHistogramDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	expoHistogramDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	expoHistogramDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	expoHistogramDataPoint.SetCount(2)
@@ -1131,10 +1128,10 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(pmetric.NewMetricDataPointFlags()),
-			newVal: int64(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue)),
+			orig:   int64(0),
+			newVal: int64(1),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.SetFlags(pmetric.NewMetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				datapoint.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -1370,7 +1367,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 	summaryDataPoint := pmetric.NewSummaryDataPoint()
-	summaryDataPoint.SetFlags(pmetric.NewMetricDataPointFlags())
 	summaryDataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	summaryDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	summaryDataPoint.SetCount(2)

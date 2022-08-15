@@ -16,9 +16,9 @@ package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -248,28 +248,28 @@ func TestInternalServerError(t *testing.T) {
 // mockServer gives a mock NSX REST API server for testing; if username or password is included, they will be required for the client.
 // otherwise, authorization is ignored.
 func mockServer(t *testing.T) *httptest.Server {
-	tNodeBytes, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "transport_nodes.json"))
+	tNodeBytes, err := os.ReadFile(filepath.Join("testdata", "metrics", "transport_nodes.json"))
 	require.NoError(t, err)
 
-	cNodeBytes, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "cluster_nodes.json"))
+	cNodeBytes, err := os.ReadFile(filepath.Join("testdata", "metrics", "cluster_nodes.json"))
 	require.NoError(t, err)
 
-	mNodeInterfaces, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "interfaces", "index.json"))
+	mNodeInterfaces, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "interfaces", "index.json"))
 	require.NoError(t, err)
 
-	tNodeInterfaces, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "interfaces", "index.json"))
+	tNodeInterfaces, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "interfaces", "index.json"))
 	require.NoError(t, err)
 
-	tNodeStatus, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "status.json"))
+	tNodeStatus, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "status.json"))
 	require.NoError(t, err)
 
-	mNodeStatus, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "status.json"))
+	mNodeStatus, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "status.json"))
 	require.NoError(t, err)
 
-	tNodeInterfaceStats, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "interfaces", transportNodeNic1, "stats.json"))
+	tNodeInterfaceStats, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "transport", transportNode1, "interfaces", transportNodeNic1, "stats.json"))
 	require.NoError(t, err)
 
-	mNodeInterfaceStats, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "interfaces", managerNodeNic1, "stats.json"))
+	mNodeInterfaceStats, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", "cluster", managerNode1, "interfaces", managerNodeNic1, "stats.json"))
 	require.NoError(t, err)
 
 	nsxMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

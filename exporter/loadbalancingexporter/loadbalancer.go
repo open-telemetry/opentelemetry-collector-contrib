@@ -23,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -42,7 +41,7 @@ type componentFactory func(ctx context.Context, endpoint string) (component.Expo
 
 type loadBalancer interface {
 	component.Component
-	Endpoint(traceID pcommon.TraceID) string
+	Endpoint(identifier []byte) string
 	Exporter(endpoint string) (component.Exporter, error)
 }
 
@@ -173,11 +172,11 @@ func (lb *loadBalancerImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (lb *loadBalancerImp) Endpoint(traceID pcommon.TraceID) string {
+func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 
-	return lb.ring.endpointFor(traceID)
+	return lb.ring.endpointFor(identifier)
 }
 
 func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {

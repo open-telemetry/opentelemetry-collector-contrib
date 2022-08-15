@@ -60,7 +60,7 @@ match either the beginning of a new log entry, or the end of a log entry.
 | `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`    | UTF-8 encoding                                                   |
 | `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be` | UTF-16 encoding with big-endian byte order                       |
 | `ascii`    | ASCII encoding                                                   |
 | `big5`     | The Big5 Chinese character encoding                              |
 
