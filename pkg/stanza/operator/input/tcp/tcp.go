@@ -25,6 +25,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configtls"
+
 	"github.com/jpillora/backoff"
 	"go.uber.org/zap"
 
@@ -33,6 +35,8 @@ import (
 )
 
 const (
+	operatorType = "tcp_input"
+
 	// minMaxLogSize is the minimal size which can be used for buffering
 	// TCP input
 	minMaxLogSize = 64 * 1024
@@ -43,13 +47,18 @@ const (
 )
 
 func init() {
-	operator.Register("tcp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfig creates a new TCP input config with default values
-func NewConfig(operatorID string) *Config {
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new TCP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "tcp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Multiline: helper.NewMultilineConfig(),
 			Encoding:  helper.NewEncodingConfig(),
@@ -65,12 +74,12 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize    helper.ByteSize         `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
-	ListenAddress string                  `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
-	TLS           *helper.TLSServerConfig `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
-	AddAttributes bool                    `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
-	Encoding      helper.EncodingConfig   `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
-	Multiline     helper.MultilineConfig  `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
+	MaxLogSize    helper.ByteSize             `mapstructure:"max_log_size,omitempty"          json:"max_log_size,omitempty"         yaml:"max_log_size,omitempty"`
+	ListenAddress string                      `mapstructure:"listen_address,omitempty"        json:"listen_address,omitempty"       yaml:"listen_address,omitempty"`
+	TLS           *configtls.TLSServerSetting `mapstructure:"tls,omitempty"                   json:"tls,omitempty"                  yaml:"tls,omitempty"`
+	AddAttributes bool                        `mapstructure:"add_attributes,omitempty"        json:"add_attributes,omitempty"       yaml:"add_attributes,omitempty"`
+	Encoding      helper.EncodingConfig       `mapstructure:",squash,omitempty"               json:",inline,omitempty"              yaml:",inline,omitempty"`
+	Multiline     helper.MultilineConfig      `mapstructure:"multiline,omitempty"             json:"multiline,omitempty"            yaml:"multiline,omitempty"`
 }
 
 // Build will build a tcp input operator.

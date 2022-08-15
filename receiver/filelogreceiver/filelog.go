@@ -53,7 +53,7 @@ func createDefaultConfig() *FileLogConfig {
 			Operators:        adapter.OperatorConfigs{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Config: *file.NewConfig("file_input"),
+		Config: *file.NewConfig(),
 	}
 }
 

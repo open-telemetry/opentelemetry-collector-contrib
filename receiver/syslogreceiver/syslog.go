@@ -52,7 +52,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: *syslog.NewConfig("syslog_input"),
+		Config: *syslog.NewConfig(),
 	}
 }
 
@@ -80,9 +80,9 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if componentParser.IsSet("tcp") {
-		cfg.TCP = &tcp.NewConfig("tcp_input").BaseConfig
+		cfg.TCP = &tcp.NewConfig().BaseConfig
 	} else if componentParser.IsSet("udp") {
-		cfg.UDP = &udp.NewConfig("udp_input").BaseConfig
+		cfg.UDP = &udp.NewConfig().BaseConfig
 	}
 
 	return componentParser.UnmarshalExact(cfg)

@@ -9,6 +9,11 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **postgresql.backends** | The number of backends. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.bgwriter.buffers.allocated** | Number of buffers allocated. | {buffers} | Sum(Int) | <ul> </ul> |
+| **postgresql.bgwriter.buffers.writes** | Number of buffers written. | {buffers} | Sum(Int) | <ul> <li>bg_buffer_source</li> </ul> |
+| **postgresql.bgwriter.checkpoint.count** | The number of checkpoints performed. | {checkpoints} | Sum(Int) | <ul> <li>bg_checkpoint_type</li> </ul> |
+| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Int) | <ul> <li>bg_duration_type</li> </ul> |
+| **postgresql.bgwriter.maxwritten** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.database.count** | Number of user databases. | {databases} | Sum(Int) | <ul> </ul> |
@@ -43,6 +48,9 @@ metrics:
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| bg_buffer_source (source) | The source of a buffer write. | backend, backend_fsync, checkpoints, bgwriter |
+| bg_checkpoint_type (type) | The type of checkpoint state. | requested, scheduled |
+| bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
 | database | The name of the database. |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |

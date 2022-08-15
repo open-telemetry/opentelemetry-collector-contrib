@@ -20,7 +20,6 @@ package windowseventlogreceiver // import "github.com/open-telemetry/opentelemet
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -54,7 +53,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			Operators:        adapter.OperatorConfigs{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Input: adapter.InputConfig{},
+		Config: *windows.NewConfig(),
 	}
 }
 
@@ -66,16 +65,11 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*WindowsLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := windows.NewConfig()
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-	return &operator.Config{Builder: inputCfg}, nil
+	return &operator.Config{Builder: &logConfig.Config}, nil
 }
 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
+	windows.Config     `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }

@@ -33,7 +33,7 @@ import (
 )
 
 func newDefaultConfig(tempDir string) *Config {
-	cfg := NewConfig("testfile")
+	cfg := NewConfigWithID("testfile")
 	cfg.PollInterval = helper.Duration{Duration: 200 * time.Millisecond}
 	cfg.StartAt = "beginning"
 	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
