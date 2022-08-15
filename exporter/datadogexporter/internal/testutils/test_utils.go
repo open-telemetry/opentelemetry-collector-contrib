@@ -18,13 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -136,7 +134,7 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		c <- body
 	}
 }

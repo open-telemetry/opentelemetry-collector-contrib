@@ -238,8 +238,8 @@ run:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=$(GOOS) GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_$(GOOS)_$(GOARCH)$(EXTENSION) ./cmd/$(COMPONENT)/$(COMPONENT)
+	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 

@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewHashRing(t *testing.T) {
@@ -39,16 +38,18 @@ func TestEndpointFor(t *testing.T) {
 	ring := newHashRing(endpoints)
 
 	for _, tt := range []struct {
-		traceID  pcommon.TraceID
+		id       []byte
 		expected string
 	}{
 		// check that we are indeed alternating endpoints for different inputs
-		{pcommon.NewTraceID([16]byte{1, 2, 0, 0}), "endpoint-1"},
-		{pcommon.NewTraceID([16]byte{128, 128, 0, 0}), "endpoint-2"},
+		{[]byte{1, 2, 0, 0}, "endpoint-1"},
+		{[]byte{128, 128, 0, 0}, "endpoint-2"},
+		{[]byte("ad-service-7"), "endpoint-1"},
+		{[]byte("get-recommendations-1"), "endpoint-2"},
 	} {
-		t.Run(fmt.Sprintf("Endpoint for traceID %s", tt.traceID.HexString()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("Endpoint for id %s", string(tt.id)), func(t *testing.T) {
 			// test
-			endpoint := ring.endpointFor(tt.traceID)
+			endpoint := ring.endpointFor(tt.id)
 
 			// verify
 			assert.Equal(t, tt.expected, endpoint)

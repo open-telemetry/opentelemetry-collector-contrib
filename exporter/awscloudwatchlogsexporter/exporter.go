@@ -84,9 +84,10 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
-		config,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		params,
+		config,
 		logsExporter.ConsumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),

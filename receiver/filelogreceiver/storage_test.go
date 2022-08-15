@@ -42,7 +42,7 @@ func TestStorage(t *testing.T) {
 
 	f := NewFactory()
 
-	cfg := testdataRotateTestYamlAsMap(logsDir)
+	cfg := rotationTestConfig(logsDir)
 	cfg.Converter.MaxFlushCount = 1
 	cfg.Converter.FlushInterval = time.Millisecond
 	cfg.Operators = nil // not testing processing, just read the lines

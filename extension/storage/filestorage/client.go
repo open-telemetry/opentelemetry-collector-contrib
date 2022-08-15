@@ -17,7 +17,6 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"errors"
-	"io/ioutil"
 	"os"
 	"sync"
 	"time"
@@ -162,7 +161,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = ioutil.TempFile(compactionDirectory, "tempdb")
+	file, err = os.CreateTemp(compactionDirectory, "tempdb")
 	if err != nil {
 		return err
 	}

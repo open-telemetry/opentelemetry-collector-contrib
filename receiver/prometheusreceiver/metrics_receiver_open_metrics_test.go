@@ -15,7 +15,6 @@
 package prometheusreceiver
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -147,7 +146,7 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 
 func readTestCase(testName string) (string, error) {
 	filePath := filepath.Join(testDir, testName, "metrics")
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Printf("failed opening file: %s", filePath)
 		return "", err

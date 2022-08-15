@@ -16,7 +16,7 @@ package golden
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -35,11 +35,11 @@ func TestWriteMetrics(t *testing.T) {
 	actualFile := filepath.Join(t.TempDir(), "metrics.json")
 	require.NoError(t, WriteMetrics(actualFile, metrics))
 
-	actualBytes, err := ioutil.ReadFile(actualFile)
+	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
-	expectedBytes, err := ioutil.ReadFile(expectedFile)
+	expectedBytes, err := os.ReadFile(expectedFile)
 	require.NoError(t, err)
 
 	if runtime.GOOS == "windows" {

@@ -38,40 +38,39 @@ import (
 //
 // The diagram below illustrates the internal communication inside the Converter:
 //
-//            ┌─────────────────────────────────┐
-//            │ Batch()                         │
-//  ┌─────────┤  Ingests batches of log entries │
-//  │         │  and sends them onto workerChan │
-//  │         └─────────────────────────────────┘
-//  │
-//  │ ┌───────────────────────────────────────────────────┐
-//  ├─► workerLoop()                                      │
-//  │ │ ┌─────────────────────────────────────────────────┴─┐
-//  ├─┼─► workerLoop()                                      │
-//  │ │ │ ┌─────────────────────────────────────────────────┴─┐
-//  └─┼─┼─► workerLoop()                                      │
-//    └─┤ │   consumes sent log entries from workerChan,      │
-//      │ │   translates received entries to plog.LogRecords,│
-//      └─┤   hashes them to generate an ID, and sends them   │
-//        │   onto batchChan                                  │
-//        └─────────────────────────┬─────────────────────────┘
-//                                  │
-//                                  ▼
-//      ┌─────────────────────────────────────────────────────┐
-//      │ aggregationLoop()                                   │
-//      │   consumes from batchChan, aggregates log records   │
-//      │   by marshaled Resource and sends the               │
-//      │   aggregated buffer to flushChan                    │
-//      └───────────────────────────┬─────────────────────────┘
-//                                  │
-//                                  ▼
-//      ┌─────────────────────────────────────────────────────┐
-//      │ flushLoop()                                         │
-//      │   receives log records from flushChan and sends     │
-//      │   them onto pLogsChan which is consumed by          │
-//      │   downstream consumers via OutChannel()             │
-//      └─────────────────────────────────────────────────────┘
-//
+//	          ┌─────────────────────────────────┐
+//	          │ Batch()                         │
+//	┌─────────┤  Ingests batches of log entries │
+//	│         │  and sends them onto workerChan │
+//	│         └─────────────────────────────────┘
+//	│
+//	│ ┌───────────────────────────────────────────────────┐
+//	├─► workerLoop()                                      │
+//	│ │ ┌─────────────────────────────────────────────────┴─┐
+//	├─┼─► workerLoop()                                      │
+//	│ │ │ ┌─────────────────────────────────────────────────┴─┐
+//	└─┼─┼─► workerLoop()                                      │
+//	  └─┤ │   consumes sent log entries from workerChan,      │
+//	    │ │   translates received entries to plog.LogRecords,│
+//	    └─┤   hashes them to generate an ID, and sends them   │
+//	      │   onto batchChan                                  │
+//	      └─────────────────────────┬─────────────────────────┘
+//	                                │
+//	                                ▼
+//	    ┌─────────────────────────────────────────────────────┐
+//	    │ aggregationLoop()                                   │
+//	    │   consumes from batchChan, aggregates log records   │
+//	    │   by marshaled Resource and sends the               │
+//	    │   aggregated buffer to flushChan                    │
+//	    └───────────────────────────┬─────────────────────────┘
+//	                                │
+//	                                ▼
+//	    ┌─────────────────────────────────────────────────────┐
+//	    │ flushLoop()                                         │
+//	    │   receives log records from flushChan and sends     │
+//	    │   them onto pLogsChan which is consumed by          │
+//	    │   downstream consumers via OutChannel()             │
+//	    └─────────────────────────────────────────────────────┘
 type Converter struct {
 	// pLogsChan is a channel on which aggregated logs will be sent to.
 	pLogsChan chan plog.Logs

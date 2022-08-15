@@ -21,7 +21,7 @@ package dockerstatsreceiver
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -149,7 +149,7 @@ func dockerMockServer(urlToFile *map[string]string) (*httptest.Server, error) {
 			}
 			defer f.Close()
 
-			fileContents, err := ioutil.ReadAll(f)
+			fileContents, err := io.ReadAll(f)
 			if err != nil {
 				return err
 			}

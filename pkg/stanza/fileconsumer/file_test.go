@@ -17,7 +17,6 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -96,7 +95,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file, err := ioutil.TempFile(dir, "")
+	file, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file.Close())
@@ -148,13 +147,13 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file1, err := ioutil.TempFile(dir, "")
+	file1, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file1.Close())
 	})
 
-	file2, err := ioutil.TempFile(dir, "")
+	file2, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file2.Close())

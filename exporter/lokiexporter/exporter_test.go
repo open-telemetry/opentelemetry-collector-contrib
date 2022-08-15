@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -94,7 +94,7 @@ func TestExporter_new(t *testing.T) {
 func TestExporter_pushLogData(t *testing.T) {
 
 	genericReqTestFunc := func(t *testing.T, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,6 +222,30 @@ func TestExporter_pushLogData(t *testing.T) {
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				return outLogs
+			},
+		},
+		{
+			name:             "bad request",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusBadRequest,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				require.True(t, consumererror.IsPermanent(err))
+			},
+		},
+		{
+			name:             "too many requests",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusTooManyRequests,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				var e consumererror.Logs
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
 			},
 		},
 	}
