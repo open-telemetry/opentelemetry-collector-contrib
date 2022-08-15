@@ -22,7 +22,7 @@ require (
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
-	go.uber.org/atomic v1.9.0
+	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.22.0
 	google.golang.org/protobuf v1.28.1
 )
