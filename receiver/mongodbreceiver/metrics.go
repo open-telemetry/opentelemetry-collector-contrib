@@ -135,18 +135,23 @@ func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbNa
 }
 
 func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	extentsPath := []string{"numExtents"}
-	extents, err := dig(doc, extentsPath)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
+	// Mongo version 4.4+ no longer returns numExtents since it is part of the obsolete MMAPv1
+	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
+	mongo44, _ := version.NewVersion("4.4")
+	if s.mongoVersion.LessThan(mongo44) {
+		extentsPath := []string{"numExtents"}
+		extents, err := dig(doc, extentsPath)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+		extentsVal, err := parseInt(extents)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+		s.mb.RecordMongodbExtentCountDataPoint(now, extentsVal, dbName)
 	}
-	extentsVal, err := parseInt(extents)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbExtentCountDataPoint(now, extentsVal, dbName)
 }
 
 // ServerStatus

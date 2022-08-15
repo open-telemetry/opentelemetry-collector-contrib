@@ -61,6 +61,9 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 ## Metrics
 
+The following metric are available with versions:
+- `mongodb.extent.count` < 4.4 with mmapv1 storage engine
+
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
