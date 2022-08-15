@@ -265,6 +265,13 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	// Collect Cache Hits & Misses if wiredTiger storage engine is used
+	// WiredTiger.cache metrics are available in 3.0+
+	// https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.wiredTiger.cache
+	mongo30, _ := version.NewVersion("3.0")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		s.logger.Error("failed to find storage engine for cache operation", zap.Error(err))
