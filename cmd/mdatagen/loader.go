@@ -166,9 +166,6 @@ type templateContext struct {
 	metadata
 	// Package name for generated code.
 	Package string
-	// ExpGen identifies whether the experimental metrics generator is used.
-	// TODO: Remove once the old mdata generator is gone.
-	ExpGen bool
 }
 
 func loadMetadata(filePath string) (metadata, error) {
