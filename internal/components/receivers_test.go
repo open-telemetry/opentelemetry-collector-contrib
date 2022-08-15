@@ -23,7 +23,9 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
+	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
@@ -38,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
@@ -198,6 +201,13 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "mongodbatlas",
+			// MongoDB Atlas needs unique config IDs
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
+				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
+				cfg.Logs.Enabled = true
+				return cfg
+			},
 		},
 		{
 			receiver: "mysql",
