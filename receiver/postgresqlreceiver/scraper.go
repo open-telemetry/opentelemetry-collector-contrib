@@ -316,7 +316,7 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointSyncTime, metadata.AttributeBgDurationTypeSync)
 	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
 
-	p.mb.RecordPostgresqlBgwriterMaxwrittenCountDataPoint(now, bgStats.maxWritten)
+	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
 func (p *postgreSQLScraper) retrieveDatabaseStats(

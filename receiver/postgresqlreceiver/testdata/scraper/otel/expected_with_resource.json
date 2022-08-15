@@ -801,7 +801,7 @@
                         },
                         {
                             "name": "postgresql.bgwriter.buffers.writes",
-                            "description": "Number of buffers written",
+                            "description": "Number of buffers written.",
                             "unit": "{buffers}",
                             "sum": {
                                 "dataPoints": [
@@ -864,7 +864,7 @@
                         },
                         {
                             "name": "postgresql.bgwriter.checkpoint.count",
-                            "description": "The number of checkpoints performed",
+                            "description": "The number of checkpoints performed.",
                             "unit": "{checkpoints}",
                             "sum": {
                                 "dataPoints": [
@@ -937,7 +937,7 @@
                             }
                         },
                         {
-                            "name": "postgresql.bgwriter.maxwritten.count",
+                            "name": "postgresql.bgwriter.maxwritten",
                             "description": "Number of times the background writer stopped a cleaning scan because it had written too many buffers.",
                             "sum": {
                                 "dataPoints": [

@@ -69,7 +69,7 @@ metrics:
   postgresql.bgwriter.buffers.writes:
     attributes:
       - bg_buffer_source
-    description: Number of buffers written
+    description: Number of buffers written.
     enabled: true
     sum:
       aggregation: cumulative
@@ -79,7 +79,7 @@ metrics:
   postgresql.bgwriter.checkpoint.count:
     attributes:
       - bg_checkpoint_type
-    description: The number of checkpoints performed
+    description: The number of checkpoints performed.
     enabled: true
     sum:
       aggregation: cumulative
@@ -96,7 +96,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: ms
-  postgresql.bgwriter.maxwritten.count:
+  postgresql.bgwriter.maxwritten:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
     enabled: true
     sum:
