@@ -114,12 +114,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-			if tt.expected != nil {
-				assert.NoError(t, cfg.Validate())
-				assert.Equal(t, tt.expected, cfg)
-			} else {
+			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
 			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

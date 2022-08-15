@@ -93,12 +93,7 @@ func TestCreateProcessors(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 
-				var id string
-				parts := strings.Split(k, "/")
-				if len(parts) > 1 {
-					id = parts[1]
-				}
-				sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, id).String())
+				sub, err := cm.Sub(k)
 				require.NoError(t, err)
 				require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
