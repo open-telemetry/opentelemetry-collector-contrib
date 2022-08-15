@@ -165,8 +165,6 @@ func TestConfigYamlUnmarshalTCP(t *testing.T) {
 protocol: rfc5424
 tcp:
   listen_address: localhost:1234
-  tls:
-    ca_file: /tmp/test.ca
 `
 	var cfg Config
 	err := yaml.Unmarshal([]byte(base), &cfg)
@@ -175,5 +173,4 @@ tcp:
 	require.Nil(t, cfg.UDP)
 	require.NotNil(t, cfg.TCP)
 	require.Equal(t, "localhost:1234", cfg.TCP.ListenAddress)
-	require.Equal(t, "/tmp/test.ca", cfg.TCP.TLS.CAFile)
 }
