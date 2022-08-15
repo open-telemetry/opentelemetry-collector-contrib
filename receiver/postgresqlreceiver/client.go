@@ -46,6 +46,7 @@ type client interface {
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
+	getQueryStats(ctx context.Context) ([]queryStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -359,6 +360,86 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+// queryStat is a representation of a row for the pg_stat_statements table,
+// more info can be found here https://www.postgresql.org/docs/current/pgstatstatements.html
+type queryStat struct {
+	queryID   string
+	queryText string
+
+	meanExecTimeMs  float64
+	totalExecTimeMs float64
+	calls           int64
+
+	sharedBlocksRead    int64
+	sharedBlocksWritten int64
+	sharedBlocksDirtied int64
+
+	localBlocksRead    int64
+	localBlocksWritten int64
+	localBlocksDirtied int64
+
+	tempBlocksRead    int64
+	tempBlocksWritten int64
+}
+
+func (c *postgreSQLClient) getQueryStats(ctx context.Context) ([]queryStat, error) {
+	// negative queryid's are indicative of internal queries, which users most likely do not care about.
+	query := `
+SELECT
+	queryid,
+	query,
+	mean_time,
+	total_time,
+	calls,
+	shared_blks_read, shared_blks_written, shared_blks_dirtied,
+	local_blks_read, local_blks_written, local_blks_dirtied,
+	temp_blks_read, temp_blks_written
+FROM pg_stat_statements
+WHERE queryid > 0;
+`
+	qs := []queryStat{}
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return qs, err
+	}
+
+	for rows.Next() {
+		var (
+			queryID, query                                             string
+			meanExecTime, totalExecTime                                float64
+			callCount                                                  int64
+			sharedBlocksRead, sharedBlocksWritten, sharedBlocksDirtied int64
+			localBlocksRead, localBlocksWritten, localBlocksDirtied    int64
+			tempBlocksRead, tempBlocksWritten                          int64
+		)
+		err := rows.Scan(
+			&queryID, &query, &meanExecTime, &totalExecTime, &callCount,
+			&sharedBlocksRead, &sharedBlocksWritten, &sharedBlocksDirtied,
+			&localBlocksRead, &localBlocksWritten, &localBlocksDirtied,
+			&tempBlocksRead, &tempBlocksWritten,
+		)
+		if err != nil {
+			return qs, err
+		}
+		qs = append(qs, queryStat{
+			queryID:             queryID,
+			queryText:           query,
+			meanExecTimeMs:      meanExecTime,
+			totalExecTimeMs:     totalExecTime,
+			calls:               callCount,
+			sharedBlocksRead:    sharedBlocksRead,
+			sharedBlocksWritten: sharedBlocksWritten,
+			sharedBlocksDirtied: sharedBlocksDirtied,
+			localBlocksRead:     localBlocksRead,
+			localBlocksWritten:  localBlocksWritten,
+			localBlocksDirtied:  localBlocksDirtied,
+			tempBlocksRead:      tempBlocksRead,
+			tempBlocksWritten:   tempBlocksWritten,
+		})
+	}
+	return qs, nil
 }
 
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {

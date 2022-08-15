@@ -10,6 +10,12 @@ resource_attributes:
   postgresql.index.name:
     description: The name of the index on a table.
     type: string
+  postgresql.query.id:
+    description: The internal ID of a postgreSQL query.
+    type: string
+  postgresql.query.text:
+    description: The first 40 characters of the SQL text of a query.
+    type: string
 
 attributes:
   database:
@@ -32,6 +38,14 @@ attributes:
   operation:
     description: The database operation.
     enum: [ins, upd, del, hot_upd]
+  query_block_operation:
+    description: The operation the query performed on the block.
+    enum: [dirty, read, write]
+    value: operation
+  query_block_type:
+    description: The type of block utilized by the query.
+    enum: [local, shared, temp]
+    value: block
   state:
     description: The tuple (row) state.
     enum: [dead, live]
@@ -116,6 +130,42 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database, table, operation]
+  postgresql.query.block.count:
+    attributes:
+      - query_block_operation
+      - query_block_type
+    description: Total number of blocks dirtied, read, or written by queries.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{queries}"
+  postgresql.query.count:
+    description: Number of times a query got executed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{queries}"
+    attributes: []
+  postgresql.query.duration.average:
+    enabled: true
+    description: Average amount of time spent executing a query.
+    gauge:
+      value_type: double
+    unit: ms
+    attributes: []
+  postgresql.query.duration.total:
+    description: Total amount of time spent executing a particular query.
+    enabled: true
+    sum:
+      value_type: double
+      monotonic: true
+      aggregation: cumulative
+    unit: ms
+    attributes: []
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
@@ -150,4 +200,4 @@ metrics:
     sum:
       aggregation: cumulative
       monotonic: true
-      value_type: int 
+      value_type: int

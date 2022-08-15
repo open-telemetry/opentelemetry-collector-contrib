@@ -16,6 +16,10 @@ These are the metrics available for this scraper.
 | **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
 | **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
+| **postgresql.query.block.count** | Total number of blocks dirtied, read, or written by queries. | {queries} | Sum(Int) | <ul> <li>query_block_operation</li> <li>query_block_type</li> </ul> |
+| **postgresql.query.count** | Number of times a query got executed. | {queries} | Sum(Int) | <ul> </ul> |
+| **postgresql.query.duration.average** | Average amount of time spent executing a query. | ms | Gauge(Double) | <ul> </ul> |
+| **postgresql.query.duration.total** | Total amount of time spent executing a particular query. | ms | Sum(Double) | <ul> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
 | **postgresql.table.count** | Number of user tables in a database. |  | Sum(Int) | <ul> </ul> |
@@ -37,6 +41,8 @@ metrics:
 | ---- | ----------- | ---- |
 | postgresql.database.name | The name of the database. | String |
 | postgresql.index.name | The name of the index on a table. | String |
+| postgresql.query.id | The internal ID of a postgreSQL query. | String |
+| postgresql.query.text | The first 40 characters of the SQL text of a query. | String |
 | postgresql.table.name | The schema name followed by the table name. | String |
 
 ## Metric attributes
@@ -45,6 +51,8 @@ metrics:
 | ---- | ----------- | ------ |
 | database | The name of the database. |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
+| query_block_operation (operation) | The operation the query performed on the block. | dirty, read, write |
+| query_block_type (block) | The type of block utilized by the query. | local, shared, temp |
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
 | state | The tuple (row) state. | dead, live |
 | table | The schema name followed by the table name. |  |

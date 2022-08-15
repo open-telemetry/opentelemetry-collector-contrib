@@ -17,19 +17,23 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for postgresqlreceiver metrics.
 type MetricsSettings struct {
-	PostgresqlBackends         MetricSettings `mapstructure:"postgresql.backends"`
-	PostgresqlBlocksRead       MetricSettings `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits          MetricSettings `mapstructure:"postgresql.commits"`
-	PostgresqlDatabaseCount    MetricSettings `mapstructure:"postgresql.database.count"`
-	PostgresqlDbSize           MetricSettings `mapstructure:"postgresql.db_size"`
-	PostgresqlIndexScans       MetricSettings `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize        MetricSettings `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations       MetricSettings `mapstructure:"postgresql.operations"`
-	PostgresqlRollbacks        MetricSettings `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows             MetricSettings `mapstructure:"postgresql.rows"`
-	PostgresqlTableCount       MetricSettings `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize        MetricSettings `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlBackends             MetricSettings `mapstructure:"postgresql.backends"`
+	PostgresqlBlocksRead           MetricSettings `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits              MetricSettings `mapstructure:"postgresql.commits"`
+	PostgresqlDatabaseCount        MetricSettings `mapstructure:"postgresql.database.count"`
+	PostgresqlDbSize               MetricSettings `mapstructure:"postgresql.db_size"`
+	PostgresqlIndexScans           MetricSettings `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize            MetricSettings `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations           MetricSettings `mapstructure:"postgresql.operations"`
+	PostgresqlQueryBlockCount      MetricSettings `mapstructure:"postgresql.query.block.count"`
+	PostgresqlQueryCount           MetricSettings `mapstructure:"postgresql.query.count"`
+	PostgresqlQueryDurationAverage MetricSettings `mapstructure:"postgresql.query.duration.average"`
+	PostgresqlQueryDurationTotal   MetricSettings `mapstructure:"postgresql.query.duration.total"`
+	PostgresqlRollbacks            MetricSettings `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows                 MetricSettings `mapstructure:"postgresql.rows"`
+	PostgresqlTableCount           MetricSettings `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize            MetricSettings `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount     MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -56,6 +60,18 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlOperations: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlQueryBlockCount: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlQueryCount: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlQueryDurationAverage: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlQueryDurationTotal: MetricSettings{
 			Enabled: true,
 		},
 		PostgresqlRollbacks: MetricSettings{
@@ -108,6 +124,66 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"upd":     AttributeOperationUpd,
 	"del":     AttributeOperationDel,
 	"hot_upd": AttributeOperationHotUpd,
+}
+
+// AttributeQueryBlockOperation specifies the a value query_block_operation attribute.
+type AttributeQueryBlockOperation int
+
+const (
+	_ AttributeQueryBlockOperation = iota
+	AttributeQueryBlockOperationDirty
+	AttributeQueryBlockOperationRead
+	AttributeQueryBlockOperationWrite
+)
+
+// String returns the string representation of the AttributeQueryBlockOperation.
+func (av AttributeQueryBlockOperation) String() string {
+	switch av {
+	case AttributeQueryBlockOperationDirty:
+		return "dirty"
+	case AttributeQueryBlockOperationRead:
+		return "read"
+	case AttributeQueryBlockOperationWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeQueryBlockOperation is a helper map of string to AttributeQueryBlockOperation attribute value.
+var MapAttributeQueryBlockOperation = map[string]AttributeQueryBlockOperation{
+	"dirty": AttributeQueryBlockOperationDirty,
+	"read":  AttributeQueryBlockOperationRead,
+	"write": AttributeQueryBlockOperationWrite,
+}
+
+// AttributeQueryBlockType specifies the a value query_block_type attribute.
+type AttributeQueryBlockType int
+
+const (
+	_ AttributeQueryBlockType = iota
+	AttributeQueryBlockTypeLocal
+	AttributeQueryBlockTypeShared
+	AttributeQueryBlockTypeTemp
+)
+
+// String returns the string representation of the AttributeQueryBlockType.
+func (av AttributeQueryBlockType) String() string {
+	switch av {
+	case AttributeQueryBlockTypeLocal:
+		return "local"
+	case AttributeQueryBlockTypeShared:
+		return "shared"
+	case AttributeQueryBlockTypeTemp:
+		return "temp"
+	}
+	return ""
+}
+
+// MapAttributeQueryBlockType is a helper map of string to AttributeQueryBlockType attribute value.
+var MapAttributeQueryBlockType = map[string]AttributeQueryBlockType{
+	"local":  AttributeQueryBlockTypeLocal,
+	"shared": AttributeQueryBlockTypeShared,
+	"temp":   AttributeQueryBlockTypeTemp,
 }
 
 // AttributeSource specifies the a value source attribute.
@@ -606,6 +682,211 @@ func newMetricPostgresqlOperations(settings MetricSettings) metricPostgresqlOper
 	return m
 }
 
+type metricPostgresqlQueryBlockCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.query.block.count metric with initial data.
+func (m *metricPostgresqlQueryBlockCount) init() {
+	m.data.SetName("postgresql.query.block.count")
+	m.data.SetDescription("Total number of blocks dirtied, read, or written by queries.")
+	m.data.SetUnit("{queries}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricPostgresqlQueryBlockCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryBlockOperationAttributeValue string, queryBlockTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("operation", queryBlockOperationAttributeValue)
+	dp.Attributes().InsertString("block", queryBlockTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryBlockCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryBlockCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryBlockCount(settings MetricSettings) metricPostgresqlQueryBlockCount {
+	m := metricPostgresqlQueryBlockCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlQueryCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.query.count metric with initial data.
+func (m *metricPostgresqlQueryCount) init() {
+	m.data.SetName("postgresql.query.count")
+	m.data.SetDescription("Number of times a query got executed.")
+	m.data.SetUnit("{queries}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlQueryCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryCount(settings MetricSettings) metricPostgresqlQueryCount {
+	m := metricPostgresqlQueryCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlQueryDurationAverage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.query.duration.average metric with initial data.
+func (m *metricPostgresqlQueryDurationAverage) init() {
+	m.data.SetName("postgresql.query.duration.average")
+	m.data.SetDescription("Average amount of time spent executing a query.")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricPostgresqlQueryDurationAverage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryDurationAverage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryDurationAverage) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryDurationAverage(settings MetricSettings) metricPostgresqlQueryDurationAverage {
+	m := metricPostgresqlQueryDurationAverage{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlQueryDurationTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.query.duration.total metric with initial data.
+func (m *metricPostgresqlQueryDurationTotal) init() {
+	m.data.SetName("postgresql.query.duration.total")
+	m.data.SetDescription("Total amount of time spent executing a particular query.")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlQueryDurationTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlQueryDurationTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlQueryDurationTotal) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlQueryDurationTotal(settings MetricSettings) metricPostgresqlQueryDurationTotal {
+	m := metricPostgresqlQueryDurationTotal{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlRollbacks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -870,24 +1151,28 @@ func newMetricPostgresqlTableVacuumCount(settings MetricSettings) metricPostgres
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                 // maximum observed number of metrics per resource.
-	resourceCapacity                 int                 // maximum observed number of resource attributes.
-	metricsBuffer                    pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo // contains version information
-	metricPostgresqlBackends         metricPostgresqlBackends
-	metricPostgresqlBlocksRead       metricPostgresqlBlocksRead
-	metricPostgresqlCommits          metricPostgresqlCommits
-	metricPostgresqlDatabaseCount    metricPostgresqlDatabaseCount
-	metricPostgresqlDbSize           metricPostgresqlDbSize
-	metricPostgresqlIndexScans       metricPostgresqlIndexScans
-	metricPostgresqlIndexSize        metricPostgresqlIndexSize
-	metricPostgresqlOperations       metricPostgresqlOperations
-	metricPostgresqlRollbacks        metricPostgresqlRollbacks
-	metricPostgresqlRows             metricPostgresqlRows
-	metricPostgresqlTableCount       metricPostgresqlTableCount
-	metricPostgresqlTableSize        metricPostgresqlTableSize
-	metricPostgresqlTableVacuumCount metricPostgresqlTableVacuumCount
+	startTime                            pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                      int                 // maximum observed number of metrics per resource.
+	resourceCapacity                     int                 // maximum observed number of resource attributes.
+	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                            component.BuildInfo // contains version information
+	metricPostgresqlBackends             metricPostgresqlBackends
+	metricPostgresqlBlocksRead           metricPostgresqlBlocksRead
+	metricPostgresqlCommits              metricPostgresqlCommits
+	metricPostgresqlDatabaseCount        metricPostgresqlDatabaseCount
+	metricPostgresqlDbSize               metricPostgresqlDbSize
+	metricPostgresqlIndexScans           metricPostgresqlIndexScans
+	metricPostgresqlIndexSize            metricPostgresqlIndexSize
+	metricPostgresqlOperations           metricPostgresqlOperations
+	metricPostgresqlQueryBlockCount      metricPostgresqlQueryBlockCount
+	metricPostgresqlQueryCount           metricPostgresqlQueryCount
+	metricPostgresqlQueryDurationAverage metricPostgresqlQueryDurationAverage
+	metricPostgresqlQueryDurationTotal   metricPostgresqlQueryDurationTotal
+	metricPostgresqlRollbacks            metricPostgresqlRollbacks
+	metricPostgresqlRows                 metricPostgresqlRows
+	metricPostgresqlTableCount           metricPostgresqlTableCount
+	metricPostgresqlTableSize            metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount     metricPostgresqlTableVacuumCount
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -902,22 +1187,26 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        buildInfo,
-		metricPostgresqlBackends:         newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBlocksRead:       newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:          newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlDatabaseCount:    newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:           newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlIndexScans:       newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:        newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
-		metricPostgresqlOperations:       newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlRollbacks:        newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:             newMetricPostgresqlRows(settings.PostgresqlRows),
-		metricPostgresqlTableCount:       newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
-		metricPostgresqlTableSize:        newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount: newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
+		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                        pmetric.NewMetrics(),
+		buildInfo:                            buildInfo,
+		metricPostgresqlBackends:             newMetricPostgresqlBackends(settings.PostgresqlBackends),
+		metricPostgresqlBlocksRead:           newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
+		metricPostgresqlCommits:              newMetricPostgresqlCommits(settings.PostgresqlCommits),
+		metricPostgresqlDatabaseCount:        newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:               newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
+		metricPostgresqlIndexScans:           newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:            newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
+		metricPostgresqlOperations:           newMetricPostgresqlOperations(settings.PostgresqlOperations),
+		metricPostgresqlQueryBlockCount:      newMetricPostgresqlQueryBlockCount(settings.PostgresqlQueryBlockCount),
+		metricPostgresqlQueryCount:           newMetricPostgresqlQueryCount(settings.PostgresqlQueryCount),
+		metricPostgresqlQueryDurationAverage: newMetricPostgresqlQueryDurationAverage(settings.PostgresqlQueryDurationAverage),
+		metricPostgresqlQueryDurationTotal:   newMetricPostgresqlQueryDurationTotal(settings.PostgresqlQueryDurationTotal),
+		metricPostgresqlRollbacks:            newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
+		metricPostgresqlRows:                 newMetricPostgresqlRows(settings.PostgresqlRows),
+		metricPostgresqlTableCount:           newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
+		metricPostgresqlTableSize:            newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:     newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -949,6 +1238,20 @@ func WithPostgresqlDatabaseName(val string) ResourceMetricsOption {
 func WithPostgresqlIndexName(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		rm.Resource().Attributes().UpsertString("postgresql.index.name", val)
+	}
+}
+
+// WithPostgresqlQueryID sets provided value as "postgresql.query.id" attribute for current resource.
+func WithPostgresqlQueryID(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.query.id", val)
+	}
+}
+
+// WithPostgresqlQueryText sets provided value as "postgresql.query.text" attribute for current resource.
+func WithPostgresqlQueryText(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("postgresql.query.text", val)
 	}
 }
 
@@ -999,6 +1302,10 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
+	mb.metricPostgresqlQueryBlockCount.emit(ils.Metrics())
+	mb.metricPostgresqlQueryCount.emit(ils.Metrics())
+	mb.metricPostgresqlQueryDurationAverage.emit(ils.Metrics())
+	mb.metricPostgresqlQueryDurationTotal.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
 	mb.metricPostgresqlTableCount.emit(ils.Metrics())
@@ -1061,6 +1368,26 @@ func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestam
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
 func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
 	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
+}
+
+// RecordPostgresqlQueryBlockCountDataPoint adds a data point to postgresql.query.block.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryBlockCountDataPoint(ts pcommon.Timestamp, val int64, queryBlockOperationAttributeValue AttributeQueryBlockOperation, queryBlockTypeAttributeValue AttributeQueryBlockType) {
+	mb.metricPostgresqlQueryBlockCount.recordDataPoint(mb.startTime, ts, val, queryBlockOperationAttributeValue.String(), queryBlockTypeAttributeValue.String())
+}
+
+// RecordPostgresqlQueryCountDataPoint adds a data point to postgresql.query.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlQueryCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlQueryDurationAverageDataPoint adds a data point to postgresql.query.duration.average metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryDurationAverageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricPostgresqlQueryDurationAverage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlQueryDurationTotalDataPoint adds a data point to postgresql.query.duration.total metric.
+func (mb *MetricsBuilder) RecordPostgresqlQueryDurationTotalDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricPostgresqlQueryDurationTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.

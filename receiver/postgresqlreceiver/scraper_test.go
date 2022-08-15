@@ -17,6 +17,7 @@ package postgresqlreceiver
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"testing"
 
@@ -117,6 +118,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.CollectQueries = true
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
 	scraper.emitMetricsWithResourceAttributes = true
 	scraper.emitMetricsWithoutResourceAttributes = false
@@ -126,6 +128,11 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 
 	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.json")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	bytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(actualMetrics)
+	require.NoError(t, err)
+	err = ioutil.WriteFile(fmt.Sprintf("%s.back.json", expectedFile), bytes, 0644)
 	require.NoError(t, err)
 
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
@@ -164,6 +171,11 @@ func (m *mockClient) getDatabaseTableMetrics(ctx context.Context, database strin
 func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) (map[tableIdentifier]tableIOStats, error) {
 	args := m.Called(ctx, database)
 	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
+}
+
+func (m *mockClient) getQueryStats(ctx context.Context) ([]queryStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]queryStat), args.Error(1)
 }
 
 func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
@@ -294,5 +306,24 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 			},
 		}
 		m.On("getIndexStats", mock.Anything, database).Return(indexStats, nil)
+
+		queryStats := []queryStat{
+			{
+				queryID:             fmt.Sprintf("%d", index+100),
+				queryText:           "SELECT * FROM products;",
+				meanExecTimeMs:      float64(index + 39),
+				totalExecTimeMs:     float64(index + 40),
+				calls:               int64(index + 41),
+				sharedBlocksRead:    int64(index + 42),
+				sharedBlocksWritten: int64(index + 43),
+				sharedBlocksDirtied: int64(index + 44),
+				localBlocksRead:     int64(index + 45),
+				localBlocksWritten:  int64(index + 46),
+				localBlocksDirtied:  int64(index + 47),
+				tempBlocksRead:      int64(index + 48),
+				tempBlocksWritten:   int64(index + 49),
+			},
+		}
+		m.On("getQueryStats", mock.Anything).Return(queryStats, nil)
 	}
 }

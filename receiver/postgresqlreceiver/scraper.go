@@ -149,6 +149,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 		if p.emitMetricsWithResourceAttributes {
 			p.collectIndexes(ctx, now, dbClient, database, &errs)
+			p.collectQueries(ctx, now, dbClient, database, &errs)
 		}
 	}
 
@@ -286,6 +287,48 @@ func (p *postgreSQLScraper) collectIndexes(
 			metadata.WithPostgresqlDatabaseName(stat.database),
 			metadata.WithPostgresqlTableName(stat.table),
 			metadata.WithPostgresqlIndexName(stat.index),
+		)
+	}
+}
+
+func (p *postgreSQLScraper) collectQueries(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	database string,
+	errs *scrapererror.ScrapeErrors,
+) {
+	if !p.config.CollectQueries {
+		return
+	}
+
+	queryStats, err := client.getQueryStats(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	for _, qs := range queryStats {
+		p.mb.RecordPostgresqlQueryCountDataPoint(now, qs.calls)
+
+		p.mb.RecordPostgresqlQueryDurationAverageDataPoint(now, qs.meanExecTimeMs)
+		p.mb.RecordPostgresqlQueryDurationTotalDataPoint(now, qs.totalExecTimeMs)
+
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeShared)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeShared)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.sharedBlocksDirtied, metadata.AttributeQueryBlockOperationDirty, metadata.AttributeQueryBlockTypeShared)
+
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.localBlocksDirtied, metadata.AttributeQueryBlockOperationDirty, metadata.AttributeQueryBlockTypeLocal)
+
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksRead, metadata.AttributeQueryBlockOperationRead, metadata.AttributeQueryBlockTypeLocal)
+		p.mb.RecordPostgresqlQueryBlockCountDataPoint(now, qs.tempBlocksWritten, metadata.AttributeQueryBlockOperationWrite, metadata.AttributeQueryBlockTypeTemp)
+
+		p.mb.EmitForResource(
+			metadata.WithPostgresqlDatabaseName(database),
+			metadata.WithPostgresqlQueryID(qs.queryID),
+			metadata.WithPostgresqlQueryText(qs.queryText),
 		)
 	}
 }
