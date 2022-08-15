@@ -154,6 +154,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	if p.emitMetricsWithResourceAttributes {
 		p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
+		p.collectBGWriterStats(ctx, now, listClient, &errs)
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -288,6 +289,34 @@ func (p *postgreSQLScraper) collectIndexes(
 			metadata.WithPostgresqlIndexName(stat.index),
 		)
 	}
+}
+
+func (p *postgreSQLScraper) collectBGWriterStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errors *scrapererror.ScrapeErrors,
+) {
+	bgStats, err := client.getBGWriterStats(ctx)
+	if err != nil {
+		errors.AddPartial(1, err)
+		return
+	}
+
+	p.mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(now, bgStats.buffersAllocated)
+
+	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bgWrites, metadata.AttributeBgBufferSourceBgwriter)
+	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferBackendWrites, metadata.AttributeBgBufferSourceBackend)
+	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferCheckpoints, metadata.AttributeBgBufferSourceCheckpoints)
+	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferFsyncWrites, metadata.AttributeBgBufferSourceBackendFsync)
+
+	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsReq, metadata.AttributeBgCheckpointTypeRequested)
+	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsScheduled, metadata.AttributeBgCheckpointTypeScheduled)
+
+	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointSyncTime, metadata.AttributeBgDurationTypeSync)
+	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
+
+	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
 func (p *postgreSQLScraper) retrieveDatabaseStats(
