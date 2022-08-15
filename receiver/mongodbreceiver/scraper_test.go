@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +35,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
 func TestNewMongodbScraper(t *testing.T) {
@@ -57,69 +57,43 @@ func TestScraperLifecycle(t *testing.T) {
 	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
 }
 
-func TestScrape(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-
-	adminStatus, err := loadAdminStatusAsMap()
-	require.NoError(t, err)
-	ss, err := loadServerStatusAsMap()
-	require.NoError(t, err)
-	dbStats, err := loadDBStatsAsMap()
-	require.NoError(t, err)
-	topStats, err := loadTopAsMap()
-	require.NoError(t, err)
-	productsIndexStats, err := loadIndexStatsAsMap("products")
-	require.NoError(t, err)
-	ordersIndexStats, err := loadIndexStatsAsMap("orders")
-	require.NoError(t, err)
-	mongo40, err := version.NewVersion("4.0")
-	require.NoError(t, err)
-
-	fakeDatabaseName := "fakedatabase"
-	fc := &fakeClient{}
-	fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
-	fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(ss, nil)
-	fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
-	fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(dbStats, nil)
-	fc.On("TopStats", mock.Anything).Return(topStats, nil)
-	fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
-	fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(productsIndexStats, nil)
-	fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(ordersIndexStats, nil)
-
-	scraper := mongodbScraper{
-		client:       fc,
-		config:       cfg,
-		mb:           metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
-		logger:       zap.NewNop(),
-		mongoVersion: mongo40,
-	}
-
-	actualMetrics, err := scraper.scrape(context.Background())
-	require.NoError(t, err)
-
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-
-	require.NoError(t, scrapertest.CompareMetrics(actualMetrics, expectedMetrics))
-}
-
-func TestScrapeNoClient(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-
-	scraper := &mongodbScraper{
-		logger: zap.NewNop(),
-		config: cfg,
-	}
-
-	m, err := scraper.scrape(context.Background())
-	require.Zero(t, m.MetricCount())
-	require.Error(t, err)
-}
-
 var (
+	errAllPartialMetrics = errors.New(
+		strings.Join(
+			[]string{
+				"failed to collect metric mongodb.cache.operations with attribute(s) miss, hit: could not find key for metric",
+				"failed to collect metric mongodb.cursor.count: could not find key for metric",
+				"failed to collect metric mongodb.cursor.timeout.count: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.time: could not find key for metric",
+				"failed to collect metric bytesIn: could not find key for metric",
+				"failed to collect metric bytesOut: could not find key for metric",
+				"failed to collect metric numRequests: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) delete: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) getmore: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) command: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) insert: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) query: could not find key for metric",
+				"failed to collect metric mongodb.operation.count with attribute(s) update: could not find key for metric",
+				"failed to collect metric mongodb.session.count: could not find key for metric",
+				"failed to collect metric mongodb.operation.time: could not find key for metric",
+				"failed to collect metric mongodb.collection.count with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.data.size with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.extent.count with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.index.size with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.index.count with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.object.count with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.storage.size with attribute(s) fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.connection.count with attribute(s) available, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.connection.count with attribute(s) current, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.connection.count with attribute(s) active, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.document.operation.count with attribute(s) inserted, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.document.operation.count with attribute(s) updated, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.document.operation.count with attribute(s) deleted, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.memory.usage with attribute(s) resident, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.memory.usage with attribute(s) virtual, fakedatabase: could not find key for metric",
+				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: failed to find index access values",
+				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: failed to find index access values",
+			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
 			[]string{
@@ -247,6 +221,35 @@ func TestScraperScrape(t *testing.T) {
 			expectedErr: errAllClientFailedFetch,
 		},
 		{
+			desc:       "Failed to scrape with partial errors on metrics",
+			partialErr: true,
+			setupMockClient: func(t *testing.T) client {
+				fc := &fakeClient{}
+				mongo40, err := version.NewVersion("4.0")
+				require.NoError(t, err)
+				wiredTigerStorage, err := loadOnlyStorageEngineAsMap()
+				require.NoError(t, err)
+				fakeDatabaseName := "fakedatabase"
+				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
+				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
+				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, nil)
+				fc.On("ServerStatus", mock.Anything, "admin").Return(wiredTigerStorage, nil)
+				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, nil)
+				fc.On("TopStats", mock.Anything).Return(bson.M{}, nil)
+				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
+				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return([]bson.M{}, nil)
+				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return([]bson.M{}, nil)
+				return fc
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.json")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			expectedErr: errAllPartialMetrics,
+		},
+		{
 			desc:       "Successful scrape",
 			partialErr: false,
 			setupMockClient: func(t *testing.T) client {
@@ -296,7 +299,16 @@ func TestScraperScrape(t *testing.T) {
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {
-				require.EqualError(t, err, tc.expectedErr.Error())
+				if strings.Contains(err.Error(), ";") {
+					// metrics with attributes use a map and errors can be returned in random order so sorting is required.
+					actualErrs := strings.Split(err.Error(), ";")
+					sort.Strings(actualErrs)
+					expectedErrs := strings.Split(tc.expectedErr.Error(), ";")
+					sort.Strings(expectedErrs)
+					require.Equal(t, actualErrs, expectedErrs)
+				} else {
+					require.EqualError(t, err, tc.expectedErr.Error())
+				}
 			}
 
 			if tc.partialErr {
