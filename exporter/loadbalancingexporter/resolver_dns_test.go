@@ -247,6 +247,8 @@ func TestPeriodicallyResolve(t *testing.T) {
 }
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
+
 	// prepare
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
