@@ -63,6 +63,7 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 The following metric are available with versions:
 - `mongodb.extent.count` < 4.4 with mmapv1 storage engine
+- `mongodb.session.count` >= 3.0 with wiredTiger storage engine
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 

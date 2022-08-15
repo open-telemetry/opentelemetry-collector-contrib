@@ -211,7 +211,13 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 }
 
 func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect session count
+	// Collect session count for version 3.0+
+	// https://www.mongodb.com/docs/v3.0/reference/command/serverStatus/#serverStatus.wiredTiger.session
+	mongo30, _ := version.NewVersion("3.0")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		s.logger.Error("failed to find storage engine for session count", zap.Error(err))
