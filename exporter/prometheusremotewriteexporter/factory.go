@@ -108,7 +108,7 @@ func createDefaultConfig() config.Exporter {
 			QueueSize:    10000,
 			NumConsumers: 5,
 		},
-		TargetInfo: TargetInfo{
+		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
 	}
