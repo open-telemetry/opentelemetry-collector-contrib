@@ -35,7 +35,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
@@ -328,9 +327,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "tcplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"listen_address": "0.0.0.0:0",
-				}
+				cfg.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},
@@ -338,9 +335,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "udplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"listen_address": "0.0.0.0:0",
-				}
+				cfg.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},
