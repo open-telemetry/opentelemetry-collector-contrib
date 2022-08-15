@@ -135,23 +135,34 @@ func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbNa
 }
 
 func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	extentsPath := []string{"numExtents"}
-	extents, err := dig(doc, extentsPath)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
+	// Mongo version 4.4+ no longer returns numExtents since it is part of the obsolete MMAPv1
+	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
+	mongo44, _ := version.NewVersion("4.4")
+	if s.mongoVersion.LessThan(mongo44) {
+		extentsPath := []string{"numExtents"}
+		extents, err := dig(doc, extentsPath)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+		extentsVal, err := parseInt(extents)
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+		s.mb.RecordMongodbExtentCountDataPoint(now, extentsVal, dbName)
 	}
-	extentsVal, err := parseInt(extents)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbExtentCountDataPoint(now, extentsVal, dbName)
 }
 
 // ServerStatus
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	mongo40, _ := version.NewVersion("4.0")
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
+		// Mongo version 4.0 added connections.active
+		// reference: https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.connections.active
+		if s.mongoVersion.LessThan(mongo40) && ctVal == "active" {
+			continue
+		}
 		connKey := []string{"connections", ctVal}
 		conn, err := dig(doc, connKey)
 		if err != nil {
@@ -206,7 +217,13 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 }
 
 func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect session count
+	// Collect session count for version 3.0+
+	// https://www.mongodb.com/docs/v3.0/reference/command/serverStatus/#serverStatus.wiredTiger.session
+	mongo30, _ := version.NewVersion("3.0")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		s.logger.Error("failed to find storage engine for session count", zap.Error(err))
@@ -254,6 +271,13 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 
 func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	// Collect Cache Hits & Misses if wiredTiger storage engine is used
+	// WiredTiger.cache metrics are available in 3.0+
+	// https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.wiredTiger.cache
+	mongo30, _ := version.NewVersion("3.0")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		s.logger.Error("failed to find storage engine for cache operation", zap.Error(err))
@@ -301,43 +325,19 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 }
 
 func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	var heldTimeUs int64
-
-	// Mongo version greater than or equal to 4.0 have it in the serverStats at "globalLock", "totalTime"
-	// reference: https://docs.mongodb.com/v4.0/reference/command/serverStatus/#server-status-global-lock
-	mongo40, _ := version.NewVersion("4.0")
-	if s.mongoVersion.GreaterThanOrEqual(mongo40) {
-		val, err := dig(doc, []string{"globalLock", "totalTime"})
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-		parsedVal, err := parseInt(val)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-		heldTimeUs = parsedVal
-	} else {
-		for _, lockType := range []string{"W", "R", "r", "w"} {
-			waitTime, err := dig(doc, []string{"locks", ".", "timeAcquiringMicros", lockType})
-			if err != nil {
-				continue
-			}
-			waitTimeVal, err := parseInt(waitTime)
-			if err != nil {
-				errs.AddPartial(1, err)
-			}
-			heldTimeUs += waitTimeVal
-		}
+	val, err := dig(doc, []string{"globalLock", "totalTime"})
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
 	}
-	if heldTimeUs != 0 {
-		htMilliseconds := heldTimeUs / 1000
-		s.mb.RecordMongodbGlobalLockTimeDataPoint(now, htMilliseconds)
+	parsedVal, err := parseInt(val)
+	if err != nil {
+		errs.AddPartial(1, err)
 		return
 	}
 
-	errs.AddPartial(1, fmt.Errorf("was unable to calculate global lock time"))
+	heldTimeMilliseconds := parsedVal / 1000
+	s.mb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
 }
 
 func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
