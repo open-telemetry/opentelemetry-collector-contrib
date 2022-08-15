@@ -278,7 +278,7 @@ func testdataConfigYaml() *FileLogConfig {
 			},
 		},
 		Config: func() file.Config {
-			c := file.NewConfig("file_input")
+			c := file.NewConfig()
 			c.Include = []string{"testdata/simple.log"}
 			c.StartAt = "beginning"
 			return *c
@@ -303,7 +303,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			Converter: adapter.ConverterConfig{},
 		},
 		Config: func() file.Config {
-			c := file.NewConfig("file_input")
+			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"
 			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}

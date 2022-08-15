@@ -1752,6 +1752,174 @@
                     },
                     "metrics": [
                         {
+                            "name": "postgresql.bgwriter.buffers.allocated",
+                            "description": "Number of buffers allocated.",
+                            "unit": "{buffers}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "971"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.buffers.writes",
+                            "description": "Number of buffers written.",
+                            "unit": "{buffers}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "bgwriter"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "0"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "backend"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "5"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "checkpoints"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "60"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "source",
+                                                "value": {
+                                                    "stringValue": "backend_fsync"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.checkpoint.count",
+                            "description": "The number of checkpoints performed.",
+                            "unit": "{checkpoints}",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "requested"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "4"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "scheduled"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.duration",
+                            "description": "Total time spent writing and syncing files to disk by checkpoints.",
+                            "unit": "ms",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "sync"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "26"
+                                    },
+                                    {
+                                        "attributes": [
+                                            {
+                                                "key": "type",
+                                                "value": {
+                                                    "stringValue": "write"
+                                                }
+                                            }
+                                        ],
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "14"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
+                            "name": "postgresql.bgwriter.maxwritten",
+                            "description": "Number of times the background writer stopped a cleaning scan because it had written too many buffers.",
+                            "sum": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660573578330028000",
+                                        "timeUnixNano": "1660573588342903000",
+                                        "asInt": "0"
+                                    }
+                                ],
+                                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                                "isMonotonic": true
+                            }
+                        },
+                        {
                             "name": "postgresql.database.count",
                             "description": "Number of user databases.",
                             "unit": "{databases}",

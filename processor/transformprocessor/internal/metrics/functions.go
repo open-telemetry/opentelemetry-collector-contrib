@@ -28,11 +28,11 @@ var registry = map[string]interface{}{
 
 func init() {
 	// Init metrics registry with default functions common to all signals
-	for k, v := range common.DefaultFunctions() {
+	for k, v := range common.Functions() {
 		registry[k] = v
 	}
 }
 
-func DefaultFunctions() map[string]interface{} {
+func Functions() map[string]interface{} {
 	return registry
 }
