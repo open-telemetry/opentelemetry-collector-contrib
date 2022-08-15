@@ -163,6 +163,8 @@ exporters:
       enabled: true
       num_consumers: 10
       queue_size: 5000
+    resource_to_telemetry_conversion:
+      enabled: true
 service:
   extensions:
   pipelines:
@@ -260,6 +262,19 @@ User should calculate this as `num_seconds * requests_per_second` where:
 - `requests_per_second` is the average number of requests per seconds.
 
 Default: `5000`
+
+### resource_to_telemetry_conversion (Optional)
+
+When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
+attributes will be included as metric attributes.
+
+> :warning: **Please note** that the Dynatrace API has a limit of `50` attributes
+> per metric and any metric which exceeds this limit will be dropped.
+> If you think you might exceed this limit, you should use the
+> [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor)
+> instead to only convert the attributes which are important to you.
+
+Default: `false`
 
 ### tags (Deprecated, Optional)
 
