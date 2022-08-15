@@ -18,47 +18,50 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/configtest"
-	"go.opentelemetry.io/collector/processor/batchprocessor"
-	"go.opentelemetry.io/collector/service/servicetest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 )
 
-func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+func TestLoadingConfig(t *testing.T) {
+	t.Parallel()
 
-	factories.Processors["batch"] = batchprocessor.NewFactory()
-	factories.Processors["groupbytrace"] = groupbytraceprocessor.NewFactory()
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Processor
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "grouping"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				GroupByKeys:       []string{"key1", "key2"},
+			},
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, "compaction"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				GroupByKeys:       []string{},
+			},
+		},
+	}
 
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
 
-	err = configtest.CheckConfigStruct(factory.CreateDefaultConfig())
-	require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	groupingConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "grouping")]
-	assert.Equal(t, groupingConf,
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "grouping")),
-			GroupByKeys:       []string{"key1", "key2"},
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
-
-	compactionConf := cfg.Processors[config.NewComponentIDWithName(typeStr, "compaction")]
-	assert.Equal(t, compactionConf,
-		&Config{
-			ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "compaction")),
-			GroupByKeys:       []string{},
-		})
+	}
 }
