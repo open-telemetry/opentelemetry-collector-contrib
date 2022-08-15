@@ -325,43 +325,19 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 }
 
 func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	var heldTimeUs int64
-
-	// Mongo version greater than or equal to 4.0 have it in the serverStats at "globalLock", "totalTime"
-	// reference: https://docs.mongodb.com/v4.0/reference/command/serverStatus/#server-status-global-lock
-	mongo40, _ := version.NewVersion("4.0")
-	if s.mongoVersion.GreaterThanOrEqual(mongo40) {
-		val, err := dig(doc, []string{"globalLock", "totalTime"})
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-		parsedVal, err := parseInt(val)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-		heldTimeUs = parsedVal
-	} else {
-		for _, lockType := range []string{"W", "R", "r", "w"} {
-			waitTime, err := dig(doc, []string{"locks", ".", "timeAcquiringMicros", lockType})
-			if err != nil {
-				continue
-			}
-			waitTimeVal, err := parseInt(waitTime)
-			if err != nil {
-				errs.AddPartial(1, err)
-			}
-			heldTimeUs += waitTimeVal
-		}
+	val, err := dig(doc, []string{"globalLock", "totalTime"})
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
 	}
-	if heldTimeUs != 0 {
-		htMilliseconds := heldTimeUs / 1000
-		s.mb.RecordMongodbGlobalLockTimeDataPoint(now, htMilliseconds)
+	parsedVal, err := parseInt(val)
+	if err != nil {
+		errs.AddPartial(1, err)
 		return
 	}
 
-	errs.AddPartial(1, fmt.Errorf("was unable to calculate global lock time"))
+	heldTimeMilliseconds := parsedVal / 1000
+	s.mb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
 }
 
 func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
