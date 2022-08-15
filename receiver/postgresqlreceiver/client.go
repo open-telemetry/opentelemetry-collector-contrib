@@ -209,14 +209,16 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 
 // tableStats contains a result for a row of the getDatabaseTableMetrics result
 type tableStats struct {
-	database string
-	table    string
-	live     int64
-	dead     int64
-	inserts  int64
-	upd      int64
-	del      int64
-	hotUpd   int64
+	database    string
+	table       string
+	live        int64
+	dead        int64
+	inserts     int64
+	upd         int64
+	del         int64
+	hotUpd      int64
+	size        int64
+	vacuumCount int64
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
@@ -226,7 +228,9 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_ins AS ins,
 	n_tup_upd AS upd,
 	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd
+	n_tup_hot_upd AS hot_upd,
+	pg_relation_size(relid) AS table_size,
+	vacuum_count
 	FROM pg_stat_user_tables;`
 
 	ts := map[tableIdentifier]tableStats{}
@@ -237,20 +241,22 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var table string
-		var live, dead, ins, upd, del, hotUpd int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd)
+		var live, dead, ins, upd, del, hotUpd, tableSize, vacuumCount int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		ts[tableKey(db, table)] = tableStats{
-			database: db,
-			table:    table,
-			live:     live,
-			inserts:  ins,
-			upd:      upd,
-			del:      del,
-			hotUpd:   hotUpd,
+			database:    db,
+			table:       table,
+			live:        live,
+			inserts:     ins,
+			upd:         upd,
+			del:         del,
+			hotUpd:      hotUpd,
+			size:        tableSize,
+			vacuumCount: vacuumCount,
 		}
 	}
 	return ts, errors

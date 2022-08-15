@@ -36,10 +36,10 @@ func NewConfig(operatorID string) *Config {
 }
 
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	syslog.BaseConfig  `yaml:",inline"`
-	TCP                *tcp.BaseConfig `json:"tcp" yaml:"tcp"`
-	UDP                *udp.BaseConfig `json:"udp" yaml:"udp"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	syslog.BaseConfig  `mapstructure:",squash" yaml:",inline"`
+	TCP                *tcp.BaseConfig `mapstructure:"tcp" json:"tcp" yaml:"tcp"`
+	UDP                *udp.BaseConfig `mapstructure:"udp" json:"udp" yaml:"udp"`
 }
 
 func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
