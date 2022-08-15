@@ -87,7 +87,7 @@ zv9WEy+9p05Aet+12x3dzRu93+yRIEYbSZ35NOUWfQ+gspF5rGgpxA==
 
 func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 
 		op, err := cfg.Build(testutil.Logger(t))
@@ -135,7 +135,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) {
 	return func(t *testing.T) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.AddAttributes = true
 
@@ -216,7 +216,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 		require.NoError(t, err)
 		f.Close()
 
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
 		cfg.TLS = helper.NewTLSServerConfig(&configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
@@ -346,7 +346,7 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test_id")
+			cfg := NewConfigWithID("test_id")
 			cfg.ListenAddress = tc.inputBody.ListenAddress
 			cfg.MaxLogSize = tc.inputBody.MaxLogSize
 			cfg.TLS = tc.inputBody.TLS
@@ -393,7 +393,7 @@ func TestFailToBind(t *testing.T) {
 	}
 
 	var startTCP = func(int) (*Input, error) {
-		cfg := NewConfig("test_id")
+		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = net.JoinHostPort(ip, strconv.Itoa(port))
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
@@ -419,7 +419,7 @@ func TestFailToBind(t *testing.T) {
 }
 
 func BenchmarkTCPInput(b *testing.B) {
-	cfg := NewConfig("test_id")
+	cfg := NewConfigWithID("test_id")
 	cfg.ListenAddress = ":0"
 
 	op, err := cfg.Build(testutil.Logger(b))

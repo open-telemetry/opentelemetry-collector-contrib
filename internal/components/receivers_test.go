@@ -317,7 +317,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.TCP = &tcpop.NewConfig("tcp_input").BaseConfig
+				cfg.TCP = &tcpop.NewConfig().BaseConfig
 				cfg.TCP.ListenAddress = "0.0.0.0:0"
 				cfg.Protocol = "rfc5424"
 				return cfg

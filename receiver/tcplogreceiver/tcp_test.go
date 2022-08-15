@@ -96,7 +96,7 @@ func testdataConfigYaml() *TCPLogConfig {
 			},
 		},
 		Config: func() tcp.Config {
-			c := tcp.NewConfig("tcp_input")
+			c := tcp.NewConfig()
 			c.ListenAddress = "0.0.0.0:29018"
 			return *c
 		}(),
@@ -111,7 +111,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			Operators:        adapter.OperatorConfigs{},
 		},
 		Config: func() tcp.Config {
-			c := tcp.NewConfig("tcp_input")
+			c := tcp.NewConfig()
 			c.Encoding.Encoding = "fake"
 			return *c
 		}(),

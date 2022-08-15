@@ -72,7 +72,7 @@ type JournaldConfig struct {
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*JournaldConfig)
 	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := journald.NewConfig("journald_input")
+	inputCfg := journald.NewConfig()
 
 	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
 		return nil, err

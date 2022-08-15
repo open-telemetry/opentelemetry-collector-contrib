@@ -106,5 +106,5 @@ func TestGoldenConfigs(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("retain")
+	return NewConfig()
 }

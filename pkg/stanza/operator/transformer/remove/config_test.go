@@ -104,7 +104,7 @@ func TestGoldenConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("move")
+	return NewConfig()
 }
 
 func newBodyField(keys ...string) rootableField {
