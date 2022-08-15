@@ -19,11 +19,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -99,12 +98,12 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-			if tt.expected != nil {
-				assert.NoError(t, cfg.Validate())
-				assert.Equal(t, tt.expected, cfg)
-			} else {
+			if tt.expected == nil {
 				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
 			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

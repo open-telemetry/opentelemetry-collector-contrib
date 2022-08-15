@@ -19,16 +19,14 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
@@ -131,12 +129,7 @@ func TestCreateProcessors(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig()
 
-				var id string
-				parts := strings.Split(k, "/")
-				if len(parts) > 1 {
-					id = parts[1]
-				}
-				sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, id).String())
+				sub, err := cm.Sub(k)
 				require.NoError(t, err)
 				require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
