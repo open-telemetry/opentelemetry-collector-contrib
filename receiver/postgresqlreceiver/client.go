@@ -365,13 +365,14 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 type bgStat struct {
 	checkpointsReq       int64
 	checkpointsScheduled int64
-	checkpointBuffers    int64
-	checkpointsWrite     int64
 	checkpointWriteTime  int64
 	checkpointSyncTime   int64
 	bgWrites             int64
-	bgBackendWrites      int64
-	bgFsyncWrites        int64
+	backendWrites        int64
+	bufferBackendWrites  int64
+	bufferFsyncWrites    int64
+	bufferCheckpoints    int64
+	buffersAllocated     int64
 	maxWritten           int64
 }
 
@@ -391,22 +392,37 @@ func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error
 
 	row := c.client.QueryRowContext(ctx, query)
 	var (
-		checkpointsReq, checkpointsScheduled, checkpointBuffers, checkpointsWrite, checkpointWriteTime, checkpointSyncTime, bgWrites, bgBackendWrites, bgFsyncWrites, maxWritten int64
+		checkpointsReq, checkpointsScheduled               int64
+		checkpointSyncTime, checkpointWriteTime            int64
+		bgWrites, bufferCheckpoints, bufferAllocated       int64
+		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
-	err := row.Scan(&checkpointsReq, &checkpointsScheduled, &checkpointBuffers, &checkpointsWrite, &checkpointWriteTime, &checkpointSyncTime, &bgWrites, &bgBackendWrites, &bgFsyncWrites, &maxWritten)
+	err := row.Scan(
+		&checkpointsReq,
+		&checkpointsScheduled,
+		&checkpointWriteTime,
+		&checkpointSyncTime,
+		&bgWrites,
+		&bufferBackendWrites,
+		&bufferFsyncWrites,
+		&bufferCheckpoints,
+		&bufferAllocated,
+		&maxWritten,
+	)
 	if err != nil {
 		return nil, err
 	}
 	return &bgStat{
 		checkpointsReq:       checkpointsReq,
 		checkpointsScheduled: checkpointsScheduled,
-		checkpointBuffers:    checkpointBuffers,
-		checkpointsWrite:     checkpointsWrite,
 		checkpointWriteTime:  checkpointWriteTime,
 		checkpointSyncTime:   checkpointSyncTime,
 		bgWrites:             bgWrites,
-		bgBackendWrites:      bgBackendWrites,
-		bgFsyncWrites:        bgFsyncWrites,
+		backendWrites:        bufferBackendWrites,
+		bufferBackendWrites:  bufferBackendWrites,
+		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferCheckpoints:    bufferCheckpoints,
+		buffersAllocated:     bufferAllocated,
 		maxWritten:           maxWritten,
 	}, nil
 }
