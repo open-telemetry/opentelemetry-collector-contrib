@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
@@ -66,8 +65,7 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 		options = append(options, translator.WithCountSumMetrics())
 	}
 
-	switch cfg.Metrics.SummaryConfig.Mode {
-	case SummaryModeGauges:
+	if cfg.Metrics.SummaryConfig.Mode == SummaryModeGauges {
 		options = append(options, translator.WithQuantiles())
 	}
 

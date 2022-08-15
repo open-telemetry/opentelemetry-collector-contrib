@@ -32,23 +32,22 @@ import (
 //
 // The diagram below illustrates the internal communication inside the FromPdataConverter:
 //
-//            ┌─────────────────────────────────┐
-//            │ Batch()                         │
-//  ┌─────────┤  Ingests plog.Logs, splits up   │
-//  │         │  and places them on workerChan  │
-//  │         └─────────────────────────────────┘
-//  │
-//  │ ┌───────────────────────────────────────────────────┐
-//  ├─► workerLoop()                                      │
-//  │ │ ┌─────────────────────────────────────────────────┴─┐
-//  ├─┼─► workerLoop()                                      │
-//  │ │ │ ┌─────────────────────────────────────────────────┴─┐
-//  └─┼─┼─► workerLoop()                                      │
-//    └─┤ │   consumes sent log entries from workerChan,      │
-//      │ │   translates received logs to entry.Entry,        │
-//      └─┤   and sends them along entriesChan                │
-//        └───────────────────────────────────────────────────┘
-//
+//	          ┌─────────────────────────────────┐
+//	          │ Batch()                         │
+//	┌─────────┤  Ingests plog.Logs, splits up   │
+//	│         │  and places them on workerChan  │
+//	│         └─────────────────────────────────┘
+//	│
+//	│ ┌───────────────────────────────────────────────────┐
+//	├─► workerLoop()                                      │
+//	│ │ ┌─────────────────────────────────────────────────┴─┐
+//	├─┼─► workerLoop()                                      │
+//	│ │ │ ┌─────────────────────────────────────────────────┴─┐
+//	└─┼─┼─► workerLoop()                                      │
+//	  └─┤ │   consumes sent log entries from workerChan,      │
+//	    │ │   translates received logs to entry.Entry,        │
+//	    └─┤   and sends them along entriesChan                │
+//	      └───────────────────────────────────────────────────┘
 type FromPdataConverter struct {
 	// entriesChan is a channel on which converted logs will be sent out of the converter.
 	entriesChan chan []*entry.Entry

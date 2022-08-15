@@ -161,12 +161,12 @@ EC2 custom configuration example:
 processors:
   resourcedetection/ec2:
     detectors: ["ec2"]
-      ec2:
-        # A list of regex's to match tag keys to add as resource attributes can be specified
-        tags:
-          - ^tag1$
-          - ^tag2$
-          - ^label.*$
+    ec2:
+      # A list of regex's to match tag keys to add as resource attributes can be specified
+      tags:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
 ```
 
 If you are using a proxy server on your EC2 instance, it's important that you exempt requests for instance metadata as [described in the AWS cli user guide](https://github.com/awsdocs/aws-cli-user-guide/blob/a2393582590b64bd2a1d9978af15b350e1f9eb8e/doc_source/cli-configure-proxy.md#using-a-proxy-on-amazon-ec2-instances). Failing to do so can result in proxied or missing instance data.

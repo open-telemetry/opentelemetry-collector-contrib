@@ -16,8 +16,8 @@ package fileconsumer
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 
@@ -257,7 +257,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 		}
 	}
 
-	fullFile, err := ioutil.TempFile(tempDir, "")
+	fullFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer fullFile.Close()
 
@@ -267,7 +267,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	fff, err := operator.readerFactory.newFingerprint(fullFile)
 	require.NoError(t, err)
 
-	partialFile, err := ioutil.TempFile(tempDir, "")
+	partialFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer partialFile.Close()
 

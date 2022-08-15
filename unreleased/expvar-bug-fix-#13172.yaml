@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: expvarreceiver
+note: "Fixes an bug where the mSpanSys value was recorded into the mCacheSys metric."
+issues: [13171]

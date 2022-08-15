@@ -56,14 +56,16 @@ type tracesamplerprocessor struct {
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
-func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.TracesProcessor, error) {
+func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	tsp := &tracesamplerprocessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
 		hashSeed:           cfg.HashSeed,
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		tsp.processTraces,

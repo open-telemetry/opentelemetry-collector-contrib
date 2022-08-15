@@ -147,9 +147,10 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporter(
-		tt,
+	got, err := exporterhelper.NewLogsExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),

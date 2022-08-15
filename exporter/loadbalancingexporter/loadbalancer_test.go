@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -342,7 +341,14 @@ func TestFailedExporterInRing(t *testing.T) {
 
 	// test
 	// this trace ID will reach the endpoint-2 -- see the consistent hashing tests for more info
-	_, err = p.Exporter(p.Endpoint(pcommon.NewTraceID([16]byte{128, 128, 0, 0})))
+	_, err = p.Exporter(p.Endpoint([]byte{128, 128, 0, 0}))
+
+	// verify
+	assert.Error(t, err)
+
+	// test
+	// this service name will reach the endpoint-2 -- see the consistent hashing tests for more info
+	_, err = p.Exporter(p.Endpoint([]byte("get-recommendations-1")))
 
 	// verify
 	assert.Error(t, err)

@@ -17,14 +17,14 @@ package logzioexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/jaegertracing/jaeger/model"
 )
 
 func TestTransformToLogzioSpanBytes(tester *testing.T) {
-	inStr, err := ioutil.ReadFile("./testdata/span.json")
+	inStr, err := os.ReadFile("./testdata/span.json")
 	if err != nil {
 		tester.Fatalf(fmt.Sprintf("error opening sample span file %s", err.Error()))
 	}
@@ -49,7 +49,7 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 }
 
 func TestTransformToDbModelSpan(tester *testing.T) {
-	inStr, err := ioutil.ReadFile("./testdata/span.json")
+	inStr, err := os.ReadFile("./testdata/span.json")
 	if err != nil {
 		tester.Fatalf(fmt.Sprintf("error opening sample span file %s", err.Error()))
 	}

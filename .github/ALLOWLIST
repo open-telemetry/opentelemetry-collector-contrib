@@ -31,4 +31,5 @@ pkg/experimentalmetricmetadata
 pkg/translator/prometheusremotewrite
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
+receiver/dotnetdiagnosticsreceiver
 testbed

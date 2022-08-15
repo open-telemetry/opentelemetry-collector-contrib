@@ -62,9 +62,10 @@ func createLogsExporter(
 ) (component.LogsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce := newLogsExporter(ctx, oCfg, set.TelemetrySettings)
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),
@@ -78,9 +79,10 @@ func createLogsExporter(
 func createMetricsExporter(ctx context.Context, set component.ExporterCreateSettings, cfg config.Exporter) (component.MetricsExporter, error) {
 	oCfg := cfg.(*Config)
 	oce := newMetricsExporter(ctx, oCfg, set.TelemetrySettings)
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

@@ -17,7 +17,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/hashicorp/go-version"
@@ -302,7 +302,7 @@ func loadAdminStatusAsMap() (bson.M, error) {
 
 func loadTestFile(filePath string) (bson.D, error) {
 	var doc bson.D
-	testFile, err := ioutil.ReadFile(filePath)
+	testFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +315,7 @@ func loadTestFile(filePath string) (bson.D, error) {
 
 func loadTestFileAsMap(filePath string) (bson.M, error) {
 	var doc bson.M
-	testFile, err := ioutil.ReadFile(filePath)
+	testFile, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
 	}

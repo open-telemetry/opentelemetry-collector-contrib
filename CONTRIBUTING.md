@@ -75,10 +75,14 @@ providing the following information:
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
   how the implementation might look like.
 
+Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
 
-Any component (receiver, processor, exporter, or extension) needs to implement the interfaces defined on the [core
-repository](https://github.com/open-telemetry/opentelemetry-collector). Familiarize yourself with the interface of the
-component that you want to write, and use existing implementations as reference.
+* Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
+* Provide a configuration structure which defines the configuration of the component
+* Provide the implementation which performs the component operation
+
+Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
+[Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
 
 *NOTICE:* The Collector is in Beta stage and as such the interfaces may undergo breaking changes. Component creators
 must be available to update or review their components when such changes happen, otherwise the component will be
