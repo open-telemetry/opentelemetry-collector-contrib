@@ -64,7 +64,7 @@ The following metric are available with versions:
 - `mongodb.extent.count` < 4.4 with mmapv1 storage engine
 - `mongodb.session.count` >= 3.0 with wiredTiger storage engine
 - `mongodb.cache.operations` >= 3.0 with wiredTiger storage engine
-- `mongodb.connection.count` for attribute `active` is available >= 4.0
+- `mongodb.connection.count` with attribute `active` is available >= 4.0
 - `mongodb.index.access.count` >= 4.0
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
