@@ -156,7 +156,13 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 
 // ServerStatus
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	mongo40, _ := version.NewVersion("4.0")
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
+		// Mongo version 4.0 added connections.active
+		// reference: https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.connections.active
+		if s.mongoVersion.LessThan(mongo40) && ctVal == "active" {
+			continue
+		}
 		connKey := []string{"connections", ctVal}
 		conn, err := dig(doc, connKey)
 		if err != nil {
