@@ -16,16 +16,18 @@ package deltatorateprocessor
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestType(t *testing.T) {
@@ -44,49 +46,42 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessors(t *testing.T) {
-	tests := []struct {
-		configName   string
-		succeed      bool
-		errorMessage string
-	}{
-		{
-			configName: "config_full.yaml",
-			succeed:    true,
-		},
-	}
+	t.Parallel()
 
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.NoError(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
-		assert.NoError(t, err)
+	for k := range cm.ToStringMap() {
+		// Check if all processor variations that are defined in test config can be actually created
+		t.Run(k, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-		for name, cfg := range config.Processors {
-			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
-				tp, tErr := factory.CreateTracesProcessor(
-					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
-					cfg,
-					consumertest.NewNop())
-				// Not implemented error
-				assert.Error(t, tErr)
-				assert.Nil(t, tp)
+			var id string
+			parts := strings.Split(k, "/")
+			if len(parts) > 1 {
+				id = parts[1]
+			}
+			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, id).String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-				mp, mErr := factory.CreateMetricsProcessor(
-					context.Background(),
-					componenttest.NewNopProcessorCreateSettings(),
-					cfg,
-					consumertest.NewNop())
-				if test.succeed {
-					assert.NotNil(t, mp)
-					assert.NoError(t, mErr)
-				} else {
-					assert.EqualError(t, mErr, test.errorMessage)
-				}
-			})
-		}
+			tp, tErr := factory.CreateTracesProcessor(
+				context.Background(),
+				componenttest.NewNopProcessorCreateSettings(),
+				cfg,
+				consumertest.NewNop())
+			// Not implemented error
+			assert.Error(t, tErr)
+			assert.Nil(t, tp)
+
+			mp, mErr := factory.CreateMetricsProcessor(
+				context.Background(),
+				componenttest.NewNopProcessorCreateSettings(),
+				cfg,
+				consumertest.NewNop())
+			assert.NotNil(t, mp)
+			assert.NoError(t, mErr)
+		})
 	}
 }
