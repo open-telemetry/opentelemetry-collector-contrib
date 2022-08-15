@@ -625,14 +625,14 @@ func accessFlags() pathGetSetter {
 	}
 }
 
-func flagsValue(flags pmetric.MetricDataPointFlagsStruct) int64 {
+func flagsValue(flags pmetric.MetricDataPointFlags) int64 {
 	if flags.NoRecordedValue() {
 		return 1
 	}
 	return 0
 }
 
-func setFlagsValue(flags pmetric.MetricDataPointFlagsStruct, value int64) {
+func setFlagsValue(flags pmetric.MetricDataPointFlags, value int64) {
 	if value&1 != 0 {
 		flags.SetNoRecordedValue(true)
 	} else {
