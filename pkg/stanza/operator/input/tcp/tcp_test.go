@@ -29,7 +29,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -218,12 +217,12 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		cfg := NewConfigWithID("test_id")
 		cfg.ListenAddress = ":0"
-		cfg.TLS = helper.NewTLSServerConfig(&configtls.TLSServerSetting{
+		cfg.TLS = &configtls.TLSServerSetting{
 			TLSSetting: configtls.TLSSetting{
 				CertFile: "test.crt",
 				KeyFile:  "test.key",
 			},
-		})
+		}
 
 		op, err := cfg.Build(testutil.Logger(t))
 		require.NoError(t, err)
@@ -337,7 +336,12 @@ func TestBuild(t *testing.T) {
 				BaseConfig: BaseConfig{
 					MaxLogSize:    65536,
 					ListenAddress: "10.0.0.1:9000",
-					TLS:           createTLSConfig("/tmp/cert/missing", "/tmp/key/missing"),
+					TLS: &configtls.TLSServerSetting{
+						TLSSetting: configtls.TLSSetting{
+							CertFile: "/tmp/cert/missing",
+							KeyFile:  "/tmp/key/missing",
+						},
+					},
 				},
 			},
 			true,
@@ -460,13 +464,4 @@ func BenchmarkTCPInput(b *testing.B) {
 	}
 
 	defer close(done)
-}
-
-func createTLSConfig(cert string, key string) *helper.TLSServerConfig {
-	return helper.NewTLSServerConfig(&configtls.TLSServerSetting{
-		TLSSetting: configtls.TLSSetting{
-			CertFile: cert,
-			KeyFile:  key,
-		},
-	})
 }
