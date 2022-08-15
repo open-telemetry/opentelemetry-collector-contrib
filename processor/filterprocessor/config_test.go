@@ -15,16 +15,15 @@
 package filterprocessor
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filtermetric"
@@ -44,25 +43,17 @@ func TestLoadingConfigStrict(t *testing.T) {
 		MatchType:   filtermetric.Strict,
 		MetricNames: testDataFilters,
 	}
-
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "empty"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: config.NewComponentIDWithName("filter", "empty"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Strict,
@@ -70,25 +61,25 @@ func TestLoadingConfigStrict(t *testing.T) {
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 					Exclude: &filtermetric.MatchProperties{
@@ -100,10 +91,17 @@ func TestLoadingConfigStrict(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -131,24 +129,17 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "empty"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: config.NewComponentIDWithName("filter", "empty"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
 						LogMatchType: Strict,
@@ -156,25 +147,25 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -183,10 +174,17 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -204,40 +202,33 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		SeverityTexts: []string{"DEBUG", "DEBUG2", "DEBUG3", "DEBUG4"},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_severity_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_severity_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -246,10 +237,17 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -266,40 +264,33 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		SeverityTexts: []string{"DEBUG[2-4]?"},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_severity_regexp.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_severity_regexp.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -308,10 +299,17 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -329,40 +327,33 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		LogBodies:    []string{"This event is not important"},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_body_strict.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_body_strict.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -371,10 +362,17 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -392,40 +390,33 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		LogBodies:    []string{"^MINOR:"},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_body_regexp.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_body_regexp.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -434,10 +425,17 @@ func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -457,40 +455,33 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		},
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_logs_min_severity.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_logs_min_severity.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		filterID config.ComponentID
-		expCfg   *Config
+		id       config.ComponentID
+		expected *Config
 	}{
 		{
-			filterID: config.NewComponentIDWithName("filter", "include"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "exclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Exclude: testDataLogPropertiesExclude,
 				},
 			},
 		}, {
-			filterID: config.NewComponentIDWithName("filter", "includeexclude"),
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Logs: LogFilters{
 					Include: testDataLogPropertiesInclude,
 					Exclude: testDataLogPropertiesExclude,
@@ -499,11 +490,17 @@ func TestLoadingConfigMinSeverityNumberLogs(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.filterID.String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.filterID]
-			assert.Equal(t, test.expCfg, cfg)
-			assert.NoError(t, test.expCfg.Validate(), "Failed to validate config")
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
@@ -527,36 +524,33 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		MetricNames: testDataFilters,
 	}
 
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
-
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_regexp.yaml"), factories)
-
-	assert.Nil(t, err)
-	require.NotNil(t, cfg)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_regexp.yaml"))
+	require.NoError(t, err)
 
 	tests := []struct {
-		expCfg *Config
+		id       config.ComponentID
+		expected config.Processor
 	}{
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: testDataMetricProperties,
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: testDataMetricProperties,
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "unlimitedcache")),
+			id: config.NewComponentIDWithName("filter", "unlimitedcache"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -568,8 +562,9 @@ func TestLoadingConfigRegexp(t *testing.T) {
 				},
 			},
 		}, {
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "limitedcache")),
+			id: config.NewComponentIDWithName("filter", "limitedcache"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Regexp,
@@ -584,29 +579,33 @@ func TestLoadingConfigRegexp(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
 func TestLoadingSpans(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_traces.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join(".", "testdata", "config_traces.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
 	tests := []struct {
-		expCfg config.Processor
+		id       config.ComponentID
+		expected config.Processor
 	}{
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "spans")),
+			id: config.NewComponentIDWithName("filter", "spans"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Spans: SpanFilters{
 					Include: &filterconfig.MatchProperties{
 						Config: filterset.Config{
@@ -630,29 +629,33 @@ func TestLoadingSpans(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
 func TestLoadingConfigExpr(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_expr.yaml"))
 	require.NoError(t, err)
-	factory := NewFactory()
-	factories.Processors[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config_expr.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
 
 	tests := []struct {
-		expCfg config.Processor
+		id       config.ComponentID
+		expected config.Processor
 	}{
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "empty")),
+			id: config.NewComponentIDWithName("filter", "empty"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -661,8 +664,9 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "include")),
+			id: config.NewComponentIDWithName("filter", "include"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -675,8 +679,9 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "exclude")),
+			id: config.NewComponentIDWithName("filter", "exclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Exclude: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -689,8 +694,9 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 		{
-			expCfg: &Config{
-				ProcessorSettings: config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "includeexclude")),
+			id: config.NewComponentIDWithName("filter", "includeexclude"),
+			expected: &Config{
+				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				Metrics: MetricFilters{
 					Include: &filtermetric.MatchProperties{
 						MatchType: filtermetric.Expr,
@@ -708,10 +714,17 @@ func TestLoadingConfigExpr(t *testing.T) {
 			},
 		},
 	}
-	for _, test := range tests {
-		t.Run(test.expCfg.ID().String(), func(t *testing.T) {
-			cfg := cfg.Processors[test.expCfg.ID()]
-			assert.Equal(t, test.expCfg, cfg)
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
