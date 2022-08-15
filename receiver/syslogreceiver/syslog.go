@@ -80,18 +80,10 @@ func (cfg *SysLogConfig) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	if componentParser.IsSet("tcp") {
-		cfg.TCP = CreateDefaultTCPConfigBase()
+		cfg.TCP = &tcp.NewConfig("tcp_input").BaseConfig
 	} else if componentParser.IsSet("udp") {
-		cfg.UDP = CreateDefaultUDPConfigBase()
+		cfg.UDP = &udp.NewConfig("udp_input").BaseConfig
 	}
 
 	return componentParser.UnmarshalExact(cfg)
-}
-
-func CreateDefaultTCPConfigBase() *tcp.BaseConfig {
-	return &tcp.NewConfig("tcp_input").BaseConfig
-}
-
-func CreateDefaultUDPConfigBase() *udp.BaseConfig {
-	return &udp.NewConfig("udp_input").BaseConfig
 }

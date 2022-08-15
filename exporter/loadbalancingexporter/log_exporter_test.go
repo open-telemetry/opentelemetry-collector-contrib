@@ -334,7 +334,6 @@ func TestLogsWithoutTraceID(t *testing.T) {
 }
 
 func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11116")
 	// this test is based on the discussion in the following issue for this exporter:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	// prepare
@@ -353,7 +352,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	})
 
 	resolverCh := make(chan struct{}, 1)
-	counter := 0
+	counter := atomic.NewInt64(0)
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -367,14 +366,14 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter++
+				counter.Inc()
 			}()
 
-			if counter <= 2 {
-				return resolve[counter], nil
+			if counter.Load() <= 2 {
+				return resolve[counter.Load()], nil
 			}
 
-			if counter == 3 {
+			if counter.Load() == 3 {
 				// stop as soon as rolling updates end
 				resolverCh <- struct{}{}
 			}
@@ -459,7 +458,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 	// will still pass due to the 10 secs of sleep that is used to simulate
 	// unreachable backends.
 	go func() {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(1 * time.Second)
 		resolverCh <- struct{}{}
 	}()
 
