@@ -164,7 +164,7 @@ exporters:
       num_consumers: 10
       queue_size: 5000
     resource_to_telemetry_conversion:
-      enabled: true
+      enabled: false
 service:
   extensions:
   pipelines:
