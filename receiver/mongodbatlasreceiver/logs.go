@@ -170,14 +170,14 @@ func (s *logsReceiver) processClusters(ctx context.Context, projectCfg ProjectCo
 	}
 }
 
-func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, project ProjectConfig, pc ProjectContext) {
+func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig, pc ProjectContext) {
 	for _, cluster := range clusters {
 		hostnames := parseHostNames(cluster.ConnectionStrings.Standard, s.log)
 		for _, hostname := range hostnames {
 			s.collectLogs(pc, hostname, "mongodb.gz", cluster.Name)
 			s.collectLogs(pc, hostname, "mongos.gz", cluster.Name)
 
-			if project.EnableAuditLogs {
+			if projectCfg.EnableAuditLogs {
 				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", cluster.Name)
 				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", cluster.Name)
 			}
@@ -224,7 +224,7 @@ func (s *logsReceiver) getHostLogs(groupID, hostname, logName string) ([]model.L
 			return entries, nil
 		}
 		if err != nil {
-			return nil, err
+			s.log.Error("Entry could not be decoded into LogEntry", zap.Error(err))
 		}
 
 		entries = append(entries, entry)
@@ -252,7 +252,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 			return entries, nil
 		}
 		if err != nil {
-			return nil, err
+			s.log.Error("Entry could not be decoded into LogEntry", zap.Error(err))
 		}
 
 		entries = append(entries, entry)
