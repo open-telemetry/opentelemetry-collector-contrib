@@ -1,31 +1,10 @@
-extensions:
-  ecs_task_observer:
-  ecs_task_observer/with-endpoint:
-    endpoint: http://a.valid.url:1234/path
-    refresh_interval: 100s
-  ecs_task_observer/with-port-labels:
-    port_labels:
-      - A_PORT_LABEL
-      - ANOTHER_PORT_LABEL
-
-receivers:
-  nop:
-processors:
-  nop:
-exporters:
-  nop:
-
-service:
-  extensions:
-    - ecs_task_observer
-    - ecs_task_observer/with-endpoint
-    - ecs_task_observer/with-port-labels
-  pipelines:
-    traces:
-      receivers:
-        - nop
-      processors:
-        - nop
-      exporters:
-        - nop
-
+ecs_task_observer:
+ecs_task_observer/with-endpoint:
+  endpoint: http://a.valid.url:1234/path
+  refresh_interval: 100s
+ecs_task_observer/with-port-labels:
+  port_labels:
+    - A_PORT_LABEL
+    - ANOTHER_PORT_LABEL
+ecs_task_observer/invalid:
+  endpoint: _:invalid

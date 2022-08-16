@@ -52,9 +52,10 @@ func TestSwExporter(t *testing.T) {
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporter(
-		tt,
+	got, err := exporterhelper.NewLogsExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),
@@ -125,9 +126,10 @@ func TestSwExporter(t *testing.T) {
 	}
 
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got2, err2 := exporterhelper.NewMetricsExporter(
-		tt,
+	got2, err2 := exporterhelper.NewMetricsExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		tt,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),

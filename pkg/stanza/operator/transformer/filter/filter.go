@@ -29,18 +29,26 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "filter"
+
+var (
+	upperBound = big.NewInt(1000)
+	randInt    = rand.Int // allow override for testing
+)
+
 func init() {
-	operator.Register("filter", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-var upperBound = big.NewInt(1000)
-
-var randInt = rand.Int // allow override for testing
-
 // NewConfig creates a filter operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a filter operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "filter"),
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		DropRatio:         1,
 	}
 }

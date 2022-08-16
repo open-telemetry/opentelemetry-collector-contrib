@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -117,7 +118,7 @@ func checkSDFile(filename string) error {
 	}
 	defer fd.Close()
 
-	content, err := ioutil.ReadAll(fd)
+	content, err := io.ReadAll(fd)
 	if err != nil {
 		return err
 	}

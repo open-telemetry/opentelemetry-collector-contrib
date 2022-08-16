@@ -17,9 +17,9 @@ package mockserver // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -244,5 +244,5 @@ func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, e
 }
 
 func loadResponse(filename string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
+	return os.ReadFile(filepath.Join("internal", "mockserver", "responses", filename))
 }

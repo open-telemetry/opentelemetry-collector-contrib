@@ -23,11 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 )
 
 func TestLoadingConfig(t *testing.T) {
@@ -48,24 +43,18 @@ func TestLoadingConfig(t *testing.T) {
 				`set(name, "bear") where attributes["http.path"] == "/animal"`,
 				`keep_keys(attributes, "http.method", "http.path")`,
 			},
-
-			functions: traces.DefaultFunctions(),
 		},
 		Metrics: SignalConfig{
 			Queries: []string{
 				`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
 				`keep_keys(attributes, "http.method", "http.path")`,
 			},
-
-			functions: metrics.DefaultFunctions(),
 		},
 		Logs: SignalConfig{
 			Queries: []string{
 				`set(body, "bear") where attributes["http.path"] == "/animal"`,
 				`keep_keys(attributes, "http.method", "http.path")`,
 			},
-
-			functions: logs.DefaultFunctions(),
 		},
 	})
 }

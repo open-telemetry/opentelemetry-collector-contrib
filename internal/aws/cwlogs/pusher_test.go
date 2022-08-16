@@ -81,9 +81,7 @@ func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 	return p
 }
 
-//
-//  logEvent Tests
-//
+// logEvent Tests
 func TestLogEvent_eventPayloadBytes(t *testing.T) {
 	testMessage := "test message"
 	logEvent := NewEvent(0, testMessage)
@@ -117,9 +115,7 @@ func TestValidateLogEventFailed(t *testing.T) {
 	assert.Equal(t, "the log entry's timestamp is older than 14 days or more than 2 hours in the future", err.Error())
 }
 
-//
-//  eventBatch Tests
-//
+// eventBatch Tests
 func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
 	min := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
 	max := min.Add(23 * time.Hour)

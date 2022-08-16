@@ -59,8 +59,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	pCfg, ok := cfg.(*Config)
@@ -78,10 +78,12 @@ func createLogsProcessor(
 
 	proc := &logsTransformProcessor{
 		id:     cfg.ID(),
-		logger: params.Logger,
+		logger: set.Logger,
 		config: pCfg,
 	}
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processLogs,

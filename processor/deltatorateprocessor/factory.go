@@ -49,7 +49,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -58,9 +58,11 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	metricsProcessor := newDeltaToRateProcessor(processorConfig, params.Logger)
+	metricsProcessor := newDeltaToRateProcessor(processorConfig, set.Logger)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,

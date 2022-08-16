@@ -18,7 +18,7 @@
 package windows
 
 import (
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -238,7 +238,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 
 }
 func TestUnmarshal(t *testing.T) {
-	data, err := ioutil.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
+	data, err := os.ReadFile(filepath.Join("testdata", "xmlSample.xml"))
 	require.NoError(t, err)
 
 	event, err := unmarshalEventXML(data)

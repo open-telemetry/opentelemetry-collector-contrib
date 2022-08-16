@@ -108,7 +108,7 @@ fmt:
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense impi misspell
+lint: checklicense misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy
@@ -127,7 +127,7 @@ misspell-correction:
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKGS)
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
 moddownload:

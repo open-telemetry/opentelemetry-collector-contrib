@@ -16,7 +16,7 @@ package expvarreceiver
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -97,7 +97,7 @@ var (
 func newMockServer(tb testing.TB, responseBodyFile string) *httptest.Server {
 	file, err := os.Open(responseBodyFile)
 	assert.NoError(tb, err)
-	fileContents, err := ioutil.ReadAll(file)
+	fileContents, err := io.ReadAll(file)
 	require.NoError(tb, err)
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if req.URL.Path == defaultPath {

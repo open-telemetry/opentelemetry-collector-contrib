@@ -54,7 +54,6 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			Operators:        adapter.OperatorConfigs{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Input: adapter.InputConfig{},
 	}
 }
 
@@ -71,5 +70,4 @@ func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
