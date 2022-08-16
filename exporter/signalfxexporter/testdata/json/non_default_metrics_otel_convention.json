@@ -220,5 +220,71 @@
   },
   {
     "k8s.volume.inodes.used": null
+  },
+  {
+    "process.disk.io.read": null
+  },
+  {
+    "process.disk.io.write": null
+  },
+  {
+    "process.network.io.receive": null
+  },
+  {
+    "process.network.io.transmit": null
+  },
+  {
+    "system.paging.operations.page_in": null
+  },
+  {
+    "system.paging.operations.page_out": null
+  },
+  {
+    "system.disk.io.read": null
+  },
+  {
+    "system.disk.io.write": null
+  },
+  {
+    "system.disk.operations.read": null
+  },
+  {
+    "system.disk.operations.write": null
+  },
+  {
+    "system.disk.operation_time.read": null
+  },
+  {
+    "system.disk.operation_time.write": null
+  },
+  {
+    "system.disk.merged.read": null
+  },
+  {
+    "system.disk.merged.write": null
+  },
+  {
+    "system.network.dropped.receive": null
+  },
+  {
+    "system.network.dropped.transmit": null
+  },
+  {
+    "system.network.errors.receive": null
+  },
+  {
+    "system.network.errors.transmit": null
+  },
+  {
+    "system.network.packets.receive": null
+  },
+  {
+    "system.network.packets.transmit": null
+  },
+  {
+    "system.network.io.receive": null
+  },
+  {
+    "system.network.io.transmit": null
   }
 ]

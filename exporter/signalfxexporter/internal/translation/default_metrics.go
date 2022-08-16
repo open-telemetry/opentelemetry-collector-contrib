@@ -70,18 +70,41 @@ exclude_metrics:
 - metric_names:
   - system.disk.merged
   - system.disk.io
+  - system.disk.io.read
+  - system.disk.io.write
   - system.disk.time
   - system.disk.io_time
+  - system.disk.merged.read
+  - system.disk.merged.write
   - system.disk.operation_time
+  - system.disk.operation_time.read
+  - system.disk.operation_time.write
+  - system.disk.operations.read
+  - system.disk.operations.write
   - system.disk.pending_operations
   - system.disk.weighted_io_time
 
 # Network-IO metrics.
 - metric_names:
-  - system.network.packets
   - system.network.dropped
+  - system.network.dropped.receive
+  - system.network.dropped.transmit
+  - system.network.errors.receive
+  - system.network.errors.transmit
+  - system.network.io.receive
+  - system.network.io.transmit
+  - system.network.packets
+  - system.network.packets.receive
+  - system.network.packets.transmit
   - system.network.tcp_connections
   - system.network.connections
+
+# Process metrics
+- metric_names:
+  - process.disk.io.read
+  - process.disk.io.write
+  - process.network.io.receive
+  - process.network.io.transmit
 
 # Processes metrics
 - metric_names:
@@ -92,6 +115,8 @@ exclude_metrics:
 - metric_names:
   - system.paging.faults
   - system.paging.usage
+  - system.paging.operations.page_in
+  - system.paging.operations.page_out
 - metric_name: system.paging.operations
   dimensions:
     type: [minor]
