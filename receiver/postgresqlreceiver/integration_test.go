@@ -17,7 +17,6 @@ package postgresqlreceiver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"path/filepath"
 	"testing"
@@ -28,8 +27,10 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 )
 
 type configFunc func(hostname string) *Config
@@ -38,11 +39,44 @@ type configFunc func(hostname string) *Config
 // to modify in order to change behavior of the integration test. i.e. featuregates
 type cleanupFunc func()
 
+type postgresVersion string
+
+var (
+	pg96 postgresVersion = "pg9.6"
+	pg10 postgresVersion = "pg10"
+
+	// port where postgres 9.6 is running on
+	pg96Port = "15432"
+	// port where postgres 10.21 is running on
+	pg10Port = "15433"
+
+	containerRequest9_6 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: filepath.Join("docker", "Dockerfile.96"),
+		},
+		ExposedPorts: []string{fmt.Sprintf("%s:5432", pg96Port)},
+		WaitingFor: wait.ForListeningPort("5432").
+			WithStartupTimeout(2 * time.Minute),
+	}
+
+	containerRequest10 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: filepath.Join("docker", "Dockerfile.10"),
+		},
+		ExposedPorts: []string{fmt.Sprintf("%s:5432", pg10Port)},
+		WaitingFor: wait.ForListeningPort("5432").
+			WithStartupTimeout(2 * time.Minute),
+	}
+)
+
 type testCase struct {
 	name         string
 	cfg          configFunc
 	cleanup      cleanupFunc
 	expectedFile string
+	pgVersion    postgresVersion
 }
 
 func TestPostgreSQLIntegration(t *testing.T) {
@@ -59,6 +93,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
+			pgVersion:    pg96,
 			expectedFile: filepath.Join("testdata", "integration", "expected_single_db.json"),
 		},
 		{
@@ -73,6 +108,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
+			pgVersion:    pg10,
 			expectedFile: filepath.Join("testdata", "integration", "expected_multi_db.json"),
 		},
 		{
@@ -104,6 +140,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.Insecure = true
 				return cfg
 			},
+			pgVersion: pg96,
 			cleanup: func() {
 				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID: false,
@@ -111,7 +148,6 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			},
 			expectedFile: filepath.Join("testdata", "integration", "expected_all_with_resource_attributes.json"),
 		},
-
 		{
 			name: "query_metrics",
 			cfg: func(hostname string) *Config {
@@ -120,7 +156,7 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				}))
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
-				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
+				cfg.Endpoint = net.JoinHostPort(hostname, pg10Port)
 				cfg.Databases = []string{}
 				cfg.Username = "otel"
 				cfg.Password = "otel"
@@ -128,6 +164,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg.CollectQueries = true
 				return cfg
 			},
+			// requires postgres 10 to work
+			pgVersion: pg10,
 			cleanup: func() {
 				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
 					emitMetricsWithResourceAttributesFeatureGateID: false,
@@ -137,50 +175,61 @@ func TestPostgreSQLIntegration(t *testing.T) {
 		},
 	}
 
-	container := getContainer(t, testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.postgresql",
-		},
-		ExposedPorts: []string{"15432:5432"},
-		WaitingFor: wait.ForListeningPort("5432").
-			WithStartupTimeout(2 * time.Minute),
+	t.Run("postgres 9.6", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest9_6)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		for _, tc := range testCases {
+			if tc.pgVersion != pg96 {
+				continue
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				runTest(t, tc, hostname)
+			})
+		}
 	})
-	defer func() {
-		require.NoError(t, container.Terminate(context.Background()))
-	}()
-	hostname, err := container.Host(context.Background())
+
+	t.Run("postgres10.21", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest10)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
+
+		for _, tc := range testCases {
+			if tc.pgVersion != pg10 {
+				continue
+			}
+			t.Run(tc.name, func(t *testing.T) {
+				runTest(t, tc, hostname)
+			})
+		}
+	})
+}
+
+func runTest(t *testing.T, tc testCase, hostname string) {
+	expectedMetrics, err := golden.ReadMetrics(tc.expectedFile)
 	require.NoError(t, err)
+	f := NewFactory()
+	consumer := new(consumertest.MetricsSink)
+	settings := componenttest.NewNopReceiverCreateSettings()
+	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, tc.cfg(hostname), consumer)
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.cleanup != nil {
-				defer tc.cleanup()
-			}
-			// expectedMetrics, err := golden.ReadMetrics(tc.expectedFile)
-			// require.NoError(t, err)
+	require.NoError(t, err, "failed creating metrics receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	require.Eventuallyf(t, func() bool {
+		return consumer.DataPointCount() > 0
+	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
 
-			f := NewFactory()
-			consumer := new(consumertest.MetricsSink)
-			settings := componenttest.NewNopReceiverCreateSettings()
-			rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, tc.cfg(hostname), consumer)
-			require.NoError(t, err, "failed creating metrics receiver")
-			require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-			require.Eventuallyf(t, func() bool {
-				return consumer.DataPointCount() > 0
-			}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-
-			actualMetrics := consumer.AllMetrics()[0]
-			if tc.name == "query_metrics" {
-				bytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(actualMetrics)
-				require.NoError(t, err)
-				err = ioutil.WriteFile(fmt.Sprintf("%s.back.json", tc.expectedFile), bytes, 0644)
-				require.NoError(t, err)
-			}
-
-			// require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
-		})
-	}
+	actualMetrics := consumer.AllMetrics()[0]
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues()))
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {

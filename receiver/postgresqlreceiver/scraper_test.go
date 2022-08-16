@@ -17,10 +17,10 @@ package postgresqlreceiver
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 
+	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -118,7 +118,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.CollectQueries = true
+
 	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
 	scraper.emitMetricsWithResourceAttributes = true
 	scraper.emitMetricsWithoutResourceAttributes = false
@@ -130,9 +130,24 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	bytes, err := pmetric.NewJSONMarshaler().MarshalMetrics(actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperWithQueryMetrics(t *testing.T) {
+	factory := mockClientFactory{}
+	factory.initMocks([]string{"otel"})
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.CollectQueries = true
+	scraper := newPostgreSQLScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &factory)
+	scraper.emitMetricsWithResourceAttributes = true
+	scraper.emitMetricsWithoutResourceAttributes = false
+
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	err = ioutil.WriteFile(fmt.Sprintf("%s.back.json", expectedFile), bytes, 0644)
+
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.json")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
 	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
@@ -173,8 +188,8 @@ func (m *mockClient) getBlocksReadByTable(ctx context.Context, database string) 
 	return args.Get(0).(map[tableIdentifier]tableIOStats), args.Error(1)
 }
 
-func (m *mockClient) getQueryStats(ctx context.Context) ([]queryStat, error) {
-	args := m.Called(ctx)
+func (m *mockClient) getQueryStats(ctx context.Context, pgVersion *version.Version) ([]queryStat, error) {
+	args := m.Called(ctx, pgVersion)
 	return args.Get(0).([]queryStat), args.Error(1)
 }
 
@@ -186,6 +201,11 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
+}
+
+func (m *mockClient) getVersion(ctx context.Context) (*version.Version, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*version.Version), args.Error(1)
 }
 
 func (m *mockClientFactory) getClient(c *Config, database string) (client, error) {
@@ -210,6 +230,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
+		m.On("getVersion", mock.Anything).Return(version.NewVersion("9.6"))
 
 		commitsAndRollbacks := map[databaseName]databaseStats{}
 		dbSize := map[databaseName]int64{}
@@ -324,6 +345,6 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				tempBlocksWritten:   int64(index + 49),
 			},
 		}
-		m.On("getQueryStats", mock.Anything).Return(queryStats, nil)
+		m.On("getQueryStats", mock.Anything, mock.Anything).Return(queryStats, nil)
 	}
 }

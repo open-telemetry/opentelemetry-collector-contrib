@@ -16,6 +16,7 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/hashicorp/go-version"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
@@ -64,6 +66,7 @@ type postgreSQLScraper struct {
 	config                               *Config
 	clientFactory                        postgreSQLClientFactory
 	mb                                   *metadata.MetricsBuilder
+	version                              *version.Version
 	emitMetricsWithoutResourceAttributes bool
 	emitMetricsWithResourceAttributes    bool
 }
@@ -115,6 +118,15 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		return pmetric.NewMetrics(), err
 	}
 	defer listClient.Close()
+
+	if p.version == nil {
+		v, err := listClient.getVersion(ctx)
+		if err != nil {
+			p.logger.Error("Failed to parse version information from running postgres", zap.Error(err))
+			return pmetric.NewMetrics(), err
+		}
+		p.version = v
+	}
 
 	if len(databases) == 0 {
 		dbList, err := listClient.listDatabases(ctx)
@@ -302,9 +314,9 @@ func (p *postgreSQLScraper) collectQueries(
 		return
 	}
 
-	queryStats, err := client.getQueryStats(ctx)
+	queryStats, err := client.getQueryStats(ctx, p.version)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf("unable to get query statistics: %w", err))
 		return
 	}
 

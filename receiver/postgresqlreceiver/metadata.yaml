@@ -13,6 +13,9 @@ resource_attributes:
   postgresql.query.id:
     description: The internal ID of a postgreSQL query.
     type: string
+  postgresql.query.user.id:
+    description: The ID of the user invoking the query.
+    type: string
   postgresql.query.text:
     description: The first 40 characters of the SQL text of a query.
     type: string

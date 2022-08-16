@@ -19,16 +19,19 @@ The monitoring user must be granted `SELECT` on `pg_stat_database`.
 ## Configuration
 
 The following settings are required to create a database connection:
+
 - `username`
 - `password`
 
 The following settings are optional:
+
 - `endpoint` (default = `localhost:5432`): The endpoint of the postgresql server. Whether using TCP or Unix sockets, this value should be `host:port`. If `transport` is set to `unix`, the endpoint will internally be translated from `host:port` to `/host.s.PGSQL.port`
 - `transport` (default = `tcp`): The transport protocol being used to connect to postgresql. Available options are `tcp` and `unix`.
-
 - `databases` (default = `[]`): The list of databases for which the receiver will attempt to collect statistics. If an empty list is provided, the receiver will attempt to collect statistics for all non-template databases.
+- `collect_query_performance` (default = `false`): Whether to collect query performance metrics. This requires enabling the `pg_stat_statements` extension. For more information how to do that, please refer to this [doc](./docs/query-performance.md)
 
 The following settings are also optional and nested under `tls` to help configure client transport security
+
 - `insecure` (default = `false`): Whether to enable client transport security for the postgresql connection.
 - `insecure_skip_verify` (default = `true`): Whether to validate server name and certificate if client transport security is enabled.
 - `cert_file` (default = `$HOME/.postgresql/postgresql.crt`): A cerficate used for client authentication, if necessary.
@@ -57,7 +60,7 @@ receivers:
       key_file: /home/otel/mypostgreskey.key
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md). 
+The full list of settings exposed for this receiver are documented [here](./config.go) with detailed sample configurations [here](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
 
 ## Metrics
 

@@ -21,6 +21,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -46,7 +47,8 @@ type client interface {
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
-	getQueryStats(ctx context.Context) ([]queryStat, error)
+	getQueryStats(ctx context.Context, pgVersion *version.Version) ([]queryStat, error)
+	getVersion(ctx context.Context) (*version.Version, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -131,6 +133,20 @@ func (c *postgreSQLClient) Close() error {
 type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
+}
+
+func (c *postgreSQLClient) getVersion(ctx context.Context) (*version.Version, error) {
+	query := `SHOW server_version;`
+	row := c.client.QueryRowContext(ctx, query)
+	var versionString string
+	err := row.Scan(&versionString)
+	if err != nil {
+		return nil, err
+	}
+	// some results of show semver_version suffix with a clarifier such as "Debian" dependent on OS
+	// so just grab the parseable semver ex) 13.2 Debian
+	semverString := strings.Split(versionString, " ")[0]
+	return version.NewVersion(semverString)
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
@@ -384,27 +400,19 @@ type queryStat struct {
 	tempBlocksWritten int64
 }
 
-func (c *postgreSQLClient) getQueryStats(ctx context.Context) ([]queryStat, error) {
+func (c *postgreSQLClient) getQueryStats(ctx context.Context, pgVersion *version.Version) ([]queryStat, error) {
 	// negative queryid's are indicative of internal queries, which users most likely do not care about.
-	query := `
-SELECT
-	queryid,
-	query,
-	mean_time,
-	total_time,
-	calls,
-	shared_blks_read, shared_blks_written, shared_blks_dirtied,
-	local_blks_read, local_blks_written, local_blks_dirtied,
-	temp_blks_read, temp_blks_written
-FROM pg_stat_statements
-WHERE queryid > 0;
-`
+	query, err := c.perfQueryStatement(pgVersion)
+	if err != nil {
+		return []queryStat{}, err
+	}
 	qs := []queryStat{}
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return qs, err
 	}
 
+	var errors []error
 	for rows.Next() {
 		var (
 			queryID, query                                             string
@@ -421,7 +429,8 @@ WHERE queryid > 0;
 			&tempBlocksRead, &tempBlocksWritten,
 		)
 		if err != nil {
-			return qs, err
+			errors = append(errors, err)
+			continue
 		}
 		qs = append(qs, queryStat{
 			queryID:             queryID,
@@ -439,7 +448,49 @@ WHERE queryid > 0;
 			tempBlocksWritten:   tempBlocksWritten,
 		})
 	}
-	return qs, nil
+	return qs, multierr.Combine(errors...)
+}
+
+func (c *postgreSQLClient) perfQueryStatement(pgVersion *version.Version) (string, error) {
+	// version definitions defined here https://www.postgresql.org/docs/current/pgstatstatements.html
+	pg10, _ := version.NewVersion("10.0")
+	pg13, _ := version.NewVersion("13.0")
+
+	var query string
+	switch {
+	// unsupported operation so just return here
+	case pgVersion.LessThan(pg10):
+		return "", fmt.Errorf("gathering performance data on queries is not supported for postgres version: %s", pgVersion.Original())
+	// main difference is the change of mean_time => mean_exec_time from pg 10,11,12 => 13
+	case pgVersion.GreaterThanOrEqual(pg10) && pgVersion.LessThan(pg13):
+		query = `
+		SELECT
+			userid,
+			queryid,
+			query,
+			mean_time,
+			total_time,
+			calls,
+			shared_blks_read, shared_blks_written, shared_blks_dirtied,
+			local_blks_read, local_blks_written, local_blks_dirtied,
+			temp_blks_read, temp_blks_written
+		FROM pg_stat_statements;
+	`
+	// default is a postgres instance version of > 13. Something to be conscious of if ends up changing.
+	default:
+		query = `SELECT
+			userid,
+			query,
+			mean_exec_time,
+			total_exec_time,
+			calls,
+			shared_blks_read, shared_blks_written, shared_blks_dirtied,
+			local_blks_read, local_blks_written, local_blks_dirtied,
+			temp_blks_read, temp_blks_written
+		FROM pg_stat_statements;
+	`
+	}
+	return query, nil
 }
 
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
