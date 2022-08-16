@@ -121,7 +121,8 @@ func TestTracesSource(t *testing.T) {
 			t.Fatalf("Metrics server handler error: %v", err)
 		}
 		reqs <- buf.Bytes()
-		w.Write([]byte("{\"status\": \"ok\"}")) // nolint:errcheck
+		_, err := w.Write([]byte("{\"status\": \"ok\"}"))
+		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
 	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
