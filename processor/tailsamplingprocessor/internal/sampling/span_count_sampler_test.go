@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/atomic"
 	"go.uber.org/zap"
 )
 
@@ -75,6 +76,7 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 
 func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 	var traceBatches []ptrace.Traces
+	var totalNumberSpans = int32(0)
 
 	// For each trace, going to create the number of spans defined in the array
 	for i := range numberSpans {
@@ -89,9 +91,11 @@ func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 		}
 		traceBatches = append(traceBatches, traces)
+		totalNumberSpans += numberSpans[i]
 	}
 
 	return &TraceData{
 		ReceivedBatches: traceBatches,
+		SpanCount:       atomic.NewInt64(int64(totalNumberSpans)),
 	}
 }
