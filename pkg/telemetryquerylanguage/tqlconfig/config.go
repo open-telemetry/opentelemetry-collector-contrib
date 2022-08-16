@@ -48,7 +48,7 @@ type DeclarativeQuery struct {
 type Argument struct {
 	Invocation *Invocation `mapstructure:"invocation"`
 	String     *string     `mapstructure:"string"`
-	Other      *string     `mapstructure:",remain"`
+	Other      *string     `mapstructure:"other"`
 }
 
 type Invocation struct {
