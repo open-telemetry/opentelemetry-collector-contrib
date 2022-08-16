@@ -6,11 +6,9 @@ require (
 	github.com/fatih/structtag v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
-	go.opentelemetry.io/collector/pdata v0.58.0
-	go.uber.org/multierr v1.8.0
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	golang.org/x/text v0.3.7
 )
@@ -350,6 +348,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.58.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.58.0 // indirect
@@ -424,7 +423,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator v0.58.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver v0.58.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.58.0 // indirect
@@ -530,6 +528,7 @@ require (
 	go.mongodb.org/atlas v0.16.0 // indirect
 	go.mongodb.org/mongo-driver v1.10.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.58.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.58.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.34.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0 // indirect
@@ -540,6 +539,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.1.12 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75 // indirect
