@@ -62,10 +62,10 @@ var (
 		ExposedPorts: []string{"27217:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
 	}
-	containerRequest4_0LPU = testcontainers.ContainerRequest{
+	containerRequest4_4LPU = testcontainers.ContainerRequest{
 		FromDockerfile: testcontainers.FromDockerfile{
 			Context:    filepath.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.mongodb.4_0.lpu",
+			Dockerfile: "Dockerfile.mongodb.4_4.lpu",
 		},
 		ExposedPorts: []string{"27317:27017"},
 		WaitingFor:   wait.ForListeningPort("27017").WithStartupTimeout(2 * time.Minute),
@@ -195,9 +195,9 @@ func TestMongodbIntegration(t *testing.T) {
 		err = scrapertest.CompareMetrics(expectedMetrics, actualMetrics, scrapertest.IgnoreMetricValues())
 		require.NoError(t, err)
 	})
-	t.Run("Running mongodb 4.0 as LPU", func(t *testing.T) {
+	t.Run("Running mongodb 4.4 as LPU", func(t *testing.T) {
 		t.Parallel()
-		container := getContainer(t, containerRequest4_0LPU, LPUSetupScript)
+		container := getContainer(t, containerRequest4_4LPU, LPUSetupScript)
 		defer func() {
 			require.NoError(t, container.Terminate(context.Background()))
 		}()
@@ -228,7 +228,7 @@ func TestMongodbIntegration(t *testing.T) {
 
 		actualMetrics := consumer.AllMetrics()[0]
 
-		expectedFile := filepath.Join("testdata", "integration", "expected.4_0.lpu.json")
+		expectedFile := filepath.Join("testdata", "integration", "expected.4_4.lpu.json")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
