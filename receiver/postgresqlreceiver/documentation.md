@@ -9,6 +9,11 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **postgresql.backends** | The number of backends. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.bgwriter.buffers.allocated** | Number of buffers allocated. | {buffers} | Sum(Int) | <ul> </ul> |
+| **postgresql.bgwriter.buffers.writes** | Number of buffers written. | {buffers} | Sum(Int) | <ul> <li>bg_buffer_source</li> </ul> |
+| **postgresql.bgwriter.checkpoint.count** | The number of checkpoints performed. | {checkpoints} | Sum(Int) | <ul> <li>bg_checkpoint_type</li> </ul> |
+| **postgresql.bgwriter.duration** | Total time spent writing and syncing files to disk by checkpoints. | ms | Sum(Int) | <ul> <li>bg_duration_type</li> </ul> |
+| **postgresql.bgwriter.maxwritten** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.database.count** | Number of user databases. | {databases} | Sum(Int) | <ul> </ul> |
@@ -43,12 +48,16 @@ metrics:
 | postgresql.index.name | The name of the index on a table. | String |
 | postgresql.query.id | The internal ID of a postgreSQL query. | String |
 | postgresql.query.text | The first 40 characters of the SQL text of a query. | String |
+| postgresql.query.user.id | The ID of the user invoking the query. | String |
 | postgresql.table.name | The schema name followed by the table name. | String |
 
 ## Metric attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| bg_buffer_source (source) | The source of a buffer write. | backend, backend_fsync, checkpoints, bgwriter |
+| bg_checkpoint_type (type) | The type of checkpoint state. | requested, scheduled |
+| bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
 | database | The name of the database. |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
 | query_block_operation (operation) | The operation the query performed on the block. | dirty, read, write |

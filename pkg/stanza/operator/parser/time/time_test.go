@@ -57,7 +57,7 @@ func TestBuild(t *testing.T) {
 		{
 			"basic",
 			func() (*Config, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return cfg, err
@@ -98,7 +98,7 @@ func TestProcess(t *testing.T) {
 		{
 			name: "promote",
 			config: func() (*Config, error) {
-				cfg := NewConfig("test_id")
+				cfg := NewConfigWithID("test_id")
 				parseFrom, err := entry.NewField("body.app_time")
 				if err != nil {
 					return nil, err
@@ -544,7 +544,7 @@ func runLossyTimeParseTest(_ *testing.T, cfg *Config, ent *entry.Entry, buildErr
 }
 
 func parseTimeTestConfig(layoutType, layout string, parseFrom entry.Field) *Config {
-	cfg := NewConfig("test_operator_id")
+	cfg := NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"output1"}
 	cfg.TimeParser = helper.TimeParser{
 		LayoutType: layoutType,

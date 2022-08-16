@@ -103,5 +103,5 @@ func TestRouterGoldenConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("router")
+	return NewConfig()
 }

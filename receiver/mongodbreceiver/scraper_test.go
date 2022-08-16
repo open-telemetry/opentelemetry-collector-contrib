@@ -24,11 +24,8 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
@@ -116,37 +113,6 @@ func TestScrapeNoClient(t *testing.T) {
 	m, err := scraper.scrape(context.Background())
 	require.Zero(t, m.MetricCount())
 	require.Error(t, err)
-}
-
-func TestGlobalLockTimeOldFormat(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Metrics = metadata.DefaultMetricsSettings()
-	scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
-	mong26, err := version.NewVersion("2.6")
-	require.NoError(t, err)
-	scraper.mongoVersion = mong26
-	doc := primitive.M{
-		"locks": primitive.M{
-			".": primitive.M{
-				"timeLockedMicros": primitive.M{
-					"R": 122169,
-					"W": 132712,
-				},
-				"timeAcquiringMicros": primitive.M{
-					"R": 116749,
-					"W": 14340,
-				},
-			},
-		},
-	}
-
-	now := pcommon.NewTimestampFromTime(time.Now())
-	scraper.recordGlobalLockTime(now, doc, &scrapererror.ScrapeErrors{})
-	expectedValue := (int64(116749+14340) / 1000)
-
-	metrics := scraper.mb.Emit().ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	collectedValue := metrics.At(0).Sum().DataPoints().At(0).IntVal()
-	require.Equal(t, expectedValue, collectedValue)
 }
 
 func TestTopMetricsAggregation(t *testing.T) {

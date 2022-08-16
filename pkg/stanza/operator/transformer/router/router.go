@@ -27,14 +27,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "router"
+
 func init() {
-	operator.Register("router", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig config creates a new router operator config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID config creates a new router operator config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		BasicConfig: helper.NewBasicConfig(operatorID, "router"),
+		BasicConfig: helper.NewBasicConfig(operatorID, operatorType),
 	}
 }
 

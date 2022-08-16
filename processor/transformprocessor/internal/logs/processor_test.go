@@ -144,7 +144,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor([]string{tt.query}, DefaultFunctions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor([]string{tt.query}, Functions(), component.ProcessorCreateSettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
