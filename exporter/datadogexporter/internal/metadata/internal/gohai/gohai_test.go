@@ -8,9 +8,8 @@ package gohai
 import (
 	"testing"
 
-	"go.uber.org/zap"
-
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestGetPayload(t *testing.T) {
