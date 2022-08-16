@@ -90,56 +90,58 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.TracesExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
-	expCfg := config.(*Config)
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
+	exp, err := createExporter(cfg, set.Logger, &set.BuildInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		expCfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.pushTraceData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop))
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (component.MetricsExporter, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
-	expCfg := config.(*Config)
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
+	exp, err := createExporter(cfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
-		expCfg,
+	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.pushMetricsData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop))
 	if err != nil {
@@ -155,29 +157,30 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	config config.Exporter,
 ) (exporter component.LogsExporter, err error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
-	expCfg := config.(*Config)
+	cfg := config.(*Config)
 
-	exp, err := createExporter(expCfg, set.Logger, &set.BuildInfo)
+	exp, err := createExporter(cfg, set.Logger, &set.BuildInfo)
 
 	if err != nil {
 		return nil, err
 	}
 
-	logsExporter, err := exporterhelper.NewLogsExporter(
-		expCfg,
+	logsExporter, err := exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
+		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.stop))
 

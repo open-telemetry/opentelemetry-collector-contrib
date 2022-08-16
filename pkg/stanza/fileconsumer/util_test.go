@@ -17,7 +17,6 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -77,14 +76,14 @@ func reopenTemp(t testing.TB, name string) *os.File {
 }
 
 func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
-	file, err := ioutil.TempFile(tempDir, pattern)
+	file, err := os.CreateTemp(tempDir, pattern)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
 }
 
 func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := ioutil.TempFile(tempDir, "")
+	file, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	require.NoError(t, file.Close()) // will be managed by rotator
 

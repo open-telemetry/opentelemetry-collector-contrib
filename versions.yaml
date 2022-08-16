@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.57.2
+    version: v0.58.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/chloggen
@@ -27,7 +27,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter
@@ -35,14 +34,12 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
@@ -71,6 +68,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/fluentbitextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetter
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
@@ -145,7 +143,8 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver
-      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver      
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver      
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver

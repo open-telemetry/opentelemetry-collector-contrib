@@ -17,12 +17,11 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/ttlmap"
 )

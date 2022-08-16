@@ -60,7 +60,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
 
 /*
-	Processing
+Processing
 */
 func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 	return c.accumulator.Accumulate(rm)
@@ -317,7 +317,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 }
 
 /*
-	Reporting
+Reporting
 */
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")

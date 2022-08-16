@@ -23,7 +23,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -94,7 +94,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/go-build
-          key: go-lint-build-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
         run: make -j2 golint GROUP=${{ matrix.group }}
   lint:
@@ -122,7 +122,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -141,7 +141,7 @@ jobs:
         run: make checkdoc
       - name: Porto
         run: |
-          make goporto
+          make -j2 goporto
           git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
@@ -151,6 +151,9 @@ jobs:
         run: |
           make generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+      - name: Impi
+        run: |
+          make -j2 goimpi
       - name: MultimodVerify
         run: make multimod-verify
   unittest-matrix:
@@ -224,7 +227,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -245,7 +248,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -271,7 +274,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -332,7 +335,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Cache Go
         id: go-cache
         uses: actions/cache@v3
@@ -465,7 +468,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
@@ -530,7 +533,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.18
+          go-version: 1.19
       - name: Mkdir bin and dist
         run: |
           mkdir bin/ dist/
