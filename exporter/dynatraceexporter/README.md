@@ -268,13 +268,39 @@ Default: `5000`
 When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
 attributes will be included as metric attributes.
 
+Default: `false`
+
 > :warning: **Please note** that the Dynatrace API has a limit of `50` attributes
 > per metric and any metric which exceeds this limit will be dropped.
-> If you think you might exceed this limit, you should use the
-> [attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor)
-> instead to only convert the attributes which are important to you.
 
-Default: `false`
+If you think you might exceed this limit, you should use the
+[transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
+ to remove any resource attributes you don't want converted.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+processors:
+  transform:
+    metrics:
+      queries:
+        - keep_keys(resource.attributes, "key1", "key2", "key3")
+exporters:
+  dynatrace:
+    endpoint: https://ab12345.live.dynatrace.com
+    api_token: <api token must have metrics.write permission>
+    resource_to_telemetry_conversion:
+      enabled: true
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      processors: [transform]
+      exporters: [dynatrace]
+```
 
 ### tags (Deprecated, Optional)
 
