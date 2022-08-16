@@ -35,6 +35,6 @@ var registry = map[string]interface{}{
 	"delete_matching_keys": tqlotel.DeleteMatchingKeys,
 }
 
-func DefaultFunctions() map[string]interface{} {
+func Functions() map[string]interface{} {
 	return registry
 }

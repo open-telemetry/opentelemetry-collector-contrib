@@ -141,7 +141,7 @@ jobs:
         run: make checkdoc
       - name: Porto
         run: |
-          make goporto
+          make -j2 goporto
           git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
@@ -151,6 +151,9 @@ jobs:
         run: |
           make generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+      - name: Impi
+        run: |
+          make -j2 goimpi
       - name: MultimodVerify
         run: make multimod-verify
   unittest-matrix:
