@@ -267,7 +267,7 @@ Default: `5000`
 
 # Temporality
 
-If possible, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
+If possible when configuring your SDK, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
 Use CUMULATIVE temporality for UpDownCounter and Asynchronous UpDownCounter metrics.
 When using OpenTelemetry SDKs to gather metrics data, setting the
 `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable to `delta`
