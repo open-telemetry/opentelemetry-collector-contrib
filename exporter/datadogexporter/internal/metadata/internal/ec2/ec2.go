@@ -26,9 +26,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"go.uber.org/zap"
 
-	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 )
 
 var (

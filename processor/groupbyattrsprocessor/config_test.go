@@ -18,11 +18,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.opentelemetry.io/collector/confmap/confmaptest"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadingConfig(t *testing.T) {
