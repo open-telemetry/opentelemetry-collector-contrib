@@ -102,6 +102,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
+
 .PHONY: goporto
 goporto:
 	porto -w --include-internal --skip-dirs "^cmd$$" ./
