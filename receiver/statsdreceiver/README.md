@@ -49,8 +49,8 @@ receivers:
         observer_type: "gauge"
       - statsd_type: "timing"
         observer_type: "histogram"
-		histogram: 
-		  max_size: 100
+        histogram: 
+          max_size: 100
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
@@ -126,12 +126,12 @@ receivers:
     timer_histogram_mapping:
       - statsd_type: "histogram"
         observer_type: "gauge"
-		histogram:
-		  max_size: 50
+        histogram:
+          max_size: 50
       - statsd_type: "timing"
         observer_type: "gauge"
-		histogram:
-		  max_size: 100
+        histogram:
+          max_size: 100
 
 exporters:
   file:
