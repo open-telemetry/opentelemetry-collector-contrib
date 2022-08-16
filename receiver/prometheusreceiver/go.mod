@@ -8,7 +8,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.58.0
-
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.37.0
 	github.com/stretchr/testify v1.8.0
