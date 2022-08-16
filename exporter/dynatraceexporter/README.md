@@ -267,10 +267,12 @@ Default: `5000`
 
 # Temporality
 
-Counters and histograms should use DELTA temporality.
-When using OpenTelemetry SDKs to gather metrics data, temporality can be
-configured using the `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`
-environment variable. You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
+If possible, use DELTA temporality for Counter, Asynchronous Counter, and Histogram metrics.
+Use CUMULATIVE temporality for UpDownCounter and Asynchronous UpDownCounter metrics.
+When using OpenTelemetry SDKs to gather metrics data, setting the
+`OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE` environment variable to `delta`
+should correctly set temporality for all metrics.
+You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
 if you are unsure if the SDK you are using supports this configuration.
 You can read more about this and other configurations at
 https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration.
