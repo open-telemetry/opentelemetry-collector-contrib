@@ -17,7 +17,6 @@ package filestorage
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -272,7 +271,7 @@ func TestCompaction(t *testing.T) {
 		require.NoError(t, client.Close(ctx))
 	})
 
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 
@@ -363,7 +362,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	})
 
 	// check if only db exists in tempDir
-	files, err := ioutil.ReadDir(tempDir)
+	files, err := os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	fileName := files[0].Name()
@@ -378,7 +377,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	})
 
 	// check if only db exists in tempDir
-	files, err = ioutil.ReadDir(tempDir)
+	files, err = os.ReadDir(tempDir)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(files))
 	require.Equal(t, fileName, files[0].Name())
@@ -395,7 +394,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	})
 
 	// check if emptyTempDir is empty after compaction
-	files, err = ioutil.ReadDir(emptyTempDir)
+	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(files))
 }

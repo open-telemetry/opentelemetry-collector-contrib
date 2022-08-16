@@ -51,7 +51,7 @@ func newExpVarScraper(cfg *Config, set component.ReceiverCreateSettings) *expVar
 }
 
 func (e *expVarScraper) start(_ context.Context, host component.Host) error {
-	client, err := e.cfg.HTTPClientSettings.ToClientWithHost(host, e.set.TelemetrySettings)
+	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.set.TelemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (e *expVarScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	e.mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(now, int64(memStats.MSpanInuse))
 	e.mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(now, int64(memStats.MSpanSys))
 	e.mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(now, int64(memStats.MCacheInuse))
-	e.mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(now, int64(memStats.MCacheSys))
+	e.mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(now, int64(memStats.MCacheSys))
 	e.mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(now, int64(memStats.BuckHashSys))
 	e.mb.RecordProcessRuntimeMemstatsGcSysDataPoint(now, int64(memStats.GCSys))
 	e.mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(now, int64(memStats.OtherSys))

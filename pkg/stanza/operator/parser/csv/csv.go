@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,14 +28,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "csv_parser"
+
 func init() {
-	operator.Register("csv_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new csv parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new csv parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, "csv_parser"),
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 

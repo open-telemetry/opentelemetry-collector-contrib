@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -115,7 +115,7 @@ type testServerParams struct {
 // assertions through the assertCB function.
 func createHTTPServer(params *testServerParams) testServer {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			params.t.Fatal(err)
 		}
@@ -129,7 +129,8 @@ func createHTTPServer(params *testServerParams) testServer {
 
 		w.WriteHeader(statusCode)
 		if len(responseBody) > 0 {
-			w.Write([]byte(responseBody)) //nolint:errcheck
+			_, err = w.Write([]byte(responseBody))
+			assert.NoError(params.t, err)
 		}
 	}))
 

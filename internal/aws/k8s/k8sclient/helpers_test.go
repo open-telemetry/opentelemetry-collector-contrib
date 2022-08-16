@@ -15,7 +15,6 @@
 package k8sclient
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -62,11 +61,11 @@ users:
       command: foo-command
       provideClusterInfo: true
 `
-	tmpfile, err := ioutil.TempFile("", "kubeconfig")
+	tmpfile, err := os.CreateTemp("", "kubeconfig")
 	if err != nil {
 		t.Error(err)
 	}
-	if err := ioutil.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
+	if err := os.WriteFile(tmpfile.Name(), []byte(content), 0600); err != nil {
 		t.Error(err)
 	}
 	// overwrite the default kube config path

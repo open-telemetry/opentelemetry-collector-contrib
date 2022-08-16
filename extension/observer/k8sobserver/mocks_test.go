@@ -31,6 +31,10 @@ type endpointSink struct {
 	changed []observer.Endpoint
 }
 
+func (e *endpointSink) ID() observer.NotifyID {
+	return "endpointSink"
+}
+
 func (e *endpointSink) OnAdd(added []observer.Endpoint) {
 	e.Lock()
 	defer e.Unlock()

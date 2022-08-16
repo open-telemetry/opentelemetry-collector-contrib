@@ -47,9 +47,10 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))

@@ -1,15 +1,15 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
 
-go 1.17
+go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.56.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.56.0
-	go.opentelemetry.io/collector/pdata v0.56.0
+	go.opentelemetry.io/collector v0.58.0
+	go.opentelemetry.io/collector/pdata v0.58.0
 	go.uber.org/multierr v1.8.0
-	go.uber.org/zap v1.21.0
+	go.uber.org/zap v1.22.0
 )
 
 require (
@@ -20,7 +20,7 @@ require (
 	github.com/containerd/cgroups v1.0.1 // indirect
 	github.com/containerd/containerd v1.5.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.11+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -58,11 +58,11 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.33.0 // indirect
-	go.opentelemetry.io/otel v1.8.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0 // indirect
+	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/trace v1.8.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect

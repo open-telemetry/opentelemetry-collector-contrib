@@ -38,7 +38,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -49,7 +49,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -58,9 +58,11 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), params.Logger)
+	metricsProcessor := newMetricsGenerationProcessor(buildInternalConfig(processorConfig), set.Logger)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,

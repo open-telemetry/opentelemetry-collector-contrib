@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -102,7 +101,7 @@ func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup 
 		// NoOp
 	}
 	var file *os.File
-	file, err = ioutil.TempFile("", "agent*.yaml")
+	file, err = os.CreateTemp("", "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err

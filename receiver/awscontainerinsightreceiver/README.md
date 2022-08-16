@@ -272,6 +272,9 @@ spec:
             - name: varlibdocker
               mountPath: /var/lib/docker
               readOnly: true
+            - name: containerdsock
+               mountPath: /run/containerd/containerd.sock
+               readOnly: true
             - name: sys
               mountPath: /sys
               readOnly: true
@@ -303,6 +306,9 @@ spec:
         - name: varlibdocker
           hostPath:
             path: /var/lib/docker
+        - name: containerdsock
+           hostPath:
+             path: /run/containerd/containerd.sock
         - name: sys
           hostPath:
             path: /sys

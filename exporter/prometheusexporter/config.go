@@ -19,16 +19,15 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
-	// Endpoint is the address on which the Prometheus scrape handler will be run on.
-	Endpoint string `mapstructure:"endpoint"`
+	config.ExporterSettings       `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
+	confighttp.HTTPServerSettings `mapstructure:",squash"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`

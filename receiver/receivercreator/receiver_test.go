@@ -62,6 +62,8 @@ func (m *mockObserver) ListAndWatch(notify observer.Notify) {
 	notify.OnAdd([]observer.Endpoint{portEndpoint})
 }
 
+func (m *mockObserver) Unsubscribe(_ observer.Notify) {}
+
 var _ observer.Observable = (*mockObserver)(nil)
 
 func TestMockedEndToEnd(t *testing.T) {
