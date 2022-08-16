@@ -19,6 +19,7 @@ import (
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 	"go.uber.org/multierr"
 )
 
@@ -148,6 +149,11 @@ func (n *IsNil) Capture(_ []string) error {
 }
 
 type EnumSymbol string
+
+func ParseDeclarativeQueries(queries []tqlconfig.DeclarativeQuery, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
+	statements := tqlconfig.Interpret(queries)
+	return ParseQueries(statements, functions, pathParser, enumParser)
+}
 
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
