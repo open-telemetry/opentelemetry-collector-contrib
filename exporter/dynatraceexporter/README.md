@@ -267,7 +267,7 @@ Default: `5000`
 
 # Temporality
 
-When possible, counters and histograms should use DELTA temporality.
+Counters and histograms should use DELTA temporality.
 When using OpenTelemetry SDKs to gather metrics data, temporality can be
 configured using the `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`
 environment variable. You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
@@ -277,6 +277,9 @@ https://github.com/open-telemetry/opentelemetry-specification/blob/main/specific
 
 ## Considerations when exporting Cumulative Data Points
 
+Histogram metrics with CUMULATIVE temporality are NOT SUPPORTED and will NOT be exported.
+
+When possible, Sum metrics should use DELTA temporality.
 When receiving Sum metrics with CUMULATIVE temporality, this exporter performs CUMULATIVE to DELTA conversion.
 This conversion can lead to missing or inconsistent data, as described below:
 
