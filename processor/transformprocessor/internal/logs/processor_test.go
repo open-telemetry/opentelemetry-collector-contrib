@@ -139,6 +139,12 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.url", "http://localhost/health")
 			},
 		},
+		{
+			query: `set(attributes["test"], Join(": ", attributes["http.method"], attributes["http.url"])) where body == Join("", "operation", "A")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "get: http://localhost/health")
+			},
+		},
 	}
 
 	for _, tt := range tests {

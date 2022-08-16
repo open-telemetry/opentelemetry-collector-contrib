@@ -266,6 +266,13 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().InsertString("attr1", "test1")
 			},
 		},
+		{
+			query: []string{`set(attributes["test"], Join("-", attributes["attr1"], attributes["attr2"])) where metric.name == Join("", "operation", "A")`},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().InsertString("test", "test1-test2")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().InsertString("test", "test1-test2")
+			},
+		},
 	}
 
 	for _, tt := range tests {
