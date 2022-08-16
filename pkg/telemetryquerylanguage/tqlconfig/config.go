@@ -40,7 +40,18 @@ type DeclarativeSignalConfig struct {
 
 // DeclarativeQuery configures a specific TQL query to execute.
 type DeclarativeQuery struct {
-	Function  string   `mapstructure:"function"`
-	Arguments []string `mapstructure:"arguments"`
-	Condition *string  `mapstructure:"condition"`
+	Function  string     `mapstructure:"function"`
+	Arguments []Argument `mapstructure:"arguments"`
+	Condition *string    `mapstructure:"condition"`
+}
+
+type Argument struct {
+	Invocation *Invocation `mapstructure:"invocation"`
+	String     *string     `mapstructure:"string"`
+	Other      *string     `mapstructure:",remain"`
+}
+
+type Invocation struct {
+	Function  string     `mapstructure:"function"`
+	Arguments []Argument `mapstructure:"arguments"`
 }

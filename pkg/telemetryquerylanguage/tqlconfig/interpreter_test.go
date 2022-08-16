@@ -32,9 +32,13 @@ func Test_Interpret(t *testing.T) {
 			query: []DeclarativeQuery{
 				{
 					Function: "set",
-					Arguments: []string{
-						"attributes[\"test\"]",
-						"\"pass\"",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("attributes[\"test\"]"),
+						},
+						{
+							String: tqltest.Strp("pass"),
+						},
 					},
 				},
 			},
@@ -47,15 +51,21 @@ func Test_Interpret(t *testing.T) {
 			query: []DeclarativeQuery{
 				{
 					Function: "singleArgument",
-					Arguments: []string{
-						"true",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("true"),
+						},
 					},
 				},
 				{
 					Function: "limit",
-					Arguments: []string{
-						"attributes",
-						"100",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("attributes"),
+						},
+						{
+							Other: tqltest.Strp("100"),
+						},
 					},
 				},
 				{
@@ -73,9 +83,20 @@ func Test_Interpret(t *testing.T) {
 			query: []DeclarativeQuery{
 				{
 					Function: "set",
-					Arguments: []string{
-						"span_id",
-						"SpanID(0x0102030405060708)",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("span_id"),
+						},
+						{
+							Invocation: &Invocation{
+								Function: "SpanID",
+								Arguments: []Argument{
+									{
+										Other: tqltest.Strp("0x0102030405060708"),
+									},
+								},
+							},
+						},
 					},
 				},
 			},
@@ -88,9 +109,20 @@ func Test_Interpret(t *testing.T) {
 			query: []DeclarativeQuery{
 				{
 					Function: "set",
-					Arguments: []string{
-						"span_id",
-						"SpanID(0x0102030405060708)",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("span_id"),
+						},
+						{
+							Invocation: &Invocation{
+								Function: "SpanID",
+								Arguments: []Argument{
+									{
+										Other: tqltest.Strp("0x0102030405060708"),
+									},
+								},
+							},
+						},
 					},
 					Condition: tqltest.Strp("name == \"a name\""),
 				},
@@ -104,9 +136,20 @@ func Test_Interpret(t *testing.T) {
 			query: []DeclarativeQuery{
 				{
 					Function: "set",
-					Arguments: []string{
-						"span_id",
-						"SpanID(0x0102030405060708)",
+					Arguments: []Argument{
+						{
+							Other: tqltest.Strp("span_id"),
+						},
+						{
+							Invocation: &Invocation{
+								Function: "SpanID",
+								Arguments: []Argument{
+									{
+										Other: tqltest.Strp("0x0102030405060708"),
+									},
+								},
+							},
+						},
 					},
 					Condition: tqltest.Strp("(name == \"a name\" or thing == false) and other_thing == true"),
 				},
