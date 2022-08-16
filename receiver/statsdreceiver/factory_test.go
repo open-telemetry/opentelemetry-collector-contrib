@@ -17,12 +17,14 @@ package statsdreceiver
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/lightstep/otel-launcher-go/lightstep/sdk/metric/aggregator/histogram/structure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
@@ -57,6 +59,56 @@ func TestCreateReceiverWithConfigErr(t *testing.T) {
 		consumertest.NewNop(),
 	)
 	assert.Error(t, err, "aggregation_interval must be a positive duration")
+	assert.Nil(t, receiver)
+
+}
+
+func TestCreateReceiverWithHistogramConfigError(t *testing.T) {
+	cfg := &Config{
+		AggregationInterval: 20 * time.Second,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{
+			{
+				StatsdType:   "timing",
+				ObserverType: "histogram",
+				Histogram: protocol.HistogramConfig{
+					MaxSize: structure.MaximumMaxSize + 1,
+				},
+			},
+		},
+	}
+	receiver, err := createMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop(),
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "histogram max_size out of range")
+	assert.Nil(t, receiver)
+
+}
+
+func TestCreateReceiverWithInvalidHistogramConfig(t *testing.T) {
+	cfg := &Config{
+		AggregationInterval: 20 * time.Second,
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{
+			{
+				StatsdType:   "timing",
+				ObserverType: "gauge",
+				Histogram: protocol.HistogramConfig{
+					MaxSize: 100,
+				},
+			},
+		},
+	}
+	receiver, err := createMetricsReceiver(
+		context.Background(),
+		componenttest.NewNopReceiverCreateSettings(),
+		cfg,
+		consumertest.NewNop(),
+	)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "histogram configration requires observer_type: histogram")
 	assert.Nil(t, receiver)
 
 }

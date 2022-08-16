@@ -54,7 +54,7 @@ func TestLoadConfig(t *testing.T) {
 			Transport: "custom_transport",
 		},
 		AggregationInterval:   70 * time.Second,
-		TimerHistogramMapping: []protocol.TimerHistogramMapping{{StatsdType: "histogram", ObserverType: "gauge", Histogram: protocol.HistogramConfig{MaxSize: 17}}, {StatsdType: "timing", ObserverType: "gauge", Histogram: protocol.HistogramConfig{MaxSize: 170}}},
+		TimerHistogramMapping: []protocol.TimerHistogramMapping{{StatsdType: "histogram", ObserverType: "gauge"}, {StatsdType: "timing", ObserverType: "histogram", Histogram: protocol.HistogramConfig{MaxSize: 170}}},
 	}, r1)
 }
 

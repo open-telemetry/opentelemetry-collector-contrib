@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
+	"github.com/lightstep/otel-launcher-go/lightstep/sdk/metric/aggregator/histogram/structure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
@@ -66,6 +67,18 @@ func (c *Config) validate() error {
 		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
 		default:
 			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+		}
+
+		if eachMap.ObserverType == protocol.HistogramObserver {
+			if eachMap.Histogram.MaxSize != 0 && (eachMap.Histogram.MaxSize < structure.MinSize || eachMap.Histogram.MaxSize > structure.MaximumMaxSize) {
+				errs = multierr.Append(errs, fmt.Errorf("histogram max_size out of range: %v", eachMap.Histogram.MaxSize))
+			}
+		} else {
+			// Non-histogram observer w/ histogram config
+			var empty protocol.HistogramConfig
+			if eachMap.Histogram != empty {
+				errs = multierr.Append(errs, fmt.Errorf("histogram configration requires observer_type: histogram"))
+			}
 		}
 	}
 

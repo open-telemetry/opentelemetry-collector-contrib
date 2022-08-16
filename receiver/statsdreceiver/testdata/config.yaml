@@ -8,10 +8,8 @@ receivers:
     timer_histogram_mapping:
       - statsd_type: "histogram"
         observer_type: "gauge"
-        histogram:
-          max_size: 17
       - statsd_type: "timing"
-        observer_type: "gauge"
+        observer_type: "histogram"
         histogram:
           max_size: 170
 
