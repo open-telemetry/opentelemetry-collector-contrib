@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 // Config represents user settings for kafkametrics receiver
@@ -44,4 +45,7 @@ type Config struct {
 
 	// ClientID is the id associated with the consumer that reads from topics in kafka.
 	ClientID string `mapstructure:"client_id"`
+
+	// Metrics allows customizing scraped metrics representation.
+	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 }
