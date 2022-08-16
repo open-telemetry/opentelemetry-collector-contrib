@@ -121,5 +121,5 @@ func TestParserGoldenConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("regex_parser")
+	return NewConfig()
 }

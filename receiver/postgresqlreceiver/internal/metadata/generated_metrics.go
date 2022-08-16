@@ -17,24 +17,44 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for postgresqlreceiver metrics.
 type MetricsSettings struct {
-	PostgresqlBackends         MetricSettings `mapstructure:"postgresql.backends"`
-	PostgresqlBlocksRead       MetricSettings `mapstructure:"postgresql.blocks_read"`
-	PostgresqlCommits          MetricSettings `mapstructure:"postgresql.commits"`
-	PostgresqlDatabaseCount    MetricSettings `mapstructure:"postgresql.database.count"`
-	PostgresqlDbSize           MetricSettings `mapstructure:"postgresql.db_size"`
-	PostgresqlIndexScans       MetricSettings `mapstructure:"postgresql.index.scans"`
-	PostgresqlIndexSize        MetricSettings `mapstructure:"postgresql.index.size"`
-	PostgresqlOperations       MetricSettings `mapstructure:"postgresql.operations"`
-	PostgresqlRollbacks        MetricSettings `mapstructure:"postgresql.rollbacks"`
-	PostgresqlRows             MetricSettings `mapstructure:"postgresql.rows"`
-	PostgresqlTableCount       MetricSettings `mapstructure:"postgresql.table.count"`
-	PostgresqlTableSize        MetricSettings `mapstructure:"postgresql.table.size"`
-	PostgresqlTableVacuumCount MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlBackends                 MetricSettings `mapstructure:"postgresql.backends"`
+	PostgresqlBgwriterBuffersAllocated MetricSettings `mapstructure:"postgresql.bgwriter.buffers.allocated"`
+	PostgresqlBgwriterBuffersWrites    MetricSettings `mapstructure:"postgresql.bgwriter.buffers.writes"`
+	PostgresqlBgwriterCheckpointCount  MetricSettings `mapstructure:"postgresql.bgwriter.checkpoint.count"`
+	PostgresqlBgwriterDuration         MetricSettings `mapstructure:"postgresql.bgwriter.duration"`
+	PostgresqlBgwriterMaxwritten       MetricSettings `mapstructure:"postgresql.bgwriter.maxwritten"`
+	PostgresqlBlocksRead               MetricSettings `mapstructure:"postgresql.blocks_read"`
+	PostgresqlCommits                  MetricSettings `mapstructure:"postgresql.commits"`
+	PostgresqlDatabaseCount            MetricSettings `mapstructure:"postgresql.database.count"`
+	PostgresqlDbSize                   MetricSettings `mapstructure:"postgresql.db_size"`
+	PostgresqlIndexScans               MetricSettings `mapstructure:"postgresql.index.scans"`
+	PostgresqlIndexSize                MetricSettings `mapstructure:"postgresql.index.size"`
+	PostgresqlOperations               MetricSettings `mapstructure:"postgresql.operations"`
+	PostgresqlRollbacks                MetricSettings `mapstructure:"postgresql.rollbacks"`
+	PostgresqlRows                     MetricSettings `mapstructure:"postgresql.rows"`
+	PostgresqlTableCount               MetricSettings `mapstructure:"postgresql.table.count"`
+	PostgresqlTableSize                MetricSettings `mapstructure:"postgresql.table.size"`
+	PostgresqlTableVacuumCount         MetricSettings `mapstructure:"postgresql.table.vacuum.count"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
 		PostgresqlBackends: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlBgwriterBuffersAllocated: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlBgwriterBuffersWrites: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlBgwriterCheckpointCount: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlBgwriterDuration: MetricSettings{
+			Enabled: true,
+		},
+		PostgresqlBgwriterMaxwritten: MetricSettings{
 			Enabled: true,
 		},
 		PostgresqlBlocksRead: MetricSettings{
@@ -74,6 +94,92 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 	}
+}
+
+// AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
+type AttributeBgBufferSource int
+
+const (
+	_ AttributeBgBufferSource = iota
+	AttributeBgBufferSourceBackend
+	AttributeBgBufferSourceBackendFsync
+	AttributeBgBufferSourceCheckpoints
+	AttributeBgBufferSourceBgwriter
+)
+
+// String returns the string representation of the AttributeBgBufferSource.
+func (av AttributeBgBufferSource) String() string {
+	switch av {
+	case AttributeBgBufferSourceBackend:
+		return "backend"
+	case AttributeBgBufferSourceBackendFsync:
+		return "backend_fsync"
+	case AttributeBgBufferSourceCheckpoints:
+		return "checkpoints"
+	case AttributeBgBufferSourceBgwriter:
+		return "bgwriter"
+	}
+	return ""
+}
+
+// MapAttributeBgBufferSource is a helper map of string to AttributeBgBufferSource attribute value.
+var MapAttributeBgBufferSource = map[string]AttributeBgBufferSource{
+	"backend":       AttributeBgBufferSourceBackend,
+	"backend_fsync": AttributeBgBufferSourceBackendFsync,
+	"checkpoints":   AttributeBgBufferSourceCheckpoints,
+	"bgwriter":      AttributeBgBufferSourceBgwriter,
+}
+
+// AttributeBgCheckpointType specifies the a value bg_checkpoint_type attribute.
+type AttributeBgCheckpointType int
+
+const (
+	_ AttributeBgCheckpointType = iota
+	AttributeBgCheckpointTypeRequested
+	AttributeBgCheckpointTypeScheduled
+)
+
+// String returns the string representation of the AttributeBgCheckpointType.
+func (av AttributeBgCheckpointType) String() string {
+	switch av {
+	case AttributeBgCheckpointTypeRequested:
+		return "requested"
+	case AttributeBgCheckpointTypeScheduled:
+		return "scheduled"
+	}
+	return ""
+}
+
+// MapAttributeBgCheckpointType is a helper map of string to AttributeBgCheckpointType attribute value.
+var MapAttributeBgCheckpointType = map[string]AttributeBgCheckpointType{
+	"requested": AttributeBgCheckpointTypeRequested,
+	"scheduled": AttributeBgCheckpointTypeScheduled,
+}
+
+// AttributeBgDurationType specifies the a value bg_duration_type attribute.
+type AttributeBgDurationType int
+
+const (
+	_ AttributeBgDurationType = iota
+	AttributeBgDurationTypeSync
+	AttributeBgDurationTypeWrite
+)
+
+// String returns the string representation of the AttributeBgDurationType.
+func (av AttributeBgDurationType) String() string {
+	switch av {
+	case AttributeBgDurationTypeSync:
+		return "sync"
+	case AttributeBgDurationTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeBgDurationType is a helper map of string to AttributeBgDurationType attribute value.
+var MapAttributeBgDurationType = map[string]AttributeBgDurationType{
+	"sync":  AttributeBgDurationTypeSync,
+	"write": AttributeBgDurationTypeWrite,
 }
 
 // AttributeOperation specifies the a value operation attribute.
@@ -232,6 +338,267 @@ func (m *metricPostgresqlBackends) emit(metrics pmetric.MetricSlice) {
 
 func newMetricPostgresqlBackends(settings MetricSettings) metricPostgresqlBackends {
 	m := metricPostgresqlBackends{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBgwriterBuffersAllocated struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.bgwriter.buffers.allocated metric with initial data.
+func (m *metricPostgresqlBgwriterBuffersAllocated) init() {
+	m.data.SetName("postgresql.bgwriter.buffers.allocated")
+	m.data.SetDescription("Number of buffers allocated.")
+	m.data.SetUnit("{buffers}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlBgwriterBuffersAllocated) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBgwriterBuffersAllocated) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBgwriterBuffersAllocated) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBgwriterBuffersAllocated(settings MetricSettings) metricPostgresqlBgwriterBuffersAllocated {
+	m := metricPostgresqlBgwriterBuffersAllocated{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBgwriterBuffersWrites struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.bgwriter.buffers.writes metric with initial data.
+func (m *metricPostgresqlBgwriterBuffersWrites) init() {
+	m.data.SetName("postgresql.bgwriter.buffers.writes")
+	m.data.SetDescription("Number of buffers written.")
+	m.data.SetUnit("{buffers}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricPostgresqlBgwriterBuffersWrites) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bgBufferSourceAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("source", bgBufferSourceAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBgwriterBuffersWrites) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBgwriterBuffersWrites) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBgwriterBuffersWrites(settings MetricSettings) metricPostgresqlBgwriterBuffersWrites {
+	m := metricPostgresqlBgwriterBuffersWrites{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBgwriterCheckpointCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.bgwriter.checkpoint.count metric with initial data.
+func (m *metricPostgresqlBgwriterCheckpointCount) init() {
+	m.data.SetName("postgresql.bgwriter.checkpoint.count")
+	m.data.SetDescription("The number of checkpoints performed.")
+	m.data.SetUnit("{checkpoints}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricPostgresqlBgwriterCheckpointCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bgCheckpointTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("type", bgCheckpointTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBgwriterCheckpointCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBgwriterCheckpointCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBgwriterCheckpointCount(settings MetricSettings) metricPostgresqlBgwriterCheckpointCount {
+	m := metricPostgresqlBgwriterCheckpointCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBgwriterDuration struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.bgwriter.duration metric with initial data.
+func (m *metricPostgresqlBgwriterDuration) init() {
+	m.data.SetName("postgresql.bgwriter.duration")
+	m.data.SetDescription("Total time spent writing and syncing files to disk by checkpoints.")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricPostgresqlBgwriterDuration) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("type", bgDurationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBgwriterDuration) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBgwriterDuration) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBgwriterDuration(settings MetricSettings) metricPostgresqlBgwriterDuration {
+	m := metricPostgresqlBgwriterDuration{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricPostgresqlBgwriterMaxwritten struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.bgwriter.maxwritten metric with initial data.
+func (m *metricPostgresqlBgwriterMaxwritten) init() {
+	m.data.SetName("postgresql.bgwriter.maxwritten")
+	m.data.SetDescription("Number of times the background writer stopped a cleaning scan because it had written too many buffers.")
+	m.data.SetUnit("")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricPostgresqlBgwriterMaxwritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlBgwriterMaxwritten) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlBgwriterMaxwritten) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlBgwriterMaxwritten(settings MetricSettings) metricPostgresqlBgwriterMaxwritten {
+	m := metricPostgresqlBgwriterMaxwritten{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -870,24 +1237,29 @@ func newMetricPostgresqlTableVacuumCount(settings MetricSettings) metricPostgres
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                  int                 // maximum observed number of metrics per resource.
-	resourceCapacity                 int                 // maximum observed number of resource attributes.
-	metricsBuffer                    pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                        component.BuildInfo // contains version information
-	metricPostgresqlBackends         metricPostgresqlBackends
-	metricPostgresqlBlocksRead       metricPostgresqlBlocksRead
-	metricPostgresqlCommits          metricPostgresqlCommits
-	metricPostgresqlDatabaseCount    metricPostgresqlDatabaseCount
-	metricPostgresqlDbSize           metricPostgresqlDbSize
-	metricPostgresqlIndexScans       metricPostgresqlIndexScans
-	metricPostgresqlIndexSize        metricPostgresqlIndexSize
-	metricPostgresqlOperations       metricPostgresqlOperations
-	metricPostgresqlRollbacks        metricPostgresqlRollbacks
-	metricPostgresqlRows             metricPostgresqlRows
-	metricPostgresqlTableCount       metricPostgresqlTableCount
-	metricPostgresqlTableSize        metricPostgresqlTableSize
-	metricPostgresqlTableVacuumCount metricPostgresqlTableVacuumCount
+	startTime                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                          int                 // maximum observed number of metrics per resource.
+	resourceCapacity                         int                 // maximum observed number of resource attributes.
+	metricsBuffer                            pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                                component.BuildInfo // contains version information
+	metricPostgresqlBackends                 metricPostgresqlBackends
+	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
+	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
+	metricPostgresqlBgwriterCheckpointCount  metricPostgresqlBgwriterCheckpointCount
+	metricPostgresqlBgwriterDuration         metricPostgresqlBgwriterDuration
+	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
+	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
+	metricPostgresqlCommits                  metricPostgresqlCommits
+	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
+	metricPostgresqlDbSize                   metricPostgresqlDbSize
+	metricPostgresqlIndexScans               metricPostgresqlIndexScans
+	metricPostgresqlIndexSize                metricPostgresqlIndexSize
+	metricPostgresqlOperations               metricPostgresqlOperations
+	metricPostgresqlRollbacks                metricPostgresqlRollbacks
+	metricPostgresqlRows                     metricPostgresqlRows
+	metricPostgresqlTableCount               metricPostgresqlTableCount
+	metricPostgresqlTableSize                metricPostgresqlTableSize
+	metricPostgresqlTableVacuumCount         metricPostgresqlTableVacuumCount
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -902,22 +1274,27 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                    pmetric.NewMetrics(),
-		buildInfo:                        buildInfo,
-		metricPostgresqlBackends:         newMetricPostgresqlBackends(settings.PostgresqlBackends),
-		metricPostgresqlBlocksRead:       newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
-		metricPostgresqlCommits:          newMetricPostgresqlCommits(settings.PostgresqlCommits),
-		metricPostgresqlDatabaseCount:    newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:           newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
-		metricPostgresqlIndexScans:       newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:        newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
-		metricPostgresqlOperations:       newMetricPostgresqlOperations(settings.PostgresqlOperations),
-		metricPostgresqlRollbacks:        newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
-		metricPostgresqlRows:             newMetricPostgresqlRows(settings.PostgresqlRows),
-		metricPostgresqlTableCount:       newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
-		metricPostgresqlTableSize:        newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount: newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
+		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                            pmetric.NewMetrics(),
+		buildInfo:                                buildInfo,
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(settings.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(settings.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(settings.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(settings.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(settings.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(settings.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(settings.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(settings.PostgresqlCommits),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(settings.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(settings.PostgresqlDbSize),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(settings.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(settings.PostgresqlOperations),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(settings.PostgresqlRows),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(settings.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(settings.PostgresqlTableVacuumCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -992,6 +1369,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricPostgresqlBackends.emit(ils.Metrics())
+	mb.metricPostgresqlBgwriterBuffersAllocated.emit(ils.Metrics())
+	mb.metricPostgresqlBgwriterBuffersWrites.emit(ils.Metrics())
+	mb.metricPostgresqlBgwriterCheckpointCount.emit(ils.Metrics())
+	mb.metricPostgresqlBgwriterDuration.emit(ils.Metrics())
+	mb.metricPostgresqlBgwriterMaxwritten.emit(ils.Metrics())
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
@@ -1026,6 +1408,31 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
 func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+}
+
+// RecordPostgresqlBgwriterBuffersAllocatedDataPoint adds a data point to postgresql.bgwriter.buffers.allocated metric.
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlBgwriterBuffersAllocated.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlBgwriterBuffersWritesDataPoint adds a data point to postgresql.bgwriter.buffers.writes metric.
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterBuffersWritesDataPoint(ts pcommon.Timestamp, val int64, bgBufferSourceAttributeValue AttributeBgBufferSource) {
+	mb.metricPostgresqlBgwriterBuffersWrites.recordDataPoint(mb.startTime, ts, val, bgBufferSourceAttributeValue.String())
+}
+
+// RecordPostgresqlBgwriterCheckpointCountDataPoint adds a data point to postgresql.bgwriter.checkpoint.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterCheckpointCountDataPoint(ts pcommon.Timestamp, val int64, bgCheckpointTypeAttributeValue AttributeBgCheckpointType) {
+	mb.metricPostgresqlBgwriterCheckpointCount.recordDataPoint(mb.startTime, ts, val, bgCheckpointTypeAttributeValue.String())
+}
+
+// RecordPostgresqlBgwriterDurationDataPoint adds a data point to postgresql.bgwriter.duration metric.
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val int64, bgDurationTypeAttributeValue AttributeBgDurationType) {
+	mb.metricPostgresqlBgwriterDuration.recordDataPoint(mb.startTime, ts, val, bgDurationTypeAttributeValue.String())
+}
+
+// RecordPostgresqlBgwriterMaxwrittenDataPoint adds a data point to postgresql.bgwriter.maxwritten metric.
+func (mb *MetricsBuilder) RecordPostgresqlBgwriterMaxwrittenDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlBgwriterMaxwritten.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.

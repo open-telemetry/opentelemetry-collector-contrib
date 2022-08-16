@@ -81,5 +81,5 @@ func TestConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("trace_parser")
+	return NewConfig()
 }

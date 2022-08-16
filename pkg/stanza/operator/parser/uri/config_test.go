@@ -93,5 +93,5 @@ func TestParserGoldenConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("uri_parser")
+	return NewConfig()
 }
