@@ -25,9 +25,8 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configtls"
-
 	"github.com/jpillora/backoff"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
