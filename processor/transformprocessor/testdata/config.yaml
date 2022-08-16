@@ -1,27 +1,49 @@
-processors:
-  transform:
-    traces:
-      queries:
-        - set(name, "bear") where attributes["http.path"] == "/animal"
-        - keep_keys(attributes, "http.method", "http.path")
-    metrics:
-      queries:
-        - set(metric.name, "bear") where attributes["http.path"] == "/animal"
-        - keep_keys(attributes, "http.method", "http.path")
-    logs:
-      queries:
-        - set(body, "bear") where attributes["http.path"] == "/animal"
-        - keep_keys(attributes, "http.method", "http.path")
+transform:
+  traces:
+    queries:
+      - set(name, "bear") where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
+  metrics:
+    queries:
+      - set(metric.name, "bear") where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
+  logs:
+    queries:
+      - set(body, "bear") where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
 
-receivers:
-  nop:
+transform/bad_syntax_log:
+  logs:
+    queries:
+      - set(body, "bear" where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
 
-exporters:
-  nop:
+transform/bad_syntax_metric:
+  metrics:
+    queries:
+      - set(name, "bear" where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
 
-service:
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [transform]
-      exporters: [nop]
+transform/bad_syntax_trace:
+  traces:
+    queries:
+      - set(name, "bear" where attributes["http.path"] == "/animal"
+      - keep_keys(attributes, "http.method", "http.path")
+
+transform/unknown_function_log:
+  logs:
+    queries:
+      - set(body, "bear") where attributes["http.path"] == "/animal"
+      - not_a_function(attributes, "http.method", "http.path")
+
+transform/unknown_function_metric:
+  metrics:
+    queries:
+      - set(metric.name, "bear") where attributes["http.path"] == "/animal"
+      - not_a_function(attributes, "http.method", "http.path")
+
+transform/unknown_function_trace:
+  traces:
+    queries:
+      - set(name, "bear") where attributes["http.path"] == "/animal"
+      - not_a_function(attributes, "http.method", "http.path")
