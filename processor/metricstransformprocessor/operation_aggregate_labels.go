@@ -193,7 +193,7 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 	}
 }
 
-func flagsValue(flags pmetric.MetricDataPointFlagsStruct) uint32 {
+func flagsValue(flags pmetric.MetricDataPointFlags) uint32 {
 	if flags.NoRecordedValue() {
 		return uint32(1)
 	}
