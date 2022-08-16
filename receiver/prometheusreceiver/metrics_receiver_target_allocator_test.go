@@ -27,6 +27,7 @@ import (
 	"time"
 
 	commonconfig "github.com/prometheus/common/config"
+	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
@@ -35,8 +36,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/atomic"
-
-	"github.com/prometheus/common/model"
 )
 
 type MockTargetAllocator struct {
