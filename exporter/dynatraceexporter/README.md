@@ -272,7 +272,7 @@ Note that these are added _in addition_ to your existing data point attributes.
 Default: `false`
 
 > :warning: **Please note** that the Dynatrace API has a limit of `50` attributes
-> per metric and any metric which exceeds this limit will be dropped.
+> per metric data point and any data point which exceeds this limit will be dropped.
 
 If you think you might exceed this limit, you should use the
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
