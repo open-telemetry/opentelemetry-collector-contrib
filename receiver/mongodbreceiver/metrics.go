@@ -44,7 +44,7 @@ var documentMap = map[string]metadata.AttributeOperation{
 
 const (
 	collectMetricError          = "failed to collect metric %s: %w"
-	collectMetricWithAttributes = "failed to collect metric %s 1with attribute(s) %s: %w"
+	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
 )
 
 // DBStats
