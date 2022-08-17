@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"net"
 	"time"
 
@@ -90,7 +89,7 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 
 	deadline, ok := ctx.Deadline()
 	if !ok {
-		return nil, fmt.Errorf("no deadline set")
+		return nil, errors.New("no deadline set")
 	}
 
 	if err = sock.SetDeadline(deadline); err != nil {
