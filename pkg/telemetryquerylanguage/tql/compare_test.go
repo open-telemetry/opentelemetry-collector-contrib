@@ -46,6 +46,14 @@ var (
 	nilpt *bool    = nil
 )
 
+type testA struct {
+	Value string
+}
+
+type testB struct {
+	Value string
+}
+
 // This is one giant table-driven test that is designed to check almost all of the possibilities for
 // comparing two different kinds of items. Each test compares two objects of any type using all
 // of the comparison operators, and has a hand-constructed list of expected values.
@@ -178,6 +186,12 @@ func Test_compare(t *testing.T) {
 		{"float64 float32", f64a, f32b, []bool{false, true, true, true, false, false}},
 		{"float64 nilfloat", nilpf, f64b, []bool{false, true, false, false, false, false}},
 		{"nilfloat float64", f64b, nilpf, []bool{false, true, false, false, false, false}},
+
+		{"non-prim, same type, equal", testA{"hi"}, testA{"hi"}, []bool{true, false, false, false, false, false}},
+		{"non-prim, same type, not equal", testA{"hi"}, testA{"byte"}, []bool{false, true, false, false, false, false}},
+		{"non-prim, diff type", testA{"hi"}, testB{"hi"}, []bool{false, true, false, false, false, false}},
+		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
+		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{EQ, NE, LT, LTE, GTE, GT}
 	for _, tt := range tests {
