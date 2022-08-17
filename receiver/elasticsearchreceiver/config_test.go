@@ -150,6 +150,9 @@ func TestValidateEndpoint(t *testing.T) {
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
 	defaultMetrics := metadata.DefaultMetricsSettings()
 	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
@@ -182,9 +185,6 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			require.NoError(t, err)
-
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig()
 
