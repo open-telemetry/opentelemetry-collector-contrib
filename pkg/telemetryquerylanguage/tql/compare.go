@@ -357,6 +357,15 @@ func compare(a any, b any, op compareOp) bool {
 		}
 		return compareString(*v, b, op)
 	default:
-		return invalidComparison("unsupported type on left", op)
+		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
+		// use Go's standard equality.
+		switch op {
+		case EQ:
+			return a == b
+		case NE:
+			return a != b
+		default:
+			return invalidComparison("unsupported type for inequality on left", op)
+		}
 	}
 }
