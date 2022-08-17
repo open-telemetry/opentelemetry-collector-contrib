@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"net"
 	"time"
 
@@ -79,14 +80,17 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	clk := clock.FromContext(ctx)
 
-	deadline := clk.Now().Add(c.timeout)
-
-	ctx, cancel := context.WithDeadline(ctx, deadline)
+	ctx, cancel := clk.TimeoutContext(ctx, c.timeout)
 	defer cancel()
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
 	if err != nil {
 		return nil, err
+	}
+
+	deadline, ok := ctx.Deadline()
+	if !ok {
+		return nil, fmt.Errorf("no deadline set")
 	}
 
 	if err = sock.SetDeadline(deadline); err != nil {
