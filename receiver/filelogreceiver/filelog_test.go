@@ -36,6 +36,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -57,14 +59,14 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("filelog")])
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
-	cfg := testdataConfigYamlAsMap()
-	cfg.Input["include"] = "not an array"
+	cfg := testdataConfigYaml()
+	cfg.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -83,7 +85,7 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataConfigYamlAsMap()
+	cfg := testdataConfigYaml()
 	cfg.Converter.MaxFlushCount = 10
 	cfg.Converter.FlushInterval = time.Millisecond
 
@@ -172,7 +174,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataRotateTestYamlAsMap(tempDir)
+	cfg := rotationTestConfig(tempDir)
 	cfg.Converter.MaxFlushCount = 1
 	cfg.Converter.FlushInterval = time.Millisecond
 
@@ -252,7 +254,7 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordCount() == expected }
 }
 
-func testdataConfigYamlAsMap() *FileLogConfig {
+func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -274,16 +276,16 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Input: adapter.InputConfig{
-			"include": []interface{}{
-				"testdata/simple.log",
-			},
-			"start_at": "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{"testdata/simple.log"}
+			c.StartAt = "beginning"
+			return *c
+		}(),
 	}
 }
 
-func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
+func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -299,14 +301,13 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 			},
 			Converter: adapter.ConverterConfig{},
 		},
-		Input: adapter.InputConfig{
-			"type": "file_input",
-			"include": []interface{}{
-				fmt.Sprintf("%s/*", tempDir),
-			},
-			"include_file_name": false,
-			"poll_interval":     "10ms",
-			"start_at":          "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
+			c.StartAt = "beginning"
+			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.IncludeFileName = false
+			return *c
+		}(),
 	}
 }

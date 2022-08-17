@@ -17,7 +17,7 @@ package metadata
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -243,8 +243,8 @@ func TestMetadataFromAttributes(t *testing.T) {
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
 			registry := featuregate.NewRegistry()
-			registry.MustRegister(hostnamePreviewGate)
-			registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic})
+			registry.MustRegister(HostnamePreviewGate)
+			require.NoError(t, registry.Apply(map[string]bool{HostnamePreviewFeatureGate: testInstance.usePreviewHostnameLogic}))
 			metadata := metadataFromAttributesWithRegistry(registry, testInstance.attrs)
 			assert.Equal(t, testInstance.expected.InternalHostname, metadata.InternalHostname)
 			assert.Equal(t, testInstance.expected.Meta, metadata.Meta)
@@ -264,7 +264,7 @@ func TestPushMetadata(t *testing.T) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 
 		var recvMetadata HostMetadata

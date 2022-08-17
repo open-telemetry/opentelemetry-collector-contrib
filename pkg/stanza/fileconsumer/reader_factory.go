@@ -108,18 +108,25 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		if err != nil {
 			b.Errorf("resolve attributes: %w", err)
 		}
+
+		// unsafeReader has the file set to nil, so don't try emending its offset.
+		if !b.fromBeginning {
+			if err := r.offsetToEnd(); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 	}
 
 	if b.fp != nil {
 		r.Fingerprint = b.fp
-	}
-
-	if !b.fromBeginning {
-		if err := r.offsetToEnd(); err != nil {
+	} else if b.file != nil {
+		fp, err := b.readerFactory.newFingerprint(r.file)
+		if err != nil {
 			return nil, err
 		}
+		r.Fingerprint = fp
 	}
 
 	return r, nil

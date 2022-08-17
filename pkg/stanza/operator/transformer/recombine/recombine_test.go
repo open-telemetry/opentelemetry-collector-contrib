@@ -60,7 +60,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoEntriesFirst",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -72,7 +72,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"NoEntriesLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -84,7 +84,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"OneEntryFirst",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -96,7 +96,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"OneEntryLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = MatchAll
 				cfg.OutputIDs = []string{"fake"}
@@ -108,7 +108,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TwoEntriesLast",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'test2'"
 				cfg.OutputIDs = []string{"fake"}
@@ -123,7 +123,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"ThreeEntriesFirstNewest",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -142,7 +142,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"EntriesNonMatchingForFirstEntry",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "$body == 'test1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -163,7 +163,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"EntriesMatchingForFirstEntryOneFileOnly",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsFirstEntry = "body == 'file1'"
 				cfg.OutputIDs = []string{"fake"}
@@ -189,7 +189,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"CombineWithEmptyString",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.CombineWith = ""
 				cfg.IsLastEntry = "body == 'test2'"
@@ -205,7 +205,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestDefaultSourceIdentifier",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -225,7 +225,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestCustomSourceIdentifier",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -246,7 +246,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestMaxSources",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -265,7 +265,7 @@ func TestTransformer(t *testing.T) {
 		{
 			"TestMaxBatchSize",
 			func() *Config {
-				cfg := NewConfig("")
+				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField()
 				cfg.IsLastEntry = "body == 'end'"
 				cfg.OutputIDs = []string{"fake"}
@@ -314,7 +314,7 @@ func TestTransformer(t *testing.T) {
 	}
 
 	t.Run("FlushesOnShutdown", func(t *testing.T) {
-		cfg := NewConfig("")
+		cfg := NewConfig()
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
@@ -349,7 +349,7 @@ func TestTransformer(t *testing.T) {
 }
 
 func BenchmarkRecombine(b *testing.B) {
-	cfg := NewConfig("")
+	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = "false"
 	cfg.OutputIDs = []string{"fake"}
@@ -386,7 +386,7 @@ func BenchmarkRecombine(b *testing.B) {
 func TestTimeout(t *testing.T) {
 	t.Parallel()
 
-	cfg := NewConfig("")
+	cfg := NewConfig()
 	cfg.CombineField = entry.NewBodyField()
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver"
 
 import (
@@ -90,7 +89,10 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	var transferChan = make(chan string, 10)
 	ticker := time.NewTicker(r.config.AggregationInterval)
-	r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
+	err := r.parser.Initialize(r.config.EnableMetricType, r.config.IsMonotonicCounter, r.config.TimerHistogramMapping)
+	if err != nil {
+		return err
+	}
 	go func() {
 		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
@@ -107,7 +109,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 					r.Flush(ctx, metrics, r.nextConsumer)
 				}
 			case rawMetric := <-transferChan:
-				r.parser.Aggregate(rawMetric)
+				_ = r.parser.Aggregate(rawMetric)
 			case <-ctx.Done():
 				ticker.Stop()
 				return

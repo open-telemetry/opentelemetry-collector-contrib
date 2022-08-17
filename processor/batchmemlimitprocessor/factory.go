@@ -18,7 +18,7 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(typeStr, createDefaultConfig,
-		component.WithLogsProcessorAndStabilityLevel(createMemoryLimiterProcessor,
+		component.WithLogsProcessor(createMemoryLimiterProcessor,
 			stability))
 }
 

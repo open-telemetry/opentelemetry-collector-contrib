@@ -17,6 +17,8 @@ package observer
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestEndpointEnv(t *testing.T) {
@@ -46,6 +48,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":     "pod",
 				"endpoint": "192.68.73.2",
+				"id":       "pod_id",
 				"name":     "pod_name",
 				"labels": map[string]string{
 					"label_key": "label_val",
@@ -83,6 +86,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":     "port",
 				"endpoint": "192.68.73.2",
+				"id":       "port_id",
 				"name":     "port_name",
 				"port":     uint16(2379),
 				"pod": EndpointEnv{
@@ -116,6 +120,7 @@ func TestEndpointEnv(t *testing.T) {
 			want: EndpointEnv{
 				"type":         "hostport",
 				"endpoint":     "127.0.0.1",
+				"id":           "port_id",
 				"process_name": "process_name",
 				"command":      "./cmd --config config.yaml",
 				"is_ipv6":      true,
@@ -146,6 +151,7 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			want: EndpointEnv{
 				"type":           "container",
+				"id":             "container_endpoint_id",
 				"name":           "otel-collector",
 				"image":          "otel-collector-image",
 				"tag":            "1.0.0",
@@ -186,6 +192,7 @@ func TestEndpointEnv(t *testing.T) {
 			},
 			want: EndpointEnv{
 				"type":                  "k8s.node",
+				"id":                    "k8s_node_endpoint_id",
 				"name":                  "a-k8s-node",
 				"uid":                   "a-k8s-node-uid",
 				"hostname":              "a-k8s-node-hostname",
@@ -215,6 +222,181 @@ func TestEndpointEnv(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Env() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func TestEndpointEquals(t *testing.T) {
+	tests := []struct {
+		name     string
+		first    Endpoint
+		second   Endpoint
+		areEqual bool
+	}{
+		{
+			name:  "equal empty endpoints",
+			first: Endpoint{}, second: Endpoint{},
+			areEqual: true,
+		},
+		{
+			name:     "equal ID",
+			first:    Endpoint{ID: "id"},
+			second:   Endpoint{ID: "id"},
+			areEqual: true,
+		},
+		{
+			name:     "unequal ID",
+			first:    Endpoint{ID: "first"},
+			second:   Endpoint{ID: "second"},
+			areEqual: false,
+		},
+		{
+			name:     "equal Target",
+			first:    Endpoint{Target: "target"},
+			second:   Endpoint{Target: "target"},
+			areEqual: true,
+		},
+		{
+			name:     "unequal Target",
+			first:    Endpoint{Target: "first"},
+			second:   Endpoint{Target: "second"},
+			areEqual: false,
+		},
+		{
+			name:     "equal empty Port",
+			first:    Endpoint{Details: &Port{}},
+			second:   Endpoint{Details: &Port{}},
+			areEqual: true,
+		},
+		{
+			name:     "equal Port Name",
+			first:    Endpoint{Details: &Port{Name: "port_name"}},
+			second:   Endpoint{Details: &Port{Name: "port_name"}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal Port Name",
+			first:    Endpoint{Details: &Port{Name: "first"}},
+			second:   Endpoint{Details: &Port{Name: "second"}},
+			areEqual: false,
+		},
+		{
+			name:     "equal Port Port",
+			first:    Endpoint{Details: &Port{Port: 2379}},
+			second:   Endpoint{Details: &Port{Port: 2379}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal Port Port",
+			first:    Endpoint{Details: &Port{Port: 0}},
+			second:   Endpoint{Details: &Port{Port: 1}},
+			areEqual: false,
+		},
+		{
+			name:     "equal Port Transport",
+			first:    Endpoint{Details: &Port{Transport: "transport"}},
+			second:   Endpoint{Details: &Port{Transport: "transport"}},
+			areEqual: true,
+		},
+		{
+			name:     "unequal Port Transport",
+			first:    Endpoint{Details: &Port{Transport: "first"}},
+			second:   Endpoint{Details: &Port{Transport: "second"}},
+			areEqual: false,
+		},
+		{
+			name: "equal Port",
+			first: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "192.68.73.2",
+				Details: &Port{
+					Name: "port_name",
+					Pod: Pod{
+						Name: "pod_name",
+						Labels: map[string]string{
+							"label_key": "label_val",
+						},
+						Annotations: map[string]string{
+							"annotation_1": "value_1",
+						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
+					},
+					Port:      2379,
+					Transport: ProtocolTCP,
+				},
+			},
+			second: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "192.68.73.2",
+				Details: &Port{
+					Name: "port_name",
+					Pod: Pod{
+						Name: "pod_name",
+						Labels: map[string]string{
+							"label_key": "label_val",
+						},
+						Annotations: map[string]string{
+							"annotation_1": "value_1",
+						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
+					},
+					Port:      2379,
+					Transport: ProtocolTCP,
+				},
+			},
+			areEqual: true,
+		},
+		{
+			name: "unequal Port Pod Label",
+			first: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "192.68.73.2",
+				Details: &Port{
+					Name: "port_name",
+					Pod: Pod{
+						Name: "pod_name",
+						Labels: map[string]string{
+							"key_one": "val_one",
+						},
+						Annotations: map[string]string{
+							"annotation_1": "value_1",
+						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
+					},
+					Port:      2379,
+					Transport: ProtocolTCP,
+				},
+			},
+			second: Endpoint{
+				ID:     EndpointID("port_id"),
+				Target: "192.68.73.2",
+				Details: &Port{
+					Name: "port_name",
+					Pod: Pod{
+						Name: "pod_name",
+						Labels: map[string]string{
+							"key_two": "val_two",
+						},
+						Annotations: map[string]string{
+							"annotation_1": "value_1",
+						},
+						Namespace: "pod-namespace",
+						UID:       "pod-uid",
+					},
+					Port:      2379,
+					Transport: ProtocolTCP,
+				},
+			},
+			areEqual: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.first.equals(tt.second), tt.areEqual)
+			require.Equal(t, tt.second.equals(tt.first), tt.areEqual)
 		})
 	}
 }

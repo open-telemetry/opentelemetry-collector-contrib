@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,6 +29,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -36,6 +37,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/tenant"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
@@ -92,7 +94,7 @@ func TestExporter_new(t *testing.T) {
 func TestExporter_pushLogData(t *testing.T) {
 
 	genericReqTestFunc := func(t *testing.T, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -222,6 +224,30 @@ func TestExporter_pushLogData(t *testing.T) {
 				return outLogs
 			},
 		},
+		{
+			name:             "bad request",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusBadRequest,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				require.True(t, consumererror.IsPermanent(err))
+			},
+		},
+		{
+			name:             "too many requests",
+			reqTestFunc:      genericReqTestFunc,
+			config:           genericConfig,
+			httpResponseCode: http.StatusTooManyRequests,
+			testServer:       true,
+			genLogsFunc:      genericGenLogsFunc,
+			errFunc: func(err error) {
+				var e consumererror.Logs
+				require.True(t, errors.As(err, &e))
+				assert.Equal(t, 10, e.GetLogs().LogRecordCount())
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -252,6 +278,78 @@ func TestExporter_pushLogData(t *testing.T) {
 			}
 
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestTenantSource(t *testing.T) {
+	testCases := []struct {
+		desc    string
+		tenant  *Tenant
+		srcType tenant.Source
+	}{
+		{
+			desc: "tenant source attributes",
+			tenant: &Tenant{
+				Source: "attributes",
+				Value:  "tenant.name",
+			},
+			srcType: &tenant.AttributeTenantSource{},
+		},
+		{
+			desc: "tenant source context",
+			tenant: &Tenant{
+				Source: "context",
+				Value:  "tenant.name",
+			},
+			srcType: &tenant.ContextTenantSource{},
+		},
+		{
+			desc: "tenant source static",
+			tenant: &Tenant{
+				Source: "static",
+				Value:  "acme",
+			},
+			srcType: &tenant.StaticTenantSource{},
+		},
+		{
+			desc:    "tenant source is non-existing",
+			tenant:  nil,
+			srcType: &tenant.StaticTenantSource{},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			cfg := &Config{
+				Tenant: tC.tenant,
+				Labels: LabelsConfig{
+					Attributes: map[string]string{
+						"severity": "severity",
+					},
+				},
+			}
+			exp := newExporter(cfg, componenttest.NewNopTelemetrySettings())
+			require.NotNil(t, exp)
+
+			assert.IsType(t, tC.srcType, exp.tenantSource)
+
+			cl := client.FromContext(context.Background())
+			cl.Metadata = client.NewMetadata(map[string][]string{"tenant.name": {"acme"}})
+
+			ctx := client.NewContext(context.Background(), cl)
+
+			ld := plog.NewLogs()
+			ld.ResourceLogs().AppendEmpty()
+			ld.ResourceLogs().At(0).Resource().Attributes().InsertString("tenant.name", "acme")
+
+			tenant, err := exp.tenantSource.GetTenant(ctx, ld)
+			assert.NoError(t, err)
+
+			if tC.tenant != nil {
+				assert.Equal(t, "acme", tenant)
+			} else {
+				assert.Empty(t, tenant)
+			}
 		})
 	}
 }

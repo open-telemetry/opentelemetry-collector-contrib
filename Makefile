@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
@@ -101,6 +101,10 @@ gofmt:
 .PHONY: golint
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
+
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
 goporto:
@@ -385,3 +389,30 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+
+.PHONY: genconfigdocs
+genconfigdocs:
+	cd cmd/configschema && $(GOCMD) run ./docsgen all
+
+.PHONY: generate-all-labels
+generate-all-labels:
+	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
+	$(MAKE) generate-labels TYPE="pkg" COLOR="#F9DE22"
+	$(MAKE) generate-labels TYPE="extension" COLOR="#FF794D"
+	$(MAKE) generate-labels TYPE="receiver" COLOR="#E91B7B"
+	$(MAKE) generate-labels TYPE="processor" COLOR="#800080"
+	$(MAKE) generate-labels TYPE="exporter" COLOR="#50C878"
+
+.PHONY: generate-labels
+generate-labels:
+	if [ -z $${TYPE+x} ] || [ -z $${COLOR+x} ]; then \
+		echo "Must provide a TYPE and COLOR"; \
+		exit 1; \
+	fi; \
+	echo "Generating labels for $${TYPE}" ; \
+	COMPONENTS=$$(find ./$${TYPE} -type d -maxdepth 1 -mindepth 1 -exec basename \{\} \;); \
+	for comp in $${COMPONENTS}; do \
+		NAME=$${comp//"$${TYPE}"}; \
+		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
+	done; \
+	exit 0
