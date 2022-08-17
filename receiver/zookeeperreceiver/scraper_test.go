@@ -19,8 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -290,8 +290,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 				cfg.Metrics = tt.metricsSettings()
 			}
 
-			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute})
-			featuregate.GetRegistry().MustApply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute})
+			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithDirectionAttributeFeatureGate.ID: tt.emitMetricsWithDirectionAttribute}))
+			require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{emitMetricsWithoutDirectionAttributeFeatureGate.ID: tt.emitMetricsWithoutDirectionAttribute}))
 			core, observedLogs := observer.New(zap.DebugLevel)
 			settings := componenttest.NewNopReceiverCreateSettings()
 			settings.Logger = zap.New(core)
@@ -375,7 +375,7 @@ func (ms *mockedServer) mockZKServer(t *testing.T, endpoint string, filename str
 	require.NoError(t, err)
 
 	for {
-		out, err := ioutil.ReadFile(filepath.Join("testdata", filename))
+		out, err := os.ReadFile(filepath.Join("testdata", filename))
 		require.NoError(t, err)
 
 		_, err = conn.Write(out)

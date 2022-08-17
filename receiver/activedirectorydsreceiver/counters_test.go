@@ -19,7 +19,7 @@ package activedirectorydsreceiver
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -43,7 +43,7 @@ func TestGetWatchers(t *testing.T) {
 func getAvailableCounters(t *testing.T) []string {
 	prefix := fmt.Sprintf(`\%s(*)\`, object)
 
-	f, err := ioutil.ReadFile(filepath.Join("testdata", "counters.txt"))
+	f, err := os.ReadFile(filepath.Join("testdata", "counters.txt"))
 	require.NoError(t, err)
 
 	lines := regexp.MustCompile("\r?\n").Split(string(f), -1)

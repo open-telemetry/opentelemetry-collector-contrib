@@ -14,7 +14,7 @@ These are the metrics available for this scraper.
 {{- range $index, $attributeName := $metricInfo.Attributes }} <li>{{ $attributeName }}</li> {{- end }} </ul> |
 {{- end }}
 
-**Highlighted metrics** are emitted by default.{{ if .ExpGen }} Other metrics are optional and not emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
 
 ```yaml
@@ -22,7 +22,6 @@ metrics:
   <metric_name>:
     enabled: <true|false>
 ```
-{{- end }}
 
 {{- if .ResourceAttributes }}
 

@@ -11,9 +11,9 @@
           }
         ]
       },
-      "instrumentationLibraryMetrics": [
+      "scopeMetrics": [
         {
-          "instrumentationLibrary": {
+          "scope": {
             "name": "otelcol/aerospikereceiver"
           },
           "metrics": [

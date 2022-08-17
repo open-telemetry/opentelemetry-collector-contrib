@@ -31,11 +31,12 @@ import (
 )
 
 type receiver struct {
-	log     *zap.Logger
-	cfg     *Config
-	client  *internal.MongoDBAtlasClient
-	lastRun time.Time
-	mb      *metadata.MetricsBuilder
+	log         *zap.Logger
+	cfg         *Config
+	client      *internal.MongoDBAtlasClient
+	lastRun     time.Time
+	mb          *metadata.MetricsBuilder
+	stopperChan chan struct{}
 }
 
 type timeconstraints struct {
@@ -44,12 +45,16 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasScraper(settings component.ReceiverCreateSettings, cfg *Config) (scraperhelper.Scraper, error) {
+func newMongoDBAtlasReceiver(settings component.ReceiverCreateSettings, cfg *Config) (*receiver, error) {
 	client, err := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
 	if err != nil {
 		return nil, err
 	}
-	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
+	recv := &receiver{log: settings.Logger, cfg: cfg, client: client, mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo), stopperChan: make(chan struct{})}
+	return recv, nil
+}
+
+func newMongoDBAtlasScraper(recv *receiver) (scraperhelper.Scraper, error) {
 	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 

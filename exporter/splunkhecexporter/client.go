@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -623,7 +622,7 @@ func (c *client) postEvents(ctx context.Context, events io.Reader, headers map[s
 		return err
 	}
 
-	_, errCopy := io.Copy(ioutil.Discard, resp.Body)
+	_, errCopy := io.Copy(io.Discard, resp.Body)
 	return multierr.Combine(err, errCopy)
 }
 

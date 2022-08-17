@@ -17,7 +17,6 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -76,7 +75,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "jmx-config-*.properties")
+	tmpFile, err := os.CreateTemp(os.TempDir(), "jmx-config-*.properties")
 	if err != nil {
 		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
 	}
