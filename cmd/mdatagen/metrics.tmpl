@@ -3,128 +3,302 @@
 package {{ .Package }}
 
 import (
-	"go.opentelemetry.io/collector/config"
+	{{- if .Metrics | parseImportsRequired }}
+	"strconv"
+	"fmt"
+	{{- end }}
+	"time"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	{{- if .SemConvVersion }}
+	conventions "go.opentelemetry.io/collector/semconv/v{{ .SemConvVersion }}"
+	{{- end }}
 )
 
-// Type is the component type name.
-const Type config.Type = "{{ .Name }}"
-
-// MetricIntf is an interface to generically interact with generated metric.
-type MetricIntf interface {
-	Name() string
-	New() pmetric.Metric
-	Init(metric pmetric.Metric)
+// MetricSettings provides common settings for a particular metric.
+type MetricSettings struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
-// Intentionally not exposing this so that it is opaque and can change freely.
-type metricImpl struct {
-	name string
-	initFunc func(pmetric.Metric)
-}
-
-// Name returns the metric name.
-func (m *metricImpl) Name() string {
-	return m.name
-}
-
-// New creates a metric object preinitialized.
-func (m *metricImpl) New() pmetric.Metric {
-	metric := pmetric.NewMetric()
-	m.Init(metric)
-	return metric
-}
-
-// Init initializes the provided metric object.
-func (m *metricImpl) Init(metric pmetric.Metric) {
-	m.initFunc(metric)
-}
-
-type metricStruct struct {
+// MetricsSettings provides settings for {{ .Name }} metrics.
+type MetricsSettings struct {
 	{{- range $name, $metric := .Metrics }}
-	{{ $name.Render }} MetricIntf
+	{{ $name.Render }} MetricSettings `mapstructure:"{{ $name }}"`
 	{{- end }}
 }
 
-// Names returns a list of all the metric name strings.
-func (m *metricStruct) Names() []string {
-    return []string {
-    {{- range $name, $metric := .Metrics }}
-        "{{ $name }}",
-    {{- end }}
-    }
-}
-
-var metricsByName = map[string]MetricIntf {
-{{- range $name, $metric := .Metrics }}
-  "{{ $name }}": Metrics.{{ $name.Render }},
-{{- end }}
-}
-
-func (m *metricStruct) ByName(n string) MetricIntf {
-    return metricsByName[n]
-}
-
-{{- /* Renders metric descriptors. */}}
-// Metrics contains a set of methods for each metric that help with
-// manipulating those metrics.
-var Metrics = &metricStruct{
-	{{- range $name, $metric := .Metrics }}
-	&metricImpl{
-		"{{ $name }}",
-		func(metric pmetric.Metric) {
-			metric.SetName("{{ $name }}")
-			metric.SetDescription("{{ $metric.Description }}")
-			metric.SetUnit("{{ $metric.Unit }}")
-			metric.SetDataType(pmetric.MetricDataType{{ $metric.Data.Type }})
-			{{- if $metric.Data.HasMonotonic }}
-			metric.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
-			{{- end }}
-			{{- if $metric.Data.HasAggregated }}
-			metric.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
-			{{- end }}
+func DefaultMetricsSettings() MetricsSettings {
+	return MetricsSettings{
+		{{- range $name, $metric := .Metrics }}
+		{{ $name.Render }}: MetricSettings{
+			Enabled: {{ $metric.Enabled }},
 		},
-	},
-	{{- end }}
+		{{- end }}
+	}
 }
-
-// M contains a set of methods for each metric that help with
-// manipulating those metrics. M is an alias for Metrics
-var M = Metrics
-
-{{- /* Renders attribute names. */}}
-// Attributes contains the possible metric attributes that can be used.
-var Attributes = struct {
-    {{- range $name, $info := .Attributes }}
-    // {{ $name.Render }} ({{ $info.Description }})
-    {{ $name.Render }} string
-    {{- end }}
-}{
-    {{- range $name, $info := .Attributes }}
-    {{- if $info.Value }}
-    "{{ $info.Value }}",
-    {{- else }}
-    "{{ $name }}",
-    {{- end }}
-    {{- end }}
-}
-
-// A is an alias for Attributes.
-var A = Attributes
-
-{{- /* Renders attribute enum values. */}}
 
 {{ range $name, $info := .Attributes }}
-{{ if $info.Enum }}
-// Attribute{{ $name.Render }} are the possible values that the attribute "{{ $name }}" can have.
-var Attribute{{ $name.Render }} = struct {
-    {{- range $info.Enum }}
-    {{ . | publicVar }} string
-    {{- end }}
-}{
-    {{- range $info.Enum }}
-    "{{ . }}",
-    {{- end }}
+{{- if $info.Enum -}}
+// Attribute{{ $name.Render }} specifies the a value {{ $name }} attribute.
+type Attribute{{ $name.Render }} int
+
+const (
+	_ Attribute{{ $name.Render }} = iota
+	{{- range $info.Enum }}
+	Attribute{{ $name.Render }}{{ . | publicVar }}
+	{{- end }}
+)
+
+// String returns the string representation of the Attribute{{ $name.Render }}.
+func (av Attribute{{ $name.Render }}) String() string {
+	switch av {
+	{{- range $info.Enum }}
+	case Attribute{{ $name.Render }}{{ . | publicVar }}:
+		return "{{ . }}"
+	{{- end }}
+	}
+	return ""
 }
+
+// MapAttribute{{ $name.Render }} is a helper map of string to Attribute{{ $name.Render }} attribute value.
+var MapAttribute{{ $name.Render }} = map[string]Attribute{{ $name.Render }}{
+	{{- range $info.Enum }}
+	"{{ . }}": Attribute{{ $name.Render }}{{ . | publicVar }},
+	{{- end }}
+}
+
+{{ end }}
 {{- end }}
-{{- end }}
+
+{{ range $name, $metric := .Metrics -}}
+type metric{{ $name.Render }} struct {
+	data     pmetric.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills {{ $name }} metric with initial data.
+func (m *metric{{ $name.Render }}) init() {
+	m.data.SetName("{{ $name }}")
+	m.data.SetDescription("{{ $metric.Description }}")
+	m.data.SetUnit("{{ $metric.Unit }}")
+	m.data.SetDataType(pmetric.MetricDataType{{ $metric.Data.Type }})
+	{{- if $metric.Data.HasMonotonic }}
+	m.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
+	{{- end }}
+	{{- if $metric.Data.HasAggregated }}
+	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality({{ $metric.Data.Aggregated.Type }})
+	{{- end }}
+	{{- if $metric.Attributes }}
+	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
+	{{- end }}
+}
+
+func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
+{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Type.ValueType }} {{ (attributeInfo .).Type.Primitive }}{{ else }}string{{ end }}{{ end }}) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
+	{{- range $metric.Attributes }}
+	{{- if eq (attributeInfo .).Type.Primitive "bool" }}
+	dp.Attributes().InsertBool("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "int64" }}
+	dp.Attributes().InsertInt("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "float64" }}
+	dp.Attributes().InsertDouble("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	{{- else if eq (attributeInfo .).Type.Primitive "[]byte" }}
+	dp.Attributes().InsertBytes("{{ attributeKey .}}", pcommon.NewImmutableByteSlice({{ .RenderUnexported }}AttributeValue))
+	{{- else }}
+	dp.Attributes().InsertString("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	{{- end }}
+	{{- end }}
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metric{{ $name.Render }}) updateCapacity() {
+	if m.data.{{ $metric.Data.Type }}().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.{{ $metric.Data.Type }}().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metric{{ $name.Render }}) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.{{ $metric.Data.Type }}().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetric{{ $name.Render }}(settings MetricSettings) metric{{ $name.Render }} {
+	m := metric{{ $name.Render }}{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+{{ end -}}
+
+// MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
+// required to produce metric representation defined in metadata and user settings.
+type MetricsBuilder struct {
+	startTime                pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity          int             // maximum observed number of metrics per resource.
+	resourceCapacity         int             // maximum observed number of resource attributes.
+	metricsBuffer            pmetric.Metrics   // accumulates metrics data before emitting.
+	buildInfo                component.BuildInfo // contains version information
+	{{- range $name, $metric := .Metrics }}
+	metric{{ $name.Render }} metric{{ $name.Render }}
+	{{- end }}
+}
+
+// metricBuilderOption applies changes to default metrics builder.
+type metricBuilderOption func(*MetricsBuilder)
+
+// WithStartTime sets startTime on the metrics builder.
+func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
+	return func(mb *MetricsBuilder) {
+		mb.startTime = startTime
+	}
+}
+
+func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+	mb := &MetricsBuilder{
+		startTime:                pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:            pmetric.NewMetrics(),
+		buildInfo: 				  buildInfo,
+		{{- range $name, $metric := .Metrics }}
+		metric{{ $name.Render }}: newMetric{{ $name.Render }}(settings.{{ $name.Render }}),
+		{{- end }}
+	}
+	for _, op := range options {
+		op(mb)
+	}
+	return mb
+}
+
+// updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
+func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
+	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
+		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+	}
+	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
+		mb.resourceCapacity = rm.Resource().Attributes().Len()
+	}
+}
+
+// ResourceMetricsOption applies changes to provided resource metrics.
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+{{- range $name, $attr := .ResourceAttributes }}
+// With{{ $name.Render }} sets provided value as "{{ $name }}" attribute for current resource.
+func With{{ $name.Render }}(val {{ $attr.Type.Primitive }}) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().Upsert{{ $attr.Type }}("{{ $name }}", val)
+	}
+}
+{{ end }}
+
+// WithStartTimeOverride overrides start time for all the resource metrics data points.
+// This option should be only used if different start time has to be set on metrics coming from different resources.
+func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		var dps pmetric.NumberDataPointSlice
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for i := 0; i < metrics.Len(); i++ {
+			switch metrics.At(i).DataType() {
+			case pmetric.MetricDataTypeGauge:
+				dps = metrics.At(i).Gauge().DataPoints()
+			case pmetric.MetricDataTypeSum:
+				dps = metrics.At(i).Sum().DataPoints()
+			}
+			for j := 0; j < dps.Len(); j++ {
+				dps.At(j).SetStartTimestamp(start)
+			}
+		}
+	}
+}
+
+// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
+// recording another set of data points as part of another resource. This function can be helpful when one scraper
+// needs to emit metrics from several resources. Otherwise calling this function is not required,
+// just `Emit` function can be called instead.
+// Resource attributes should be provided as ResourceMetricsOption arguments.
+func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
+	rm := pmetric.NewResourceMetrics()
+	{{- if .SemConvVersion }}
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	{{- end }}
+	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
+	ils := rm.ScopeMetrics().AppendEmpty()
+	ils.Scope().SetName("otelcol/{{ .Name }}")
+	ils.Scope().SetVersion(mb.buildInfo.Version)
+	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	{{- range $name, $metric := .Metrics }}
+	mb.metric{{- $name.Render }}.emit(ils.Metrics())
+	{{- end }}
+	for _, op := range rmo {
+		op(rm)
+	}
+	if ils.Metrics().Len() > 0 {
+		mb.updateCapacity(rm)
+		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
+	}
+}
+
+// Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
+// recording another set of metrics. This function will be responsible for applying all the transformations required to
+// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
+	mb.EmitForResource(rmo...)
+	metrics := pmetric.NewMetrics()
+	mb.metricsBuffer.MoveTo(metrics)
+	return metrics
+}
+
+{{ range $name, $metric := .Metrics -}}
+// Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
+func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
+	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
+	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
+	{{- end }}
+	{{- range $metric.Attributes -}}
+	, {{ .RenderUnexported }}AttributeValue {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ else }}{{ if (attributeInfo .).Type.ValueType }} {{ (attributeInfo .).Type.Primitive }}{{ else }}string{{ end }}{{ end }}
+	{{- end }})
+	{{- if $metric.Data.HasMetricInputType }} error{{ end }} {
+	{{- if $metric.Data.HasMetricInputType }}
+	{{- if eq $metric.Data.MetricValueType.BasicType "float64" }}
+	val, err := strconv.ParseFloat(inputVal, 64)
+	{{- else if eq $metric.Data.MetricValueType.BasicType "int64" }}
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	{{- end }}
+	if err != nil {
+		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
+	}
+	{{- end }}
+	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
+		{{- range $metric.Attributes -}}
+		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
+		{{- end }})
+	{{- if $metric.Data.HasMetricInputType }}
+	return nil
+	{{- end }}
+}
+{{ end }}
+
+// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
+// and metrics builder should update its startTime and reset it's internal state accordingly.
+func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
+	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+	for _, op := range options {
+		op(mb)
+	}
+}

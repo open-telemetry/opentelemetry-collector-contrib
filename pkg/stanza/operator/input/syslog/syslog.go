@@ -26,12 +26,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 )
 
+const operatorType = "syslog_input"
+
 func init() {
-	operator.Register("syslog_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
-func NewConfig(operatorID string) *Config {
+
+// NewConfig creates a new input config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "syslog_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 	}
 }
 
@@ -48,7 +57,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	syslogParserCfg := syslog.NewConfig(inputBase.ID() + "_internal_tcp")
+	syslogParserCfg := syslog.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
@@ -58,7 +67,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.TCP != nil {
-		tcpInputCfg := tcp.NewConfig(inputBase.ID() + "_internal_tcp")
+		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
 		tcpInputCfg.BaseConfig = *c.TCP
 
 		tcpInput, err := tcpInputCfg.Build(logger)
@@ -79,7 +88,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.UDP != nil {
-		udpInputCfg := udp.NewConfig(inputBase.ID() + "_internal_udp")
+		udpInputCfg := udp.NewConfigWithID(inputBase.ID() + "_internal_udp")
 		udpInputCfg.BaseConfig = *c.UDP
 
 		udpInput, err := udpInputCfg.Build(logger)

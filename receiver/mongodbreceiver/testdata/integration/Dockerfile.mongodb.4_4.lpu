@@ -1,7 +1,4 @@
-FROM mongo:4.0
-
-COPY scripts/setup.sh /setup.sh
-RUN chmod +x /setup.sh
+FROM mongo:4.4
 
 COPY scripts/lpu.sh /lpu.sh
 RUN chmod +x /lpu.sh

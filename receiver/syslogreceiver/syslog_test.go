@@ -111,8 +111,8 @@ func testdataConfigYaml() *SysLogConfig {
 			},
 		},
 		Config: func() syslog.Config {
-			c := syslog.NewConfig("syslog_input")
-			c.TCP = &tcp.NewConfig("tcp_input").BaseConfig
+			c := syslog.NewConfig()
+			c.TCP = &tcp.NewConfig().BaseConfig
 			c.TCP.ListenAddress = "0.0.0.0:29018"
 			c.Protocol = "rfc5424"
 			return *c
@@ -131,8 +131,8 @@ func testdataUDPConfig() *SysLogConfig {
 			},
 		},
 		Config: func() syslog.Config {
-			c := syslog.NewConfig("syslog_input")
-			c.UDP = &udp.NewConfig("udp_input").BaseConfig
+			c := syslog.NewConfig()
+			c.UDP = &udp.NewConfig().BaseConfig
 			c.UDP.ListenAddress = "0.0.0.0:29018"
 			c.Protocol = "rfc5424"
 			return *c
@@ -149,8 +149,8 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			Operators:        adapter.OperatorConfigs{},
 		},
 		Config: func() syslog.Config {
-			c := syslog.NewConfig("syslog_input")
-			c.TCP = &tcp.NewConfig("tcp_input").BaseConfig
+			c := syslog.NewConfig()
+			c.TCP = &tcp.NewConfig().BaseConfig
 			c.Protocol = "fake"
 			return *c
 		}(),
