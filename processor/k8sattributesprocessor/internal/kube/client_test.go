@@ -636,7 +636,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: RegexpMustCompile("la.*"),
+					KeyRegex: regexpMustCompile("la.*"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -650,7 +650,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: RegexpMustCompile("an.*"),
+					KeyRegex: regexpMustCompile("an.*"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -663,7 +663,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-annotations-not-match",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: RegexpMustCompile("an*"),
+					KeyRegex: regexpMustCompile("an*"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -675,7 +675,7 @@ func TestExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "$1",
-					KeyRegex:             RegexpMustCompile(`annotation(\d+)`),
+					KeyRegex:             regexpMustCompile(`annotation(\d+)`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
@@ -690,7 +690,7 @@ func TestExtractionRules(t *testing.T) {
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "prefix-$0",
-					KeyRegex:             RegexpMustCompile(`annotation(\d+)`),
+					KeyRegex:             regexpMustCompile(`annotation(\d+)`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
@@ -768,7 +768,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: RegexpMustCompile("la.*"),
+					KeyRegex: regexpMustCompile("la.*"),
 					From:     MetadataFromNamespace,
 				},
 				},
@@ -781,7 +781,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: RegexpMustCompile("an.*"),
+					KeyRegex: regexpMustCompile("an.*"),
 					From:     MetadataFromNamespace,
 				},
 				},
@@ -1300,4 +1300,12 @@ func newTestClientWithRulesAndFilters(t *testing.T, e ExtractionRules, f Filters
 
 func newTestClient(t *testing.T) (*WatchClient, *observer.ObservedLogs) {
 	return newTestClientWithRulesAndFilters(t, ExtractionRules{}, Filters{})
+}
+
+func regexpMustCompile(pattern string) *regexp.Regexp {
+	re, err := RegexpCompile(pattern)
+	if err != nil {
+		panic(err)
+	}
+	return re
 }

@@ -275,14 +275,6 @@ func RegexpCompile(pattern string) (*regexp.Regexp, error) {
 	return regexp.Compile("^(?:" + pattern + ")$")
 }
 
-func RegexpMustCompile(pattern string) *regexp.Regexp {
-	re, err := RegexpCompile(pattern)
-	if err != nil {
-		panic(err)
-	}
-	return re
-}
-
 // Associations represent a list of rules for Pod metadata associations with resources
 type Associations struct {
 	Associations []Association
