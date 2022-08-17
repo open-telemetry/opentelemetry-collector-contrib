@@ -266,7 +266,8 @@ Default: `5000`
 ### resource_to_telemetry_conversion (Optional)
 
 When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
-attributes will be included as metric attributes.
+attributes will be included as metric dimensions in Dynatrace.
+Note that these are added _in addition_ to your existing data point attributes.
 
 Default: `false`
 
@@ -275,7 +276,7 @@ Default: `false`
 
 If you think you might exceed this limit, you should use the
 [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor)
- to remove any resource attributes you don't want converted.
+to apply a filter, so only a select subset of your resource attributes are converted.
 
 ```yaml
 receivers:
