@@ -362,13 +362,6 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 			}
 			indexAccessTotal += indexAccessValue
 		}
-		if len(documents) == 0 {
-			metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
-			err := errors.New("failed to find index access values")
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
-			return
-		}
 		s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 	}
 }

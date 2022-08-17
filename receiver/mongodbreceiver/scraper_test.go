@@ -91,8 +91,8 @@ var (
 				"failed to collect metric mongodb.document.operation.count with attribute(s) deleted, fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.memory.usage with attribute(s) resident, fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.memory.usage with attribute(s) virtual, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: failed to find index access values",
-				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: failed to find index access values",
+				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: could not find key for index access metric",
+				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: could not find key for index access metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
@@ -230,6 +230,8 @@ func TestScraperScrape(t *testing.T) {
 				wiredTigerStorage, err := loadOnlyStorageEngineAsMap()
 				require.NoError(t, err)
 				fakeDatabaseName := "fakedatabase"
+				indexStats, err := loadIndexStatsAsMap("error")
+				require.NoError(t, err)
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, nil)
@@ -237,8 +239,8 @@ func TestScraperScrape(t *testing.T) {
 				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, nil)
 				fc.On("TopStats", mock.Anything).Return(bson.M{}, nil)
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
-				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return([]bson.M{}, nil)
-				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return([]bson.M{}, nil)
+				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "products").Return(indexStats, nil)
+				fc.On("IndexStats", mock.Anything, fakeDatabaseName, "orders").Return(indexStats, nil)
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
