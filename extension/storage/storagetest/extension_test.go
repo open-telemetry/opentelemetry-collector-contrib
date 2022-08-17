@@ -18,12 +18,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestInMemoryLifecycle(t *testing.T) {
