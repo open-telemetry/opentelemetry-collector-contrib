@@ -12,21 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
 import (
-	"path/filepath"
+	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema/docsgen/docsgen"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
-func main() {
-	c, err := components.Components()
-	if err != nil {
-		panic(err)
+func Test_newTracesReceiver_err(t *testing.T) {
+	c := Config{
+		Encoding: defaultEncoding,
 	}
-	dr := configschema.NewDirResolver(filepath.Join("..", ".."), configschema.DefaultModule)
-	docsgen.CLI(c, dr)
+	_, err := newTracesReceiver(c, componenttest.NewNopReceiverCreateSettings(), defaultTracesUnmarshalers(), consumertest.NewNop())
+	assert.Error(t, err)
 }
