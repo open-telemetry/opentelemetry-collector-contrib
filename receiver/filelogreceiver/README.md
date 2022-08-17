@@ -30,6 +30,7 @@ Tails and parses logs from files.
 | `resource`                   | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 | `converter`                  | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`plog.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
+| `storage`                   |                  | The ID of a storage extension. The extension will be used to store file checkpoints, which allows the receiver to pick up where it left off in the case of a collector restart. |
 
 [entry_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/entry/entry.go
 [pdata_logrecord_link]: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.40.0/model/pdata/generated_log.go#L553-L564

@@ -39,6 +39,7 @@ func TestStorage(t *testing.T) {
 
 	logsDir := t.TempDir()
 	storageDir := t.TempDir()
+	extID := storagetest.NewFileBackedStorageExtension("test", storageDir).ID()
 
 	f := NewFactory()
 
@@ -46,10 +47,12 @@ func TestStorage(t *testing.T) {
 	cfg.Converter.MaxFlushCount = 1
 	cfg.Converter.FlushInterval = time.Millisecond
 	cfg.Operators = nil // not testing processing, just read the lines
+	cfg.StorageID = &extID
 
 	logger := newRecallLogger(t, logsDir)
 
-	host := storagetest.NewStorageHost().WithFileBackedStorageExtension("test", storageDir)
+	ext := storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host := storagetest.NewStorageHost().WithExtension(ext.ID(), ext)
 	sink := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
@@ -80,7 +83,8 @@ func TestStorage(t *testing.T) {
 	logger.log(fmt.Sprintf(baseLog, 4))
 
 	// Start the components again
-	host = storagetest.NewStorageHost().WithFileBackedStorageExtension("test", storageDir)
+	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host = storagetest.NewStorageHost().WithExtension(ext.ID(), ext)
 	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
@@ -124,7 +128,8 @@ func TestStorage(t *testing.T) {
 	logger.log(fmt.Sprintf(baseLog, 9))
 
 	// Start the components again
-	host = storagetest.NewStorageHost().WithFileBackedStorageExtension("test", storageDir)
+	ext = storagetest.NewFileBackedStorageExtension("test", storageDir)
+	host = storagetest.NewStorageHost().WithExtension(ext.ID(), ext)
 	rcvr, err = f.CreateLogsReceiver(ctx, componenttest.NewNopReceiverCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(ctx, host))
