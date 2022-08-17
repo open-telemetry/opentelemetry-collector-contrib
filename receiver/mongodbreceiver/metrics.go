@@ -435,11 +435,7 @@ func collectMetric(document bson.M, path []string) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	metricVal, err := parseInt(metric)
-	if err != nil {
-		return 0, err
-	}
-	return metricVal, nil
+	return parseInt(metric)
 }
 
 func dig(document bson.M, path []string) (interface{}, error) {
