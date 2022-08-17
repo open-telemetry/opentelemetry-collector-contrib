@@ -184,8 +184,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 var parser = newParser()
 
 func parseQuery(raw string) (*ParsedQuery, error) {
-	parsed := &ParsedQuery{}
-	err := parser.ParseString("", raw, parsed)
+	parsed, err := parser.ParseString("", raw)
 	if err != nil {
 		return nil, err
 	}
@@ -216,9 +215,9 @@ func buildLexer() *lexer.StatefulDefinition {
 
 // newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
 // is not formatted for the DSL.
-func newParser() *participle.Parser {
+func newParser() *participle.Parser[ParsedQuery] {
 	lex := buildLexer()
-	parser, err := participle.Build(&ParsedQuery{},
+	parser, err := participle.Build[ParsedQuery](
 		participle.Lexer(lex),
 		participle.Unquote("String"),
 		participle.Elide("whitespace"),
