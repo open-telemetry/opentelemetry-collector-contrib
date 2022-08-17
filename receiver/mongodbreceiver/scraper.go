@@ -85,7 +85,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	dbNames, err := s.client.ListDatabaseNames(ctx, bson.D{})
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch database names: %w", err))
-		s.logger.Warn("Failed to fetch database names", zap.Error(err))
 		return
 	}
 
@@ -100,7 +99,6 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf("failed to fetch collection names: %w", err))
-			s.logger.Warn("Failed to fetch collection names", zap.Error(err))
 			return
 		}
 
@@ -119,7 +117,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	dbStats, err := s.client.DBStats(ctx, databaseName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch database stats metrics: %w", err))
-		s.logger.Warn("Failed to fetch database stats metrics", zap.Error(err))
 	} else {
 		s.recordDBStats(now, dbStats, databaseName, errs)
 	}
@@ -127,7 +124,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch server status metrics: %w", err))
-		s.logger.Warn("Failed to fetch server status metrics", zap.Error(err))
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
@@ -139,7 +135,6 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.T
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch admin server status metrics: %w", err))
-		s.logger.Warn("Failed to fetch admin server status metrics", zap.Error(err))
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errs)
@@ -150,7 +145,6 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 	topStats, err := s.client.TopStats(ctx)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch top stats metrics: %w", err))
-		s.logger.Warn("Failed to fetch top stats metrics", zap.Error(err))
 		return
 	}
 	s.recordOperationTime(now, topStats, errs)
@@ -161,7 +155,6 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
-		s.logger.Warn("Failed to fetch index stats metrics", zap.Error(err))
 		return
 	}
 	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)

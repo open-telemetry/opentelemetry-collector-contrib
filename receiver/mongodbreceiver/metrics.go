@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -57,7 +56,6 @@ func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, db
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbCollectionCountDataPoint(now, val, dbName)
@@ -69,7 +67,6 @@ func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbNam
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbDataSizeDataPoint(now, val, dbName)
@@ -81,7 +78,6 @@ func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, db
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbStorageSizeDataPoint(now, val, dbName)
@@ -93,7 +89,6 @@ func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, db
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbObjectCountDataPoint(now, val, dbName)
@@ -105,7 +100,6 @@ func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbN
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbIndexCountDataPoint(now, val, dbName)
@@ -117,7 +111,6 @@ func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbNa
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbIndexSizeDataPoint(now, val, dbName)
@@ -133,7 +126,6 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, dbName), zap.Error(err))
 			return
 		}
 		s.mb.RecordMongodbExtentCountDataPoint(now, val, dbName)
@@ -155,7 +147,6 @@ func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, db
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
 			continue
 		}
 		s.mb.RecordMongodbConnectionCountDataPoint(now, val, dbName, ct)
@@ -170,7 +161,6 @@ func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, db
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
 			continue
 		}
 		// convert from mebibytes to bytes
@@ -187,7 +177,6 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
 			continue
 		}
 		s.mb.RecordMongodbDocumentOperationCountDataPoint(now, val, dbName, metadataKey)
@@ -205,7 +194,6 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for session count"))
-		s.logger.Warn("Failed to find storage engine for session count", zap.Error(err))
 		return
 	}
 	if storageEngine != "wiredTiger" {
@@ -218,7 +206,6 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbSessionCountDataPoint(now, val)
@@ -232,7 +219,6 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, operationVal), zap.Error(err))
 			continue
 		}
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
@@ -251,7 +237,6 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for cache operations"))
-		s.logger.Warn("Failed to find storage engine for cache operations", zap.Error(err))
 		return
 	}
 	if storageEngine != "wiredTiger" {
@@ -264,7 +249,6 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 	cacheMissVal, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(2, fmt.Errorf(collectMetricWithAttributes, metricName, "miss, hit", err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, "miss, hit"), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissVal, metadata.AttributeTypeMiss)
@@ -274,7 +258,6 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 	cacheHitVal, err := collectMetric(doc, cacheHitPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, cacheHitName, "hit", err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, cacheHitName, "hit"), zap.Error(err))
 		return
 	}
 
@@ -288,7 +271,6 @@ func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M,
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 	heldTimeMilliseconds := val / 1000
@@ -301,7 +283,6 @@ func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, er
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbCursorCountDataPoint(now, val)
@@ -313,7 +294,6 @@ func (s *mongodbScraper) recordCursorTimeoutCount(now pcommon.Timestamp, doc bso
 	val, err := collectMetric(doc, metricPath)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 	s.mb.RecordMongodbCursorTimeoutCountDataPoint(now, val)
@@ -330,7 +310,6 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 		val, err := collectMetric(doc, metricPath)
 		if err != nil {
 			errs.AddPartial(1, fmt.Errorf(collectMetricError, networkKey, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarning, networkKey), zap.Error(err))
 			continue
 		}
 		recorder(now, val)
@@ -351,13 +330,11 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 			if !ok {
 				err := errors.New("could not find key for index access metric")
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
 				return
 			}
 			indexAccessValue, err := parseInt(indexAccess)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
-				s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, metricAttributes), zap.Error(err))
 				return
 			}
 			indexAccessTotal += indexAccessValue
@@ -372,13 +349,11 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 	collectionPathNames, err := digForCollectionPathNames(doc)
 	if err != nil {
 		errs.AddPartial(len(operationsMap), fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 	operationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames, operationsMap)
 	if err != nil {
 		errs.AddPartial(len(operationsMap), fmt.Errorf(collectMetricError, metricName, err))
-		s.logger.Warn(fmt.Sprintf(collectMetricWarning, metricName), zap.Error(err))
 		return
 	}
 
@@ -387,7 +362,6 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 		if !ok {
 			err := errors.New("could not find key for operation name")
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationName, err))
-			s.logger.Warn(fmt.Sprintf(collectMetricWarningWithAttributes, metricName, operationName), zap.Error(err))
 			continue
 		}
 		s.mb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
