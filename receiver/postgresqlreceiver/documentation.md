@@ -23,7 +23,6 @@ These are the metrics available for this scraper.
 | **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
 | **postgresql.replication.data_delay** | The amount of data delayed in replication. | By | Gauge(Int) | <ul> <li>replication_client</li> </ul> |
-| **postgresql.replication.delay** | The amount of time of lag between the current clock and the timestamp of the last WAL record. | ms | Gauge(Int) | <ul> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
 | **postgresql.table.count** | Number of user tables in a database. |  | Sum(Int) | <ul> </ul> |

@@ -32,7 +32,6 @@ type MetricsSettings struct {
 	PostgresqlIndexSize                MetricSettings `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               MetricSettings `mapstructure:"postgresql.operations"`
 	PostgresqlReplicationDataDelay     MetricSettings `mapstructure:"postgresql.replication.data_delay"`
-	PostgresqlReplicationDelay         MetricSettings `mapstructure:"postgresql.replication.delay"`
 	PostgresqlRollbacks                MetricSettings `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows                     MetricSettings `mapstructure:"postgresql.rows"`
 	PostgresqlTableCount               MetricSettings `mapstructure:"postgresql.table.count"`
@@ -87,9 +86,6 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		PostgresqlReplicationDataDelay: MetricSettings{
-			Enabled: true,
-		},
-		PostgresqlReplicationDelay: MetricSettings{
 			Enabled: true,
 		},
 		PostgresqlRollbacks: MetricSettings{
@@ -1123,55 +1119,6 @@ func newMetricPostgresqlReplicationDataDelay(settings MetricSettings) metricPost
 	return m
 }
 
-type metricPostgresqlReplicationDelay struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills postgresql.replication.delay metric with initial data.
-func (m *metricPostgresqlReplicationDelay) init() {
-	m.data.SetName("postgresql.replication.delay")
-	m.data.SetDescription("The amount of time of lag between the current clock and the timestamp of the last WAL record.")
-	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
-}
-
-func (m *metricPostgresqlReplicationDelay) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricPostgresqlReplicationDelay) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricPostgresqlReplicationDelay) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricPostgresqlReplicationDelay(settings MetricSettings) metricPostgresqlReplicationDelay {
-	m := metricPostgresqlReplicationDelay{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricPostgresqlRollbacks struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1557,7 +1504,6 @@ type MetricsBuilder struct {
 	metricPostgresqlIndexSize                metricPostgresqlIndexSize
 	metricPostgresqlOperations               metricPostgresqlOperations
 	metricPostgresqlReplicationDataDelay     metricPostgresqlReplicationDataDelay
-	metricPostgresqlReplicationDelay         metricPostgresqlReplicationDelay
 	metricPostgresqlRollbacks                metricPostgresqlRollbacks
 	metricPostgresqlRows                     metricPostgresqlRows
 	metricPostgresqlTableCount               metricPostgresqlTableCount
@@ -1597,7 +1543,6 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(settings.PostgresqlIndexSize),
 		metricPostgresqlOperations:               newMetricPostgresqlOperations(settings.PostgresqlOperations),
 		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(settings.PostgresqlReplicationDataDelay),
-		metricPostgresqlReplicationDelay:         newMetricPostgresqlReplicationDelay(settings.PostgresqlReplicationDelay),
 		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(settings.PostgresqlRollbacks),
 		metricPostgresqlRows:                     newMetricPostgresqlRows(settings.PostgresqlRows),
 		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(settings.PostgresqlTableCount),
@@ -1693,7 +1638,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
 	mb.metricPostgresqlOperations.emit(ils.Metrics())
 	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
-	mb.metricPostgresqlReplicationDelay.emit(ils.Metrics())
 	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
 	mb.metricPostgresqlRows.emit(ils.Metrics())
 	mb.metricPostgresqlTableCount.emit(ils.Metrics())
@@ -1793,11 +1737,6 @@ func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timesta
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.
 func (mb *MetricsBuilder) RecordPostgresqlReplicationDataDelayDataPoint(ts pcommon.Timestamp, val int64, replicationClientAttributeValue string) {
 	mb.metricPostgresqlReplicationDataDelay.recordDataPoint(mb.startTime, ts, val, replicationClientAttributeValue)
-}
-
-// RecordPostgresqlReplicationDelayDataPoint adds a data point to postgresql.replication.delay metric.
-func (mb *MetricsBuilder) RecordPostgresqlReplicationDelayDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlReplicationDelay.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
