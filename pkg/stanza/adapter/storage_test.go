@@ -29,7 +29,8 @@ import (
 func TestStorage(t *testing.T) {
 	ctx := context.Background()
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "test")
+	host := storagetest.NewStorageHost().
+		WithFileBackedStorageExtension("test", t.TempDir())
 	require.NoError(t, r.Start(ctx, host))
 
 	myBytes := []byte("my_value")
@@ -66,12 +67,14 @@ func TestStorage(t *testing.T) {
 
 	_, err = r.storageClient.Get(ctx, "key")
 	require.Error(t, err)
-	require.Equal(t, "database not open", err.Error())
+	require.Equal(t, "client closed", err.Error())
 }
 
 func TestFailOnMultipleStorageExtensions(t *testing.T) {
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "one", "two")
+	host := storagetest.NewStorageHost().
+		WithInMemoryStorageExtension("one").
+		WithInMemoryStorageExtension("two")
 	err := r.Start(context.Background(), host)
 	require.Error(t, err)
 	require.Equal(t, "storage client: multiple storage extensions found", err.Error())

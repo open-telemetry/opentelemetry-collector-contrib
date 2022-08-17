@@ -26,10 +26,11 @@ import (
 )
 
 func renderHeader(typ, group, doc string) []byte {
+	caser := cases.Title(language.English)
 	return []byte(fmt.Sprintf(
-		"# %q %s Reference\n\n%s\n\n",
-		typ,
-		cases.Title(language.English).String(group),
+		"# %s %s Reference\n\n%s\n\n",
+		caser.String(typ),
+		caser.String(group),
 		doc,
 	))
 }
