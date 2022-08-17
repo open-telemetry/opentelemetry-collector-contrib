@@ -173,6 +173,7 @@ receiver/postgresqlreceiver/                         @open-telemetry/collector-c
 receiver/prometheusexecreceiver/                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 receiver/rabbitmqreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @cpheps
+receiver/pulsarreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @tjiuming
 receiver/receivercreator/                            @open-telemetry/collector-contrib-approvers @jrcamp
 receiver/redisreceiver/                              @open-telemetry/collector-contrib-approvers @pmcollins @dmitryax
 receiver/riakreceiver/                               @open-telemetry/collector-contrib-approvers @djaglowski @armstrmi
