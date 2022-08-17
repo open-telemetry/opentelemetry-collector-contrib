@@ -17,8 +17,9 @@ package tqlconfig
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
 func Test_Interpret(t *testing.T) {
@@ -124,7 +125,19 @@ func Test_Interpret(t *testing.T) {
 							},
 						},
 					},
-					Condition: tqltest.Strp("name == \"a name\""),
+					Condition: &Expression{
+						Comparison: &Comparison{
+							Arguments: []Argument{
+								{
+									Other: tqltest.Strp("name"),
+								},
+								{
+									String: tqltest.Strp("a name"),
+								},
+							},
+							Operator: "==",
+						},
+					},
 				},
 			},
 			expected: []string{
@@ -151,11 +164,57 @@ func Test_Interpret(t *testing.T) {
 							},
 						},
 					},
-					Condition: tqltest.Strp("(name == \"a name\" or thing == false) and other_thing == true"),
+					Condition: &Expression{
+						And: []Expression{
+							{
+								Or: []Expression{
+									{
+										Comparison: &Comparison{
+											Arguments: []Argument{
+												{
+													Other: tqltest.Strp("name"),
+												},
+												{
+													String: tqltest.Strp("a name"),
+												},
+											},
+											Operator: "==",
+										},
+									},
+									{
+										Comparison: &Comparison{
+											Arguments: []Argument{
+												{
+													Other: tqltest.Strp("thing"),
+												},
+												{
+													Other: tqltest.Strp("false"),
+												},
+											},
+											Operator: "!=",
+										},
+									},
+								},
+							},
+							{
+								Comparison: &Comparison{
+									Arguments: []Argument{
+										{
+											Other: tqltest.Strp("other_thing"),
+										},
+										{
+											Other: tqltest.Strp("1.123"),
+										},
+									},
+									Operator: "==",
+								},
+							},
+						},
+					},
 				},
 			},
 			expected: []string{
-				"set(span_id, SpanID(0x0102030405060708)) where (name == \"a name\" or thing == false) and other_thing == true",
+				"set(span_id, SpanID(0x0102030405060708)) where ((name == \"a name\" or thing != false) and other_thing == 1.123)",
 			},
 		},
 	}

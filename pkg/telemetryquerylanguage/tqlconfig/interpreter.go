@@ -29,7 +29,7 @@ func interpretQuery(query DeclarativeQuery) string {
 	sb.WriteString(interpretInvocation(query.Function, query.Arguments))
 	if query.Condition != nil {
 		sb.WriteString(" where ")
-		sb.WriteString(*query.Condition)
+		sb.WriteString(interpretExpression(*query.Condition))
 	}
 	return sb.String()
 }
@@ -62,4 +62,44 @@ func interpretArgument(arg Argument) string {
 	}
 
 	return *arg.Other
+}
+
+func interpretExpression(expression Expression) string {
+	var sb strings.Builder
+
+	if expression.Comparison != nil {
+		return interpretComparison(*expression.Comparison)
+	}
+
+	if expression.Or != nil {
+		sb.WriteRune('(')
+		for i, expr := range expression.Or {
+			sb.WriteString(interpretExpression(expr))
+			if i < len(expression.Or)-1 {
+				sb.WriteString(" or ")
+			}
+		}
+		sb.WriteRune(')')
+		return sb.String()
+	}
+
+	sb.WriteRune('(')
+	for i, expr := range expression.And {
+		sb.WriteString(interpretExpression(expr))
+		if i < len(expression.And)-1 {
+			sb.WriteString(" and ")
+		}
+	}
+	sb.WriteRune(')')
+	return sb.String()
+}
+
+func interpretComparison(comparison Comparison) string {
+	var sb strings.Builder
+	sb.WriteString(interpretArgument(comparison.Arguments[0]))
+	sb.WriteRune(' ')
+	sb.WriteString(comparison.Operator)
+	sb.WriteRune(' ')
+	sb.WriteString(interpretArgument(comparison.Arguments[1]))
+	return sb.String()
 }

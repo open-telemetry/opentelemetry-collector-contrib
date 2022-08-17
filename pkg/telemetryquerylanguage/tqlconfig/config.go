@@ -40,9 +40,9 @@ type DeclarativeSignalConfig struct {
 
 // DeclarativeQuery configures a specific TQL query to execute.
 type DeclarativeQuery struct {
-	Function  string     `mapstructure:"function"`
-	Arguments []Argument `mapstructure:"arguments"`
-	Condition *string    `mapstructure:"condition"`
+	Function  string      `mapstructure:"function"`
+	Arguments []Argument  `mapstructure:"arguments"`
+	Condition *Expression `mapstructure:"condition"`
 }
 
 type Argument struct {
@@ -54,4 +54,15 @@ type Argument struct {
 type Invocation struct {
 	Function  string     `mapstructure:"function"`
 	Arguments []Argument `mapstructure:"arguments"`
+}
+
+type Comparison struct {
+	Arguments []Argument `mapstructure:"arguments"`
+	Operator  string     `mapstructure:"operator"`
+}
+
+type Expression struct {
+	Comparison *Comparison  `mapstructure:"comparison"`
+	And        []Expression `mapstructure:"and"`
+	Or         []Expression `mapstructure:"or"`
 }
