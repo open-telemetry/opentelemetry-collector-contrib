@@ -16,16 +16,17 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 )
 
@@ -65,7 +66,7 @@ type receiver struct {
 }
 
 func (f *receiver) Start(ctx context.Context, host component.Host) error {
-	storageClient, err := adapter.GetStorageClient(ctx, f.id, component.KindReceiver, host)
+	storageClient, err := f.storageClient(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -74,6 +75,24 @@ func (f *receiver) Start(ctx context.Context, host component.Host) error {
 
 func (f *receiver) Shutdown(ctx context.Context) error {
 	return f.input.Stop()
+}
+
+func (f *receiver) storageClient(ctx context.Context, host component.Host) (storage.Client, error) {
+	if f.storageID == nil {
+		return storage.NewNopClient(), nil
+	}
+
+	extension, ok := host.GetExtensions()[*f.storageID]
+	if !ok {
+		return nil, fmt.Errorf("storage extension '%s' not found", f.storageID)
+	}
+
+	storageExtension, ok := extension.(storage.Extension)
+	if !ok {
+		return nil, fmt.Errorf("non-storage extension '%s' found", f.storageID)
+	}
+
+	return storageExtension.GetClient(ctx, component.KindReceiver, f.id, "")
 }
 
 func createLogsReceiver(_ context.Context, settings component.ReceiverCreateSettings, configuration config.Receiver, logs consumer.Logs) (component.LogsReceiver, error) {
