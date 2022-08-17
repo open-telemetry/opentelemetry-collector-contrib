@@ -44,24 +44,29 @@ type provider struct {
 // New returns a new confmap.Provider that reads the configuration from a file.
 //
 // This Provider supports "s3" scheme, and can be called with a "uri" that follows:
-//   s3-uri : s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
+//
+//	s3-uri : s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY]
 //
 // One example for s3-uri be like: s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg
 //
 // Examples:
 // `s3://DOC-EXAMPLE-BUCKET.s3.us-west-2.amazonaws.com/photos/puppy.jpg` - (unix, windows)
 func New() confmap.Provider {
-	// initialize the client
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		fmt.Println("Failed to load configurations to initialize an AWS SDK client, error: %w", err)
-	}
-	return &provider{client: s3.NewFromConfig(cfg)}
+	return &provider{client: nil}
 }
 
 func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
+	}
+
+	// initialize the s3 client in the first call of Retrieve
+	if fmp.client == nil {
+		cfg, err := config.LoadDefaultConfig(context.Background())
+		if err != nil {
+			fmt.Println("Failed to load configurations to initialize an AWS SDK client, error: %w", err)
+		}
+		fmp.client = s3.NewFromConfig(cfg)
 	}
 
 	// Split the uri and get [BUCKET], [REGION], [KEY]
@@ -103,9 +108,9 @@ func (*provider) Shutdown(context.Context) error {
 // S3URISplit splits the s3 uri and get the [BUCKET], [REGION], [KEY] in it
 // INPUT : s3 uri (like s3://[BUCKET].s3.[REGION].amazonaws.com/[KEY])
 // OUTPUT :
-//		-  [BUCKET] : The name of a bucket in Amazon S3.
-//		-  [REGION] : Where are servers from, e.g. us-west-2.
-//		-  [KEY]    : The key exists in a given bucket, can be used to retrieve a file.
+//   - [BUCKET] : The name of a bucket in Amazon S3.
+//   - [REGION] : Where are servers from, e.g. us-west-2.
+//   - [KEY]    : The key exists in a given bucket, can be used to retrieve a file.
 func s3URISplit(uri string) (string, string, string, error) {
 	// check whether the pattern of s3-uri is correct
 	matched, err := regexp.MatchString(`s3:\/\/(.*)\.s3\.(.*).amazonaws\.com\/(.*)`, uri)

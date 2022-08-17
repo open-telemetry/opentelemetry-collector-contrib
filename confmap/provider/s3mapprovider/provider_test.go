@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -34,7 +34,7 @@ type testClient struct{}
 // Implement GetObject() for testClient in normal cases
 func (client *testClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	// read local config file and return
-	f, err := ioutil.ReadFile("./testdata/otel-config.yaml")
+	f, err := os.ReadFile("./testdata/otel-config.yaml")
 	if err != nil {
 		return &s3.GetObjectOutput{}, err
 	}
@@ -57,7 +57,7 @@ func NewTestNonExistProvider() confmap.Provider {
 // Implement GetObject() for testClient when there is no corresponding config file according to the given s3-uri
 func (client *testNonExistClient) GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error) {
 	// read local config file and return
-	f, err := ioutil.ReadFile("./testdata/nonexist-otel-config.yaml")
+	f, err := os.ReadFile("./testdata/nonexist-otel-config.yaml")
 	if err != nil {
 		return &s3.GetObjectOutput{}, err
 	}
