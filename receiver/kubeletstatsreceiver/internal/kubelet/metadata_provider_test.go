@@ -16,7 +16,7 @@ package kubelet
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,7 +40,7 @@ func (f testRestClient) Pods() ([]byte, error) {
 		return []byte("wrong-json-body"), nil
 	}
 
-	return ioutil.ReadFile("../../testdata/pods.json")
+	return os.ReadFile("../../testdata/pods.json")
 }
 
 func TestPods(t *testing.T) {

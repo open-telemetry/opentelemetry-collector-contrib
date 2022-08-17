@@ -39,24 +39,23 @@ const (
 // Examples:
 //
 // 1. Rule:
-//        - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
-//          name_prefix: cpu_seconds
-//          labels:
-//            k: v
-//    Metric path: "service_name.host00.cpu.seconds"
-//    Resulting metric:
-//        name: cpu_seconds
-//        label keys: {"svc", "host", "k"}
-//        label values: {"service_name", "host00", "k"}
+//   - regexp: "(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds"
+//     name_prefix: cpu_seconds
+//     labels:
+//     k: v
+//     Metric path: "service_name.host00.cpu.seconds"
+//     Resulting metric:
+//     name: cpu_seconds
+//     label keys: {"svc", "host", "k"}
+//     label values: {"service_name", "host00", "k"}
 //
 // 2. Rule:
-//        - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
-//    Metric path: "svc_02.host02.avg.duration"
-//    Resulting metric:
-//        name: avgduration
-//        label keys: {"svc", "host"}
-//        label values: {"svc_02", "host02"}
-//
+//   - regexp: "^(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.(?P<name_0>[^.]+).(?P<name_1>[^.]+)$"
+//     Metric path: "svc_02.host02.avg.duration"
+//     Resulting metric:
+//     name: avgduration
+//     label keys: {"svc", "host"}
+//     label values: {"svc_02", "host02"}
 type RegexParserConfig struct {
 	// Rules contains the regular expression rules to be used by the parser.
 	// The first rule that matches and applies the transformations configured in

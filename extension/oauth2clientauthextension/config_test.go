@@ -22,99 +22,80 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	expected := factory.CreateDefaultConfig().(*Config)
-	expected.ClientSecret = "someclientsecret"
-	expected.ClientID = "someclientid"
-	expected.Scopes = []string{"api.metrics"}
-	expected.TokenURL = "https://example.com/oauth2/default/v1/token"
-
-	ext := cfg.Extensions[config.NewComponentIDWithName(typeStr, "1")]
-	assert.Equal(t,
-		&Config{
-			ExtensionSettings: config.NewExtensionSettings(config.NewComponentIDWithName(typeStr, "1")),
-			ClientSecret:      "someclientsecret",
-			ClientID:          "someclientid",
-			EndpointParams:    url.Values{"audience": []string{"someaudience"}},
-			Scopes:            []string{"api.metrics"},
-			TokenURL:          "https://example.com/oauth2/default/v1/token",
-			Timeout:           time.Second,
-		},
-		ext)
-
-	assert.Equal(t, 2, len(cfg.Service.Extensions))
-	assert.Equal(t, config.NewComponentIDWithName(typeStr, "1"), cfg.Service.Extensions[0])
-}
-
-func TestConfigTLSSettings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	ext2 := cfg.Extensions[config.NewComponentIDWithName(typeStr, "withtls")]
-
-	cfg2 := ext2.(*Config)
-	assert.Equal(t, cfg2.TLSSetting, configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
-			CAFile:   "cafile",
-			CertFile: "certfile",
-			KeyFile:  "keyfile",
-		},
-		Insecure:           true,
-		InsecureSkipVerify: false,
-		ServerName:         "",
-	})
-}
-
-func TestLoadConfigError(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
 
 	tests := []struct {
-		configName  string
+		id          config.ComponentID
+		expected    config.Extension
 		expectedErr error
 	}{
 		{
-			"missingurl",
-			errNoTokenURLProvided,
+			id: config.NewComponentID(typeStr),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ClientSecret:      "someclientsecret",
+				ClientID:          "someclientid",
+				EndpointParams:    url.Values{"audience": []string{"someaudience"}},
+				Scopes:            []string{"api.metrics"},
+				TokenURL:          "https://example.com/oauth2/default/v1/token",
+				Timeout:           time.Second,
+			},
 		},
 		{
-			"missingid",
-			errNoClientIDProvided,
+			id: config.NewComponentIDWithName(typeStr, "withtls"),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				ClientSecret:      "someclientsecret2",
+				ClientID:          "someclientid2",
+				Scopes:            []string{"api.metrics"},
+				TokenURL:          "https://example2.com/oauth2/default/v1/token",
+				Timeout:           time.Second,
+				TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.TLSSetting{
+						CAFile:   "cafile",
+						CertFile: "certfile",
+						KeyFile:  "keyfile",
+					},
+					Insecure:           true,
+					InsecureSkipVerify: false,
+					ServerName:         "",
+				},
+			},
 		},
 		{
-			"missingsecret",
-			errNoClientSecretProvided,
+			id:          config.NewComponentIDWithName(typeStr, "missingurl"),
+			expectedErr: errNoTokenURLProvided,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "missingid"),
+			expectedErr: errNoClientIDProvided,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "missingsecret"),
+			expectedErr: errNoClientSecretProvided,
 		},
 	}
 	for _, tt := range tests {
-		factory := NewFactory()
-		factories.Extensions[typeStr] = factory
-		cfg, _ := servicetest.LoadConfig(filepath.Join("testdata", "config_bad.yaml"), factories)
-		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
-		verr := extension.Validate()
-		require.ErrorIs(t, verr, tt.expectedErr)
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
 }

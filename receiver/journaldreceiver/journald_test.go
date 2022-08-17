@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -44,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t, len(cfg.Receivers), 1)
 
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("journald")])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("journald")])
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
@@ -55,29 +56,30 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{
-			"units":     map[string]interface{}{},
-			"priority":  "info",
-			"directory": "/run/log/journal",
-		},
+		Config: func() journald.Config {
+			c := journald.NewConfig()
+			c.StartAt = "middle"
+			return *c
+		}(),
 	}
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")
 	require.Nil(t, receiver, "receiver creation should fail if input config isn't valid")
 }
 
-func testdataConfigYamlAsMap() *JournaldConfig {
+func testdataConfigYaml() *JournaldConfig {
 	return &JournaldConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{
-			"units": []interface{}{
-				"ssh",
-			},
-			"directory": "/run/log/journal",
-			"priority":  "info",
-		},
+		Config: func() journald.Config {
+			c := journald.NewConfig()
+			c.Units = []string{"ssh"}
+			c.Priority = "info"
+			dir := "/run/log/journal"
+			c.Directory = &dir
+			return *c
+		}(),
 	}
 }

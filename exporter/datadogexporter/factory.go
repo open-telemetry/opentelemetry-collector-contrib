@@ -64,8 +64,8 @@ func newFactoryWithRegistry(registry *featuregate.Registry) component.ExporterFa
 	return component.NewExporterFactory(
 		typeStr,
 		f.createDefaultConfig,
-		component.WithMetricsExporterAndStabilityLevel(f.createMetricsExporter, stability),
-		component.WithTracesExporterAndStabilityLevel(f.createTracesExporter, stability),
+		component.WithMetricsExporter(f.createMetricsExporter, stability),
+		component.WithTracesExporter(f.createTracesExporter, stability),
 	)
 }
 
@@ -180,9 +180,10 @@ func (f *factory) createMetricsExporter(
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		pushMetricsFn,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
@@ -250,9 +251,10 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),

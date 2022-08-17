@@ -226,7 +226,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-				dp.SetFlags(pmetric.MetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				dp.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -243,7 +243,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-				dp.SetFlags(pmetric.MetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				dp.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -262,7 +262,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-				dp.SetFlags(pmetric.MetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				dp.Flags().SetNoRecordedValue(true)
 			},
 		},
 		{
@@ -279,7 +279,7 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.Attributes().InsertString("label_1", "1")
 				dp.Attributes().InsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-				dp.SetFlags(pmetric.MetricDataPointFlags(pmetric.MetricDataPointFlagNoRecordedValue))
+				dp.Flags().SetNoRecordedValue(true)
 				fillQuantileValue := func(pN, value float64, dest pmetric.ValueAtQuantile) {
 					dest.SetQuantile(pN)
 					dest.SetValue(value)

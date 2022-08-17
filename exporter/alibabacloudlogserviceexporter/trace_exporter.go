@@ -36,9 +36,10 @@ func newTracesExporter(set component.ExporterCreateSettings, cfg config.Exporter
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		l.pushTraceData)
 }
 

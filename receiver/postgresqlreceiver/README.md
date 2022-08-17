@@ -65,3 +65,32 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
+### Feature gate configurations
+
+#### Transition from metrics without "resource_attributes"
+
+All metrics are being transitioning to moving the metric attributes `table` and `database` to resource attributes `postgresql.table` and `postgresql.database` respectively. This effort is motivated via the resource specification found [in the metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/141a3ef0bf1eba0b6d260335bbe0ce7af9387cfc/specification/metrics/data-model.md#resource-attributes-1).
+
+Eventually the move will be finalized, but there will be a transitional period where metrics will emit with resource attributes behind a feature gate.
+
+##### Transition Schedule
+
+1. v0.58.0, August 2022:
+
+   - The version of the metrics receiver with resource attributes will be available via feature gates.
+   - The old metrics with `table` and `database` metric attributes are deprecated with a warning.
+   - `receiver.postgresql.emitMetricsWithResourceAttributes` is *disabled* by default.
+   - `receiver.postgresql.emitMetricsWithoutResourceAttributes` is *enabled* by default.
+
+2. v0.60.0, September 2022:
+
+   - The new collection method with resource attributes is enabled by default. The old metrics with the `table` and `database` metric attributes is disabled by default.
+   - `receiver.postgresql.emitMetricsWithResourceAttributes` is *enabled* by default.
+   - `receiver.postgresql.emitMetricsWithoutResourceAttributes` is *disabled* by default.
+
+3. v0.62.0, October 2022:
+
+   - The feature gates are removed.
+   - Metrics collection using resource attributes are always emitted
+   - Metrics collection using the `database` and `table` metric attributes are no longer available.

@@ -135,6 +135,7 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  # produced when receiver.kubeletstats.emitMetricsWithDirectionAttribute feature gate is enabled
   k8s.node.network.io:
     enabled: true
     description: "Node network IO"
@@ -144,6 +145,27 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.node.network.io.transmit:
+    enabled: true
+    description: "Node network IO transmitted"
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.node.network.io.receive:
+    enabled: true
+    description: "Node network IO received"
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithDirectionAttribute feature gate is enabled
   k8s.node.network.errors:
     enabled: true
     description: "Node network errors"
@@ -153,6 +175,26 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.node.network.errors.transmit:
+    enabled: true
+    description: "Node network transmission errors"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.node.network.errors.receive:
+    enabled: true
+    description: "Node network receive errors"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"
@@ -232,6 +274,7 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  # produced when receiver.kubeletstats.emitMetricsWithDirectionAttribute feature gate is enabled
   k8s.pod.network.io:
     enabled: true
     description: "Pod network IO"
@@ -241,6 +284,27 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.pod.network.io.transmit:
+    enabled: true
+    description: "Pod network IO transmitted"
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.pod.network.io.receive:
+    enabled: true
+    description: "Pod network IO received"
+    unit: By
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithDirectionAttribute feature gate is enabled
   k8s.pod.network.errors:
     enabled: true
     description: "Pod network errors"
@@ -250,6 +314,26 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: ["interface", "direction"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.pod.network.errors.transmit:
+    enabled: true
+    description: "Pod network transmission errors"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
+  # produced when receiver.kubeletstats.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  k8s.pod.network.errors.receive:
+    enabled: true
+    description: "Pod network receive errors"
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: ["interface"]
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"

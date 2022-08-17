@@ -17,11 +17,10 @@ package serialization // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 
-	"go.uber.org/zap"
-
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func serializeGaugePoint(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.NumberDataPoint) (string, error) {

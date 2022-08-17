@@ -24,7 +24,10 @@ import (
 )
 
 const (
-	typeStr             = "pulsar"
+	typeStr = "pulsar"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelInDevelopment
+
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
@@ -57,9 +60,9 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter),
-		component.WithMetricsExporter(f.createMetricsExporter),
-		component.WithLogsExporter(f.createLogsExporter),
+		component.WithTracesExporter(f.createTracesExporter, stability),
+		component.WithMetricsExporter(f.createMetricsExporter, stability),
+		component.WithLogsExporter(f.createLogsExporter, stability),
 	)
 }
 
@@ -84,7 +87,7 @@ type pulsarExporterFactory struct {
 }
 
 func (f *pulsarExporterFactory) createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -99,9 +102,10 @@ func (f *pulsarExporterFactory) createTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.tracesPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -113,7 +117,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 }
 
 func (f *pulsarExporterFactory) createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -128,9 +132,10 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.metricsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
@@ -142,7 +147,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 }
 
 func (f *pulsarExporterFactory) createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
@@ -157,9 +162,10 @@ func (f *pulsarExporterFactory) createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exp.logsDataPusher,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,

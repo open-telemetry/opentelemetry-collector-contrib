@@ -1,0 +1,1571 @@
+{
+   "resourceMetrics": [
+      {
+         "scopeMetrics": [
+            {
+               "scope": {
+                  "name": "otelcol/elasticsearchreceiver",
+                  "version": "latest"
+               },
+               "metrics": [
+                  {
+                     "description": "Estimated memory used for the operation.",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "request"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "in_flight_requests"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "model_inference"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "accounting"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "305152000",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "parent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "elasticsearch.breaker.memory.estimated",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Memory limit for the circuit breaker.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "322122547",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "request"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "214748364",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "536870912",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "in_flight_requests"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "268435456",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "model_inference"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "536870912",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "accounting"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "510027366",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "parent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "name": "elasticsearch.breaker.memory.limit",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Total number of times the circuit breaker has been triggered and prevented an out of memory error.",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "request"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "in_flight_requests"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "model_inference"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "accounting"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "parent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "name": "elasticsearch.breaker.tripped",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The number of evictions from the cache.",
+                     "name": "elasticsearch.node.cache.evictions",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "13212",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "938",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{evictions}"
+                  },
+                  {
+                     "description": "The size in bytes of the cache.",
+                     "name": "elasticsearch.node.cache.memory.usage",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "32",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "fielddata"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "394",
+                              "attributes": [
+                                 {
+                                    "key": "cache_name",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of open tcp connections for internal cluster communication.",
+                     "name": "elasticsearch.node.cluster.connections",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "100",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "The number of bytes received on the network for internal cluster communication.",
+                     "name": "elasticsearch.node.cluster.io.received",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "129384",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of bytes sent on the network for internal cluster communication.",
+                     "name": "elasticsearch.node.cluster.io.sent",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "157732",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of documents on the node.",
+                     "name": "elasticsearch.node.documents",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "100",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "200",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "deleted"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{documents}"
+                  },
+                  {
+                     "description": "The amount of disk space available across all file stores for this node.",
+                     "name": "elasticsearch.node.fs.disk.available",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "12293464064",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The total number of kilobytes read across all file stores for this node.",
+                     "name": "elasticsearch.node.disk.io.read",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "1617780",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The total number of kilobytes written across all file stores for this node.",
+                     "name": "elasticsearch.node.disk.io.write",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "602016",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of HTTP connections to the node.",
+                     "name": "elasticsearch.node.http.connections",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
+                     "description": "The number of open file descriptors held by the node.",
+                     "name": "elasticsearch.node.open_files",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "270",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{files}"
+                  },
+                  {
+                     "description": "The number of operations completed.",
+                     "name": "elasticsearch.node.operations.completed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "200",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "index"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "400",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "600",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "get"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "124",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "234",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "fetch"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "235",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "scroll"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "5234",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "suggest"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "5234",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "merge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "958",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "refresh"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "345",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "flush"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "warmer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "Time spent on operations.",
+                     "name": "elasticsearch.node.operations.time",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "300",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "index"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "500",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "500",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "get"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "2354",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "query"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "256",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "fetch"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "5234",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "scroll"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "2342",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "suggest"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "25345",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "merge"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "544",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "refresh"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "995",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "flush"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "664",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "warmer"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
+                  },
+                  {
+                     "description": "The size of the shards assigned to this node.",
+                     "name": "elasticsearch.node.shards.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "300",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.",
+                     "name": "elasticsearch.node.shards.data_set.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.",
+                     "name": "elasticsearch.node.shards.reserved.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Number of transaction log operations.",
+                     "name": "elasticsearch.node.translog.operations",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "Size of the transaction log.",
+                     "name": "elasticsearch.node.translog.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Size of uncommitted transaction log operations.",
+                     "name": "elasticsearch.node.translog.uncommitted.size",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "Recent CPU usage for the whole system, or -1 if not supported.",
+                     "name": "elasticsearch.os.cpu.usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "%"
+                  },
+                  {
+                     "description": "One-minute load average on the system (field is not present if one-minute load average is not available).",
+                     "name": "elasticsearch.os.cpu.load_avg.1m",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": "0.0",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "Five-minute load average on the system (field is not present if five-minute load average is not available).",
+                     "name": "elasticsearch.os.cpu.load_avg.5m",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": "0.02",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).",
+                     "name": "elasticsearch.os.cpu.load_avg.15m",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asDouble": "0.02",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "Amount of physical memory.",
+                     "name": "elasticsearch.os.memory",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "294109184",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "free"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "779632640",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "used"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The number of tasks finished by the thread pool.",
+                     "name": "elasticsearch.node.thread_pool.tasks.finished",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "6",
+                              "attributes": [
+                                 {
+                                    "key": "thread_pool_name",
+                                    "value": {
+                                       "stringValue": "analyze"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "completed"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "4",
+                              "attributes": [
+                                 {
+                                    "key": "thread_pool_name",
+                                    "value": {
+                                       "stringValue": "analyze"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "rejected"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "{tasks}"
+                  },
+                  {
+                     "description": "The number of queued tasks in the thread pool.",
+                     "name": "elasticsearch.node.thread_pool.tasks.queued",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "thread_pool_name",
+                                    "value": {
+                                       "stringValue": "analyze"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{tasks}"
+                  },
+                  {
+                     "description": "The number of threads in the thread pool.",
+                     "name": "elasticsearch.node.thread_pool.threads",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "thread_pool_name",
+                                    "value": {
+                                       "stringValue": "analyze"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "-2",
+                              "attributes": [
+                                 {
+                                    "key": "thread_pool_name",
+                                    "value": {
+                                       "stringValue": "analyze"
+                                    }
+                                 },
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "idle"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{threads}"
+                  },
+                  {
+                     "description": "The number of loaded classes",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "20695",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.classes.loaded",
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The total number of garbage collections that have occurred",
+                     "name": "jvm.gc.collections.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "20",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "young"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "old"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "1"
+                  },
+                  {
+                     "description": "The approximate accumulated collection elapsed time",
+                     "name": "jvm.gc.collections.elapsed",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "930",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "young"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "old"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ],
+                        "isMonotonic": true
+                     },
+                     "unit": "ms"
+                  },
+                  {
+                     "description": "The amount of memory that is guaranteed to be available for the heap",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "536870912",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.heap.committed",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The maximum amount of memory can be used for the heap",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "536870912",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.heap.max",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The current heap memory usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "305152000",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.heap.used",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The amount of memory that is guaranteed to be available for non-heap purposes",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "131792896",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.nonheap.committed",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The current non-heap memory usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "128825192",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.nonheap.used",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The maximum amount of memory can be used for the memory pool",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "636870912",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "young"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "736870912",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "survivor"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "536870912",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "old"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.pool.max",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The current memory pool memory usage",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "218103808",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "young"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "10485760",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "survivor"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "76562432",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "old"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.memory.pool.used",
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The current number of threads",
+                     "gauge": {
+                        "dataPoints": [
+                           {
+                              "asInt": "27",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "name": "jvm.threads.count",
+                     "unit": "1"
+                  }
+               ]
+            }
+         ],
+         "resource": {
+            "attributes": [
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
+               },
+               {
+                  "key": "elasticsearch.node.name",
+                  "value": {
+                     "stringValue": "917e13e55eed"
+                  }
+               }
+            ]
+         }
+      },
+      {
+         "scopeMetrics": [
+            {
+               "scope": {
+                  "name": "otelcol/elasticsearchreceiver",
+                  "version": "latest"
+               },
+               "metrics": [
+                  {
+                     "description": "The number of data nodes in the cluster.",
+                     "name": "elasticsearch.cluster.data_nodes",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "25",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The total number of nodes in the cluster.",
+                     "name": "elasticsearch.cluster.nodes",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "46",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of shards in the cluster.",
+                     "name": "elasticsearch.cluster.shards",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "45",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "active"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "initializing"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "10",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "relocating"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "state",
+                                    "value": {
+                                       "stringValue": "unassigned"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{shards}"
+                  },
+                  {
+                     "description": "The health status of the cluster.",
+                     "name": "elasticsearch.cluster.health",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "green"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "yellow"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "red"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{status}"
+                  }
+               ]
+            }
+         ],
+         "resource": {
+            "attributes": [
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
+               }
+            ]
+         }
+      }
+   ]
+}

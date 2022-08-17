@@ -30,8 +30,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTraceExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
+		component.WithTracesExporter(createTraceExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, component.StabilityLevelAlpha),
 	)
 }
 
@@ -50,21 +51,27 @@ func createDefaultConfig() config.Exporter {
 			Compression:     configcompression.Gzip,
 			WriteBufferSize: 512 * 1024,
 		},
+		Logs: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+			Headers:  map[string]string{},
+		},
+
 		PrivateKey: "",
 		AppName:    "",
 	}
 }
 
-func createTraceExporter(_ context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
+func createTraceExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	cfg := config.(*Config)
 	exporter, err := newCoralogixExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		config,
 		exporter.tracesPusher,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),
@@ -74,7 +81,7 @@ func createTraceExporter(_ context.Context, set component.ExporterCreateSettings
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -83,10 +90,35 @@ func createMetricsExporter(
 		return nil, err
 	}
 	oCfg := cfg.(*Config)
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		oce.pushMetrics,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
+		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
+		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(oce.start),
+		exporterhelper.WithShutdown(oce.shutdown),
+	)
+}
+
+func createLogsExporter(
+	ctx context.Context,
+	set component.ExporterCreateSettings,
+	cfg config.Exporter,
+) (component.LogsExporter, error) {
+	oce, err := newLogsExporter(cfg, set)
+	if err != nil {
+		return nil, err
+	}
+	oCfg := cfg.(*Config)
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
+		set,
+		cfg,
+		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
 		exporterhelper.WithRetry(oCfg.RetrySettings),

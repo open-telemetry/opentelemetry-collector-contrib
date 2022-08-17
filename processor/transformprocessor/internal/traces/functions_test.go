@@ -23,5 +23,5 @@ import (
 )
 
 func Test_DefaultFunctions(t *testing.T) {
-	assert.Equal(t, common.DefaultFunctions(), DefaultFunctions())
+	assert.Equal(t, common.Functions(), Functions())
 }

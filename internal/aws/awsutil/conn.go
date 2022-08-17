@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
@@ -79,7 +78,11 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 
 	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
 	// http2.ConfigureTransport will setup transport layer to use HTTP2
-	http2.ConfigureTransport(transport)
+	if err = http2.ConfigureTransport(transport); err != nil {
+		logger.Error("unable to configure http2 transport", zap.Error(err))
+		return nil, err
+	}
+
 	http := &http.Client{
 		Transport: transport,
 		Timeout:   time.Second * time.Duration(requestTimeout),
