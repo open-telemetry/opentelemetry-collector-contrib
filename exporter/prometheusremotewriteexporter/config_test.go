@@ -95,7 +95,7 @@ func Test_loadConfigDefaultAutomaticRename(t *testing.T) {
 					"X-Scope-OrgID":                   "234"},
 			},
 			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
-			TargetInfo: TargetInfo{
+			TargetInfo: &TargetInfo{
 				Enabled: true,
 			},
 		})

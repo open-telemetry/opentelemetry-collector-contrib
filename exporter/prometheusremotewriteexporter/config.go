@@ -90,6 +90,7 @@ func (cfg *Config) Validate() error {
 	if cfg.RemoteWriteQueue.NumConsumers < 0 {
 		return fmt.Errorf("remote write consumer number can't be negative")
 	}
+
 	if cfg.TargetInfo == nil {
 		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
