@@ -16,6 +16,8 @@ package tqlconfig // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import "strings"
 
+// Interpret converts the given DeclarativeQuery structs into TQL statement strings.
+// The returned statements can be safely passed to tql.ParseQueries.
 func Interpret(queries []DeclarativeQuery) []string {
 	strQueries := make([]string, 0, len(queries))
 	for _, query := range queries {

@@ -20,8 +20,6 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"go.uber.org/multierr"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
@@ -151,11 +149,6 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-func ParseDeclarativeQueries(queries []tqlconfig.DeclarativeQuery, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
-	statements := tqlconfig.Interpret(queries)
-	return ParseQueries(statements, functions, pathParser, enumParser)
-}
-
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
@@ -186,6 +179,13 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 		return nil, errors
 	}
 	return queries, nil
+}
+
+// ValidateStatement attempts to parse the given statement.  An error is returned if the statement is not a valid TQL
+// statement, and nil if the statement is successfully parsed.
+func ValidateStatement(statement string) error {
+	_, err := parseQuery(statement)
+	return err
 }
 
 var parser = newParser()

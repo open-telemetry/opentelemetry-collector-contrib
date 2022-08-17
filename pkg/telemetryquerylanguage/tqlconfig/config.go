@@ -39,30 +39,48 @@ type DeclarativeSignalConfig struct {
 }
 
 // DeclarativeQuery configures a specific TQL query to execute.
+// Function is the name of the function and is required for interpretation to work correctly.
+// Arguments are the arguments that are passed to the function and is optional.
+// Condition determines when the function should be called and is option. When not supplied the function will always be called.
 type DeclarativeQuery struct {
 	Function  string      `mapstructure:"function"`
 	Arguments []Argument  `mapstructure:"arguments"`
 	Condition *Expression `mapstructure:"condition"`
 }
 
+// Argument represents an argument of a function or condition.
+// Factory should be used to represent a factory function call.
+// String should be used to represent a string.  The value of String will be wrapped in "" during interpretation.
+// Other should be used for all other types.
 type Argument struct {
-	Invocation *Invocation `mapstructure:"invocation"`
-	String     *string     `mapstructure:"string"`
-	Other      *string     `mapstructure:"other"`
+	Factory *Factory `mapstructure:"factory"`
+	String  *string  `mapstructure:"string"`
+	Other   *string  `mapstructure:"other"`
 }
 
-type Invocation struct {
+// Factory should be used to represent a factory function call.
+// Function is the name of the function and is required for interpretation to work correctly.
+// Arguments are the arguments that are passed to the function and is optional.
+type Factory struct {
 	Function  string     `mapstructure:"function"`
 	Arguments []Argument `mapstructure:"arguments"`
 }
 
-type Comparison struct {
-	Arguments []Argument `mapstructure:"arguments"`
-	Operator  string     `mapstructure:"operator"`
-}
-
+// Expression represents a single, or group, of comparisons.
+// Whenever using an Expression, the expectation is that exactly one of Comparison, And, or Or is used.
+// Comparison represents a single comparison.
+// And represents a group of comparisons ANDed together.
+// Or represents a group of comparisons ORed together.
 type Expression struct {
 	Comparison *Comparison  `mapstructure:"comparison"`
 	And        []Expression `mapstructure:"and"`
 	Or         []Expression `mapstructure:"or"`
+}
+
+// Comparison represents a logical comparison.
+// Arguments is a list of exactly 2 Arguments, which represent the left and right side of a comparison.
+// Operator is the operator that compares the 2 arguments.
+type Comparison struct {
+	Arguments []Argument `mapstructure:"arguments"`
+	Operator  string     `mapstructure:"operator"`
 }

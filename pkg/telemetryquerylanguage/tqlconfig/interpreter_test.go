@@ -17,6 +17,7 @@ package tqlconfig
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
@@ -223,6 +224,9 @@ func Test_Interpret(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := Interpret(tt.query)
 			assert.EqualValues(t, tt.expected, actual)
+			for _, statement := range actual {
+				assert.NoError(t, tql.ValidateStatement(statement))
+			}
 		})
 	}
 }
