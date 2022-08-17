@@ -17,9 +17,8 @@ package storagetest
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/config"
-
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config"
 )
 
 func TestStorageHostWithNone(t *testing.T) {
