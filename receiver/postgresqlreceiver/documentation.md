@@ -63,4 +63,4 @@ metrics:
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
 | state | The tuple (row) state. | dead, live |
 | table | The schema name followed by the table name. |  |
-| wal_operation_lag (operation) | The operation which responsible for the lag. | flush, replay, write |
+| wal_operation_lag (operation) | The operation which is responsible for the lag. | flush, replay, write |

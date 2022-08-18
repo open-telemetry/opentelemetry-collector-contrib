@@ -60,7 +60,7 @@ attributes:
     enum: [dead, live]
   wal_operation_lag:
     value: operation
-    description: The operation which responsible for the lag.
+    description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]
 
