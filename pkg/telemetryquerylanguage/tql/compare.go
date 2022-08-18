@@ -16,6 +16,8 @@ package tql // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bytes"
+
+	"golang.org/x/exp/constraints"
 )
 
 // The functions in this file implement a general-purpose comparison of two
@@ -60,8 +62,26 @@ func (op compareOp) String() string {
 	}
 }
 
-// TODO: Many of these compare* functions for base types could be generic,
-// but we can't do that until we've committed to go 1.18.
+// comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
+// According to benchmarks, it's faster than explicit comparison functions for these types.
+func comparePrimitives[T constraints.Ordered](a T, b T, op compareOp) bool {
+	switch op {
+	case EQ:
+		return a == b
+	case NE:
+		return a != b
+	case LT:
+		return a < b
+	case LTE:
+		return a <= b
+	case GTE:
+		return a >= b
+	case GT:
+		return a > b
+	default:
+		return false
+	}
+}
 
 func compareBools(a bool, b bool, op compareOp) bool {
 	switch op {
@@ -77,63 +97,6 @@ func compareBools(a bool, b bool, op compareOp) bool {
 		return a || !b
 	case GT:
 		return a && !b
-	default:
-		return false
-	}
-}
-
-func compareInt64s(a int64, b int64, op compareOp) bool {
-	switch op {
-	case EQ:
-		return a == b
-	case NE:
-		return a != b
-	case LT:
-		return a < b
-	case LTE:
-		return a <= b
-	case GTE:
-		return a >= b
-	case GT:
-		return a > b
-	default:
-		return false
-	}
-}
-
-func compareFloat64s(a float64, b float64, op compareOp) bool {
-	switch op {
-	case EQ:
-		return a == b
-	case NE:
-		return a != b
-	case LT:
-		return a < b
-	case LTE:
-		return a <= b
-	case GTE:
-		return a >= b
-	case GT:
-		return a > b
-	default:
-		return false
-	}
-}
-
-func compareStrings(a string, b string, op compareOp) bool {
-	switch op {
-	case EQ:
-		return a == b
-	case NE:
-		return a != b
-	case LT:
-		return a < b
-	case LTE:
-		return a <= b
-	case GTE:
-		return a >= b
-	case GT:
-		return a > b
 	default:
 		return false
 	}
@@ -175,12 +138,12 @@ func compareBool(a bool, b any, op compareOp) bool {
 func compareString(a string, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case string:
-		return compareStrings(a, v, op)
+		return comparePrimitives(a, v, op)
 	case *string:
 		if v == nil {
 			return op == NE
 		}
-		return compareStrings(a, *v, op)
+		return comparePrimitives(a, *v, op)
 	default:
 		return invalidComparison("string to non-string", op)
 	}
@@ -203,40 +166,40 @@ func compareByte(a []byte, b any, op compareOp) bool {
 func compareInt64(a int64, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case int:
-		return compareInt64s(a, int64(v), op)
+		return comparePrimitives(a, int64(v), op)
 	case int32:
-		return compareInt64s(a, int64(v), op)
+		return comparePrimitives(a, int64(v), op)
 	case int64:
-		return compareInt64s(a, v, op)
+		return comparePrimitives(a, v, op)
 	case float32:
-		return compareFloat64s(float64(a), float64(v), op)
+		return comparePrimitives(float64(a), float64(v), op)
 	case float64:
-		return compareFloat64s(float64(a), v, op)
+		return comparePrimitives(float64(a), v, op)
 	case *int:
 		if v == nil {
 			return op == NE
 		}
-		return compareInt64s(a, int64(*v), op)
+		return comparePrimitives(a, int64(*v), op)
 	case *int32:
 		if v == nil {
 			return op == NE
 		}
-		return compareInt64s(a, int64(*v), op)
+		return comparePrimitives(a, int64(*v), op)
 	case *int64:
 		if v == nil {
 			return op == NE
 		}
-		return compareInt64s(a, *v, op)
+		return comparePrimitives(a, *v, op)
 	case *float32:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(float64(a), float64(*v), op)
+		return comparePrimitives(float64(a), float64(*v), op)
 	case *float64:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(float64(a), *v, op)
+		return comparePrimitives(float64(a), *v, op)
 	default:
 		return invalidComparison("int to non-numeric value", op)
 	}
@@ -245,44 +208,44 @@ func compareInt64(a int64, b any, op compareOp) bool {
 func compareFloat64(a float64, b any, op compareOp) bool {
 	switch v := b.(type) {
 	case int:
-		return compareFloat64s(a, float64(v), op)
+		return comparePrimitives(a, float64(v), op)
 	case int32:
-		return compareFloat64s(a, float64(v), op)
+		return comparePrimitives(a, float64(v), op)
 	case int64:
-		return compareFloat64s(a, float64(v), op)
+		return comparePrimitives(a, float64(v), op)
 	case float32:
-		return compareFloat64s(a, float64(v), op)
+		return comparePrimitives(a, float64(v), op)
 	case float64:
-		return compareFloat64s(a, v, op)
+		return comparePrimitives(a, v, op)
 	case *int:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(a, float64(*v), op)
+		return comparePrimitives(a, float64(*v), op)
 
 	case *int32:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(a, float64(*v), op)
+		return comparePrimitives(a, float64(*v), op)
 
 	case *int64:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(a, float64(*v), op)
+		return comparePrimitives(a, float64(*v), op)
 
 	case *float32:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(a, float64(*v), op)
+		return comparePrimitives(a, float64(*v), op)
 
 	case *float64:
 		if v == nil {
 			return op == NE
 		}
-		return compareFloat64s(a, *v, op)
+		return comparePrimitives(a, *v, op)
 	default:
 		return invalidComparison("float to non-numeric value", op)
 	}
