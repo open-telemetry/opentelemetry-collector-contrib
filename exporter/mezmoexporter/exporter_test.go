@@ -129,7 +129,8 @@ func createHTTPServer(params *testServerParams) testServer {
 
 		w.WriteHeader(statusCode)
 		if len(responseBody) > 0 {
-			w.Write([]byte(responseBody)) //nolint:errcheck
+			_, err = w.Write([]byte(responseBody))
+			assert.NoError(params.t, err)
 		}
 	}))
 

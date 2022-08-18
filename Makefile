@@ -390,6 +390,10 @@ clean:
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
 
+.PHONY: genconfigdocs
+genconfigdocs:
+	cd cmd/configschema && $(GOCMD) run ./docsgen all
+
 .PHONY: generate-all-labels
 generate-all-labels:
 	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
