@@ -1920,6 +1920,20 @@
                             }
                         },
                         {
+                            "name": "postgresql.connection.max",
+                            "description": "Configured maximum number of client connections allowed",
+                            "unit": "{connections}",
+                            "gauge": {
+                                "dataPoints": [
+                                    {
+                                        "startTimeUnixNano": "1660756211061376000",
+                                        "timeUnixNano": "1660756221071500000",
+                                        "asInt": "100"
+                                    }
+                                ]
+                            }
+                        },
+                        {
                             "name": "postgresql.database.count",
                             "description": "Number of user databases.",
                             "unit": "{databases}",
