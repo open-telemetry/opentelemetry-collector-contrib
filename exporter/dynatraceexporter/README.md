@@ -267,9 +267,7 @@ Default: `5000`
 
 When `resource_to_telemetry_conversion.enabled` is set to `true`, all resource
 attributes will be included as metric dimensions in Dynatrace in addition to the
-attributes present on the metric data point. In case of a conflict where
-the same key appears in resource attributes and metric data point attributes,
-the resource attribute takes precedence.
+attributes present on the metric data point.
 
 Default: `false`
 
