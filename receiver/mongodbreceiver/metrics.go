@@ -23,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -43,95 +42,76 @@ var documentMap = map[string]metadata.AttributeOperation{
 	"deleted":  metadata.AttributeOperationDelete,
 }
 
+const (
+	collectMetricError          = "failed to collect metric %s: %w"
+	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
+)
+
 // DBStats
 func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	collectionsPath := []string{"collections"}
-	collections, err := dig(doc, collectionsPath)
+	metricPath := []string{"collections"}
+	metricName := "mongodb.collection.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	collectionsVal, err := parseInt(collections)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbCollectionCountDataPoint(now, collectionsVal, dbName)
+	s.mb.RecordMongodbCollectionCountDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	dataSizePath := []string{"dataSize"}
-	dataSize, err := dig(doc, dataSizePath)
+	metricPath := []string{"dataSize"}
+	metricName := "mongodb.data.size"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	dataSizeVal, err := parseInt(dataSize)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbDataSizeDataPoint(now, dataSizeVal, dbName)
+	s.mb.RecordMongodbDataSizeDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	storageSizePath := []string{"storageSize"}
-	storageSize, err := dig(doc, storageSizePath)
+	metricPath := []string{"storageSize"}
+	metricName := "mongodb.storage.size"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	storageSizeValue, err := parseInt(storageSize)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbStorageSizeDataPoint(now, storageSizeValue, dbName)
+	s.mb.RecordMongodbStorageSizeDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	objectsPath := []string{"objects"}
-	objects, err := dig(doc, objectsPath)
+	metricPath := []string{"objects"}
+	metricName := "mongodb.object.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	objectsVal, err := parseInt(objects)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbObjectCountDataPoint(now, objectsVal, dbName)
+	s.mb.RecordMongodbObjectCountDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	indexesPath := []string{"indexes"}
-	indexes, err := dig(doc, indexesPath)
+	metricPath := []string{"indexes"}
+	metricName := "mongodb.index.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	indexesVal, err := parseInt(indexes)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbIndexCountDataPoint(now, indexesVal, dbName)
+	s.mb.RecordMongodbIndexCountDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	indexSizePath := []string{"indexSize"}
-	indexSize, err := dig(doc, indexSizePath)
+	metricPath := []string{"indexSize"}
+	metricName := "mongodb.index.size"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	indexSizeVal, err := parseInt(indexSize)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-	s.mb.RecordMongodbIndexSizeDataPoint(now, indexSizeVal, dbName)
+	s.mb.RecordMongodbIndexSizeDataPoint(now, val, dbName)
 }
 
 func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
@@ -139,18 +119,14 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
 	mongo44, _ := version.NewVersion("4.4")
 	if s.mongoVersion.LessThan(mongo44) {
-		extentsPath := []string{"numExtents"}
-		extents, err := dig(doc, extentsPath)
+		metricPath := []string{"numExtents"}
+		metricName := "mongodb.extent.count"
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 			return
 		}
-		extentsVal, err := parseInt(extents)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
-		s.mb.RecordMongodbExtentCountDataPoint(now, extentsVal, dbName)
+		s.mb.RecordMongodbExtentCountDataPoint(now, val, dbName)
 	}
 }
 
@@ -158,61 +134,50 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	mongo40, _ := version.NewVersion("4.0")
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
-		// Mongo version 4.0 added connections.active
+		// Mongo version 4.0 added active
 		// reference: https://www.mongodb.com/docs/v4.0/reference/command/serverStatus/#serverstatus.connections.active
 		if s.mongoVersion.LessThan(mongo40) && ctVal == "active" {
 			continue
 		}
-		connKey := []string{"connections", ctVal}
-		conn, err := dig(doc, connKey)
+		metricPath := []string{"connections", ctVal}
+		metricName := "mongodb.connection.count"
+		metricAttributes := fmt.Sprintf("%s, %s", ctVal, dbName)
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
-
-		connVal, err := parseInt(conn)
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-		s.mb.RecordMongodbConnectionCountDataPoint(now, connVal, dbName, ct)
+		s.mb.RecordMongodbConnectionCountDataPoint(now, val, dbName, ct)
 	}
 }
 
 func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	for mtVal, mt := range metadata.MapAttributeMemoryType {
-		memKey := []string{"mem", mtVal}
-		mem, err := dig(doc, memKey)
+		metricPath := []string{"mem", mtVal}
+		metricName := "mongodb.memory.usage"
+		metricAttributes := fmt.Sprintf("%s, %s", mtVal, dbName)
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-
-		memUsageMebi, err := parseInt(mem)
-		if err != nil {
-			errs.AddPartial(1, err)
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
 		// convert from mebibytes to bytes
-		memUsageBytes := memUsageMebi * int64(1048576)
+		memUsageBytes := val * int64(1048576)
 		s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, dbName, mt)
 	}
 }
 
 func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	// Collect document insert, delete, update
 	for operationKey, metadataKey := range documentMap {
-		docOperation, err := dig(doc, []string{"metrics", "document", operationKey})
+		metricPath := []string{"metrics", "document", operationKey}
+		metricName := "mongodb.document.operation.count"
+		metricAttributes := fmt.Sprintf("%s, %s", operationKey, dbName)
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
-			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operationKey))
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			continue
 		}
-		docOperationValue, err := parseInt(docOperation)
-		if err != nil {
-			errs.AddPartial(1, err)
-		} else {
-			s.mb.RecordMongodbDocumentOperationCountDataPoint(now, docOperationValue, dbName, metadataKey)
-		}
+		s.mb.RecordMongodbDocumentOperationCountDataPoint(now, val, dbName, metadataKey)
 	}
 }
 
@@ -226,8 +191,7 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
-		s.logger.Error("failed to find storage engine for session count", zap.Error(err))
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, errors.New("failed to find storage engine for session count"))
 		return
 	}
 	if storageEngine != "wiredTiger" {
@@ -235,37 +199,27 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 		return
 	}
 
-	sessionCount, err := dig(doc, []string{"wiredTiger", "session", "open session count"})
+	metricPath := []string{"wiredTiger", "session", "open session count"}
+	metricName := "mongodb.session.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-
-	sessionCountValue, err := parseInt(sessionCount)
-	if err != nil {
-		errs.AddPartial(1, err)
-	} else {
-		s.mb.RecordMongodbSessionCountDataPoint(now, sessionCountValue)
-	}
+	s.mb.RecordMongodbSessionCountDataPoint(now, val)
 }
 
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect Operations
 	for operationVal, operation := range metadata.MapAttributeOperation {
-		count, err := dig(doc, []string{"opcounters", operationVal})
+		metricPath := []string{"opcounters", operationVal}
+		metricName := "mongodb.operation.count"
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
-			s.logger.Error("failed to find operation", zap.Error(err), zap.String("operation", operationVal))
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
-		countVal, err := parseInt(count)
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-
-		s.mb.RecordMongodbOperationCountDataPoint(now, countVal, operation)
+		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
 	}
 }
 
@@ -280,8 +234,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
-		s.logger.Error("failed to find storage engine for cache operation", zap.Error(err))
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, errors.New("failed to find storage engine for cache operations"))
 		return
 	}
 	if storageEngine != "wiredTiger" {
@@ -289,106 +242,75 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 		return
 	}
 
-	canCalculateCacheHits := true
-
-	cacheMisses, err := dig(doc, []string{"wiredTiger", "cache", "pages read into cache"})
+	metricPath := []string{"wiredTiger", "cache", "pages read into cache"}
+	metricName := "mongodb.cache.operations"
+	cacheMissVal, err := collectMetric(doc, metricPath)
 	if err != nil {
-		s.logger.Error("failed to find cache misses", zap.Error(err))
-		errs.AddPartial(1, err)
+		errs.AddPartial(2, fmt.Errorf(collectMetricWithAttributes, metricName, "miss, hit", err))
+		return
+	}
+	s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissVal, metadata.AttributeTypeMiss)
+
+	cacheHitPath := []string{"wiredTiger", "cache", "pages requested from the cache"}
+	cacheHitName := "mongodb.cache.operations"
+	cacheHitVal, err := collectMetric(doc, cacheHitPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, cacheHitName, "hit", err))
 		return
 	}
 
-	cacheMissesValue, err := parseInt(cacheMisses)
-	if err != nil {
-		errs.AddPartial(1, err)
-	} else {
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissesValue, metadata.AttributeTypeMiss)
-	}
-
-	tcr, err := dig(doc, []string{"wiredTiger", "cache", "pages requested from the cache"})
-	if err != nil {
-		errs.AddPartial(1, err)
-		s.logger.Debug("failed to parse total cache requests unable to calculate cache hits", zap.Error(err))
-		canCalculateCacheHits = false
-	}
-
-	totalCacheReqs, err := parseInt(tcr)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-
-	if canCalculateCacheHits && totalCacheReqs > cacheMissesValue {
-		cacheHits := totalCacheReqs - cacheMissesValue
-		s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
-	}
+	cacheHits := cacheHitVal - cacheMissVal
+	s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
 }
 
 func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	val, err := dig(doc, []string{"globalLock", "totalTime"})
+	metricPath := []string{"globalLock", "totalTime"}
+	metricName := "mongodb.global_lock.time"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	parsedVal, err := parseInt(val)
-	if err != nil {
-		errs.AddPartial(1, err)
-		return
-	}
-
-	heldTimeMilliseconds := parsedVal / 1000
+	heldTimeMilliseconds := val / 1000
 	s.mb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
 }
 
 func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect cursor count
-	cursorCount, err := dig(doc, []string{"metrics", "cursor", "open", "total"})
+	metricPath := []string{"metrics", "cursor", "open", "total"}
+	metricName := "mongodb.cursor.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-
-	cursorCountValue, err := parseInt(cursorCount)
-	if err != nil {
-		errs.AddPartial(1, err)
-	}
-	s.mb.RecordMongodbCursorCountDataPoint(now, cursorCountValue)
+	s.mb.RecordMongodbCursorCountDataPoint(now, val)
 }
 
 func (s *mongodbScraper) recordCursorTimeoutCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect cursor timeout count
-	cursorTimeoutCount, err := dig(doc, []string{"metrics", "cursor", "timedOut"})
+	metricPath := []string{"metrics", "cursor", "timedOut"}
+	metricName := "mongodb.cursor.timeout.count"
+	val, err := collectMetric(doc, metricPath)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-
-	cursorTimeoutCountValue, err := parseInt(cursorTimeoutCount)
-	if err != nil {
-		errs.AddPartial(1, err)
-	}
-	s.mb.RecordMongodbCursorTimeoutCountDataPoint(now, cursorTimeoutCountValue)
+	s.mb.RecordMongodbCursorTimeoutCountDataPoint(now, val)
 }
 
 func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect network bytes receive, transmit, and request count
 	networkRecorderMap := map[string]func(pcommon.Timestamp, int64){
 		"bytesIn":     s.mb.RecordMongodbNetworkIoReceiveDataPoint,
 		"bytesOut":    s.mb.RecordMongodbNetworkIoTransmitDataPoint,
 		"numRequests": s.mb.RecordMongodbNetworkRequestCountDataPoint,
 	}
 	for networkKey, recorder := range networkRecorderMap {
-		network, err := dig(doc, []string{"network", networkKey})
+		metricPath := []string{"network", networkKey}
+		val, err := collectMetric(doc, metricPath)
 		if err != nil {
-			errs.AddPartial(1, err)
-			s.logger.Error("failed to find network", zap.Error(err), zap.String("network", networkKey))
+			errs.AddPartial(1, fmt.Errorf(collectMetricError, networkKey, err))
+			continue
 		}
-		networkValue, err := parseInt(network)
-		if err != nil {
-			errs.AddPartial(1, err)
-		} else {
-			recorder(now, networkValue)
-		}
+		recorder(now, val)
 	}
 }
 
@@ -396,18 +318,21 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	// Collect the index access given a collection and database if version is >= 3.2
 	// https://www.mongodb.com/docs/v3.2/reference/operator/aggregation/indexStats/
-	mongo40, _ := version.NewVersion("3.2")
-	if s.mongoVersion.GreaterThanOrEqual(mongo40) {
+	mongo32, _ := version.NewVersion("3.2")
+	if s.mongoVersion.GreaterThanOrEqual(mongo32) {
+		metricName := "mongodb.index.access.count"
 		var indexAccessTotal int64
 		for _, doc := range documents {
+			metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
 			indexAccess, ok := doc["accesses"].(bson.M)["ops"]
 			if !ok {
-				errs.AddPartial(1, errors.New("could not find key for metric"))
+				err := errors.New("could not find key for index access metric")
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				return
 			}
 			indexAccessValue, err := parseInt(indexAccess)
 			if err != nil {
-				errs.AddPartial(1, err)
+				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				return
 			}
 			indexAccessTotal += indexAccessValue
@@ -418,23 +343,24 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 
 // Top Stats
 func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	// Collect the total operation time
+	metricName := "mongodb.operation.time"
 	collectionPathNames, err := digForCollectionPathNames(doc)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(len(operationsMap), fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
 	operationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames, operationsMap)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(len(operationsMap), fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
 
 	for operationName, metadataOperationName := range operationsMap {
 		operationValue, ok := operationTimeValues[operationName]
 		if !ok {
-			errs.AddPartial(1, errors.New("could not find key for metric"))
-			return
+			err := errors.New("could not find key for operation name")
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationName, err))
+			continue
 		}
 		s.mb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
 	}
@@ -474,6 +400,14 @@ func digForCollectionPathNames(document bson.M) ([]string, error) {
 		}
 	}
 	return collectionPathNames, nil
+}
+
+func collectMetric(document bson.M, path []string) (int64, error) {
+	metric, err := dig(document, path)
+	if err != nil {
+		return 0, err
+	}
+	return parseInt(metric)
 }
 
 func dig(document bson.M, path []string) (interface{}, error) {
