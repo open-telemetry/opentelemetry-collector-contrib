@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mongodb-forks/digest v1.0.4
 	go.mongodb.org/atlas v0.16.0
-	go.opentelemetry.io/collector v0.58.0
+	go.opentelemetry.io/collector v0.58.1-0.20220818011719-109c917e75b0
 	go.uber.org/zap v1.22.0
 )
 
@@ -36,7 +36,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.48.0 // indirect
@@ -47,7 +47,7 @@ require (
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.58.0
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220818011719-109c917e75b0
 	go.uber.org/multierr v1.8.0
 )
 

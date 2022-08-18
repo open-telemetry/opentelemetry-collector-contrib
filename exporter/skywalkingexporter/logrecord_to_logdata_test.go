@@ -64,7 +64,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 		logRecord.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
 		logRecord.SetFlags(uint32(0x01))
 		logRecord.SetSeverityText("INFO")
-		logRecord.SetSeverityNumber(plog.SeverityNumberINFO)
+		logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 		logRecord.SetTimestamp(ts)
 		switch i {
 		case 0:

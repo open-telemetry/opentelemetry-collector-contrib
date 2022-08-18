@@ -6,9 +6,9 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.0
-	go.opentelemetry.io/collector/pdata v0.58.0
-	go.opentelemetry.io/collector/semconv v0.58.0
+	go.opentelemetry.io/collector v0.58.1-0.20220818011719-109c917e75b0
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220818011719-109c917e75b0
+	go.opentelemetry.io/collector/semconv v0.58.1-0.20220818011719-109c917e75b0
 	go.uber.org/multierr v1.8.0
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
@@ -48,7 +48,7 @@ require (
 	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220218161850-94dd64e39d7c // indirect

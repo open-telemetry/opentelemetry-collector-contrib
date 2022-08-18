@@ -200,7 +200,7 @@ func TestConvert(t *testing.T) {
 
 	lr := logs.At(0)
 
-	assert.Equal(t, plog.SeverityNumberERROR, lr.SeverityNumber())
+	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
 	assert.Equal(t, "Error", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
@@ -758,31 +758,31 @@ func TestConvertSeverity(t *testing.T) {
 		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, plog.SeverityNumberUNDEFINED, ""},
-		{entry.Trace, plog.SeverityNumberTRACE, "Trace"},
-		{entry.Trace2, plog.SeverityNumberTRACE2, "Trace2"},
-		{entry.Trace3, plog.SeverityNumberTRACE3, "Trace3"},
-		{entry.Trace4, plog.SeverityNumberTRACE4, "Trace4"},
-		{entry.Debug, plog.SeverityNumberDEBUG, "Debug"},
-		{entry.Debug2, plog.SeverityNumberDEBUG2, "Debug2"},
-		{entry.Debug3, plog.SeverityNumberDEBUG3, "Debug3"},
-		{entry.Debug4, plog.SeverityNumberDEBUG4, "Debug4"},
-		{entry.Info, plog.SeverityNumberINFO, "Info"},
-		{entry.Info2, plog.SeverityNumberINFO2, "Info2"},
-		{entry.Info3, plog.SeverityNumberINFO3, "Info3"},
-		{entry.Info4, plog.SeverityNumberINFO4, "Info4"},
-		{entry.Warn, plog.SeverityNumberWARN, "Warn"},
-		{entry.Warn2, plog.SeverityNumberWARN2, "Warn2"},
-		{entry.Warn3, plog.SeverityNumberWARN3, "Warn3"},
-		{entry.Warn4, plog.SeverityNumberWARN4, "Warn4"},
-		{entry.Error, plog.SeverityNumberERROR, "Error"},
-		{entry.Error2, plog.SeverityNumberERROR2, "Error2"},
-		{entry.Error3, plog.SeverityNumberERROR3, "Error3"},
-		{entry.Error4, plog.SeverityNumberERROR4, "Error4"},
-		{entry.Fatal, plog.SeverityNumberFATAL, "Fatal"},
-		{entry.Fatal2, plog.SeverityNumberFATAL2, "Fatal2"},
-		{entry.Fatal3, plog.SeverityNumberFATAL3, "Fatal3"},
-		{entry.Fatal4, plog.SeverityNumberFATAL4, "Fatal4"},
+		{entry.Default, plog.SeverityNumberUndefined, ""},
+		{entry.Trace, plog.SeverityNumberTrace, "Trace"},
+		{entry.Trace2, plog.SeverityNumberTrace2, "Trace2"},
+		{entry.Trace3, plog.SeverityNumberTrace3, "Trace3"},
+		{entry.Trace4, plog.SeverityNumberTrace4, "Trace4"},
+		{entry.Debug, plog.SeverityNumberDebug, "Debug"},
+		{entry.Debug2, plog.SeverityNumberDebug2, "Debug2"},
+		{entry.Debug3, plog.SeverityNumberDebug3, "Debug3"},
+		{entry.Debug4, plog.SeverityNumberDebug4, "Debug4"},
+		{entry.Info, plog.SeverityNumberInfo, "Info"},
+		{entry.Info2, plog.SeverityNumberInfo2, "Info2"},
+		{entry.Info3, plog.SeverityNumberInfo3, "Info3"},
+		{entry.Info4, plog.SeverityNumberInfo4, "Info4"},
+		{entry.Warn, plog.SeverityNumberWarn, "Warn"},
+		{entry.Warn2, plog.SeverityNumberWarn2, "Warn2"},
+		{entry.Warn3, plog.SeverityNumberWarn3, "Warn3"},
+		{entry.Warn4, plog.SeverityNumberWarn4, "Warn4"},
+		{entry.Error, plog.SeverityNumberError, "Error"},
+		{entry.Error2, plog.SeverityNumberError2, "Error2"},
+		{entry.Error3, plog.SeverityNumberError3, "Error3"},
+		{entry.Error4, plog.SeverityNumberError4, "Error4"},
+		{entry.Fatal, plog.SeverityNumberFatal, "Fatal"},
+		{entry.Fatal2, plog.SeverityNumberFatal2, "Fatal2"},
+		{entry.Fatal3, plog.SeverityNumberFatal3, "Fatal3"},
+		{entry.Fatal4, plog.SeverityNumberFatal4, "Fatal4"},
 	}
 
 	for _, tc := range cases {

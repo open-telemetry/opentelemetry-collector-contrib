@@ -34,8 +34,8 @@ func newSeverityNumberMatcher(minSeverity plog.SeverityNumber, matchUndefined bo
 }
 
 func (snm severityNumberMatcher) MatchLogRecord(lr plog.LogRecord, _ pcommon.Resource, _ pcommon.InstrumentationScope) bool {
-	// behavior on SeverityNumberUNDEFINED is explicitly defined by matchUndefined
-	if lr.SeverityNumber() == plog.SeverityNumberUNDEFINED {
+	// behavior on SeverityNumberUndefined is explicitly defined by matchUndefined
+	if lr.SeverityNumber() == plog.SeverityNumberUndefined {
 		return snm.matchUndefined
 	}
 

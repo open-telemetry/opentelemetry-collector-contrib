@@ -17,9 +17,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.58.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.0
-	go.opentelemetry.io/collector/pdata v0.58.0
-	go.opentelemetry.io/collector/semconv v0.58.0
+	go.opentelemetry.io/collector v0.58.1-0.20220818011719-109c917e75b0
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220818011719-109c917e75b0
+	go.opentelemetry.io/collector/semconv v0.58.1-0.20220818011719-109c917e75b0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.22.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
@@ -99,7 +99,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2 // indirect
-	golang.org/x/sys v0.0.0-20220624220833-87e55d714810 // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect

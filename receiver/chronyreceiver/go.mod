@@ -6,8 +6,8 @@ require (
 	github.com/facebook/time v0.0.0-20220713225404-f7a0d7702d50
 	github.com/stretchr/testify v1.8.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector v0.58.0
-	go.opentelemetry.io/collector/pdata v0.58.0
+	go.opentelemetry.io/collector v0.58.1-0.20220818011719-109c917e75b0
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220818011719-109c917e75b0
 	go.uber.org/multierr v1.8.0
 )
 
@@ -33,7 +33,7 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20220524220425-1d687d428aca // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	google.golang.org/grpc v1.48.0 // indirect
