@@ -21,12 +21,11 @@ import (
 	"regexp"
 	"strings"
 
-	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"go.opentelemetry.io/collector/confmap"
+	"gopkg.in/yaml.v2"
 )
 
 const (
