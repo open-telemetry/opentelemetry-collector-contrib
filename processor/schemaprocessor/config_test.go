@@ -15,15 +15,14 @@
 package schemaprocessor
 
 import (
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
 )
@@ -31,18 +30,18 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err, "Must not error on creating Nop factories")
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[typeStr] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(path.Join("testdata", "config.yml"), factories)
-	require.NoError(t, err, "Must not error when loading configuration")
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "with-all-options").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-	pcfg := cfg.Processors[config.NewComponentIDWithName(typeStr, "with-all-options")]
-	assert.Equal(t, pcfg, &Config{
-		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentIDWithName(typeStr, "with-all-options")),
+	assert.Equal(t, &Config{
+		ProcessorSettings:  config.NewProcessorSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
 		Prefetch: []string{
 			"https://opentelemetry.io/schemas/1.9.0",
@@ -51,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 			"https://opentelemetry.io/schemas/1.4.2",
 			"https://example.com/otel/schemas/1.2.0",
 		},
-	})
+	}, cfg)
 }
 
 func TestConfigurationValidation(t *testing.T) {
