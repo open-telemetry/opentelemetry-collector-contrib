@@ -15,16 +15,9 @@
 package storagetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 
 import (
-	"context"
-	"testing"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.uber.org/zap/zaptest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 )
 
 type StorageHost struct {
@@ -32,32 +25,31 @@ type StorageHost struct {
 	extensions map[config.ComponentID]component.Extension
 }
 
-func (h StorageHost) GetExtensions() map[config.ComponentID]component.Extension {
-	return h.extensions
-}
-
-func NewStorageHost(t *testing.T, directory string, extensionNames ...string) StorageHost {
-	h := StorageHost{
+func NewStorageHost() *StorageHost {
+	return &StorageHost{
 		Host:       componenttest.NewNopHost(),
 		extensions: make(map[config.ComponentID]component.Extension),
 	}
+}
 
-	for _, name := range extensionNames {
-		h.extensions[newTestEntity(name)] = NewTestExtension(t, directory)
-	}
+func (h *StorageHost) WithInMemoryStorageExtension(name string) *StorageHost {
+	ext := NewInMemoryStorageExtension(name)
+	h.extensions[ext.ID()] = ext
 	return h
 }
 
-func NewTestExtension(t *testing.T, directory string) storage.Extension {
-	f := filestorage.NewFactory()
-	cfg := f.CreateDefaultConfig().(*filestorage.Config)
-	cfg.Directory = directory
-	params := component.ExtensionCreateSettings{TelemetrySettings: component.TelemetrySettings{Logger: zaptest.NewLogger(t)}}
-	extension, _ := f.CreateExtension(context.Background(), params, cfg)
-	se, _ := extension.(storage.Extension)
-	return se
+func (h *StorageHost) WithFileBackedStorageExtension(name, storageDir string) *StorageHost {
+	ext := NewFileBackedStorageExtension(name, storageDir)
+	h.extensions[ext.ID()] = ext
+	return h
 }
 
-func newTestEntity(name string) config.ComponentID {
-	return config.NewComponentIDWithName("nop", name)
+func (h *StorageHost) WithNonStorageExtension(name string) *StorageHost {
+	ext := NewNonStorageExtension(name)
+	h.extensions[ext.ID()] = ext
+	return h
+}
+
+func (h *StorageHost) GetExtensions() map[config.ComponentID]component.Extension {
+	return h.extensions
 }
