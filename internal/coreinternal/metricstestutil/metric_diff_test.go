@@ -68,3 +68,29 @@ func TestHistogram(t *testing.T) {
 	diffs := diffMetricData(expected, actual)
 	assert.Len(t, diffs, 3)
 }
+
+func TestAttributes(t *testing.T) {
+	cfg1 := goldendataset.DefaultCfg()
+	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.NumPtLabels = 1
+	expected := goldendataset.MetricsFromCfg(cfg1)
+	cfg2 := goldendataset.DefaultCfg()
+	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.NumPtLabels = 2
+	actual := goldendataset.MetricsFromCfg(cfg2)
+	diffs := DiffMetrics(nil, expected, actual)
+	assert.Len(t, diffs, 1)
+}
+
+func TestExponentialHistogram(t *testing.T) {
+	cfg1 := goldendataset.DefaultCfg()
+	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.PtVal = 1
+	expected := goldendataset.MetricsFromCfg(cfg1)
+	cfg2 := goldendataset.DefaultCfg()
+	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.PtVal = 3
+	actual := goldendataset.MetricsFromCfg(cfg2)
+	diffs := DiffMetrics(nil, expected, actual)
+	assert.Len(t, diffs, 3)
+}
