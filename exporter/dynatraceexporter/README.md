@@ -275,7 +275,7 @@ should correctly set temporality for all metrics.
 You can check the [spec compliance matrix](https://github.com/open-telemetry/opentelemetry-specification/blob/main/spec-compliance-matrix.md#environment-variables)
 if you are unsure if the SDK you are using supports this configuration.
 You can read more about this and other configurations at
-https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration.
+[OpenTelemetry Metrics Exporter - OTLP](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk_exporters/otlp.md#additional-configuration).
 
 ## Considerations when exporting Cumulative Data Points
 
