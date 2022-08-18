@@ -111,7 +111,7 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+3)
+		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+4)
 		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
