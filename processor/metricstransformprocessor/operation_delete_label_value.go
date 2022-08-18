@@ -15,29 +15,9 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-// deleteLabelValueOp deletes a label value and all data associated with it
-func (mtp *metricsTransformProcessor) deleteLabelValueOp(metric *metricspb.Metric, mtpOp internalOperation) {
-	op := mtpOp.configOperation
-	for idx, label := range metric.MetricDescriptor.LabelKeys {
-		if label.Key != op.Label {
-			continue
-		}
-
-		newTimeseries := make([]*metricspb.TimeSeries, 0)
-		for _, timeseries := range metric.Timeseries {
-			if timeseries.LabelValues[idx].Value == op.LabelValue {
-				continue
-			}
-			newTimeseries = append(newTimeseries, timeseries)
-		}
-		metric.Timeseries = newTimeseries
-	}
-}
 
 // deleteLabelValueOp deletes a label value and all data associated with it
 func deleteLabelValueOp(metric pmetric.Metric, mtpOp internalOperation) {
