@@ -298,11 +298,7 @@ func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
 }
 
 func (p *processor) updateSeries(key string, dimensions pcommon.Map) {
-	if series, ok := p.keyToMetric[key]; ok {
-		series.lastUpdated = time.Now().UnixMilli()
-		return
-	}
-
+	// Overwrite the series if it already exists
 	p.keyToMetric[key] = metricSeries{
 		dimensions:  dimensions,
 		lastUpdated: time.Now().UnixMilli(),
