@@ -22,6 +22,9 @@ The `uri_parser` operator parses the string-type field selected by `parse_from` 
 | `on_error`    | `send`           | The behavior of the operator if it encounters an error. See [on_error](../types/on_error.md). |
 | `if`          |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
+### Embedded Operations
+
+The `uri_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
 
 ### Output Fields
 

@@ -27,6 +27,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -49,7 +51,9 @@ func TestPrometheusExporter(t *testing.T) {
 					"foo0":  "bar0",
 					"code0": "one0",
 				},
-				Endpoint:         ":8999",
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":8999",
+				},
 				SendTimestamps:   false,
 				MetricExpiration: 60 * time.Second,
 			},
@@ -57,7 +61,9 @@ func TestPrometheusExporter(t *testing.T) {
 		{
 			config: &Config{
 				ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-				Endpoint:         ":88999",
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: ":88999",
+				},
 			},
 			wantStartErr: "listen tcp: address 88999: invalid port",
 		},
@@ -99,6 +105,91 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 }
 
+func TestPrometheusExporter_WithTLS(t *testing.T) {
+	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Namespace:        "test",
+		ConstLabels: map[string]string{
+			"foo2":  "bar2",
+			"code2": "one2",
+		},
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+			TLSSetting: &configtls.TLSServerSetting{
+				TLSSetting: configtls.TLSSetting{
+					CertFile: "./testdata/certs/server.crt",
+					KeyFile:  "./testdata/certs/server.key",
+					CAFile:   "./testdata/certs/ca.crt",
+				},
+			},
+		},
+		SendTimestamps:   true,
+		MetricExpiration: 120 * time.Minute,
+		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
+			Enabled: true,
+		},
+	}
+	factory := NewFactory()
+	set := componenttest.NewNopExporterCreateSettings()
+	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	tlscs := configtls.TLSClientSetting{
+		TLSSetting: configtls.TLSSetting{
+			CAFile:   "./testdata/certs/ca.crt",
+			CertFile: "./testdata/certs/client.crt",
+			KeyFile:  "./testdata/certs/client.key",
+		},
+		ServerName: "localhost",
+	}
+	tls, err := tlscs.LoadTLSConfig()
+	assert.NoError(t, err)
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tls,
+		},
+	}
+
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+		// trigger a get so that the server cleans up our keepalive socket
+		_, err = httpClient.Get("https://localhost:7777/metrics")
+		require.NoError(t, err)
+	})
+
+	assert.NotNil(t, exp)
+
+	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
+
+	md := testdata.GenerateMetricsOneMetric()
+	assert.NotNil(t, md)
+
+	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
+
+	rsp, err := httpClient.Get("https://localhost:7777/metrics")
+	require.NoError(t, err, "Failed to perform a scrape")
+
+	if g, w := rsp.StatusCode, 200; g != w {
+		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
+	}
+
+	blob, _ := io.ReadAll(rsp.Body)
+	_ = rsp.Body.Close()
+
+	want := []string{
+		`# HELP test_counter_int`,
+		`# TYPE test_counter_int counter`,
+		`test_counter_int{code2="one2",foo2="bar2",label_1="label-value-1",resource_attr="resource-attr-val-1"} 123 1581452773000`,
+		`test_counter_int{code2="one2",foo2="bar2",label_2="label-value-2",resource_attr="resource-attr-val-1"} 456 1581452773000`,
+	}
+
+	for _, w := range want {
+		if !strings.Contains(string(blob), w) {
+			t.Errorf("Missing %v from response:\n%v", w, string(blob))
+		}
+	}
+}
+
 // See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4986
 func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	cfg := &Config{
@@ -108,7 +199,9 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
@@ -189,7 +282,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 			"foo1":  "bar1",
 			"code1": "one1",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		MetricExpiration: 120 * time.Minute,
 	}
 
@@ -264,7 +359,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 	}
@@ -340,7 +437,9 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 			"foo2":  "bar2",
 			"code2": "one2",
 		},
-		Endpoint:         ":7777",
+		HTTPServerSettings: confighttp.HTTPServerSettings{
+			Endpoint: ":7777",
+		},
 		SendTimestamps:   true,
 		MetricExpiration: 120 * time.Minute,
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{

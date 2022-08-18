@@ -35,13 +35,18 @@ type databaseName string
 // i.e. database1|table2
 type tableIdentifier string
 
+// indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
+type indexIdentifer string
+
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
+	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -205,14 +210,16 @@ func (c *postgreSQLClient) getDatabaseSize(ctx context.Context, databases []stri
 
 // tableStats contains a result for a row of the getDatabaseTableMetrics result
 type tableStats struct {
-	database string
-	table    string
-	live     int64
-	dead     int64
-	inserts  int64
-	upd      int64
-	del      int64
-	hotUpd   int64
+	database    string
+	table       string
+	live        int64
+	dead        int64
+	inserts     int64
+	upd         int64
+	del         int64
+	hotUpd      int64
+	size        int64
+	vacuumCount int64
 }
 
 func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error) {
@@ -222,7 +229,9 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_ins AS ins,
 	n_tup_upd AS upd,
 	n_tup_del AS del,
-	n_tup_hot_upd AS hot_upd
+	n_tup_hot_upd AS hot_upd,
+	pg_relation_size(relid) AS table_size,
+	vacuum_count
 	FROM pg_stat_user_tables;`
 
 	ts := map[tableIdentifier]tableStats{}
@@ -233,20 +242,22 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var table string
-		var live, dead, ins, upd, del, hotUpd int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd)
+		var live, dead, ins, upd, del, hotUpd, tableSize, vacuumCount int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
 		ts[tableKey(db, table)] = tableStats{
-			database: db,
-			table:    table,
-			live:     live,
-			inserts:  ins,
-			upd:      upd,
-			del:      del,
-			hotUpd:   hotUpd,
+			database:    db,
+			table:       table,
+			live:        live,
+			inserts:     ins,
+			upd:         upd,
+			del:         del,
+			hotUpd:      hotUpd,
+			size:        tableSize,
+			vacuumCount: vacuumCount,
 		}
 	}
 	return ts, errors
@@ -307,6 +318,115 @@ func (c *postgreSQLClient) getBlocksReadByTable(ctx context.Context, db string) 
 	return tios, errors
 }
 
+type indexStat struct {
+	index    string
+	table    string
+	database string
+	size     int64
+	scans    int64
+}
+
+func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error) {
+	query := `SELECT relname, indexrelname,
+	pg_relation_size(indexrelid) AS index_size,
+	idx_scan
+	FROM pg_stat_user_indexes;`
+
+	stats := map[indexIdentifer]indexStat{}
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var errs []error
+	for rows.Next() {
+		var (
+			table, index          string
+			indexSize, indexScans int64
+		)
+		err := rows.Scan(&table, &index, &indexSize, &indexScans)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		stats[indexKey(database, table, index)] = indexStat{
+			index:    index,
+			table:    table,
+			database: database,
+			size:     indexSize,
+			scans:    indexScans,
+		}
+	}
+	return stats, multierr.Combine(errs...)
+}
+
+type bgStat struct {
+	checkpointsReq       int64
+	checkpointsScheduled int64
+	checkpointWriteTime  int64
+	checkpointSyncTime   int64
+	bgWrites             int64
+	backendWrites        int64
+	bufferBackendWrites  int64
+	bufferFsyncWrites    int64
+	bufferCheckpoints    int64
+	buffersAllocated     int64
+	maxWritten           int64
+}
+
+func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	query := `SELECT 
+	checkpoints_req AS checkpoint_req,
+	checkpoints_timed AS checkpoint_scheduled,
+	checkpoint_write_time AS checkpoint_duration_write,
+	checkpoint_sync_time AS checkpoint_duration_sync,
+	buffers_clean AS bg_writes,
+	buffers_backend AS backend_writes,
+	buffers_backend_fsync AS buffers_written_fsync,
+	buffers_checkpoint AS buffers_checkpoints,
+	buffers_alloc AS buffers_allocated,
+	maxwritten_clean AS maxwritten_count
+	FROM pg_stat_bgwriter;`
+
+	row := c.client.QueryRowContext(ctx, query)
+	var (
+		checkpointsReq, checkpointsScheduled               int64
+		checkpointSyncTime, checkpointWriteTime            int64
+		bgWrites, bufferCheckpoints, bufferAllocated       int64
+		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
+	)
+	err := row.Scan(
+		&checkpointsReq,
+		&checkpointsScheduled,
+		&checkpointWriteTime,
+		&checkpointSyncTime,
+		&bgWrites,
+		&bufferBackendWrites,
+		&bufferFsyncWrites,
+		&bufferCheckpoints,
+		&bufferAllocated,
+		&maxWritten,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &bgStat{
+		checkpointsReq:       checkpointsReq,
+		checkpointsScheduled: checkpointsScheduled,
+		checkpointWriteTime:  checkpointWriteTime,
+		checkpointSyncTime:   checkpointSyncTime,
+		bgWrites:             bgWrites,
+		backendWrites:        bufferBackendWrites,
+		bufferBackendWrites:  bufferBackendWrites,
+		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferCheckpoints:    bufferCheckpoints,
+		buffersAllocated:     bufferAllocated,
+		maxWritten:           maxWritten,
+	}, nil
+}
+
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {
 	query := `SELECT datname FROM pg_database
 	WHERE datistemplate = false;`
@@ -349,4 +469,8 @@ func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) 
 
 func tableKey(database, table string) tableIdentifier {
 	return tableIdentifier(fmt.Sprintf("%s|%s", database, table))
+}
+
+func indexKey(database, table, index string) indexIdentifer {
+	return indexIdentifer(fmt.Sprintf("%s|%s|%s", database, table, index))
 }

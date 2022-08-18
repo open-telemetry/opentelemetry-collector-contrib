@@ -6,8 +6,8 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/google/go-cmp v0.5.8
 	github.com/jaegertracing/jaeger v1.37.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.58.0
 	github.com/openzipkin/zipkin-go v0.4.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector/pdata v0.58.0
@@ -30,7 +30,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.22.0 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect

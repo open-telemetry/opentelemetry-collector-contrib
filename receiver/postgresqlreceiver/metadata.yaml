@@ -7,8 +7,31 @@ resource_attributes:
   postgresql.table.name:
     description: The schema name followed by the table name.
     type: string
+  postgresql.index.name:
+    description: The name of the index on a table.
+    type: string
 
 attributes:
+  bg_buffer_source:
+    description: The source of a buffer write.
+    enum:
+      - backend
+      - backend_fsync
+      - checkpoints
+      - bgwriter
+    value: source
+  bg_checkpoint_type:
+    description: The type of checkpoint state.
+    enum:
+      - requested
+      - scheduled
+    value: type
+  bg_duration_type:
+    description: The type of time spent during the checkpoint.
+    enum:
+      - sync
+      - write
+    value: type
   database:
     description: The name of the database.
     type: string
@@ -34,6 +57,52 @@ attributes:
     enum: [dead, live]
 
 metrics:
+  postgresql.bgwriter.buffers.allocated:
+    attributes: []
+    description: Number of buffers allocated.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{buffers}"
+  postgresql.bgwriter.buffers.writes:
+    attributes:
+      - bg_buffer_source
+    description: Number of buffers written.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{buffers}"
+  postgresql.bgwriter.checkpoint.count:
+    attributes:
+      - bg_checkpoint_type
+    description: The number of checkpoints performed.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{checkpoints}"
+  postgresql.bgwriter.duration:
+    attributes:
+      - bg_duration_type
+    description: Total time spent writing and syncing files to disk by checkpoints.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: ms
+  postgresql.bgwriter.maxwritten:
+    description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
@@ -52,6 +121,15 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database]
+  postgresql.database.count:
+    attributes: []
+    description: Number of user databases.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+    unit: "{databases}"
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -79,6 +157,22 @@ metrics:
       monotonic: false
       aggregation: cumulative
     attributes: [database, table, state]
+  postgresql.index.scans:
+    attributes: []
+    description: The number of index scans on a table.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int
+    unit: "{scans}"
+  postgresql.index.size:
+    attributes: []
+    description: The size of the index on disk.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "By"
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
@@ -97,3 +191,29 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [database]
+  postgresql.table.count:
+    attributes: []
+    description: Number of user tables in a database.
+    enabled: true
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+  postgresql.table.size:
+    attributes: []
+    description: Disk space used by a table.
+    enabled: true
+    unit: By
+    sum:
+      aggregation: cumulative
+      monotonic: false
+      value_type: int
+  postgresql.table.vacuum.count:
+    attributes: []
+    description: Number of times a table has manually been vacuumed.
+    enabled: true
+    unit: "{vacuums}"
+    sum:
+      aggregation: cumulative
+      monotonic: true
+      value_type: int 

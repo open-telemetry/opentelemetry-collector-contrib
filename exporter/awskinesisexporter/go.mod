@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskin
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.72
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.57.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.57.2
+	github.com/aws/aws-sdk-go v1.44.77
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	go.uber.org/zap v1.22.0
@@ -33,7 +33,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.57.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -44,7 +44,7 @@ require (
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
