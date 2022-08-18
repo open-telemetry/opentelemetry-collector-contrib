@@ -88,7 +88,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	}
 
 	// There is no need for this processor to use storage
-	err = pipe.Start(adapter.GetPersister(storage.NewNopClient()))
+	err = pipe.Start(storage.NewNopClient())
 	if err != nil {
 		return err
 	}
