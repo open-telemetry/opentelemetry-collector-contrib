@@ -246,6 +246,9 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 }
 
 func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessThreads.Enabled {
+		return nil
+	}
 	threads, err := handle.NumThreads()
 	if err != nil {
 		return err

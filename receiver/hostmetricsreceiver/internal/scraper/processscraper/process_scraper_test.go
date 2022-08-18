@@ -50,6 +50,7 @@ func TestScrape(t *testing.T) {
 		name                                   string
 		expectMetricsWithDirectionAttribute    bool
 		expectMetricsWithoutDirectionAttribute bool
+		expectThreadsCount                     bool
 		mutateScraper                          func(*scraper)
 	}
 	testCases := []testCase{
@@ -76,6 +77,10 @@ func TestScrape(t *testing.T) {
 				s.emitMetricsWithoutDirectionAttribute = true
 			},
 		},
+		{
+			name:               "With threads count",
+			expectThreadsCount: true,
+		},
 	}
 
 	const bootTime = 100
@@ -83,7 +88,11 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metadata.DefaultMetricsSettings()})
+			metricsConfig := metadata.DefaultMetricsSettings()
+			if test.expectThreadsCount {
+				metricsConfig.ProcessThreads.Enabled = true
+			}
+			scraper, err := newProcessScraper(componenttest.NewNopReceiverCreateSettings(), &Config{Metrics: metricsConfig})
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -118,6 +127,11 @@ func TestScrape(t *testing.T) {
 			}
 			if test.expectMetricsWithoutDirectionAttribute {
 				assertNewDiskIOMetricValid(t, md.ResourceMetrics(), expectedStartTime)
+			}
+			if test.expectThreadsCount {
+				assertThreadsCountValid(t, md.ResourceMetrics(), expectedStartTime)
+			} else {
+				assertMetricMissing(t, md.ResourceMetrics(), "process.threads")
 			}
 			assertSameTimeStampForAllMetricsWithinResource(t, md.ResourceMetrics())
 		})
@@ -171,6 +185,27 @@ func assertNewDiskIOMetricValid(t *testing.T, resourceMetrics pmetric.ResourceMe
 		diskIOMetric := getMetric(t, metricName, resourceMetrics)
 		if startTime != 0 {
 			internal.AssertSumMetricStartTimeEquals(t, diskIOMetric, startTime)
+		}
+	}
+}
+
+func assertThreadsCountValid(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, startTime pcommon.Timestamp) {
+	for _, metricName := range []string{"process.threads"} {
+		threadsMetric := getMetric(t, metricName, resourceMetrics)
+		if startTime != 0 {
+			internal.AssertSumMetricStartTimeEquals(t, threadsMetric, startTime)
+		}
+	}
+}
+
+func assertMetricMissing(t *testing.T, resourceMetrics pmetric.ResourceMetricsSlice, expectedMetricName string) {
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		metrics := getMetricSlice(t, resourceMetrics.At(i))
+		for j := 0; j < metrics.Len(); j++ {
+			metric := metrics.At(j)
+			if metric.Name() == expectedMetricName {
+				require.Fail(t, fmt.Sprintf("metric with name %s should not be present", expectedMetricName))
+			}
 		}
 	}
 }
