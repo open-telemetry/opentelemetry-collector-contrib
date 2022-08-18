@@ -17,9 +17,9 @@ package tqlconfig
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
@@ -90,7 +90,7 @@ func Test_Interpret(t *testing.T) {
 							Other: tqltest.Strp("span_id"),
 						},
 						{
-							Invocation: &Invocation{
+							Factory: &Factory{
 								Function: "SpanID",
 								Arguments: []Argument{
 									{
@@ -116,7 +116,7 @@ func Test_Interpret(t *testing.T) {
 							Other: tqltest.Strp("span_id"),
 						},
 						{
-							Invocation: &Invocation{
+							Factory: &Factory{
 								Function: "SpanID",
 								Arguments: []Argument{
 									{
@@ -155,7 +155,7 @@ func Test_Interpret(t *testing.T) {
 							Other: tqltest.Strp("span_id"),
 						},
 						{
-							Invocation: &Invocation{
+							Factory: &Factory{
 								Function: "SpanID",
 								Arguments: []Argument{
 									{

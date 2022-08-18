@@ -28,7 +28,7 @@ func Interpret(queries []DeclarativeQuery) []string {
 
 func interpretQuery(query DeclarativeQuery) string {
 	var sb strings.Builder
-	sb.WriteString(interpretInvocation(query.Function, query.Arguments))
+	sb.WriteString(interpretFactory(query.Function, query.Arguments))
 	if query.Condition != nil {
 		sb.WriteString(" where ")
 		sb.WriteString(interpretExpression(*query.Condition))
@@ -36,7 +36,7 @@ func interpretQuery(query DeclarativeQuery) string {
 	return sb.String()
 }
 
-func interpretInvocation(function string, arguments []Argument) string {
+func interpretFactory(function string, arguments []Argument) string {
 	var sb strings.Builder
 	sb.WriteString(function)
 	sb.WriteString("(")
@@ -51,8 +51,8 @@ func interpretInvocation(function string, arguments []Argument) string {
 }
 
 func interpretArgument(arg Argument) string {
-	if arg.Invocation != nil {
-		return interpretInvocation(arg.Invocation.Function, arg.Invocation.Arguments)
+	if arg.Factory != nil {
+		return interpretFactory(arg.Factory.Function, arg.Factory.Arguments)
 	}
 
 	if arg.String != nil {
