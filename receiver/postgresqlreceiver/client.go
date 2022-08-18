@@ -454,7 +454,7 @@ type replicationStats struct {
 
 func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
 	query := `SELECT 
-	coalesce(client_addr, 'unix'),
+	client_addr,
 	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0) AS replication_bytes_pending,
 	write_lag,
 	flush_lag,
