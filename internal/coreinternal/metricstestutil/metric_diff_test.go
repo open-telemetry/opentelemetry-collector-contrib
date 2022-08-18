@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metrics
+package metricstestutil
 
 import (
 	"testing"
@@ -28,6 +28,19 @@ func TestSameMetrics(t *testing.T) {
 	actual := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	diffs := diffMetricData(expected, actual)
 	assert.Nil(t, diffs)
+}
+
+func diffMetricData(expected pmetric.Metrics, actual pmetric.Metrics) []*MetricDiff {
+	expectedRMSlice := expected.ResourceMetrics()
+	actualRMSlice := actual.ResourceMetrics()
+	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
+}
+
+func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
+	for i := 0; i < s.Len(); i++ {
+		out = append(out, s.At(i))
+	}
+	return out
 }
 
 func TestDifferentValues(t *testing.T) {
