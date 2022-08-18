@@ -36,6 +36,8 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 		metricLines = serializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	case pmetric.MetricDataTypeSum:
 		metricLines = serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
+	case pmetric.MetricDataTypeSummary:
+		metricLines = serializeSummary(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	case pmetric.MetricDataTypeHistogram:
 		metricLines = serializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
 	default:
