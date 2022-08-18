@@ -103,16 +103,16 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					attrs["hostname"] = resourceHostName.AsString()
 				}
 
-				traceId := log.TraceID().HexString()
-				if traceId != "" {
-					attrs["trace.id"] = traceId
+				traceID := log.TraceID().HexString()
+				if traceID != "" {
+					attrs["trace.id"] = traceID
 				}
 
-				spanId := log.SpanID().HexString()
-				if spanId != "" {
-					attrs["span.id"] = spanId
+				spanID := log.SpanID().HexString()
+				if spanID != "" {
+					attrs["span.id"] = spanID
 				}
-				
+
 				log.Attributes().Range(func(k string, v pcommon.Value) bool {
 					attrs[k] = truncateString(v.StringVal(), maxMetaDataSize)
 					return true
