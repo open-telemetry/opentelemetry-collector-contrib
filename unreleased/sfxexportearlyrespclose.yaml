@@ -1,5 +1,0 @@
-change_type: bug_fix
-component: signalfxexporter
-note: fix invalid response error message
-issues: [12654]
-

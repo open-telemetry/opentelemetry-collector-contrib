@@ -18,7 +18,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -126,7 +126,7 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	tok, err := ioutil.ReadFile(p.tokenPath)
+	tok, err := os.ReadFile(p.tokenPath)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read token file %s: %w", p.tokenPath, err)
 	}
@@ -225,7 +225,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 		}
 	}()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Kubelet response body: %w", err)
 	}

@@ -16,8 +16,8 @@ package memcachedreceiver
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net"
+	"os"
 
 	"github.com/grobie/gomemcache/memcache"
 )
@@ -27,7 +27,7 @@ type fakeClient struct{}
 var _ client = (*fakeClient)(nil)
 
 func (c *fakeClient) Stats() (map[net.Addr]memcache.Stats, error) {
-	bytes, err := ioutil.ReadFile("./testdata/fake_stats.json")
+	bytes, err := os.ReadFile("./testdata/fake_stats.json")
 	if err != nil {
 		return nil, err
 	}

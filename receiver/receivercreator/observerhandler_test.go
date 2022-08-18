@@ -53,7 +53,7 @@ func TestOnAdd(t *testing.T) {
 	rcvrCfg := receiverConfig{id: config.NewComponentIDWithName("name", "1"), config: userConfigMap{"foo": "bar"}, endpointID: portEndpoint.ID}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
+		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,
@@ -105,7 +105,7 @@ func TestOnChange(t *testing.T) {
 	newRcvr := &nopWithEndpointReceiver{}
 	cfg := createDefaultConfig().(*Config)
 	cfg.receiverTemplates = map[string]receiverTemplate{
-		"name/1": {rcvrCfg, "", newRuleOrPanic(`type == "port"`)},
+		"name/1": {rcvrCfg, "", map[string]interface{}{}, newRuleOrPanic(`type == "port"`)},
 	}
 	handler := &observerHandler{
 		config:                cfg,

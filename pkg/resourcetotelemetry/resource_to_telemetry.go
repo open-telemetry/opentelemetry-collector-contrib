@@ -25,10 +25,11 @@ import (
 
 // Settings defines configuration for converting resource attributes to telemetry attributes.
 // When used, it must be embedded in the exporter configuration:
-// type Config struct {
-//   // ...
-//   resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
-// }
+//
+//	type Config struct {
+//	  // ...
+//	  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
+//	}
 type Settings struct {
 	// Enabled indicates whether to convert resource attributes to telemetry attributes. Default is `false`.
 	Enabled bool `mapstructure:"enabled"`

@@ -1,7 +1,0 @@
-change_type: enhancement
-component: dockerstatsreceiver
-note: "Enable a featuregate for the new implementation of scrape. Change the units in the new implementation to align to semantic convention."
-issues: [9794]
-subtext: | 
-  This allows the new implementation of scrape to be used via a featuregate.
-  It also updates the tests, which now test for expected descriptions and units in the new implementation.

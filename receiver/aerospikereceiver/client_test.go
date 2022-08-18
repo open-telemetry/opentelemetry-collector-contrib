@@ -161,3 +161,67 @@ func TestAerospike_NamespaceInfo(t *testing.T) {
 
 	client.Close()
 }
+
+func TestAerospike_NamespaceInfo_Negative(t *testing.T) {
+	t.Parallel()
+
+	// test error in NamespaceInfo
+	testNodeNeg := cm.NewNode(t)
+	testNodeNeg.On("GetName").Return("BB990C28F270009")
+	testNodeNeg.On("RequestInfo", &as.InfoPolicy{Timeout: 0}, "namespaces").Return(metricsMap{"namespaces": "test;bar"}, nil)
+	testNodeNeg.On("RequestInfo", &as.InfoPolicy{Timeout: 0}, "namespace/test", "namespace/bar").Return(metricsMap{
+		"ERROR:NOT_AUTHENTICATED": "",
+	}, nil)
+
+	testNodesNeg := []cluster.Node{
+		testNodeNeg,
+	}
+
+	testClusterNeg := mocks.NewNodeGetter(t)
+	testClusterNeg.On("GetNodes").Return(testNodesNeg)
+	testClusterNeg.On("Close").Return()
+
+	nodeGetterFactoryFuncNeg := func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+		return testClusterNeg, nil
+	}
+
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
+
+	clientCfg := clientConfig{
+		logger: logger.Sugar(),
+	}
+
+	client, err := newASClient(&clientCfg, nodeGetterFactoryFuncNeg)
+	require.NoError(t, err)
+
+	actualResults := client.NamespaceInfo()
+	require.Equal(t, namespaceInfo{"BB990C28F270009": map[string]map[string]string{}}, actualResults)
+
+	client.Close()
+
+	// test error in mapNodeInfoFunc
+	testNodeNeg = cm.NewNode(t)
+	testNodeNeg.On("GetName").Return("BB990C28F270009")
+	testNodeNeg.On("RequestInfo", &as.InfoPolicy{Timeout: 0}, "namespaces").Return(nil, as.ErrNotAuthenticated)
+
+	testNodesNeg = []cluster.Node{
+		testNodeNeg,
+	}
+
+	testClusterNeg = mocks.NewNodeGetter(t)
+	testClusterNeg.On("GetNodes").Return(testNodesNeg)
+	testClusterNeg.On("Close").Return()
+
+	nodeGetterFactoryFuncNeg = func(cfg *clientConfig, policy *as.ClientPolicy, authEnabled bool) (nodeGetter, error) {
+		return testClusterNeg, nil
+	}
+
+	client, err = newASClient(&clientCfg, nodeGetterFactoryFuncNeg)
+	require.NoError(t, err)
+
+	actualResults = client.NamespaceInfo()
+	require.Equal(t, namespaceInfo{"BB990C28F270009": map[string]map[string]string{}}, actualResults)
+
+	client.Close()
+}

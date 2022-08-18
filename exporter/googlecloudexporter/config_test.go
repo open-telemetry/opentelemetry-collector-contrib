@@ -31,16 +31,16 @@ import (
 
 // setPdataFeatureGateForTest changes the pdata feature gate during a test.
 // usage: defer SetPdataFeatureGateForTest(true)()
-func setPdataFeatureGateForTest(enabled bool) func() {
+func setPdataFeatureGateForTest(t testing.TB, enabled bool) func() {
 	originalValue := featuregate.GetRegistry().IsEnabled(pdataExporterFeatureGate)
-	featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: enabled})
+	require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: enabled}))
 	return func() {
-		featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: originalValue})
+		require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{pdataExporterFeatureGate: originalValue}))
 	}
 }
 
 func TestLoadConfig(t *testing.T) {
-	defer setPdataFeatureGateForTest(true)()
+	defer setPdataFeatureGateForTest(t, true)()
 	factories, err := componenttest.NopFactories()
 	assert.Nil(t, err)
 
