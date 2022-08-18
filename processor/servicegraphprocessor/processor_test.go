@@ -92,9 +92,8 @@ func TestProcessorShutdown(t *testing.T) {
 
 	// Test
 	next := new(consumertest.TracesSink)
-	p, err := newProcessor(zaptest.NewLogger(t), cfg, next)
-	assert.NoError(t, err)
-	err = p.Shutdown(context.Background())
+	p := newProcessor(zaptest.NewLogger(t), cfg, next)
+	err := p.Shutdown(context.Background())
 
 	// Verify
 	assert.NoError(t, err)
@@ -110,8 +109,7 @@ func TestProcessorConsume(t *testing.T) {
 		return verifyMetrics(t, md)
 	})
 
-	processor, err := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
-	assert.NoError(t, err)
+	processor := newProcessor(zaptest.NewLogger(t), cfg, consumertest.NewNop())
 
 	mHost := &mockHost{
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {

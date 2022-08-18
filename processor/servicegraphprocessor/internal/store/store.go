@@ -17,34 +17,13 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"container/list"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
-)
-
-const (
-	defaultTTL      = 2 * time.Second
-	defaultMaxItems = 1000
 )
 
 var (
 	ErrTooManyItems = errors.New("too many items")
 )
-
-type Config struct {
-	TTL      time.Duration `mapstructure:"ttl"`
-	MaxItems int           `mapstructure:"max_items"`
-}
-
-func (c *Config) validate() error {
-	if c.TTL < 0 {
-		return fmt.Errorf("invalid ttl %v, use a positive value", c.TTL)
-	}
-	if c.MaxItems < 0 {
-		return fmt.Errorf("invalid max_items %v, use a positive value", c.MaxItems)
-	}
-	return nil
-}
 
 var _ Store = (*store)(nil)
 
@@ -63,19 +42,7 @@ type store struct {
 // NewStore creates a Store to build service graphs. The store caches edges, each representing a
 // request between two services. Once an edge is complete its metrics can be collected. Edges that
 // have not found their pair are deleted after ttl time.
-func NewStore(cfg Config, onComplete, onExpire Callback) (Store, error) {
-	if err := cfg.validate(); err != nil {
-		return nil, fmt.Errorf("invalid store config: %w", err)
-	}
-
-	ttl, maxItems := defaultTTL, defaultMaxItems
-	if cfg.TTL != 0 {
-		ttl = cfg.TTL
-	}
-	if cfg.MaxItems != 0 {
-		maxItems = cfg.MaxItems
-	}
-
+func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) Store {
 	s := &store{
 		l: list.New(),
 		m: make(map[string]*list.Element),
@@ -87,7 +54,7 @@ func NewStore(cfg Config, onComplete, onExpire Callback) (Store, error) {
 		maxItems: maxItems,
 	}
 
-	return s, nil
+	return s
 }
 
 func (s *store) len() int {
@@ -123,7 +90,7 @@ func (s *store) tryEvictHead() bool {
 // UpsertEdge fetches an Edge from the store and updates it using the given callback. If the Edge
 // doesn't exist yet, it creates a new one with the default TTL.
 // If the Edge is complete after applying the callback, it's completed and removed.
-func (s *store) UpsertEdge(key string, update Callback) (bool, error) {
+func (s *store) UpsertEdge(key string, update Callback) (isNew bool, err error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 
@@ -140,16 +107,22 @@ func (s *store) UpsertEdge(key string, update Callback) (bool, error) {
 		return false, nil
 	}
 
+	edge := newEdge(key, s.ttl)
+	update(edge)
+
+	if edge.isComplete() {
+		s.onComplete(edge)
+		return true, nil
+	}
+
 	// Check we can add new edges
 	if s.l.Len() >= s.maxItems {
 		// TODO: try to evict expired items
 		return false, ErrTooManyItems
 	}
 
-	edge := newEdge(key, s.ttl)
 	ele := s.l.PushBack(edge)
 	s.m[key] = ele
-	update(edge)
 
 	return true, nil
 }

@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -32,8 +31,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	v1 "go.opentelemetry.io/proto/otlp/trace/v1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 )
 
 const (
@@ -50,8 +50,7 @@ var (
 )
 
 type metricSeries struct {
-	dimensions pcommon.Map
-	// TODO: Remove stale series from the processor
+	dimensions  pcommon.Map
 	lastUpdated int64 // Used to remove stale series
 }
 
@@ -76,9 +75,11 @@ type processor struct {
 	reqDurationSecondsBucketCounts map[string][]uint64
 
 	keyToMetric map[string]metricSeries
+
+	shutdownCh chan interface{}
 }
 
-func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) (*processor, error) {
+func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) *processor {
 	logger.Info("Building servicegraphsprocessor")
 
 	pConfig := config.(*Config)
@@ -107,19 +108,16 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		reqDurationBounds:              bounds,
 		reqDurationSecondsBucketCounts: make(map[string][]uint64),
 		keyToMetric:                    make(map[string]metricSeries),
+		shutdownCh:                     make(chan interface{}),
 	}
 
-	return p, nil
+	return p
 }
 
 func (p *processor) Start(_ context.Context, host component.Host) error {
 	p.logger.Info("Starting servicegraphsprocessor")
 
-	store, err := store.NewStore(p.config.Store, p.onComplete, p.onExpire)
-	if err != nil {
-		return fmt.Errorf("failed to instantiate store: %w", err)
-	}
-	p.store = store
+	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	exporters := host.GetExporters()
 
@@ -137,12 +135,16 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 			p.config.MetricsExporter)
 	}
 
+	// TODO: Consider making this configurable.
+	go p.cacheLoop(time.Minute)
+
 	p.logger.Info("Started servicegraphsprocessor")
 	return nil
 }
 
 func (p *processor) Shutdown(_ context.Context) error {
 	p.logger.Info("Shutting down servicegraphsprocessor")
+	close(p.shutdownCh)
 	return nil
 }
 
@@ -150,12 +152,21 @@ func (p *processor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (p *processor) ConsumeTraces(ctx context.Context, td ptrace.Traces) (err error) {
+func (p *processor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if err := p.aggregateMetrics(ctx, td); err != nil {
 		return fmt.Errorf("failed to aggregate md: %w", err)
 	}
 
-	md := p.buildMetrics()
+	md, err := p.buildMetrics()
+	if err != nil {
+		return fmt.Errorf("failed to build metrics: %w", err)
+	}
+
+	// Skip empty metrics.
+	if md.MetricCount() == 0 {
+		return nil
+	}
+
 	// Firstly, export md to avoid being impacted by downstream trace processor errors/latency.
 	if err := p.metricsExporter.ConsumeMetrics(ctx, md); err != nil {
 		return err
@@ -187,24 +198,45 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 			spans := scopeSpans.At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				switch span.Kind().String() {
-				case v1.Span_SPAN_KIND_CLIENT.String():
+
+				connectionType := store.Unknown
+
+				switch span.Kind() {
+				case ptrace.SpanKindProducer:
+					// override connection type and continue processing as span kind client
+					connectionType = store.MessagingSystem
+					fallthrough
+				case ptrace.SpanKindClient:
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.SpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
+						e.ConnectionType = connectionType
 						e.ClientService = serviceName
-						e.ClientLatency = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == 2
 						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
+
+						// A database request will only have one span, we don't wait for the server
+						// span but just copy details from the client span
+						if dbName, ok := findAttributeValue("db.name", rAttributes, span.Attributes()); ok {
+							e.ConnectionType = store.Database
+							e.ServerService = dbName
+							e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						}
 					})
-				case v1.Span_SPAN_KIND_SERVER.String():
+				case ptrace.SpanKindConsumer:
+					// override connection type and continue processing as span kind server
+					connectionType = store.MessagingSystem
+					fallthrough
+				case ptrace.SpanKindServer:
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.ParentSpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
 						e.TraceID = traceID
+						e.ConnectionType = connectionType
 						e.ServerService = serviceName
-						e.ServerLatency = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
+						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
 						e.Failed = e.Failed || span.Status().Code() == 2
 						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
 					})
@@ -252,11 +284,11 @@ func (p *processor) onExpire(*store.Edge) {
 }
 
 func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
-	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, e.Dimensions)
+	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
 	dimensions := buildDimensions(e)
 
 	// TODO: Consider configuring server or client latency
-	duration := e.ServerLatency
+	duration := e.ServerLatencySec
 
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
@@ -303,6 +335,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	dims := pcommon.NewMap()
 	dims.UpsertString("client", e.ClientService)
 	dims.UpsertString("server", e.ServerService)
+	dims.UpsertString("connection_type", string(e.ConnectionType))
 	dims.UpsertBool("failed", e.Failed)
 	for k, v := range e.Dimensions {
 		dims.UpsertString(k, v)
@@ -310,7 +343,7 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	return dims
 }
 
-func (p *processor) buildMetrics() pmetric.Metrics {
+func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("servicegraphprocessor")
@@ -320,14 +353,14 @@ func (p *processor) buildMetrics() pmetric.Metrics {
 	defer p.seriesMutex.Unlock()
 
 	if err := p.collectCountMetrics(ilm); err != nil {
-		return m
+		return m, err
 	}
 
 	if err := p.collectLatencyMetrics(ilm); err != nil {
-		return m
+		return m, err
 	}
 
-	return m
+	return m, nil
 }
 
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
@@ -385,9 +418,9 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	return nil
 }
 
-func (p *processor) buildMetricKey(clientName, serverName string, edgeDimensions map[string]string) string {
+func (p *processor) buildMetricKey(clientName, serverName, connectionType string, edgeDimensions map[string]string) string {
 	var metricKey strings.Builder
-	metricKey.WriteString(clientName + metricKeySeparator + serverName)
+	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType)
 
 	for _, dimName := range p.config.Dimensions {
 		dim, ok := edgeDimensions[dimName]
@@ -398,6 +431,34 @@ func (p *processor) buildMetricKey(clientName, serverName string, edgeDimensions
 	}
 
 	return metricKey.String()
+}
+
+// cacheLoop runs in a separate goroutine and periodically cleans the cache
+func (p *processor) cacheLoop(d time.Duration) {
+	t := time.NewTicker(d)
+	for {
+		select {
+		case <-t.C:
+			p.cleanCache()
+		case <-p.shutdownCh:
+			return
+		}
+	}
+
+}
+
+// cleanCache removes series that have not been updated in 15 minutes
+func (p *processor) cleanCache() {
+	var staleSeries []string
+	for key, series := range p.keyToMetric {
+		if series.lastUpdated+15*time.Minute.Milliseconds() < time.Now().UnixMilli() {
+			staleSeries = append(staleSeries, key)
+		}
+	}
+
+	for _, key := range staleSeries {
+		delete(p.keyToMetric, key)
+	}
 }
 
 func buildEdgeKey(k1, k2 string) string {

@@ -17,7 +17,6 @@ package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"go.opentelemetry.io/collector/config"
 )
 
@@ -41,5 +40,12 @@ type Config struct {
 	Dimensions []string `mapstructure:"dimensions"`
 
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
-	Store store.Config `mapstructure:"store"`
+	Store StoreConfig `mapstructure:"store"`
+}
+
+type StoreConfig struct {
+	// MaxItems is the maximum number of items to keep in the store.
+	MaxItems int `mapstructure:"max_items"`
+	// TTL is the time to live for items in the store.
+	TTL time.Duration `mapstructure:"ttl"`
 }

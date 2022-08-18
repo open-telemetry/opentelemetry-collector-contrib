@@ -16,13 +16,22 @@ package store // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import "time"
 
+type ConnectionType string
+
+const (
+	Unknown         ConnectionType = ""
+	MessagingSystem ConnectionType = "messaging_system"
+	Database        ConnectionType = "database"
+)
+
 // Edge is an Edge between two nodes in the graph
 type Edge struct {
 	key string
 
-	TraceID                      string
-	ServerService, ClientService string
-	ServerLatency, ClientLatency float64
+	TraceID                            string
+	ConnectionType                     ConnectionType
+	ServerService, ClientService       string
+	ServerLatencySec, ClientLatencySec float64
 
 	// If either the client or the server spans have status code error,
 	// the Edge will be considered as failed.

@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -46,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 			MetricsExporter:         "metrics",
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},
-			Store: store.Config{
+			Store: StoreConfig{
 				TTL:      time.Second,
 				MaxItems: 10,
 			},

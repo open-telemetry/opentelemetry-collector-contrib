@@ -18,7 +18,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -45,7 +44,7 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Store: store.Config{
+		Store: StoreConfig{
 			TTL:      2 * time.Second,
 			MaxItems: 1000,
 		},
@@ -53,5 +52,5 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
-	return newProcessor(params.Logger, cfg, nextConsumer)
+	return newProcessor(params.Logger, cfg, nextConsumer), nil
 }

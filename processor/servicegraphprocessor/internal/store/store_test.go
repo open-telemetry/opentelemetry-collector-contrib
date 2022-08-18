@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package store // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 
 import (
 	"fmt"
@@ -32,8 +32,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 	var onCompletedCount int
 	var onExpireCount int
 
-	storeInterface, err := NewStore(Config{TTL: time.Hour, MaxItems: 1}, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
-	assert.NoError(t, err)
+	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCompletedCount), countingCallback(&onExpireCount))
 
 	s := storeInterface.(*store)
 	assert.Equal(t, 0, s.len())
@@ -84,8 +83,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 	var onCallbackCounter int
 
-	storeInterface, err := NewStore(Config{TTL: time.Hour, MaxItems: 1}, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
-	assert.NoError(t, err)
+	storeInterface := NewStore(time.Hour, 1, countingCallback(&onCallbackCounter), countingCallback(&onCallbackCounter))
 
 	s := storeInterface.(*store)
 	assert.Equal(t, 0, s.len())
@@ -129,10 +127,8 @@ func TestStoreExpire(t *testing.T) {
 		assert.True(t, keys[e.key])
 	}
 	// New edges are immediately expired
-	storeInterface, err := NewStore(Config{MaxItems: testSize}, onComplete, countingCallback(&onExpireCount))
-	assert.NoError(t, err)
+	storeInterface := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))
 	s := storeInterface.(*store)
-	s.ttl = -time.Second
 
 	for key := range keys {
 		isNew, err := s.UpsertEdge(key, noopCallback)
@@ -147,8 +143,7 @@ func TestStoreExpire(t *testing.T) {
 }
 
 func TestStore_concurrency(t *testing.T) {
-	s, err := NewStore(Config{TTL: 10 * time.Millisecond, MaxItems: 100_000}, noopCallback, noopCallback)
-	assert.NoError(t, err)
+	s := NewStore(10*time.Millisecond, 100000, noopCallback, noopCallback)
 
 	end := make(chan struct{})
 
@@ -185,8 +180,7 @@ func TestStore_concurrency(t *testing.T) {
 	close(end)
 }
 
-func noopCallback(_ *Edge) {
-}
+func noopCallback(_ *Edge) {}
 
 func countingCallback(counter *int) func(*Edge) {
 	return func(_ *Edge) {
