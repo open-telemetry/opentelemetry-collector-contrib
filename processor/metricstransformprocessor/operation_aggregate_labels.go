@@ -56,22 +56,25 @@ func groupDataPoints(metric pmetric.Metric, ag aggGroups) aggGroups {
 		if ag.gauge == nil {
 			ag.gauge = map[string]pmetric.NumberDataPointSlice{}
 		}
-		groupNumberDataPoints(metric.Gauge().DataPoints(), ag.gauge)
+		groupNumberDataPoints(metric.Gauge().DataPoints(), false, ag.gauge)
 	case pmetric.MetricDataTypeSum:
 		if ag.sum == nil {
 			ag.sum = map[string]pmetric.NumberDataPointSlice{}
 		}
-		groupNumberDataPoints(metric.Sum().DataPoints(), ag.sum)
+		groupByStartTime := metric.Sum().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupNumberDataPoints(metric.Sum().DataPoints(), groupByStartTime, ag.sum)
 	case pmetric.MetricDataTypeHistogram:
 		if ag.histogram == nil {
 			ag.histogram = map[string]pmetric.HistogramDataPointSlice{}
 		}
-		groupHistogramDataPoints(metric.Histogram().DataPoints(), ag.histogram)
+		groupByStartTime := metric.Histogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupHistogramDataPoints(metric.Histogram().DataPoints(), groupByStartTime, ag.histogram)
 	case pmetric.MetricDataTypeExponentialHistogram:
 		if ag.expHistogram == nil {
 			ag.expHistogram = map[string]pmetric.ExponentialHistogramDataPointSlice{}
 		}
-		groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), ag.expHistogram)
+		groupByStartTime := metric.ExponentialHistogram().AggregationTemporality() == pmetric.MetricAggregationTemporalityDelta
+		groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), groupByStartTime, ag.expHistogram)
 	}
 	return ag
 }
@@ -89,9 +92,14 @@ func mergeDataPoints(to pmetric.Metric, aggType AggregationType, ag aggGroups) {
 	}
 }
 
-func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
+func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
+	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
+	var keyHashParts []interface{}
 	for i := 0; i < dps.Len(); i++ {
-		key := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).StartTimestamp(), dps.At(i).Timestamp())
+		if useStartTime {
+			keyHashParts = []interface{}{dps.At(i).StartTimestamp().String()}
+		}
+		key := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewNumberDataPointSlice()
 		}
@@ -99,17 +107,20 @@ func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, dpsByAttrsAndTs map
 	}
 }
 
-func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice,
+func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+3)
+		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+4)
 		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
+		if useStartTime {
+			keyHashParts = append(keyHashParts, dp.StartTimestamp().String())
+		}
 
 		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), flagsValue(dp.Flags()))
-		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
+		key := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewHistogramDataPointSlice()
 		}
@@ -117,14 +128,17 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice,
 	}
 }
 
-func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice,
+func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, 4)
+		keyHashParts := make([]interface{}, 0, 5)
 		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), flagsValue(dp.Flags()), dp.Negative().Offset(),
 			dp.Positive().Offset())
-		key := dataPointHashKey(dps.At(i).Attributes(), dp.StartTimestamp(), dp.Timestamp(), keyHashParts...)
+		if useStartTime {
+			keyHashParts = append(keyHashParts, dp.StartTimestamp().String())
+		}
+		key := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewExponentialHistogramDataPointSlice()
 		}
@@ -151,8 +165,8 @@ func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
 	})
 }
 
-func dataPointHashKey(atts pcommon.Map, start pcommon.Timestamp, ts pcommon.Timestamp, other ...interface{}) string {
-	hashParts := []interface{}{atts.AsRaw(), start.String(), ts.String()}
+func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface{}) string {
+	hashParts := []interface{}{atts.AsRaw(), ts.String()}
 	jsonStr, _ := json.Marshal(append(hashParts, other...))
 	return string(jsonStr)
 }
@@ -172,6 +186,9 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 				case Min:
 					dp.SetDoubleVal(math.Min(dp.DoubleVal(), doubleVal(dps.At(i))))
 				}
+				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
+					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
+				}
 			}
 			if agg == Mean {
 				dp.SetDoubleVal(dp.DoubleVal() / float64(dps.Len()))
@@ -189,6 +206,9 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 					if dp.IntVal() > intVal(dps.At(i)) {
 						dp.SetIntVal(intVal(dps.At(i)))
 					}
+				}
+				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
+					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 				}
 			}
 			if agg == Mean {
@@ -240,6 +260,9 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 				counts[b] += dps.At(i).BucketCounts().At(b)
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
+			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
+				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
+			}
 		}
 		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
 	}
@@ -271,6 +294,9 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 				positives[b] += dps.At(i).Positive().BucketCounts().At(b)
 			}
 			dps.At(i).Exemplars().MoveAndAppendTo(dp.Exemplars())
+			if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
+				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
+			}
 		}
 		dp.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(negatives))
 		dp.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(positives))
