@@ -77,8 +77,8 @@ type ExtractConfig struct {
 	//   k8s.node.name, k8s.namespace.name, k8s.pod.start_time,
 	//   k8s.replicaset.name, k8s.replicaset.uid,
 	//   k8s.daemonset.name, k8s.daemonset.uid,
-	//   k8s.job.name, k8s.job.uid,
-	//   k8s.statefulset.name, and k8s.statefulset.uid
+	//   k8s.job.name, k8s.job.uid, k8s.cronjob.name,
+	//   k8s.statefulset.name, k8s.statefulset.uid
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default all of the fields are extracted and added to spans and metrics.
