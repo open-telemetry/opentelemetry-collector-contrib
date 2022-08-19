@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package protocol
 
 import (
@@ -668,7 +667,7 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+			assert.NoError(t, p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
@@ -737,7 +736,7 @@ func TestStatsDParser_AggregateWithMetricType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+			assert.NoError(t, p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
@@ -785,7 +784,7 @@ func TestStatsDParser_AggregateWithIsMonotonicCounter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(false, true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+			assert.NoError(t, p.Initialize(false, true, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 			p.lastIntervalTime = time.Unix(611, 0)
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
@@ -881,7 +880,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}})
+			assert.NoError(t, p.Initialize(false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}}))
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
 			}
@@ -896,7 +895,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 
 func TestStatsDParser_Initialize(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+	assert.NoError(t, p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	teststatsdDMetricdescription := statsDMetricDescription{
 		name:       "test",
 		metricType: "g",
@@ -909,7 +908,7 @@ func TestStatsDParser_Initialize(t *testing.T) {
 
 func TestStatsDParser_GetMetricsWithMetricType(t *testing.T) {
 	p := &StatsDParser{}
-	p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}})
+	assert.NoError(t, p.Initialize(true, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}))
 	p.gauges[testDescription("statsdTestMetric1", "g",
 		[]string{"mykey", "metric_type"}, []string{"myvalue", "gauge"})] =
 		buildGaugeMetric(testStatsDMetric("testGauge1", 1, false, "g", 0, []string{"mykey", "metric_type"}, []string{"myvalue", "gauge"}), time.Unix(711, 0))
@@ -982,10 +981,10 @@ func TestStatsDParser_Mappings(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &StatsDParser{}
 
-			p.Initialize(false, false, tc.mapping)
+			assert.NoError(t, p.Initialize(false, false, tc.mapping))
 
-			p.Aggregate("H:10|h")
-			p.Aggregate("T:10|ms")
+			assert.NoError(t, p.Aggregate("H:10|h"))
+			assert.NoError(t, p.Aggregate("T:10|ms"))
 
 			typeNames := map[string]string{}
 

@@ -20,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 
@@ -153,7 +153,7 @@ func decompress(payload []byte, compression compression) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		return ioutil.ReadAll(reader)
+		return io.ReadAll(reader)
 	}
 	return payload, nil
 }

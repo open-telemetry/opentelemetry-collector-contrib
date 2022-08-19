@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
@@ -25,7 +24,6 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -42,18 +40,6 @@ var (
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
 )
-
-const prometheusCompatible = "exporter.signalfxexporter.PrometheusCompatible"
-
-var prometheusCompatibleGate = featuregate.Gate{
-	ID:          prometheusCompatible,
-	Enabled:     true,
-	Description: "Controls if conversion should follow prometheus compatibility for histograms and summaries.",
-}
-
-func init() {
-	featuregate.GetRegistry().MustRegister(prometheusCompatibleGate)
-}
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
@@ -83,7 +69,7 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
-		translator:         &signalfx.FromTranslator{PrometheusCompatible: featuregate.GetRegistry().IsEnabled(prometheusCompatible)},
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 
@@ -201,7 +187,7 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
@@ -283,8 +269,8 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	return true
 }
 
-// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
+// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
 	if logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
 		return logger
@@ -311,7 +297,7 @@ func DatapointToString(dp *sfxpb.DataPoint) string {
 
 	var dimsStr string
 	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
+		dimsStr += dim.String()
 	}
 
 	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)

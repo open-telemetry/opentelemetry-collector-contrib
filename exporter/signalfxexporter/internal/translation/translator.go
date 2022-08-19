@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
 import (
@@ -450,7 +449,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if multiplier, ok := tr.ScaleFactorsInt[dp.Metric]; ok {
 					v := dp.GetValue().IntValue
 					if v != nil {
-						*v = *v * multiplier
+						*v *= multiplier
 					}
 				}
 			}
@@ -459,7 +458,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if divisor, ok := tr.ScaleFactorsInt[dp.Metric]; ok {
 					v := dp.GetValue().IntValue
 					if v != nil {
-						*v = *v / divisor
+						*v /= divisor
 					}
 				}
 			}
@@ -468,7 +467,7 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				if multiplier, ok := tr.ScaleFactorsFloat[dp.Metric]; ok {
 					v := dp.GetValue().DoubleValue
 					if v != nil {
-						*v = *v * multiplier
+						*v *= multiplier
 					}
 				}
 			}
@@ -524,7 +523,8 @@ func (mp *MetricTranslator) TranslateDataPoints(logger *zap.Logger, sfxDataPoint
 				}
 			}
 			aggregatedDps := aggregateDatapoints(dpsToAggregate, tr.WithoutDimensions, tr.AggregationMethod)
-			processedDataPoints = append(otherDps, aggregatedDps...)
+			processedDataPoints = otherDps
+			processedDataPoints = append(processedDataPoints, aggregatedDps...)
 
 		case ActionDropMetrics:
 			resultSliceLen := 0
@@ -622,7 +622,10 @@ func calculateNewMetric(
 	}
 
 	if tr.Operator == MetricOperatorDivision && *v2 == 0 {
-		logger.Warn(
+		// We can get here if, for example, in the denominator we get multiple
+		// datapoints that have the same counter value, which will yield a delta of
+		// zero.
+		logger.Debug(
 			"calculate_new_metric: attempt to divide by zero, skipping",
 			zap.String("tr.Operand2Metric", tr.Operand2Metric),
 			zap.String("tr.MetricName", tr.MetricName),
@@ -650,11 +653,12 @@ func ptToFloatVal(pt *sfxpb.DataPoint) *float64 {
 		return nil
 	}
 	var f float64
-	if pt.Value.IntValue != nil {
+	switch {
+	case pt.Value.IntValue != nil:
 		f = float64(*pt.Value.IntValue)
-	} else if pt.Value.DoubleValue != nil {
+	case pt.Value.DoubleValue != nil:
 		f = *pt.Value.DoubleValue
-	} else {
+	default:
 		return nil
 	}
 	return &f

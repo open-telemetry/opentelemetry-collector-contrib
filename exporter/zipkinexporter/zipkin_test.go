@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -41,10 +40,11 @@ import (
 // This function tests that Zipkin spans that are received then processed roundtrip
 // back to almost the same JSON with differences:
 // a) Go's net.IP.String intentional shortens 0s with "::" but also converts to hex values
-//    so
-//          "7::0.128.128.127"
-//    becomes
-//          "7::80:807f"
+//
+//	so
+//	      "7::0.128.128.127"
+//	becomes
+//	      "7::80:807f"
 //
 // The rest of the fields should match up exactly
 func TestZipkinExporter_roundtripJSON(t *testing.T) {
@@ -298,7 +298,8 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 	buf := new(bytes.Buffer)
 	var contentType string
 	cst := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.Copy(buf, r.Body) // nolint:errcheck
+		_, err := io.Copy(buf, r.Body)
+		assert.NoError(t, err)
 		contentType = r.Header.Get("Content-Type")
 		r.Body.Close()
 	}))
@@ -346,7 +347,7 @@ func TestZipkinExporter_roundtripProto(t *testing.T) {
 
 	require.Equal(t, zipkin_proto3.SpanSerializer{}.ContentType(), contentType)
 	// Finally we need to inspect the output
-	gotBytes, err := ioutil.ReadAll(buf)
+	gotBytes, err := io.ReadAll(buf)
 	require.NoError(t, err)
 
 	_, err = zipkin_proto3.ParseSpans(gotBytes, false)

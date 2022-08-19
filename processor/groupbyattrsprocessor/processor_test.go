@@ -160,8 +160,8 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				buckets := randUIntArr(histogramSize)
 				sort.Slice(buckets, func(i, j int) bool { return buckets[i] < buckets[j] })
-				dataPoint.SetMBucketCounts(buckets)
-				dataPoint.SetMExplicitBounds(randFloat64Arr(histogramSize))
+				dataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
+				dataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(randFloat64Arr(histogramSize)))
 				dataPoint.SetCount(sum(buckets))
 				dataPoint.Attributes().InsertString("commonGroupedAttr", "abc")
 				dataPoint.Attributes().InsertString("commonNonGroupedAttr", "xyz")
@@ -206,20 +206,20 @@ func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, a
 }
 
 // The "complex" use case has following input data:
-//  * Resource[Spans|Logs|Metrics] #1
-//    Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)
-//      * InstrumentationLibrary[Spans|Logs|Metrics] #1
-//          * [Span|Log] foo-1-1
-//            Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
-//          * Metric foo-1-1
-//            * DataPoint #1
-//              IntValue: 1
-//              Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
-//      * InstrumentationLibrary[Spans|Logs|Metrics] #M
-//        ...
-//    ...
-//   * Resource[Spans|Logs|Metrics] #N
-//      ...
+//   - Resource[Spans|Logs|Metrics] #1
+//     Attributes: resourceAttrIndex => <resource_no> (when `withResourceAttrIndex` set to true)
+//   - InstrumentationLibrary[Spans|Logs|Metrics] #1
+//   - [Span|Log] foo-1-1
+//     Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
+//   - Metric foo-1-1
+//   - DataPoint #1
+//     IntValue: 1
+//     Attributes: commonGroupedAttr => abc, commonNonGroupedAttr => xyz
+//   - InstrumentationLibrary[Spans|Logs|Metrics] #M
+//     ...
+//     ...
+//   - Resource[Spans|Logs|Metrics] #N
+//     ...
 func TestComplexAttributeGrouping(t *testing.T) {
 	tests := []struct {
 		name                              string

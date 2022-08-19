@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusremotewriteexporter
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -248,7 +247,7 @@ func Test_export(t *testing.T) {
 	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
 		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -382,6 +381,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
+	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
+
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
@@ -411,7 +412,7 @@ func Test_PushMetrics(t *testing.T) {
 	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -481,6 +482,13 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:            &histogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 12,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "valid_empty_histogram_case",
+			metrics:            &emptyDataPointHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 6,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -755,7 +763,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
-		//disable sanitizeLabel flag
+		// disable sanitizeLabel flag
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -786,7 +794,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	uploadedBytesCh := make(chan []byte, 1)
 	exiting := make(chan bool)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		uploaded, err2 := ioutil.ReadAll(req.Body)
+		uploaded, err2 := io.ReadAll(req.Body)
 		assert.NoError(t, err2, "Error while reading from HTTP upload")
 		select {
 		case uploadedBytesCh <- uploaded:

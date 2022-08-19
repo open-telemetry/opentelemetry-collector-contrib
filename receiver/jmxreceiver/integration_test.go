@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -76,7 +75,7 @@ func downloadJMXMetricGathererJAR(url string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	file, err := ioutil.TempFile("", "jmx-metrics.jar")
+	file, err := os.CreateTemp("", "jmx-metrics.jar")
 	if err != nil {
 		return "", err
 	}

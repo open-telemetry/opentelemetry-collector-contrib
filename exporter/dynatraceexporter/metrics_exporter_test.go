@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -45,7 +45,7 @@ var testTimestamp = pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time
 func Test_exporter_PushMetricsData(t *testing.T) {
 	sent := "not sent"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bodyBytes, _ := ioutil.ReadAll(r.Body)
+		bodyBytes, _ := io.ReadAll(r.Body)
 		sent = string(bodyBytes)
 
 		response := metricsResponse{
@@ -302,7 +302,7 @@ func Test_SumMetrics(t *testing.T) {
 	// server setup:
 	sent := "nothing sent"
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bodyBytes, _ := ioutil.ReadAll(r.Body)
+		bodyBytes, _ := io.ReadAll(r.Body)
 		sent = string(bodyBytes)
 
 		response := metricsResponse{

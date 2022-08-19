@@ -32,10 +32,12 @@ var once sync.Once
 
 // NewFactory creates a factory for FluentBit extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelDeprecated,
+	)
 }
 
 func createDefaultConfig() config.Extension {

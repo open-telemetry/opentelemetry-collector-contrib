@@ -18,9 +18,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -143,7 +143,7 @@ func loadAPIResponseData(t *testing.T, fileName string) []byte {
 	t.Helper()
 	fullPath := filepath.Join("testdata", "apiresponses", fileName)
 
-	data, err := ioutil.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
 	require.NoError(t, err)
 
 	return data

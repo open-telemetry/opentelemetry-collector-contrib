@@ -137,7 +137,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: "QuantileLabel is empty",
+			wantErr: errEmptyQuantileLabel.Error(),
 		},
 		{
 			name:  "summary with quantile label",
@@ -153,7 +153,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: "QuantileLabel is empty",
+			wantErr: errEmptyQuantileLabel.Error(),
 		},
 		{
 			name:  "other data types without matches",
@@ -161,7 +161,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: "given metricType has no BucketLabel or QuantileLabel",
+			wantErr: errNoBoundaryLabel.Error(),
 		},
 	}
 
@@ -1229,7 +1229,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
+		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyLeLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})
@@ -1237,7 +1237,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyBoundaryLabel) {
+		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyQuantileLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
 		}
 	})

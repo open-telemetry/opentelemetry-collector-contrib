@@ -19,6 +19,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 )
 
 func Test_convertSumToGauge(t *testing.T) {
@@ -93,8 +95,8 @@ func Test_convertSumToGauge(t *testing.T) {
 			metric := pmetric.NewMetric()
 			tt.input.CopyTo(metric)
 
-			ctx := metricTransformContext{
-				metric: metric,
+			ctx := tqlmetrics.MetricTransformContext{
+				Metric: metric,
 			}
 
 			exprFunc, _ := convertSumToGauge()

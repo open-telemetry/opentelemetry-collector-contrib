@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package awsecscontainermetrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver/internal/awsecscontainermetrics"
 
 import "time"
@@ -49,7 +48,7 @@ type DiskStats struct {
 	IoServiceBytesRecursives []IoServiceBytesRecursive `json:"io_service_bytes_recursive,omitempty"`
 }
 
-//IoServiceBytesRecursive defines the IO device stats
+// IoServiceBytesRecursive defines the IO device stats
 type IoServiceBytesRecursive struct {
 	Major *uint64 `json:"major,omitempty"`
 	Minor *uint64 `json:"minor,omitempty"`

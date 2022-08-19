@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -57,5 +58,6 @@ func TestLoadConfig(t *testing.T) {
 		},
 		ClientID: defaultClientID,
 		Scrapers: []string{"brokers", "topics", "consumers"},
+		Metrics:  metadata.DefaultMetricsSettings(),
 	}, r)
 }

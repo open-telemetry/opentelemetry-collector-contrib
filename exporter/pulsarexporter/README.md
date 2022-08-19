@@ -2,9 +2,9 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [in-development]      |
+| Stability                | [alpha]               |
 | Supported pipeline types | traces, logs, metrics |
-| Distributions            | none                  |
+| Distributions            | [contrib]             |
 
 Pulsar exporter exports logs, metrics, and traces to Pulsar. This exporter uses a synchronous producer
 that blocks and able to batch messages.
@@ -43,6 +43,7 @@ The following settings can be optionally configured:
 - `tls_trust_certs_file_path`: path to the CA cert. For a client this verifies the server certificate. Should
   only be used if `insecure` is set to true.
 - `tls_allow_insecure_connection`: configure whether the Pulsar client accept untrusted TLS certificate from broker (default: false)
+- `timeout`: send pulsar message timeout (default: 5s)
 - `retry_on_failure`
     - `enabled` (default = true)
     - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -67,8 +68,11 @@ exporters:
       tls:
         cert_file: cert.pem
         key_file: key.pem
+    timeout: 10s
     tls_allow_insecure_connection: false
     tls_trust_certs_file_path: ca.pem
 ```
 
-[in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+

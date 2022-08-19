@@ -17,11 +17,9 @@ package logzioexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 
 	"github.com/hashicorp/go-hclog"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -109,7 +107,7 @@ func (l *hclog2ZapLogger) SetLevel(level hclog.Level) {
 // StandardLogger implementation.
 func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
 	// no need to implement that as go-plugin doesn't use this method.
-	return log.New(ioutil.Discard, "", 0)
+	return log.New(io.Discard, "", 0)
 }
 
 func argsToFields(args ...interface{}) []zapcore.Field {

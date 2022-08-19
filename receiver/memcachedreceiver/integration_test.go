@@ -19,7 +19,7 @@ package memcachedreceiver
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -53,7 +53,7 @@ func TestIntegration(t *testing.T) {
 
 	actualMetrics := consumer.AllMetrics()[0]
 
-	expectedFileBytes, err := ioutil.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
+	expectedFileBytes, err := os.ReadFile("./testdata/expected_metrics/test_scraper/expected.json")
 	require.NoError(t, err)
 	unmarshaller := pmetric.NewJSONUnmarshaler()
 	expectedMetrics, err := unmarshaller.UnmarshalMetrics(expectedFileBytes)

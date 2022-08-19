@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
@@ -96,7 +95,7 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	prwe.client, err = prwe.clientSettings.ToClient(host.GetExtensions(), prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
@@ -257,7 +256,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	body, err := ioutil.ReadAll(io.LimitReader(resp.Body, 256))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
 	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
 	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 		return rerr

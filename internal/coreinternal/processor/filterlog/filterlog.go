@@ -28,7 +28,8 @@ import (
 // Matcher is an interface that allows matching a log record against a
 // configuration of a match.
 // TODO: Modify Matcher to invoke both the include and exclude properties so
-//  calling processors will always have the same logic.
+//
+//	calling processors will always have the same logic.
 type Matcher interface {
 	MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }
@@ -42,6 +43,9 @@ type propertiesMatcher struct {
 
 	// log severity texts to compare to
 	severityTextFilters filterset.FilterSet
+
+	// matcher for severity number
+	severityNumberMatcher Matcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -74,10 +78,16 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 		}
 	}
 
+	var severityNumberMatcher Matcher
+	if mp.LogSeverityNumber != nil {
+		severityNumberMatcher = newSeverityNumberMatcher(mp.LogSeverityNumber.Min, mp.LogSeverityNumber.MatchUndefined)
+	}
+
 	return &propertiesMatcher{
-		PropertiesMatcher:   rm,
-		bodyFilters:         bodyFS,
-		severityTextFilters: severitytextFS,
+		PropertiesMatcher:     rm,
+		bodyFilters:           bodyFS,
+		severityTextFilters:   severitytextFS,
+		severityNumberMatcher: severityNumberMatcher,
 	}, nil
 }
 
@@ -94,6 +104,9 @@ func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.
 		return false
 	}
 	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
+		return false
+	}
+	if mp.severityNumberMatcher != nil && !mp.severityNumberMatcher.MatchLogRecord(lr, resource, library) {
 		return false
 	}
 

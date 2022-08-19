@@ -9,6 +9,8 @@ These are the metrics available for this scraper.
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
 | **system.network.connections** | The number of connections. | {connections} | Sum(Int) | <ul> <li>protocol</li> <li>state</li> </ul> |
+| system.network.conntrack.count | The count of entries in conntrack table. | {entries} | Sum(Int) | <ul> </ul> |
+| system.network.conntrack.max | The limit for entries in the conntrack table. | {entries} | Sum(Int) | <ul> </ul> |
 | **system.network.dropped** | The number of packets dropped. (Deprecated) | {packets} | Sum(Int) | <ul> <li>device</li> <li>direction</li> </ul> |
 | **system.network.dropped.receive** | The number of packets dropped on receive. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |
 | **system.network.dropped.transmit** | The number of packets dropped on transmit. | {packets} | Sum(Int) | <ul> <li>device</li> </ul> |

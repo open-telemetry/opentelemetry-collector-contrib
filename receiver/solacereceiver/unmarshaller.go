@@ -21,11 +21,10 @@ import (
 	"net"
 	"strings"
 
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	model_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/v1"
 )
@@ -201,6 +200,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		messageIDAttrKey                   = "messaging.message_id"
 		conversationIDAttrKey              = "messaging.conversation_id"
 		payloadSizeBytesAttrKey            = "messaging.message_payload_size_bytes"
+		destinationAttrKey                 = "messaging.destination"
 		clientUsernameAttrKey              = "messaging.solace.client_username"
 		clientNameAttrKey                  = "messaging.solace.client_name"
 		replicationGroupMessageIDAttrKey   = "messaging.solace.replication_group_message_id"
@@ -232,6 +232,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	attrMap.InsertString(clientUsernameAttrKey, spanData.ClientUsername)
 	attrMap.InsertString(clientNameAttrKey, spanData.ClientName)
 	attrMap.InsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
+	attrMap.InsertString(destinationAttrKey, spanData.Topic)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
@@ -432,7 +433,7 @@ func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
 		toMap.InsertDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.InsertMBytes(k, v.ByteArrayValue)
+		toMap.InsertBytes(k, pcommon.NewImmutableByteSlice(v.ByteArrayValue))
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
 		toMap.InsertDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:
