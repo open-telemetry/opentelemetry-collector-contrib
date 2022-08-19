@@ -39,7 +39,8 @@ type receiverConfig struct {
 	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	config     userConfigMap
+	endpointID observer.EndpointID
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -71,8 +72,9 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			id:     id,
-			config: cfg,
+			id:         id,
+			config:     cfg,
+			endpointID: observer.EndpointID("endpoint.id"),
 		},
 	}, nil
 }

@@ -75,7 +75,8 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 			params:      rc.params,
 			idNamespace: rc.cfg.ID(),
 			host:        &loggingHost{host, rc.params.Logger},
-		}}
+		},
+	}
 
 	observers := map[config.Type]observer.Observable{}
 
