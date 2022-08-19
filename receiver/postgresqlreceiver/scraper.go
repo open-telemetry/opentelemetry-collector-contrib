@@ -16,6 +16,8 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -155,6 +157,9 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	if p.emitMetricsWithResourceAttributes {
 		p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
 		p.collectBGWriterStats(ctx, now, listClient, &errs)
+		p.collectWalAge(ctx, now, listClient, &errs)
+		p.collectReplicationStats(ctx, now, listClient, &errs)
+		p.collectMaxConnections(ctx, now, listClient, &errs)
 	}
 
 	return p.mb.Emit(), errs.Combine()
@@ -295,11 +300,11 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	ctx context.Context,
 	now pcommon.Timestamp,
 	client client,
-	errors *scrapererror.ScrapeErrors,
+	errs *scrapererror.ScrapeErrors,
 ) {
 	bgStats, err := client.getBGWriterStats(ctx)
 	if err != nil {
-		errors.AddPartial(1, err)
+		errs.AddPartial(1, err)
 		return
 	}
 
@@ -317,6 +322,57 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
 
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
+}
+
+func (p *postgreSQLScraper) collectMaxConnections(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	mc, err := client.getMaxConnections(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
+}
+
+func (p *postgreSQLScraper) collectReplicationStats(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	rss, err := client.getReplicationStats(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	for _, rs := range rss {
+		p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+		p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+	}
+}
+
+func (p *postgreSQLScraper) collectWalAge(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *scrapererror.ScrapeErrors,
+) {
+	walAge, err := client.getLatestWalAgeSeconds(ctx)
+	if errors.Is(err, errNoLastArchive) {
+		// return no error as there is no last archive to derive the value from
+		return
+	}
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("unable to determine latest WAL age: %w", err))
+		return
+	}
+	p.mb.RecordPostgresqlWalAgeDataPoint(now, walAge)
 }
 
 func (p *postgreSQLScraper) retrieveDatabaseStats(
