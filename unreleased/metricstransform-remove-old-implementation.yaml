@@ -1,0 +1,6 @@
+change_type: breaking
+component: processor/metricstransform
+note: >
+  Remove `processor.metricstransformprocessor.UseOTLPDataModel` feature flag. OpenCensus-based implementation is
+  not available anymore.
+issues: [13405]

@@ -256,6 +256,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
 		},
 		{
+			receiver:     "pulsar",
+			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
+		},
+		{
 			receiver: "rabbitmq",
 		},
 		{
