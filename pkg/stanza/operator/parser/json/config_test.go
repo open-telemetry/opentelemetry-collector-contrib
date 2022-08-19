@@ -25,12 +25,12 @@ func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
-			Expect: defaultCfg(),
+			Expect: NewConfig(),
 		},
 		{
 			Name: "parse_from_simple",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
 			}(),
@@ -38,7 +38,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name: "parse_to_simple",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
 			}(),
@@ -46,7 +46,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name: "on_error_drop",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				cfg.OnError = "drop"
 				return cfg
 			}(),
@@ -54,7 +54,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name: "timestamp",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
 					LayoutType: "strptime",
@@ -68,7 +68,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name: "severity",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				parseField := entry.NewBodyField("severity_field")
 				severityParser := helper.NewSeverityConfig()
 				severityParser.ParseFrom = &parseField
@@ -86,7 +86,7 @@ func TestConfig(t *testing.T) {
 		{
 			Name: "scope_name",
 			Expect: func() *Config {
-				cfg := defaultCfg()
+				cfg := NewConfig()
 				loggerNameParser := helper.NewScopeNameParser()
 				loggerNameParser.ParseFrom = entry.NewBodyField("logger_name_field")
 				cfg.ScopeNameParser = &loggerNameParser
@@ -97,11 +97,8 @@ func TestConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Run(t, defaultCfg())
+			tc.Run(t, NewConfig())
+			tc.RunDeprecated(t, NewConfig())
 		})
 	}
-}
-
-func defaultCfg() *Config {
-	return NewConfig()
 }
