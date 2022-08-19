@@ -14,6 +14,7 @@ Functions
 - [limit](#limit)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
+- [split](#split)
 
 ## SpanID
 
@@ -141,3 +142,16 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 Examples:
 
 - `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
+## split
+
+`split(target, delimiter)`
+
+The `split` function converts a string attribute into an array of substrings split by the delimiter.
+
+`target` is a string attribute. `delimiter` is a string.
+
+If the `target` is not a string, or the `target` is not exist, the `split` function will not change anything.
+
+Examples:
+- If `attributes["flags"]` value is `"A|B|C"`, the following query will change the value to `["A", "B", "C"]`
+```split(attributes["flags"], "|")```
