@@ -86,7 +86,7 @@ type Config struct {
 	config.ReceiverSettings `mapstructure:",squash"`
 	receiverTemplates       map[string]receiverTemplate
 	// WatchObservers are the extensions to listen to endpoints from.
-	WatchObservers []config.Type `mapstructure:"watch_observers"`
+	WatchObservers []config.ComponentID `mapstructure:"watch_observers"`
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
