@@ -22,19 +22,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
 
 const (
-	instrumentationLibName = "otelcol/kafkametricsreceiver"
-	brokersScraperName     = "brokers"
-	topicsScraperName      = "topics"
-	consumersScraperName   = "consumers"
+	brokersScraperName   = "brokers"
+	topicsScraperName    = "topics"
+	consumersScraperName = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -65,7 +63,7 @@ var newMetricsReceiver = func(
 	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params.Logger)
+			s, err := s(ctx, config, sc, params)
 			if err != nil {
 				return nil, err
 			}

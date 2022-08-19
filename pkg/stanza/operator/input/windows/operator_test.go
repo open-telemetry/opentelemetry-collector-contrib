@@ -29,7 +29,7 @@ func TestConfig(t *testing.T) {
 	expect := NewConfig()
 
 	input := map[string]interface{}{
-		"id":            "",
+		"id":            "windows_eventlog_input",
 		"type":          "windows_eventlog_input",
 		"max_reads":     100,
 		"start_at":      "end",

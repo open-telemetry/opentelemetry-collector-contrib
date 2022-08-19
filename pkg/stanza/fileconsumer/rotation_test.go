@@ -46,7 +46,7 @@ func TestMultiFileRotate(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	numFiles := 3
 	numMessages := 3
@@ -104,7 +104,7 @@ func TestMultiFileRotateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -155,7 +155,7 @@ func TestMultiCopyTruncateSlow(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 
 	getMessage := func(f, k, m int) string { return fmt.Sprintf("file %d-%d, message %d", f, k, m) }
 	fileName := func(f, k int) string { return filepath.Join(tempDir, fmt.Sprintf("file%d.rot%d.log", f, k)) }
@@ -221,25 +221,26 @@ type rotationTest struct {
 }
 
 /*
-	When log files are rotated at extreme speeds, it is possible to miss some log entries.
-	This can happen when an individual log entry is written and deleted within the duration
-	of a single poll interval. For example, consider the following scenario:
-		- A log file may have up to 9 backups (10 total log files)
-		- Each log file may contain up to 10 entries
-		- Log entries are written at an interval of 10µs
-		- Log files are polled at an interval of 100ms
-	In this scenario, a log entry that is written may only exist on disk for about 1ms.
-	A polling interval of 100ms will most likely never produce a chance to read the log file.
+When log files are rotated at extreme speeds, it is possible to miss some log entries.
+This can happen when an individual log entry is written and deleted within the duration
+of a single poll interval. For example, consider the following scenario:
+  - A log file may have up to 9 backups (10 total log files)
+  - Each log file may contain up to 10 entries
+  - Log entries are written at an interval of 10µs
+  - Log files are polled at an interval of 100ms
 
-	In production settings, this consideration is not very likely to be a problem, but it is
-	easy to encounter the issue in tests, and difficult to deterministically simulate edge cases.
-	However, the above understanding does allow for some consistent expectations.
-		1) Cases that do not require deletion of old log entries should always pass.
-		2) Cases where the polling interval is sufficiently rapid should always pass.
-		3) When neither 1 nor 2 is true, there may be missing entries, but still no duplicates.
+In this scenario, a log entry that is written may only exist on disk for about 1ms.
+A polling interval of 100ms will most likely never produce a chance to read the log file.
 
-	The following method is provided largely as documentation of how this is expected to behave.
-	In practice, timing is largely dependent on the responsiveness of system calls.
+In production settings, this consideration is not very likely to be a problem, but it is
+easy to encounter the issue in tests, and difficult to deterministically simulate edge cases.
+However, the above understanding does allow for some consistent expectations.
+ 1. Cases that do not require deletion of old log entries should always pass.
+ 2. Cases where the polling interval is sufficiently rapid should always pass.
+ 3. When neither 1 nor 2 is true, there may be missing entries, but still no duplicates.
+
+The following method is provided largely as documentation of how this is expected to behave.
+In practice, timing is largely dependent on the responsiveness of system calls.
 */
 func (rt rotationTest) expectEphemeralLines() bool {
 	// primary + backups
@@ -263,7 +264,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		cfg.StartAt = "beginning"
 		cfg.PollInterval = helper.NewDuration(tc.pollInterval)
 		emitCalls := make(chan *emitParams, tc.totalLines)
-		operator := buildTestOperatorWithEmit(t, cfg, emitCalls)
+		operator := buildTestManagerWithEmit(t, cfg, emitCalls)
 
 		logger := getRotatingLogger(t, tempDir, tc.maxLinesPerFile, tc.maxBackupFiles, copyTruncate, sequential)
 
@@ -365,7 +366,7 @@ func TestMoveFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -397,7 +398,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -438,7 +439,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -472,7 +473,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -512,7 +513,7 @@ func TestFileMovedWhileOff_BigFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestOperator(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg)
 	persister := testutil.NewMockPersister("test")
 
 	log1 := tokenWithLength(1000)

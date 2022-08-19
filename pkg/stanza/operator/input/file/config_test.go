@@ -45,7 +45,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			Name:      "id_custom",
 			ExpectErr: false,
-			Expect:    NewConfig("test_id"),
+			Expect:    NewConfigWithID("test_id"),
 		},
 		{
 			Name:      "include_one",
@@ -520,7 +520,7 @@ func TestBuild(t *testing.T) {
 	fakeOutput := testutil.NewMockOperator("fake")
 
 	basicConfig := func() *Config {
-		cfg := NewConfig("testfile")
+		cfg := NewConfigWithID("testfile")
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Include = []string{"/var/log/testpath.*"}
 		cfg.Exclude = []string{"/var/log/testpath.ex*"}
@@ -747,11 +747,11 @@ func requireSamePreEmitOptions(t *testing.T, expect, actual []preEmitOption) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("file_input")
+	return NewConfig()
 }
 
 func NewTestConfig() *Config {
-	cfg := NewConfig("config_test")
+	cfg := NewConfigWithID("config_test")
 	cfg.Include = []string{"i1", "i2"}
 	cfg.Exclude = []string{"e1", "e2"}
 	cfg.Splitter = helper.NewSplitterConfig()

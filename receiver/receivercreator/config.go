@@ -39,7 +39,8 @@ type receiverConfig struct {
 	id config.ComponentID
 	// config is the map configured by the user in the config file. It is the contents of the map from
 	// the "config" section. The keys and values are arbitrarily configured by the user.
-	config userConfigMap
+	config     userConfigMap
+	endpointID observer.EndpointID
 }
 
 // userConfigMap is an arbitrary map of string keys to arbitrary values as specified by the user
@@ -52,7 +53,10 @@ type receiverTemplate struct {
 	// Rule is the discovery rule that when matched will create a receiver instance
 	// based on receiverTemplate.
 	Rule string `mapstructure:"rule"`
-	rule rule
+	// ResourceAttributes is a map of resource attributes to add to just this receiver's resource metrics.
+	// It can contain expr expressions for endpoint env value expansion
+	ResourceAttributes map[string]interface{} `mapstructure:"resource_attributes"`
+	rule               rule
 }
 
 // resourceAttributes holds a map of default resource attributes for each Endpoint type.
@@ -68,8 +72,9 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 
 	return receiverTemplate{
 		receiverConfig: receiverConfig{
-			id:     id,
-			config: cfg,
+			id:         id,
+			config:     cfg,
+			endpointID: observer.EndpointID("endpoint.id"),
 		},
 	}, nil
 }
@@ -97,6 +102,14 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 
+	for endpointType := range cfg.ResourceAttributes {
+		switch endpointType {
+		case observer.ContainerType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType:
+		default:
+			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
+		}
+	}
+
 	receiversCfg, err := componentParser.Sub(receiversConfigKey)
 	if err != nil {
 		return fmt.Errorf("unable to extract key %v: %w", receiversConfigKey, err)
@@ -121,6 +134,12 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		subreceiver.rule, err = newRule(subreceiver.Rule)
 		if err != nil {
 			return fmt.Errorf("subreceiver %q rule is invalid: %w", subreceiverKey, err)
+		}
+
+		for k, v := range subreceiver.ResourceAttributes {
+			if _, ok := v.(string); !ok {
+				return fmt.Errorf("unsupported `resource_attributes` %q value %v in %s", k, v, subreceiverKey)
+			}
 		}
 
 		cfg.receiverTemplates[subreceiverKey] = subreceiver

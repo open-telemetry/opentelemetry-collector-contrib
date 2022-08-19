@@ -31,6 +31,17 @@ For logs:
 - `record_attributes`: RecordAttributes defines a list of possible record
   attributes to match logs against.
   A match occurs if any record attribute matches all expressions in this given list.
+- `severity_texts`: SeverityTexts defines a list of possible severity texts to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `bodies`: Bodies defines a list of possible log bodies to match the logs against.
+  A match occurs if the record matches any expression in this given list.
+- `severity_number`: SeverityNumber defines how to match a record based on its SeverityNumber.
+  The following can be configured for matching a log record's SeverityNumber:
+  - `min`: Min defines the minimum severity with which a log record should match.
+    e.g. if this is "WARN", all log records with "WARN" severity and above (WARN[2-4], ERROR[2-4], FATAL[2-4]) are matched.
+    The list of valid severities that may be used for this option can be found [here](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#displaying-severity). You may use either the numerical "SeverityNumber" or the "Short Name"
+  - `match_undefined`: MatchUndefinedSeverity defines whether to match logs with undefined severity or not when using the `min_severity` matching option.
+    By default, this is `false`.
 
 For metrics:
 
@@ -76,15 +87,37 @@ processors:
           - Key: host.name
             Value: just_this_one_hostname
     logs/regexp:
+      include:
         match_type: regexp
         resource_attributes:
           - Key: host.name
             Value: prefix.*
     logs/regexp_record:
+      include:
         match_type: regexp
         record_attributes:
           - Key: record_attr
             Value: prefix_.*
+    # Filter on severity text field
+    logs/severity_text:
+      include:
+        match_type: regexp
+        severity_texts:
+        - INFO[2-4]?
+        - WARN[2-4]?
+        - ERROR[2-4]?
+    # Filter out logs below INFO (no DEBUG or TRACE level logs),
+    # retaining logs with undefined severity
+    logs/severity_number:
+      include:
+        severity_number:
+          min: "INFO"
+          match_undefined: true
+    logs/bodies:
+      include:
+        match_type: regexp
+        bodies:
+        - ^IMPORTANT RECORD
 ```
 
 Refer to the config files in [testdata](./testdata) for detailed

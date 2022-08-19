@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
 
-go 1.17
+go 1.18
 
 require (
 	github.com/aws/aws-xray-sdk-go v1.7.0
@@ -14,7 +14,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
-	github.com/aws/aws-sdk-go v1.44.67 // indirect
+	github.com/aws/aws-sdk-go v1.44.77 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.15.9 // indirect

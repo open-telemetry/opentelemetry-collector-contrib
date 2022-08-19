@@ -30,10 +30,12 @@ const (
 
 // NewFactory should be called to create a factory with default values.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 // CreateDefaultConfig creates the default configuration for the extension.

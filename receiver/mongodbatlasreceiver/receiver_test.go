@@ -27,6 +27,7 @@ import (
 func TestDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.SetIDName("testDefaultConfig")
 	params := componenttest.NewNopReceiverCreateSettings()
 	ctx := context.Background()
 

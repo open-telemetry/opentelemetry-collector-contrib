@@ -41,7 +41,7 @@ type couchDBClient struct {
 
 // newCouchDBClient creates a new client to make requests for the CouchDB receiver.
 func newCouchDBClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
-	client, err := cfg.ToClientWithHost(host, settings)
+	client, err := cfg.ToClient(host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

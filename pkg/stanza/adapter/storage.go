@@ -21,8 +21,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 func GetStorageClient(ctx context.Context, id config.ComponentID, componentKind component.Kind, host component.Host) (storage.Client, error) {
@@ -45,10 +43,6 @@ func GetStorageClient(ctx context.Context, id config.ComponentID, componentKind 
 	return storageExtension.GetClient(ctx, componentKind, id, "")
 }
 
-func GetPersister(storageClient storage.Client) operator.Persister {
-	return &persister{storageClient}
-}
-
 func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
 	client, err := GetStorageClient(ctx, r.id, component.KindReceiver, host)
 	if err != nil {
@@ -57,26 +51,4 @@ func (r *receiver) setStorageClient(ctx context.Context, host component.Host) er
 
 	r.storageClient = client
 	return nil
-}
-
-func (r *receiver) getPersister() operator.Persister {
-	return GetPersister(r.storageClient)
-}
-
-type persister struct {
-	client storage.Client
-}
-
-var _ operator.Persister = &persister{}
-
-func (p *persister) Get(ctx context.Context, key string) ([]byte, error) {
-	return p.client.Get(ctx, key)
-}
-
-func (p *persister) Set(ctx context.Context, key string, value []byte) error {
-	return p.client.Set(ctx, key, value)
-}
-
-func (p *persister) Delete(ctx context.Context, key string) error {
-	return p.client.Delete(ctx, key)
 }

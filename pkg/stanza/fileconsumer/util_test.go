@@ -17,7 +17,6 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -48,12 +47,12 @@ type emitParams struct {
 	token []byte
 }
 
-func buildTestOperator(t *testing.T, cfg *Config) (*Input, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	return buildTestOperatorWithEmit(t, cfg, emitChan), emitChan
+	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
 }
 
-func buildTestOperatorWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Input {
+func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
 	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
 		emitChan <- &emitParams{attrs, token}
 	})
@@ -77,14 +76,14 @@ func reopenTemp(t testing.TB, name string) *os.File {
 }
 
 func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
-	file, err := ioutil.TempFile(tempDir, pattern)
+	file, err := os.CreateTemp(tempDir, pattern)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
 }
 
 func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := ioutil.TempFile(tempDir, "")
+	file, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	require.NoError(t, file.Close()) // will be managed by rotator
 

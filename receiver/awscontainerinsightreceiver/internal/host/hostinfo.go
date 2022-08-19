@@ -131,7 +131,7 @@ func (m *Info) GetRegion() string {
 	return m.ec2Metadata.getRegion()
 }
 
-//GetInstanceIP returns the IP address of the host
+// GetInstanceIP returns the IP address of the host
 func (m *Info) GetInstanceIP() string {
 	return m.ec2Metadata.getInstanceIP()
 }
@@ -164,7 +164,7 @@ func (m *Info) GetClusterName() string {
 	return ""
 }
 
-//GetInstanceIPReadyC returns the channel to show the status of host IP
+// GetInstanceIPReadyC returns the channel to show the status of host IP
 func (m *Info) GetInstanceIPReadyC() chan bool {
 	return m.instanceIPReadyC
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package utils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 
 import (
@@ -23,8 +22,8 @@ import (
 )
 
 // CreateClient creates a new Datadog client
-func CreateClient(APIKey string, endpoint string) *datadog.Client {
-	client := datadog.NewClient(APIKey, "")
+func CreateClient(apiKey string, endpoint string) *datadog.Client {
+	client := datadog.NewClient(apiKey, "")
 	client.SetBaseUrl(endpoint)
 
 	return client

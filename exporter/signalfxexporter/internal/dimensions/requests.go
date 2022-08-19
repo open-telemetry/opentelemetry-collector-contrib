@@ -31,7 +31,7 @@ package dimensions // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"go.uber.org/atomic"
@@ -147,6 +147,6 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, int, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	return body, resp.StatusCode, err
 }

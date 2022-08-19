@@ -83,7 +83,7 @@ func newSigv4Extension(cfg *Config, awsSDKInfo string, logger *zap.Logger) *sigv
 // from the Config.
 func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
-		awsconfig.WithRegion(cfg.Region),
+		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
 	)
 	if err != nil {
 		return nil, err

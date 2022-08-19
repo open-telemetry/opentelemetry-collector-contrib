@@ -23,13 +23,13 @@ import (
 )
 
 func Test_DefaultFunctions(t *testing.T) {
-	expectedFunctions := common.DefaultFunctions()
+	expectedFunctions := common.Functions()
 	expectedFunctions["convert_sum_to_gauge"] = convertSumToGauge
 	expectedFunctions["convert_gauge_to_sum"] = convertGaugeToSum
 	expectedFunctions["convert_summary_sum_val_to_sum"] = convertSummarySumValToSum
 	expectedFunctions["convert_summary_count_val_to_sum"] = convertSummaryCountValToSum
 
-	actual := DefaultFunctions()
+	actual := Functions()
 
 	assert.NotNil(t, actual)
 	assert.Equal(t, len(expectedFunctions), len(actual))
