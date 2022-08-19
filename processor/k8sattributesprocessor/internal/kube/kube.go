@@ -270,11 +270,6 @@ func (r *FieldExtractionRule) extractField(v string) string {
 	return ""
 }
 
-// RegexpCompile make pattern fully anchored
-func RegexpCompile(pattern string) (*regexp.Regexp, error) {
-	return regexp.Compile("^(?:" + pattern + ")$")
-}
-
 // Associations represent a list of rules for Pod metadata associations with resources
 type Associations struct {
 	Associations []Association
