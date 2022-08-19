@@ -168,12 +168,13 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func newMetricsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
+func newMetricsExporter(config Config, set component.ExporterCreateSettings, producerFactory ProducerFactoryFunc, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(config)
+
+	producer, err := producerFactory(config)
 	if err != nil {
 		return nil, err
 	}
@@ -188,15 +189,17 @@ func newMetricsExporter(config Config, set component.ExporterCreateSettings, mar
 }
 
 // newTracesExporter creates Kafka exporter.
-func newTracesExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
+func newTracesExporter(config Config, set component.ExporterCreateSettings, producerFactory ProducerFactoryFunc, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(config)
+
+	producer, err := producerFactory(config)
 	if err != nil {
 		return nil, err
 	}
+
 	return &kafkaTracesProducer{
 		producer:  producer,
 		topic:     config.Topic,
@@ -205,12 +208,13 @@ func newTracesExporter(config Config, set component.ExporterCreateSettings, mars
 	}, nil
 }
 
-func newLogsExporter(config Config, set component.ExporterCreateSettings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
+func newLogsExporter(config Config, set component.ExporterCreateSettings, producerFactory ProducerFactoryFunc, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	producer, err := newSaramaProducer(config)
+
+	producer, err := producerFactory(config)
 	if err != nil {
 		return nil, err
 	}

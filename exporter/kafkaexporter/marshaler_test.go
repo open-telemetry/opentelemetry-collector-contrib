@@ -19,9 +19,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -145,4 +148,49 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	require.NoError(t, err, "Must not error marshaling expected data")
 
 	assert.Equal(t, expectedJSON, final, "Must match the expected value")
+}
+
+type mockTraceMarshaler struct {
+	MarshalFunc  func(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingFunc func() string
+}
+
+var _ TracesMarshaler = (*mockTraceMarshaler)(nil)
+
+func (c *mockTraceMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	return c.MarshalFunc(td, topic)
+}
+
+func (c *mockTraceMarshaler) Encoding() string {
+	return c.EncodingFunc()
+}
+
+type mockLogMarshaler struct {
+	MarshalFunc  func(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingFunc func() string
+}
+
+var _ LogsMarshaler = (*mockLogMarshaler)(nil)
+
+func (c *mockLogMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+	return c.MarshalFunc(logs, topic)
+}
+
+func (c *mockLogMarshaler) Encoding() string {
+	return c.EncodingFunc()
+}
+
+type mockMetricsMarshaler struct {
+	MarshalFunc  func(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingFunc func() string
+}
+
+var _ MetricsMarshaler = (*mockMetricsMarshaler)(nil)
+
+func (c *mockMetricsMarshaler) Marshal(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
+	return c.MarshalFunc(metrics, topic)
+}
+
+func (c *mockMetricsMarshaler) Encoding() string {
+	return c.EncodingFunc()
 }

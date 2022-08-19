@@ -80,6 +80,12 @@ func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 	}
 }
 
+func WithProducerFactory(producerFactory ProducerFactoryFunc) FactoryOption {
+	return func(factory *kafkaExporterFactory) {
+		factory.producerFactory = producerFactory
+	}
+}
+
 // NewFactory creates Kafka exporter factory.
 func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	f := &kafkaExporterFactory{
@@ -125,10 +131,13 @@ func createDefaultConfig() config.Exporter {
 	}
 }
 
+type ProducerFactoryFunc func(config Config) (sarama.SyncProducer, error)
+
 type kafkaExporterFactory struct {
 	tracesMarshalers  map[string]TracesMarshaler
 	metricsMarshalers map[string]MetricsMarshaler
 	logsMarshalers    map[string]LogsMarshaler
+	producerFactory   ProducerFactoryFunc
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(
@@ -143,7 +152,10 @@ func (f *kafkaExporterFactory) createTracesExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
+	if f.producerFactory == nil {
+		f.producerFactory = newSaramaProducer
+	}
+	exp, err := newTracesExporter(oCfg, set, f.producerFactory, f.tracesMarshalers)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +185,10 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
+	if f.producerFactory == nil {
+		f.producerFactory = newSaramaProducer
+	}
+	exp, err := newMetricsExporter(oCfg, set, f.producerFactory, f.metricsMarshalers)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +218,10 @@ func (f *kafkaExporterFactory) createLogsExporter(
 	if oCfg.Encoding == "otlp_json" {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
-	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)
+	if f.producerFactory == nil {
+		f.producerFactory = newSaramaProducer
+	}
+	exp, err := newLogsExporter(oCfg, set, f.producerFactory, f.logsMarshalers)
 	if err != nil {
 		return nil, err
 	}
