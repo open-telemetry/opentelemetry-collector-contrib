@@ -52,9 +52,8 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 #### Transition from metrics with "direction" attribute
 
-Some elasticsearch metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+There is a proposal to change some elasticsearch metrics from being reported with a `direction` attribute to being
+reported with the direction included in the metric name.
 
 - `elasticsearch.node.cluster.io` will become:
   - `elasticsearch.node.cluster.io.received`
@@ -67,26 +66,8 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-See this [tracking issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11815) for more details.
-
-1. Phase 1, v0.59.0, August 2022:
-
-- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-2. Phase 2, version and date TBD:
-
-- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
-- `receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
-- `receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
-
-3. Phase 3, version and date TBD:
-
-- The feature gates are removed.
-- The new metrics without `direction` attribute are always emitted.
-- The deprecated metrics with `direction` attribute are no longer available.
-
+The final decision on the transition is not finalized yet. The transition is on hold until
+https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
