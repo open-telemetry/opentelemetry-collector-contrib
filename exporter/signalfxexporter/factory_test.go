@@ -664,6 +664,33 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.Equal(t, 0, len(dps))
 }
 
+// Benchmark test for default translation rules on an example hostmetrics dataset.
+func BenchmarkMetricConversion(b *testing.B) {
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(b, err)
+	require.NotNil(b, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1)
+	require.NoError(b, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	require.NoError(b, err)
+
+	file, err := os.Open("testdata/json/hostmetrics.json")
+	defer func() { _ = file.Close() }()
+	require.NoError(b, err)
+	bytes, err := io.ReadAll(file)
+	require.NoError(b, err)
+
+	unmarshaller := pmetric.NewJSONUnmarshaler()
+	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
+	require.NoError(b, err)
+
+	for n := 0; n < b.N; n++ {
+		translated := c.MetricsToSignalFxV2(metrics)
+		require.NotNil(b, translated)
+	}
+}
+
 func getMetrics(metrics []map[string]string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	ilms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
