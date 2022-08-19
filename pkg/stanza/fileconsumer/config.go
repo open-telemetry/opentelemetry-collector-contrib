@@ -36,7 +36,7 @@ func NewConfig() *Config {
 		IncludeFilePath:         false,
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
-		PollInterval:            helper.Duration{Duration: 200 * time.Millisecond},
+		PollInterval:            200 * time.Millisecond,
 		Splitter:                helper.NewSplitterConfig(),
 		StartAt:                 "end",
 		FingerprintSize:         DefaultFingerprintSize,
@@ -52,7 +52,7 @@ type Config struct {
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"              json:"include_file_path,omitempty"             yaml:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"     json:"include_file_name_resolved,omitempty"    yaml:"include_file_name_resolved,omitempty"`
 	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"     json:"include_file_path_resolved,omitempty"    yaml:"include_file_path_resolved,omitempty"`
-	PollInterval            helper.Duration       `mapstructure:"poll_interval,omitempty"                  json:"poll_interval,omitempty"                 yaml:"poll_interval,omitempty"`
+	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"                  json:"poll_interval,omitempty"                 yaml:"poll_interval,omitempty"`
 	StartAt                 string                `mapstructure:"start_at,omitempty"                       json:"start_at,omitempty"                      yaml:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"               json:"fingerprint_size,omitempty"              yaml:"fingerprint_size,omitempty"`
 	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"                   json:"max_log_size,omitempty"                  yaml:"max_log_size,omitempty"`
@@ -131,7 +131,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 		},
 		finder:        c.Finder,
 		roller:        newRoller(),
-		pollInterval:  c.PollInterval.Raw(),
+		pollInterval:  c.PollInterval,
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		knownFiles:    make([]*Reader, 0, 10),
 		seenPaths:     make(map[string]struct{}, 100),

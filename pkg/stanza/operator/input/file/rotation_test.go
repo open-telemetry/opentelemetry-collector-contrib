@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -251,7 +250,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 	return func(t *testing.T) {
 		operator, logReceived, tempDir := newTestFileOperator(t,
 			func(cfg *Config) {
-				cfg.PollInterval = helper.NewDuration(tc.pollInterval)
+				cfg.PollInterval = tc.pollInterval
 			},
 			func(out *testutil.FakeOutput) {
 				out.Received = make(chan *entry.Entry, tc.totalLines)
