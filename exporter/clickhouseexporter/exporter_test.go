@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
@@ -81,10 +82,6 @@ func TestExporter_New(t *testing.T) {
 	}
 }
 
-const (
-	defaultDSN = "tcp://127.0.0.1:9000?database=default"
-)
-
 func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
 		var items int
@@ -130,7 +127,7 @@ func simpleLogs(count int) plog.Logs {
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		r.Attributes().PutStr("k", "v")
+		r.Attributes().PutString(conventions.AttributeServiceName, "v")
 	}
 	return logs
 }
@@ -140,11 +137,9 @@ func mustPushLogsData(t *testing.T, exporter *clickhouseExporter, ld plog.Logs) 
 	require.NoError(t, err)
 }
 
-const testDriverName = "clickhouse-test"
-
-func initClickhouseTestServer(_ *testing.T, recorder recorder) {
-	driverName = testDriverName
-	sql.Register(testDriverName, &testClickhouseDriver{
+func initClickhouseTestServer(t *testing.T, recorder recorder) {
+	driverName = t.Name()
+	sql.Register(t.Name(), &testClickhouseDriver{
 		recorder: recorder,
 	})
 }

@@ -18,6 +18,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
@@ -28,8 +29,9 @@ import (
 )
 
 type clickhouseExporter struct {
-	client        *sql.DB
-	insertLogsSQL string
+	client          *sql.DB
+	insertLogsSQL   string
+	insertTracesSQL string
 
 	logger *zap.Logger
 	cfg    *Config
@@ -45,13 +47,12 @@ func newExporter(logger *zap.Logger, cfg *Config) (*clickhouseExporter, error) {
 		return nil, err
 	}
 
-	insertLogsSQL := renderInsertLogsSQL(cfg)
-
 	return &clickhouseExporter{
-		client:        client,
-		insertLogsSQL: insertLogsSQL,
-		logger:        logger,
-		cfg:           cfg,
+		client:          client,
+		insertLogsSQL:   renderInsertLogsSQL(cfg),
+		insertTracesSQL: renderInsertTracesSQL(cfg),
+		logger:          logger,
+		cfg:             cfg,
 	}, nil
 }
 
@@ -177,22 +178,55 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	// use empty database to create database
+	// create database
+	if err := createDatabase(cfg); err != nil {
+		return nil, err
+	}
+	// create table
 	db, err := sql.Open(driverName, cfg.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("sql.Open:%w", err)
 	}
-	// create table
-	query := fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, "")
-	if cfg.TTLDays > 0 {
-		query = fmt.Sprintf(createLogsTableSQL,
-			cfg.LogsTableName,
-			fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays))
+	if _, err := db.Exec(renderCreateLogsTableSQL(cfg)); err != nil {
+		return nil, fmt.Errorf("exec create logs table sql: %w", err)
 	}
-	if _, err := db.Exec(query); err != nil {
-		return nil, fmt.Errorf("exec create table sql: %w", err)
+	if _, err := db.Exec(renderCreateTracesTableSQL(cfg)); err != nil {
+		return nil, fmt.Errorf("exec create traces table sql: %w", err)
+	}
+	if _, err := db.Exec(renderCreateTraceIDTsTableSQL(cfg)); err != nil {
+		return nil, fmt.Errorf("exec create traceIDTs table sql: %w", err)
+	}
+	if _, err := db.Exec(renderTraceIDTsMaterializedViewSQL(cfg)); err != nil {
+		return nil, fmt.Errorf("exec create traceIDTs view sql: %w", err)
 	}
 	return db, nil
+}
+
+func createDatabase(cfg *Config) error {
+	const defaultDatabase = "default"
+	if cfg.Database == defaultDatabase {
+		return nil
+	}
+	// use default database to create new database
+	dsnUseDefaultDatabase := strings.Replace(cfg.DSN, cfg.Database, defaultDatabase, 1)
+	db, err := sql.Open(driverName, dsnUseDefaultDatabase)
+	if err != nil {
+		return fmt.Errorf("sql.Open:%w", err)
+	}
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	_, err = db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("create database:%w", err)
+	}
+	return nil
+}
+
+func renderCreateLogsTableSQL(cfg *Config) string {
+	var ttlExpr string
+	if cfg.TTLDays > 0 {
+		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
+	}
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
