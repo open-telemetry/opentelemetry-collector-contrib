@@ -22,10 +22,9 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 )
 
 func (e *clickhouseExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
