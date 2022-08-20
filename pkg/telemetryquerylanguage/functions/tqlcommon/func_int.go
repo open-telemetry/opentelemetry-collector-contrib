@@ -39,7 +39,6 @@ func Int(target tql.Getter) (tql.ExprFunc, error) {
 			if value {
 				return int64(1)
 			}
-
 			return int64(0)
 		default:
 			return nil

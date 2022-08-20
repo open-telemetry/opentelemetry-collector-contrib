@@ -32,10 +32,18 @@ Examples:
 
 `Int(value)`
 
-The `Int` factory function converts a float, bool and string data to the int type.
+The `Int` factory function converts the `value` to int type.
 
-`value` is either a path expression to a telemetry field to retrieve or a literal.
+The returned type is int64.
+
+The input `value` types:
+* float64
+* string
+* bool
+
 If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
 
 Examples:
 
