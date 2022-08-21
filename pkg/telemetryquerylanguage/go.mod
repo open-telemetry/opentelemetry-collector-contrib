@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryqu
 go 1.18
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0-alpha9
+	github.com/alecthomas/participle/v2 v2.0.0-beta.5
 	github.com/gobwas/glob v0.2.3
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.57.2
-	go.opentelemetry.io/otel/trace v1.8.0
+	go.opentelemetry.io/collector/pdata v0.58.0
+	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/multierr v1.8.0
 )
 
@@ -20,8 +20,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/otel v1.8.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.opentelemetry.io/otel v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
 	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	golang.org/x/text v0.3.3 // indirect

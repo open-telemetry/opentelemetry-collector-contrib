@@ -59,12 +59,12 @@ const (
 //
 // Each metric point becomes a single string with the following format:
 //
-// 	"<path> <value> <timestamp>"
+//	"<path> <value> <timestamp>"
 //
 // The <path> contains the metric name and its tags and has the following,
 // format:
 //
-// 	<metric_name>[;tag0;...;tagN]
+//	<metric_name>[;tag0;...;tagN]
 //
 // <metric_name> is the name of the metric and terminates either at the first ';'
 // or at the end of the path.
@@ -77,10 +77,10 @@ const (
 // The <timestamp> is the Unix time text of when the measurement was made.
 //
 // The returned values are:
-// 	- a string concatenating all generated "lines" (each single one representing
-// 	  a single Carbon metric.
-//  - number of time series successfully converted to carbon.
-// 	- number of time series that could not be converted to Carbon.
+//   - a string concatenating all generated "lines" (each single one representing
+//     a single Carbon metric.
+//   - number of time series successfully converted to carbon.
+//   - number of time series that could not be converted to Carbon.
 func metricDataToPlaintext(mds []*agentmetricspb.ExportMetricsServiceRequest) (string, int, int) {
 	if len(mds) == 0 {
 		return "", 0, 0
@@ -266,7 +266,6 @@ func buildSummaryIntoBuilder(
 // 1. The total count will be represented by a metric named "<metricName>.count".
 //
 // 2. The total sum will be represented by a metruc with the original "<metricName>".
-//
 func buildCountAndSumIntoBuilder(
 	sb *strings.Builder,
 	metricName string,

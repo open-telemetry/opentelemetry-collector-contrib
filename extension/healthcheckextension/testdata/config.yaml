@@ -1,35 +1,30 @@
-extensions:
-  health_check:
-  health_check/1:
-    endpoint: "localhost:13"
-    tls:
-      ca_file: "/path/to/ca"
-      key_file: "/path/to/key"
-      cert_file: "/path/to/cert"
-    check_collector_pipeline:
-      enabled: false
-      interval: "5m"
-      exporter_failure_threshold: 5
-  health_check/2:
-    endpoint: "localhost:13"
-    path: "/health"
-    check_collector_pipeline:
-      enabled: false
-      interval: "5m"
-      exporter_failure_threshold: 5
-
-service:
-  extensions: [health_check/1]
-  pipelines:
-    traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [nop]
-
-# Data pipeline is required to load the config.
-receivers:
-  nop:
-processors:
-  nop:
-exporters:
-  nop:
+health_check:
+health_check/1:
+  endpoint: "localhost:13"
+  tls:
+    ca_file: "/path/to/ca"
+    key_file: "/path/to/key"
+    cert_file: "/path/to/cert"
+  check_collector_pipeline:
+    enabled: false
+    interval: "5m"
+    exporter_failure_threshold: 5
+health_check/missingendpoint:
+  endpoint: ""
+  check_collector_pipeline:
+    enabled: false
+    interval: "5m"
+    exporter_failure_threshold: 5
+health_check/invalidthreshold:
+  endpoint: "localhost:13"
+  check_collector_pipeline:
+    enabled: false
+    interval: "5m"
+    exporter_failure_threshold: -1
+health_check/invalidpath:
+  endpoint: "localhost:13"
+  path: "invalid"
+  check_collector_pipeline:
+    enabled: false
+    interval: "5m"
+    exporter_failure_threshold: 5

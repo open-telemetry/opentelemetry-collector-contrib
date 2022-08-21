@@ -19,13 +19,12 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
-
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func Test_serializeGaugePoint(t *testing.T) {

@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
@@ -31,8 +32,6 @@ import (
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	"gopkg.in/zorkian/go-datadog-api.v2"
-
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"

@@ -31,7 +31,11 @@ These are the metrics available for this scraper.
 | **k8s.node.memory.usage** | Node memory usage | By | Gauge(Int) | <ul> </ul> |
 | **k8s.node.memory.working_set** | Node memory working_set | By | Gauge(Int) | <ul> </ul> |
 | **k8s.node.network.errors** | Node network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.node.network.errors.receive** | Node network receive errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
+| **k8s.node.network.errors.transmit** | Node network transmission errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **k8s.node.network.io** | Node network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.node.network.io.receive** | Node network IO received | By | Sum(Int) | <ul> <li>interface</li> </ul> |
+| **k8s.node.network.io.transmit** | Node network IO transmitted | By | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **k8s.pod.cpu.time** | Pod CPU time | s | Sum(Double) | <ul> </ul> |
 | **k8s.pod.cpu.utilization** | Pod CPU utilization | 1 | Gauge(Double) | <ul> </ul> |
 | **k8s.pod.filesystem.available** | Pod filesystem available | By | Gauge(Int) | <ul> </ul> |
@@ -44,7 +48,11 @@ These are the metrics available for this scraper.
 | **k8s.pod.memory.usage** | Pod memory usage | By | Gauge(Int) | <ul> </ul> |
 | **k8s.pod.memory.working_set** | Pod memory working_set | By | Gauge(Int) | <ul> </ul> |
 | **k8s.pod.network.errors** | Pod network errors | 1 | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.pod.network.errors.receive** | Pod network receive errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
+| **k8s.pod.network.errors.transmit** | Pod network transmission errors | 1 | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **k8s.pod.network.io** | Pod network IO | By | Sum(Int) | <ul> <li>interface</li> <li>direction</li> </ul> |
+| **k8s.pod.network.io.receive** | Pod network IO received | By | Sum(Int) | <ul> <li>interface</li> </ul> |
+| **k8s.pod.network.io.transmit** | Pod network IO transmitted | By | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **k8s.volume.available** | The number of available bytes in the volume. | By | Gauge(Int) | <ul> </ul> |
 | **k8s.volume.capacity** | The total capacity in bytes of the volume. | By | Gauge(Int) | <ul> </ul> |
 | **k8s.volume.inodes** | The total inodes in the filesystem. | 1 | Gauge(Int) | <ul> </ul> |

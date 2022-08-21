@@ -51,9 +51,8 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 #### Transition from metrics with "direction" attribute
 
-Some host metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+There is a proposal to change some memcached metrics from being reported with a `direction` attribute to being
+reported with the direction included in the metric name.
 
 - `vcenter.host.disk.throughput` will become:
   - `vcenter.host.disk.throughput.read`
@@ -90,24 +89,8 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-1. v0.56.0, July 2022:
-
-- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- The old metrics with `direction` attribute are deprecated with a warning.
-- `receiver.vcenterreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-2. v0.58.0, August 2022:
-
-- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
-- `receiver.vcenterreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
-- `receiver.vcenterreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
-
-3. v0.60.0, September 2022:
-
-- The feature gates are removed.
-- The new metrics without `direction` attribute are always emitted.
-- The deprecated metrics with `direction` attribute are no longer available.
+The final decision on the transition is not finalized yet. The transition is on hold until
+https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

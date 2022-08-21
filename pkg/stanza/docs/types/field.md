@@ -14,7 +14,7 @@ Body fields can be nested arbitrarily deeply, such as `body.my_value.my_nested_v
 
 If a field does not start with `resource`, `attributes`, or `body`, then `body` is assumed. For example, `my_value` is equivalent to `body.my_value`.
 
-## Examples
+### Examples
 
 #### Using fields with the add and remove operators.
 

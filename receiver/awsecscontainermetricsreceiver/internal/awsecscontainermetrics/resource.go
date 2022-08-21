@@ -87,7 +87,8 @@ func taskResource(tm ecsutil.TaskMetadata) pcommon.Resource {
 
 // https://docs.aws.amazon.com/AmazonECS/latest/userguide/ecs-account-settings.html
 // The new taskARN format: New: arn:aws:ecs:region:aws_account_id:task/cluster-name/task-id
-//  Old(current): arn:aws:ecs:region:aws_account_id:task/task-id
+//
+//	Old(current): arn:aws:ecs:region:aws_account_id:task/task-id
 func getResourceFromARN(arn string) (string, string, string) {
 	if !strings.HasPrefix(arn, "arn:aws:ecs") {
 		return "", "", ""

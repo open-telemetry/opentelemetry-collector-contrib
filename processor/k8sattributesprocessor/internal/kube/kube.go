@@ -182,12 +182,19 @@ type FieldFilter struct {
 // ExtractionRules is used to specify the information that needs to be extracted
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
+	CronJobName        bool
 	Deployment         bool
+	DaemonSetUID       bool
+	DaemonSetName      bool
+	JobUID             bool
+	JobName            bool
 	Namespace          bool
 	PodName            bool
 	PodUID             bool
 	ReplicaSetID       bool
 	ReplicaSetName     bool
+	StatefulSetUID     bool
+	StatefulSetName    bool
 	Node               bool
 	StartTime          bool
 	ContainerID        bool

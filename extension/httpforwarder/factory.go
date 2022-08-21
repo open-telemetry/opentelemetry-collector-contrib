@@ -33,10 +33,11 @@ const (
 
 // NewFactory creates a factory for HostObserver extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUnmaintained)
 }
 
 func createDefaultConfig() config.Extension {

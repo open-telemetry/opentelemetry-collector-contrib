@@ -22,11 +22,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestType(t *testing.T) {
@@ -45,6 +46,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 }
 
 func TestCreateProcessors(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		configName   string
 		succeed      bool
@@ -116,17 +119,20 @@ func TestCreateProcessors(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		factories, err := componenttest.NopFactories()
-		assert.NoError(t, err)
+	for _, tt := range tests {
+		cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configName))
+		require.NoError(t, err)
 
-		factory := NewFactory()
-		factories.Processors[typeStr] = factory
-		config, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", test.configName), factories)
-		assert.NoError(t, err)
+		for k := range cm.ToStringMap() {
+			// Check if all processor variations that are defined in test config can be actually created
+			t.Run(tt.configName, func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
 
-		for name, cfg := range config.Processors {
-			t.Run(fmt.Sprintf("%s/%s", test.configName, name), func(t *testing.T) {
+				sub, err := cm.Sub(k)
+				require.NoError(t, err)
+				require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
 					componenttest.NewNopProcessorCreateSettings(),
@@ -141,11 +147,11 @@ func TestCreateProcessors(t *testing.T) {
 					componenttest.NewNopProcessorCreateSettings(),
 					cfg,
 					consumertest.NewNop())
-				if test.succeed {
+				if tt.succeed {
 					assert.NotNil(t, mp)
 					assert.NoError(t, mErr)
 				} else {
-					assert.EqualError(t, mErr, test.errorMessage)
+					assert.EqualError(t, mErr, tt.errorMessage)
 				}
 			})
 		}
