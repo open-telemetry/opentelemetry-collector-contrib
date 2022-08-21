@@ -37,9 +37,10 @@ The `Int` factory function converts the `value` to int type.
 The returned type is int64.
 
 The input `value` types:
-* float64
-* string
-* bool
+* float64. Fraction is discharged (truncation towards zero).
+* string. Trying to parse an integer from string if it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function returns the `value` without changes.
 
 If `value` is another type or parsing failed nil is always returned.
 

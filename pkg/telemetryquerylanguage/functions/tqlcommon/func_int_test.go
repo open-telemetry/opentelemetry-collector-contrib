@@ -56,7 +56,7 @@ func Test_Int(t *testing.T) {
 		},
 		{
 			name:     "float64 without decimal",
-			value:    float64(55.0),
+			value:    float64(55),
 			expected: int64(55),
 		},
 		{
