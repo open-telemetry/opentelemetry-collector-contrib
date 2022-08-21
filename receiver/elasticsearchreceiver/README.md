@@ -18,7 +18,7 @@ See the [Elasticsearch docs](https://www.elastic.co/guide/en/elasticsearch/refer
 ## Configuration
 
 The following settings are optional:
-- `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics_v2.go): Allows enabling and disabling specific metrics from being collected in this receiver.
+- `metrics` (default: see `DefaultMetricsSettings` [here](./internal/metadata/generated_metrics.go): Allows enabling and disabling specific metrics from being collected in this receiver.
 - `nodes` (default: `["_all"]`): Allows specifying node filters that define which nodes are scraped for node-level metrics. See [the Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster.html#cluster-nodes) for allowed filters. If this option is left explicitly empty, then no node-level metrics will be scraped.
 - `skip_cluster_metrics` (default: `false`): If true, cluster-level metrics will not be scraped.
 - `endpoint` (default = `http://localhost:9200`): The base URL of the Elasticsearch API for the cluster to monitor.
