@@ -52,6 +52,18 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
 }
 
+func TestParserConfigBodyCollision(t *testing.T) {
+	cfg := NewParserConfig("test-id", "test-type")
+	cfg.ParseTo = entry.NewBodyField()
+
+	b := entry.NewAttributeField("message")
+	cfg.BodyField = &b
+
+	_, err := cfg.Build(testutil.Logger(t))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
+}
+
 func TestParserConfigBuildValid(t *testing.T) {
 	cfg := NewParserConfig("test-id", "test-type")
 
@@ -505,6 +517,28 @@ func TestParserFields(t *testing.T) {
 						},
 					},
 				}
+				return e
+			},
+		},
+		{
+			"ParseAndSetBody",
+			func(cfg *ParserConfig) {
+				b := entry.NewAttributeField("key")
+				cfg.BodyField = &b
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Body = keyValue
+				return e
+			},
+			func() *entry.Entry {
+				e := entry.New()
+				e.ObservedTimestamp = now
+				e.Attributes = map[string]interface{}{
+					"key": "value",
+				}
+				e.Body = "value"
 				return e
 			},
 		},

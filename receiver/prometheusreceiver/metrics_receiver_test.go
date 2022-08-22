@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1445,18 +1445,18 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric
 func TestGCInterval(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
-		input *config.Config
+		input *promConfig.Config
 		want  time.Duration
 	}{
 		{
 			desc:  "default",
-			input: &config.Config{},
+			input: &promConfig.Config{},
 			want:  defaultGCInterval,
 		},
 		{
 			desc: "global override",
-			input: &config.Config{
-				GlobalConfig: config.GlobalConfig{
+			input: &promConfig.Config{
+				GlobalConfig: promConfig.GlobalConfig{
 					ScrapeInterval: model.Duration(10 * time.Minute),
 				},
 			},
@@ -1464,8 +1464,8 @@ func TestGCInterval(t *testing.T) {
 		},
 		{
 			desc: "scrape config override",
-			input: &config.Config{
-				ScrapeConfigs: []*config.ScrapeConfig{
+			input: &promConfig.Config{
+				ScrapeConfigs: []*promConfig.ScrapeConfig{
 					{
 						ScrapeInterval: model.Duration(10 * time.Minute),
 					},

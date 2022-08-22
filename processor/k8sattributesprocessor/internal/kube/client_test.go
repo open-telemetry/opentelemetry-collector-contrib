@@ -464,7 +464,7 @@ func TestExtractionRules(t *testing.T) {
 				{
 					APIVersion: "batch/v1",
 					Kind:       "Job",
-					Name:       "pi",
+					Name:       "auth-cronjob-27667920",
 					UID:        "59f27ac1-5c71-42e5-abe9-2c499d603706",
 				},
 				{
@@ -545,7 +545,15 @@ func TestExtractionRules(t *testing.T) {
 			JobName: true,
 		},
 		attributes: map[string]string{
-			"k8s.job.name": "pi",
+			"k8s.job.name": "auth-cronjob-27667920",
+		},
+	}, {
+		name: "cronJob",
+		rules: ExtractionRules{
+			CronJobName: true,
+		},
+		attributes: map[string]string{
+			"k8s.cronjob.name": "auth-cronjob",
 		},
 	}, {
 		name: "statefulsetUID",
