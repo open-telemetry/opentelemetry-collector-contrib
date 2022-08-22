@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [beta]                |
+| Stability                | [alpha]               |
 | Distributions            | [contrib]             |
 
 This extension allows serving sampling strategies following the Jaeger's remote sampling API. This extension can be configured to proxy requests to a backing remote sampling server, which could potentially be a Jaeger Collector down the pipeline, or a static JSON file from the local file system.
@@ -85,5 +85,5 @@ A sampling strategy file could look like:
 ```
 Source: https://www.jaegertracing.io/docs/1.28/sampling/#collector-sampling-configuration
 
-[beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

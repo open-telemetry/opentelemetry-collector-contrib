@@ -120,7 +120,7 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Mao` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string. 
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string. 
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
 
@@ -132,7 +132,7 @@ Examples:
 
 `replace_all_patterns(target, regex, replacement)`
 
-The `replace_all_matches` function replaces any segments in a string value that match the regex pattern with the replacement string.
+The `replace_all_patterns` function replaces any segments in a string value that match the regex pattern with the replacement string.
 
 `target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string. 
 
