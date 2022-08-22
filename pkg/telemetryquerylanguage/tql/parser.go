@@ -16,6 +16,7 @@ package tql // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"encoding/hex"
+	"fmt"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
@@ -56,17 +57,49 @@ type OpOrTerm struct {
 }
 
 // BooleanExpression represents a true/false decision expressed
-// as an arbitrary number of terms separated by OR
+// as an arbitrary number of terms separated by OR.
 type BooleanExpression struct {
 	Left  *Term       `parser:"@@"`
 	Right []*OpOrTerm `parser:"@@*"`
 }
 
+// CompareOp is the type of a comparison operator.
+type CompareOp int
+
+// These are the allowed values of a CompareOp
+const (
+	EQ CompareOp = iota
+	NE
+	LT
+	LTE
+	GTE
+	GT
+)
+
+// a fast way to get from a string to a compareOp
+var comparisonTable = map[string]CompareOp{
+	"==": EQ,
+	"!=": NE,
+	"<":  LT,
+	"<=": LTE,
+	">":  GT,
+	">=": GTE,
+}
+
+func (c *CompareOp) Capture(values []string) error {
+	op, ok := comparisonTable[values[0]]
+	if !ok {
+		return fmt.Errorf("'%s' is not a valid operator", values[0])
+	}
+	*c = op
+	return nil
+}
+
 // Comparison represents an optional boolean condition.
 type Comparison struct {
-	Left  Value  `parser:"@@"`
-	Op    string `parser:"@OpComparison"`
-	Right Value  `parser:"@@"`
+	Left  Value     `parser:"@@"`
+	Op    CompareOp `parser:"@OpComparison"`
+	Right Value     `parser:"@@"`
 }
 
 // Invocation represents a function call.

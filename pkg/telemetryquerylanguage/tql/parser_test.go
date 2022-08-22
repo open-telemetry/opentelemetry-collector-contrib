@@ -186,7 +186,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: "==",
+								Op: EQ,
 								Right: Value{
 									String: tqltest.Strp("fido"),
 								},
@@ -237,7 +237,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: "!=",
+								Op: NE,
 								Right: Value{
 									String: tqltest.Strp("fido"),
 								},
@@ -288,7 +288,7 @@ func Test_parse(t *testing.T) {
 										},
 									},
 								},
-								Op: "==",
+								Op: EQ,
 								Right: Value{
 									String: tqltest.Strp("fido"),
 								},
@@ -693,7 +693,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: "!=",
+							Op: NE,
 							Right: Value{
 								String: tqltest.Strp("foo"),
 							},
@@ -713,7 +713,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: "!=",
+									Op: NE,
 									Right: Value{
 										String: tqltest.Strp("bar"),
 									},
@@ -739,7 +739,7 @@ func Test_parseWhere(t *testing.T) {
 									},
 								},
 							},
-							Op: "==",
+							Op: EQ,
 							Right: Value{
 								String: tqltest.Strp("foo"),
 							},
@@ -761,7 +761,7 @@ func Test_parseWhere(t *testing.T) {
 											},
 										},
 									},
-									Op: "==",
+									Op: EQ,
 									Right: Value{
 										String: tqltest.Strp("bar"),
 									},

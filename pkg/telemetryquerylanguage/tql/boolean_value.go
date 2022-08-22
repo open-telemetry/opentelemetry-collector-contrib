@@ -55,16 +55,6 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-// a fast way to get from a string to a compareOp
-var comparisonTable = map[string]compareOp{
-	"==": EQ,
-	"!=": NE,
-	"<":  LT,
-	"<=": LTE,
-	">":  GT,
-	">=": GTE,
-}
-
 func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
@@ -82,7 +72,7 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 	return func(ctx TransformContext) bool {
 		a := left.Get(ctx)
 		b := right.Get(ctx)
-		return compare(a, b, comparisonTable[comparison.Op])
+		return compare(a, b, comparison.Op)
 	}, nil
 
 }

@@ -71,7 +71,7 @@ func comparison(left any, right any, op string) *Comparison {
 	return &Comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
-		Op:    op,
+		Op:    comparisonTable[op],
 	}
 }
 
@@ -130,7 +130,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 				Left: Value{
 					Enum: (*EnumSymbol)(tqltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: "==",
+				Op: EQ,
 				Right: Value{
 					String: tqltest.Strp("trash"),
 				},

@@ -28,24 +28,13 @@ import (
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
-func invalidComparison(msg string, op compareOp) bool {
+func invalidComparison(msg string, op CompareOp) bool {
 	fmt.Printf("%s with op %v", msg, op)
 	return op == NE
 }
 
-type compareOp int
-
-const (
-	EQ compareOp = iota
-	NE
-	LT
-	LTE
-	GTE
-	GT
-)
-
 // String for compareOp gives us more legible test results and error messages.
-func (op compareOp) String() string {
+func (op CompareOp) String() string {
 	switch op {
 	case EQ:
 		return "EQ"
@@ -66,7 +55,7 @@ func (op compareOp) String() string {
 
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
-func comparePrimitives[T constraints.Ordered](a T, b T, op compareOp) bool {
+func comparePrimitives[T constraints.Ordered](a T, b T, op CompareOp) bool {
 	switch op {
 	case EQ:
 		return a == b
@@ -85,7 +74,7 @@ func comparePrimitives[T constraints.Ordered](a T, b T, op compareOp) bool {
 	}
 }
 
-func compareBools(a bool, b bool, op compareOp) bool {
+func compareBools(a bool, b bool, op CompareOp) bool {
 	switch op {
 	case EQ:
 		return a == b
@@ -104,7 +93,7 @@ func compareBools(a bool, b bool, op compareOp) bool {
 	}
 }
 
-func compareBytes(a []byte, b []byte, op compareOp) bool {
+func compareBytes(a []byte, b []byte, op CompareOp) bool {
 	switch op {
 	case EQ:
 		return bytes.Equal(a, b)
@@ -123,7 +112,7 @@ func compareBytes(a []byte, b []byte, op compareOp) bool {
 	}
 }
 
-func compareBool(a bool, b any, op compareOp) bool {
+func compareBool(a bool, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
@@ -137,7 +126,7 @@ func compareBool(a bool, b any, op compareOp) bool {
 	}
 }
 
-func compareString(a string, b any, op compareOp) bool {
+func compareString(a string, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
@@ -151,7 +140,7 @@ func compareString(a string, b any, op compareOp) bool {
 	}
 }
 
-func compareByte(a []byte, b any, op compareOp) bool {
+func compareByte(a []byte, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case nil:
 		return op == NE
@@ -165,7 +154,7 @@ func compareByte(a []byte, b any, op compareOp) bool {
 	}
 }
 
-func compareInt64(a int64, b any, op compareOp) bool {
+func compareInt64(a int64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int:
 		return comparePrimitives(a, int64(v), op)
@@ -207,7 +196,7 @@ func compareInt64(a int64, b any, op compareOp) bool {
 	}
 }
 
-func compareFloat64(a float64, b any, op compareOp) bool {
+func compareFloat64(a float64, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case int:
 		return comparePrimitives(a, float64(v), op)
@@ -255,7 +244,7 @@ func compareFloat64(a float64, b any, op compareOp) bool {
 
 // a and b are the return values from a Getter; we try to compare them
 // according to the given operator.
-func compare(a any, b any, op compareOp) bool {
+func compare(a any, b any, op CompareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
