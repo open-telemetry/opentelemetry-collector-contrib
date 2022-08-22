@@ -114,6 +114,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.JobName = true
 			case conventions.AttributeK8SJobUID:
 				p.rules.JobUID = true
+			case conventions.AttributeK8SCronJobName:
+				p.rules.CronJobName = true
 			case metadataNode, conventions.AttributeK8SNodeName:
 				p.rules.Node = true
 			case conventions.AttributeContainerID:

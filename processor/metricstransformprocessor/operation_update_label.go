@@ -15,32 +15,9 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
-
-// updateLabelOp updates labels and label values in metric based on given operation
-func (mtp *metricsTransformProcessor) updateLabelOp(metric *metricspb.Metric, mtpOp internalOperation) {
-	op := mtpOp.configOperation
-	for idx, label := range metric.MetricDescriptor.LabelKeys {
-		if label.Key != op.Label {
-			continue
-		}
-
-		if op.NewLabel != "" {
-			label.Key = op.NewLabel
-		}
-
-		labelValuesMapping := mtpOp.valueActionsMapping
-		for _, timeseries := range metric.Timeseries {
-			newValue, ok := labelValuesMapping[timeseries.LabelValues[idx].Value]
-			if ok {
-				timeseries.LabelValues[idx].Value = newValue
-			}
-		}
-	}
-}
 
 // updateLabelOp updates labels and label values in metric based on given operation
 func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFilter) {

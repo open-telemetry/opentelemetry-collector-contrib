@@ -31,7 +31,6 @@ const targetExternalLabels = `
 go_threads 19`
 
 func TestExternalLabels(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10603")
 	targets := []*testData{
 		{
 			name: "target1",
@@ -238,7 +237,6 @@ test_counter0{label1="value1",label2="value2"} 1
 `
 
 func TestLabelNameLimitConfig(t *testing.T) {
-	t.Skip("Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11516")
 	targets := []*testData{
 		{
 			name: "target1",

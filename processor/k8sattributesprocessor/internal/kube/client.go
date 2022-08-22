@@ -43,6 +43,7 @@ type WatchClient struct {
 	informer          cache.SharedInformer
 	namespaceInformer cache.SharedInformer
 	replicasetRegex   *regexp.Regexp
+	cronJobRegex      *regexp.Regexp
 	deleteQueue       []deleteRequest
 	stopCh            chan struct{}
 
@@ -63,6 +64,10 @@ type WatchClient struct {
 // format: [deployment-name]-[Random-String-For-ReplicaSet]
 var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 
+// Extract CronJob name from the Job name. Job name is created using
+// format: [cronjob-name]-[time-hash-int]
+var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+
 // New initializes a new k8s Client.
 func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace) (Client, error) {
 	c := &WatchClient{
@@ -72,6 +77,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		Associations:    associations,
 		Exclude:         exclude,
 		replicasetRegex: rRegex,
+		cronJobRegex:    cronJobRegex,
 		stopCh:          make(chan struct{}),
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
@@ -296,7 +302,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		c.Rules.DaemonSetUID || c.Rules.DaemonSetName ||
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
-		c.Rules.Deployment {
+		c.Rules.Deployment || c.Rules.CronJobName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -328,6 +334,12 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
+				if c.Rules.CronJobName {
+					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
+					if len(parts) == 2 {
+						tags[conventions.AttributeK8SCronJobName] = parts[1]
+					}
+				}
 				if c.Rules.JobUID {
 					tags[conventions.AttributeK8SJobUID] = string(ref.UID)
 				}

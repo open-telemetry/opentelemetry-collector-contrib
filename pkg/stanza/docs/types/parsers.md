@@ -53,3 +53,4 @@ List of embeddable operations:
 - [`severity`](./severity.md)
 - [`trace`](./trace.md)
 - [`scope_name`](./scope_name.md)
+- `body`: A field that should be assigned to a the log body.
