@@ -22,16 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-const (
-	// AttributeInstanaHostID can be used to distinguish multiple hosts' data
-	// being processed by a single collector (in a chained scenario)
-	AttributeInstanaHostID = "instana.host.id"
-
-	HeaderKey  = "x-instana-key"
-	HeaderHost = "x-instana-host"
-	HeaderTime = "x-instana-time"
-)
-
 // Config defines configuration for the Instana exporter
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct

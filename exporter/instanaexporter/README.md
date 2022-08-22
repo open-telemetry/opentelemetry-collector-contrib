@@ -2,7 +2,7 @@
 
 | Status                   |                  |
 | ------------------------ |------------------|
-| Stability                | [beta]           |
+| Stability                | [in-development]  |
 | Supported pipeline types | traces           |
 | Distributions            | [contrib]        |
 
@@ -69,5 +69,5 @@ service:
       exporters: [instana]
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[in-development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

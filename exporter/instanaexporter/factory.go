@@ -31,7 +31,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "instana"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelInDevelopment
 )
 
 //NewFactory creates an Instana exporter factory
@@ -48,10 +48,9 @@ func createDefaultConfig() config.Exporter {
 	return &instanaConfig.Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
+			Endpoint:        "",
+			Timeout:         30 * time.Second,
+			Headers:         map[string]string{},
 			WriteBufferSize: 512 * 1024,
 		},
 	}
