@@ -16,7 +16,6 @@ package operatortest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -28,6 +27,13 @@ import (
 )
 
 // ConfigUnmarshalTest is used for testing golden configs
+type ConfigUnmarshalTests struct {
+	DefaultConfig operator.Builder
+	TestsFile     string
+	Tests         []ConfigUnmarshalTest
+}
+
+// ConfigUnmarshalTest is used for testing golden configs
 type ConfigUnmarshalTest struct {
 	Name      string
 	Expect    interface{}
@@ -35,18 +41,26 @@ type ConfigUnmarshalTest struct {
 }
 
 // Run Unmarshals yaml files and compares them against the expected.
-func (c ConfigUnmarshalTest) Run(t *testing.T, defaultConfig operator.Builder) {
-	cm, err := confmaptest.LoadConf(filepath.Join(".", "testdata", fmt.Sprintf("%s.yaml", c.Name)))
+func (c ConfigUnmarshalTests) Run(t *testing.T) {
+	testConfMaps, err := confmaptest.LoadConf(c.TestsFile)
 	require.NoError(t, err)
 
-	cfg := newAnyOpConfig(defaultConfig)
-	err = config.UnmarshalReceiver(cm, cfg)
+	for _, tc := range c.Tests {
+		t.Run(tc.Name, func(t *testing.T) {
+			testConfMap, err := testConfMaps.Sub(tc.Name)
+			require.NoError(t, err)
+			require.NotZero(t, len(testConfMap.AllKeys()), fmt.Sprintf("config not found: '%s'", tc.Name))
 
-	if c.ExpectErr {
-		require.Error(t, err)
-	} else {
-		require.NoError(t, err)
-		require.Equal(t, c.Expect, cfg.Operator.Builder)
+			cfg := newAnyOpConfig(c.DefaultConfig)
+			err = config.UnmarshalReceiver(testConfMap, cfg)
+
+			if tc.ExpectErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.Expect, cfg.Operator.Builder)
+			}
+		})
 	}
 }
 
