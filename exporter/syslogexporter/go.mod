@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslog
 go 1.18
 
 require (
-	github.com/elastic/go-structform v0.0.10
 	github.com/influxdata/go-syslog/v3 v3.0.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
