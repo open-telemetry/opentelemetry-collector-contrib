@@ -130,7 +130,7 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFilePath:         false,
 			IncludeFileNameResolved: false,
 			IncludeFilePathResolved: false,
-			PollInterval:            helper.Duration{Duration: 200 * time.Millisecond},
+			PollInterval:            200 * time.Millisecond,
 			Splitter:                helper.NewSplitterConfig(),
 			StartAt:                 "end",
 			FingerprintSize:         1000,
