@@ -16,7 +16,7 @@ Tails and parses logs from files.
 | `exclude`                    | []               | A list of file glob patterns to exclude from reading                                                               |
 | `start_at`                   | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `multiline`                  |                  | A `multiline` configuration block. See below for more details                                                      |
-| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](../../pkg/stanza/docs/types/duration.md) as value. Zero means waiting for new data forever |
+| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes `time.Duration` (e.g. `10s`, `1m`, or `500ms`) as value. Zero means waiting for new data forever |
 | `encoding`                   | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`          | `true`           | Whether to add the file name as the attribute `log.file.name`. |
 | `include_file_path`          | `false`          | Whether to add the file path as the attribute `log.file.path`. |
