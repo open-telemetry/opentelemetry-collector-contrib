@@ -58,7 +58,13 @@ func configFromFileViaMapstructure(file string, config interface{}) error {
 		return fmt.Errorf("failed to read data from yaml: %w", err)
 	}
 
-	dc := &mapstructure.DecoderConfig{Result: config, DecodeHook: helper.JSONUnmarshalerHook()}
+	dc := &mapstructure.DecoderConfig{
+		Result: config,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			helper.JSONUnmarshalerHook(),
+		),
+	}
 	ms, err := mapstructure.NewDecoder(dc)
 	if err != nil {
 		return err
