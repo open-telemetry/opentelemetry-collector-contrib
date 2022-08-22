@@ -695,7 +695,7 @@ func accessExplicitBounds() tql.StandardGetSetter {
 			if newExplicitBounds, ok := val.([]float64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetExplicitBounds(pcommon.NewImmutableFloat64Slice(newExplicitBounds))
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetExplicitBounds(pcommon.NewFloat64SliceFromRaw(newExplicitBounds))
 				}
 			}
 		},
@@ -715,7 +715,7 @@ func accessBucketCounts() tql.StandardGetSetter {
 			if newBucketCount, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetBucketCounts(pcommon.NewImmutableUInt64Slice(newBucketCount))
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetBucketCounts(pcommon.NewUInt64SliceFromRaw(newBucketCount))
 				}
 			}
 		},
@@ -815,7 +815,7 @@ func accessPositiveBucketCounts() tql.StandardGetSetter {
 			if newPositiveBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newPositiveBucketCounts))
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive().SetBucketCounts(pcommon.NewUInt64SliceFromRaw(newPositiveBucketCounts))
 				}
 			}
 		},
@@ -875,7 +875,7 @@ func accessNegativeBucketCounts() tql.StandardGetSetter {
 			if newNegativeBucketCounts, ok := val.([]uint64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(newNegativeBucketCounts))
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative().SetBucketCounts(pcommon.NewUInt64SliceFromRaw(newNegativeBucketCounts))
 				}
 			}
 		},
@@ -941,7 +941,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case float64:
 		attrs.UpsertDouble(mapKey, v)
 	case []byte:
-		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
+		attrs.UpsertBytes(mapKey, pcommon.NewByteSliceFromRaw(v))
 	case []string:
 		arr := pcommon.NewValueSlice()
 		for _, str := range v {
@@ -969,7 +969,7 @@ func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
 	case [][]byte:
 		arr := pcommon.NewValueSlice()
 		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
+			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewByteSliceFromRaw(b))
 		}
 		attrs.Upsert(mapKey, arr)
 	default:

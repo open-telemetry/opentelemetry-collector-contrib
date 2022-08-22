@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"math"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
@@ -260,11 +259,11 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 			}
 
 			bucketsValid := true
-			rawBucketCounts := dp.BucketCounts().AsRaw()
-			for index := 0; index < len(rawBucketCounts); index++ {
+			bucketCounts := dp.BucketCounts()
+			for index := 0; index < bucketCounts.Len(); index++ {
 				bucketID := baseIdentities.BucketIdentities[index]
-				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp, int64(rawBucketCounts[index]))
-				rawBucketCounts[index] = uint64(bucketDelta.IntValue)
+				bucketDelta, bucketValid := ctdp.convertHistogramIntValue(bucketID, dp, int64(bucketCounts.At(index)))
+				bucketCounts.SetAt(index, uint64(bucketDelta.IntValue))
 				bucketsValid = bucketsValid && bucketValid
 			}
 
@@ -274,7 +273,6 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 				if hasSum {
 					dp.SetSum(sumDelta.FloatValue)
 				}
-				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawBucketCounts))
 				return false
 			}
 

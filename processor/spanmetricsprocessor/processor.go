@@ -80,7 +80,7 @@ type processorImp struct {
 	// Latency histogram.
 	latencyCount         map[metricKey]uint64
 	latencySum           map[metricKey]float64
-	latencyBucketCounts  map[metricKey][]uint64
+	latencyBucketCounts  map[metricKey]pcommon.UInt64Slice
 	latencyBounds        []float64
 	latencyExemplarsData map[metricKey][]exemplarData
 
@@ -121,7 +121,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 		latencyBounds:         bounds,
 		latencySum:            make(map[metricKey]float64),
 		latencyCount:          make(map[metricKey]uint64),
-		latencyBucketCounts:   make(map[metricKey][]uint64),
+		latencyBucketCounts:   make(map[metricKey]pcommon.UInt64Slice),
 		latencyExemplarsData:  make(map[metricKey][]exemplarData),
 		nextConsumer:          nextConsumer,
 		dimensions:            pConfig.Dimensions,
@@ -290,8 +290,8 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpLatency := mLatency.Histogram().DataPoints().AppendEmpty()
 		dpLatency.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpLatency.SetTimestamp(timestamp)
-		dpLatency.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.latencyBounds))
-		dpLatency.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.latencyBucketCounts[key]))
+		dpLatency.SetExplicitBounds(pcommon.NewFloat64SliceFromRaw(p.latencyBounds))
+		dpLatency.SetBucketCounts(p.latencyBucketCounts[key])
 		dpLatency.SetCount(p.latencyCount[key])
 		dpLatency.SetSum(p.latencySum[key])
 
@@ -406,7 +406,7 @@ func (p *processorImp) resetAccumulatedMetrics() {
 	p.callSum = make(map[metricKey]int64)
 	p.latencyCount = make(map[metricKey]uint64)
 	p.latencySum = make(map[metricKey]float64)
-	p.latencyBucketCounts = make(map[metricKey][]uint64)
+	p.latencyBucketCounts = make(map[metricKey]pcommon.UInt64Slice)
 	p.metricKeyToDimensions.Purge()
 }
 
@@ -433,11 +433,12 @@ func (p *processorImp) resetExemplarData() {
 // updateLatencyMetrics increments the histogram counts for the given metric key and bucket index.
 func (p *processorImp) updateLatencyMetrics(key metricKey, latency float64, index int) {
 	if _, ok := p.latencyBucketCounts[key]; !ok {
-		p.latencyBucketCounts[key] = make([]uint64, len(p.latencyBounds)+1)
+		p.latencyBucketCounts[key] = pcommon.NewUInt64Slice(len(p.latencyBounds) + 1)
 	}
 	p.latencySum[key] += latency
 	p.latencyCount[key]++
-	p.latencyBucketCounts[key][index]++
+	lbc := p.latencyBucketCounts[key]
+	lbc.SetAt(index, lbc.At(index)+1)
 }
 
 func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, optionalDims []Dimension, resourceAttrs pcommon.Map) pcommon.Map {

@@ -129,15 +129,15 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 
 	// for OCAgent Proto, the bounds won't include +inf
 	// TODO: (@odeke-em) should we also check OpenTelemetry Pdata for bucket bounds?
-	bounds := make([]float64, len(mg.complexValue)-1)
-	bucketCounts := make([]uint64, len(mg.complexValue))
+	bounds := pcommon.NewFloat64Slice(len(mg.complexValue) - 1)
+	bucketCounts := pcommon.NewUInt64Slice(len(mg.complexValue))
 
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
 	for i := 0; i < len(mg.complexValue); i++ {
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as bound to oc proto
-			bounds[i] = mg.complexValue[i].boundary
+			bounds.SetAt(i, mg.complexValue[i].boundary)
 		}
 		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
@@ -148,7 +148,7 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 		} else if i != 0 {
 			adjustedCount -= mg.complexValue[i-1].value
 		}
-		bucketCounts[i] = uint64(adjustedCount)
+		bucketCounts.SetAt(i, uint64(adjustedCount))
 	}
 
 	point := dest.AppendEmpty()
@@ -160,8 +160,8 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmet
 		point.SetSum(mg.sum)
 	}
 
-	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
-	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(bucketCounts))
+	point.SetExplicitBounds(bounds)
+	point.SetBucketCounts(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)

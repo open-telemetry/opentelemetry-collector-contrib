@@ -376,7 +376,7 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case []string:
 		toStringArray(t).CopyTo(dest)
 	case []byte:
-		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
+		dest.SetBytesVal(pcommon.NewByteSliceFromRaw(t))
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -429,7 +429,7 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 			arr := toStringArray(t)
 			dest.Insert(k, arr)
 		case []byte:
-			dest.InsertBytes(k, pcommon.NewImmutableByteSlice(t))
+			dest.InsertBytes(k, pcommon.NewByteSliceFromRaw(t))
 		case int64:
 			dest.InsertInt(k, t)
 		case int32:
