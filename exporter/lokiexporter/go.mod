@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.57.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
 	github.com/prometheus/common v0.37.0
 	github.com/prometheus/prometheus v0.37.0
 	github.com/stretchr/testify v1.8.0
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b // indirect
 	golang.org/x/text v0.3.7 // indirect

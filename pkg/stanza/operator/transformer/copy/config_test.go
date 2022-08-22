@@ -86,5 +86,5 @@ func TestGoldenConfig(t *testing.T) {
 }
 
 func defaultCfg() *Config {
-	return NewConfig("copy")
+	return NewConfig()
 }

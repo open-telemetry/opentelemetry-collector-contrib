@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 

@@ -9,7 +9,7 @@
 Prometheus Remote Write Exporter sends OpenTelemetry metrics
 to Prometheus [remote write compatible
 backends](https://prometheus.io/docs/operating/integrations/)
-such as Cortex and Thanos.
+such as Cortex, Mimir, and Thanos.
 By default, this exporter requires TLS and offers queued retry capabilities.
 
 :warning: Non-cumulative monotonic, histogram, and summary OTLP metrics are

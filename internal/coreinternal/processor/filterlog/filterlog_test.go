@@ -41,7 +41,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`,
+			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`,
 		},
 		{
 			name: "empty_log_bodies_and_attributes",
@@ -49,7 +49,7 @@ func TestLogRecord_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 				LogBodies:        []string{},
 				LogSeverityTexts: []string{},
 			},
-			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies" or "log_severity_texts" field must be specified`,
+			errorString: `at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`,
 		},
 		{
 			name: "span_properties",
@@ -123,9 +123,20 @@ func TestLogRecord_Matching_False(t *testing.T) {
 				LogSeverityTexts: []string{"debug.*"},
 			},
 		},
+		{
+			name: "log_min_severity_trace_dont_match",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
+					Min: plog.SeverityNumberINFO,
+				},
+			},
+		},
 	}
 
 	lr := plog.NewLogRecord()
+	lr.SetSeverityNumber(plog.SeverityNumberTRACE)
+
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
 			matcher, err := NewMatcher(tc.properties)
@@ -172,12 +183,22 @@ func TestLogRecord_Matching_True(t *testing.T) {
 				LogSeverityTexts: []string{"debug.*"},
 			},
 		},
+		{
+			name: "log_min_severity_match",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
+					Min: plog.SeverityNumberDEBUG,
+				},
+			},
+		},
 	}
 
 	lr := plog.NewLogRecord()
 	lr.Attributes().InsertString("abc", "def")
 	lr.Body().SetStringVal("AUTHENTICATION FAILED")
 	lr.SetSeverityText("debug")
+	lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {

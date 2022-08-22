@@ -28,14 +28,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "csv_parser"
+
 func init() {
-	operator.Register("csv_parser", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new csv parser config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new csv parser config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		ParserConfig: helper.NewParserConfig(operatorID, "csv_parser"),
+		ParserConfig: helper.NewParserConfig(operatorID, operatorType),
 	}
 }
 
@@ -189,7 +196,7 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) p
 		parsedValues := make(map[string]interface{})
 
 		if len(joinedLine) != len(headers) {
-			return nil, errors.New("wrong number of fields")
+			return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(joinedLine))
 		}
 
 		for i, val := range joinedLine {

@@ -14,7 +14,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.57.2
+    version: v0.58.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/chloggen
@@ -207,6 +207,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen
