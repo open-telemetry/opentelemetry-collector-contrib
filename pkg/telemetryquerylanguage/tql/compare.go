@@ -29,7 +29,7 @@ import (
 // objects were definitely not equivalent).
 // It also gives us an opportunity to log something.
 func invalidComparison(msg string, op CompareOp) bool {
-	fmt.Printf("%s with op %v", msg, op)
+	fmt.Printf("%s with op %v\n", msg, op)
 	return op == NE
 }
 
@@ -96,11 +96,6 @@ func compareBool(a bool, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case bool:
 		return compareBools(a, v, op)
-	case *bool:
-		if v == nil {
-			return op == NE
-		}
-		return compareBools(a, *v, op)
 	default:
 		return invalidComparison("bool to non-bool", op)
 	}
@@ -110,11 +105,6 @@ func compareString(a string, b any, op CompareOp) bool {
 	switch v := b.(type) {
 	case string:
 		return comparePrimitives(a, v, op)
-	case *string:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, *v, op)
 	default:
 		return invalidComparison("string to non-string", op)
 	}
@@ -136,41 +126,10 @@ func compareByte(a []byte, b any, op CompareOp) bool {
 
 func compareInt64(a int64, b any, op CompareOp) bool {
 	switch v := b.(type) {
-	case int:
-		return comparePrimitives(a, int64(v), op)
-	case int32:
-		return comparePrimitives(a, int64(v), op)
 	case int64:
 		return comparePrimitives(a, v, op)
-	case float32:
-		return comparePrimitives(float64(a), float64(v), op)
 	case float64:
 		return comparePrimitives(float64(a), v, op)
-	case *int:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, int64(*v), op)
-	case *int32:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, int64(*v), op)
-	case *int64:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, *v, op)
-	case *float32:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(float64(a), float64(*v), op)
-	case *float64:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(float64(a), *v, op)
 	default:
 		return invalidComparison("int to non-numeric value", op)
 	}
@@ -178,45 +137,10 @@ func compareInt64(a int64, b any, op CompareOp) bool {
 
 func compareFloat64(a float64, b any, op CompareOp) bool {
 	switch v := b.(type) {
-	case int:
-		return comparePrimitives(a, float64(v), op)
-	case int32:
-		return comparePrimitives(a, float64(v), op)
 	case int64:
-		return comparePrimitives(a, float64(v), op)
-	case float32:
 		return comparePrimitives(a, float64(v), op)
 	case float64:
 		return comparePrimitives(a, v, op)
-	case *int:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, float64(*v), op)
-
-	case *int32:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, float64(*v), op)
-
-	case *int64:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, float64(*v), op)
-
-	case *float32:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, float64(*v), op)
-
-	case *float64:
-		if v == nil {
-			return op == NE
-		}
-		return comparePrimitives(a, *v, op)
 	default:
 		return invalidComparison("float to non-numeric value", op)
 	}
@@ -238,14 +162,8 @@ func compare(a any, b any, op CompareOp) bool {
 		return compare(b, nil, op)
 	case bool:
 		return compareBool(v, b, op)
-	case int:
-		return compareInt64(int64(v), b, op)
-	case int32:
-		return compareInt64(int64(v), b, op)
 	case int64:
 		return compareInt64(v, b, op)
-	case float32:
-		return compareFloat64(float64(v), b, op)
 	case float64:
 		return compareFloat64(v, b, op)
 	case string:
@@ -255,41 +173,6 @@ func compare(a any, b any, op CompareOp) bool {
 			return compare(b, nil, op)
 		}
 		return compareByte(v, b, op)
-	case *bool:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareBool(*v, b, op)
-	case *int:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareInt64(int64(*v), b, op)
-	case *int32:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareInt64(int64(*v), b, op)
-	case *int64:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareInt64(*v, b, op)
-	case *float32:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareFloat64(float64(*v), b, op)
-	case *float64:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareFloat64(*v, b, op)
-	case *string:
-		if v == nil {
-			return compare(b, nil, op)
-		}
-		return compareString(*v, b, op)
 	default:
 		// If we don't know what type it is, we can't do inequalities yet. So we can fall back to the old behavior where we just
 		// use Go's standard equality.

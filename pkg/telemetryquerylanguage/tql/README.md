@@ -123,23 +123,25 @@ The valid operators are:
 
 ### Comparison Rules
 
-The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. In this table, `int` refers to all integer types (int, int32, int64), and `float` similarly refers to both `float32` and `float64`. If numeric values are of different types, they are compared as the most general instance required (so `int32` and `int64` are compared as `int64`, while `int64` and `float64` are compared as `float64`), In addition, pointers to `bool`, `int` types, `float` types, and `string` are compared by first dereferencing the pointer.
+The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. All of the value types supported by TQL are listed in this table.
+
+If numeric values are of different types, they are compared as `float64`.
 
 For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`. 
 
-For values that are not one of the basic primitive types (or a pointer to them), the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
+For values that are not one of the basic primitive types, the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
 
-Note that a nil pointer to a value type is equivalent (and therefore equal) to a nil value or another nil pointer. All nils compare equal even if they are of different base types (so a nil pointer to float64 is equal to a nil pointer to int32).
+A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false.
 
 
-| base type | bool        | int                 | float               | string                          | Bytes                    | nil                    |
+| base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
 | --------- | ----------- | ------------------- | ------------------- | ------------------------------- | ------------------------ | ---------------------- |
-| bool      | normal, T>F | false               | false               | false                           | false                    | false                  |
-| int       | false       | compared as largest | compared as float64 | false                           | false                    | false                  |
-| float     | false       | compared as float64 | compared as largest | false                           | false                    | false                  |
-| string    | false       | false               | false               | normal (compared as Go strings) | false                    | false                  |
-| Bytes     | false       | false               | false               | false                           | byte-for-byte comparison | false                  |
-| nil       | false       | false               | false               | false                           | false                    | true for equality only |
+| bool      | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              |
+| int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
+| float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |
+| string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
+| Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | not equal              |
+| nil       | not equal   | not equal           | not equal           | not equal                       | not equal                | true for equality only |
 
 ## Accessing signal telemetry
 
