@@ -90,6 +90,22 @@ attributes:
     enum:
       - free
       - used
+  indexing_memory_state:
+    value: state
+    description: State of the indexing memory
+    enum:
+      - current
+      - total
+  cluster_state_update_type:
+    value: status
+    description: Type of cluster state update
+    enum:
+      - unchanged
+      - success
+      - failure
+  ingest_pipeline_name:
+    value: name
+    description: Name of the ingest pipeline.
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -483,9 +499,228 @@ metrics:
   elasticsearch.os.memory:
     description: Amount of physical memory.
     unit: By
+    gauge:
+      value_type: int
+    attributes: [memory_state]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.coordinating:
+    description: Memory consumed, in bytes, by indexing requests in the coordinating stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.primary:
+    description: Memory consumed, in bytes, by indexing requests in the primary stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.replica:
+    description: Memory consumed, in bytes, by indexing requests in the primary stage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.indexing_pressure.memory.total.primary_rejections:
+    description: Cumulative number of indexing requests rejected in the primary stage.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.total.replica_rejections:
+    description: Number of indexing requests rejected in the replica stage.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.indexing_pressure.memory.limit:
+    description: Configured memory limit, in bytes, for the indexing requests.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.state_queue.pending:
+    description: Number of pending cluster states in queue.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.state_queue.committed:
+    description: Number of pending cluster states in queue.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.published_states.full:
+    description: Number of published cluster states.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.published_states.incompatible:
+    description: Number of incompatible differences between published cluster states.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.published_states.compatible:
+    description: Number of compatible differences between published cluster states.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.count:
+    description: The number of cluster state update attempts that changed the cluster state since the node started.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.computation_time:
+    description: The cumulative amount of time spent computing cluster state updates since the node started.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.context_construction_time:
+    description: The cumulative amount of time spent constructing a publication context since the node started.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.commit_time:
+    description: The cumulative amount of time spent waiting for a cluster state update to commit.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.completion_time:
+    description: The cumulative amount of time spent waiting for a cluster state update to complete.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.master_apply_time:
+    description: The cumulative amount of time spent applying cluster state updates on the elected master since the node started.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.cluster.state_update.notification_time:
+    description: The cumulative amount of time spent notifying listeners of a cluster state update since the node started.
+    unit: 1
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ cluster_state_update_type ]
+    enabled: true
+  elasticsearch.node.ingest.count:
+    description: Total number of documents ingested during the lifetime of this node.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.current:
+    description: Total number of documents currently being ingested.
+    unit: "{documents}"
+    gauge:
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.failed:
+    description: Total number of failed ingest operations during the lifetime of this node.
+    unit: "{operation}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.count:
+    description: Total number of documents ingested during the lifetime of this node.
+    unit: "{documents}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.failed:
+    description: Total number of failed operations for the ingest pipeline.
+    unit: "{operation}"
+    sum:
+      monotonic: true
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.ingest.pipeline.current:
+    description: Total number of documents currently being ingested by a pipeline.
+    unit: "{documents}"
+    gauge:
+      value_type: int
+    attributes: [ ingest_pipeline_name ]
+    enabled: true
+  elasticsearch.node.script.compilations:
+    description: Total number of inline script compilations performed by the node.
+    unit: "{compilations}"
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
-    attributes: [memory_state]
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.script.cache_evictions:
+    description: Total number of times the script cache has evicted old data.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: true
+  elasticsearch.node.script.compilation_limit_triggered:
+    description: Total number of times the script compilation circuit breaker has limited inline script compilations.
+    unit: 1
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: true
