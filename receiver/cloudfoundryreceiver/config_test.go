@@ -22,67 +22,75 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
-
-	require.Len(t, cfg.Receivers, 2)
-
-	r0 := cfg.Receivers[config.NewComponentID(typeStr)]
-	defaultConfig := factory.CreateDefaultConfig().(*Config)
-	defaultConfig.UAA.Password = "test"
-	assert.Equal(t, defaultConfig, r0)
-
-	r1 := cfg.Receivers[config.NewComponentIDWithName(typeStr, "one")].(*Config)
-	assert.Equal(t,
-		&Config{
-			ReceiverSettings: config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "one")),
-			RLPGateway: RLPGatewayConfig{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://log-stream.sys.example.internal",
-					TLSSetting: configtls.TLSClientSetting{
-						InsecureSkipVerify: true,
+	tests := []struct {
+		id           config.ComponentID
+		expected     config.Receiver
+		errorMessage string
+	}{
+		{
+			id: config.NewComponentIDWithName(typeStr, "one"),
+			expected: &Config{
+				ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
+				RLPGateway: RLPGatewayConfig{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: "https://log-stream.sys.example.internal",
+						TLSSetting: configtls.TLSClientSetting{
+							InsecureSkipVerify: true,
+						},
+						Timeout: time.Second * 20,
 					},
-					Timeout: time.Second * 20,
+					ShardID: "otel-test",
 				},
-				ShardID: "otel-test",
-			},
-			UAA: UAAConfig{
-				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
-					Endpoint: "https://uaa.sys.example.internal",
-					TLSSetting: LimitedTLSClientSetting{
-						InsecureSkipVerify: true,
+				UAA: UAAConfig{
+					LimitedHTTPClientSettings: LimitedHTTPClientSettings{
+						Endpoint: "https://uaa.sys.example.internal",
+						TLSSetting: LimitedTLSClientSetting{
+							InsecureSkipVerify: true,
+						},
 					},
+					Username: "admin",
+					Password: "test",
 				},
-				Username: "admin",
-				Password: "test",
 			},
-		}, r1)
-}
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "empty"),
+			errorMessage: "UAA password not specified",
+		},
+		{
+			id:           config.NewComponentIDWithName(typeStr, "invalid"),
+			errorMessage: "failed to parse rlp_gateway.endpoint as url: parse \"https://[invalid\": missing ']' in host",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	_, err = servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalid.yaml"), factories)
-
-	require.Error(t, err)
+			if tt.expected == nil {
+				assert.EqualError(t, cfg.Validate(), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestInvalidConfigValidation(t *testing.T) {

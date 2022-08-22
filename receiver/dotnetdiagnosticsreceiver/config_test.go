@@ -21,23 +21,28 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
-	factories.Receivers[typeStr] = NewFactory()
-	collectorCfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
 	require.NoError(t, err)
-	require.NotNil(t, collectorCfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	cfg := collectorCfg.Receivers[config.NewComponentID(typeStr)].(*Config)
-	require.NotNil(t, cfg)
-
-	assert.Equal(t, 1234, cfg.PID)
-	assert.Equal(t, 2*time.Second, cfg.CollectionInterval)
-	assert.Equal(t, []string{"Foo", "Bar"}, cfg.Counters)
+	assert.Equal(t, &Config{
+		PID:      1234,
+		Counters: []string{"Foo", "Bar"},
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			CollectionInterval: 2 * time.Second,
+		},
+	}, cfg)
 }
