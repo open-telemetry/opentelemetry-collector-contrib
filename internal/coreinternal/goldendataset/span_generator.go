@@ -92,11 +92,12 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 }
 
 // fillSpan generates a single ptrace.Span based on the input values provided. They are:
-//   traceID - the trace ID to use, should not be nil
-//   parentID - the parent span ID or nil if it is a root span
-//   spanName - the span name, should not be blank
-//   spanInputs - the pairwise combination of field value variations for this span
-//   random - the random number generator to use in generating ID values
+//
+//	traceID - the trace ID to use, should not be nil
+//	parentID - the parent span ID or nil if it is a root span
+//	spanName - the span name, should not be blank
+//	spanInputs - the pairwise combination of field value variations for this span
+//	random - the random number generator to use in generating ID values
 //
 // The generated span is returned.
 func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string, spanInputs *PICTSpanInputs, random io.Reader, span ptrace.Span) {

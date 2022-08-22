@@ -15,6 +15,10 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 | `timestamp`   | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
 | `severity`    | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
 
+### Embedded Operations
+
+The `json_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
+
 
 ### Example Configurations
 

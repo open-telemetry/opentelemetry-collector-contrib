@@ -29,7 +29,7 @@ import (
 )
 
 func basicConfig() *Config {
-	cfg := NewConfig("test_operator_id")
+	cfg := NewConfigWithID("test_operator_id")
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
@@ -92,7 +92,7 @@ func TestSyslogParseRFC5424_SDNameTooLong(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	expect := NewConfig("test")
+	expect := NewConfigWithID("test")
 	expect.Protocol = RFC3164
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
@@ -128,7 +128,7 @@ parse_to: body.to`
 }
 
 func TestParserInvalidLocation(t *testing.T) {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	config.Location = "not_a_location"
 	config.Protocol = RFC3164
 

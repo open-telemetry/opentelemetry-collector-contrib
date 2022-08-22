@@ -29,8 +29,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "windows_eventlog_input"
+
 func init() {
-	operator.Register("windows_eventlog_input", func() operator.Builder { return NewConfig() })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
+}
+
+// NewConfig will return an event log config with default values.
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfig will return an event log config with default values.
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
+		MaxReads:    100,
+		StartAt:     "end",
+		PollInterval: helper.Duration{
+			Duration: 1 * time.Second,
+		},
+	}
 }
 
 // Config is the configuration of a windows event log operator.
@@ -69,18 +88,6 @@ func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		startAt:       c.StartAt,
 		pollInterval:  c.PollInterval,
 	}, nil
-}
-
-// NewConfig will return an event log config with default values.
-func NewConfig() *Config {
-	return &Config{
-		InputConfig: helper.NewInputConfig("", "windows_eventlog_input"),
-		MaxReads:    100,
-		StartAt:     "end",
-		PollInterval: helper.Duration{
-			Duration: 1 * time.Second,
-		},
-	}
 }
 
 // Input is an operator that creates entries using the windows event log api.

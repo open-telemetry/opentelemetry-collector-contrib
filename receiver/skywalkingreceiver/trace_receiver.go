@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -210,7 +210,7 @@ type Response struct {
 
 func (sr *swReceiver) httpHandler(rsp http.ResponseWriter, r *http.Request) {
 	rsp.Header().Set("Content-Type", "application/json")
-	b, err := ioutil.ReadAll(r.Body)
+	b, err := io.ReadAll(r.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)

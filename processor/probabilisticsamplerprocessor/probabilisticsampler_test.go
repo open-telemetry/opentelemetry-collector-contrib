@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -67,7 +68,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesProcessor(tt.nextConsumer, tt.cfg)
+			got, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -143,7 +144,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -204,7 +205,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating tracesamplerprocessor: %v", err)
 				return
@@ -321,7 +322,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(sink, tt.cfg)
+			tsp, err := newTracesProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), tt.cfg, sink)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraces(context.Background(), tt.td)

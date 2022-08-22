@@ -113,7 +113,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	}
 }
 
-func TestCreateMetricReceiver(t *testing.T) {
+func TestCreateMetricsReceiver(t *testing.T) {
 	defaultNetAddr := confignet.NetAddr{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
 		Transport: "tcp",

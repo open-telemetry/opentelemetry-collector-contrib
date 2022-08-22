@@ -19,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -225,7 +225,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	if resp.StatusCode == http.StatusBadRequest {
 		// At least some metrics were not accepted
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
 			// if the response cannot be read, do not retry the batch as it may have been successful
 			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
@@ -281,7 +281,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 // start starts the exporter
 func (e *exporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.cfg.HTTPClientSettings.ToClient(host.GetExtensions(), e.settings)
+	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
 		return fmt.Errorf("start: %w", err)

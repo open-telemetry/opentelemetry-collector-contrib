@@ -4,7 +4,7 @@ The Telemetry Query Language is a query language for transforming open telemetry
 
 This package reads in TQL queries and converts them to invokable Booleans and functions based on the TQL's grammar.
 
-The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a TransformContext, which provide access to the signal's telemetry.
+The TQL is signal agnostic; it is not aware of the type of telemetry on which it will operate.  Instead, the Booleans and functions returned by the package must be passed a `TransformContext`, which provide access to the signal's telemetry. Telemetry data can be accessed and updated through [Getters and Setters](#getters-and-setters).
 
 ## Grammar
 
@@ -17,21 +17,46 @@ Invocations represent a function call. Invocations are made up of 2 parts
 - a string identifier. The string identifier must start with a letter or an underscore (`_`).
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
 
-**The TQL does not define any functions implementations.** Users must supply a map between string identifiers and the actual function implementation.  The TQL will use this map and reflection to generate Invocations, that can then be invoked by the user.
+**The TQL does not define any function implementations.** Users must supply a map between string identifiers and the actual function implementation.  The TQL will use this map and reflection to generate Invocations, that can then be invoked by the user.
 
 Example Invocations
 - `drop()`
 - `set(field, 1)`
 
+#### Invocation parameters
+
+The TQL will use reflection to determine parameter types when parsing an invocation within a statement.  When interpreting slice parameter types, the TQL will attempt to build the slice from all remaining Values in the Invocation's arguments.  As a result, function implementations of Invocations may only contain one slice argument and it must be the last argument in the function definition.  See [function syntax guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#function-syntax) for more details.
+
+The following types are supported for single parameter values:
+- `Setter`
+- `GetSetter`
+- `Getter`
+- `Enum`
+- `string`
+- `float64`
+- `int64`
+- `bool`
+
+For slice parameters, the following types are supported:
+- `string`
+- `float64`
+- `int64`
+- `uint8`. Slices of bytes will be interpreted as a byte array.
+- `Getter`
+
 ### Values
 
-Values are the things that get passed to an Invocation or used in an Expression. Values can be either a Path, a Literal, or an Invocation.
+Values are passed as input to an Invocation or are used in an Expression. Values can take the form of:
+- [Paths](#paths).
+- [Literals](#literals).
+- [Enums](#enums).
+- [Invocations](#invocations).
 
 Invocations as Values allows calling functions as parameters to other functions. See [Invocations](#invocations) for details on Invocation syntax.
 
 #### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of string identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the TQL.**  Instead, the user must provide a `PathExpressionParser` that the TQL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
+A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`).  **The interpretation of a Path is NOT implemented by the TQL.**  Instead, the user must provide a `PathExpressionParser` that the TQL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended, that the parts be used like so:
 
 - Identifiers are used to map to a telemetry field.
 - Dots (`.`) are used to separate nested fields.
@@ -39,6 +64,7 @@ A Path Value is a reference to a telemetry field.  Paths are made up of string i
 
 Example Paths
 - `name`
+- `value_double`
 - `resource.name`
 - `resource.attributes["key"]`
 
@@ -48,7 +74,7 @@ Literals are literal interpretations of the Value into a Go value.  Accepted lit
 
 - Strings. Strings are represented as literals by surrounding the string in double quotes (`""`).
 - Ints.  Ints are represented by any digit, optionally prepended by plus (`+`) or minus (`-`). Internally the TQL represents all ints as `int64`
-- Floats.  Floats are represented by digits separated by a dot (`.`), optionally prepended by plus (`+`) or minus (`-`). The leading digit is optional. Internally the TQL represents all Floats as `float64.
+- Floats.  Floats are represented by digits separated by a dot (`.`), optionally prepended by plus (`+`) or minus (`-`). The leading digit is optional. Internally the TQL represents all Floats as `float64`.
 - Bools.  Bools are represented by the exact strings `true` and `false`.
 - Nil.  Nil is represented by the exact string `nil`.
 - Byte slices.  Byte slices are represented via a hex string prefaced with `0x`
@@ -60,6 +86,14 @@ Example Literals
 - `true`, `false`
 - `nil`,
 - `0x0001`
+
+#### Enums
+
+Enums are uppercase identifiers that get interpreted during parsing and converted to an `int64`. **The interpretation of an Enum is NOT implemented by the TQL.** Instead, the user must provide a `EnumParser` that the TQL can use to interpret the Enum.  The `EnumParser` returns an `int64` instead of a function, which means that the Enum's numeric value is retrieved during parsing instead of during execution.
+
+Within the grammar Enums are always used as `int64`.  As a result, the Enum's symbol can be used as if it is an Int value.
+
+When defining a function that will be used as an Invocation by the TQL, if the function needs to take an Enum then the function must use the `Enum` type for that argument, not an `int64`.
 
 ### Expressions
 
@@ -80,6 +114,20 @@ Operators determine how the two Values are compared.  The valid operators are:
 
 - Equal (`==`). Equal (`==`) checks if the left and right Values are equal, using Go's `==` operator.
 - Not Equal (`!=`).  Not Equal (`!=`) checks if the left and right Values are not equal, using Go's `!=` operator.
+
+## Accessing signal telemetry
+
+Access to signal telemetry is provided to TQL functions through a `TransformContext` that is created by the user and passed during statement evaluation. To allow functions to operate on the `TransformContext`, the TQL provides `Getter`, `Setter`, and `GetSetter` interfaces.
+
+### Getters and Setters
+
+Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted. 
+- [Paths](#paths).
+- [Enums](#enums).
+- [Literals](#literals).
+- [Invocations](#invocations).
+
+It is possible to update the Value in a telemetry field using a Setter. For read and write access, the `GetSetter` interface extends both interfaces.
 
 ## Examples
 

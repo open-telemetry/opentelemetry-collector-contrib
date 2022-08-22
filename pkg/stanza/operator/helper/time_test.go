@@ -16,8 +16,8 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math"
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -697,7 +697,7 @@ func TestGoldenTimeParserConfig(t *testing.T) {
 }
 
 func timeConfigFromFileViaYaml(file string) (*TimeParser, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
@@ -711,7 +711,7 @@ func timeConfigFromFileViaYaml(file string) (*TimeParser, error) {
 }
 
 func timeConfigFromFileViaMapstructure(file string, result *TimeParser) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}

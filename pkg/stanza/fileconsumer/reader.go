@@ -43,15 +43,13 @@ type Reader struct {
 	fileAttributes *FileAttributes
 }
 
-// InitializeOffset sets the starting offset
-func (r *Reader) InitializeOffset(startAtBeginning bool) error {
-	if !startAtBeginning {
-		info, err := r.file.Stat()
-		if err != nil {
-			return fmt.Errorf("stat: %w", err)
-		}
-		r.Offset = info.Size()
+// offsetToEnd sets the starting offset
+func (r *Reader) offsetToEnd() error {
+	info, err := r.file.Stat()
+	if err != nil {
+		return fmt.Errorf("stat: %w", err)
 	}
+	r.Offset = info.Size()
 	return nil
 }
 

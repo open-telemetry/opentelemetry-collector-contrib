@@ -31,6 +31,10 @@ var (
 
 	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
 	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+
+	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 )
 
 func TestProcess(t *testing.T) {
@@ -166,7 +170,7 @@ func TestProcess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.query, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor([]string{tt.query}, DefaultFunctions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor([]string{tt.query}, Functions(), component.ProcessorCreateSettings{})
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -216,7 +220,7 @@ func BenchmarkTwoSpans(b *testing.B) {
 
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, DefaultFunctions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), component.ProcessorCreateSettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
@@ -258,7 +262,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 	}
 	for _, tt := range tests {
 		b.Run(tt.name, func(b *testing.B) {
-			processor, err := NewProcessor(tt.queries, DefaultFunctions(), component.ProcessorCreateSettings{})
+			processor, err := NewProcessor(tt.queries, Functions(), component.ProcessorCreateSettings{})
 			assert.NoError(b, err)
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {

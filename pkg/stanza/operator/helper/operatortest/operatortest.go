@@ -16,7 +16,7 @@ package operatortest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 
@@ -35,7 +35,7 @@ type ConfigUnmarshalTest struct {
 }
 
 func configFromFileViaYaml(file string, config interface{}) error {
-	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
+	bytes, err := os.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}
@@ -47,7 +47,7 @@ func configFromFileViaYaml(file string, config interface{}) error {
 }
 
 func configFromFileViaMapstructure(file string, config interface{}) error {
-	bytes, err := ioutil.ReadFile(file) // #nosec - configs load based on user specified directory
+	bytes, err := os.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}
