@@ -151,8 +151,8 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 }
 
 type mockTraceMarshaler struct {
-	MarshalFunc  func(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error)
-	EncodingFunc func() string
+	MarshalFunc   func(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingValue string
 }
 
 var _ TracesMarshaler = (*mockTraceMarshaler)(nil)
@@ -162,12 +162,12 @@ func (c *mockTraceMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.
 }
 
 func (c *mockTraceMarshaler) Encoding() string {
-	return c.EncodingFunc()
+	return c.EncodingValue
 }
 
 type mockLogMarshaler struct {
-	MarshalFunc  func(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error)
-	EncodingFunc func() string
+	MarshalFunc   func(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingValue string
 }
 
 var _ LogsMarshaler = (*mockLogMarshaler)(nil)
@@ -177,12 +177,12 @@ func (c *mockLogMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.Prod
 }
 
 func (c *mockLogMarshaler) Encoding() string {
-	return c.EncodingFunc()
+	return c.EncodingValue
 }
 
 type mockMetricsMarshaler struct {
-	MarshalFunc  func(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error)
-	EncodingFunc func() string
+	MarshalFunc   func(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error)
+	EncodingValue string
 }
 
 var _ MetricsMarshaler = (*mockMetricsMarshaler)(nil)
@@ -192,5 +192,5 @@ func (c *mockMetricsMarshaler) Marshal(metrics pmetric.Metrics, topic string) ([
 }
 
 func (c *mockMetricsMarshaler) Encoding() string {
-	return c.EncodingFunc()
+	return c.EncodingValue
 }

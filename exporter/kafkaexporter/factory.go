@@ -80,6 +80,7 @@ func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 	}
 }
 
+// WithProducerFactory sets an alternative producer factory.
 func WithProducerFactory(producerFactory ProducerFactoryFunc) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		factory.producerFactory = producerFactory

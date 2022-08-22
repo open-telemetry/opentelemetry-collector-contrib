@@ -145,26 +145,25 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	assert.Nil(t, mr)
 }
 
-func TestCustomMarshalerOptions(t *testing.T) {
+func TestWithMarshalers(t *testing.T) {
 
 	customMarshalerEncoding := "custom"
-	customMarshalerKey := sarama.StringEncoder("key that could only come from the custom marshaller")
 
-	// mock custom marshalers will all produce the same ProducerMessage
-	genericCustomMarshalMessages := func(topic string) ([]*sarama.ProducerMessage, error) {
-		return []*sarama.ProducerMessage{
-			{
-				Topic: topic,
-				Key:   customMarshalerKey,
-				Value: sarama.StringEncoder("value"),
-			},
-		}, nil
+	// For simplicity, all the custom marshalers will produce the same message
+	customMarshalMessage := &sarama.ProducerMessage{
+		Topic: "any_topic",
+		Key:   sarama.StringEncoder("key that could only come from the custom marshaller"),
+		Value: sarama.StringEncoder("value"),
 	}
 
-	// all the mock marshalers return the same message
-	expectCustomMarshalMessage := func(expectCustom bool) mocks.MessageChecker {
-		return func(pm *sarama.ProducerMessage) error {
-			isCustom := pm.Key != nil && pm.Key == customMarshalerKey
+	// sets up mock to either expect the custom message or not
+	setupProducerMock := func(expectCustom bool) sarama.SyncProducer {
+		producer := mocks.NewSyncProducer(t, nil)
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			isCustom := pm != nil &&
+				pm.Topic == customMarshalMessage.Topic &&
+				pm.Key == customMarshalMessage.Key &&
+				pm.Value == customMarshalMessage.Value
 			if expectCustom {
 				if !isCustom {
 					return fmt.Errorf("marshaled message was not custom")
@@ -175,11 +174,12 @@ func TestCustomMarshalerOptions(t *testing.T) {
 				}
 			}
 			return nil
-		}
+		})
+		return producer
 	}
 
-	// all the marshaler tests are setup the same
-	setupTest := func(encoding string, expectCustomEncodedMessage bool) (*Config, component.ExporterFactory) {
+	// config is consistent except encoding to use
+	setupConfig := func(encoding string) *Config {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Encoding = encoding
 		cfg.QueueSettings = exporterhelper.QueueSettings{
@@ -188,40 +188,49 @@ func TestCustomMarshalerOptions(t *testing.T) {
 		cfg.RetrySettings = exporterhelper.RetrySettings{
 			Enabled: false,
 		}
+		return cfg
+	}
 
-		producer := mocks.NewSyncProducer(t, nil)
-		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(expectCustomMarshalMessage(expectCustomEncodedMessage))
-
+	// all the marshaler tests are setup the same
+	setupFactory := func(producer sarama.SyncProducer) component.ExporterFactory {
 		f := NewFactory(
 			WithProducerFactory(func(config Config) (sarama.SyncProducer, error) { return producer, nil }),
 			WithTracesMarshalers(&mockTraceMarshaler{
 				MarshalFunc: func(traces ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-					return genericCustomMarshalMessages(topic)
+					return []*sarama.ProducerMessage{
+						customMarshalMessage,
+					}, nil
 				},
-				EncodingFunc: func() string { return customMarshalerEncoding },
+				EncodingValue: customMarshalerEncoding,
 			}),
 			WithMetricsMarshalers(&mockMetricsMarshaler{
 				MarshalFunc: func(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
-					return genericCustomMarshalMessages(topic)
+					return []*sarama.ProducerMessage{
+						customMarshalMessage,
+					}, nil
 				},
-				EncodingFunc: func() string { return customMarshalerEncoding },
+				EncodingValue: customMarshalerEncoding,
 			}),
 			WithLogsMarshalers(&mockLogMarshaler{
 				MarshalFunc: func(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-					return genericCustomMarshalMessages(topic)
+					return []*sarama.ProducerMessage{
+						customMarshalMessage,
+					}, nil
 				},
-				EncodingFunc: func() string { return customMarshalerEncoding },
+				EncodingValue: customMarshalerEncoding,
 			}),
 		)
 
-		return cfg, f
+		return f
 	}
 
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("testSpan")
 
 	t.Run("traces_custom_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(customMarshalerEncoding, true)
+		cfg := setupConfig(customMarshalerEncoding)
+		producer := setupProducerMock(true)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeTraces(context.TODO(), traces)
@@ -230,7 +239,9 @@ func TestCustomMarshalerOptions(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("traces_default_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(defaultEncoding, false)
+		cfg := setupConfig(defaultEncoding)
+		producer := setupProducerMock(false)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeTraces(context.TODO(), traces)
@@ -242,7 +253,9 @@ func TestCustomMarshalerOptions(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test")
 	t.Run("metrics_custom_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(customMarshalerEncoding, true)
+		cfg := setupConfig(customMarshalerEncoding)
+		producer := setupProducerMock(true)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeMetrics(context.TODO(), metrics)
@@ -251,7 +264,9 @@ func TestCustomMarshalerOptions(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("metrics_default_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(defaultEncoding, false)
+		cfg := setupConfig(defaultEncoding)
+		producer := setupProducerMock(false)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeMetrics(context.TODO(), metrics)
@@ -263,7 +278,9 @@ func TestCustomMarshalerOptions(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test")
 	t.Run("logs_custom_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(customMarshalerEncoding, true)
+		cfg := setupConfig(customMarshalerEncoding)
+		producer := setupProducerMock(true)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeLogs(context.TODO(), logs)
@@ -272,7 +289,9 @@ func TestCustomMarshalerOptions(t *testing.T) {
 		require.NotNil(t, exporter)
 	})
 	t.Run("logs_default_encoding", func(t *testing.T) {
-		cfg, exporterFactory := setupTest(defaultEncoding, false)
+		cfg := setupConfig(defaultEncoding)
+		producer := setupProducerMock(false)
+		exporterFactory := setupFactory(producer)
 
 		exporter, err := exporterFactory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 		consumeErr := exporter.ConsumeLogs(context.TODO(), logs)
@@ -282,68 +301,3 @@ func TestCustomMarshalerOptions(t *testing.T) {
 	})
 
 }
-
-/*
-func TestWithLogsMarshalers(t *testing.T) {
-
-	logs := plog.NewLogs()
-	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStringVal("test")
-
-	t.Run("custom_encoding", func(t *testing.T) {
-		cfg, exporterFactory, producer := setupExporterFactoryForMarshalerTests("custom")
-
-		exporter, err := exporterFactory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
-		consumeErr := exporter.ConsumeLogs(context.TODO(), logs)
-		require.NoError(t, err)
-		require.NoError(t, consumeErr)
-		require.NotNil(t, exporter)
-		require.Len(t, producer.messages, 1)
-		require.Equal(t, sarama.StringEncoder("key"), producer.messages[0].Key)
-	})
-	t.Run("default_encoding", func(t *testing.T) {
-		cfg, exporterFactory, producer := setupExporterFactoryForMarshalerTests(defaultEncoding)
-
-		exporter, err := exporterFactory.CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
-		consumeErr := exporter.ConsumeLogs(context.TODO(), logs)
-		require.NoError(t, err)
-		require.NoError(t, consumeErr)
-		assert.NotNil(t, exporter)
-		require.Len(t, producer.messages, 1)
-		require.Nil(t, producer.messages[0].Key)
-	})
-
-}
-
-
-func TestWithMetricsMarshalers(t *testing.T) {
-
-	metrics := pmetric.NewMetrics()
-	metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("test")
-
-	t.Run("custom_encoding", func(t *testing.T) {
-		cfg, exporterFactory, producer := setupExporterFactoryForMarshalerTests("custom")
-
-		exporter, err := exporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
-		consumeErr := exporter.ConsumeMetrics(context.TODO(), metrics)
-		require.NoError(t, err)
-		require.NoError(t, consumeErr)
-		require.NotNil(t, exporter)
-		require.Len(t, producer.messages, 1)
-		require.Equal(t, sarama.StringEncoder("key"), producer.messages[0].Key)
-	})
-	t.Run("default_encoding", func(t *testing.T) {
-		cfg, exporterFactory, producer := setupExporterFactoryForMarshalerTests(defaultEncoding)
-
-		exporter, err := exporterFactory.CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
-		consumeErr := exporter.ConsumeMetrics(context.TODO(), metrics)
-		require.NoError(t, err)
-		require.NoError(t, consumeErr)
-		assert.NotNil(t, exporter)
-		require.Len(t, producer.messages, 1)
-		require.Nil(t, producer.messages[0].Key)
-	})
-
-}
-
-
-*/
