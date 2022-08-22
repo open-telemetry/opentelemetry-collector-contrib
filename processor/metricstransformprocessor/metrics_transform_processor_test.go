@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package metricstransformprocessor
 
 import (
 	"context"
-	"math"
+	"sort"
+	"strings"
 	"testing"
 
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -38,9 +39,14 @@ func TestMetricsTransformProcessor(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			next := new(consumertest.MetricsSink)
 
-			p := newMetricsTransformProcessor(zap.NewExample(), test.transforms)
+			p := &metricsTransformProcessor{
+				transforms: test.transforms,
+				logger:     zap.NewExample(),
+			}
 
-			mtp, err := processorhelper.NewMetricsProcessor(
+			mtp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+				context.Background(),
+				componenttest.NewNopProcessorCreateSettings(),
 				&Config{
 					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				},
@@ -60,11 +66,16 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			// get and check results
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
-			_, _, actualOutMetrics := internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
+			actualOutMetrics := []*metricspb.Metric{}
+			if got[0].ResourceMetrics().Len() > 0 {
+				_, _, actualOutMetrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
+			}
 			require.Equal(t, len(test.out), len(actualOutMetrics))
 
 			for idx, out := range test.out {
 				actualOut := actualOutMetrics[idx]
+				sortTimeseries(actualOut.Timeseries)
+				sortTimeseries(out.Timeseries)
 				if diff := cmp.Diff(actualOut, out, protocmp.Transform()); diff != "" {
 					t.Errorf("Unexpected difference:\n%v", diff)
 				}
@@ -75,78 +86,10 @@ func TestMetricsTransformProcessor(t *testing.T) {
 	}
 }
 
-func TestComputeDistVals(t *testing.T) {
-	ssdTests := []struct {
-		name        string
-		pointGroup1 []float64
-		pointGroup2 []float64
-	}{
-		{
-			name:        "similar point groups",
-			pointGroup1: []float64{1, 2, 3, 7, 4},
-			pointGroup2: []float64{1, 2, 3, 3, 1},
-		},
-		{
-			name:        "different size point groups",
-			pointGroup1: []float64{1, 2, 3, 7, 4},
-			pointGroup2: []float64{1},
-		},
-		{
-			name:        "point groups with an outlier",
-			pointGroup1: []float64{1, 2, 3, 7, 1000},
-			pointGroup2: []float64{1, 2, 5},
-		},
-	}
-
-	for _, test := range ssdTests {
-		t.Run(test.name, func(t *testing.T) {
-			p := newMetricsTransformProcessor(nil, nil)
-
-			pointGroup1 := test.pointGroup1
-			pointGroup2 := test.pointGroup2
-			sum1, sumOfSquaredDeviation1 := calculateSumOfSquaredDeviation(pointGroup1)
-			sum2, sumOfSquaredDeviation2 := calculateSumOfSquaredDeviation(pointGroup2)
-			_, sumOfSquaredDeviation := calculateSumOfSquaredDeviation(append(pointGroup1, pointGroup2...))
-
-			val1 := &metricspb.DistributionValue{
-				Count:                 int64(len(pointGroup1)),
-				Sum:                   sum1,
-				SumOfSquaredDeviation: sumOfSquaredDeviation1,
-			}
-
-			val2 := &metricspb.DistributionValue{
-				Count:                 int64(len(pointGroup2)),
-				Sum:                   sum2,
-				SumOfSquaredDeviation: sumOfSquaredDeviation2,
-			}
-
-			outVal := p.computeSumOfSquaredDeviation(val1, val2)
-
-			assert.Equal(t, sumOfSquaredDeviation, outVal)
-		})
-	}
-}
-
-// calculateSumOfSquaredDeviation returns the sum and the sumOfSquaredDeviation for this slice
-func calculateSumOfSquaredDeviation(slice []float64) (sum float64, sumOfSquaredDeviation float64) {
-	sum = 0
-	for _, e := range slice {
-		sum += e
-	}
-	ave := sum / float64(len(slice))
-	sumOfSquaredDeviation = 0
-	for _, e := range slice {
-		sumOfSquaredDeviation += math.Pow((e - ave), 2)
-	}
-	return
-}
-
-func TestExemplars(t *testing.T) {
-	p := newMetricsTransformProcessor(nil, nil)
-	exe1 := &metricspb.DistributionValue_Exemplar{Value: 1}
-	exe2 := &metricspb.DistributionValue_Exemplar{Value: 2}
-	picked := p.pickExemplar(exe1, exe2)
-	assert.True(t, picked == exe1 || picked == exe2)
+func sortTimeseries(ts []*metricspb.TimeSeries) {
+	sort.Slice(ts, func(i, j int) bool {
+		return strings.Compare(ts[i].String(), ts[j].String()) < 0
+	})
 }
 
 func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
@@ -165,11 +108,11 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p.processMetrics)
+	mtp, _ := processorhelper.NewMetricsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &Config{}, consumertest.NewNop(), p.processMetrics)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, in))
+		assert.NoError(b, mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, in)))
 	}
 }

@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package basicauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -60,7 +58,7 @@ var (
 
 func TestBasicAuth_Valid(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
+	f, err := os.CreateTemp("", ".htpasswd")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
@@ -161,11 +159,12 @@ func TestBasicAuth_InvalidFormat(t *testing.T) {
 
 func TestBasicAuth_HtpasswdInlinePrecedence(t *testing.T) {
 	t.Parallel()
-	f, err := ioutil.TempFile("", ".htpasswd")
+	f, err := os.CreateTemp("", ".htpasswd")
 	require.NoError(t, err)
 	defer os.Remove(f.Name())
 
-	f.WriteString("username:fromfile")
+	_, err = f.WriteString("username:fromfile")
+	require.NoError(t, err)
 
 	ext, err := newServerAuthExtension(&Config{
 		Htpasswd: &HtpasswdSettings{

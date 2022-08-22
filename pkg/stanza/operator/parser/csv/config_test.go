@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestJSONParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name: "basic",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *Config {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -34,7 +34,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "lazy_quotes",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *Config {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.LazyQuotes = true
@@ -44,7 +44,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "delimiter",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *Config {
 				p := defaultCfg()
 				p.Header = "id,severity,message"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -54,7 +54,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "header_attribute",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *Config {
 				p := defaultCfg()
 				p.HeaderAttribute = "header_field"
 				p.ParseFrom = entry.NewBodyField("message")
@@ -64,7 +64,7 @@ func TestJSONParserConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *CSVParserConfig {
+			Expect: func() *Config {
 				p := defaultCfg()
 				p.Header = "timestamp_field,severity,message"
 				newTime := helper.NewTimeParser()
@@ -85,6 +85,6 @@ func TestJSONParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *CSVParserConfig {
-	return NewCSVParserConfig("json_parser")
+func defaultCfg() *Config {
+	return NewConfig()
 }

@@ -17,7 +17,7 @@ package internal_test
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -33,8 +33,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/mapprovider/filemapprovider"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/atomic"
@@ -91,7 +91,7 @@ jvm_memory_pool_bytes_used{pool="CodeHeap 'non-nmethods'"} %.1f`, float64(i))
 	prweUploads := make(chan *prompb.WriteRequest)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		// Snappy decode the uploads.
-		payload, rerr := ioutil.ReadAll(req.Body)
+		payload, rerr := io.ReadAll(req.Body)
 		if err != nil {
 			panic(rerr)
 		}
@@ -140,7 +140,7 @@ service:
       processors: [batch]
       exporters: [prometheusremotewrite]`, serverURL.Host, prweServer.URL)
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.Nil(t, err)
 	defer os.Remove(confFile.Name())
 	_, err = confFile.Write([]byte(cfg))
@@ -159,11 +159,13 @@ service:
 		Processors: processors,
 	}
 
-	fmp := filemapprovider.New()
+	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{confFile.Name()},
-			MapProviders: map[string]config.MapProvider{fmp.Scheme(): fmp},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{confFile.Name()},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
 		})
 	require.NoError(t, err)
 

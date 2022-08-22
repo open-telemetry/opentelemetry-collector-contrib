@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestTraceParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -37,31 +37,31 @@ func TestTraceParserConfig(t *testing.T) {
 		},
 		{
 			Name: "spanid",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_span_id")
-				cfg := helper.SpanIdConfig{}
+				cfg := helper.SpanIDConfig{}
 				cfg.ParseFrom = &parseFrom
 
 				c := defaultCfg()
-				c.SpanId = &cfg
+				c.SpanID = &cfg
 				return c
 			}(),
 		},
 		{
 			Name: "traceid",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_trace_id")
-				cfg := helper.TraceIdConfig{}
+				cfg := helper.TraceIDConfig{}
 				cfg.ParseFrom = &parseFrom
 
 				c := defaultCfg()
-				c.TraceId = &cfg
+				c.TraceID = &cfg
 				return c
 			}(),
 		},
 		{
 			Name: "trace_flags",
-			Expect: func() *TraceParserConfig {
+			Expect: func() *Config {
 				parseFrom := entry.NewBodyField("app_trace_flags_id")
 				cfg := helper.TraceFlagsConfig{}
 				cfg.ParseFrom = &parseFrom
@@ -80,6 +80,6 @@ func TestTraceParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *TraceParserConfig {
-	return NewTraceParserConfig("trace_parser")
+func defaultCfg() *Config {
+	return NewConfig()
 }

@@ -37,12 +37,12 @@ type traceVisitor struct {
 	exporter  *traceExporter
 }
 
-// Called for each tuple of Resource, InstrumentationLibrary, and Span
+// Called for each tuple of Resource, InstrumentationScope, and Span
 func (v *traceVisitor) visit(
 	resource pcommon.Resource,
-	instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
+	scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
 
-	envelope, err := spanToEnvelope(resource, instrumentationLibrary, span, v.exporter.logger)
+	envelope, err := spanToEnvelope(resource, scope, span, v.exporter.logger)
 	if err != nil {
 		// record the error and short-circuit
 		v.err = consumererror.NewPermanent(err)
@@ -78,5 +78,5 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set co
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporter(config, set, exporter.onTraceData)
+	return exporterhelper.NewTracesExporterWithContext(context.TODO(), set, config, exporter.onTraceData)
 }

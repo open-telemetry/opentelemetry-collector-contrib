@@ -16,6 +16,7 @@ package ecsobserver
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -74,6 +75,10 @@ func (h *inspectErrorHost) getError() error {
 // Simply start and stop, the actual test logic is in sd_test.go until we implement the ListWatcher interface.
 // In that case sd itself does not use timer and relies on caller to trigger List.
 func TestExtensionStartStop(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping flaky test on Windows, see " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4042")
+	}
 	refreshInterval := 100 * time.Millisecond
 	waitDuration := 2 * refreshInterval
 

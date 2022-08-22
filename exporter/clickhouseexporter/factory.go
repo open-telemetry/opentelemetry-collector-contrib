@@ -26,6 +26,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "clickhouse"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -33,7 +35,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -60,9 +62,10 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exporter.pushLogsData,
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),

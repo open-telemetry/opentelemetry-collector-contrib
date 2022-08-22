@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -189,14 +188,15 @@ func sshConnection(logger *zap.Logger, _url *url.URL, secure bool, key, passphra
 }
 
 func publicKey(path string, passphrase []byte) (ssh.Signer, error) {
-	key, err := ioutil.ReadFile(path)
+	key, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		if _, ok := err.(*ssh.PassphraseMissingError); !ok {
+		pmErr := &ssh.PassphraseMissingError{}
+		if !errors.As(err, &pmErr) {
 			return nil, err
 		}
 		return ssh.ParsePrivateKeyWithPassphrase(key, passphrase)

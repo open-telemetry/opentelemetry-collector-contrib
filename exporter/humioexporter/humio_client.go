@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package humioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 
 import (
@@ -22,7 +21,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"sync"
 	"time"
@@ -108,7 +106,7 @@ type humioClient struct {
 
 // Constructs a new HTTP client for sending payloads to Humio
 func newHumioClient(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
-	client, err := cfg.HTTPClientSettings.ToClient(host.GetExtensions(), settings)
+	client, err := cfg.HTTPClientSettings.ToClient(host, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +160,10 @@ func (h *humioClient) sendEvents(ctx context.Context, evts interface{}, url stri
 	}
 	// Response body needs to both be read to EOF and closed to avoid leaks
 	defer res.Body.Close()
-	io.Copy(ioutil.Discard, res.Body)
+	_, err = io.Copy(io.Discard, res.Body)
+	if err != nil {
+		return err
+	}
 
 	// If an error has occurred, determine if it would make sense to retry
 	// This check is not exhaustive, but should cover the most common cases

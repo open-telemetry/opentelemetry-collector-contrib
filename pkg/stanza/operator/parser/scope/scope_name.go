@@ -24,44 +24,51 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "scope_name_parser"
+
 func init() {
-	operator.Register("scope_name_parser", func() operator.Builder { return NewScopeNameParserConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewScopeNameParserConfig creates a new logger name parser config with default values
-func NewScopeNameParserConfig(operatorID string) *ScopeNameParserConfig {
-	return &ScopeNameParserConfig{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "scope_name_parser"),
+// NewConfig creates a new logger name parser config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new logger name parser config with default values
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		ScopeNameParser:   helper.NewScopeNameParser(),
 	}
 }
 
-// ScopeNameParserConfig is the configuration of a logger name parser operator.
-type ScopeNameParserConfig struct {
+// Config is the configuration of a logger name parser operator.
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"           yaml:",inline"`
 	helper.ScopeNameParser   `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a logger name parser operator.
-func (c ScopeNameParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ScopeNameParserOperator{
+	return &Parser{
 		TransformerOperator: transformerOperator,
 		ScopeNameParser:     c.ScopeNameParser,
 	}, nil
 }
 
-// ScopeNameParserOperator is an operator that parses logger name from a field to an entry.
-type ScopeNameParserOperator struct {
+// Parser is an operator that parses logger name from a field to an entry.
+type Parser struct {
 	helper.TransformerOperator
 	helper.ScopeNameParser
 }
 
 // Process will parse logger name from an entry.
-func (p *ScopeNameParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Parse)
 }

@@ -36,9 +36,9 @@ type activeDirectoryDSScraper struct {
 	w  *watchers
 }
 
-func newActiveDirectoryDSScraper(ms metadata.MetricsSettings) *activeDirectoryDSScraper {
+func newActiveDirectoryDSScraper(ms metadata.MetricsSettings, params component.ReceiverCreateSettings) *activeDirectoryDSScraper {
 	return &activeDirectoryDSScraper{
-		mb: metadata.NewMetricsBuilder(ms),
+		mb: metadata.NewMetricsBuilder(ms, params.BuildInfo),
 	}
 }
 

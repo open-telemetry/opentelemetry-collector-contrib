@@ -15,125 +15,34 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
-	"github.com/alecthomas/participle/v2"
-	"github.com/alecthomas/participle/v2/lexer"
-	"go.uber.org/multierr"
+	"encoding/hex"
+	"errors"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// ParsedQuery represents a parsed query. It is the entry point into the query DSL.
-// nolint:govet
-type ParsedQuery struct {
-	Invocation Invocation `@@`
-	Condition  *Condition `( "where" @@ )?`
-}
-
-// Condition represents an optional boolean condition on the RHS of a query.
-// nolint:govet
-type Condition struct {
-	Left  Value  `@@`
-	Op    string `@("==" | "!=")`
-	Right Value  `@@`
-}
-
-// Invocation represents a function call.
-// nolint:govet
-type Invocation struct {
-	Function  string  `@Ident`
-	Arguments []Value `"(" ( @@ ( "," @@ )* )? ")"`
-}
-
-// Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
-// expression, function call, or literal.
-// nolint:govet
-type Value struct {
-	Invocation *Invocation `( @@`
-	String     *string     `| @String`
-	Float      *float64    `| @Float`
-	Int        *int64      `| @Int`
-	Path       *Path       `| @@ )`
-}
-
-// Path represents a telemetry path expression.
-// nolint:govet
-type Path struct {
-	Fields []Field `@@ ( "." @@ )*`
-}
-
-// Field is an item within a Path.
-// nolint:govet
-type Field struct {
-	Name   string  `@Ident`
-	MapKey *string `( "[" @String "]" )?`
-}
-
-// Query holds a top level Query for processing telemetry data. A Query is a combination of a function
-// invocation and the condition to match telemetry for invoking the function.
-type Query struct {
-	Function  ExprFunc
-	Condition condFunc
-}
-
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser) ([]Query, error) {
-	queries := make([]Query, 0)
-	var errors error
-
-	for _, statement := range statements {
-		parsed, err := parseQuery(statement)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		condition, err := newConditionEvaluator(parsed.Condition, functions, pathParser)
-		if err != nil {
-			errors = multierr.Append(errors, err)
-			continue
-		}
-		queries = append(queries, Query{
-			Function:  function,
-			Condition: condition,
-		})
-	}
-
-	if errors != nil {
-		return nil, errors
-	}
-	return queries, nil
-}
-
-var parser = newParser()
-
-func parseQuery(raw string) (*ParsedQuery, error) {
-	parsed := &ParsedQuery{}
-	err := parser.ParseString("", raw, parsed)
+func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
+	id, err := hex.DecodeString(spanIDStr)
 	if err != nil {
-		return nil, err
+		return pcommon.SpanID{}, err
 	}
-	return parsed, nil
+	if len(id) != 8 {
+		return pcommon.SpanID{}, errors.New("span ids must be 8 bytes")
+	}
+	var idArr [8]byte
+	copy(idArr[:8], id)
+	return pcommon.NewSpanID(idArr), nil
 }
 
-// newParser returns a parser that can be used to read a string into a ParsedQuery. An error will be returned if the string
-// is not formatted for the DSL.
-func newParser() *participle.Parser {
-	lex := lexer.MustSimple([]lexer.SimpleRule{
-		{Name: `Ident`, Pattern: `[a-zA-Z_][a-zA-Z0-9_]*`},
-		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
-		{Name: `Int`, Pattern: `[-+]?\d+`},
-		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
-		{Name: `Operators`, Pattern: `==|!=|[,.()\[\]]`},
-		{Name: "whitespace", Pattern: `\s+`},
-	})
-	parser, err := participle.Build(&ParsedQuery{},
-		participle.Lexer(lex),
-		participle.Unquote("String"),
-		participle.Elide("whitespace"),
-	)
+func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
+	id, err := hex.DecodeString(traceIDStr)
 	if err != nil {
-		panic("Unable to initialize parser, this is a programming error in the transformprocesor")
+		return pcommon.TraceID{}, err
 	}
-	return parser
+	if len(id) != 16 {
+		return pcommon.TraceID{}, errors.New("traces ids must be 16 bytes")
+	}
+	var idArr [16]byte
+	copy(idArr[:16], id)
+	return pcommon.NewTraceID(idArr), nil
 }

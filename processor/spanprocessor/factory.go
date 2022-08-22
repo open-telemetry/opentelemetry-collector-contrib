@@ -27,6 +27,8 @@ import (
 const (
 	// typeStr is the value of "type" Span processor in the configuration.
 	typeStr = "span"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 const (
@@ -41,6 +43,7 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // errMissingRequiredField is returned when a required field in the config
 // is not specified.
 // TODO https://github.com/open-telemetry/opentelemetry-collector/issues/215
+//
 //	Move this to the error package that allows for span name and field to be specified.
 var (
 	errMissingRequiredField       = errors.New("error creating \"span\" processor: either \"from_attributes\" or \"to_attributes\" must be specified in \"name:\" or \"setStatus\" must be specified")
@@ -53,7 +56,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -63,8 +66,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	_ component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -91,7 +94,9 @@ func createTracesProcessor(
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		sp.processTraces,

@@ -260,13 +260,14 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		netHostPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetHostPort, 10)
 	}
 
-	if attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "" {
+	switch {
+	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPHost)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.HTTPServerName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.HTTPServerName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPServerName)
@@ -274,7 +275,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(netHostPortAsString)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetHostName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetHostName != "" && netHostPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetHostName)
@@ -282,7 +283,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 		sb.WriteString(netHostPortAsString)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Url = sb.String()
-	} else if attrs.HTTPURL != "" {
+	case attrs.HTTPURL != "":
 		if _, err := url.Parse(attrs.HTTPURL); err == nil {
 			data.Url = attrs.HTTPURL
 		}
@@ -344,19 +345,20 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		netPeerPortAsString = strconv.FormatInt(attrs.NetworkAttributes.NetPeerPort, 10)
 	}
 
-	if attrs.HTTPURL != "" {
+	switch {
+	case attrs.HTTPURL != "":
 		if u, err := url.Parse(attrs.HTTPURL); err == nil {
 			data.Data = attrs.HTTPURL
 			data.Target = u.Host
 		}
-	} else if attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.HTTPHost != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.HTTPHost)
 		sb.WriteString(attrs.HTTPTarget)
 		data.Data = sb.String()
 		data.Target = attrs.HTTPHost
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerName != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerName != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetPeerName)
@@ -370,7 +372,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 		sb.WriteString(":")
 		sb.WriteString(netPeerPortAsString)
 		data.Target = sb.String()
-	} else if attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerIP != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "" {
+	case attrs.HTTPScheme != "" && attrs.NetworkAttributes.NetPeerIP != "" && netPeerPortAsString != "" && attrs.HTTPTarget != "":
 		sb.WriteString(attrs.HTTPScheme)
 		sb.WriteString("://")
 		sb.WriteString(attrs.NetworkAttributes.NetPeerIP)

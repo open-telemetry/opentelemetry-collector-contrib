@@ -112,8 +112,8 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		var splunkMetrics []*splunk.Event
 		for gi := 0; gi < pts.Len(); gi++ {
 			dataPt := pts.At(gi)
-			bounds := dataPt.MExplicitBounds()
-			counts := dataPt.MBucketCounts()
+			bounds := dataPt.ExplicitBounds()
+			counts := dataPt.BucketCounts()
 			// first, add one event for sum, and one for count
 			{
 				fields := cloneMap(commonFields)
@@ -131,16 +131,16 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 			// Spec says counts is optional but if present it must have one more
 			// element than the bounds array.
-			if len(counts) == 0 || len(counts) != len(bounds)+1 {
+			if counts.Len() == 0 || counts.Len() != bounds.Len()+1 {
 				continue
 			}
 			value := uint64(0)
 			// now create buckets for each bound.
-			for bi := 0; bi < len(bounds); bi++ {
+			for bi := 0; bi < bounds.Len(); bi++ {
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
-				fields["le"] = float64ToDimValue(bounds[bi])
-				value += counts[bi]
+				fields["le"] = float64ToDimValue(bounds.At(bi))
+				value += counts.At(bi)
 				fields[metricFieldName+bucketSuffix] = value
 				fields[splunkMetricTypeKey] = pmetric.MetricDataTypeHistogram.String()
 				sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
@@ -151,7 +151,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 				fields := cloneMap(commonFields)
 				populateAttributes(fields, dataPt.Attributes())
 				fields["le"] = float64ToDimValue(math.Inf(1))
-				fields[metricFieldName+bucketSuffix] = value + counts[len(counts)-1]
+				fields[metricFieldName+bucketSuffix] = value + counts.At(counts.Len()-1)
 				fields[splunkMetricTypeKey] = pmetric.MetricDataTypeHistogram.String()
 				sm := createEvent(dataPt.Timestamp(), host, source, sourceType, index, fields)
 				splunkMetrics = append(splunkMetrics, sm)

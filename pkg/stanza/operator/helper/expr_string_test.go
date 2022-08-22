@@ -15,7 +15,6 @@
 package helper
 
 import (
-	"os"
 	"strconv"
 	"testing"
 
@@ -25,8 +24,7 @@ import (
 )
 
 func TestExprString(t *testing.T) {
-	os.Setenv("TEST_EXPR_STRING_ENV", "foo")
-	defer os.Unsetenv("TEST_EXPR_STRING_ENV")
+	t.Setenv("TEST_EXPR_STRING_ENV", "foo")
 
 	exampleEntry := func() *entry.Entry {
 		e := entry.New()

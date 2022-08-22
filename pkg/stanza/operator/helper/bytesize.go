@@ -59,7 +59,7 @@ func (h *ByteSize) unmarshalShared(unmarshal func(interface{}) error) error {
 
 	var stringType string
 	if err := unmarshal(&stringType); err != nil {
-		return fmt.Errorf("failed to unmarshal to int64, float64, or string: %s", err)
+		return fmt.Errorf("failed to unmarshal to int64, float64, or string: %w", err)
 	}
 
 	matches := byteSizeRegex.FindStringSubmatch(stringType)

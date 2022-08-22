@@ -39,7 +39,7 @@ type IPResolver struct {
 }
 
 // Create new resolver
-func NewIpResolver() *IPResolver {
+func NewIPResolver() *IPResolver {
 	r := &IPResolver{
 		cache:                make(map[string]cacheEntry),
 		stopped:              false,
@@ -94,7 +94,7 @@ func (r *IPResolver) invalidateCache() {
 // GetHostFromIp returns hostname for given ip
 // It is taken from cache if exists,
 // otherwise lookup is performed and result is put into cache
-func (r *IPResolver) GetHostFromIp(ip string) (host string) {
+func (r *IPResolver) GetHostFromIP(ip string) (host string) {
 	r.mutex.RLock()
 	entry, ok := r.cache[ip]
 	if ok {
@@ -104,7 +104,7 @@ func (r *IPResolver) GetHostFromIp(ip string) (host string) {
 	}
 	r.mutex.RUnlock()
 
-	host = r.lookupIpAddr(ip)
+	host = r.lookupIPAddr(ip)
 
 	r.mutex.Lock()
 	r.cache[ip] = cacheEntry{
@@ -116,8 +116,8 @@ func (r *IPResolver) GetHostFromIp(ip string) (host string) {
 	return host
 }
 
-// lookupIpAddr resturns hostname based on ip address
-func (r *IPResolver) lookupIpAddr(ip string) (host string) {
+// lookupIPAddr resturns hostname based on ip address
+func (r *IPResolver) lookupIPAddr(ip string) (host string) {
 	res, err := net.LookupAddr(ip)
 	if err != nil || len(res) == 0 {
 		return ip

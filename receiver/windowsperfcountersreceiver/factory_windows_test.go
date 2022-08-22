@@ -23,17 +23,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-
-	winperfcounters "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 )
 
 func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).PerfCounters = []winperfcounters.ObjectConfig{
+	cfg.(*Config).PerfCounters = []ObjectConfig{
 		{
 			Object:   "object",
-			Counters: []winperfcounters.CounterConfig{{Name: "counter", MetricRep: winperfcounters.MetricRep{Name: "metric"}}},
+			Counters: []CounterConfig{{Name: "counter", MetricRep: MetricRep{Name: "metric"}}},
 		},
 	}
 

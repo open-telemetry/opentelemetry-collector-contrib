@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 
 import (
@@ -66,8 +65,6 @@ func newCwLogsPusher(expConfig *Config, params component.ExporterCreateSettings)
 		return nil, err
 	}
 
-	expConfig.Validate()
-
 	pusher := cwlogs.NewPusher(aws.String(expConfig.LogGroupName), aws.String(expConfig.LogStreamName), *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
 
 	logsExporter := &exporter{
@@ -87,9 +84,10 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
-		config,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		params,
+		config,
 		logsExporter.ConsumeLogs,
 		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
 		exporterhelper.WithRetry(expConfig.RetrySettings),

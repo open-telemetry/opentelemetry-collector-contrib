@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -147,6 +147,25 @@ func TestCompositeEvaluatorSampled_AlwaysSampled(t *testing.T) {
 	// Create 2 subpolicies. First results in 100% NotSampled, the second in 100% Sampled.
 	n1 := NewNumericAttributeFilter(zap.NewNop(), "tag", 0, 100)
 	n2 := NewAlwaysSample(zap.NewNop())
+	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
+
+	for i := 1; i <= 10; i++ {
+		trace := createTrace()
+
+		decision, err := c.Evaluate(traceID, trace)
+		require.NoError(t, err, "Failed to evaluate composite policy: %v", err)
+
+		// The second policy is AlwaysSample, so the decision should be Sampled.
+		expected := Sampled
+		assert.Equal(t, decision, expected)
+	}
+}
+
+func TestCompositeEvaluatorInverseSampled_AlwaysSampled(t *testing.T) {
+
+	// The first policy does not match, the second matches through invert
+	n1 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, false)
+	n2 := NewStringAttributeFilter(zap.NewNop(), "tag", []string{"foo"}, false, 0, true)
 	c := NewComposite(zap.NewNop(), 10, []SubPolicyEvalParams{{n1, 20}, {n2, 20}}, FakeTimeProvider{})
 
 	for i := 1; i <= 10; i++ {

@@ -29,11 +29,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 )
 
 func TestUdp(t *testing.T) {
-	testUDP(t, testdataConfigYamlAsMap())
+	testUDP(t, testdataConfigYaml())
 }
 
 func testUDP(t *testing.T, cfg *UDPLogConfig) {
@@ -86,18 +87,20 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("udplog")])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("udplog")])
 }
 
-func testdataConfigYamlAsMap() *UDPLogConfig {
+func testdataConfigYaml() *UDPLogConfig {
 	return &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
-			"listen_address": "0.0.0.0:29018",
-		},
+		Config: func() udp.Config {
+			c := udp.NewConfig()
+			c.ListenAddress = "0.0.0.0:29018"
+			return *c
+		}(),
 	}
 }
 
@@ -105,13 +108,15 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	factory := NewFactory()
 	badCfg := &UDPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
-			"max_buffer_size": "0.1.0.1-",
-		},
+		Config: func() udp.Config {
+			c := udp.NewConfig()
+			c.Encoding.Encoding = "fake"
+			return *c
+		}(),
 	}
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, sink)
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")

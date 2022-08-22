@@ -16,7 +16,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -33,8 +32,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newDefaultConfig(tempDir string) *InputConfig {
-	cfg := NewInputConfig("testfile")
+func newDefaultConfig(tempDir string) *Config {
+	cfg := NewConfigWithID("testfile")
 	cfg.PollInterval = helper.Duration{Duration: 200 * time.Millisecond}
 	cfg.StartAt = "beginning"
 	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
@@ -42,13 +41,13 @@ func newDefaultConfig(tempDir string) *InputConfig {
 	return cfg
 }
 
-func newTestFileOperator(t *testing.T, cfgMod func(*InputConfig), outMod func(*testutil.FakeOutput)) (*InputOperator, chan *entry.Entry, string) {
+func newTestFileOperator(t *testing.T, cfgMod func(*Config), outMod func(*testutil.FakeOutput)) (*Input, chan *entry.Entry, string) {
 	fakeOutput := testutil.NewFakeOutput(t)
 	if outMod != nil {
 		outMod(fakeOutput)
 	}
 
-	tempDir := testutil.NewTempDir(t)
+	tempDir := t.TempDir()
 
 	cfg := newDefaultConfig(tempDir)
 	if cfgMod != nil {
@@ -60,7 +59,7 @@ func newTestFileOperator(t *testing.T, cfgMod func(*InputConfig), outMod func(*t
 	err = op.SetOutputs([]operator.Operator{fakeOutput})
 	require.NoError(t, err)
 
-	return op.(*InputOperator), fakeOutput.Received, tempDir
+	return op.(*Input), fakeOutput.Received, tempDir
 }
 
 func openFile(tb testing.TB, path string) *os.File {
@@ -79,14 +78,14 @@ func reopenTemp(t testing.TB, name string) *os.File {
 }
 
 func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
-	file, err := ioutil.TempFile(tempDir, pattern)
+	file, err := os.CreateTemp(tempDir, pattern)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
 }
 
 func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := ioutil.TempFile(tempDir, "")
+	file, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	require.NoError(t, file.Close()) // will be managed by rotator
 
@@ -125,20 +124,6 @@ func waitForOne(t *testing.T, c chan *entry.Entry) *entry.Entry {
 		require.FailNow(t, "Timed out waiting for message")
 		return nil
 	}
-}
-
-func waitForN(t *testing.T, c chan *entry.Entry, n int) []string {
-	messages := make([]string, 0, n)
-	for i := 0; i < n; i++ {
-		select {
-		case e := <-c:
-			messages = append(messages, e.Body.(string))
-		case <-time.After(3 * time.Second):
-			require.FailNow(t, "Timed out waiting for message")
-			return nil
-		}
-	}
-	return messages
 }
 
 func waitForMessage(t *testing.T, c chan *entry.Entry, expected string) {

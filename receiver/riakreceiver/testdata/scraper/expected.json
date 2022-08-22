@@ -1,10 +1,11 @@
 {
    "resourceMetrics": [
       {
-         "instrumentationLibraryMetrics": [
+         "scopeMetrics": [
             {
-               "instrumentationLibrary": {
-                  "name": "otelcol/riakreceiver"
+               "scope": {
+                  "name": "otelcol/riakreceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {

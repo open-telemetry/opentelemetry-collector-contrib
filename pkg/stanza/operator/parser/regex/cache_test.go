@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/atomic"
 )
 
 func TestNewMemoryCache(t *testing.T) {
@@ -225,7 +226,7 @@ func TestThrottledLimiter(t *testing.T) {
 	// has not been called yet, so the reset go routine is not running
 	l := atomicLimiter{
 		max:      max,
-		count:    max + 1,
+		count:    atomic.NewUint64(max + 1),
 		interval: 1,
 	}
 

@@ -202,10 +202,9 @@ func TestExportTraceDataWithInstrumentationDetails(t *testing.T) {
 	)
 	traces := constructTraces([]ptrace.Span{minSpan})
 
-	instrumentationLibrary := traces.ResourceSpans().At(0).ScopeSpans().At(0).
-		Scope()
-	instrumentationLibrary.SetName("instrumentation_name")
-	instrumentationLibrary.SetVersion("v0.0.1")
+	scope := traces.ResourceSpans().At(0).ScopeSpans().At(0).Scope()
+	scope.SetName("instrumentation_name")
+	scope.SetVersion("v0.0.1")
 
 	expected := []*span{{
 		Name:    "root",
@@ -237,9 +236,10 @@ func TestExportTraceDataRespectsContext(t *testing.T) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
-		cfg,
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)
@@ -287,9 +287,10 @@ func consumeTraces(ptrace ptrace.Traces) ([]*span, error) {
 		sender: sender,
 		logger: zap.NewNop(),
 	}
-	mockOTelTracesExporter, err := exporterhelper.NewTracesExporter(
-		cfg,
+	mockOTelTracesExporter, err := exporterhelper.NewTracesExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushTraceData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)

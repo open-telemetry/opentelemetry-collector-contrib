@@ -24,7 +24,6 @@ import (
 	"github.com/prometheus/prometheus/discovery"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/service/servicetest"
@@ -56,7 +55,7 @@ func TestCreateTraceAndMetricsReceiver(t *testing.T) {
 	traceReceiver, err = factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)
 
 	assert.Equal(t, nil, traceReceiver)
-	assert.ErrorIs(t, err, componenterror.ErrDataTypeIsNotSupported)
+	assert.ErrorIs(t, err, component.ErrDataTypeIsNotSupported)
 
 	// Test CreateMetricsReceiver error because of lack of command
 	_, err = factory.CreateMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), receiver, nil)

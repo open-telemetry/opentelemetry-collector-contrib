@@ -16,7 +16,6 @@ package eks
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,7 +47,7 @@ func TestEKS(t *testing.T) {
 	detectorUtils := new(MockDetectorUtils)
 	ctx := context.Background()
 
-	require.NoError(t, os.Setenv("KUBERNETES_SERVICE_HOST", "localhost"))
+	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
 	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
@@ -64,7 +63,6 @@ func TestEKS(t *testing.T) {
 // Tests EKS resource detector not running in EKS environment by verifying resource is not running on k8s
 func TestNotEKS(t *testing.T) {
 	eksResourceDetector := detector{logger: zap.NewNop()}
-	require.NoError(t, os.Unsetenv("KUBERNETES_SERVICE_HOST"))
 	r, _, err := eksResourceDetector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, 0, r.Attributes().Len(), "Resource object should be empty")

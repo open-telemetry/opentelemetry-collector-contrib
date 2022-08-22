@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
 import (
@@ -24,7 +23,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -43,7 +41,7 @@ type componentFactory func(ctx context.Context, endpoint string) (component.Expo
 
 type loadBalancer interface {
 	component.Component
-	Endpoint(traceID pcommon.TraceID) string
+	Endpoint(identifier []byte) string
 	Exporter(endpoint string) (component.Exporter, error)
 }
 
@@ -153,7 +151,7 @@ func endpointWithPort(endpoint string) string {
 func (lb *loadBalancerImp) removeExtraExporters(ctx context.Context, endpoints []string) {
 	for existing := range lb.exporters {
 		if !endpointFound(existing, endpoints) {
-			lb.exporters[existing].Shutdown(ctx)
+			_ = lb.exporters[existing].Shutdown(ctx)
 			delete(lb.exporters, existing)
 		}
 	}
@@ -174,11 +172,11 @@ func (lb *loadBalancerImp) Shutdown(context.Context) error {
 	return nil
 }
 
-func (lb *loadBalancerImp) Endpoint(traceID pcommon.TraceID) string {
+func (lb *loadBalancerImp) Endpoint(identifier []byte) string {
 	lb.updateLock.RLock()
 	defer lb.updateLock.RUnlock()
 
-	return lb.ring.endpointFor(traceID)
+	return lb.ring.endpointFor(identifier)
 }
 
 func (lb *loadBalancerImp) Exporter(endpoint string) (component.Exporter, error) {

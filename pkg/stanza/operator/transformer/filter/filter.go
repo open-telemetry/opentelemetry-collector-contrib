@@ -29,31 +29,39 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "filter"
+
+var (
+	upperBound = big.NewInt(1000)
+	randInt    = rand.Int // allow override for testing
+)
+
 func init() {
-	operator.Register("filter", func() operator.Builder { return NewFilterOperatorConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-var upperBound = big.NewInt(1000)
+// NewConfig creates a filter operator config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
 
-var randInt = rand.Int // allow override for testing
-
-// NewFilterOperatorConfig creates a filter operator config with default values
-func NewFilterOperatorConfig(operatorID string) *FilterOperatorConfig {
-	return &FilterOperatorConfig{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "filter"),
+// NewConfigWithID creates a filter operator config with default values
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		DropRatio:         1,
 	}
 }
 
-// FilterOperatorConfig is the configuration of a filter operator
-type FilterOperatorConfig struct {
+// Config is the configuration of a filter operator
+type Config struct {
 	helper.TransformerConfig `yaml:",inline"`
 	Expression               string  `json:"expr"   yaml:"expr"`
 	DropRatio                float64 `json:"drop_ratio"   yaml:"drop_ratio"`
 }
 
 // Build will build a filter operator from the supplied configuration
-func (c FilterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -68,22 +76,22 @@ func (c FilterOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 		return nil, fmt.Errorf("drop_ratio must be a number between 0 and 1")
 	}
 
-	return &FilterOperator{
+	return &Transformer{
 		TransformerOperator: transformer,
 		expression:          compiledExpression,
 		dropCutoff:          big.NewInt(int64(c.DropRatio * 1000)),
 	}, nil
 }
 
-// FilterOperator is an operator that filters entries based on matching expressions
-type FilterOperator struct {
+// Transformer is an operator that filters entries based on matching expressions
+type Transformer struct {
 	helper.TransformerOperator
 	expression *vm.Program
 	dropCutoff *big.Int // [0..1000)
 }
 
 // Process will drop incoming entries that match the filter expression
-func (f *FilterOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (f *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 

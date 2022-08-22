@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
@@ -37,9 +36,7 @@ const ExceptionEventName = "exception"
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.Code() != ptrace.StatusCodeError {
-		return false, false, false, attributes, nil
-	}
+
 	filtered = attributes
 
 	var (
@@ -56,7 +53,8 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if hasExceptions {
+	switch {
+	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.StringVal()
@@ -90,7 +88,11 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
 				Exceptions: exceptions}}
-	} else {
+
+	case status.Code() != ptrace.StatusCodeError:
+		cause = nil
+
+	default:
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
 		filtered = make(map[string]pcommon.Value)
@@ -124,7 +126,14 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
+	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+
+	switch {
+	case status.Code() != ptrace.StatusCodeError:
+		isError = false
+		isThrottle = false
+		isFault = false
+	case ok:
 		code := val.IntVal()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
@@ -138,11 +147,12 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			isThrottle = false
 			isFault = true
 		}
-	} else {
+	default:
 		isError = false
 		isThrottle = false
 		isFault = true
 	}
+
 	return isError, isFault, isThrottle, filtered, cause
 }
 
@@ -180,11 +190,14 @@ func parseException(exceptionType string, message string, stacktrace string, lan
 func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -371,11 +384,14 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -427,11 +443,14 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxray.Exception {
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
 	var line string
-	line, err := r.ReadLine()
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}
@@ -502,10 +521,13 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 
 	r := textproto.NewReader(bufio.NewReader(strings.NewReader(stacktrace)))
 
-	// Skip first line containing top level exception / message
-	_, _ = r.ReadLine()
+	// Skip first line containing top level message
 	exception := &exceptions[0]
-	line, err := r.ReadLine()
+	_, err := r.ReadLine()
+	if err != nil {
+		return exceptions
+	}
+	line, err = r.ReadLine()
 	if err != nil {
 		return exceptions
 	}

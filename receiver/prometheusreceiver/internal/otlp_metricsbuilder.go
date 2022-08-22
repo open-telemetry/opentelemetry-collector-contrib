@@ -41,43 +41,47 @@ func isUsefulLabel(mType pmetric.MetricDataType, labelKey string) bool {
 }
 
 func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
-	labelName := ""
+	val := ""
 	switch metricType {
 	case pmetric.MetricDataTypeHistogram:
-		labelName = model.BucketLabel
+		val = labels.Get(model.BucketLabel)
+		if val == "" {
+			return 0, errEmptyLeLabel
+		}
 	case pmetric.MetricDataTypeSummary:
-		labelName = model.QuantileLabel
+		val = labels.Get(model.QuantileLabel)
+		if val == "" {
+			return 0, errEmptyQuantileLabel
+		}
 	default:
 		return 0, errNoBoundaryLabel
 	}
 
-	v := labels.Get(labelName)
-	if v == "" {
-		return 0, errEmptyBoundaryLabel
-	}
-
-	return strconv.ParseFloat(v, 64)
+	return strconv.ParseFloat(val, 64)
 }
 
-func convToMetricType(metricType textparse.MetricType) pmetric.MetricDataType {
+// convToMetricType returns the data type and if it is monotonic
+func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, bool) {
 	switch metricType {
 	case textparse.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
-		return pmetric.MetricDataTypeSum
+		return pmetric.MetricDataTypeSum, true
 	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
 	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pmetric.MetricDataTypeGauge
+		return pmetric.MetricDataTypeGauge, false
 	case textparse.MetricTypeHistogram:
-		return pmetric.MetricDataTypeHistogram
+		return pmetric.MetricDataTypeHistogram, true
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
 	// case textparse.MetricTypeGaugeHistogram:
 	//	return <pdata gauge histogram type>
 	case textparse.MetricTypeSummary:
-		return pmetric.MetricDataTypeSummary
+		return pmetric.MetricDataTypeSummary, true
+	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
+		return pmetric.MetricDataTypeSum, false
 	default:
-		// including: textparse.MetricTypeGaugeHistogram, textparse.MetricTypeInfo, textparse.MetricTypeStateset
-		return pmetric.MetricDataTypeNone
+		// including: textparse.MetricTypeGaugeHistogram
+		return pmetric.MetricDataTypeNone, false
 	}
 }
 

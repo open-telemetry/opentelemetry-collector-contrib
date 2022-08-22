@@ -39,8 +39,6 @@ var (
 	sfxMetricTypeGauge             = sfxpb.MetricType_GAUGE
 	sfxMetricTypeCumulativeCounter = sfxpb.MetricType_CUMULATIVE_COUNTER
 	sfxMetricTypeCounter           = sfxpb.MetricType_COUNTER
-
-	translator = &signalfx.FromTranslator{}
 )
 
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
@@ -50,6 +48,7 @@ type MetricsConverter struct {
 	metricTranslator   *MetricTranslator
 	filterSet          *dpfilters.FilterSet
 	datapointValidator *datapointValidator
+	translator         *signalfx.FromTranslator
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -70,6 +69,7 @@ func NewMetricsConverter(
 		metricTranslator:   t,
 		filterSet:          fs,
 		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:         &signalfx.FromTranslator{},
 	}, nil
 }
 
@@ -87,7 +87,7 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
 				dps = c.translateAndFilter(dps)
 				sfxDataPoints = append(sfxDataPoints, dps...)
 			}
@@ -187,7 +187,7 @@ type datapointValidator struct {
 }
 
 func newDatapointValidator(logger *zap.Logger, nonAlphanumericDimChars string) *datapointValidator {
-	return &datapointValidator{logger: createSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
+	return &datapointValidator{logger: CreateSampledLogger(logger), nonAlphanumericDimChars: nonAlphanumericDimChars}
 }
 
 // sanitizeDataPoints sanitizes datapoints prior to dispatching them to the backend.
@@ -269,8 +269,8 @@ func (dpv *datapointValidator) isValidDimensionValue(value, name string) bool {
 	return true
 }
 
-// Copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
-func createSampledLogger(logger *zap.Logger) *zap.Logger {
+// CreateSampledLogger was copied from https://github.com/open-telemetry/opentelemetry-collector/blob/v0.26.0/exporter/exporterhelper/queued_retry.go#L108
+func CreateSampledLogger(logger *zap.Logger) *zap.Logger {
 	if logger.Core().Enabled(zapcore.DebugLevel) {
 		// Debugging is enabled. Don't do any sampling.
 		return logger
@@ -297,7 +297,7 @@ func DatapointToString(dp *sfxpb.DataPoint) string {
 
 	var dimsStr string
 	for _, dim := range dp.Dimensions {
-		dimsStr = dimsStr + dim.String()
+		dimsStr += dim.String()
 	}
 
 	return fmt.Sprintf("%s: %s (%s) %s\n%s", dp.Metric, dp.Value.String(), dpTypeToString(*dp.MetricType), tsStr, dimsStr)

@@ -70,7 +70,7 @@ func TestWatchNamespace(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
-	op := &K8sEvents{
+	op := &Input{
 		InputOperator: inputOp,
 		client: &fakev1.FakeCoreV1{
 			Fake: fakeAPI,
@@ -83,7 +83,9 @@ func TestWatchNamespace(t *testing.T) {
 	op.OutputOperators = []operator.Operator{fake}
 
 	op.startWatchingNamespace(ctx, "test_namespace")
-	defer op.Stop()
+	defer func() {
+		require.NoError(t, op.Stop())
+	}()
 
 	select {
 	case e := <-fake.Received:

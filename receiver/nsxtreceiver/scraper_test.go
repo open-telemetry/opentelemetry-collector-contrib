@@ -17,7 +17,7 @@ package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -60,7 +60,7 @@ func TestScrape(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -81,7 +81,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -99,7 +99,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 		&Config{
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.client = mockClient
 
@@ -117,7 +117,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 				Endpoint: mockClient.URL,
 			},
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NotNil(t, scraper.client)
@@ -131,7 +131,7 @@ func TestStartBadUrl(t *testing.T) {
 				Endpoint: "\x00",
 			},
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 
 	_ = scraper.start(context.Background(), componenttest.NewNopHost())
@@ -146,7 +146,7 @@ func TestScraperRecordNoStat(t *testing.T) {
 			},
 			Metrics: metadata.DefaultMetricsSettings(),
 		},
-		componenttest.NewNopTelemetrySettings(),
+		componenttest.NewNopReceiverCreateSettings(),
 	)
 	scraper.host = componenttest.NewNopHost()
 	scraper.recordNode(pcommon.NewTimestampFromTime(time.Now()), &nodeInfo{stats: nil})
@@ -160,7 +160,7 @@ func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeS
 	default:
 		classType = "cluster"
 	}
-	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
+	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
 	require.NoError(t, err)
 	switch class {
 	case transportClass:
@@ -184,7 +184,7 @@ func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.
 	default:
 		classType = "cluster"
 	}
-	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", "index.json"))
+	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", "index.json"))
 	require.NoError(t, err)
 	var interfaces dm.NodeNetworkInterfacePropertiesListResult
 	err = json.Unmarshal(testFile, &interfaces)
@@ -200,7 +200,7 @@ func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClas
 	default:
 		classType = "cluster"
 	}
-	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", interfaceID, "stats.json"))
+	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", interfaceID, "stats.json"))
 	require.NoError(t, err)
 	var stats dm.NetworkInterfaceStats
 	err = json.Unmarshal(testFile, &stats)
@@ -209,7 +209,7 @@ func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClas
 }
 
 func loadTestClusterNodes() ([]dm.ClusterNode, error) {
-	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "cluster_nodes.json"))
+	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "cluster_nodes.json"))
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func loadTestClusterNodes() ([]dm.ClusterNode, error) {
 }
 
 func loadTestTransportNodes() ([]dm.TransportNode, error) {
-	testFile, err := ioutil.ReadFile(filepath.Join("testdata", "metrics", "transport_nodes.json"))
+	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "transport_nodes.json"))
 	if err != nil {
 		return nil, err
 	}

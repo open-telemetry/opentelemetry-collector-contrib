@@ -169,7 +169,7 @@ func (f BodyField) Delete(entry *Entry) (interface{}, bool) {
 func (f *BodyField) UnmarshalJSON(raw []byte) error {
 	var value string
 	if err := json.Unmarshal(raw, &value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)
@@ -195,7 +195,7 @@ func (f BodyField) MarshalJSON() ([]byte, error) {
 func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var value string
 	if err := unmarshal(&value); err != nil {
-		return fmt.Errorf("the field is not a string: %s", err)
+		return fmt.Errorf("the field is not a string: %w", err)
 	}
 
 	keys, err := fromJSONDot(value)

@@ -29,7 +29,8 @@ import (
 // Matcher is an interface that allows matching a span against a configuration
 // of a match.
 // TODO: Modify Matcher to invoke both the include and exclude properties so
-//  calling processors will always have the same logic.
+//
+//	calling processors will always have the same logic.
 type Matcher interface {
 	MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }
@@ -64,7 +65,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.Services) > 0 {
 		serviceFS, err = filterset.CreateFilterSet(mp.Services, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating service name filters: %v", err)
+			return nil, fmt.Errorf("error creating service name filters: %w", err)
 		}
 	}
 
@@ -72,7 +73,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.SpanNames) > 0 {
 		nameFS, err = filterset.CreateFilterSet(mp.SpanNames, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating span name filters: %v", err)
+			return nil, fmt.Errorf("error creating span name filters: %w", err)
 		}
 	}
 
@@ -112,7 +113,9 @@ func SkipSpan(include Matcher, exclude Matcher, span ptrace.Span, resource pcomm
 func (mp *propertiesMatcher) MatchSpan(span ptrace.Span, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
 	// If a set of properties was not in the mp, all spans are considered to match on that property
 	if mp.serviceFilters != nil {
+		// Check resource and spans for service.name
 		serviceName := serviceNameForResource(resource)
+
 		if !mp.serviceFilters.Matches(serviceName) {
 			return false
 		}
@@ -131,6 +134,5 @@ func serviceNameForResource(resource pcommon.Resource) string {
 	if !found {
 		return "<nil-service-name>"
 	}
-
-	return service.StringVal()
+	return service.AsString()
 }

@@ -26,8 +26,8 @@ type mockVisitor struct {
 	mock.Mock
 }
 
-func (v *mockVisitor) visit(resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
-	args := v.Called(resource, instrumentationLibrary, span)
+func (v *mockVisitor) visit(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool) {
+	args := v.Called(resource, scope, span)
 	return args.Bool(0)
 }
 

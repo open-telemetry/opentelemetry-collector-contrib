@@ -24,26 +24,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "trace_parser"
+
 func init() {
-	operator.Register("trace_parser", func() operator.Builder { return NewTraceParserConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewTraceParserConfig creates a new trace parser config with default values
-func NewTraceParserConfig(operatorID string) *TraceParserConfig {
-	return &TraceParserConfig{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "trace_parser"),
+// NewConfig creates a new trace parser config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new trace parser config with default values
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 		TraceParser:       helper.NewTraceParser(),
 	}
 }
 
-// TraceParserConfig is the configuration of a trace parser operator.
-type TraceParserConfig struct {
+// Config is the configuration of a trace parser operator.
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash"           yaml:",inline"`
 	helper.TraceParser       `mapstructure:",omitempty,squash" yaml:",omitempty,inline"`
 }
 
 // Build will build a trace parser operator.
-func (c TraceParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -53,19 +60,19 @@ func (c TraceParserConfig) Build(logger *zap.SugaredLogger) (operator.Operator, 
 		return nil, err
 	}
 
-	return &TraceParserOperator{
+	return &Parser{
 		TransformerOperator: transformerOperator,
 		TraceParser:         c.TraceParser,
 	}, nil
 }
 
-// TraceParserConfig is an operator that parses traces from fields to an entry.
-type TraceParserOperator struct {
+// Config is an operator that parses traces from fields to an entry.
+type Parser struct {
 	helper.TransformerOperator
 	helper.TraceParser
 }
 
 // Process will parse traces from an entry.
-func (p *TraceParserOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Parse)
 }

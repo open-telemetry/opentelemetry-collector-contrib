@@ -26,9 +26,9 @@ import (
 
 // TraceVisitor interface defines a iteration callback when walking through traces
 type TraceVisitor interface {
-	// Called for each tuple of Resource, InstrumentationLibrary, and Span
+	// Called for each tuple of Resource, InstrumentationScope, and Span
 	// If Visit returns false, the iteration is short-circuited
-	visit(resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, span ptrace.Span) (ok bool)
+	visit(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool)
 }
 
 // Accept method is called to start the iteration process

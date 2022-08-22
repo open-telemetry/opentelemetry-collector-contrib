@@ -20,31 +20,18 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/loggingexporter"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
-	"go.opentelemetry.io/collector/service/servicetest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
 	testcases := []struct {
-		configPath     string
-		factoriesFunc  func(component.Factories) component.Factories
-		expectedConfig *Config
+		configPath string
+		expected   config.Processor
 	}{
 		{
 			configPath: "config_traces.yaml",
-			factoriesFunc: func(factories component.Factories) component.Factories {
-				// we don't need to use them in this test, but the config has them
-				factories.Exporters["otlp"] = otlpexporter.NewFactory()
-				factories.Exporters["jaeger"] = jaegerexporter.NewFactory()
-				return factories
-			},
-			expectedConfig: &Config{
+			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				DefaultExporters:  []string{"otlp"},
 				AttributeSource:   "context",
@@ -63,12 +50,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_metrics.yaml",
-			factoriesFunc: func(factories component.Factories) component.Factories {
-				// we don't need to use it in this test, but the config has them
-				factories.Exporters["logging"] = loggingexporter.NewFactory()
-				return factories
-			},
-			expectedConfig: &Config{
+			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				DefaultExporters:  []string{"logging/default"},
 				AttributeSource:   "context",
@@ -87,12 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			configPath: "config_logs.yaml",
-			factoriesFunc: func(factories component.Factories) component.Factories {
-				// we don't need to use it in this test, but the config has them
-				factories.Exporters["logging"] = loggingexporter.NewFactory()
-				return factories
-			},
-			expectedConfig: &Config{
+			expected: &Config{
 				ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
 				DefaultExporters:  []string{"logging/default"},
 				AttributeSource:   "context",
@@ -111,21 +88,20 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testcases {
-		t.Run(tc.configPath, func(t *testing.T) {
-			tc := tc
-
-			factories, err := componenttest.NopFactories()
-			assert.NoError(t, err)
-			factories.Processors[typeStr] = NewFactory()
-			factories = tc.factoriesFunc(factories)
-
-			cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", tc.configPath), factories)
+	for _, tt := range testcases {
+		t.Run(tt.configPath, func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.configPath))
 			require.NoError(t, err)
-			require.NotNil(t, cfg)
 
-			parsed := cfg.Processors[config.NewComponentID(typeStr)]
-			assert.Equal(t, tc.expectedConfig, parsed)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalProcessor(sub, cfg))
+
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }

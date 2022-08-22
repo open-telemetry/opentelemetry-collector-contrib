@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:gocritic
 package ecsinfo // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 
 import (
 	"bufio"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -182,7 +182,7 @@ func readString(dirpath string, file string) (string, error) {
 	cgroupFile := filepath.Join(dirpath, file)
 
 	// Read
-	out, err := ioutil.ReadFile(cgroupFile)
+	out, err := os.ReadFile(cgroupFile)
 	if err != nil {
 		// Ignore non-existent files
 		log.Printf("W! readString: Failed to read %q: %s", cgroupFile, err)

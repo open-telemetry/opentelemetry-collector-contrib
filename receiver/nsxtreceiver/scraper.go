@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/metadata"
 	dm "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver/internal/model"
@@ -37,21 +36,19 @@ type scraper struct {
 	host     component.Host
 	client   Client
 	mb       *metadata.MetricsBuilder
-	logger   *zap.Logger
 }
 
-func newScraper(cfg *Config, settings component.TelemetrySettings) *scraper {
+func newScraper(cfg *Config, settings component.ReceiverCreateSettings) *scraper {
 	return &scraper{
 		config:   cfg,
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
-		logger:   settings.Logger,
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 
 func (s *scraper) start(ctx context.Context, host component.Host) error {
 	s.host = host
-	client, err := newClient(s.config, s.settings, s.host, s.logger)
+	client, err := newClient(s.config, s.settings, s.host, s.settings.Logger)
 	if err != nil {
 		return fmt.Errorf("unable to construct http client: %w", err)
 	}

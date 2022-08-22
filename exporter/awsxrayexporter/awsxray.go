@@ -16,6 +16,7 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/xray"
@@ -46,9 +47,10 @@ func newTracesExporter(
 		return nil, err
 	}
 	xrayClient := newXRay(logger, awsConfig, set.BuildInfo, session)
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
@@ -67,7 +69,7 @@ func newTracesExporter(
 				output, localErr := xrayClient.PutTraceSegments(&input)
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
-					err = wrapErrorIfBadRequest(&localErr) // record error
+					err = wrapErrorIfBadRequest(localErr) // record error
 				}
 				if output != nil {
 					logger.Debug("response: " + output.String())
@@ -106,10 +108,10 @@ func extractResourceSpans(config config.Exporter, logger *zap.Logger, td ptrace.
 	return documents
 }
 
-func wrapErrorIfBadRequest(err *error) error {
-	_, ok := (*err).(awserr.RequestFailure)
-	if ok && (*err).(awserr.RequestFailure).StatusCode() < 500 {
-		return consumererror.NewPermanent(*err)
+func wrapErrorIfBadRequest(err error) error {
+	var rfErr awserr.RequestFailure
+	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+		return consumererror.NewPermanent(err)
 	}
-	return *err
+	return err
 }

@@ -25,31 +25,32 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
-const typeStr = "journald"
+const (
+	typeStr   = "journald"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a dummy factory.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
 type JournaldConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	adapter.BaseConfig `mapstructure:",squash"`
 }
 
 func createDefaultConfig() config.Receiver {
 	return &JournaldConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{},
 	}
 }
 
@@ -59,6 +60,5 @@ func createLogsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-
 	return nil, fmt.Errorf("journald is only supported on linux")
 }

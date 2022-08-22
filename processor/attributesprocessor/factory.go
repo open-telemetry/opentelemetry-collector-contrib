@@ -32,6 +32,8 @@ import (
 const (
 	// typeStr is the value of "type" key in configuration.
 	typeStr = "attributes"
+	// The stability level of the processor.
+	stability = component.StabilityLevelAlpha
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -41,9 +43,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithLogsProcessor(createLogProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -54,8 +56,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
@@ -65,7 +67,7 @@ func createTracesProcessor(
 	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 	include, err := filterspan.NewMatcher(oCfg.Include)
 	if err != nil {
@@ -76,15 +78,17 @@ func createTracesProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newSpanAttributesProcessor(params.Logger, attrProc, include, exclude).processTraces,
+		newSpanAttributesProcessor(set.Logger, attrProc, include, exclude).processTraces,
 		processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogProcessor(
-	_ context.Context,
+func createLogsProcessor(
+	ctx context.Context,
 	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
@@ -95,7 +99,7 @@ func createLogProcessor(
 	}
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
 	include, err := filterlog.NewMatcher(oCfg.Include)
@@ -107,7 +111,9 @@ func createLogProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		newLogAttributesProcessor(set.Logger, attrProc, include, exclude).processLogs,
@@ -115,8 +121,8 @@ func createLogProcessor(
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -128,7 +134,7 @@ func createMetricsProcessor(
 
 	attrProc, err := attraction.NewAttrProc(&oCfg.Settings)
 	if err != nil {
-		return nil, fmt.Errorf("error creating \"attributes\" processor: %w of processor %v", err, cfg.ID())
+		return nil, fmt.Errorf("error creating \"attributes\" processor %v: %w", cfg.ID(), err)
 	}
 
 	include, err := filtermetric.NewMatcher(filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include))
@@ -141,9 +147,11 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(params.Logger, attrProc, include, exclude).processMetrics,
+		newMetricAttributesProcessor(set.Logger, attrProc, include, exclude).processMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
 }

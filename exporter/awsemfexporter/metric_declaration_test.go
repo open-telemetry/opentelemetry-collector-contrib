@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsemfexporter
 
 import (
@@ -115,7 +114,8 @@ func TestGetConcatenatedLabels(t *testing.T) {
 			Separator:  tc.separator,
 			Regex:      ".+",
 		}
-		lm.init()
+		err := lm.init()
+		assert.Nil(t, err)
 		t.Run(tc.testName, func(t *testing.T) {
 			concatenatedLabels := lm.getConcatenatedLabels(labels)
 			assert.Equal(t, tc.expected, concatenatedLabels)
@@ -220,7 +220,8 @@ func TestLabelMatcherMatches(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc.labelMatcher.init()
+		err := tc.labelMatcher.init()
+		assert.Nil(t, err)
 		t.Run(tc.testName, func(t *testing.T) {
 			matches := tc.labelMatcher.Matches(tc.labels)
 			assert.Equal(t, tc.expected, matches)

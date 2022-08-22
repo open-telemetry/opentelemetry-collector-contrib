@@ -46,9 +46,10 @@ func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (compo
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
 }
@@ -119,10 +120,8 @@ func (cp *connPool) Write(bytes []byte) (int, error) {
 			cp.mtx.Lock()
 			cp.conns = append(cp.conns, conn)
 			cp.mtx.Unlock()
-		} else {
-			if conn != nil {
-				conn.Close()
-			}
+		} else if conn != nil {
+			conn.Close()
 		}
 	}()
 

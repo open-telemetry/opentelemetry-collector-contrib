@@ -48,7 +48,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, map[string]string{}, ocfg.Labels.Attributes)
 }
 
-func TestFactory_CreateLogExporter(t *testing.T) {
+func TestFactory_CreateLogsExporter(t *testing.T) {
 	tests := []struct {
 		name         string
 		config       Config

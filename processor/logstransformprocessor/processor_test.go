@@ -28,14 +28,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 var (
 	cfg = &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig: stanza.BaseConfig{
-			Operators: stanza.OperatorConfigs{
+		BaseConfig: adapter.BaseConfig{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -48,7 +48,7 @@ var (
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
+			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 100,
 				FlushInterval: 100 * time.Millisecond,
 			},
@@ -73,7 +73,13 @@ type testLogMessage struct {
 	attributes   *map[string]pcommon.Value
 }
 
+// Temporary abstraction to avoid "unused" linter
+var skip = func(t *testing.T, why string) {
+	t.Skip(why)
+}
+
 func TestLogsTransformProcessor(t *testing.T) {
+	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
 	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test message")
 	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})

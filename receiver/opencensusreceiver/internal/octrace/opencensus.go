@@ -23,7 +23,6 @@ import (
 	agenttracepb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/trace/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -48,7 +47,7 @@ type Receiver struct {
 // New creates a new opencensus.Receiver reference.
 func New(id config.ComponentID, nextConsumer consumer.Traces, set component.ReceiverCreateSettings) (*Receiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	return &Receiver{
@@ -106,7 +105,7 @@ func (ocr *Receiver) Export(tes agenttracepb.TraceService_ExportServer) error {
 
 		recv, err = tes.Recv()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				// Do not return EOF as an error so that grpc-gateway calls get an empty
 				// response with HTTP status code 200 rather than a 500 error with EOF.
 				return nil

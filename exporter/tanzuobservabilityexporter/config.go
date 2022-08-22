@@ -69,13 +69,13 @@ func (c *Config) Validate() error {
 	if c.hasTracesEndpoint() {
 		tracesHostName, _, err = c.parseTracesEndpoint()
 		if err != nil {
-			return fmt.Errorf("Failed to parse traces.endpoint: %v", err)
+			return fmt.Errorf("failed to parse traces.endpoint: %w", err)
 		}
 	}
 	if c.hasMetricsEndpoint() {
 		metricsHostName, _, err = c.parseMetricsEndpoint()
 		if err != nil {
-			return fmt.Errorf("Failed to parse metrics.endpoint: %v", err)
+			return fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 		}
 	}
 	if c.hasTracesEndpoint() && c.hasMetricsEndpoint() && tracesHostName != metricsHostName {

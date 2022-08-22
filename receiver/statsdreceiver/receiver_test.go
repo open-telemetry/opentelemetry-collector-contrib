@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package statsdreceiver
 
 import (
@@ -25,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenterror"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -54,7 +53,7 @@ func Test_statsdreceiver_New(t *testing.T) {
 			args: args{
 				config: *defaultConfig,
 			},
-			wantErr: componenterror.ErrNilNextConsumer,
+			wantErr: component.ErrNilNextConsumer,
 		},
 		{
 			name: "unsupported transport",
@@ -88,8 +87,8 @@ func TestStatsdReceiver_Flush(t *testing.T) {
 	r := rcv.(*statsdReceiver)
 	var metrics = pmetric.NewMetrics()
 	assert.Nil(t, r.Flush(ctx, metrics, nextConsumer))
-	r.Start(ctx, componenttest.NewNopHost())
-	r.Shutdown(ctx)
+	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, r.Shutdown(ctx))
 }
 
 func Test_statsdreceiver_EndToEnd(t *testing.T) {
@@ -136,7 +135,9 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			r.reporter = mr
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
-			defer r.Shutdown(context.Background())
+			defer func() {
+				assert.NoError(t, r.Shutdown(context.Background()))
+			}()
 
 			statsdClient := tt.clientFn(t)
 

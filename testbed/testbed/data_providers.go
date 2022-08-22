@@ -15,7 +15,7 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -264,7 +264,7 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 		return nil, err
 	}
 	var buf []byte
-	buf, err = ioutil.ReadAll(file)
+	buf, err = io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

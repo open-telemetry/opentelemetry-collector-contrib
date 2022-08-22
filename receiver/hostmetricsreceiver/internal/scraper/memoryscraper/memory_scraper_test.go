@@ -87,7 +87,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newMemoryScraper(context.Background(), test.config)
+			scraper := newMemoryScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), test.config)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}
@@ -108,7 +108,9 @@ func TestScrape(t *testing.T) {
 				isPartial := scrapererror.IsPartialScrapeError(err)
 				assert.True(t, isPartial)
 				if isPartial {
-					assert.Equal(t, metricsLen, err.(scrapererror.PartialScrapeError).Failed)
+					var scraperErr scrapererror.PartialScrapeError
+					require.ErrorAs(t, err, &scraperErr)
+					assert.Equal(t, metricsLen, scraperErr.Failed)
 				}
 
 				return
@@ -157,7 +159,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 					},
 				},
 			}
-			scraper := newMemoryScraper(context.Background(), &scraperConfig)
+			scraper := newMemoryScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &scraperConfig)
 			if test.virtualMemoryFunc != nil {
 				scraper.virtualMemory = test.virtualMemoryFunc
 			}

@@ -1,11 +1,12 @@
 # TCP Receiver
 
-Receives logs from tcp using
-the [opentelemetry-log-collection](https://github.com/open-telemetry/opentelemetry-log-collection) library.
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | logs      |
+| Distributions            | [contrib] |
 
-Supported pipeline types: logs
-
-> :construction: This receiver is in alpha and configuration fields are subject to change.
+Receives logs over TCP.
 
 ## Configuration
 
@@ -19,7 +20,7 @@ Supported pipeline types: logs
 | `add_attributes`  | false            | Adds `net.*` attributes according to [semantic convention][https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/span-general.md#general-network-connection-attributes] |
 | `multiline`       |                  | A `multiline` configuration block. See below for details                                                           |
 | `encoding`        | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
-| `operators`       | []               | An array of [operators](https://github.com/open-telemetry/opentelemetry-log-collection/blob/main/docs/operators/README.md#what-operators-are-available). See below for more details |
+| `operators`       | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 
 ### TLS Configuration
 
@@ -41,6 +42,10 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.
 - Operators will output to the next operator in the pipeline. The last operator in the pipeline will emit from the receiver. Optionally, the `output` parameter can be used to specify the `id` of another operator to which logs will be passed directly.
 - Only parsers and general purpose operators should be used.
+
+### Parsers with Embedded Operations
+
+Many parsers operators can be configured to embed certain followup operations such as timestamp and severity parsing. For more information, see [complex parsers](../../pkg/stanza/docs/types/parsers.md#complex-parsers).
 
 #### `multiline` configuration
 
@@ -75,3 +80,5 @@ receivers:
   tcplog:
     listen_address: "0.0.0.0:54525"
 ```
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

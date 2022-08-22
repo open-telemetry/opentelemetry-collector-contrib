@@ -23,10 +23,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
 func TestLoadConfig(t *testing.T) {
+
 	factories, err := componenttest.NopFactories()
 	assert.NoError(t, err)
 
@@ -44,14 +47,23 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, e1,
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
-			Endpoint:         "1.2.3.4:1234",
-			Namespace:        "test-space",
+			HTTPServerSettings: confighttp.HTTPServerSettings{
+				Endpoint: "1.2.3.4:1234",
+				TLSSetting: &configtls.TLSServerSetting{
+					TLSSetting: configtls.TLSSetting{
+						CertFile: "certs/server.crt",
+						KeyFile:  "certs/server.key",
+						CAFile:   "certs/ca.crt",
+					},
+				},
+			},
+			Namespace: "test-space",
 			ConstLabels: map[string]string{
 				"label1":        "value1",
 				"another label": "spaced value",
 			},
-			SendTimestamps:    true,
-			MetricExpiration:  60 * time.Minute,
-			skipSanitizeLabel: false,
+			SendTimestamps:   true,
+			MetricExpiration: 60 * time.Minute,
 		})
+
 }

@@ -21,7 +21,7 @@ An entry that does not match any of the routes is dropped and not processed furt
 | Field        | Default  | Description |
 | ---          | ---      | ---         |
 | `output`     | required | The connected operator(s) that will receive all outbound entries for this route. |
-| `expr`       | required | An [expression](/docs/types/expression.md) that returns a boolean. The body of the routed entry is available as `$`. |
+| `expr`       | required | An [expression](../types/expression.md) that returns a boolean. The body of the routed entry is available as `$`. |
 | `attributes` | {}       | A map of `key: value` pairs to add to an entry that matches the route. |
 
 

@@ -25,7 +25,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -39,8 +39,8 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig: stanza.BaseConfig{
-			Operators: stanza.OperatorConfigs{
+		BaseConfig: adapter.BaseConfig{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type":  "regex_parser",
 					"regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$",
@@ -53,7 +53,7 @@ func TestCreateProcessor(t *testing.T) {
 					},
 				},
 			},
-			Converter: stanza.ConverterConfig{
+			Converter: adapter.ConverterConfig{
 				MaxFlushCount: 500,
 				FlushInterval: 13 * time.Millisecond,
 			},
@@ -69,8 +69,8 @@ func TestInvalidOperators(t *testing.T) {
 	factory := NewFactory()
 	cfg := &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		BaseConfig: stanza.BaseConfig{
-			Operators: stanza.OperatorConfigs{
+		BaseConfig: adapter.BaseConfig{
+			Operators: adapter.OperatorConfigs{
 				map[string]interface{}{
 					"type": "nonsense",
 				},

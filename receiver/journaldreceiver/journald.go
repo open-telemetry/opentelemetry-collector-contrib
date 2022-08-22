@@ -18,23 +18,25 @@
 package journaldreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver"
 
 import (
-	"github.com/open-telemetry/opentelemetry-log-collection/operator"
-	"github.com/open-telemetry/opentelemetry-log-collection/operator/input/journald"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 )
 
-const typeStr = "journald"
+const (
+	typeStr   = "journald"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for journald receiver
 func NewFactory() component.ReceiverFactory {
-	return stanza.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
-// ReceiverType implements stanza.LogReceiverType
+// ReceiverType implements adapter.LogReceiverType
 // to create a journald receiver
 type ReceiverType struct{}
 
@@ -46,34 +48,27 @@ func (f ReceiverType) Type() config.Type {
 // CreateDefaultConfig creates a config with type and version
 func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 	return &JournaldConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{},
+		Config: *journald.NewConfig(),
 	}
 }
 
 // BaseConfig gets the base config from config, for now
-func (f ReceiverType) BaseConfig(cfg config.Receiver) stanza.BaseConfig {
+func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 	return cfg.(*JournaldConfig).BaseConfig
 }
 
 // JournaldConfig defines configuration for the journald receiver
 type JournaldConfig struct {
-	stanza.BaseConfig `mapstructure:",squash"`
-	Input             stanza.InputConfig `mapstructure:",remain"`
+	adapter.BaseConfig `mapstructure:",squash"`
+	journald.Config    `mapstructure:",squash"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*JournaldConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := journald.NewJournaldInputConfig("journald_input")
-
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-
-	return &operator.Config{Builder: inputCfg}, nil
+	return &operator.Config{Builder: &logConfig.Config}, nil
 }

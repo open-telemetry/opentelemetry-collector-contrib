@@ -49,4 +49,4 @@ The full list of settings exposed for this processor are documented [here](./con
 - [metrics](./testdata/config_metrics.yaml)
 - [traces](./testdata/config_traces.yaml)
 
-[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/context.md
+[context_docs]: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/README.md

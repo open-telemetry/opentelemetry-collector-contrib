@@ -16,6 +16,7 @@ package skywalkingexporter
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net"
 	"strconv"
@@ -146,9 +147,10 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporter(
-		tt,
+	got, err := exporterhelper.NewLogsExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(tt.RetrySettings),
@@ -194,7 +196,7 @@ type mockLogHandler2 struct {
 func (h *mockLogHandler2) Collect(stream logpb.LogReportService_CollectServer) error {
 	for {
 		_, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			h.stopChan <- -1
 			return stream.SendAndClose(&v3.Commands{})
 		}

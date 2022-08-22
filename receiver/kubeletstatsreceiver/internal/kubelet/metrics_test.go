@@ -15,10 +15,11 @@
 package kubelet
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -30,11 +31,11 @@ type fakeRestClient struct {
 }
 
 func (f fakeRestClient) StatsSummary() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/stats-summary.json")
+	return os.ReadFile("../../testdata/stats-summary.json")
 }
 
 func (f fakeRestClient) Pods() ([]byte, error) {
-	return ioutil.ReadFile("../../testdata/pods.json")
+	return os.ReadFile("../../testdata/pods.json")
 }
 
 func TestMetricAccumulator(t *testing.T) {
@@ -45,17 +46,17 @@ func TestMetricAccumulator(t *testing.T) {
 	podsMetadata, _ := metadataProvider.Pods()
 	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nil)
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 	}
-	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs))
+	requireMetricsOk(t, MetricsData(zap.NewNop(), summary, k8sMetadata, ValidMetricGroups, mbs, true, false))
 	// Disable all groups
 	mbs.NodeMetricsBuilder.Reset()
 	mbs.PodMetricsBuilder.Reset()
 	mbs.OtherMetricsBuilder.Reset()
-	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs)))
+	require.Equal(t, 0, len(MetricsData(zap.NewNop(), summary, k8sMetadata, map[MetricGroup]bool{}, mbs, true, false)))
 }
 
 func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
@@ -111,7 +112,7 @@ func requireResourceOk(t *testing.T, resource pcommon.Resource) {
 }
 
 func TestWorkingSetMem(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.working_set")
 	requireContains(t, metrics, "container.memory.working_set")
 
@@ -121,7 +122,7 @@ func TestWorkingSetMem(t *testing.T) {
 }
 
 func TestPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.page_faults")
 	requireContains(t, metrics, "container.memory.page_faults")
 
@@ -131,7 +132,7 @@ func TestPageFaults(t *testing.T) {
 }
 
 func TestMajorPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(true, false)
 	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
 	requireContains(t, metrics, "container.memory.major_page_faults")
 
@@ -140,13 +141,55 @@ func TestMajorPageFaults(t *testing.T) {
 	require.Equal(t, int64(12), value)
 }
 
+func TestEmitMetricsWithDirectionAttribute(t *testing.T) {
+	metrics := indexedFakeMetrics(true, false)
+	metricNamesWithDirectionAttr := []string{
+		"k8s.node.network.io",
+		"k8s.node.network.errors",
+		"k8s.pod.network.io",
+		"k8s.pod.network.errors",
+	}
+	for _, name := range metricNamesWithDirectionAttr {
+		requireContains(t, metrics, name)
+		metric := metrics[name][0]
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			_, found := dp.Attributes().Get("direction")
+			require.True(t, found, "expected direction attribute")
+		}
+	}
+}
+
+func TestEmitMetricsWithoutDirectionAttribute(t *testing.T) {
+	metrics := indexedFakeMetrics(false, true)
+	metricNamesWithoutDirectionAttr := []string{
+		"k8s.node.network.io.receive",
+		"k8s.node.network.io.transmit",
+		"k8s.node.network.errors.receive",
+		"k8s.node.network.errors.transmit",
+		"k8s.pod.network.io.receive",
+		"k8s.pod.network.io.transmit",
+		"k8s.pod.network.errors.receive",
+		"k8s.pod.network.errors.transmit",
+	}
+	for _, name := range metricNamesWithoutDirectionAttr {
+		requireContains(t, metrics, name)
+		metric := metrics[name][0]
+		for i := 0; i < metric.Sum().DataPoints().Len(); i++ {
+			dp := metric.Sum().DataPoints().At(i)
+			_, found := dp.Attributes().Get("direction")
+			require.False(t, found, "unexpected direction attribute")
+		}
+	}
+}
+
 func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricName string) {
 	_, found := metrics[metricName]
 	require.True(t, found)
 }
 
-func indexedFakeMetrics() map[string][]pmetric.Metric {
-	mds := fakeMetrics()
+func indexedFakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute bool) map[string][]pmetric.Metric {
+	mds := fakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute)
 	metrics := make(map[string][]pmetric.Metric)
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
@@ -166,7 +209,7 @@ func indexedFakeMetrics() map[string][]pmetric.Metric {
 	return metrics
 }
 
-func fakeMetrics() []pmetric.Metrics {
+func fakeMetrics(emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute bool) []pmetric.Metrics {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()
@@ -176,10 +219,10 @@ func fakeMetrics() []pmetric.Metrics {
 		NodeMetricGroup:      true,
 	}
 	mbs := &metadata.MetricsBuilders{
-		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
-		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings()),
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
+		OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsSettings(), componenttest.NewNopReceiverCreateSettings().BuildInfo),
 	}
-	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs)
+	return MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs, emitMetricsWithDirectionAttribute, emitMetricsWithoutDirectionAttribute)
 }

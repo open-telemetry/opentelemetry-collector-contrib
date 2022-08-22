@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build windows
 // +build windows
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
@@ -34,12 +35,12 @@ func (p *Publisher) Open(provider string) error {
 
 	utf16, err := syscall.UTF16PtrFromString(provider)
 	if err != nil {
-		return fmt.Errorf("failed to convert provider to utf16: %s", err)
+		return fmt.Errorf("failed to convert provider to utf16: %w", err)
 	}
 
 	handle, err := evtOpenPublisherMetadata(0, utf16, nil, 0, 0)
 	if err != nil {
-		return fmt.Errorf("failed to open publisher handle: %s", err)
+		return fmt.Errorf("failed to open publisher handle: %w", err)
 	}
 
 	p.handle = handle
@@ -53,7 +54,7 @@ func (p *Publisher) Close() error {
 	}
 
 	if err := evtClose(p.handle); err != nil {
-		return fmt.Errorf("failed to close publisher: %s", err)
+		return fmt.Errorf("failed to close publisher: %w", err)
 	}
 
 	p.handle = 0

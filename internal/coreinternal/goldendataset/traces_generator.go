@@ -54,9 +54,10 @@ func GenerateTraces(tracePairsFile string, spanPairsFile string) ([]ptrace.Trace
 }
 
 // generateResourceSpan generates a single PData ResourceSpans populated based on the provided inputs. They are:
-//   tracingInputs - the pairwise combination of field value variations for this ResourceSpans
-//   spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
-//   random - the random number generator to use in generating ID values
+//
+//	tracingInputs - the pairwise combination of field value variations for this ResourceSpans
+//	spanPairsFile - the file with the PICT-generated parameter combinations to generate spans for
+//	random - the random number generator to use in generating ID values
 //
 // The generated resource spans. If err is not nil, some or all of the resource spans fields will be nil.
 func appendResourceSpan(tracingInputs *PICTTracingInputs, spanPairsFile string,
@@ -119,7 +120,7 @@ func countTotalSpanCases(spanPairsFile string) (int, error) {
 	return count, err
 }
 
-func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, instrumentationLibrary pcommon.InstrumentationScope) {
+func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, scope pcommon.InstrumentationScope) {
 	if tracingInputs.InstrumentationLibrary == LibraryNone {
 		return
 	}
@@ -128,6 +129,6 @@ func fillInstrumentationLibrary(tracingInputs *PICTTracingInputs, index int, ins
 	if index > 0 {
 		verStr = ""
 	}
-	instrumentationLibrary.SetName(nameStr)
-	instrumentationLibrary.SetVersion(verStr)
+	scope.SetName(nameStr)
+	scope.SetVersion(verStr)
 }

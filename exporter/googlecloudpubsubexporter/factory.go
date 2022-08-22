@@ -31,7 +31,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr        = "googlecloudpubsub"
+	typeStr = "googlecloudpubsub"
+	// The stability level of the exporter.
+	stability      = component.StabilityLevelBeta
 	defaultTimeout = 12 * time.Second
 )
 
@@ -40,9 +42,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 var exporters = map[*Config]*pubsubExporter{}
@@ -92,16 +94,17 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.TracesExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		pubsubExporter.consumeTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
@@ -113,15 +116,16 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.MetricsExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		pubsubExporter.consumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
@@ -133,16 +137,17 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter) (component.LogsExporter, error) {
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
 
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		pubsubExporter.consumeLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),

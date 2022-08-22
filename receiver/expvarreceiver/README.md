@@ -1,17 +1,21 @@
 # Expvar Receiver
 
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [alpha]   |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
+
 An Expvar Receiver scrapes metrics from [expvar](https://pkg.go.dev/expvar), 
 which exposes data in JSON format from an HTTP endpoint. The metrics are 
 extracted from the `expvar` variable [memstats](https://pkg.go.dev/runtime#MemStats), 
 which exposes various information about the Go runtime.
 
-> :construction: This receiver is in development and incomplete. It should not be used yet.
-
 ## Configuration 
 
 ### Default
 
-By default, without any configuration, a request will be sent to `http://localhost:8080/debug/vars` 
+By default, without any configuration, a request will be sent to `http://localhost:8000/debug/vars` 
 every 60 seconds. The default configuration is achieved by the following:
 
 ```yaml
@@ -26,7 +30,7 @@ The following can be configured:
   configuration options for the client can be found in the core repo's
   [confighttp](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration).
   - defaults: 
-    - `endpoint = http://localhost:8080/debug/vars` 
+    - `endpoint = http://localhost:8000/debug/vars` 
     - `timeout = 3s`
 - `collection_interval` - Configure how often the metrics are scraped.
   - default: 1m
@@ -41,8 +45,11 @@ receivers:
     timeout: 1s
     collection_interval: 30s
     metrics:
-      - name: example_metric.enabled
+      process.runtime.memstats.total_alloc:
         enabled: true
-      - name: example_metric.disabled
+      process.runtime.memstats.mallocs:
         enabled: false
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

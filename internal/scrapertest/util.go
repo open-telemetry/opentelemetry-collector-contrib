@@ -54,3 +54,24 @@ func sortInstrumentationLibrary(a, b pmetric.ScopeMetrics) bool {
 	}
 	return false
 }
+
+func sortResourceMetrics(a, b pmetric.ResourceMetrics) bool {
+	if a.SchemaUrl() < b.SchemaUrl() {
+		return true
+	}
+	if a.ScopeMetrics().Len() != b.ScopeMetrics().Len() {
+		return a.ScopeMetrics().Len() < b.ScopeMetrics().Len()
+	}
+	for i := 0; i < a.ScopeMetrics().Len(); i++ {
+		aSm := a.ScopeMetrics().At(i)
+		bSm := b.ScopeMetrics().At(i)
+		if aSm.Metrics().Len() < bSm.Metrics().Len() {
+			return true
+		}
+	}
+	return false
+}
+
+func sortMetricSlice(a, b pmetric.Metric) bool {
+	return a.Name() < b.Name()
+}

@@ -1,6 +1,10 @@
 # Attributes Processor
 
-Supported pipeline types: traces, logs, metrics.
+| Status                   |                       |
+| ------------------------ | --------------------- |
+| Stability                | [alpha]               |
+| Supported pipeline types | traces, metrics, logs |
+| Distributions            | [core], [contrib]     |
 
 The attributes processor modifies attributes of a span, log, or metric. Please refer to
 [config.go](./config.go) for the config spec.
@@ -57,22 +61,26 @@ For the actions `insert`, `update` and `upsert`,
 ```
 
 For the `delete` action,
- - `key` is required
+ - `key` and/or `pattern` is required
  - `action: delete` is required.
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
   action: delete
+  # Rule specifies the regex pattern for attribute names to act upon.
+  pattern: <regular pattern>
 ```
 
 
 For the `hash` action,
- - `key` is required
+ - `key` and/or `pattern` is required
  - `action: hash` is required.
 ```yaml
 # Key specifies the attribute to act upon.
 - key: <key>
   action: hash
+  # Rule specifies the regex pattern for attribute names to act upon.
+  pattern: <regular pattern>
 ```
 
 
@@ -122,6 +130,7 @@ processors:
         action: update
       - key: account_id
         value: 2245
+        action: insert
       - key: account_password
         action: delete
       - key: account_email
@@ -256,3 +265,7 @@ regexp:
   # cachemaxnumentries is the max number of entries of the LRU cache; ignored if cacheenabled is false.
   cachemaxnumentries: <int>
 ```
+
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+[core]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol

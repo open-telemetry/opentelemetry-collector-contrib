@@ -4,7 +4,8 @@
          "scopeMetrics": [
             {
                "scope": {
-                  "name": "otelcol/apachereceiver"
+                  "name": "otelcol/apachereceiver",
+                  "version": "latest"
                },
                "metrics": [
                   {
@@ -50,7 +51,7 @@
                            }
                         ]
                      },
-                     "unit": "connections"
+                     "unit": "{connections}"
                   },
                   {
                      "description": "The number of workers currently attached to the HTTP server.",
@@ -96,7 +97,7 @@
                            }
                         ]
                      },
-                     "unit": "connections"
+                     "unit": "{workers}"
                   },
                   {
                      "description": "The number of requests serviced by the HTTP server per second.",
@@ -119,7 +120,7 @@
                         ],
                         "isMonotonic": true
                      },
-                     "unit": "1"
+                     "unit": "{requests}"
                   },
                   {
                      "description": "Total HTTP server traffic.",
@@ -145,7 +146,7 @@
                      "unit": "By"
                   },
                   {
-                     "description": "The number of connections in each state.",
+                     "description": "The number of workers in each state.",
                      "name": "apache.scoreboard",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -350,7 +351,7 @@
                            }
                         ]
                      },
-                     "unit": "scoreboard"
+                     "unit": "{workers}"
                   }
                ]
             }

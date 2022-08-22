@@ -25,11 +25,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-func TestEventLogConfig(t *testing.T) {
-	expect := NewDefaultConfig()
+func TestConfig(t *testing.T) {
+	expect := NewConfig()
 
 	input := map[string]interface{}{
-		"id":            "",
+		"id":            "windows_eventlog_input",
 		"type":          "windows_eventlog_input",
 		"max_reads":     100,
 		"start_at":      "end",
@@ -38,7 +38,7 @@ func TestEventLogConfig(t *testing.T) {
 		"resource":      map[string]interface{}{},
 	}
 
-	var actual EventLogConfig
+	var actual Config
 	err := helper.UnmarshalMapstructure(input, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)

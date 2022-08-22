@@ -112,6 +112,20 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 				return logs
 			}(),
 		},
+		{
+			name: "missing event type",
+			sfxEvents: func() []*sfxpb.Event {
+				e := buildDefaultSFxEvent()
+				e.EventType = "unknown"
+				return []*sfxpb.Event{e}
+			}(),
+			logData: func() plog.Logs {
+				logs := buildDefaultLogs()
+				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+				lrs.At(0).Attributes().Remove("com.splunk.signalfx.event_type")
+				return logs
+			}(),
+		},
 	}
 
 	for _, tt := range tests {

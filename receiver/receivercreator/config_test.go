@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/service"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -53,7 +54,7 @@ func (mh *mockHostFactories) GetExtensions() map[config.ComponentID]component.Ex
 	return mh.extensions
 }
 
-func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *config.Config) {
+func exampleCreatorFactory(t *testing.T) (*mockHostFactories, *service.Config) {
 	factories, err := componenttest.NopFactories()
 	require.Nil(t, err)
 
@@ -89,7 +90,36 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, userConfigMap{
 		endpointConfigKey: "localhost:12345",
 	}, r1.receiverTemplates["nop/1"].config)
-	assert.Equal(t, []config.Type{"mock_observer"}, r1.WatchObservers)
+	assert.Equal(t, []config.ComponentID{
+		config.NewComponentID("mock_observer"),
+		config.NewComponentIDWithName("mock_observer", "with_name"),
+	}, r1.WatchObservers)
+}
+
+func TestInvalidResourceAttributeEndpointType(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.Nil(t, err)
+
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
+	require.EqualError(t, err, "error reading receivers configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	require.Nil(t, cfg)
+}
+
+func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	require.Nil(t, err)
+
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+
+	factory := NewFactory()
+	factories.Receivers[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
+	require.EqualError(t, err, "error reading receivers configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	require.Nil(t, cfg)
 }
 
 type nopWithEndpointConfig struct {
@@ -104,6 +134,7 @@ type nopWithEndpointFactory struct {
 type nopWithEndpointReceiver struct {
 	component.Component
 	consumer.Metrics
+	component.ReceiverCreateSettings
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() config.Receiver {
@@ -119,11 +150,12 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	ctx context.Context,
-	_ component.ReceiverCreateSettings,
+	rcs component.ReceiverCreateSettings,
 	_ config.Receiver,
 	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
 	return &nopWithEndpointReceiver{
-		Component: mockComponent{},
-		Metrics:   nextConsumer,
+		Component:              mockComponent{},
+		Metrics:                nextConsumer,
+		ReceiverCreateSettings: rcs,
 	}, nil
 }

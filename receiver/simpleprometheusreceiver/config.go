@@ -19,14 +19,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/confighttp"
 )
 
 // Config defines configuration for simple prometheus receiver.
 type Config struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	httpConfig              `mapstructure:",squash"`
-	confignet.TCPAddr       `mapstructure:",squash"`
+	config.ReceiverSettings       `mapstructure:",squash"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	// Deprecated: [v0.55.0] Use confighttp.HTTPClientSettings instead.
+	httpConfig `mapstructure:",squash"`
 	// CollectionInterval is the interval at which metrics should be collected
 	CollectionInterval time.Duration `mapstructure:"collection_interval"`
 	// MetricsPath the path to the metrics endpoint.

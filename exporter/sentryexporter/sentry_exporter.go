@@ -112,9 +112,9 @@ func (s *SentryExporter) pushTraceData(_ context.Context, td ptrace.Traces) erro
 
 	transactions := generateTransactions(transactionMap, orphanSpans)
 
-	events := append(transactions, exceptionEvents...)
+	transactions = append(transactions, exceptionEvents...)
 
-	s.transport.SendEvents(events)
+	s.transport.SendEvents(transactions)
 
 	return nil
 }
@@ -436,9 +436,10 @@ func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) 
 		transport: transport,
 	}
 
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		s.pushTraceData,
 		exporterhelper.WithShutdown(func(ctx context.Context) error {
 			allEventsFlushed := transport.Flush(ctx)

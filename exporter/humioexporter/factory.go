@@ -27,6 +27,8 @@ import (
 const (
 	// The key used to refer to this exporter
 	typeStr = "humio"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates an exporter factory for Humio
@@ -34,7 +36,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
 	)
 }
 
@@ -82,9 +84,10 @@ func createTracesExporter(
 
 	exporter := newTracesExporter(cfg, set.TelemetrySettings)
 
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		exporter.pushTraceData,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithRetry(cfg.RetrySettings),

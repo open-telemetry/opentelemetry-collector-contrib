@@ -17,7 +17,7 @@ package alibabacloudlogserviceexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -74,7 +74,7 @@ func TestTraceDataToLogService(t *testing.T) {
 }
 
 func loadFromJSON(file string, obj interface{}) error {
-	blob, err := ioutil.ReadFile(file)
+	blob, err := os.ReadFile(file)
 	if err == nil {
 		err = json.Unmarshal(blob, obj)
 	}

@@ -16,6 +16,7 @@ package statsreader // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -96,7 +97,7 @@ func (reader *currentStatsReader) pull(ctx context.Context, stmt statsStatement)
 	for {
 		row, err := rowsIterator.Next()
 		if err != nil {
-			if err == iterator.Done {
+			if errors.Is(err, iterator.Done) {
 				return collectedDataPoints, nil
 			}
 			return nil, fmt.Errorf("query %q failed with error: %w", stmt.statement.SQL, err)

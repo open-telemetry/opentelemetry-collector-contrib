@@ -171,11 +171,11 @@ func spanToJaegerProto(span ptrace.Span, libraryTags pcommon.InstrumentationScop
 	}
 }
 
-func getJaegerProtoSpanTags(span ptrace.Span, instrumentationLibrary pcommon.InstrumentationScope) []model.KeyValue {
+func getJaegerProtoSpanTags(span ptrace.Span, scope pcommon.InstrumentationScope) []model.KeyValue {
 	var spanKindTag, statusCodeTag, errorTag, statusMsgTag model.KeyValue
 	var spanKindTagFound, statusCodeTagFound, errorTagFound, statusMsgTagFound bool
 
-	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(instrumentationLibrary)
+	libraryTags, libraryTagsFound := getTagsFromInstrumentationLibrary(scope)
 
 	tagsCount := span.Attributes().Len() + len(libraryTags)
 
@@ -292,9 +292,10 @@ func spanEventsToJaegerProtoLogs(events ptrace.SpanEventSlice) []model.Log {
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		fields := make([]model.KeyValue, 0, event.Attributes().Len()+1)
-		if event.Name() != "" {
+		_, eventAttrFound := event.Attributes().Get(eventNameAttr)
+		if event.Name() != "" && !eventAttrFound {
 			fields = append(fields, model.KeyValue{
-				Key:   tracetranslator.TagMessage,
+				Key:   eventNameAttr,
 				VType: model.ValueType_STRING,
 				VStr:  event.Name(),
 			})

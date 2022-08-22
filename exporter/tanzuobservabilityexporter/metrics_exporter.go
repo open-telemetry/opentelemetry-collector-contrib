@@ -37,7 +37,7 @@ func createMetricsConsumer(hostName string, port int, settings component.Telemet
 		SDKMetricsTags:       map[string]string{"otel.metrics.collector_version": otelVersion},
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create proxy sender: %v", err)
+		return nil, fmt.Errorf("failed to create proxy sender: %w", err)
 	}
 	cumulative := newCumulativeHistogramDataPointConsumer(s)
 	delta := newDeltaHistogramDataPointConsumer(s)
@@ -66,7 +66,7 @@ func newMetricsExporter(settings component.ExporterCreateSettings, c config.Expo
 	}
 	hostName, port, err := cfg.parseMetricsEndpoint()
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse metrics.endpoint: %v", err)
+		return nil, fmt.Errorf("failed to parse metrics.endpoint: %w", err)
 	}
 	consumer, err := creator(hostName, port, settings.TelemetrySettings, settings.BuildInfo.Version)
 	if err != nil {

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package loadbalancingexporter
 
 import (
@@ -22,6 +21,7 @@ import (
 	"math/rand"
 	"net"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -104,7 +104,9 @@ func TestTracesExporterStart(t *testing.T) {
 
 			// test
 			res := p.Start(context.Background(), componenttest.NewNopHost())
-			defer p.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, p.Shutdown(context.Background()))
+			}()
 
 			// verify
 			require.Equal(t, tt.err, res)
@@ -135,6 +137,7 @@ func TestConsumeTraces(t *testing.T) {
 	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, traceIDRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
@@ -148,13 +151,80 @@ func TestConsumeTraces(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
 
 	// verify
 	assert.Nil(t, res)
+}
+
+func TestConsumeTracesServiceBased(t *testing.T) {
+	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
+		return newNopMockTracesExporter(), nil
+	}
+	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
+	require.NotNil(t, lb)
+	require.NoError(t, err)
+
+	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), serviceBasedRoutingConfig())
+	require.NotNil(t, p)
+	require.NoError(t, err)
+	assert.Equal(t, p.routingKey, svcRouting)
+
+	// pre-load an exporter here, so that we don't use the actual OTLP exporter
+	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
+	lb.res = &mockResolver{
+		triggerCallbacks: true,
+		onResolve: func(ctx context.Context) ([]string, error) {
+			return []string{"endpoint-1"}, nil
+		},
+	}
+	p.loadBalancer = lb
+
+	err = p.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// test
+	res := p.ConsumeTraces(context.Background(), simpleTracesWithServiceName())
+
+	// verify
+	assert.Nil(t, res)
+}
+
+func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
+	b := pcommon.NewTraceID([16]byte{1, 2, 3, 4}).Bytes()
+	for _, tt := range []struct {
+		desc       string
+		batch      ptrace.Traces
+		routingKey routingKey
+		res        map[string]bool
+	}{
+		{
+			"same trace id and different services - service based routing",
+			twoServicesWithSameTraceID(),
+			svcRouting,
+			map[string]bool{"ad-service-1": true, "get-recommendations-7": true},
+		},
+		{
+			"same trace id and different services - trace id routing",
+			twoServicesWithSameTraceID(),
+			traceIDRouting,
+			map[string]bool{string(b[:]): true},
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			assert.Equal(t, err, nil)
+			assert.Equal(t, res, tt.res)
+		})
+	}
 }
 
 func TestConsumeTracesExporterNotFound(t *testing.T) {
@@ -179,7 +249,9 @@ func TestConsumeTracesExporterNotFound(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
@@ -211,7 +283,9 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
@@ -245,7 +319,9 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 
 	// test
 	res := p.ConsumeTraces(context.Background(), simpleTraces())
@@ -319,12 +395,16 @@ func TestBatchWithTwoTraces(t *testing.T) {
 
 func TestNoTracesInBatch(t *testing.T) {
 	for _, tt := range []struct {
-		desc  string
-		batch ptrace.Traces
+		desc       string
+		batch      ptrace.Traces
+		routingKey routingKey
+		err        error
 	}{
 		{
 			"no resource spans",
 			ptrace.NewTraces(),
+			traceIDRouting,
+			errors.New("empty resource spans"),
 		},
 		{
 			"no instrumentation library spans",
@@ -333,6 +413,8 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty()
 				return batch
 			}(),
+			traceIDRouting,
+			errors.New("empty scope spans"),
 		},
 		{
 			"no spans",
@@ -341,16 +423,21 @@ func TestNoTracesInBatch(t *testing.T) {
 				batch.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
 				return batch
 			}(),
+			svcRouting,
+			errors.New("empty spans"),
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
-			res := traceIDFromTraces(tt.batch)
-			assert.Equal(t, pcommon.InvalidTraceID(), res)
+			res, err := routingIdentifiersFromTraces(tt.batch, tt.routingKey)
+			assert.Equal(t, err, tt.err)
+			assert.Equal(t, res, map[string]bool(nil))
 		})
 	}
 }
 
 func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
+	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
+
 	// this test is based on the discussion in the following issue for this exporter:
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/1690
 	// prepare
@@ -360,13 +447,16 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
+	mu := sync.Mutex{}
 	var lastResolved []string
 	res.onChange(func(s []string) {
+		mu.Lock()
 		lastResolved = s
+		mu.Unlock()
 	})
 
 	resolverCh := make(chan struct{}, 1)
-	counter := 0
+	counter := atomic.NewInt64(0)
 	resolve := [][]net.IPAddr{
 		{
 			{IP: net.IPv4(127, 0, 0, 1)},
@@ -380,14 +470,14 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
 			defer func() {
-				counter++
+				counter.Inc()
 			}()
 
-			if counter <= 2 {
-				return resolve[counter], nil
+			if counter.Load() <= 2 {
+				return resolve[counter.Load()], nil
 			}
 
-			if counter == 3 {
+			if counter.Load() == 3 {
 				// stop as soon as rolling updates end
 				resolverCh <- struct{}{}
 			}
@@ -398,6 +488,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	res.resInterval = 10 * time.Millisecond
 
 	cfg := &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		Resolver: ResolverSettings{
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
@@ -436,7 +527,9 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	// test
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer p.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
 	// ensure using default exporters
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
@@ -458,7 +551,9 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
-				go p.ConsumeTraces(ctx, randomTraces())
+				go func() {
+					require.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+				}()
 			}
 		}
 	}(ctx)
@@ -476,7 +571,9 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	<-consumeCh
 
 	// verify
+	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
+	mu.Unlock()
 	require.Greater(t, counter1.Load(), int64(0))
 	require.Greater(t, counter2.Load(), int64(0))
 }
@@ -493,10 +590,44 @@ func simpleTraces() ptrace.Traces {
 	return simpleTraceWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 }
 
+func simpleTracesWithServiceName() ptrace.Traces {
+	return simpleTraceWithServiceName(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+}
+
+func twoServicesWithSameTraceID() ptrace.Traces {
+	return servicesWithSameTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+}
+
 func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
 	return traces
+}
+
+func servicesWithSameTraceID(id pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(2)
+	traces.ResourceSpans().AppendEmpty()
+	traces.ResourceSpans().AppendEmpty()
+	fillResource(traces.ResourceSpans().At(0).Resource(), "ad-service-1")
+	fillResource(traces.ResourceSpans().At(1).Resource(), "get-recommendations-7")
+	traces.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	traces.ResourceSpans().At(1).ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	return traces
+}
+
+func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	traces.ResourceSpans().EnsureCapacity(1)
+	rspans := traces.ResourceSpans().AppendEmpty()
+	fillResource(rspans.Resource(), "service-name-1")
+	rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(id)
+	return traces
+}
+
+func fillResource(resource pcommon.Resource, svc string) {
+	attrs := resource.Attributes()
+	attrs.InsertString("service.name", svc)
 }
 
 func simpleConfig() *Config {
@@ -505,6 +636,16 @@ func simpleConfig() *Config {
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
+	}
+}
+
+func serviceBasedRoutingConfig() *Config {
+	return &Config{
+		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+		},
+		RoutingKey: "service",
 	}
 }
 

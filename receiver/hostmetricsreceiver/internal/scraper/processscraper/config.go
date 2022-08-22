@@ -15,15 +15,14 @@
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
 // Config relating to Process Metric Scraper.
 type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 	// Include specifies a filter on the process names that should be included from the generated metrics.
@@ -36,6 +35,10 @@ type Config struct {
 	// collector does not have permission for.
 	// See https://github.com/open-telemetry/opentelemetry-collector/issues/3004 for more information.
 	MuteProcessNameError bool `mapstructure:"mute_process_name_error,omitempty"`
+
+	// ScrapeProcessDelay is used to indicate the minimum amount of time a process must be running
+	// before metrics are scraped for it.  The default value is 0 seconds (0s)
+	ScrapeProcessDelay time.Duration `mapstructure:"scrape_process_delay"`
 }
 
 type MatchConfig struct {

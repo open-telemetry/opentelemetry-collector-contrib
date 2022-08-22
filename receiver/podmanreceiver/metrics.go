@@ -32,19 +32,25 @@ type point struct {
 	attributes map[string]string
 }
 
-func translateStatsToMetrics(stats *containerStats, ts time.Time, rm pmetric.ResourceMetrics) {
+func containerStatsToMetrics(ts time.Time, container container, stats *containerStats) pmetric.Metrics {
 	pbts := pcommon.NewTimestampFromTime(ts)
 
-	resource := rm.Resource()
-	resource.Attributes().InsertString(conventions.AttributeContainerRuntime, "podman")
-	resource.Attributes().InsertString(conventions.AttributeContainerName, stats.Name)
-	resource.Attributes().InsertString(conventions.AttributeContainerID, stats.ContainerID)
+	md := pmetric.NewMetrics()
+	rs := md.ResourceMetrics().AppendEmpty()
 
-	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
+	resourceAttr := rs.Resource().Attributes()
+	resourceAttr.InsertString(conventions.AttributeContainerRuntime, "podman")
+	resourceAttr.InsertString(conventions.AttributeContainerName, stats.Name)
+	resourceAttr.InsertString(conventions.AttributeContainerID, stats.ContainerID)
+	resourceAttr.InsertString(conventions.AttributeContainerImageName, container.Image)
+
+	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
 	appendCPUMetrics(ms, stats, pbts)
 	appendNetworkMetrics(ms, stats, pbts)
 	appendMemoryMetrics(ms, stats, pbts)
+
+	return md
 }
 
 func appendMemoryMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {

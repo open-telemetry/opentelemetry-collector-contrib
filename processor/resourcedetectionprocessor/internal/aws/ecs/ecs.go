@@ -17,6 +17,7 @@ package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -44,7 +45,8 @@ func NewDetector(params component.ProcessorCreateSettings, _ internal.DetectorCo
 	provider, err := ecsutil.NewDetectedTaskMetadataProvider(params.TelemetrySettings)
 	if err != nil {
 		// Allow metadata provider to be created in incompatible environments and just have a noop Detect()
-		if _, ok := err.(endpoints.ErrNoTaskMetadataEndpointDetected); ok {
+		var errNTMED endpoints.ErrNoTaskMetadataEndpointDetected
+		if errors.As(err, &errNTMED) {
 			return &Detector{provider: nil}, nil
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)

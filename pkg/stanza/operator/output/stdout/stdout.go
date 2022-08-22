@@ -32,43 +32,43 @@ import (
 var Stdout io.Writer = os.Stdout
 
 func init() {
-	operator.Register("stdout", func() operator.Builder { return NewStdoutConfig("") })
+	operator.Register("stdout", func() operator.Builder { return NewConfig("") })
 }
 
-// NewStdoutConfig creates a new stdout config with default values
-func NewStdoutConfig(operatorID string) *StdoutConfig {
-	return &StdoutConfig{
+// NewConfig creates a new stdout config with default values
+func NewConfig(operatorID string) *Config {
+	return &Config{
 		OutputConfig: helper.NewOutputConfig(operatorID, "stdout"),
 	}
 }
 
-// StdoutConfig is the configuration of the Stdout operator
-type StdoutConfig struct {
+// Config is the configuration of the Stdout operator
+type Config struct {
 	helper.OutputConfig `yaml:",inline"`
 }
 
 // Build will build a stdout operator.
-func (c StdoutConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return &StdoutOperator{
+	return &Output{
 		OutputOperator: outputOperator,
 		encoder:        json.NewEncoder(Stdout),
 	}, nil
 }
 
-// StdoutOperator is an operator that logs entries using stdout.
-type StdoutOperator struct {
+// Output is an operator that logs entries using stdout.
+type Output struct {
 	helper.OutputOperator
 	encoder *json.Encoder
 	mux     sync.Mutex
 }
 
 // Process will log entries received.
-func (o *StdoutOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (o *Output) Process(ctx context.Context, entry *entry.Entry) error {
 	o.mux.Lock()
 	err := o.encoder.Encode(entry)
 	if err != nil {

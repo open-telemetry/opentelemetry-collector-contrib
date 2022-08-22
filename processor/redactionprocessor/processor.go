@@ -107,10 +107,12 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 	// - Don't mask any values if the whole attribute is slated for deletion
 	attributes.Range(func(k string, value pcommon.Value) bool {
 		// Make a list of attribute keys to redact
-		if _, allowed := s.allowList[k]; !allowed {
-			toDelete = append(toDelete, k)
-			// Skip to the next attribute
-			return true
+		if !s.config.AllowAllKeys {
+			if _, allowed := s.allowList[k]; !allowed {
+				toDelete = append(toDelete, k)
+				// Skip to the next attribute
+				return true
+			}
 		}
 
 		// Mask any blocked values for the other attributes

@@ -28,7 +28,8 @@ import (
 // Matcher is an interface that allows matching a log record against a
 // configuration of a match.
 // TODO: Modify Matcher to invoke both the include and exclude properties so
-//  calling processors will always have the same logic.
+//
+//	calling processors will always have the same logic.
 type Matcher interface {
 	MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool
 }
@@ -42,6 +43,9 @@ type propertiesMatcher struct {
 
 	// log severity texts to compare to
 	severityTextFilters filterset.FilterSet
+
+	// matcher for severity number
+	severityNumberMatcher Matcher
 }
 
 // NewMatcher creates a LogRecord Matcher that matches based on the given MatchProperties.
@@ -63,21 +67,27 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.LogBodies) > 0 {
 		bodyFS, err = filterset.CreateFilterSet(mp.LogBodies, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record body filters: %v", err)
+			return nil, fmt.Errorf("error creating log record body filters: %w", err)
 		}
 	}
 	var severitytextFS filterset.FilterSet
 	if len(mp.LogSeverityTexts) > 0 {
 		severitytextFS, err = filterset.CreateFilterSet(mp.LogSeverityTexts, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating log record severity text filters: %v", err)
+			return nil, fmt.Errorf("error creating log record severity text filters: %w", err)
 		}
 	}
 
+	var severityNumberMatcher Matcher
+	if mp.LogSeverityNumber != nil {
+		severityNumberMatcher = newSeverityNumberMatcher(mp.LogSeverityNumber.Min, mp.LogSeverityNumber.MatchUndefined)
+	}
+
 	return &propertiesMatcher{
-		PropertiesMatcher:   rm,
-		bodyFilters:         bodyFS,
-		severityTextFilters: severitytextFS,
+		PropertiesMatcher:     rm,
+		bodyFilters:           bodyFS,
+		severityTextFilters:   severitytextFS,
+		severityNumberMatcher: severityNumberMatcher,
 	}, nil
 }
 
@@ -90,11 +100,14 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 // supported to have more than one of these specified, and all specified must
 // evaluate to true for a match to occur.
 func (mp *propertiesMatcher) MatchLogRecord(lr plog.LogRecord, resource pcommon.Resource, library pcommon.InstrumentationScope) bool {
-	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && mp.bodyFilters.Matches(lr.Body().StringVal()) {
-		return true
+	if lr.Body().Type() == pcommon.ValueTypeString && mp.bodyFilters != nil && !mp.bodyFilters.Matches(lr.Body().StringVal()) {
+		return false
 	}
-	if mp.severityTextFilters != nil && mp.severityTextFilters.Matches(lr.SeverityText()) {
-		return true
+	if mp.severityTextFilters != nil && !mp.severityTextFilters.Matches(lr.SeverityText()) {
+		return false
+	}
+	if mp.severityNumberMatcher != nil && !mp.severityNumberMatcher.MatchLogRecord(lr, resource, library) {
+		return false
 	}
 
 	return mp.PropertiesMatcher.Match(lr.Attributes(), resource, library)

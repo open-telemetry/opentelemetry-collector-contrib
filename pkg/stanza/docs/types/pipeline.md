@@ -1,6 +1,6 @@
 # Pipeline
 
-A pipeline is made up of [operators](/docs/operators/README.md). The pipeline defines how stanza should input, process, and output logs.
+A pipeline is made up of [operators](../operators/README.md). The pipeline defines how stanza should input, process, and output logs.
 
 
 ## Linear Pipelines
@@ -131,7 +131,7 @@ pipeline:
   - type: stdout
 ```
 
-Finally, in some cases, you might expect multiple log formats to come from a single input. This solution uses the [router](/docs/operators/router.md) operator. The `router` operator allows one to define multiple "routes", each of which has an `output`.
+Finally, in some cases, you might expect multiple log formats to come from a single input. This solution uses the [router](../operators/router.md) operator. The `router` operator allows one to define multiple "routes", each of which has an `output`.
 
 
 ```yaml

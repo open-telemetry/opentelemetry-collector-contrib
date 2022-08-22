@@ -15,12 +15,14 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 
 import (
+	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -68,6 +70,20 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 
 // OverwriteHandleFuncs allows to overwrite the default handler functions
 type OverwriteHandleFunc func() (string, http.HandlerFunc)
+
+// HTTPRequestRecorder records a HTTP request.
+type HTTPRequestRecorder struct {
+	Pattern  string
+	Header   http.Header
+	ByteBody []byte
+}
+
+func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
+	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+		rec.Header = r.Header
+		rec.ByteBody, _ = io.ReadAll(r.Body)
+	}
+}
 
 // ValidateAPIKeyEndpointInvalid returns a handler function that returns an invalid API key response
 func ValidateAPIKeyEndpointInvalid() (string, http.HandlerFunc) {
@@ -118,7 +134,7 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		c <- body
 	}
 }
@@ -152,4 +168,12 @@ func newTracesWithAttributeMap(mp map[string]string) ptrace.Traces {
 	fillAttributeMap(rs.Resource().Attributes(), mp)
 	rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	return traces
+}
+
+type MockSourceProvider struct {
+	Src source.Source
+}
+
+func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+	return s.Src, nil
 }

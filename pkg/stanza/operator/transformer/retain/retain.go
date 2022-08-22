@@ -26,25 +26,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "retain"
+
 func init() {
-	operator.Register("retain", func() operator.Builder { return NewRetainOperatorConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewRetainOperatorConfig creates a new retain operator config with default values
-func NewRetainOperatorConfig(operatorID string) *RetainOperatorConfig {
-	return &RetainOperatorConfig{
-		TransformerConfig: helper.NewTransformerConfig(operatorID, "retain"),
+// NewConfig creates a new retain operator config with default values
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new retain operator config with default values
+func NewConfigWithID(operatorID string) *Config {
+	return &Config{
+		TransformerConfig: helper.NewTransformerConfig(operatorID, operatorType),
 	}
 }
 
-// RetainOperatorConfig is the configuration of a retain operator
-type RetainOperatorConfig struct {
+// Config is the configuration of a retain operator
+type Config struct {
 	helper.TransformerConfig `mapstructure:",squash" yaml:",inline"`
 	Fields                   []entry.Field `mapstructure:"fields" json:"fields" yaml:"fields"`
 }
 
 // Build will build a retain operator from the supplied configuration
-func (c RetainOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err
@@ -53,7 +60,7 @@ func (c RetainOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 		return nil, fmt.Errorf("retain: 'fields' is empty")
 	}
 
-	retainOp := &RetainOperator{
+	retainOp := &Transformer{
 		TransformerOperator: transformerOperator,
 		Fields:              c.Fields,
 	}
@@ -73,8 +80,8 @@ func (c RetainOperatorConfig) Build(logger *zap.SugaredLogger) (operator.Operato
 	return retainOp, nil
 }
 
-// RetainOperator keeps the given fields and deletes the rest.
-type RetainOperator struct {
+// Transformer keeps the given fields and deletes the rest.
+type Transformer struct {
 	helper.TransformerOperator
 	Fields             []entry.Field
 	AllBodyFields      bool
@@ -83,12 +90,12 @@ type RetainOperator struct {
 }
 
 // Process will process an entry with a retain transformation.
-func (p *RetainOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return p.ProcessWith(ctx, entry, p.Transform)
 }
 
 // Transform will apply the retain operation to an entry
-func (p *RetainOperator) Transform(e *entry.Entry) error {
+func (p *Transformer) Transform(e *entry.Entry) error {
 	newEntry := entry.New()
 	newEntry.ObservedTimestamp = e.ObservedTimestamp
 	newEntry.Timestamp = e.Timestamp

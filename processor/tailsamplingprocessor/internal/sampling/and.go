@@ -45,7 +45,7 @@ func (c *And) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, err
 		if err != nil {
 			return Unspecified, err
 		}
-		if decision == NotSampled {
+		if decision == NotSampled || decision == InvertNotSampled {
 			return NotSampled, nil
 		}
 

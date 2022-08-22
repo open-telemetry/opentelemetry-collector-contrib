@@ -164,7 +164,6 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 		)
 	}
 
-	p.lastIntervalTime = timeNowFunc()
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.timersAndDistributions = make([]pmetric.ScopeMetrics, 0)
@@ -172,9 +171,7 @@ func (p *StatsDParser) GetMetrics() pmetric.Metrics {
 	return metrics
 }
 
-var timeNowFunc = func() time.Time {
-	return time.Now()
-}
+var timeNowFunc = time.Now
 
 func (p *StatsDParser) observerTypeFor(t MetricType) ObserverType {
 	switch t {
@@ -209,7 +206,9 @@ func (p *StatsDParser) Aggregate(line string) error {
 	case CounterType:
 		_, ok := p.counters[parsedMetric.description]
 		if !ok {
-			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNowFunc(), p.lastIntervalTime)
+			timeNow := timeNowFunc()
+			p.counters[parsedMetric.description] = buildCounterMetric(parsedMetric, p.isMonotonicCounter, timeNow, p.lastIntervalTime)
+			p.lastIntervalTime = timeNow
 		} else {
 			point := p.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
 			point.SetIntVal(point.IntVal() + parsedMetric.counterValue())
@@ -278,7 +277,8 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 	var kvs []attribute.KeyValue
 
 	for _, part := range additionalParts {
-		if strings.HasPrefix(part, "@") {
+		switch {
+		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
 
 			f, err := strconv.ParseFloat(sampleRateStr, 64)
@@ -287,20 +287,21 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 			}
 
 			result.sampleRate = f
-		} else if strings.HasPrefix(part, "#") {
+		case strings.HasPrefix(part, "#"):
 			tagsStr := strings.TrimPrefix(part, "#")
 
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
-				tagParts := strings.Split(tagSet, ":")
+				tagParts := strings.SplitN(tagSet, ":", 2)
 				if len(tagParts) != 2 {
 					return result, fmt.Errorf("invalid tag format: %s", tagParts)
 				}
-				kvs = append(kvs, attribute.String(tagParts[0], tagParts[1]))
+				k := tagParts[0]
+				v := tagParts[1]
+				kvs = append(kvs, attribute.String(k, v))
 			}
-
-		} else {
+		default:
 			return result, fmt.Errorf("unrecognized message part: %s", part)
 		}
 	}

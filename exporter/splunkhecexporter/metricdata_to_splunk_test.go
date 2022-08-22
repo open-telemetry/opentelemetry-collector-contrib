@@ -17,7 +17,7 @@ package splunkhecexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"testing"
 	"time"
@@ -40,8 +40,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 	doubleVal := 1234.5678
 	int64Val := int64(123)
 
-	distributionBounds := []float64{1, 2, 4}
-	distributionCounts := []uint64{4, 2, 3, 5}
+	distributionBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4})
+	distributionCounts := pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 5})
 
 	tests := []struct {
 		name              string
@@ -51,10 +51,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 		configFn          func() *Config
 	}{
 		{
-			name: "nil_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "nil_gauge_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
@@ -66,10 +64,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "nan_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "nan_gauge_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
@@ -87,10 +83,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "+Inf_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "+Inf_gauge_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
@@ -108,10 +102,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "-Inf_gauge_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "-Inf_gauge_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
@@ -129,10 +121,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_histogram_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "nil_histogram_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("histogram_with_dims")
@@ -144,10 +134,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "nil_sum_value",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "nil_sum_value",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				sum := pmetric.NewMetric()
 				sum.SetName("sum_with_dims")
@@ -159,10 +147,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "gauge_empty_data_point",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "gauge_empty_data_point",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
@@ -175,10 +161,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "histogram_empty_data_point",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "histogram_empty_data_point",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("histogram_with_dims")
@@ -191,10 +175,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "sum_empty_data_point",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "sum_empty_data_point",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				sum := pmetric.NewMetric()
 				sum.SetName("sum_with_dims")
@@ -269,17 +251,15 @@ func Test_metricDataToSplunk(t *testing.T) {
 		},
 
 		{
-			name: "histogram_no_upper_bound",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "histogram_no_upper_bound",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
 				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
-				histogramPt.SetMExplicitBounds(distributionBounds)
-				histogramPt.SetMBucketCounts([]uint64{4, 2, 3})
+				histogramPt.SetExplicitBounds(distributionBounds)
+				histogramPt.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3}))
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -290,17 +270,15 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "histogram",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "histogram",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
 				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
 				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
-				histogramPt.SetMExplicitBounds(distributionBounds)
-				histogramPt.SetMBucketCounts(distributionCounts)
+				histogramPt.SetExplicitBounds(distributionBounds)
+				histogramPt.SetBucketCounts(distributionCounts)
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -396,10 +374,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 		},
 
 		{
-			name: "int_sum",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "int_sum",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				intSum := pmetric.NewMetric()
 				intSum.SetName("int_sum_with_dims")
@@ -429,10 +405,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "double_sum",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "double_sum",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				doubleSum := pmetric.NewMetric()
 				doubleSum.SetName("double_sum_with_dims")
@@ -462,10 +436,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "summary",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "summary",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("summary")
@@ -544,10 +516,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 			},
 		},
 		{
-			name: "unknown_type",
-			resourceFn: func() pcommon.Resource {
-				return newMetricsWithResources()
-			},
+			name:       "unknown_type",
+			resourceFn: newMetricsWithResources,
 			metricsDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("unknown_with_dims")
@@ -601,7 +571,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			md := tt.metricsDataFn()
 			cfg := tt.configFn()
 			gotMetrics := mapMetricToSplunkEvent(res, md, cfg, zap.NewNop())
-			encoder := json.NewEncoder(ioutil.Discard)
+			encoder := json.NewEncoder(io.Discard)
 			for i, want := range tt.wantSplunkMetrics {
 				assert.Equal(t, want, gotMetrics[i])
 				err := encoder.Encode(gotMetrics[i])

@@ -4,7 +4,7 @@ SRC_ROOT := $(realpath $(dir $(lastword $(MAKEFILE_LIST))))
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
 GOTEST_OPT?= -race -v -timeout 300s --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 120s
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -v -tags=integration,$(GO_BUILD_TAGS) -run=Integration -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
@@ -12,6 +12,7 @@ GOTEST=$(GOCMD) test
 GOOS=$(shell $(GOCMD) env GOOS)
 GOARCH=$(shell $(GOCMD) env GOARCH)
 ADDLICENCESE= addlicense
+MDLINKCHECK=markdown-link-check
 MISSPELL=misspell -error
 MISSPELL_CORRECTION=misspell -w
 LINT=golangci-lint
@@ -95,19 +96,25 @@ checklicense:
 			echo "Check License finished successfully"; \
 		fi
 
+.PHONY: checklinks
+checklinks:
+	command -v $(MDLINKCHECK) >/dev/null 2>&1 || { echo >&2 "$(MDLINKCHECK) not installed. Run 'npm install -g markdown-link-check'"; exit 1; }
+	find . -name \*.md -print0 | xargs -0 -n1 \
+		$(MDLINKCHECK) -q -c $(SRC_ROOT)/.github/workflows/check_links_config.json || true
+
 .PHONY: fmt
 fmt:
 	gofmt  -w -s ./
 	goimports -w  -local github.com/open-telemetry/opentelemetry-collector-contrib ./
 
 .PHONY: lint
-lint: checklicense impi misspell
+lint: checklicense misspell
 	$(LINT) run --allow-parallel-runners
 
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.17
+	$(GOCMD) mod tidy -compat=1.18
 
 .PHONY: misspell
 misspell:
@@ -120,7 +127,7 @@ misspell-correction:
 
 .PHONY: impi
 impi:
-	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal $(ALL_PKGS)
+	@$(IMPI) --local github.com/open-telemetry/opentelemetry-collector-contrib --scheme stdThirdPartyLocal ./...
 
 .PHONY: moddownload
 moddownload:

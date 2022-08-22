@@ -325,7 +325,7 @@ func TestGetLogInfo(t *testing.T) {
 			"/aws/ecs/containerinsights/test-cluster-name/performance",
 			"test-task-id",
 		},
-		//test case for aws container insight usage
+		// test case for aws container insight usage
 		{
 			"empty namespace, config w/ pattern",
 			"",

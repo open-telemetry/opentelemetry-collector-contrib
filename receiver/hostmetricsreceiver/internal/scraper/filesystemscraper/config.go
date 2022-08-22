@@ -18,14 +18,11 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper/internal/metadata"
 )
 
 // Config relating to FileSystem Metric Scraper.
 type Config struct {
-	internal.ConfigSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	// Metrics allows to customize scraped metrics representation.
 	Metrics metadata.MetricsSettings `mapstructure:"metrics"`
 

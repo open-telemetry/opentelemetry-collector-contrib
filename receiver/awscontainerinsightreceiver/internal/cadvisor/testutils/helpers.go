@@ -18,7 +18,7 @@ package testutils // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	cinfo "github.com/google/cadvisor/info/v1"
@@ -26,7 +26,7 @@ import (
 )
 
 func LoadContainerInfo(t *testing.T, file string) []*cinfo.ContainerInfo {
-	info, err := ioutil.ReadFile(file)
+	info, err := os.ReadFile(file)
 	assert.Nil(t, err, "Fail to read file content")
 
 	var result []*cinfo.ContainerInfo

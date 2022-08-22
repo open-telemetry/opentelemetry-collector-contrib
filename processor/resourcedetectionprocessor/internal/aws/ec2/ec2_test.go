@@ -29,6 +29,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 
+	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
@@ -44,23 +45,23 @@ type mockMetadata struct {
 	isAvailable bool
 }
 
-var _ metadataProvider = (*mockMetadata)(nil)
+var _ ec2provider.Provider = (*mockMetadata)(nil)
 
-func (mm mockMetadata) instanceID(_ context.Context) (string, error) {
+func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	if !mm.isAvailable {
 		return "", errUnavailable
 	}
 	return "", nil
 }
 
-func (mm mockMetadata) get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
 		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
 }
 
-func (mm mockMetadata) hostname(_ context.Context) (string, error) {
+func (mm mockMetadata) Hostname(_ context.Context) (string, error) {
 	if mm.retErrHostname != nil {
 		return "", mm.retErrHostname
 	}
@@ -109,7 +110,7 @@ func TestNewDetector(t *testing.T) {
 
 func TestDetector_Detect(t *testing.T) {
 	type fields struct {
-		metadataProvider metadataProvider
+		metadataProvider ec2provider.Provider
 	}
 	type args struct {
 		ctx context.Context

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package oauth2clientauthextension
 
 import (
@@ -259,7 +258,8 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 func TestFailContactingOAuth(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte("not-json"))
+		_, err := w.Write([]byte("not-json"))
+		assert.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -289,7 +289,7 @@ func TestFailContactingOAuth(t *testing.T) {
 		},
 	}
 
-	client, _ := setting.ToClient(componenttest.NewNopHost().GetExtensions(), componenttest.NewNopTelemetrySettings())
+	client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
 	req, err := http.NewRequest("POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
 	_, err = client.Do(req)

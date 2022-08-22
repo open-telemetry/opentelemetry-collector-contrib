@@ -15,7 +15,6 @@
 package helper
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -24,8 +23,7 @@ import (
 )
 
 func TestIdentifier(t *testing.T) {
-	os.Setenv("TEST_METADATA_OPERATOR_ENV", "foo")
-	defer os.Unsetenv("TEST_METADATA_OPERATOR_ENV")
+	t.Setenv("TEST_METADATA_OPERATOR_ENV", "foo")
 
 	cases := []struct {
 		name     string

@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	zap "go.uber.org/zap"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
-	entry "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 

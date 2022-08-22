@@ -134,3 +134,29 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 		}
 	}
 }
+
+// IgnoreResourceAttributeValue is a CompareOption that removes a resource attribute
+// from all resources
+func IgnoreResourceAttributeValue(attributeName string) CompareOption {
+	return ignoreResourceAttributeValue{
+		attributeName: attributeName,
+	}
+}
+
+type ignoreResourceAttributeValue struct {
+	attributeName string
+}
+
+func (opt ignoreResourceAttributeValue) apply(expected, actual pmetric.Metrics) {
+	maskResourceAttributeValue(expected, opt)
+	maskResourceAttributeValue(actual, opt)
+}
+
+func maskResourceAttributeValue(metrics pmetric.Metrics, opt ignoreResourceAttributeValue) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		if _, ok := rms.At(i).Resource().Attributes().Get(opt.attributeName); ok {
+			rms.At(i).Resource().Attributes().Remove(opt.attributeName)
+		}
+	}
+}

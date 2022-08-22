@@ -27,7 +27,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	typeStr                  = "googlecloud"
+	typeStr = "googlecloud"
+	// The stability level of the exporter.
+	stability                = component.StabilityLevelBeta
 	defaultTimeout           = 12 * time.Second // Consistent with Cloud Monitoring's timeout
 	pdataExporterFeatureGate = "exporter.googlecloud.OTLPDirect"
 )
@@ -45,9 +47,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter),
-		component.WithMetricsExporter(createMetricsExporter),
-		component.WithLogsExporter(createLogsExporter),
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -85,9 +87,10 @@ func createLogsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		params,
+		cfg,
 		logsExporter.PushLogs,
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -112,9 +115,10 @@ func createTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(
-		cfg,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		params,
+		cfg,
 		tExp.PushTraces,
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -138,9 +142,10 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		params,
+		cfg,
 		mExp.PushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

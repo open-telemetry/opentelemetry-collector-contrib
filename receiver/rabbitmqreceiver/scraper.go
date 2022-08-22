@@ -56,12 +56,12 @@ type rabbitmqScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings component.TelemetrySettings) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings component.ReceiverCreateSettings) *rabbitmqScraper {
 	return &rabbitmqScraper{
 		logger:   logger,
 		cfg:      cfg,
-		settings: settings,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings: settings.TelemetrySettings,
+		mb:       metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
 	}
 }
 

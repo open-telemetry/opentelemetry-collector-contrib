@@ -243,20 +243,5 @@ const (
 type defaultWatcherCreater struct{}
 
 func (defaultWatcherCreater) Create(counterName string) (winperfcounters.PerfCounterWatcher, error) {
-	conf := winperfcounters.ObjectConfig{
-		Object:    object,
-		Instances: []string{instanceName},
-		Counters: []winperfcounters.CounterConfig{
-			{
-				Name: counterName,
-			},
-		},
-	}
-
-	watchers, err := conf.BuildPaths()
-	if err != nil {
-		return nil, err
-	}
-
-	return watchers[0], nil
+	return winperfcounters.NewWatcher(object, instanceName, counterName)
 }

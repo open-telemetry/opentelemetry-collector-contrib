@@ -242,14 +242,3 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 func IsEmptyResource(res pcommon.Resource) bool {
 	return res.Attributes().Len() == 0
 }
-
-// GOOSToOSType maps a runtime.GOOS-like value to os.type style.
-func GOOSToOSType(goos string) string {
-	switch goos {
-	case "dragonfly":
-		return "dragonflybsd"
-	case "zos":
-		return "z_os"
-	}
-	return goos
-}

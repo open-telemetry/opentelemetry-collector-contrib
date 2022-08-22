@@ -17,7 +17,7 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -38,7 +38,7 @@ func TestScraper(t *testing.T) {
 	dbWrapper := &testDBWrapper{}
 	initializeWrapper(t, dbWrapper, allQueryMetrics)
 
-	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config), &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsPath)
@@ -103,7 +103,7 @@ func TestDisabledMetrics(t *testing.T) {
 	cfg.Metrics.SaphanaVolumeOperationSize.Enabled = false
 	cfg.Metrics.SaphanaVolumeOperationTime.Enabled = false
 
-	sc, err := newSapHanaScraper(componenttest.NewNopTelemetrySettings(), cfg, &testConnectionFactory{dbWrapper})
+	sc, err := newSapHanaScraper(componenttest.NewNopReceiverCreateSettings(), cfg, &testConnectionFactory{dbWrapper})
 	require.NoError(t, err)
 
 	expectedMetrics, err := golden.ReadMetrics(partialExpectedMetricsPath)
@@ -124,7 +124,7 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 	w.On("PingContext").Return(nil)
 	w.On("Close").Return(nil)
 
-	contents, err := ioutil.ReadFile(filename)
+	contents, err := os.ReadFile(filename)
 	require.NoError(t, err)
 
 	var queries []queryJSON

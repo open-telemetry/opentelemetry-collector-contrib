@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+	"sync"
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/mongodb-forks/digest"
-	"github.com/pkg/errors"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -35,15 +36,16 @@ type clientRoundTripper struct {
 	originalTransport http.RoundTripper
 	log               *zap.Logger
 	retrySettings     exporterhelper.RetrySettings
-	isStopped         bool
+	stopped           bool
+	mutex             sync.Mutex
 	shutdownChan      chan struct{}
 }
 
 func newClientRoundTripper(
 	originalTransport http.RoundTripper,
 	log *zap.Logger,
-	retrySettings exporterhelper.RetrySettings) *clientRoundTripper {
-
+	retrySettings exporterhelper.RetrySettings,
+) *clientRoundTripper {
 	return &clientRoundTripper{
 		originalTransport: originalTransport,
 		log:               log,
@@ -52,15 +54,33 @@ func newClientRoundTripper(
 	}
 }
 
+func (rt *clientRoundTripper) isStopped() bool {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	return rt.stopped
+}
+
+func (rt *clientRoundTripper) stop() {
+	rt.mutex.Lock()
+	defer rt.mutex.Unlock()
+
+	rt.stopped = true
+}
+
 func (rt *clientRoundTripper) Shutdown() error {
-	rt.isStopped = true
+	if rt.isStopped() {
+		return nil
+	}
+
+	rt.stop()
 	rt.shutdownChan <- struct{}{}
 	close(rt.shutdownChan)
 	return nil
 }
 
 func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	if rt.isStopped {
+	if rt.isStopped() {
 		return nil, fmt.Errorf("request cancelled due to shutdown")
 	}
 
@@ -136,8 +156,7 @@ func NewMongoDBAtlasClient(
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
-	s.roundTripper.Shutdown()
-	return nil
+	return s.roundTripper.Shutdown()
 }
 
 // Check both the returned error and the status of the HTTP response
@@ -171,7 +190,7 @@ func (s *MongoDBAtlasClient) Organizations(ctx context.Context) ([]*mongodbatlas
 		if err != nil {
 			// TODO: Add error to a metric
 			// Stop, returning what we have (probably empty slice)
-			return allOrgs, errors.Wrap(err, "error retrieving organizations from MongoDB Atlas API")
+			return allOrgs, fmt.Errorf("error retrieving organizations from MongoDB Atlas API: %w", err)
 		}
 		allOrgs = append(allOrgs, orgs...)
 		if !hasNext {
@@ -197,6 +216,17 @@ func (s *MongoDBAtlasClient) getOrganizationsPage(
 	return orgs.Results, hasNext(orgs.Links), nil
 }
 
+// GetOrganization retrieves a single organization specified by orgID
+func (s *MongoDBAtlasClient) GetOrganization(ctx context.Context, orgID string) (*mongodbatlas.Organization, error) {
+	org, response, err := s.client.Organizations.Get(ctx, orgID)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return org, nil
+
+}
+
 // Projects returns a list of projects accessible within the provided organization
 func (s *MongoDBAtlasClient) Projects(
 	ctx context.Context,
@@ -209,7 +239,7 @@ func (s *MongoDBAtlasClient) Projects(
 		projects, hasNext, err := s.getProjectsPage(ctx, orgID, page)
 		page++
 		if err != nil {
-			return allProjects, errors.Wrap(err, "error retrieving list of projects from MongoDB Atlas API")
+			return allProjects, fmt.Errorf("error retrieving list of projects from MongoDB Atlas API: %w", err)
 		}
 		allProjects = append(allProjects, projects...)
 		if !hasNext {
@@ -217,6 +247,16 @@ func (s *MongoDBAtlasClient) Projects(
 		}
 	}
 	return allProjects, nil
+}
+
+// GetProject returns a single project specified by projectName
+func (s *MongoDBAtlasClient) GetProject(ctx context.Context, projectName string) (*mongodbatlas.Project, error) {
+	project, response, err := s.client.Projects.GetOneProjectByName(ctx, projectName)
+	err = checkMongoDBClientErr(err, response)
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving project page: %w", err)
+	}
+	return project, nil
 }
 
 func (s *MongoDBAtlasClient) getProjectsPage(
@@ -231,7 +271,7 @@ func (s *MongoDBAtlasClient) getProjectsPage(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return nil, false, errors.Wrap(err, "error retrieving project page")
+		return nil, false, fmt.Errorf("error retrieving project page: %w", err)
 	}
 	return projects.Results, hasNext(projects.Links), nil
 }
@@ -259,7 +299,7 @@ func (s *MongoDBAtlasClient) Processes(
 	)
 	err = checkMongoDBClientErr(err, response)
 	if err != nil {
-		return make([]*mongodbatlas.Process, 0), errors.Wrap(err, "error retrieving processes from MongoDB Atlas API")
+		return make([]*mongodbatlas.Process, 0), fmt.Errorf("error retrieving processes from MongoDB Atlas API: %w", err)
 	}
 	return processes, nil
 }
@@ -555,4 +595,37 @@ func (s *MongoDBAtlasClient) processDiskMeasurementsPage(
 		return nil, false, err
 	}
 	return measurements.Measurements, hasNext(measurements.Links), nil
+}
+
+// GetLogs retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/logs/#syntax
+func (s *MongoDBAtlasClient) GetLogs(ctx context.Context, groupID, hostname, logName string, start, end time.Time) (*bytes.Buffer, error) {
+	buf := bytes.NewBuffer([]byte{})
+
+	dateRange := &mongodbatlas.DateRangetOptions{StartDate: toUnixString(start), EndDate: toUnixString(end)}
+	resp, err := s.client.Logs.Get(ctx, groupID, hostname, logName, buf, dateRange)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("received status code: %d", resp.StatusCode)
+	}
+
+	return buf, nil
+}
+
+// retrieves the logs from the mongo API using API call: https://www.mongodb.com/docs/atlas/reference/api/clusters-get-all/#request
+func (s *MongoDBAtlasClient) GetClusters(ctx context.Context, groupID string) ([]mongodbatlas.Cluster, error) {
+	options := mongodbatlas.ListOptions{}
+
+	clusters, _, err := s.client.Clusters.List(ctx, groupID, &options)
+	if err != nil {
+		return nil, err
+	}
+
+	return clusters, nil
+}
+
+func toUnixString(t time.Time) string {
+	return strconv.Itoa(int(t.Unix()))
 }

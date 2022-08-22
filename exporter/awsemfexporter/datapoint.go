@@ -49,9 +49,9 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pmetric.NumberDataPointSlice
-// 	- pmetric.HistogramDataPointSlice
-//  - pmetric.SummaryDataPointSlice
+//   - pmetric.NumberDataPointSlice
+//   - pmetric.HistogramDataPointSlice
+//   - pmetric.SummaryDataPointSlice
 type dataPoints interface {
 	Len() int
 	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
@@ -154,6 +154,8 @@ func (dps histogramDataPointSlice) At(i int) (dataPoint, bool) {
 		value: &cWMetricStats{
 			Count: metric.Count(),
 			Sum:   metric.Sum(),
+			Max:   metric.Max(),
+			Min:   metric.Min(),
 		},
 		labels:      labels,
 		timestampMs: timestamp,

@@ -31,7 +31,7 @@ func TestBuildPipelineSuccess(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfigWithID("noop"),
 			},
 		},
 	}
@@ -45,7 +45,7 @@ func TestBuildPipelineNoLogger(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfigWithID("noop"),
 			},
 		},
 	}
@@ -77,10 +77,10 @@ func TestBuildAPipelineDefaultOperator(t *testing.T) {
 	cfg := Config{
 		Operators: []operator.Config{
 			{
-				Builder: noop.NewNoopOperatorConfig("noop"),
+				Builder: noop.NewConfigWithID("noop"),
 			},
 			{
-				Builder: noop.NewNoopOperatorConfig("noop1"),
+				Builder: noop.NewConfigWithID("noop1"),
 			},
 		},
 		DefaultOutput: testutil.NewFakeOutput(t),
@@ -398,9 +398,9 @@ func TestUpdateOutputIDs(t *testing.T) {
 }
 
 func newDummyJSON(dummyID string) operator.Config {
-	return operator.Config{Builder: json.NewJSONParserConfig(dummyID)}
+	return operator.Config{Builder: json.NewConfigWithID(dummyID)}
 }
 
 func newDummyCopy(dummyID string) operator.Config {
-	return operator.Config{Builder: copy.NewCopyOperatorConfig(dummyID)}
+	return operator.Config{Builder: copy.NewConfigWithID(dummyID)}
 }

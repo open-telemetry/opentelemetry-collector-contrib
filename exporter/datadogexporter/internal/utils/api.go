@@ -22,8 +22,8 @@ import (
 )
 
 // CreateClient creates a new Datadog client
-func CreateClient(APIKey string, endpoint string) *datadog.Client {
-	client := datadog.NewClient(APIKey, "")
+func CreateClient(apiKey string, endpoint string) *datadog.Client {
+	client := datadog.NewClient(apiKey, "")
 	client.SetBaseUrl(endpoint)
 
 	return client

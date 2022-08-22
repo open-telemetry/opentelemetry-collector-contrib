@@ -36,10 +36,10 @@ var (
 )
 
 const (
-	// Some standard dimension keys. upper bound dimension key for histogram buckets.
-	bucketDimensionKey = "upper_bound"
+	// prometheus compatible dimension key for histogram buckets.
+	bucketDimensionKey = "le"
 
-	// Some standard dimension keys. quantile dimension key for summary quantiles.
+	// quantile dimension key for summary quantiles.
 	quantileDimensionKey = "quantile"
 )
 
@@ -133,7 +133,19 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb.MetricType, extraDims []*sfxpb.Dimension) []*sfxpb.DataPoint {
 	var numDPs int
 	for i := 0; i < in.Len(); i++ {
-		numDPs += 2 + len(in.At(i).MBucketCounts())
+		histDP := in.At(i)
+		numDPs += 1 + histDP.BucketCounts().Len()
+		if histDP.HasSum() {
+			numDPs++
+		}
+
+		if histDP.HasMin() {
+			numDPs++
+		}
+
+		if histDP.HasMax() {
+			numDPs++
+		}
 	}
 	dps := newDpsBuilder(numDPs)
 
@@ -146,23 +158,42 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 		count := int64(histDP.Count())
 		countDP.Value.IntValue = &count
 
-		sumDP := dps.appendPoint(name, mt, ts, dims)
-		sum := histDP.Sum()
-		sumDP.Value.DoubleValue = &sum
+		if histDP.HasSum() {
+			sumDP := dps.appendPoint(name+"_sum", mt, ts, dims)
+			sum := histDP.Sum()
+			sumDP.Value.DoubleValue = &sum
+		}
 
-		bounds := histDP.MExplicitBounds()
-		counts := histDP.MBucketCounts()
+		if histDP.HasMin() {
+			// Min is always a gauge.
+			minDP := dps.appendPoint(name+"_min", &sfxMetricTypeGauge, ts, dims)
+			min := histDP.Min()
+			minDP.Value.DoubleValue = &min
+		}
+
+		if histDP.HasMax() {
+			// Max is always a gauge.
+			maxDP := dps.appendPoint(name+"_max", &sfxMetricTypeGauge, ts, dims)
+			max := histDP.Max()
+			maxDP.Value.DoubleValue = &max
+		}
+
+		bounds := histDP.ExplicitBounds()
+		counts := histDP.BucketCounts()
 
 		// Spec says counts is optional but if present it must have one more
 		// element than the bounds array.
-		if len(counts) > 0 && len(counts) != len(bounds)+1 {
+		if counts.Len() > 0 && counts.Len() != bounds.Len()+1 {
 			continue
 		}
 
-		for j, c := range counts {
+		bucketMetricName := name + "_bucket"
+		var val uint64
+		for j := 0; j < counts.Len(); j++ {
+			val += counts.At(j)
 			bound := infinityBoundSFxDimValue
-			if j < len(bounds) {
-				bound = float64ToDimValue(bounds[j])
+			if j < bounds.Len() {
+				bound = float64ToDimValue(bounds.At(j))
 			}
 			cloneDim := make([]*sfxpb.Dimension, len(dims)+1)
 			copy(cloneDim, dims)
@@ -170,8 +201,8 @@ func convertHistogram(in pmetric.HistogramDataPointSlice, name string, mt *sfxpb
 				Key:   bucketDimensionKey,
 				Value: bound,
 			}
-			dp := dps.appendPoint(name+"_bucket", mt, ts, cloneDim)
-			cInt := int64(c)
+			dp := dps.appendPoint(bucketMetricName, mt, ts, cloneDim)
+			cInt := int64(val)
 			dp.Value.IntValue = &cInt
 		}
 	}
@@ -196,7 +227,8 @@ func convertSummaryDataPoints(in pmetric.SummaryDataPointSlice, name string, ext
 		c := int64(inDp.Count())
 		countDP.Value.IntValue = &c
 
-		sumDP := dps.appendPoint(name, &sfxMetricTypeCumulativeCounter, ts, dims)
+		sumName := name + "_sum"
+		sumDP := dps.appendPoint(sumName, &sfxMetricTypeCumulativeCounter, ts, dims)
 		sum := inDp.Sum()
 		sumDP.Value.DoubleValue = &sum
 

@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package tanzuobservabilityexporter
 
 import (
 	"context"
 	"errors"
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,9 +77,10 @@ func createMockMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
+		cfg,
 		exp.pushMetricsData,
 		exporterhelper.WithShutdown(exp.shutdown),
 	)
@@ -91,7 +92,11 @@ func consumeMetrics(metrics pmetric.Metrics, sender *mockMetricSender) error {
 	if err != nil {
 		return err
 	}
-	defer mockOTelMetricsExporter.Shutdown(ctx)
+	defer func() {
+		if err := mockOTelMetricsExporter.Shutdown(ctx); err != nil {
+			log.Fatalln(err)
+		}
+	}()
 	return mockOTelMetricsExporter.ConsumeMetrics(ctx, metrics)
 }
 

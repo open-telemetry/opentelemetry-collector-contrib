@@ -188,10 +188,10 @@ func getMetadataForPod(pod *corev1.Pod, mc *metadataStore, logger *zap.Logger) m
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
 // on Job to see if it was created by a CronJob. Sync metadata accordingly.
-func collectPodJobProperties(pod *corev1.Pod, JobStore cache.Store, logger *zap.Logger) map[string]string {
+func collectPodJobProperties(pod *corev1.Pod, jobStore cache.Store, logger *zap.Logger) map[string]string {
 	jobRef := utils.FindOwnerWithKind(pod.OwnerReferences, k8sKindJob)
 	if jobRef != nil {
-		job, exists, err := JobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
+		job, exists, err := jobStore.GetByKey(utils.GetIDForCache(pod.Namespace, jobRef.Name))
 		if err != nil {
 			logError(err, jobRef, pod.UID, logger)
 			return nil

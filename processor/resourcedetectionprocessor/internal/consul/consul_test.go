@@ -24,27 +24,30 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
+
+var _ consul.Provider = (*mockMetadata)(nil)
 
 type mockMetadata struct {
 	mock.Mock
 }
 
-func (m *mockMetadata) Metadata(context.Context) (*consulMetadata, error) {
+func (m *mockMetadata) Metadata(context.Context) (*consul.Metadata, error) {
 	args := m.MethodCalled("Metadata")
 
-	return args.Get(0).(*consulMetadata), args.Error(1)
+	return args.Get(0).(*consul.Metadata), args.Error(1)
 }
 
 func TestDetect(t *testing.T) {
 	md := &mockMetadata{}
 	md.On("Metadata").Return(
-		&consulMetadata{
-			hostName:     "hostname",
-			datacenter:   "dc1",
-			nodeID:       "00000000-0000-0000-0000-000000000000",
-			hostMetadata: map[string]string{"test": "test"},
+		&consul.Metadata{
+			Hostname:     "hostname",
+			Datacenter:   "dc1",
+			NodeID:       "00000000-0000-0000-0000-000000000000",
+			HostMetadata: map[string]string{"test": "test"},
 		},
 		nil,
 	)

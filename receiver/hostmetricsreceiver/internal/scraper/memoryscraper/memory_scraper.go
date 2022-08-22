@@ -36,8 +36,9 @@ var ErrInvalidTotalMem = errors.New("invalid total memory")
 
 // scraper for Memory Metrics
 type scraper struct {
-	config *Config
-	mb     *metadata.MetricsBuilder
+	settings component.ReceiverCreateSettings
+	config   *Config
+	mb       *metadata.MetricsBuilder
 
 	// for mocking gopsutil mem.VirtualMemory
 	bootTime      func() (uint64, error)
@@ -45,8 +46,8 @@ type scraper struct {
 }
 
 // newMemoryScraper creates a Memory Scraper
-func newMemoryScraper(_ context.Context, cfg *Config) *scraper {
-	return &scraper{config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory}
+func newMemoryScraper(_ context.Context, settings component.ReceiverCreateSettings, cfg *Config) *scraper {
+	return &scraper{settings: settings, config: cfg, bootTime: host.BootTime, virtualMemory: mem.VirtualMemory}
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
@@ -55,7 +56,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestKVParserConfig(t *testing.T) {
+func TestConfig(t *testing.T) {
 	cases := []operatortest.ConfigUnmarshalTest{
 		{
 			Name:   "default",
@@ -29,7 +29,7 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_from_simple",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseFrom = entry.NewBodyField("from")
 				return cfg
@@ -37,7 +37,7 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "parse_to_simple",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.ParseTo = entry.NewBodyField("log")
 				return cfg
@@ -45,7 +45,7 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "on_error_drop",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.OnError = "drop"
 				return cfg
@@ -53,7 +53,7 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "timestamp",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("timestamp_field")
 				newTime := helper.TimeParser{
@@ -67,10 +67,10 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "severity",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityField := helper.NewSeverityParserConfig()
+				severityField := helper.NewSeverityConfig()
 				severityField.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
@@ -79,13 +79,13 @@ func TestKVParserConfig(t *testing.T) {
 					"debug":    "2xx",
 				}
 				severityField.Mapping = mapping
-				cfg.SeverityParserConfig = &severityField
+				cfg.Config = &severityField
 				return cfg
 			}(),
 		},
 		{
 			Name: "delimiter",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.Delimiter = ";"
 				return cfg
@@ -93,7 +93,7 @@ func TestKVParserConfig(t *testing.T) {
 		},
 		{
 			Name: "pair_delimiter",
-			Expect: func() *KVParserConfig {
+			Expect: func() *Config {
 				cfg := defaultCfg()
 				cfg.PairDelimiter = ";"
 				return cfg
@@ -108,6 +108,6 @@ func TestKVParserConfig(t *testing.T) {
 	}
 }
 
-func defaultCfg() *KVParserConfig {
-	return NewKVParserConfig("key_value_parser")
+func defaultCfg() *Config {
+	return NewConfig()
 }

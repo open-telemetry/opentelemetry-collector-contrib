@@ -43,25 +43,16 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 		return nil, err
 	}
 
-	sfs, err := newSourceFormats(cfg)
-	if err != nil {
-		return nil, err
-	}
+	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)
 	if err != nil {
 		return nil, err
 	}
 
-	pf, err := newPrometheusFormatter()
-	if err != nil {
-		return nil, err
-	}
+	pf := newPrometheusFormatter()
 
-	gf, err := newGraphiteFormatter(cfg.GraphiteTemplate)
-	if err != nil {
-		return nil, err
-	}
+	gf := newGraphiteFormatter(cfg.GraphiteTemplate)
 
 	se := &sumologicexporter{
 		config:              cfg,
@@ -84,9 +75,10 @@ func newLogsExporter(
 		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
 	}
 
-	return exporterhelper.NewLogsExporter(
-		cfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -106,9 +98,10 @@ func newMetricsExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushMetricsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
@@ -121,7 +114,7 @@ func newMetricsExporter(
 
 // start starts the exporter
 func (se *sumologicexporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := se.config.HTTPClientSettings.ToClient(host.GetExtensions(), se.settings)
+	client, err := se.config.HTTPClientSettings.ToClient(host, se.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

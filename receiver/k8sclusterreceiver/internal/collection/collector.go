@@ -21,7 +21,6 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
@@ -67,9 +66,6 @@ const (
 	k8sKindReplicationController = "ReplicationController"
 	k8sKindReplicaSet            = "ReplicaSet"
 	k8sStatefulSet               = "StatefulSet"
-
-	// ID for a temporary feature gate
-	reportCPUMetricsAsDoubleFeatureGateID = "receiver.k8sclusterreceiver.reportCpuMetricsAsDouble"
 )
 
 // DataCollector wraps around a metricsStore and a metadaStore exposing
@@ -84,33 +80,8 @@ type DataCollector struct {
 	allocatableTypesToReport []string
 }
 
-var reportCPUMetricsAsDoubleFeatureGate = featuregate.Gate{
-	ID:      reportCPUMetricsAsDoubleFeatureGateID,
-	Enabled: true,
-	Description: "The k8s container and node cpu metrics being reported by the k8sclusterreceiver are transitioning " +
-		"from being reported as integer millicpu units to being reported as double cpu units to adhere to " +
-		"opentelemetry cpu metric specifications. You can control whether the k8sclusterreceiver reports container " +
-		"and node cpu metrics in double cpu units instead of integer millicpu units with the " +
-		"receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate. " +
-		"For more details see: " +
-		"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/k8sclusterreceiver/README.md#feature-gate-configurations ",
-}
-
-func init() {
-	featuregate.GetRegistry().MustRegister(reportCPUMetricsAsDoubleFeatureGate)
-}
-
 // NewDataCollector returns a DataCollector.
 func NewDataCollector(logger *zap.Logger, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
-	if featuregate.GetRegistry().IsEnabled(reportCPUMetricsAsDoubleFeatureGateID) {
-		logger.Info("The receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate is enabled. This " +
-			"otel collector will report double cpu units, which is good for future support!")
-	} else {
-		logger.Info("WARNING - Breaking Change: " + reportCPUMetricsAsDoubleFeatureGate.Description)
-		logger.Info("The receiver.k8sclusterreceiver.reportCpuMetricsAsDouble feature gate is disabled. This " +
-			"otel collector will report integer cpu units, be aware this will not be supported in the future.")
-	}
-
 	return &DataCollector{
 		logger: logger,
 		metricsStore: &metricsStore{

@@ -37,8 +37,13 @@ func CompareMetrics(expected, actual pmetric.Metrics, options ...CompareOption) 
 
 	expectedMetrics, actualMetrics := expected.ResourceMetrics(), actual.ResourceMetrics()
 	if expectedMetrics.Len() != actualMetrics.Len() {
-		return fmt.Errorf("number of resources does not match")
+		return fmt.Errorf("number of resources does not match expected: %d, actual: %d", expectedMetrics.Len(),
+			actualMetrics.Len())
 	}
+
+	// sort ResourceMetrics
+	expectedMetrics.Sort(sortResourceMetrics)
+	actualMetrics.Sort(sortResourceMetrics)
 
 	numResources := expectedMetrics.Len()
 
@@ -90,7 +95,8 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 	ailms := actual.ScopeMetrics()
 
 	if eilms.Len() != ailms.Len() {
-		return fmt.Errorf("number of instrumentation libraries does not match")
+		return fmt.Errorf("number of instrumentation libraries does not match expected: %d, actual: %d", eilms.Len(),
+			ailms.Len())
 	}
 
 	eilms.Sort(sortInstrumentationLibrary)
@@ -119,8 +125,12 @@ func CompareResourceMetrics(expected, actual pmetric.ResourceMetrics) error {
 // expected and actual values are clones before options are applied.
 func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 	if expected.Len() != actual.Len() {
-		return fmt.Errorf("metric slices not of same length")
+		return fmt.Errorf("number of metrics does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
+
+	// Sort MetricSlices
+	expected.Sort(sortMetricSlice)
+	actual.Sort(sortMetricSlice)
 
 	expectedByName, actualByName := metricsByName(expected), metricsByName(actual)
 
@@ -183,7 +193,7 @@ func CompareMetricSlices(expected, actual pmetric.MetricSlice) error {
 // an error if they don't match. The error describes what didn't match.
 func CompareNumberDataPointSlices(expected, actual pmetric.NumberDataPointSlice) error {
 	if expected.Len() != actual.Len() {
-		return fmt.Errorf("length of datapoints don't match")
+		return fmt.Errorf("number of datapoints does not match expected: %d, actual: %d", expected.Len(), actual.Len())
 	}
 
 	numPoints := expected.Len()

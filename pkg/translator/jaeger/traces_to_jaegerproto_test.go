@@ -303,6 +303,20 @@ func TestInternalTracesToJaegerProto(t *testing.T) {
 			},
 			err: nil,
 		},
+
+		{
+			name: "span-with-span-event-attribute",
+			td:   generateTracesOneSpanNoResourceWithEventAttribute(),
+			jb: &model.Batch{
+				Process: &model.Process{
+					ServiceName: tracetranslator.ResourceNoServiceName,
+				},
+				Spans: []*model.Span{
+					generateJProtoSpanWithEventAttribute(),
+				},
+			},
+			err: nil,
+		},
 	}
 
 	for _, test := range tests {
@@ -331,6 +345,31 @@ func TestInternalTracesToJaegerProtoBatchesAndBack(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, td.SpanCount(), tdFromPB.SpanCount())
 	}
+}
+
+func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
+	td := generateTracesOneSpanNoResource()
+	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
+	event.SetName("must-be-ignorred")
+	event.Attributes().InsertString("event", "must-be-used-instead-of-event-name")
+	return td
+}
+
+func generateJProtoSpanWithEventAttribute() *model.Span {
+	span := generateProtoSpan()
+	span.Logs[0].Fields = []model.KeyValue{
+		{
+			Key:   "span-event-attr",
+			VType: model.ValueType_STRING,
+			VStr:  "span-event-attr-val",
+		},
+		{
+			Key:   eventNameAttr,
+			VType: model.ValueType_STRING,
+			VStr:  "must-be-used-instead-of-event-name",
+		},
+	}
+	return span
 }
 
 // generateProtoChildSpanWithErrorTags generates a jaeger span to be used in

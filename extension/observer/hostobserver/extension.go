@@ -29,7 +29,7 @@ import (
 )
 
 type hostObserver struct {
-	observer.EndpointsWatcher
+	*observer.EndpointsWatcher
 }
 
 type endpointsLister struct {
@@ -46,16 +46,15 @@ var _ component.Extension = (*hostObserver)(nil)
 
 func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
 	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: config.RefreshInterval,
-			Endpointslister: endpointsLister{
+		EndpointsWatcher: observer.NewEndpointsWatcher(
+			endpointsLister{
 				logger:                logger,
 				observerName:          config.ID().String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
-			},
-		},
+			}, config.RefreshInterval, logger,
+		),
 	}
 
 	return h, nil
@@ -228,12 +227,12 @@ type processDetails struct {
 func collectProcessDetails(proc *process.Process) (*processDetails, error) {
 	name, err := proc.Name()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process name: %v", err)
+		return nil, fmt.Errorf("could not get process name: %w", err)
 	}
 
 	args, err := proc.Cmdline()
 	if err != nil {
-		return nil, fmt.Errorf("could not get process args: %v", err)
+		return nil, fmt.Errorf("could not get process args: %w", err)
 	}
 
 	return &processDetails{

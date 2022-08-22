@@ -17,9 +17,9 @@ package docsgen // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"text/template"
@@ -40,7 +40,7 @@ func CLI(factories component.Factories, dr configschema.DirResolver) {
 		panic(err)
 	}
 
-	handleCLI(factories, dr, tableTmpl, ioutil.WriteFile, os.Stdout, os.Args...)
+	handleCLI(factories, dr, tableTmpl, os.WriteFile, os.Stdout, os.Args...)
 }
 
 func handleCLI(
@@ -112,9 +112,10 @@ func writeConfigDoc(
 		panic(err)
 	}
 
-	f.Type = stripPrefix(f.Type)
-
 	mdBytes := renderHeader(string(ci.Type), ci.Group, f.Doc)
+
+	f.Name = typeToName(f.Type)
+
 	tableBytes, err := renderTable(tableTmpl, f)
 	if err != nil {
 		panic(err)
@@ -125,17 +126,18 @@ func writeConfigDoc(
 		mdBytes = append(mdBytes, durationBlock...)
 	}
 
-	dir, err := dr.PackageDir(v.Type().Elem())
-	if err != nil {
-		panic(err)
+	dir := dr.TypeToProjectPath(v.Type().Elem())
+	if dir == "" {
+		log.Printf("writeConfigDoc: skipping, local path not found for component: %s %s", ci.Group, ci.Type)
+		return
 	}
-	err = writeFile(path.Join(dir, mdFileName), mdBytes, 0644)
+	err = writeFile(filepath.Join(dir, mdFileName), mdBytes, 0644)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func stripPrefix(name string) string {
-	idx := strings.Index(name, ".")
-	return name[idx+1:]
+func typeToName(typ string) string {
+	idx := strings.IndexRune(typ, '.')
+	return typ[:idx]
 }

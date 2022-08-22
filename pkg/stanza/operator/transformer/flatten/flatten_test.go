@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ import (
 type testCase struct {
 	name      string
 	expectErr bool
-	op        *FlattenOperatorConfig
+	op        *Config
 	input     func() *entry.Entry
 	output    func() *entry.Entry
 }
@@ -52,7 +52,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_one_level",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested"},
@@ -72,7 +72,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_one_level_multiValue",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested"},
@@ -107,7 +107,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_second_level",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested", "secondlevel"},
@@ -140,7 +140,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_second_level_multivalue",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested", "secondlevel"},
@@ -179,7 +179,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_move_nest",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested"},
@@ -212,7 +212,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_collision",
 			false,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"nested"},
@@ -240,7 +240,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_invalid_field",
 			true,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"invalid"},
@@ -253,7 +253,7 @@ func TestBuildAndProcess(t *testing.T) {
 		{
 			"flatten_resource",
 			true,
-			func() *FlattenOperatorConfig {
+			func() *Config {
 				cfg := defaultCfg()
 				cfg.Field = entry.BodyField{
 					Keys: []string{"resource", "invalid"},
@@ -278,9 +278,9 @@ func TestBuildAndProcess(t *testing.T) {
 			}
 			require.NoError(t, err)
 
-			flatten := op.(*FlattenOperator)
+			flatten := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			flatten.SetOutputs([]operator.Operator{fake})
+			require.NoError(t, flatten.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
 			err = flatten.Process(context.Background(), val)
 

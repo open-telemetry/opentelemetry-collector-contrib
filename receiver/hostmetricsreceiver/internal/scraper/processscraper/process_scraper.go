@@ -16,6 +16,7 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -24,8 +25,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -33,25 +36,37 @@ const (
 	cpuMetricsLen    = 1
 	memoryMetricsLen = 2
 	diskMetricsLen   = 1
+	threadMetricsLen = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + threadMetricsLen
 )
 
 // scraper for Process Metrics
 type scraper struct {
-	config    *Config
-	mb        *metadata.MetricsBuilder
-	includeFS filterset.FilterSet
-	excludeFS filterset.FilterSet
-
+	settings           component.ReceiverCreateSettings
+	config             *Config
+	mb                 *metadata.MetricsBuilder
+	includeFS          filterset.FilterSet
+	excludeFS          filterset.FilterSet
+	scrapeProcessDelay time.Duration
 	// for mocking
-	bootTime          func() (uint64, error)
-	getProcessHandles func() (processHandles, error)
+	bootTime                             func() (uint64, error)
+	getProcessHandles                    func() (processHandles, error)
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(cfg *Config) (*scraper, error) {
-	scraper := &scraper{config: cfg, bootTime: host.BootTime, getProcessHandles: getProcessHandlesInternal}
+func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+	scraper := &scraper{
+		settings:                             settings,
+		config:                               cfg,
+		bootTime:                             host.BootTime,
+		getProcessHandles:                    getProcessHandlesInternal,
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
+		scrapeProcessDelay:                   cfg.ScrapeProcessDelay,
+	}
 
 	var err error
 
@@ -78,7 +93,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 		return err
 	}
 
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -87,8 +102,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	data, err := s.getProcessMetadata()
 	if err != nil {
-		partialErr, isPartial := err.(scrapererror.PartialScrapeError)
-		if !isPartial {
+		var partialErr scrapererror.PartialScrapeError
+		if !errors.As(err, &partialErr) {
 			return pmetric.NewMetrics(), err
 		}
 
@@ -108,6 +123,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendThreadsMetrics(now, md.handle); err != nil {
+			errs.AddPartial(threadMetricsLen, fmt.Errorf("error reading thread info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		s.mb.EmitForResource(md.resourceOptions()...)
@@ -157,8 +176,24 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
+		createTime, err := handle.CreateTime()
+		if err != nil {
+			errs.AddPartial(0, fmt.Errorf("error reading create time for process %q (pid %v): %w", executable.name, pid, err))
+			// set the start time to now to avoid including this when a scrape_process_delay is set
+			createTime = time.Now().UnixMilli()
+		}
+		if s.scrapeProcessDelay.Milliseconds() > (time.Now().UnixMilli() - createTime) {
+			continue
+		}
+
+		parentPid, err := parentPid(handle, pid)
+		if err != nil {
+			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+		}
+
 		md := &processMetadata{
 			pid:        pid,
+			parentPid:  parentPid,
 			executable: executable,
 			command:    command,
 			username:   username,
@@ -198,7 +233,27 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		return err
 	}
 
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
-	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	if s.emitMetricsWithoutDirectionAttribute {
+		s.mb.RecordProcessDiskIoReadDataPoint(now, int64(io.ReadBytes))
+		s.mb.RecordProcessDiskIoWriteDataPoint(now, int64(io.WriteBytes))
+	}
+	if s.emitMetricsWithDirectionAttribute {
+		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
+		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	}
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessThreads.Enabled {
+		return nil
+	}
+	threads, err := handle.NumThreads()
+	if err != nil {
+		return err
+	}
+	s.mb.RecordProcessThreadsDataPoint(now, int64(threads))
+
 	return nil
 }

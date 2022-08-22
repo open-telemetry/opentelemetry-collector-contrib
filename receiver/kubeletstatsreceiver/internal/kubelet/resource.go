@@ -29,7 +29,7 @@ func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.Container
 		metadata.WithK8sPodUID(sPod.PodRef.UID),
 		metadata.WithK8sPodName(sPod.PodRef.Name),
 		metadata.WithK8sNamespaceName(sPod.PodRef.Namespace),
-		metadata.WithContainerName(sContainer.Name),
+		metadata.WithK8sContainerName(sContainer.Name),
 	}
 
 	extraResources, err := k8sMetadata.getExtraResources(sPod.PodRef, MetadataLabelContainerID, sContainer.Name)

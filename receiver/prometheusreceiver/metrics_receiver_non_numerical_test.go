@@ -141,7 +141,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 					histogramPointComparator: []histogramPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp are incorrect
 						// for Summary and Histogram metrics after a failed scrape
-						//compareHistogramStartTimestamp(*startTimestamp),
+						// compareHistogramStartTimestamp(*startTimestamp),
 						compareHistogramTimestamp(ts1),
 						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
 					},
@@ -154,7 +154,7 @@ func verifyStaleNaNPage1SuccessfulScrape(t *testing.T, td *testData, resourceMet
 					summaryPointComparator: []summaryPointComparator{
 						// TODO: #6360 Prometheus Receiver Issue- start_timestamp are incorrect
 						// for Summary and Histogram metrics after a failed scrape
-						//compareSummaryStartTimestamp(*startTimestamp),
+						// compareSummaryStartTimestamp(*startTimestamp),
 						compareSummaryTimestamp(ts1),
 						compareSummary(1000, 5000, [][]float64{{0.01, 1}, {0.9, 5}, {0.99, 8}}),
 					},
@@ -236,7 +236,7 @@ var normalNaNsPage1 = `
 go_threads NaN
 
 # HELP redis_connected_clients Redis connected clients
-redis_connected_clients{name="rough-snowflake-web",port="6380"} NaN 
+redis_connected_clients{name="rough-snowflake-web",port="6380"} NaN
 
 # HELP rpc_duration_seconds A summary of the RPC duration in seconds.
 # TYPE rpc_duration_seconds summary

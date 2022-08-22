@@ -24,27 +24,64 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 )
 
+const (
+	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.elasticsearchreceiver.emitMetricsWithDirectionAttribute"
+	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.elasticsearchreceiver.emitMetricsWithoutDirectionAttribute"
+)
+
+var (
+	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some elasticsearch metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+}
+
 var errUnknownClusterStatus = errors.New("unknown cluster status")
 
 type elasticsearchScraper struct {
-	client   elasticsearchClient
-	settings component.TelemetrySettings
-	cfg      *Config
-	mb       *metadata.MetricsBuilder
+	client                               elasticsearchClient
+	settings                             component.TelemetrySettings
+	cfg                                  *Config
+	mb                                   *metadata.MetricsBuilder
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func newElasticSearchScraper(
-	settings component.TelemetrySettings,
+	settings component.ReceiverCreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{
-		settings: settings,
-		cfg:      cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.Metrics),
+		settings:                             settings.TelemetrySettings,
+		cfg:                                  cfg,
+		mb:                                   metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 }
 
@@ -85,8 +122,18 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
 
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
-		r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		r.mb.RecordElasticsearchNodeDiskIoReadDataPoint(now, info.FS.IOStats.Total.ReadBytes)
+		r.mb.RecordElasticsearchNodeDiskIoWriteDataPoint(now, info.FS.IOStats.Total.WriteBytes)
+
+		if r.emitMetricsWithDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.ReceivedBytes, metadata.AttributeDirectionReceived)
+			r.mb.RecordElasticsearchNodeClusterIoDataPoint(now, info.TransportStats.SentBytes, metadata.AttributeDirectionSent)
+		}
+
+		if r.emitMetricsWithoutDirectionAttribute {
+			r.mb.RecordElasticsearchNodeClusterIoReceivedDataPoint(now, info.TransportStats.ReceivedBytes)
+			r.mb.RecordElasticsearchNodeClusterIoSentDataPoint(now, info.TransportStats.SentBytes)
+		}
 
 		r.mb.RecordElasticsearchNodeClusterConnectionsDataPoint(now, info.TransportStats.OpenConnections)
 
@@ -117,6 +164,8 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
+		r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+		r.mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
 
 		for tpName, tpInfo := range info.ThreadPoolInfo {
 			r.mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(now, tpInfo.ActiveThreads, tpName, metadata.AttributeThreadStateActive)
@@ -128,10 +177,28 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			r.mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(now, tpInfo.RejectedTasks, tpName, metadata.AttributeTaskStateRejected)
 		}
 
+		for cbName, cbInfo := range info.CircuitBreakerInfo {
+			r.mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(now, cbInfo.EstimatedSizeInBytes, cbName)
+			r.mb.RecordElasticsearchBreakerMemoryLimitDataPoint(now, cbInfo.LimitSizeInBytes, cbName)
+			r.mb.RecordElasticsearchBreakerTrippedDataPoint(now, cbInfo.Tripped, cbName)
+		}
+
 		r.mb.RecordElasticsearchNodeDocumentsDataPoint(now, info.Indices.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive)
 		r.mb.RecordElasticsearchNodeDocumentsDataPoint(now, info.Indices.DocumentStats.DeletedCount, metadata.AttributeDocumentStateDeleted)
 
 		r.mb.RecordElasticsearchNodeOpenFilesDataPoint(now, info.ProcessStats.OpenFileDescriptorsCount)
+
+		r.mb.RecordElasticsearchNodeTranslogOperationsDataPoint(now, info.Indices.TranslogStats.Operations)
+		r.mb.RecordElasticsearchNodeTranslogSizeDataPoint(now, info.Indices.TranslogStats.SizeInBy)
+		r.mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(now, info.Indices.TranslogStats.UncommittedOperationsInBy)
+
+		r.mb.RecordElasticsearchOsCPUUsageDataPoint(now, info.OS.CPU.Usage)
+		r.mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(now, info.OS.CPU.LoadAvg.OneMinute)
+		r.mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(now, info.OS.CPU.LoadAvg.FiveMinutes)
+		r.mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(now, info.OS.CPU.LoadAvg.FifteenMinutes)
+
+		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.UsedInBy, metadata.AttributeMemoryStateUsed)
+		r.mb.RecordElasticsearchOsMemoryDataPoint(now, info.OS.Memory.FreeInBy, metadata.AttributeMemoryStateFree)
 
 		r.mb.RecordJvmClassesLoadedDataPoint(now, info.JVMInfo.ClassInfo.CurrentLoadedCount)
 

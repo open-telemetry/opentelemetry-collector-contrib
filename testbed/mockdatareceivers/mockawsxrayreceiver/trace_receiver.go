@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -26,7 +26,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenterror"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -50,7 +49,7 @@ func New(
 	params component.ReceiverCreateSettings,
 	config *Config) (*MockAwsXrayReceiver, error) {
 	if nextConsumer == nil {
-		return nil, componenterror.ErrNilNextConsumer
+		return nil, component.ErrNilNextConsumer
 	}
 
 	ar := &MockAwsXrayReceiver{
@@ -69,7 +68,7 @@ func (ar *MockAwsXrayReceiver) Start(_ context.Context, host component.Host) err
 	// set up the listener
 	ln, err := net.Listen("tcp", ar.config.Endpoint)
 	if err != nil {
-		return fmt.Errorf("failed to bind to address %s: %v", ar.config.Endpoint, err)
+		return fmt.Errorf("failed to bind to address %s: %w", ar.config.Endpoint, err)
 	}
 	ar.logger.Info(fmt.Sprintf("listen to address %s", ar.config.Endpoint))
 
@@ -100,7 +99,7 @@ func (ar *MockAwsXrayReceiver) handleRequest(req *http.Request) error {
 
 	obsrecv := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: ar.config.ID(), Transport: transport})
 	ctx := obsrecv.StartTracesOp(req.Context())
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Fatalln(err)
 	}

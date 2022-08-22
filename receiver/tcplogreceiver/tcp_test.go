@@ -29,11 +29,12 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/service/servicetest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/stanza"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 )
 
 func TestTcp(t *testing.T) {
-	testTCP(t, testdataConfigYamlAsMap())
+	testTCP(t, testdataConfigYaml())
 }
 
 func testTCP(t *testing.T, cfg *TCPLogConfig) {
@@ -82,34 +83,38 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	assert.Equal(t, len(cfg.Receivers), 1)
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID(typeStr)])
+	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID(typeStr)])
 }
 
-func testdataConfigYamlAsMap() *TCPLogConfig {
+func testdataConfigYaml() *TCPLogConfig {
 	return &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
-			Converter: stanza.ConverterConfig{
+			Operators:        adapter.OperatorConfigs{},
+			Converter: adapter.ConverterConfig{
 				WorkerCount: 1,
 			},
 		},
-		Input: stanza.InputConfig{
-			"listen_address": "0.0.0.0:29018",
-		},
+		Config: func() tcp.Config {
+			c := tcp.NewConfig()
+			c.ListenAddress = "0.0.0.0:29018"
+			return *c
+		}(),
 	}
 }
 
 func TestDecodeInputConfigFailure(t *testing.T) {
 	factory := NewFactory()
 	badCfg := &TCPLogConfig{
-		BaseConfig: stanza.BaseConfig{
+		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
-			Operators:        stanza.OperatorConfigs{},
+			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: stanza.InputConfig{
-			"max_buffer_size": "0.1.0.1-",
-		},
+		Config: func() tcp.Config {
+			c := tcp.NewConfig()
+			c.Encoding.Encoding = "fake"
+			return *c
+		}(),
 	}
 	receiver, err := factory.CreateLogsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), badCfg, consumertest.NewNop())
 	require.Error(t, err, "receiver creation should fail if input config isn't valid")

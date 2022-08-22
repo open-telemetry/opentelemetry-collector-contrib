@@ -17,9 +17,9 @@ package bigipreceiver
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -123,22 +123,23 @@ func setupMockIControlServer(t *testing.T) *httptest.Server {
 			return
 		}
 
-		if strings.HasSuffix(r.RequestURI, getVirtualServersURISuffix) {
+		switch {
+		case strings.HasSuffix(r.RequestURI, getVirtualServersURISuffix):
 			_, err = w.Write(mockVirtualServersResponse)
-		} else if strings.HasSuffix(r.RequestURI, getVirtualServersStatsURISuffix) {
+		case strings.HasSuffix(r.RequestURI, getVirtualServersStatsURISuffix):
 			_, err = w.Write(mockVirtualServersStatsResponse)
-		} else if strings.HasSuffix(r.RequestURI, getPoolsStatsURISuffix) {
+		case strings.HasSuffix(r.RequestURI, getPoolsStatsURISuffix):
 			_, err = w.Write(mockPoolsStatsResponse)
-		} else if strings.HasSuffix(r.RequestURI, getNodesStatsURISuffix) {
+		case strings.HasSuffix(r.RequestURI, getNodesStatsURISuffix):
 			_, err = w.Write(mockNodesStatsResponse)
-		} else if strings.HasSuffix(r.RequestURI, getPoolMembersStatsURISuffix) {
+		case strings.HasSuffix(r.RequestURI, getPoolMembersStatsURISuffix):
 			// Assume pool member response files follow a specific file pattern based of pool name
 			poolURI := strings.TrimSuffix(r.RequestURI, getPoolMembersStatsURISuffix)
 			poolURIParts := strings.Split(poolURI, "/")
 			poolName := strings.ReplaceAll(poolURIParts[len(poolURIParts)-1], "~", "_")
 			poolMembersStatsData := createMockServerResponseData(t, poolName+poolMembersStatsResponseFileSuffix)
 			_, err = w.Write(poolMembersStatsData)
-		} else {
+		default:
 			w.WriteHeader(http.StatusBadRequest)
 			err = nil
 		}
@@ -152,7 +153,7 @@ func createMockServerResponseData(t *testing.T, fileName string) []byte {
 	t.Helper()
 	fullPath := filepath.Join("testdata", "integration", "mock_server", fileName)
 
-	data, err := ioutil.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
 	require.NoError(t, err)
 
 	return data

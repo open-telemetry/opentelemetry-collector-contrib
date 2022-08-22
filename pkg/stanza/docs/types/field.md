@@ -1,8 +1,8 @@
 ## Fields
 
-A _Field_ is a reference to a value in a log [entry](/docs/types/field.md).
+A _Field_ is a reference to a value in a log [entry](../types/field.md).
 
-Many [operators](/docs/operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
+Many [operators](../operators/README.md) use fields in their configurations. For example, parsers use fields to specify which value to parse and where to write a new value.
 
 Fields are `.`-delimited strings which allow you to select attributes or body on the entry.
 
@@ -14,7 +14,7 @@ Body fields can be nested arbitrarily deeply, such as `body.my_value.my_nested_v
 
 If a field does not start with `resource`, `attributes`, or `body`, then `body` is assumed. For example, `my_value` is equivalent to `body.my_value`.
 
-## Examples
+### Examples
 
 #### Using fields with the add and remove operators.
 
