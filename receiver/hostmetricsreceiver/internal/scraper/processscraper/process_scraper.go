@@ -36,8 +36,9 @@ const (
 	cpuMetricsLen    = 1
 	memoryMetricsLen = 2
 	diskMetricsLen   = 1
+	threadMetricsLen = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + threadMetricsLen
 )
 
 // scraper for Process Metrics
@@ -122,6 +123,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendThreadsMetrics(now, md.handle); err != nil {
+			errs.AddPartial(threadMetricsLen, fmt.Errorf("error reading thread info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
 		s.mb.EmitForResource(md.resourceOptions()...)
@@ -236,6 +241,19 @@ func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle proc
 		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
 		s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
 	}
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.Metrics.ProcessThreads.Enabled {
+		return nil
+	}
+	threads, err := handle.NumThreads()
+	if err != nil {
+		return err
+	}
+	s.mb.RecordProcessThreadsDataPoint(now, int64(threads))
 
 	return nil
 }

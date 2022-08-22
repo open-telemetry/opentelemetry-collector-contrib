@@ -282,6 +282,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pmetric.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
+		mLatency.SetUnit("ms")
 		mLatency.Histogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())

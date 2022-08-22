@@ -196,7 +196,7 @@ func generateParseFunc(headers []string, fieldDelimiter rune, lazyQuotes bool) p
 		parsedValues := make(map[string]interface{})
 
 		if len(joinedLine) != len(headers) {
-			return nil, errors.New("wrong number of fields")
+			return nil, fmt.Errorf("wrong number of fields: expected %d, found %d", len(headers), len(joinedLine))
 		}
 
 		for i, val := range joinedLine {

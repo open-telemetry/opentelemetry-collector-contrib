@@ -16,16 +16,22 @@ These are the metrics available for this scraper.
 | **postgresql.bgwriter.maxwritten** | Number of times the background writer stopped a cleaning scan because it had written too many buffers. |  | Sum(Int) | <ul> </ul> |
 | **postgresql.blocks_read** | The number of blocks read. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>source</li> </ul> |
 | **postgresql.commits** | The number of commits. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
+| **postgresql.connection.max** | Configured maximum number of client connections allowed | {connections} | Gauge(Int) | <ul> </ul> |
 | **postgresql.database.count** | Number of user databases. | {databases} | Sum(Int) | <ul> </ul> |
 | **postgresql.db_size** | The database disk usage. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.index.scans** | The number of index scans on a table. | {scans} | Sum(Int) | <ul> </ul> |
 | **postgresql.index.size** | The size of the index on disk. | By | Gauge(Int) | <ul> </ul> |
 | **postgresql.operations** | The number of db row operations. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>operation</li> </ul> |
+| **postgresql.replication.data_delay** | The amount of data delayed in replication. | By | Gauge(Int) | <ul> <li>replication_client</li> </ul> |
 | **postgresql.rollbacks** | The number of rollbacks. | 1 | Sum(Int) | <ul> <li>database</li> </ul> |
 | **postgresql.rows** | The number of rows in the database. | 1 | Sum(Int) | <ul> <li>database</li> <li>table</li> <li>state</li> </ul> |
 | **postgresql.table.count** | Number of user tables in a database. |  | Sum(Int) | <ul> </ul> |
 | **postgresql.table.size** | Disk space used by a table. | By | Sum(Int) | <ul> </ul> |
 | **postgresql.table.vacuum.count** | Number of times a table has manually been vacuumed. | {vacuums} | Sum(Int) | <ul> </ul> |
+| **postgresql.wal.age** | Age of the oldest WAL file. This metric requires WAL to be enabled with at least one replica.
+ | s | Gauge(Int) | <ul> </ul> |
+| **postgresql.wal.lag** | Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it. This metric requires WAL to be enabled with at least one replica.
+ | s | Gauge(Int) | <ul> <li>wal_operation_lag</li> <li>replication_client</li> </ul> |
 
 **Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
 Any metric can be enabled or disabled with the following scraper configuration:
@@ -53,6 +59,8 @@ metrics:
 | bg_duration_type (type) | The type of time spent during the checkpoint. | sync, write |
 | database | The name of the database. |  |
 | operation | The database operation. | ins, upd, del, hot_upd |
+| replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. |  |
 | source | The block read source type. | heap_read, heap_hit, idx_read, idx_hit, toast_read, toast_hit, tidx_read, tidx_hit |
 | state | The tuple (row) state. | dead, live |
 | table | The schema name followed by the table name. |  |
+| wal_operation_lag (operation) | The operation which is responsible for the lag. | flush, replay, write |

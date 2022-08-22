@@ -25,10 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -135,9 +137,15 @@ func BenchmarkReadLine(b *testing.B) {
 		require.NoError(b, err)
 	}
 
+	storageClient := storagetest.NewInMemoryClient(
+		component.KindReceiver,
+		config.NewComponentID("foolog"),
+		"test",
+	)
+
 	// // Run the actual benchmark
 	b.ResetTimer()
-	require.NoError(b, pipe.Start(newMockPersister()))
+	require.NoError(b, pipe.Start(storageClient))
 	for i := 0; i < b.N; i++ {
 		entries := <-emitter.logChan
 		for _, e := range entries {
@@ -196,9 +204,15 @@ func BenchmarkParseAndMap(b *testing.B) {
 		require.NoError(b, err)
 	}
 
+	storageClient := storagetest.NewInMemoryClient(
+		component.KindReceiver,
+		config.NewComponentID("foolog"),
+		"test",
+	)
+
 	// // Run the actual benchmark
 	b.ResetTimer()
-	require.NoError(b, pipe.Start(newMockPersister()))
+	require.NoError(b, pipe.Start(storageClient))
 	for i := 0; i < b.N; i++ {
 		entries := <-emitter.logChan
 		for _, e := range entries {
