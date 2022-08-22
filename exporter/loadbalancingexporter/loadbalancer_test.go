@@ -127,7 +127,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	require.NoError(t, err)
 
 	// test
-	e := p.Endpoint(pcommon.NewTraceID([16]byte{128, 128, 0, 0}))
+	e := p.Endpoint([]byte{128, 128, 0, 0})
 
 	// verify
 	assert.Equal(t, "", e)
