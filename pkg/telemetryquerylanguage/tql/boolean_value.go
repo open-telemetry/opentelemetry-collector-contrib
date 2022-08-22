@@ -55,6 +55,16 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
+// a fast way to get from a string to a compareOp
+var comparisonTable = map[string]compareOp{
+	"==": EQ,
+	"!=": NE,
+	"<":  LT,
+	"<=": LTE,
+	">":  GT,
+	">=": GTE,
+}
+
 func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
@@ -68,46 +78,13 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 		return nil, err
 	}
 
-	switch comparison.Op {
-	case "==":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, EQ)
-		}, nil
-	case "!=":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, NE)
-		}, nil
-	case ">=":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, GTE)
-		}, nil
-	case "<=":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, LTE)
-		}, nil
-	case ">":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, GT)
-		}, nil
-	case "<":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return compare(a, b, LT)
-		}, nil
-	}
+	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
+	return func(ctx TransformContext) bool {
+		a := left.Get(ctx)
+		b := right.Get(ctx)
+		return compare(a, b, comparisonTable[comparison.Op])
+	}, nil
 
-	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
 func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {

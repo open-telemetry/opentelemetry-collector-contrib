@@ -110,19 +110,24 @@ Booleans can be either:
 - A literal boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
-Operators determine how the two Values are compared.  The valid operators are:
+Operators determine how the two Values are compared. 
+
+The valid operators are:
 
 - Equal (`==`). Tests if the left and right Values are equal (see the Comparison Rules below).
 - Not Equal (`!=`).  Tests if the left and right Values are not equal.
-- Less Than (`<`). Tests if left is less than right. For binary values, `false` is considered to be less than `true`.
-- Less Than (`<`). Tests if left is less than right.
-
+- Less Than (`<`). Tests if left is less than right. 
+- Greater Than (`>`). Tests if left is greater than right.
+- Less Than or Equal To (`<=`). Tests if left is less than or equal to right. 
+- Greater Than (`>`). Tests if left is greater than right.
 
 ### Comparison Rules
 
 The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. In this table, `int` refers to all integer types (int, int32, int64), and `float` similarly refers to both `float32` and `float64`. If numeric values are of different types, they are compared as the most general instance required (so `int32` and `int64` are compared as `int64`, while `int64` and `float64` are compared as `float64`), In addition, pointers to `bool`, `int` types, `float` types, and `string` are compared by first dereferencing the pointer.
 
-For all other types, only Equal and Not Equal are currently supported. 
+For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`. 
+
+For values that are not one of the basic primitive types (or a pointer to them), the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
 
 Note that a nil pointer to a value type is equivalent (and therefore equal) to a nil value or another nil pointer. All nils compare equal even if they are of different base types (so a nil pointer to float64 is equal to a nil pointer to int32).
 

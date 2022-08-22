@@ -16,6 +16,7 @@ package tql // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"bytes"
+	"fmt"
 
 	"golang.org/x/exp/constraints"
 )
@@ -26,8 +27,9 @@ import (
 
 // invalidComparison returns false for everything except NE (where it returns true to indicate that the
 // objects were definitely not equivalent).
-// It also gives us an opportunity to log something first if we want to do that.
-func invalidComparison(_ string, op compareOp) bool {
+// It also gives us an opportunity to log something.
+func invalidComparison(msg string, op compareOp) bool {
+	fmt.Printf("%s with op %v", msg, op)
 	return op == NE
 }
 
@@ -257,7 +259,7 @@ func compare(a any, b any, op compareOp) bool {
 	// nils are equal to each other and never equal to anything else,
 	// so if they're both nil, report equality.
 	if a == nil && b == nil {
-		return (op == EQ || op == LTE || op == GTE)
+		return op == EQ || op == LTE || op == GTE
 	}
 	// Anything else, we switch on the left side first.
 	switch v := a.(type) {
