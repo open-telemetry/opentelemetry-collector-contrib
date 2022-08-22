@@ -36,7 +36,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
@@ -305,7 +304,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"
-			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
 			return *c
 		}(),

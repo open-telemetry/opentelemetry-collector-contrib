@@ -410,7 +410,7 @@ func TestStartAtEnd(t *testing.T) {
 	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-		pollInterval = cfg.PollInterval.Raw()
+		pollInterval = cfg.PollInterval
 	}, nil)
 
 	temp := openTemp(t, tempDir)
@@ -439,7 +439,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-		pollInterval = cfg.PollInterval.Raw()
+		pollInterval = cfg.PollInterval
 	}, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -462,7 +462,7 @@ func TestNoNewline(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
-		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
+		cfg.Splitter.Flusher.Period = time.Nanosecond
 	}, nil)
 
 	temp := openTemp(t, tempDir)
