@@ -77,7 +77,7 @@ const (
 )
 
 // a fast way to get from a string to a compareOp
-var comparisonTable = map[string]CompareOp{
+var compareOpTable = map[string]CompareOp{
 	"==": EQ,
 	"!=": NE,
 	"<":  LT,
@@ -86,13 +86,34 @@ var comparisonTable = map[string]CompareOp{
 	">=": GTE,
 }
 
+// Capture is how the parser converts an operator string to a CompareOp.
 func (c *CompareOp) Capture(values []string) error {
-	op, ok := comparisonTable[values[0]]
+	op, ok := compareOpTable[values[0]]
 	if !ok {
 		return fmt.Errorf("'%s' is not a valid operator", values[0])
 	}
 	*c = op
 	return nil
+}
+
+// String() for CompareOp gives us more legible test results and error messages.
+func (op CompareOp) String() string {
+	switch op {
+	case EQ:
+		return "EQ"
+	case NE:
+		return "NE"
+	case LT:
+		return "LT"
+	case LTE:
+		return "LTE"
+	case GTE:
+		return "GTE"
+	case GT:
+		return "GT"
+	default:
+		return "UNKNOWN OP!"
+	}
 }
 
 // Comparison represents an optional boolean condition.

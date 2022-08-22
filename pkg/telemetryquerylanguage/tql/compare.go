@@ -33,26 +33,6 @@ func invalidComparison(msg string, op CompareOp) bool {
 	return op == NE
 }
 
-// String for compareOp gives us more legible test results and error messages.
-func (op CompareOp) String() string {
-	switch op {
-	case EQ:
-		return "EQ"
-	case NE:
-		return "NE"
-	case LT:
-		return "LT"
-	case LTE:
-		return "LTE"
-	case GTE:
-		return "GTE"
-	case GT:
-		return "GT"
-	default:
-		return "UNKNOWN OP!"
-	}
-}
-
 // comparePrimitives implements a generic comparison helper for all Ordered types (derived from Float, Int, or string).
 // According to benchmarks, it's faster than explicit comparison functions for these types.
 func comparePrimitives[T constraints.Ordered](a T, b T, op CompareOp) bool {

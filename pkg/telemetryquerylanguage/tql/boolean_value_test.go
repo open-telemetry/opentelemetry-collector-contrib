@@ -71,7 +71,7 @@ func comparison(left any, right any, op string) *Comparison {
 	return &Comparison{
 		Left:  valueFor(left),
 		Right: valueFor(right),
-		Op:    comparisonTable[op],
+		Op:    compareOpTable[op],
 	}
 }
 
