@@ -371,7 +371,7 @@ metrics:
 
 
   # BlockIO
-  container.blockio.io_merged_recursive.read:
+  container.blockio.io_merged_recursive:
     enabled: true
     description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -385,7 +385,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_queued_recursive.read:
+  container.blockio.io_queued_recursive:
     enabled: true
     description: "Number of requests queued up for this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -399,7 +399,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_service_bytes_recursive.read:
+  container.blockio.io_service_bytes_recursive:
     enabled: true
     description: "Number of bytes transferred to/from the disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -413,7 +413,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_service_time_recursive.read:
+  container.blockio.io_service_time_recursive:
     enabled: true
     description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -427,7 +427,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_serviced_recursive.read:
+  container.blockio.io_serviced_recursive:
     enabled: true
     description: "Number of IOs (bio) issued to the disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -441,7 +441,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_time_recursive.read:
+  container.blockio.io_time_recursive:
     enabled: true
     description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -455,7 +455,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.io_wait_time_recursive.read:
+  container.blockio.io_wait_time_recursive:
     enabled: true
     description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -469,7 +469,7 @@ metrics:
       - device_minor
       - operation
 
-  container.blockio.sectors_recursive.read:
+  container.blockio.sectors_recursive:
     enabled: true
     description: "Number of sectors transferred to/from disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."

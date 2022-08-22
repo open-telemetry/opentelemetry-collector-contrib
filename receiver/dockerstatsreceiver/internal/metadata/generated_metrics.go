@@ -18,95 +18,95 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for dockerstatsreceiver metrics.
 type MetricsSettings struct {
-	ContainerBlockioIoMergedRecursiveRead       MetricSettings `mapstructure:"container.blockio.io_merged_recursive.read"`
-	ContainerBlockioIoQueuedRecursiveRead       MetricSettings `mapstructure:"container.blockio.io_queued_recursive.read"`
-	ContainerBlockioIoServiceBytesRecursiveRead MetricSettings `mapstructure:"container.blockio.io_service_bytes_recursive.read"`
-	ContainerBlockioIoServiceTimeRecursiveRead  MetricSettings `mapstructure:"container.blockio.io_service_time_recursive.read"`
-	ContainerBlockioIoServicedRecursiveRead     MetricSettings `mapstructure:"container.blockio.io_serviced_recursive.read"`
-	ContainerBlockioIoTimeRecursiveRead         MetricSettings `mapstructure:"container.blockio.io_time_recursive.read"`
-	ContainerBlockioIoWaitTimeRecursiveRead     MetricSettings `mapstructure:"container.blockio.io_wait_time_recursive.read"`
-	ContainerBlockioSectorsRecursiveRead        MetricSettings `mapstructure:"container.blockio.sectors_recursive.read"`
-	ContainerCPUPercent                         MetricSettings `mapstructure:"container.cpu.percent"`
-	ContainerCPUThrottlingDataPeriods           MetricSettings `mapstructure:"container.cpu.throttling_data.periods"`
-	ContainerCPUThrottlingDataThrottledPeriods  MetricSettings `mapstructure:"container.cpu.throttling_data.throttled_periods"`
-	ContainerCPUThrottlingDataThrottledTime     MetricSettings `mapstructure:"container.cpu.throttling_data.throttled_time"`
-	ContainerCPUUsageKernelmode                 MetricSettings `mapstructure:"container.cpu.usage.kernelmode"`
-	ContainerCPUUsagePercpu                     MetricSettings `mapstructure:"container.cpu.usage.percpu"`
-	ContainerCPUUsageSystem                     MetricSettings `mapstructure:"container.cpu.usage.system"`
-	ContainerCPUUsageTotal                      MetricSettings `mapstructure:"container.cpu.usage.total"`
-	ContainerCPUUsageUsermode                   MetricSettings `mapstructure:"container.cpu.usage.usermode"`
-	ContainerMemoryActiveAnon                   MetricSettings `mapstructure:"container.memory.active_anon"`
-	ContainerMemoryActiveFile                   MetricSettings `mapstructure:"container.memory.active_file"`
-	ContainerMemoryCache                        MetricSettings `mapstructure:"container.memory.cache"`
-	ContainerMemoryDirty                        MetricSettings `mapstructure:"container.memory.dirty"`
-	ContainerMemoryHierarchicalMemoryLimit      MetricSettings `mapstructure:"container.memory.hierarchical_memory_limit"`
-	ContainerMemoryHierarchicalMemswLimit       MetricSettings `mapstructure:"container.memory.hierarchical_memsw_limit"`
-	ContainerMemoryInactiveAnon                 MetricSettings `mapstructure:"container.memory.inactive_anon"`
-	ContainerMemoryInactiveFile                 MetricSettings `mapstructure:"container.memory.inactive_file"`
-	ContainerMemoryMappedFile                   MetricSettings `mapstructure:"container.memory.mapped_file"`
-	ContainerMemoryPercent                      MetricSettings `mapstructure:"container.memory.percent"`
-	ContainerMemoryPgfault                      MetricSettings `mapstructure:"container.memory.pgfault"`
-	ContainerMemoryPgmajfault                   MetricSettings `mapstructure:"container.memory.pgmajfault"`
-	ContainerMemoryPgpgin                       MetricSettings `mapstructure:"container.memory.pgpgin"`
-	ContainerMemoryPgpgout                      MetricSettings `mapstructure:"container.memory.pgpgout"`
-	ContainerMemoryRss                          MetricSettings `mapstructure:"container.memory.rss"`
-	ContainerMemoryRssHuge                      MetricSettings `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                         MetricSettings `mapstructure:"container.memory.swap"`
-	ContainerMemoryTotalActiveAnon              MetricSettings `mapstructure:"container.memory.total_active_anon"`
-	ContainerMemoryTotalActiveFile              MetricSettings `mapstructure:"container.memory.total_active_file"`
-	ContainerMemoryTotalCache                   MetricSettings `mapstructure:"container.memory.total_cache"`
-	ContainerMemoryTotalDirty                   MetricSettings `mapstructure:"container.memory.total_dirty"`
-	ContainerMemoryTotalInactiveAnon            MetricSettings `mapstructure:"container.memory.total_inactive_anon"`
-	ContainerMemoryTotalInactiveFile            MetricSettings `mapstructure:"container.memory.total_inactive_file"`
-	ContainerMemoryTotalMappedFile              MetricSettings `mapstructure:"container.memory.total_mapped_file"`
-	ContainerMemoryTotalPgfault                 MetricSettings `mapstructure:"container.memory.total_pgfault"`
-	ContainerMemoryTotalPgmajfault              MetricSettings `mapstructure:"container.memory.total_pgmajfault"`
-	ContainerMemoryTotalPgpgin                  MetricSettings `mapstructure:"container.memory.total_pgpgin"`
-	ContainerMemoryTotalPgpgout                 MetricSettings `mapstructure:"container.memory.total_pgpgout"`
-	ContainerMemoryTotalRss                     MetricSettings `mapstructure:"container.memory.total_rss"`
-	ContainerMemoryTotalRssHuge                 MetricSettings `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                    MetricSettings `mapstructure:"container.memory.total_swap"`
-	ContainerMemoryTotalUnevictable             MetricSettings `mapstructure:"container.memory.total_unevictable"`
-	ContainerMemoryTotalWriteback               MetricSettings `mapstructure:"container.memory.total_writeback"`
-	ContainerMemoryUnevictable                  MetricSettings `mapstructure:"container.memory.unevictable"`
-	ContainerMemoryUsageLimit                   MetricSettings `mapstructure:"container.memory.usage.limit"`
-	ContainerMemoryUsageMax                     MetricSettings `mapstructure:"container.memory.usage.max"`
-	ContainerMemoryUsageTotal                   MetricSettings `mapstructure:"container.memory.usage.total"`
-	ContainerMemoryWriteback                    MetricSettings `mapstructure:"container.memory.writeback"`
-	ContainerNetworkIoUsageRxBytes              MetricSettings `mapstructure:"container.network.io.usage.rx_bytes"`
-	ContainerNetworkIoUsageRxDropped            MetricSettings `mapstructure:"container.network.io.usage.rx_dropped"`
-	ContainerNetworkIoUsageRxErrors             MetricSettings `mapstructure:"container.network.io.usage.rx_errors"`
-	ContainerNetworkIoUsageRxPackets            MetricSettings `mapstructure:"container.network.io.usage.rx_packets"`
-	ContainerNetworkIoUsageTxBytes              MetricSettings `mapstructure:"container.network.io.usage.tx_bytes"`
-	ContainerNetworkIoUsageTxDropped            MetricSettings `mapstructure:"container.network.io.usage.tx_dropped"`
-	ContainerNetworkIoUsageTxErrors             MetricSettings `mapstructure:"container.network.io.usage.tx_errors"`
-	ContainerNetworkIoUsageTxPackets            MetricSettings `mapstructure:"container.network.io.usage.tx_packets"`
+	ContainerBlockioIoMergedRecursive          MetricSettings `mapstructure:"container.blockio.io_merged_recursive"`
+	ContainerBlockioIoQueuedRecursive          MetricSettings `mapstructure:"container.blockio.io_queued_recursive"`
+	ContainerBlockioIoServiceBytesRecursive    MetricSettings `mapstructure:"container.blockio.io_service_bytes_recursive"`
+	ContainerBlockioIoServiceTimeRecursive     MetricSettings `mapstructure:"container.blockio.io_service_time_recursive"`
+	ContainerBlockioIoServicedRecursive        MetricSettings `mapstructure:"container.blockio.io_serviced_recursive"`
+	ContainerBlockioIoTimeRecursive            MetricSettings `mapstructure:"container.blockio.io_time_recursive"`
+	ContainerBlockioIoWaitTimeRecursive        MetricSettings `mapstructure:"container.blockio.io_wait_time_recursive"`
+	ContainerBlockioSectorsRecursive           MetricSettings `mapstructure:"container.blockio.sectors_recursive"`
+	ContainerCPUPercent                        MetricSettings `mapstructure:"container.cpu.percent"`
+	ContainerCPUThrottlingDataPeriods          MetricSettings `mapstructure:"container.cpu.throttling_data.periods"`
+	ContainerCPUThrottlingDataThrottledPeriods MetricSettings `mapstructure:"container.cpu.throttling_data.throttled_periods"`
+	ContainerCPUThrottlingDataThrottledTime    MetricSettings `mapstructure:"container.cpu.throttling_data.throttled_time"`
+	ContainerCPUUsageKernelmode                MetricSettings `mapstructure:"container.cpu.usage.kernelmode"`
+	ContainerCPUUsagePercpu                    MetricSettings `mapstructure:"container.cpu.usage.percpu"`
+	ContainerCPUUsageSystem                    MetricSettings `mapstructure:"container.cpu.usage.system"`
+	ContainerCPUUsageTotal                     MetricSettings `mapstructure:"container.cpu.usage.total"`
+	ContainerCPUUsageUsermode                  MetricSettings `mapstructure:"container.cpu.usage.usermode"`
+	ContainerMemoryActiveAnon                  MetricSettings `mapstructure:"container.memory.active_anon"`
+	ContainerMemoryActiveFile                  MetricSettings `mapstructure:"container.memory.active_file"`
+	ContainerMemoryCache                       MetricSettings `mapstructure:"container.memory.cache"`
+	ContainerMemoryDirty                       MetricSettings `mapstructure:"container.memory.dirty"`
+	ContainerMemoryHierarchicalMemoryLimit     MetricSettings `mapstructure:"container.memory.hierarchical_memory_limit"`
+	ContainerMemoryHierarchicalMemswLimit      MetricSettings `mapstructure:"container.memory.hierarchical_memsw_limit"`
+	ContainerMemoryInactiveAnon                MetricSettings `mapstructure:"container.memory.inactive_anon"`
+	ContainerMemoryInactiveFile                MetricSettings `mapstructure:"container.memory.inactive_file"`
+	ContainerMemoryMappedFile                  MetricSettings `mapstructure:"container.memory.mapped_file"`
+	ContainerMemoryPercent                     MetricSettings `mapstructure:"container.memory.percent"`
+	ContainerMemoryPgfault                     MetricSettings `mapstructure:"container.memory.pgfault"`
+	ContainerMemoryPgmajfault                  MetricSettings `mapstructure:"container.memory.pgmajfault"`
+	ContainerMemoryPgpgin                      MetricSettings `mapstructure:"container.memory.pgpgin"`
+	ContainerMemoryPgpgout                     MetricSettings `mapstructure:"container.memory.pgpgout"`
+	ContainerMemoryRss                         MetricSettings `mapstructure:"container.memory.rss"`
+	ContainerMemoryRssHuge                     MetricSettings `mapstructure:"container.memory.rss_huge"`
+	ContainerMemorySwap                        MetricSettings `mapstructure:"container.memory.swap"`
+	ContainerMemoryTotalActiveAnon             MetricSettings `mapstructure:"container.memory.total_active_anon"`
+	ContainerMemoryTotalActiveFile             MetricSettings `mapstructure:"container.memory.total_active_file"`
+	ContainerMemoryTotalCache                  MetricSettings `mapstructure:"container.memory.total_cache"`
+	ContainerMemoryTotalDirty                  MetricSettings `mapstructure:"container.memory.total_dirty"`
+	ContainerMemoryTotalInactiveAnon           MetricSettings `mapstructure:"container.memory.total_inactive_anon"`
+	ContainerMemoryTotalInactiveFile           MetricSettings `mapstructure:"container.memory.total_inactive_file"`
+	ContainerMemoryTotalMappedFile             MetricSettings `mapstructure:"container.memory.total_mapped_file"`
+	ContainerMemoryTotalPgfault                MetricSettings `mapstructure:"container.memory.total_pgfault"`
+	ContainerMemoryTotalPgmajfault             MetricSettings `mapstructure:"container.memory.total_pgmajfault"`
+	ContainerMemoryTotalPgpgin                 MetricSettings `mapstructure:"container.memory.total_pgpgin"`
+	ContainerMemoryTotalPgpgout                MetricSettings `mapstructure:"container.memory.total_pgpgout"`
+	ContainerMemoryTotalRss                    MetricSettings `mapstructure:"container.memory.total_rss"`
+	ContainerMemoryTotalRssHuge                MetricSettings `mapstructure:"container.memory.total_rss_huge"`
+	ContainerMemoryTotalSwap                   MetricSettings `mapstructure:"container.memory.total_swap"`
+	ContainerMemoryTotalUnevictable            MetricSettings `mapstructure:"container.memory.total_unevictable"`
+	ContainerMemoryTotalWriteback              MetricSettings `mapstructure:"container.memory.total_writeback"`
+	ContainerMemoryUnevictable                 MetricSettings `mapstructure:"container.memory.unevictable"`
+	ContainerMemoryUsageLimit                  MetricSettings `mapstructure:"container.memory.usage.limit"`
+	ContainerMemoryUsageMax                    MetricSettings `mapstructure:"container.memory.usage.max"`
+	ContainerMemoryUsageTotal                  MetricSettings `mapstructure:"container.memory.usage.total"`
+	ContainerMemoryWriteback                   MetricSettings `mapstructure:"container.memory.writeback"`
+	ContainerNetworkIoUsageRxBytes             MetricSettings `mapstructure:"container.network.io.usage.rx_bytes"`
+	ContainerNetworkIoUsageRxDropped           MetricSettings `mapstructure:"container.network.io.usage.rx_dropped"`
+	ContainerNetworkIoUsageRxErrors            MetricSettings `mapstructure:"container.network.io.usage.rx_errors"`
+	ContainerNetworkIoUsageRxPackets           MetricSettings `mapstructure:"container.network.io.usage.rx_packets"`
+	ContainerNetworkIoUsageTxBytes             MetricSettings `mapstructure:"container.network.io.usage.tx_bytes"`
+	ContainerNetworkIoUsageTxDropped           MetricSettings `mapstructure:"container.network.io.usage.tx_dropped"`
+	ContainerNetworkIoUsageTxErrors            MetricSettings `mapstructure:"container.network.io.usage.tx_errors"`
+	ContainerNetworkIoUsageTxPackets           MetricSettings `mapstructure:"container.network.io.usage.tx_packets"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
 	return MetricsSettings{
-		ContainerBlockioIoMergedRecursiveRead: MetricSettings{
+		ContainerBlockioIoMergedRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoQueuedRecursiveRead: MetricSettings{
+		ContainerBlockioIoQueuedRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoServiceBytesRecursiveRead: MetricSettings{
+		ContainerBlockioIoServiceBytesRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoServiceTimeRecursiveRead: MetricSettings{
+		ContainerBlockioIoServiceTimeRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoServicedRecursiveRead: MetricSettings{
+		ContainerBlockioIoServicedRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoTimeRecursiveRead: MetricSettings{
+		ContainerBlockioIoTimeRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioIoWaitTimeRecursiveRead: MetricSettings{
+		ContainerBlockioIoWaitTimeRecursive: MetricSettings{
 			Enabled: true,
 		},
-		ContainerBlockioSectorsRecursiveRead: MetricSettings{
+		ContainerBlockioSectorsRecursive: MetricSettings{
 			Enabled: true,
 		},
 		ContainerCPUPercent: MetricSettings{
@@ -277,15 +277,15 @@ func DefaultMetricsSettings() MetricsSettings {
 	}
 }
 
-type metricContainerBlockioIoMergedRecursiveRead struct {
+type metricContainerBlockioIoMergedRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_merged_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoMergedRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_merged_recursive.read")
+// init fills container.blockio.io_merged_recursive metric with initial data.
+func (m *metricContainerBlockioIoMergedRecursive) init() {
+	m.data.SetName("container.blockio.io_merged_recursive")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -294,7 +294,7 @@ func (m *metricContainerBlockioIoMergedRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoMergedRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoMergedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -308,14 +308,14 @@ func (m *metricContainerBlockioIoMergedRecursiveRead) recordDataPoint(start pcom
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoMergedRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoMergedRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoMergedRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoMergedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -323,8 +323,8 @@ func (m *metricContainerBlockioIoMergedRecursiveRead) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricContainerBlockioIoMergedRecursiveRead(settings MetricSettings) metricContainerBlockioIoMergedRecursiveRead {
-	m := metricContainerBlockioIoMergedRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoMergedRecursive(settings MetricSettings) metricContainerBlockioIoMergedRecursive {
+	m := metricContainerBlockioIoMergedRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -332,15 +332,15 @@ func newMetricContainerBlockioIoMergedRecursiveRead(settings MetricSettings) met
 	return m
 }
 
-type metricContainerBlockioIoQueuedRecursiveRead struct {
+type metricContainerBlockioIoQueuedRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_queued_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoQueuedRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_queued_recursive.read")
+// init fills container.blockio.io_queued_recursive metric with initial data.
+func (m *metricContainerBlockioIoQueuedRecursive) init() {
+	m.data.SetName("container.blockio.io_queued_recursive")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -349,7 +349,7 @@ func (m *metricContainerBlockioIoQueuedRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoQueuedRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoQueuedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -363,14 +363,14 @@ func (m *metricContainerBlockioIoQueuedRecursiveRead) recordDataPoint(start pcom
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoQueuedRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoQueuedRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoQueuedRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoQueuedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -378,8 +378,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveRead) emit(metrics pmetric.Metri
 	}
 }
 
-func newMetricContainerBlockioIoQueuedRecursiveRead(settings MetricSettings) metricContainerBlockioIoQueuedRecursiveRead {
-	m := metricContainerBlockioIoQueuedRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoQueuedRecursive(settings MetricSettings) metricContainerBlockioIoQueuedRecursive {
+	m := metricContainerBlockioIoQueuedRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -387,15 +387,15 @@ func newMetricContainerBlockioIoQueuedRecursiveRead(settings MetricSettings) met
 	return m
 }
 
-type metricContainerBlockioIoServiceBytesRecursiveRead struct {
+type metricContainerBlockioIoServiceBytesRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_service_bytes_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoServiceBytesRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_service_bytes_recursive.read")
+// init fills container.blockio.io_service_bytes_recursive metric with initial data.
+func (m *metricContainerBlockioIoServiceBytesRecursive) init() {
+	m.data.SetName("container.blockio.io_service_bytes_recursive")
 	m.data.SetDescription("Number of bytes transferred to/from the disk by the group and descendant groups.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -404,7 +404,7 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoServiceBytesRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoServiceBytesRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -418,14 +418,14 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveRead) recordDataPoint(star
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoServiceBytesRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoServiceBytesRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoServiceBytesRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoServiceBytesRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -433,8 +433,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveRead) emit(metrics pmetric
 	}
 }
 
-func newMetricContainerBlockioIoServiceBytesRecursiveRead(settings MetricSettings) metricContainerBlockioIoServiceBytesRecursiveRead {
-	m := metricContainerBlockioIoServiceBytesRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoServiceBytesRecursive(settings MetricSettings) metricContainerBlockioIoServiceBytesRecursive {
+	m := metricContainerBlockioIoServiceBytesRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -442,15 +442,15 @@ func newMetricContainerBlockioIoServiceBytesRecursiveRead(settings MetricSetting
 	return m
 }
 
-type metricContainerBlockioIoServiceTimeRecursiveRead struct {
+type metricContainerBlockioIoServiceTimeRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_service_time_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoServiceTimeRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_service_time_recursive.read")
+// init fills container.blockio.io_service_time_recursive metric with initial data.
+func (m *metricContainerBlockioIoServiceTimeRecursive) init() {
+	m.data.SetName("container.blockio.io_service_time_recursive")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
 	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -459,7 +459,7 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoServiceTimeRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoServiceTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -473,14 +473,14 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveRead) recordDataPoint(start
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoServiceTimeRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoServiceTimeRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoServiceTimeRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoServiceTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -488,8 +488,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveRead) emit(metrics pmetric.
 	}
 }
 
-func newMetricContainerBlockioIoServiceTimeRecursiveRead(settings MetricSettings) metricContainerBlockioIoServiceTimeRecursiveRead {
-	m := metricContainerBlockioIoServiceTimeRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoServiceTimeRecursive(settings MetricSettings) metricContainerBlockioIoServiceTimeRecursive {
+	m := metricContainerBlockioIoServiceTimeRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -497,15 +497,15 @@ func newMetricContainerBlockioIoServiceTimeRecursiveRead(settings MetricSettings
 	return m
 }
 
-type metricContainerBlockioIoServicedRecursiveRead struct {
+type metricContainerBlockioIoServicedRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_serviced_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoServicedRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_serviced_recursive.read")
+// init fills container.blockio.io_serviced_recursive metric with initial data.
+func (m *metricContainerBlockioIoServicedRecursive) init() {
+	m.data.SetName("container.blockio.io_serviced_recursive")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
 	m.data.SetUnit("{operations}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -514,7 +514,7 @@ func (m *metricContainerBlockioIoServicedRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoServicedRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoServicedRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -528,14 +528,14 @@ func (m *metricContainerBlockioIoServicedRecursiveRead) recordDataPoint(start pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoServicedRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoServicedRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoServicedRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoServicedRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -543,8 +543,8 @@ func (m *metricContainerBlockioIoServicedRecursiveRead) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricContainerBlockioIoServicedRecursiveRead(settings MetricSettings) metricContainerBlockioIoServicedRecursiveRead {
-	m := metricContainerBlockioIoServicedRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoServicedRecursive(settings MetricSettings) metricContainerBlockioIoServicedRecursive {
+	m := metricContainerBlockioIoServicedRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -552,15 +552,15 @@ func newMetricContainerBlockioIoServicedRecursiveRead(settings MetricSettings) m
 	return m
 }
 
-type metricContainerBlockioIoTimeRecursiveRead struct {
+type metricContainerBlockioIoTimeRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_time_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoTimeRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_time_recursive.read")
+// init fills container.blockio.io_time_recursive metric with initial data.
+func (m *metricContainerBlockioIoTimeRecursive) init() {
+	m.data.SetName("container.blockio.io_time_recursive")
 	m.data.SetDescription("Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.")
 	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -569,7 +569,7 @@ func (m *metricContainerBlockioIoTimeRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoTimeRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -583,14 +583,14 @@ func (m *metricContainerBlockioIoTimeRecursiveRead) recordDataPoint(start pcommo
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoTimeRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoTimeRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoTimeRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -598,8 +598,8 @@ func (m *metricContainerBlockioIoTimeRecursiveRead) emit(metrics pmetric.MetricS
 	}
 }
 
-func newMetricContainerBlockioIoTimeRecursiveRead(settings MetricSettings) metricContainerBlockioIoTimeRecursiveRead {
-	m := metricContainerBlockioIoTimeRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoTimeRecursive(settings MetricSettings) metricContainerBlockioIoTimeRecursive {
+	m := metricContainerBlockioIoTimeRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -607,15 +607,15 @@ func newMetricContainerBlockioIoTimeRecursiveRead(settings MetricSettings) metri
 	return m
 }
 
-type metricContainerBlockioIoWaitTimeRecursiveRead struct {
+type metricContainerBlockioIoWaitTimeRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.io_wait_time_recursive.read metric with initial data.
-func (m *metricContainerBlockioIoWaitTimeRecursiveRead) init() {
-	m.data.SetName("container.blockio.io_wait_time_recursive.read")
+// init fills container.blockio.io_wait_time_recursive metric with initial data.
+func (m *metricContainerBlockioIoWaitTimeRecursive) init() {
+	m.data.SetName("container.blockio.io_wait_time_recursive")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
 	m.data.SetUnit("ns")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -624,7 +624,7 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioIoWaitTimeRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioIoWaitTimeRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -638,14 +638,14 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveRead) recordDataPoint(start pc
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioIoWaitTimeRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioIoWaitTimeRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioIoWaitTimeRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioIoWaitTimeRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -653,8 +653,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveRead) emit(metrics pmetric.Met
 	}
 }
 
-func newMetricContainerBlockioIoWaitTimeRecursiveRead(settings MetricSettings) metricContainerBlockioIoWaitTimeRecursiveRead {
-	m := metricContainerBlockioIoWaitTimeRecursiveRead{settings: settings}
+func newMetricContainerBlockioIoWaitTimeRecursive(settings MetricSettings) metricContainerBlockioIoWaitTimeRecursive {
+	m := metricContainerBlockioIoWaitTimeRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -662,15 +662,15 @@ func newMetricContainerBlockioIoWaitTimeRecursiveRead(settings MetricSettings) m
 	return m
 }
 
-type metricContainerBlockioSectorsRecursiveRead struct {
+type metricContainerBlockioSectorsRecursive struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.blockio.sectors_recursive.read metric with initial data.
-func (m *metricContainerBlockioSectorsRecursiveRead) init() {
-	m.data.SetName("container.blockio.sectors_recursive.read")
+// init fills container.blockio.sectors_recursive metric with initial data.
+func (m *metricContainerBlockioSectorsRecursive) init() {
+	m.data.SetName("container.blockio.sectors_recursive")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
 	m.data.SetUnit("{sectors}")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
@@ -679,7 +679,7 @@ func (m *metricContainerBlockioSectorsRecursiveRead) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricContainerBlockioSectorsRecursiveRead) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+func (m *metricContainerBlockioSectorsRecursive) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -693,14 +693,14 @@ func (m *metricContainerBlockioSectorsRecursiveRead) recordDataPoint(start pcomm
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerBlockioSectorsRecursiveRead) updateCapacity() {
+func (m *metricContainerBlockioSectorsRecursive) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerBlockioSectorsRecursiveRead) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerBlockioSectorsRecursive) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -708,8 +708,8 @@ func (m *metricContainerBlockioSectorsRecursiveRead) emit(metrics pmetric.Metric
 	}
 }
 
-func newMetricContainerBlockioSectorsRecursiveRead(settings MetricSettings) metricContainerBlockioSectorsRecursiveRead {
-	m := metricContainerBlockioSectorsRecursiveRead{settings: settings}
+func newMetricContainerBlockioSectorsRecursive(settings MetricSettings) metricContainerBlockioSectorsRecursive {
+	m := metricContainerBlockioSectorsRecursive{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3481,74 +3481,74 @@ func newMetricContainerNetworkIoUsageTxPackets(settings MetricSettings) metricCo
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                   int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                  int                 // maximum observed number of resource attributes.
-	metricsBuffer                                     pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                         component.BuildInfo // contains version information
-	metricContainerBlockioIoMergedRecursiveRead       metricContainerBlockioIoMergedRecursiveRead
-	metricContainerBlockioIoQueuedRecursiveRead       metricContainerBlockioIoQueuedRecursiveRead
-	metricContainerBlockioIoServiceBytesRecursiveRead metricContainerBlockioIoServiceBytesRecursiveRead
-	metricContainerBlockioIoServiceTimeRecursiveRead  metricContainerBlockioIoServiceTimeRecursiveRead
-	metricContainerBlockioIoServicedRecursiveRead     metricContainerBlockioIoServicedRecursiveRead
-	metricContainerBlockioIoTimeRecursiveRead         metricContainerBlockioIoTimeRecursiveRead
-	metricContainerBlockioIoWaitTimeRecursiveRead     metricContainerBlockioIoWaitTimeRecursiveRead
-	metricContainerBlockioSectorsRecursiveRead        metricContainerBlockioSectorsRecursiveRead
-	metricContainerCPUPercent                         metricContainerCPUPercent
-	metricContainerCPUThrottlingDataPeriods           metricContainerCPUThrottlingDataPeriods
-	metricContainerCPUThrottlingDataThrottledPeriods  metricContainerCPUThrottlingDataThrottledPeriods
-	metricContainerCPUThrottlingDataThrottledTime     metricContainerCPUThrottlingDataThrottledTime
-	metricContainerCPUUsageKernelmode                 metricContainerCPUUsageKernelmode
-	metricContainerCPUUsagePercpu                     metricContainerCPUUsagePercpu
-	metricContainerCPUUsageSystem                     metricContainerCPUUsageSystem
-	metricContainerCPUUsageTotal                      metricContainerCPUUsageTotal
-	metricContainerCPUUsageUsermode                   metricContainerCPUUsageUsermode
-	metricContainerMemoryActiveAnon                   metricContainerMemoryActiveAnon
-	metricContainerMemoryActiveFile                   metricContainerMemoryActiveFile
-	metricContainerMemoryCache                        metricContainerMemoryCache
-	metricContainerMemoryDirty                        metricContainerMemoryDirty
-	metricContainerMemoryHierarchicalMemoryLimit      metricContainerMemoryHierarchicalMemoryLimit
-	metricContainerMemoryHierarchicalMemswLimit       metricContainerMemoryHierarchicalMemswLimit
-	metricContainerMemoryInactiveAnon                 metricContainerMemoryInactiveAnon
-	metricContainerMemoryInactiveFile                 metricContainerMemoryInactiveFile
-	metricContainerMemoryMappedFile                   metricContainerMemoryMappedFile
-	metricContainerMemoryPercent                      metricContainerMemoryPercent
-	metricContainerMemoryPgfault                      metricContainerMemoryPgfault
-	metricContainerMemoryPgmajfault                   metricContainerMemoryPgmajfault
-	metricContainerMemoryPgpgin                       metricContainerMemoryPgpgin
-	metricContainerMemoryPgpgout                      metricContainerMemoryPgpgout
-	metricContainerMemoryRss                          metricContainerMemoryRss
-	metricContainerMemoryRssHuge                      metricContainerMemoryRssHuge
-	metricContainerMemorySwap                         metricContainerMemorySwap
-	metricContainerMemoryTotalActiveAnon              metricContainerMemoryTotalActiveAnon
-	metricContainerMemoryTotalActiveFile              metricContainerMemoryTotalActiveFile
-	metricContainerMemoryTotalCache                   metricContainerMemoryTotalCache
-	metricContainerMemoryTotalDirty                   metricContainerMemoryTotalDirty
-	metricContainerMemoryTotalInactiveAnon            metricContainerMemoryTotalInactiveAnon
-	metricContainerMemoryTotalInactiveFile            metricContainerMemoryTotalInactiveFile
-	metricContainerMemoryTotalMappedFile              metricContainerMemoryTotalMappedFile
-	metricContainerMemoryTotalPgfault                 metricContainerMemoryTotalPgfault
-	metricContainerMemoryTotalPgmajfault              metricContainerMemoryTotalPgmajfault
-	metricContainerMemoryTotalPgpgin                  metricContainerMemoryTotalPgpgin
-	metricContainerMemoryTotalPgpgout                 metricContainerMemoryTotalPgpgout
-	metricContainerMemoryTotalRss                     metricContainerMemoryTotalRss
-	metricContainerMemoryTotalRssHuge                 metricContainerMemoryTotalRssHuge
-	metricContainerMemoryTotalSwap                    metricContainerMemoryTotalSwap
-	metricContainerMemoryTotalUnevictable             metricContainerMemoryTotalUnevictable
-	metricContainerMemoryTotalWriteback               metricContainerMemoryTotalWriteback
-	metricContainerMemoryUnevictable                  metricContainerMemoryUnevictable
-	metricContainerMemoryUsageLimit                   metricContainerMemoryUsageLimit
-	metricContainerMemoryUsageMax                     metricContainerMemoryUsageMax
-	metricContainerMemoryUsageTotal                   metricContainerMemoryUsageTotal
-	metricContainerMemoryWriteback                    metricContainerMemoryWriteback
-	metricContainerNetworkIoUsageRxBytes              metricContainerNetworkIoUsageRxBytes
-	metricContainerNetworkIoUsageRxDropped            metricContainerNetworkIoUsageRxDropped
-	metricContainerNetworkIoUsageRxErrors             metricContainerNetworkIoUsageRxErrors
-	metricContainerNetworkIoUsageRxPackets            metricContainerNetworkIoUsageRxPackets
-	metricContainerNetworkIoUsageTxBytes              metricContainerNetworkIoUsageTxBytes
-	metricContainerNetworkIoUsageTxDropped            metricContainerNetworkIoUsageTxDropped
-	metricContainerNetworkIoUsageTxErrors             metricContainerNetworkIoUsageTxErrors
-	metricContainerNetworkIoUsageTxPackets            metricContainerNetworkIoUsageTxPackets
+	startTime                                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                                  int                 // maximum observed number of metrics per resource.
+	resourceCapacity                                 int                 // maximum observed number of resource attributes.
+	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                                        component.BuildInfo // contains version information
+	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
+	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
+	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
+	metricContainerBlockioIoServiceTimeRecursive     metricContainerBlockioIoServiceTimeRecursive
+	metricContainerBlockioIoServicedRecursive        metricContainerBlockioIoServicedRecursive
+	metricContainerBlockioIoTimeRecursive            metricContainerBlockioIoTimeRecursive
+	metricContainerBlockioIoWaitTimeRecursive        metricContainerBlockioIoWaitTimeRecursive
+	metricContainerBlockioSectorsRecursive           metricContainerBlockioSectorsRecursive
+	metricContainerCPUPercent                        metricContainerCPUPercent
+	metricContainerCPUThrottlingDataPeriods          metricContainerCPUThrottlingDataPeriods
+	metricContainerCPUThrottlingDataThrottledPeriods metricContainerCPUThrottlingDataThrottledPeriods
+	metricContainerCPUThrottlingDataThrottledTime    metricContainerCPUThrottlingDataThrottledTime
+	metricContainerCPUUsageKernelmode                metricContainerCPUUsageKernelmode
+	metricContainerCPUUsagePercpu                    metricContainerCPUUsagePercpu
+	metricContainerCPUUsageSystem                    metricContainerCPUUsageSystem
+	metricContainerCPUUsageTotal                     metricContainerCPUUsageTotal
+	metricContainerCPUUsageUsermode                  metricContainerCPUUsageUsermode
+	metricContainerMemoryActiveAnon                  metricContainerMemoryActiveAnon
+	metricContainerMemoryActiveFile                  metricContainerMemoryActiveFile
+	metricContainerMemoryCache                       metricContainerMemoryCache
+	metricContainerMemoryDirty                       metricContainerMemoryDirty
+	metricContainerMemoryHierarchicalMemoryLimit     metricContainerMemoryHierarchicalMemoryLimit
+	metricContainerMemoryHierarchicalMemswLimit      metricContainerMemoryHierarchicalMemswLimit
+	metricContainerMemoryInactiveAnon                metricContainerMemoryInactiveAnon
+	metricContainerMemoryInactiveFile                metricContainerMemoryInactiveFile
+	metricContainerMemoryMappedFile                  metricContainerMemoryMappedFile
+	metricContainerMemoryPercent                     metricContainerMemoryPercent
+	metricContainerMemoryPgfault                     metricContainerMemoryPgfault
+	metricContainerMemoryPgmajfault                  metricContainerMemoryPgmajfault
+	metricContainerMemoryPgpgin                      metricContainerMemoryPgpgin
+	metricContainerMemoryPgpgout                     metricContainerMemoryPgpgout
+	metricContainerMemoryRss                         metricContainerMemoryRss
+	metricContainerMemoryRssHuge                     metricContainerMemoryRssHuge
+	metricContainerMemorySwap                        metricContainerMemorySwap
+	metricContainerMemoryTotalActiveAnon             metricContainerMemoryTotalActiveAnon
+	metricContainerMemoryTotalActiveFile             metricContainerMemoryTotalActiveFile
+	metricContainerMemoryTotalCache                  metricContainerMemoryTotalCache
+	metricContainerMemoryTotalDirty                  metricContainerMemoryTotalDirty
+	metricContainerMemoryTotalInactiveAnon           metricContainerMemoryTotalInactiveAnon
+	metricContainerMemoryTotalInactiveFile           metricContainerMemoryTotalInactiveFile
+	metricContainerMemoryTotalMappedFile             metricContainerMemoryTotalMappedFile
+	metricContainerMemoryTotalPgfault                metricContainerMemoryTotalPgfault
+	metricContainerMemoryTotalPgmajfault             metricContainerMemoryTotalPgmajfault
+	metricContainerMemoryTotalPgpgin                 metricContainerMemoryTotalPgpgin
+	metricContainerMemoryTotalPgpgout                metricContainerMemoryTotalPgpgout
+	metricContainerMemoryTotalRss                    metricContainerMemoryTotalRss
+	metricContainerMemoryTotalRssHuge                metricContainerMemoryTotalRssHuge
+	metricContainerMemoryTotalSwap                   metricContainerMemoryTotalSwap
+	metricContainerMemoryTotalUnevictable            metricContainerMemoryTotalUnevictable
+	metricContainerMemoryTotalWriteback              metricContainerMemoryTotalWriteback
+	metricContainerMemoryUnevictable                 metricContainerMemoryUnevictable
+	metricContainerMemoryUsageLimit                  metricContainerMemoryUsageLimit
+	metricContainerMemoryUsageMax                    metricContainerMemoryUsageMax
+	metricContainerMemoryUsageTotal                  metricContainerMemoryUsageTotal
+	metricContainerMemoryWriteback                   metricContainerMemoryWriteback
+	metricContainerNetworkIoUsageRxBytes             metricContainerNetworkIoUsageRxBytes
+	metricContainerNetworkIoUsageRxDropped           metricContainerNetworkIoUsageRxDropped
+	metricContainerNetworkIoUsageRxErrors            metricContainerNetworkIoUsageRxErrors
+	metricContainerNetworkIoUsageRxPackets           metricContainerNetworkIoUsageRxPackets
+	metricContainerNetworkIoUsageTxBytes             metricContainerNetworkIoUsageTxBytes
+	metricContainerNetworkIoUsageTxDropped           metricContainerNetworkIoUsageTxDropped
+	metricContainerNetworkIoUsageTxErrors            metricContainerNetworkIoUsageTxErrors
+	metricContainerNetworkIoUsageTxPackets           metricContainerNetworkIoUsageTxPackets
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3563,72 +3563,72 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     buildInfo,
-		metricContainerBlockioIoMergedRecursiveRead:       newMetricContainerBlockioIoMergedRecursiveRead(settings.ContainerBlockioIoMergedRecursiveRead),
-		metricContainerBlockioIoQueuedRecursiveRead:       newMetricContainerBlockioIoQueuedRecursiveRead(settings.ContainerBlockioIoQueuedRecursiveRead),
-		metricContainerBlockioIoServiceBytesRecursiveRead: newMetricContainerBlockioIoServiceBytesRecursiveRead(settings.ContainerBlockioIoServiceBytesRecursiveRead),
-		metricContainerBlockioIoServiceTimeRecursiveRead:  newMetricContainerBlockioIoServiceTimeRecursiveRead(settings.ContainerBlockioIoServiceTimeRecursiveRead),
-		metricContainerBlockioIoServicedRecursiveRead:     newMetricContainerBlockioIoServicedRecursiveRead(settings.ContainerBlockioIoServicedRecursiveRead),
-		metricContainerBlockioIoTimeRecursiveRead:         newMetricContainerBlockioIoTimeRecursiveRead(settings.ContainerBlockioIoTimeRecursiveRead),
-		metricContainerBlockioIoWaitTimeRecursiveRead:     newMetricContainerBlockioIoWaitTimeRecursiveRead(settings.ContainerBlockioIoWaitTimeRecursiveRead),
-		metricContainerBlockioSectorsRecursiveRead:        newMetricContainerBlockioSectorsRecursiveRead(settings.ContainerBlockioSectorsRecursiveRead),
-		metricContainerCPUPercent:                         newMetricContainerCPUPercent(settings.ContainerCPUPercent),
-		metricContainerCPUThrottlingDataPeriods:           newMetricContainerCPUThrottlingDataPeriods(settings.ContainerCPUThrottlingDataPeriods),
-		metricContainerCPUThrottlingDataThrottledPeriods:  newMetricContainerCPUThrottlingDataThrottledPeriods(settings.ContainerCPUThrottlingDataThrottledPeriods),
-		metricContainerCPUThrottlingDataThrottledTime:     newMetricContainerCPUThrottlingDataThrottledTime(settings.ContainerCPUThrottlingDataThrottledTime),
-		metricContainerCPUUsageKernelmode:                 newMetricContainerCPUUsageKernelmode(settings.ContainerCPUUsageKernelmode),
-		metricContainerCPUUsagePercpu:                     newMetricContainerCPUUsagePercpu(settings.ContainerCPUUsagePercpu),
-		metricContainerCPUUsageSystem:                     newMetricContainerCPUUsageSystem(settings.ContainerCPUUsageSystem),
-		metricContainerCPUUsageTotal:                      newMetricContainerCPUUsageTotal(settings.ContainerCPUUsageTotal),
-		metricContainerCPUUsageUsermode:                   newMetricContainerCPUUsageUsermode(settings.ContainerCPUUsageUsermode),
-		metricContainerMemoryActiveAnon:                   newMetricContainerMemoryActiveAnon(settings.ContainerMemoryActiveAnon),
-		metricContainerMemoryActiveFile:                   newMetricContainerMemoryActiveFile(settings.ContainerMemoryActiveFile),
-		metricContainerMemoryCache:                        newMetricContainerMemoryCache(settings.ContainerMemoryCache),
-		metricContainerMemoryDirty:                        newMetricContainerMemoryDirty(settings.ContainerMemoryDirty),
-		metricContainerMemoryHierarchicalMemoryLimit:      newMetricContainerMemoryHierarchicalMemoryLimit(settings.ContainerMemoryHierarchicalMemoryLimit),
-		metricContainerMemoryHierarchicalMemswLimit:       newMetricContainerMemoryHierarchicalMemswLimit(settings.ContainerMemoryHierarchicalMemswLimit),
-		metricContainerMemoryInactiveAnon:                 newMetricContainerMemoryInactiveAnon(settings.ContainerMemoryInactiveAnon),
-		metricContainerMemoryInactiveFile:                 newMetricContainerMemoryInactiveFile(settings.ContainerMemoryInactiveFile),
-		metricContainerMemoryMappedFile:                   newMetricContainerMemoryMappedFile(settings.ContainerMemoryMappedFile),
-		metricContainerMemoryPercent:                      newMetricContainerMemoryPercent(settings.ContainerMemoryPercent),
-		metricContainerMemoryPgfault:                      newMetricContainerMemoryPgfault(settings.ContainerMemoryPgfault),
-		metricContainerMemoryPgmajfault:                   newMetricContainerMemoryPgmajfault(settings.ContainerMemoryPgmajfault),
-		metricContainerMemoryPgpgin:                       newMetricContainerMemoryPgpgin(settings.ContainerMemoryPgpgin),
-		metricContainerMemoryPgpgout:                      newMetricContainerMemoryPgpgout(settings.ContainerMemoryPgpgout),
-		metricContainerMemoryRss:                          newMetricContainerMemoryRss(settings.ContainerMemoryRss),
-		metricContainerMemoryRssHuge:                      newMetricContainerMemoryRssHuge(settings.ContainerMemoryRssHuge),
-		metricContainerMemorySwap:                         newMetricContainerMemorySwap(settings.ContainerMemorySwap),
-		metricContainerMemoryTotalActiveAnon:              newMetricContainerMemoryTotalActiveAnon(settings.ContainerMemoryTotalActiveAnon),
-		metricContainerMemoryTotalActiveFile:              newMetricContainerMemoryTotalActiveFile(settings.ContainerMemoryTotalActiveFile),
-		metricContainerMemoryTotalCache:                   newMetricContainerMemoryTotalCache(settings.ContainerMemoryTotalCache),
-		metricContainerMemoryTotalDirty:                   newMetricContainerMemoryTotalDirty(settings.ContainerMemoryTotalDirty),
-		metricContainerMemoryTotalInactiveAnon:            newMetricContainerMemoryTotalInactiveAnon(settings.ContainerMemoryTotalInactiveAnon),
-		metricContainerMemoryTotalInactiveFile:            newMetricContainerMemoryTotalInactiveFile(settings.ContainerMemoryTotalInactiveFile),
-		metricContainerMemoryTotalMappedFile:              newMetricContainerMemoryTotalMappedFile(settings.ContainerMemoryTotalMappedFile),
-		metricContainerMemoryTotalPgfault:                 newMetricContainerMemoryTotalPgfault(settings.ContainerMemoryTotalPgfault),
-		metricContainerMemoryTotalPgmajfault:              newMetricContainerMemoryTotalPgmajfault(settings.ContainerMemoryTotalPgmajfault),
-		metricContainerMemoryTotalPgpgin:                  newMetricContainerMemoryTotalPgpgin(settings.ContainerMemoryTotalPgpgin),
-		metricContainerMemoryTotalPgpgout:                 newMetricContainerMemoryTotalPgpgout(settings.ContainerMemoryTotalPgpgout),
-		metricContainerMemoryTotalRss:                     newMetricContainerMemoryTotalRss(settings.ContainerMemoryTotalRss),
-		metricContainerMemoryTotalRssHuge:                 newMetricContainerMemoryTotalRssHuge(settings.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalSwap:                    newMetricContainerMemoryTotalSwap(settings.ContainerMemoryTotalSwap),
-		metricContainerMemoryTotalUnevictable:             newMetricContainerMemoryTotalUnevictable(settings.ContainerMemoryTotalUnevictable),
-		metricContainerMemoryTotalWriteback:               newMetricContainerMemoryTotalWriteback(settings.ContainerMemoryTotalWriteback),
-		metricContainerMemoryUnevictable:                  newMetricContainerMemoryUnevictable(settings.ContainerMemoryUnevictable),
-		metricContainerMemoryUsageLimit:                   newMetricContainerMemoryUsageLimit(settings.ContainerMemoryUsageLimit),
-		metricContainerMemoryUsageMax:                     newMetricContainerMemoryUsageMax(settings.ContainerMemoryUsageMax),
-		metricContainerMemoryUsageTotal:                   newMetricContainerMemoryUsageTotal(settings.ContainerMemoryUsageTotal),
-		metricContainerMemoryWriteback:                    newMetricContainerMemoryWriteback(settings.ContainerMemoryWriteback),
-		metricContainerNetworkIoUsageRxBytes:              newMetricContainerNetworkIoUsageRxBytes(settings.ContainerNetworkIoUsageRxBytes),
-		metricContainerNetworkIoUsageRxDropped:            newMetricContainerNetworkIoUsageRxDropped(settings.ContainerNetworkIoUsageRxDropped),
-		metricContainerNetworkIoUsageRxErrors:             newMetricContainerNetworkIoUsageRxErrors(settings.ContainerNetworkIoUsageRxErrors),
-		metricContainerNetworkIoUsageRxPackets:            newMetricContainerNetworkIoUsageRxPackets(settings.ContainerNetworkIoUsageRxPackets),
-		metricContainerNetworkIoUsageTxBytes:              newMetricContainerNetworkIoUsageTxBytes(settings.ContainerNetworkIoUsageTxBytes),
-		metricContainerNetworkIoUsageTxDropped:            newMetricContainerNetworkIoUsageTxDropped(settings.ContainerNetworkIoUsageTxDropped),
-		metricContainerNetworkIoUsageTxErrors:             newMetricContainerNetworkIoUsageTxErrors(settings.ContainerNetworkIoUsageTxErrors),
-		metricContainerNetworkIoUsageTxPackets:            newMetricContainerNetworkIoUsageTxPackets(settings.ContainerNetworkIoUsageTxPackets),
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               buildInfo,
+		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(settings.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(settings.ContainerBlockioIoQueuedRecursive),
+		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(settings.ContainerBlockioIoServiceBytesRecursive),
+		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(settings.ContainerBlockioIoServiceTimeRecursive),
+		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(settings.ContainerBlockioIoServicedRecursive),
+		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(settings.ContainerBlockioIoTimeRecursive),
+		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(settings.ContainerBlockioIoWaitTimeRecursive),
+		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(settings.ContainerBlockioSectorsRecursive),
+		metricContainerCPUPercent:                        newMetricContainerCPUPercent(settings.ContainerCPUPercent),
+		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(settings.ContainerCPUThrottlingDataPeriods),
+		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(settings.ContainerCPUThrottlingDataThrottledPeriods),
+		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(settings.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(settings.ContainerCPUUsageKernelmode),
+		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(settings.ContainerCPUUsagePercpu),
+		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(settings.ContainerCPUUsageSystem),
+		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(settings.ContainerCPUUsageTotal),
+		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(settings.ContainerCPUUsageUsermode),
+		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(settings.ContainerMemoryActiveAnon),
+		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(settings.ContainerMemoryActiveFile),
+		metricContainerMemoryCache:                       newMetricContainerMemoryCache(settings.ContainerMemoryCache),
+		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(settings.ContainerMemoryDirty),
+		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(settings.ContainerMemoryHierarchicalMemoryLimit),
+		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(settings.ContainerMemoryHierarchicalMemswLimit),
+		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(settings.ContainerMemoryInactiveAnon),
+		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(settings.ContainerMemoryInactiveFile),
+		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(settings.ContainerMemoryMappedFile),
+		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(settings.ContainerMemoryPercent),
+		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(settings.ContainerMemoryPgfault),
+		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(settings.ContainerMemoryPgmajfault),
+		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(settings.ContainerMemoryPgpgin),
+		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(settings.ContainerMemoryPgpgout),
+		metricContainerMemoryRss:                         newMetricContainerMemoryRss(settings.ContainerMemoryRss),
+		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(settings.ContainerMemoryRssHuge),
+		metricContainerMemorySwap:                        newMetricContainerMemorySwap(settings.ContainerMemorySwap),
+		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(settings.ContainerMemoryTotalActiveAnon),
+		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(settings.ContainerMemoryTotalActiveFile),
+		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(settings.ContainerMemoryTotalCache),
+		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(settings.ContainerMemoryTotalDirty),
+		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(settings.ContainerMemoryTotalInactiveAnon),
+		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(settings.ContainerMemoryTotalInactiveFile),
+		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(settings.ContainerMemoryTotalMappedFile),
+		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(settings.ContainerMemoryTotalPgfault),
+		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(settings.ContainerMemoryTotalPgmajfault),
+		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(settings.ContainerMemoryTotalPgpgin),
+		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(settings.ContainerMemoryTotalPgpgout),
+		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(settings.ContainerMemoryTotalRss),
+		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(settings.ContainerMemoryTotalRssHuge),
+		metricContainerMemoryTotalSwap:                   newMetricContainerMemoryTotalSwap(settings.ContainerMemoryTotalSwap),
+		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(settings.ContainerMemoryTotalUnevictable),
+		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(settings.ContainerMemoryTotalWriteback),
+		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(settings.ContainerMemoryUnevictable),
+		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(settings.ContainerMemoryUsageLimit),
+		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(settings.ContainerMemoryUsageMax),
+		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(settings.ContainerMemoryUsageTotal),
+		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(settings.ContainerMemoryWriteback),
+		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(settings.ContainerNetworkIoUsageRxBytes),
+		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(settings.ContainerNetworkIoUsageRxDropped),
+		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(settings.ContainerNetworkIoUsageRxErrors),
+		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(settings.ContainerNetworkIoUsageRxPackets),
+		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(settings.ContainerNetworkIoUsageTxBytes),
+		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(settings.ContainerNetworkIoUsageTxDropped),
+		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(settings.ContainerNetworkIoUsageTxErrors),
+		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(settings.ContainerNetworkIoUsageTxPackets),
 	}
 	for _, op := range options {
 		op(mb)
@@ -3717,14 +3717,14 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/dockerstatsreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricContainerBlockioIoMergedRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoQueuedRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServiceBytesRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServiceTimeRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServicedRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoTimeRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioIoWaitTimeRecursiveRead.emit(ils.Metrics())
-	mb.metricContainerBlockioSectorsRecursiveRead.emit(ils.Metrics())
+	mb.metricContainerBlockioIoMergedRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoQueuedRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoServiceBytesRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoServiceTimeRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoServicedRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoTimeRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioIoWaitTimeRecursive.emit(ils.Metrics())
+	mb.metricContainerBlockioSectorsRecursive.emit(ils.Metrics())
 	mb.metricContainerCPUPercent.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
 	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
@@ -3799,44 +3799,44 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordContainerBlockioIoMergedRecursiveReadDataPoint adds a data point to container.blockio.io_merged_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoMergedRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoMergedRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoMergedRecursiveDataPoint adds a data point to container.blockio.io_merged_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoMergedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoMergedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoQueuedRecursiveReadDataPoint adds a data point to container.blockio.io_queued_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoQueuedRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoQueuedRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoQueuedRecursiveDataPoint adds a data point to container.blockio.io_queued_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoQueuedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoQueuedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint adds a data point to container.blockio.io_service_bytes_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServiceBytesRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoServiceBytesRecursiveDataPoint adds a data point to container.blockio.io_service_bytes_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoServiceBytesRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoServiceTimeRecursiveReadDataPoint adds a data point to container.blockio.io_service_time_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServiceTimeRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServiceTimeRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoServiceTimeRecursiveDataPoint adds a data point to container.blockio.io_service_time_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoServiceTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoServicedRecursiveReadDataPoint adds a data point to container.blockio.io_serviced_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServicedRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServicedRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoServicedRecursiveDataPoint adds a data point to container.blockio.io_serviced_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoServicedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoServicedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoTimeRecursiveReadDataPoint adds a data point to container.blockio.io_time_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoTimeRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoTimeRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoTimeRecursiveDataPoint adds a data point to container.blockio.io_time_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioIoWaitTimeRecursiveReadDataPoint adds a data point to container.blockio.io_wait_time_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoWaitTimeRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoWaitTimeRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioIoWaitTimeRecursiveDataPoint adds a data point to container.blockio.io_wait_time_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioIoWaitTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
-// RecordContainerBlockioSectorsRecursiveReadDataPoint adds a data point to container.blockio.sectors_recursive.read metric.
-func (mb *MetricsBuilder) RecordContainerBlockioSectorsRecursiveReadDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioSectorsRecursiveRead.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+// RecordContainerBlockioSectorsRecursiveDataPoint adds a data point to container.blockio.sectors_recursive metric.
+func (mb *MetricsBuilder) RecordContainerBlockioSectorsRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	mb.metricContainerBlockioSectorsRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerCPUPercentDataPoint adds a data point to container.cpu.percent metric.
