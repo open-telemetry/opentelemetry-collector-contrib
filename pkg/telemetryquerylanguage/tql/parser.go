@@ -97,8 +97,8 @@ func (c *CompareOp) Capture(values []string) error {
 }
 
 // String() for CompareOp gives us more legible test results and error messages.
-func (op CompareOp) String() string {
-	switch op {
+func (c CompareOp) String() string {
+	switch c {
 	case EQ:
 		return "EQ"
 	case NE:
