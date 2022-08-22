@@ -23,92 +23,81 @@ import (
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
-// nolint:govet
 type ParsedQuery struct {
-	Invocation  Invocation         `@@`
-	WhereClause *BooleanExpression `( "where" @@ )?`
+	Invocation  Invocation         `parser:"@@"`
+	WhereClause *BooleanExpression `parser:"( 'where' @@ )?"`
 }
 
 // BooleanValue represents something that evaluates to a boolean --
 // either an equality or inequality, explicit true or false, or
 // a parenthesized subexpression.
-// nolint:govet
 type BooleanValue struct {
-	Comparison *Comparison        `( @@`
-	ConstExpr  *Boolean           `| @Boolean`
-	SubExpr    *BooleanExpression `| "(" @@ ")" )`
+	Comparison *Comparison        `parser:"( @@"`
+	ConstExpr  *Boolean           `parser:"| @Boolean"`
+	SubExpr    *BooleanExpression `parser:"| '(' @@ ')' )"`
 }
 
 // OpAndBooleanValue represents the right side of an AND boolean expression.
-// nolint:govet
 type OpAndBooleanValue struct {
-	Operator string        `@OpAnd`
-	Value    *BooleanValue `@@`
+	Operator string        `parser:"@OpAnd"`
+	Value    *BooleanValue `parser:"@@"`
 }
 
 // Term represents an arbitrary number of boolean values joined by AND.
-// nolint:govet
 type Term struct {
-	Left  *BooleanValue        `@@`
-	Right []*OpAndBooleanValue `@@*`
+	Left  *BooleanValue        `parser:"@@"`
+	Right []*OpAndBooleanValue `parser:"@@*"`
 }
 
 // OpOrTerm represents the right side of an OR boolean expression.
-// nolint:govet
 type OpOrTerm struct {
-	Operator string `@OpOr`
-	Term     *Term  `@@`
+	Operator string `parser:"@OpOr"`
+	Term     *Term  `parser:"@@"`
 }
 
 // BooleanExpression represents a true/false decision expressed
 // as an arbitrary number of terms separated by OR
-// nolint:govet
 type BooleanExpression struct {
-	Left  *Term       `@@`
-	Right []*OpOrTerm `@@*`
+	Left  *Term       `parser:"@@"`
+	Right []*OpOrTerm `parser:"@@*"`
 }
 
 // Comparison represents an optional boolean condition.
-// nolint:govet
 type Comparison struct {
-	Left  Value  `@@`
-	Op    string `@OpComparison`
-	Right Value  `@@`
+	Left  Value  `parser:"@@"`
+	Op    string `parser:"@OpComparison"`
+	Right Value  `parser:"@@"`
 }
 
 // Invocation represents a function call.
-// nolint:govet
 type Invocation struct {
-	Function  string  `@(Uppercase | Lowercase)+`
-	Arguments []Value `"(" ( @@ ( "," @@ )* )? ")"`
+	Function  string  `parser:"@(Uppercase | Lowercase)+"`
+	Arguments []Value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
 }
 
 // Value represents a part of a parsed query which is resolved to a value of some sort. This can be a telemetry path
 // expression, function call, or literal.
-// nolint:govet
 type Value struct {
-	Invocation *Invocation `( @@`
-	Bytes      *Bytes      `| @Bytes`
-	String     *string     `| @String`
-	Float      *float64    `| @Float`
-	Int        *int64      `| @Int`
-	Bool       *Boolean    `| @Boolean`
-	IsNil      *IsNil      `| @"nil"`
-	Enum       *EnumSymbol `| @Uppercase`
-	Path       *Path       `| @@ )`
+	Invocation *Invocation `parser:"( @@"`
+	Bytes      *Bytes      `parser:"| @Bytes"`
+	String     *string     `parser:"| @String"`
+	Float      *float64    `parser:"| @Float"`
+	Int        *int64      `parser:"| @Int"`
+	Bool       *Boolean    `parser:"| @Boolean"`
+	IsNil      *IsNil      `parser:"| @'nil'"`
+	Enum       *EnumSymbol `parser:"| @Uppercase"`
+	Path       *Path       `parser:"| @@ )"`
 }
 
 // Path represents a telemetry path expression.
-// nolint:govet
 type Path struct {
-	Fields []Field `@@ ( "." @@ )*`
+	Fields []Field `parser:"@@ ( '.' @@ )*"`
 }
 
 // Field is an item within a Path.
-// nolint:govet
 type Field struct {
-	Name   string  `@Lowercase`
-	MapKey *string `( "[" @String "]" )?`
+	Name   string  `parser:"@Lowercase"`
+	MapKey *string `parser:"( '[' @String ']' )?"`
 }
 
 // Query holds a top level Query for processing telemetry data. A Query is a combination of a function
