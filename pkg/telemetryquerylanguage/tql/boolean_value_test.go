@@ -125,18 +125,6 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 		comparison *Comparison
 	}{
 		{
-			name: "unknown operation",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("bear"),
-				},
-				Op: "<>",
-				Right: Value{
-					String: tqltest.Strp("cat"),
-				},
-			},
-		},
-		{
 			name: "unknown Path",
 			comparison: &Comparison{
 				Left: Value{
