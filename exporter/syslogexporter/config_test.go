@@ -47,6 +47,15 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, "localhost:514", cfg.Endpoint)
 	})
 
+	t.Run("Endpoint is set correctly", func(t *testing.T) {
+		cfg := factory.CreateDefaultConfig().(*Config)
+		cfg.Endpoint = "example.com:5000"
+		err := cfg.Validate()
+		assert.NoError(t, err)
+
+		assert.Equal(t, "example.com:5000", cfg.Endpoint)
+	})
+
 	t.Run("Net protocol set as TCP if not set", func(t *testing.T) {
 		cfg := factory.CreateDefaultConfig().(*Config)
 		cfg.Endpoint = "localhost"

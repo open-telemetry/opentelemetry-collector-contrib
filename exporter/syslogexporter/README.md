@@ -1,93 +1,47 @@
-# Elasticsearch Exporter
+# Syslog Exporter
 
 | Status                   |           |
 | ------------------------ |-----------|
-| Stability                | [beta]    |
+| Stability                | [alpha]   |
 | Supported pipeline types | logs      |
 | Distributions            | [contrib] |
 
-This exporter supports sending OpenTelemetry logs to [Elasticsearch](https://www.elastic.co/elasticsearch).
+This exporter will send logs to the Syslog server in rfc5424 format.
+It will be possible to send logs by TCP and UDP.
 
 ## Configuration options
+- `endpoint` - Endpoint where to send the data. Error if not set. Could be set with SYSLOG_HOST env variable
+- `net_protocol` - Defines which network protocol to use. (By default TCP)
+- `sd_config` - Custom configuration of structured data
+- `sd_config.common_sdid` - Defines which SDID should be used for attributes. (meta by default)
+- `sd_config.trace_sdid` - Defines which SDID should be used for trace_id and span_id attributes. (meta by default)
+- `sd_config.mapping_sdid` - Key value list. Defines custom SDID for the specific attribute names.   
+   For example in the config all attributes will have SDID user@12345 but tag attribute will have metadata@12345 SDID
+- `sd_config.static_sd` - Defines structured data that will be added to each log entry. In format: SDID: key:value
 
-- `endpoints`: List of Elasticsearch URLs. If endpoints and cloudid is missing, the
-  ELASTICSEARCH_URL environment variable will be used.
-- `cloudid` (optional):
-  [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
-  Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
-  of `endpoints`.
-- `num_workers` (optional): Number of workers publishing bulk requests concurrently.
-- `index`: The
-  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [datastream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`.
-- `pipeline` (optional): Optional [Ingest Node](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html)
-  pipeline ID used for processing documents published by the exporter.
-- `flush`: Event bulk buffer flush settings
-  - `bytes` (default=5242880): Write buffer flush limit.
-  - `interval` (default=30s): Write buffer time limit.
-- `retry`: Event retry settings
-  - `enabled` (default=true): Enable/Disable event retry on error. Retry
-    support is enabled by default.
-  - `max_requests` (default=3): Number of HTTP request retries.
-  - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
-  - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-- `mapping`: Events are encoded to JSON. The `mapping` allows users to
-  configure additional mapping rules.
-  - `mode` (default=ecs): The fields naming mode. valid modes are:
-    - `none`: Use original fields and event structure from the OTLP event.
-    - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/opentelemetry-specification/tree/main/semantic_conventions)
-             to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html).
-  - `fields` (optional): Configure additional fields mappings.
-  - `file` (optional): Read additional field mappings from the provided YAML file.
-  - `dedup` (default=true): Try to find and remove duplicate fields/attributes
-    from events before publishing to Elasticsearch. Some structured logging
-    libraries can produce duplicate fields (for example zap). Elasticsearch
-    will reject documents that have duplicate fields.
-  - `dedot` (default=true): When enabled attributes with `.` will be split into
-    proper json objects.
-
-### HTTP settings
-
-- `read_buffer_size` (default=0): Read buffer size.
-- `write_buffer_size` (default=0): Write buffer size used when.
-- `timeout` (default=90s): HTTP request time limit.
-- `headers` (optional): Headers to be send with each HTTP request.
-
-### Security and Authentication settings
-
-- `user` (optional): Username used for HTTP Basic Authentication.
-- `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html).
-
-### TLS settings
-- `ca_file` (optional): Root Certificate Authority (CA) certificate, for
-  verifying the server's identity, if TLS is enabled.
-- `cert_file` (optional): Client TLS certificate.
-- `key_file` (optional): Client TLS key.
-- `insecure` (optional): In gRPC when set to true, this is used to disable the client transport security. In HTTP, this disables verifying the server's certificate chain and host name.
-- `insecure_skip_verify` (optional): Will enable TLS but not verify the certificate.
-  is enabled.
-
-### Node Discovery
-
-The Elasticsearch Exporter will check Elasticsearch regularly for available
-nodes and updates the list of hosts if discovery is enabled. Newly discovered
-nodes will automatically be used for load balancing.
-
-- `discover`:
-  - `on_start` (optional): If enabled the exporter queries Elasticsearch
-    for all known nodes in the cluster on startup.
-  - `interval` (optional): Interval to update the list of Elasticsearch nodes.
+### Structured data
+Exporter will add resources and log records attributes as structured data  
+Id of the sd-element can be rewritten by configuration options (meta by default)  
+Attributes from the resource and log records will be merged since each Syslog record is an independent entity.  
+service.name and host.hostname attributes will be excluded from structured data and used as HOSTNAME and APPNAME in the message.  
 
 ## Example
 
 ```yaml
-exporters:
-  elasticsearch:
-    endpoints:
-    - "https://localhost:9200"
+syslog:
+    endpoint: localhost:5552
+    net_protocol: tcp
+    sd_config:
+      common_sdid: user@12345
+      trace_sdid: opentelemetry@12345
+      mapping_sdid:
+        tag: metadata@12345
+      static_sd:
+        location@12345:
+          env: prod
+          loc: bcn
+        stats@51719:
+          proc: "1"
 ```
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[beta]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

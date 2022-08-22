@@ -20,10 +20,8 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 //todo multicore
 //todo flush and buffering
 //todo retries for single log entry
+//todo retry if bunch is errored
 //todo reliability
-//todo proper logging
-//todo use helpers
-//todo doc
 //todo exporter metrics
 //todo tls
 //todo compress

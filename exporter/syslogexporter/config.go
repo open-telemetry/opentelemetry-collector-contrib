@@ -18,7 +18,7 @@ import (
 	"errors"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"net/url"
+	"net"
 	"os"
 )
 
@@ -73,12 +73,9 @@ func (cfg *Config) setDefaults() error {
 		}
 	}
 
-	parse, err := url.Parse(cfg.Endpoint)
-	if err != nil {
-		return errConfigParseEndpoint
-	}
+	_, port, _ := net.SplitHostPort(cfg.Endpoint)
 
-	if parse.Port() == "" {
+	if port == "" {
 		cfg.Endpoint += ":" + defaultSyslogPort
 	}
 

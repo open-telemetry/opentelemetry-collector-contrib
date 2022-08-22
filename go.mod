@@ -15,6 +15,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.0.0-replace
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.58.0
@@ -698,6 +699,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter => ./exporter/tencentcloudlogserviceexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter => ./exporter/elasticsearchexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.0.0-replace => ./exporter/syslogexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter => ./exporter/zipkinexporter
 
