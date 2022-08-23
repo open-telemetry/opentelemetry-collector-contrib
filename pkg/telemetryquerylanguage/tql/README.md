@@ -12,7 +12,7 @@ The TQL grammar includes Invocations, Values and Expressions.
 
 ### Invocations
 
-Invocations represent a function call. Invocations are made up of 2 parts
+Invocations represent a function call. Invocations are made up of 2 parts:
 
 - a string identifier. The string identifier must start with a letter or an underscore (`_`).
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
