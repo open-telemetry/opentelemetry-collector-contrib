@@ -177,7 +177,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -186,7 +186,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -195,7 +195,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Millisecond)
+				cfg.PollInterval = time.Millisecond
 				return cfg
 			}(),
 		},
@@ -204,7 +204,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -399,7 +399,7 @@ func TestBuild(t *testing.T) {
 		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}
 		cfg.Exclude = []string{"/var/log/testpath.ex*"}
-		cfg.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+		cfg.PollInterval = 10 * time.Millisecond
 		return cfg
 	}
 
@@ -562,12 +562,12 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 		"resource":      map[string]interface{}{},
 		"include":       expect.Include,
 		"exclude":       expect.Exclude,
-		"poll_interval": 0.2,
+		"poll_interval": 200 * time.Millisecond,
 		"multiline": map[string]interface{}{
 			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
 			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
 		},
-		"force_flush_period":   0.5,
+		"force_flush_period":   500 * time.Millisecond,
 		"include_file_name":    true,
 		"include_file_path":    false,
 		"start_at":             "end",
@@ -589,13 +589,11 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 func TestMapStructureDecodeConfig(t *testing.T) {
 	expect := NewTestConfig()
 	cfgMap := map[string]interface{}{
-		"attributes": map[string]interface{}{},
-		"resource":   map[string]interface{}{},
-		"include":    expect.Include,
-		"exclude":    expect.Exclude,
-		"poll_interval": map[string]interface{}{
-			"Duration": 200 * 1000 * 1000,
-		},
+		"attributes":    map[string]interface{}{},
+		"resource":      map[string]interface{}{},
+		"include":       expect.Include,
+		"exclude":       expect.Exclude,
+		"poll_interval": 200 * time.Millisecond,
 		"multiline": map[string]interface{}{
 			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
 			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
@@ -607,9 +605,7 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 		"max_log_size":         1024 * 1024,
 		"max_concurrent_files": 1024,
 		"encoding":             "utf16",
-		"force_flush_period": map[string]interface{}{
-			"Duration": 500 * 1000 * 1000,
-		},
+		"force_flush_period":   500 * time.Millisecond,
 	}
 
 	var actual Config

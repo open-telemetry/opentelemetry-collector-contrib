@@ -44,16 +44,16 @@ func NewConfig(operatorID string) *Config {
 		InputConfig:        helper.NewInputConfig(operatorID, "k8s_event_input"),
 		Namespaces:         []string{},
 		DiscoverNamespaces: true,
-		DiscoveryInterval:  helper.Duration{Duration: time.Minute * 1},
+		DiscoveryInterval:  time.Minute,
 	}
 }
 
 // Config is the configuration of Input operator
 type Config struct {
 	helper.InputConfig `yaml:",inline"`
-	Namespaces         []string        `json:"namespaces" yaml:"namespaces"`
-	DiscoverNamespaces bool            `json:"discover_namespaces" yaml:"discover_namespaces"`
-	DiscoveryInterval  helper.Duration `json:"discovery_interval" yaml:"discovery_interval"`
+	Namespaces         []string      `json:"namespaces" yaml:"namespaces"`
+	DiscoverNamespaces bool          `json:"discover_namespaces" yaml:"discover_namespaces"`
+	DiscoveryInterval  time.Duration `json:"discovery_interval" yaml:"discovery_interval"`
 }
 
 // Build will build a k8s_event_input operator from the supplied configuration
@@ -80,7 +80,7 @@ type Input struct {
 	helper.InputOperator
 	client             corev1.CoreV1Interface
 	discoverNamespaces bool
-	discoveryInterval  helper.Duration
+	discoveryInterval  time.Duration
 	namespaces         []string
 
 	cancel       func()
@@ -175,7 +175,7 @@ func (k *Input) startFindingNamespaces(ctx context.Context, client corev1.CoreV1
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(k.discoveryInterval.Duration):
+			case <-time.After(k.discoveryInterval):
 				namespaces, err := listNamespaces(ctx, client)
 				if err != nil {
 					k.Errorf("failed to list namespaces: %s", err)
