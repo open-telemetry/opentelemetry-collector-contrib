@@ -26,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtest"
 	"go.opentelemetry.io/collector/service/servicetest"
-
-	instanaConfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/config"
 )
 
 // Test that the factory creates the default configuration
@@ -35,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	assert.Equal(t, &instanaConfig.Config{
+	assert.Equal(t, &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "",
@@ -61,11 +59,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	t.Run("valid config", func(t *testing.T) {
-		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*instanaConfig.Config)
+		validConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "valid")].(*Config)
 		err = validConfig.Validate()
 
 		require.NoError(t, err)
-		assert.Equal(t, &instanaConfig.Config{
+		assert.Equal(t, &Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint:        "http://example.com/api/",
@@ -79,13 +77,13 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("bad endpoint", func(t *testing.T) {
-		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*instanaConfig.Config)
+		badEndpointConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "bad_endpoint")].(*Config)
 		err = badEndpointConfig.Validate()
 		require.Error(t, err)
 	})
 
 	t.Run("missing agent key", func(t *testing.T) {
-		missingAgentConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_agent_key")].(*instanaConfig.Config)
+		missingAgentConfig := cfg.Exporters[config.NewComponentIDWithName(typeStr, "missing_agent_key")].(*Config)
 		err = missingAgentConfig.Validate()
 		require.Error(t, err)
 	})

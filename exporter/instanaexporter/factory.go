@@ -23,8 +23,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	instanaConfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/config"
 )
 
 const (
@@ -45,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() config.Exporter {
-	return &instanaConfig.Config{
+	return &Config{
 		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:        "",
@@ -59,7 +57,7 @@ func createDefaultConfig() config.Exporter {
 // createTracesExporter creates a trace exporter based on this configuration
 func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
 	// TODO: Lines commented out until implementation is available
-	// cfg := config.(*instanaConfig.Config)
+	// cfg := config.(*Config)
 
 	ctx, cancel := context.WithCancel(ctx)
 
