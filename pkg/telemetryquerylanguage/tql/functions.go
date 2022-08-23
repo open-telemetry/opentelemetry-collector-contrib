@@ -46,26 +46,47 @@ func (p *Parser) NewFunctionCall(inv Invocation) (ExprFunc, error) {
 
 func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
+	// Some function arguments may be intended to take values from the calling processor
+	// instead of being passed by the caller of the TQL function, so we have to keep
+	// track of the index of the argument passed within the DSL.
+	// e.g. zap.Logger, which is provided by the processor to the TQL Parser struct.
+	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		if argType.Kind() == reflect.Slice {
+		switch argType.Kind() {
+		case reflect.Slice:
 			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
-		} else {
-			if i >= len(inv.Arguments) {
+			// Slice arguments must be the final argument in an invocation.
+			return args, nil
+		case reflect.Pointer:
+			switch argType.Elem().String() {
+			case "zap.Logger":
+				args = append(args, reflect.ValueOf(p.Logger))
+			default:
+				return nil, fmt.Errorf("unsupported pointer to type '%s' for function '%v'", argType.Elem().String(), inv.Function)
+			}
+		default:
+			if DSLArgumentIndex >= len(inv.Arguments) {
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
 
-			argDef := inv.Arguments[i]
-			err := p.buildArg(argDef, argType, i, &args)
+			argDef := inv.Arguments[DSLArgumentIndex]
+			err := p.buildArg(argDef, argType, DSLArgumentIndex, &args)
+			DSLArgumentIndex++
 			if err != nil {
 				return nil, err
 			}
 		}
 	}
+
+	if len(inv.Arguments) > DSLArgumentIndex {
+		return nil, fmt.Errorf("too many arguments for function %v", inv.Function)
+	}
+
 	return args, nil
 }
 
