@@ -211,7 +211,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		droppedEnqueueEventsFailedAttrKey  = "messaging.solace.dropped_enqueue_events_failed"
 		replyToAttrKey                     = "messaging.solace.reply_to_topic"
 		receiveTimeAttrKey                 = "messaging.solace.broker_receive_time_unix_nano"
-		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_user_properties"
+		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_application_message_properties"
 		deliveryModeAttrKey                = "messaging.solace.delivery_mode"
 		hostIPAttrKey                      = "net.host.ip"
 		hostPortAttrKey                    = "net.host.port"
