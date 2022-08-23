@@ -19,6 +19,7 @@ package windows
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -33,7 +34,7 @@ func TestConfig(t *testing.T) {
 		"type":          "windows_eventlog_input",
 		"max_reads":     100,
 		"start_at":      "end",
-		"poll_interval": "1s",
+		"poll_interval": time.Second,
 		"attributes":    map[string]interface{}{},
 		"resource":      map[string]interface{}{},
 	}
