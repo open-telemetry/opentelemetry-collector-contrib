@@ -3,12 +3,31 @@
 The following functions can be used in any implementation of the Telemetry Query Language.  Although they are tested using [pdata](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata) for convenience, the function implementation only interact with native Go types or types defined in the [tql package](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/telemetryquerylanguage/tql).
 
 Factory Functions
+- [Join](#join)
 - [IsMatch](#ismatch)
 
 Functions
 - [set](#set)
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
+
+## Join
+
+`Join(delimiter, ...values)`
+
+The `Join` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+
+`delimiter` is a string value that is used to join the string. If no delimiter is desired, then simply pass an empty string.
+
+`values` is a series of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+
+Examples:
+
+- `Join(": ", attributes["http.method"], attributes["http.path"])`
+
+- `Join(" ", name, 1)`
+
+- `Join("", "HTTP method is: ", attributes["http.method"])`
 
 ## IsMatch
 
