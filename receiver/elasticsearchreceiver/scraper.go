@@ -226,40 +226,40 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
 		r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
-		r.mb.RecordElasticsearchIndexingPressureMemoryPrimaryDataPoint(now, info.IndexingPressure.Memory.Current.PrimaryInBy)
-		r.mb.RecordElasticsearchIndexingPressureMemoryCoordinatingDataPoint(now, info.IndexingPressure.Memory.Current.CoordinatingInBy)
-		r.mb.RecordElasticsearchIndexingPressureMemoryReplicaDataPoint(now, info.IndexingPressure.Memory.Current.ReplicaInBy)
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.PrimaryInBy, metadata.AttributeIndexingPressureStagePrimary)
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.CoordinatingInBy, metadata.AttributeIndexingPressureStageCoordinating)
+		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.ReplicaInBy, metadata.AttributeIndexingPressureStageReplica)
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.PrimaryRejections)
 		r.mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(now, info.IndexingPressure.Memory.Total.ReplicaRejections)
 
-		r.mb.RecordElasticsearchNodeClusterStateQueueCommittedDataPoint(now, info.Discovery.ClusterStateQueue.Committed)
-		r.mb.RecordElasticsearchNodeClusterStateQueuePendingDataPoint(now, info.Discovery.ClusterStateQueue.Pending)
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStateCommitted)
+		r.mb.RecordElasticsearchClusterStateQueueDataPoint(now, info.Discovery.ClusterStateQueue.Committed, metadata.AttributeClusterStateQueueStatePending)
 
-		r.mb.RecordElasticsearchNodeClusterPublishedStatesCompatibleDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs)
-		r.mb.RecordElasticsearchNodeClusterPublishedStatesIncompatibleDataPoint(now, info.Discovery.PublishedClusterStates.IncompatibleDiffs)
-		r.mb.RecordElasticsearchNodeClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
+		r.mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(now, info.Discovery.PublishedClusterStates.FullStates)
+		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateCompatible)
+		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.IncompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateIncompatible)
 
 		for csuName, csuInfo := range info.Discovery.ClusterStateUpdate {
-			r.mb.RecordElasticsearchNodeClusterStateUpdateCountDataPoint(now, csuInfo.Count, csuName)
-			r.mb.RecordElasticsearchNodeClusterStateUpdateComputationTimeDataPoint(now, csuInfo.ComputationTimeMillis, csuName)
-			r.mb.RecordElasticsearchNodeClusterStateUpdateNotificationTimeDataPoint(now, csuInfo.NotificationTimeMillis, csuName)
+			r.mb.RecordElasticsearchClusterStateUpdateCountDataPoint(now, csuInfo.Count, csuName)
+			r.mb.RecordElasticsearchClusterStateUpdateComputationTimeDataPoint(now, csuInfo.ComputationTimeMillis, csuName)
+			r.mb.RecordElasticsearchClusterStateUpdateNotificationTimeDataPoint(now, csuInfo.NotificationTimeMillis, csuName)
 
 			if csuName != metadata.AttributeClusterStateUpdateTypeUnchanged {
-				r.mb.RecordElasticsearchNodeClusterStateUpdateContextConstructionTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, csuName)
-				r.mb.RecordElasticsearchNodeClusterStateUpdateCommitTimeDataPoint(now, csuInfo.CommitTimeMillis, csuName)
-				r.mb.RecordElasticsearchNodeClusterStateUpdateCompletionTimeDataPoint(now, csuInfo.CompletionTimeMillis, csuName)
-				r.mb.RecordElasticsearchNodeClusterStateUpdateMasterApplyTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, csuName)
+				r.mb.RecordElasticsearchClusterStateUpdateContextConstructionTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, csuName)
+				r.mb.RecordElasticsearchClusterStateUpdateCommitTimeDataPoint(now, csuInfo.CommitTimeMillis, csuName)
+				r.mb.RecordElasticsearchClusterStateUpdateCompletionTimeDataPoint(now, csuInfo.CompletionTimeMillis, csuName)
+				r.mb.RecordElasticsearchClusterStateUpdateMasterApplyTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, csuName)
 			}
 		}
 
-		r.mb.RecordElasticsearchNodeIngestCountDataPoint(now, info.Ingest.Total.Count)
-		r.mb.RecordElasticsearchNodeIngestCurrentDataPoint(now, info.Ingest.Total.Current)
-		r.mb.RecordElasticsearchNodeIngestFailedDataPoint(now, info.Ingest.Total.Failed)
+		r.mb.RecordElasticsearchNodeIngestDocumentsDataPoint(now, info.Ingest.Total.Count)
+		r.mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(now, info.Ingest.Total.Current)
+		r.mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(now, info.Ingest.Total.Failed)
 
 		for ipName, ipInfo := range info.Ingest.Pipelines {
-			r.mb.RecordElasticsearchNodeIngestPipelineCountDataPoint(now, ipInfo.Count, ipName)
-			r.mb.RecordElasticsearchNodeIngestPipelineFailedDataPoint(now, ipInfo.Failed, ipName)
-			r.mb.RecordElasticsearchNodeIngestPipelineCurrentDataPoint(now, ipInfo.Current, ipName)
+			r.mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(now, ipInfo.Count, ipName)
+			r.mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(now, ipInfo.Failed, ipName)
+			r.mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(now, ipInfo.Current, ipName)
 		}
 
 		r.mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(now, info.Script.CacheEvictions)
