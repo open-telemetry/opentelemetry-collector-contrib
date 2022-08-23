@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDirectLogsUnmarshaler(t *testing.T) {
-	um := newDirectLogsUnmarshaler("test")
-	assert.Equal(t, "test", um.Encoding())
+func TestNewRawUnmarshaler(t *testing.T) {
+	um := newRawLogsUnmarshaler()
+	assert.Equal(t, "raw", um.Encoding())
 }

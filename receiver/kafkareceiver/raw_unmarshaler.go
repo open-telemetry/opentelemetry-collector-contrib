@@ -19,22 +19,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-type directLogsUnmarshaler struct {
-	encoding string
+type rawLogsUnmarshaler struct {
 }
 
-func (p directLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
+func newRawLogsUnmarshaler() LogsUnmarshaler {
+	return rawLogsUnmarshaler{}
+}
+
+func (r rawLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
 	l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetBytesVal(pcommon.NewImmutableByteSlice(buf))
 	return l, nil
 }
 
-func (p directLogsUnmarshaler) Encoding() string {
-	return p.encoding
-}
-
-func newDirectLogsUnmarshaler(encoding string) LogsUnmarshaler {
-	return directLogsUnmarshaler{
-		encoding: encoding,
-	}
+func (r rawLogsUnmarshaler) Encoding() string {
+	return "raw"
 }
