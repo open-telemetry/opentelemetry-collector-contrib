@@ -39,6 +39,7 @@ func TestScrape(t *testing.T) {
 		bootTimeFunc                           func() (uint64, error)
 		ioCountersFunc                         func(bool) ([]net.IOCountersStat, error)
 		connectionsFunc                        func(string) ([]net.ConnectionStat, error)
+		conntrackFunc                          func() ([]net.FilterStat, error)
 		expectNetworkMetrics                   bool
 		expectedStartTime                      pcommon.Timestamp
 		newErrRegex                            string
@@ -123,6 +124,15 @@ func TestScrape(t *testing.T) {
 			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
+		{
+			name: "Conntrack error ignorred if metric disabled",
+			config: Config{
+				Metrics: metadata.DefaultMetricsSettings(), // conntrack metrics are disabled by default
+			},
+			conntrackFunc:                       func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			expectNetworkMetrics:                true,
+			expectMetricsWithDirectionAttribute: true,
+		},
 	}
 
 	for _, test := range testCases {
@@ -146,6 +156,9 @@ func TestScrape(t *testing.T) {
 			}
 			if test.connectionsFunc != nil {
 				scraper.connections = test.connectionsFunc
+			}
+			if test.conntrackFunc != nil {
+				scraper.conntrack = test.conntrackFunc
 			}
 
 			err = scraper.start(context.Background(), componenttest.NewNopHost())

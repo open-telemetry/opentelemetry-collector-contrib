@@ -17,6 +17,7 @@ package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
@@ -29,9 +30,9 @@ const (
 	defaultTimeout time.Duration = 5 * time.Second
 
 	// defaultIngestURL
-	defaultIngestURL = "https://logs.logdna.com/log/ingest"
+	defaultIngestURL = "https://logs.mezmo.com/otel/ingest/rest"
 
-	// See https://docs.logdna.com/docs/ingestion#service-limits for details
+	// See https://docs.mezmo.com/docs/Mezmo-ingestion-service-limits for details
 
 	// Maximum payload in bytes that can be POST'd to the REST endpoint
 	maxBodySize     = 10 * 1024 * 1024
@@ -68,11 +69,15 @@ func (c *Config) Validate() error {
 
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
-		return fmt.Errorf("\"ingest_url\" must be a valid URL")
+		return fmt.Errorf(`"ingest_url" must be a valid URL`)
+	}
+
+	if !strings.HasSuffix(c.IngestURL, "/otel/ingest/rest") {
+		return fmt.Errorf(`"ingest_url" must end with "/otel/ingest/rest"`)
 	}
 
 	if parsed.Host == "" {
-		return fmt.Errorf("\"ingest_url\" must contain a valid host")
+		return fmt.Errorf(`"ingest_url" must contain a valid host`)
 	}
 
 	return nil

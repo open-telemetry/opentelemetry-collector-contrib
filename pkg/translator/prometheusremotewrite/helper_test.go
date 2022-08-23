@@ -457,10 +457,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceName:       "service-name",
 		conventions.AttributeServiceNamespace:  "service-namespace",
 		conventions.AttributeServiceInstanceID: "service-instance-id",
-		"resource_attr":                        "resource-attr-val-1",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
 	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
+	resourceWithServiceAttrs.Attributes().UpsertString("resource_attr", "resource-attr-val-1")
+	resourceWithOnlyServiceAttrs := pcommon.NewResource()
+	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithOnlyServiceAttrs.Attributes())
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource
@@ -478,11 +480,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target-resource_attr-resource-attr-val-1": {
+				"info-__name__-target_info-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "target",
+							Value: "target_info",
 						},
 						{
 							Name:  "resource_attr",
@@ -504,11 +506,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			timestamp: testdata.TestMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-foo_target-resource_attr-resource-attr-val-1": {
+				"info-__name__-foo_target_info-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "foo_target",
+							Value: "foo_target_info",
 						},
 						{
 							Name:  "resource_attr",
@@ -529,11 +531,11 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
 			expected: map[string]*prompb.TimeSeries{
-				"info-__name__-target-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
+				"info-__name__-target_info-instance-service-instance-id-job-service-namespace/service-name-resource_attr-resource-attr-val-1": {
 					Labels: []prompb.Label{
 						{
 							Name:  "__name__",
-							Value: "target",
+							Value: "target_info",
 						},
 						{
 							Name:  "instance",
@@ -556,6 +558,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc:      "with resource, with only service attributes",
+			resource:  resourceWithOnlyServiceAttrs,
+			timestamp: testdata.TestMetricStartTimestamp,
+			expected:  map[string]*prompb.TimeSeries{},
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

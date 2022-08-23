@@ -21,11 +21,11 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 )
@@ -41,7 +41,7 @@ func TestNewReceiver_invalid_version_err(t *testing.T) {
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
@@ -71,7 +71,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 		return nil, nil
 	}
 	allScrapers["brokers"] = mockScraper
@@ -83,7 +83,7 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, *zap.Logger) (scraperhelper.Scraper, error) {
+	mockScraper := func(context.Context, Config, *sarama.Config, component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
 		return nil, fmt.Errorf("fail")
 	}
 	allScrapers["brokers"] = mockScraper

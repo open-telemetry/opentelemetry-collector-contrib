@@ -18,19 +18,19 @@ import (
 	"fmt"
 	"go/build"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 
 	"golang.org/x/mod/modfile"
+	"golang.org/x/mod/module"
 )
 
 // DefaultSrcRoot is the default root of the collector repo, relative to the
 // current working directory. Can be used to create a DirResolver.
 const DefaultSrcRoot = "."
 
-// DefaultModule is the module prefix of otelcol. Can be used to create a
+// DefaultModule is the module prefix of contrib. Can be used to create a
 // DirResolver.
 const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
 
@@ -57,29 +57,81 @@ func NewDirResolver(srcRoot string, moduleName string) DirResolver {
 	}
 }
 
-// PackageDir accepts a Type and returns its package dir.
-// If package is not found locally, searches for package location through go.mod.
-// Attempts to search through an absolute path or GOPATH
-func (dr DirResolver) PackageDir(t reflect.Type) (string, error) {
-	pkg := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
-	dir := dr.localPackageDir(pkg)
-	_, err := os.ReadDir(dir)
+// TypeToPackagePath accepts a Type and returns the filesystem path. If the
+// path does not exist in the current project, returns location in GOPATH.
+func (dr DirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
+	pkgPath := t.PkgPath()
+	if strings.HasPrefix(pkgPath, dr.ModuleName) {
+		return dr.packagePathToVerifiedProjectPath(strings.TrimPrefix(pkgPath, dr.ModuleName+"/"))
+	}
+	verifiedGoPath, err := dr.packagePathToVerifiedGoPath(pkgPath)
 	if err != nil {
-		if dir, err = dr.externalPackageDir(pkg); err != nil {
-			return "", fmt.Errorf("could not find the pkg %q: %w", pkg, err)
+		return "", fmt.Errorf("could not find the pkg %q: %w", pkgPath, err)
+	}
+	return verifiedGoPath, nil
+}
+
+// TypeToProjectPath accepts a Type and returns its directory in the current project. If
+// the type doesn't live in the current project, returns "".
+func (dr DirResolver) TypeToProjectPath(t reflect.Type) string {
+	if !strings.HasPrefix(t.PkgPath(), dr.ModuleName) {
+		return ""
+	}
+	trimmed := strings.TrimPrefix(t.PkgPath(), dr.ModuleName+"/")
+	dir, err := dr.packagePathToVerifiedProjectPath(trimmed)
+	if err != nil {
+		return ""
+	}
+	return dir
+}
+
+func (dr DirResolver) packagePathToVerifiedProjectPath(packagePath string) (string, error) {
+	dir := dr.packagePathToProjectPath(packagePath)
+	_, err := os.ReadDir(dir)
+	return dir, err
+}
+
+// packagePathToProjectPath returns the path to a package in the local project.
+func (dr DirResolver) packagePathToProjectPath(packagePath string) string {
+	return filepath.Join(dr.SrcRoot, packagePath)
+}
+
+func (dr DirResolver) packagePathToVerifiedGoPath(packagePath string) (string, error) {
+	dir, err := dr.packagePathToGoPath(packagePath)
+	if err != nil {
+		return "", err
+	}
+	_, err = os.ReadDir(dir)
+	return dir, err
+}
+
+// packagePathToGoPath accepts a package path (e.g.
+// "go.opentelemetry.io/collector/receiver/otlpreceiver") and returns the
+// filesystem path starting at GOPATH by reading the current module's go.mod
+// file to get the version and appending it to the filesystem path.
+func (dr DirResolver) packagePathToGoPath(packagePath string) (string, error) {
+	gomodPath := filepath.Join(dr.SrcRoot, "go.mod")
+	gomodBytes, err := os.ReadFile(gomodPath)
+	if err != nil {
+		return "", err
+	}
+	parsedModfile, err := modfile.Parse(gomodPath, gomodBytes, nil)
+	if err != nil {
+		return "", err
+	}
+	for _, modfileRequire := range parsedModfile.Require {
+		modpath := modfileRequire.Syntax.Token[0]
+		if strings.HasPrefix(packagePath, modpath) {
+			return modfileRequreToGoPath(modfileRequire)
 		}
 	}
-	return dir, nil
+	return "", fmt.Errorf("packagePathToGoPath: not found in go.mod: package path %q", packagePath)
 }
 
-// localPackageDir returns the path to a local package.
-func (dr DirResolver) localPackageDir(pkg string) string {
-	return filepath.Join(dr.SrcRoot, pkg)
-}
-
-// externalPackageDir returns the path to an external package.
-func (dr DirResolver) externalPackageDir(pkg string) (string, error) {
-	line, version, err := grepMod(filepath.Join(dr.SrcRoot, "go.mod"), pkg)
+// modfileRequreToGoPath converts a modfile.Require value to a fully-qualified
+// filesystem path with a GOPATH prefix.
+func modfileRequreToGoPath(required *modfile.Require) (string, error) {
+	path, err := requireTokensToPartialPath(required.Syntax.Token)
 	if err != nil {
 		return "", err
 	}
@@ -87,57 +139,19 @@ func (dr DirResolver) externalPackageDir(pkg string) (string, error) {
 	if goPath == "" {
 		goPath = build.Default.GOPATH
 	}
-	pkgPath := filepath.FromSlash(dr.buildExternalPath(goPath, pkg, line, version))
-	if _, err = os.ReadDir(pkgPath); err != nil {
+	return filepath.Join(goPath, "pkg", "mod", path), nil
+}
+
+// requireTokensToPartialPath converts a string slice of length two e.g.
+// ["github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector",
+// "42"] from a modfile.Require struct to an escaped, partial filesystem path
+// (without the GOPATH prefix) e.g.
+// "github.com/!google!cloud!platform/opentelemetry-operations-go/exporter/collector@42"
+func requireTokensToPartialPath(tokens []string) (string, error) {
+	pathPart, err := module.EscapePath(tokens[0])
+	if err != nil {
 		return "", err
 	}
-	return pkgPath, nil
-}
-
-// grepMod returns the line within go.mod associated with the package
-// we are looking for.
-
-func grepMod(goModPath string, pkg string) (pkgPath string, version string, err error) {
-	file, err := os.ReadFile(goModPath)
-	if err != nil {
-		return "", "", err
-	}
-	modContents, err := modfile.Parse(goModPath, file, nil)
-	if err != nil {
-		return "", "", err
-	}
-	for _, line := range modContents.Replace {
-		switch {
-		case line.Old.Path == DefaultModule:
-			pkgPath, version = line.New.Path, line.New.Version
-		case strings.HasPrefix(pkg, line.Old.Path):
-			return line.New.Path, line.New.Version, nil
-		}
-	}
-	for _, line := range modContents.Require {
-		switch {
-		case pkgPath == "" && line.Mod.Path == DefaultModule:
-			pkgPath, version = line.Mod.Path, line.Mod.Version
-		case strings.HasPrefix(pkg, line.Mod.Path):
-			return line.Mod.Path, line.Mod.Version, nil
-		}
-	}
-	isDefaultModPkg := strings.Contains(pkg, DefaultModule)
-	if isDefaultModPkg && pkgPath != "" {
-		return pkgPath, version, nil
-	}
-	return "", "", fmt.Errorf("could not find package: %q", pkg)
-}
-
-// buildExternalPath builds a path to a package that is not local to directory.
-func (dr DirResolver) buildExternalPath(goPath, pkg, line, v string) string {
-
-	switch {
-	case strings.HasPrefix(line, "./"):
-		return path.Join(dr.SrcRoot, line)
-	case strings.HasPrefix(line, "../"):
-		return path.Join(dr.SrcRoot, line, strings.TrimPrefix(pkg, DefaultModule))
-	default:
-		return path.Join(goPath, "pkg", "mod", line+"@"+v, strings.TrimPrefix(pkg, line))
-	}
+	version := tokens[1]
+	return fmt.Sprintf("%s@%s", pathPart, version), nil
 }

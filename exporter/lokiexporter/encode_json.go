@@ -60,7 +60,7 @@ func serializeBody(body pcommon.Value) ([]byte, error) {
 		str, err = json.Marshal(body.SliceVal().AsRaw())
 
 	case pcommon.ValueTypeBytes:
-		str, err = json.Marshal(body.MBytesVal())
+		str, err = json.Marshal(body.BytesVal().AsRaw())
 
 	default:
 		err = fmt.Errorf("unsuported body type to serialize")

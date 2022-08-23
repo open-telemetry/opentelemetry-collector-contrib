@@ -177,7 +177,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -186,7 +186,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -195,7 +195,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Millisecond)
+				cfg.PollInterval = time.Millisecond
 				return cfg
 			}(),
 		},
@@ -204,7 +204,7 @@ func TestUnmarshal(t *testing.T) {
 			ExpectErr: false,
 			Expect: func() *Config {
 				cfg := NewConfig()
-				cfg.PollInterval = helper.NewDuration(time.Second)
+				cfg.PollInterval = time.Second
 				return cfg
 			}(),
 		},
@@ -399,7 +399,7 @@ func TestBuild(t *testing.T) {
 		cfg := NewConfig()
 		cfg.Include = []string{"/var/log/testpath.*"}
 		cfg.Exclude = []string{"/var/log/testpath.ex*"}
-		cfg.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+		cfg.PollInterval = 10 * time.Millisecond
 		return cfg
 	}
 
@@ -407,15 +407,15 @@ func TestBuild(t *testing.T) {
 		name             string
 		modifyBaseConfig func(*Config)
 		errorRequirement require.ErrorAssertionFunc
-		validate         func(*testing.T, *Input)
+		validate         func(*testing.T, *Manager)
 	}{
 		{
 			"Basic",
 			func(f *Config) {},
 			require.NoError,
-			func(t *testing.T, f *Input) {
+			func(t *testing.T, f *Manager) {
 				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
-				require.Equal(t, f.PollInterval, 10*time.Millisecond)
+				require.Equal(t, f.pollInterval, 10*time.Millisecond)
 			},
 		},
 		{
@@ -455,7 +455,7 @@ func TestBuild(t *testing.T) {
 				}
 			},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"MultilineConfiguredEndPattern",
@@ -466,7 +466,7 @@ func TestBuild(t *testing.T) {
 				}
 			},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"InvalidEncoding",
@@ -495,7 +495,7 @@ func TestBuild(t *testing.T) {
 				f.Splitter.Multiline = helper.MultilineConfig{}
 			},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"InvalidLineStartRegex",
@@ -557,20 +557,17 @@ func NewTestConfig() *Config {
 
 func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 	expect := NewTestConfig()
-	input := map[string]interface{}{
-		// Config
-		"id":            "config_test",
-		"type":          "file_input",
+	cfgMap := map[string]interface{}{
 		"attributes":    map[string]interface{}{},
 		"resource":      map[string]interface{}{},
 		"include":       expect.Include,
 		"exclude":       expect.Exclude,
-		"poll_interval": 0.2,
+		"poll_interval": 200 * time.Millisecond,
 		"multiline": map[string]interface{}{
 			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
 			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
 		},
-		"force_flush_period":   0.5,
+		"force_flush_period":   500 * time.Millisecond,
 		"include_file_name":    true,
 		"include_file_path":    false,
 		"start_at":             "end",
@@ -584,24 +581,19 @@ func TestMapStructureDecodeConfigWithHook(t *testing.T) {
 	dc := &mapstructure.DecoderConfig{Result: &actual, DecodeHook: helper.JSONUnmarshalerHook()}
 	ms, err := mapstructure.NewDecoder(dc)
 	require.NoError(t, err)
-	err = ms.Decode(input)
+	err = ms.Decode(cfgMap)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)
 }
 
 func TestMapStructureDecodeConfig(t *testing.T) {
 	expect := NewTestConfig()
-	input := map[string]interface{}{
-		// Config
-		"id":         "config_test",
-		"type":       "file_input",
-		"attributes": map[string]interface{}{},
-		"resource":   map[string]interface{}{},
-		"include":    expect.Include,
-		"exclude":    expect.Exclude,
-		"poll_interval": map[string]interface{}{
-			"Duration": 200 * 1000 * 1000,
-		},
+	cfgMap := map[string]interface{}{
+		"attributes":    map[string]interface{}{},
+		"resource":      map[string]interface{}{},
+		"include":       expect.Include,
+		"exclude":       expect.Exclude,
+		"poll_interval": 200 * time.Millisecond,
 		"multiline": map[string]interface{}{
 			"line_start_pattern": expect.Splitter.Multiline.LineStartPattern,
 			"line_end_pattern":   expect.Splitter.Multiline.LineEndPattern,
@@ -613,13 +605,11 @@ func TestMapStructureDecodeConfig(t *testing.T) {
 		"max_log_size":         1024 * 1024,
 		"max_concurrent_files": 1024,
 		"encoding":             "utf16",
-		"force_flush_period": map[string]interface{}{
-			"Duration": 500 * 1000 * 1000,
-		},
+		"force_flush_period":   500 * time.Millisecond,
 	}
 
 	var actual Config
-	err := mapstructure.Decode(input, &actual)
+	err := mapstructure.Decode(cfgMap, &actual)
 	require.NoError(t, err)
 	require.Equal(t, expect, &actual)
 }

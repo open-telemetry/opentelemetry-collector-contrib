@@ -22,6 +22,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -78,9 +79,13 @@ func TestMetricsGrouping(t *testing.T) {
 					otlpDataModelGateEnabled: useOTLP,
 				}
 
-				mtp, err := processorhelper.NewMetricsProcessor(&Config{
-					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-				}, next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
+				mtp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+					context.Background(),
+					componenttest.NewNopProcessorCreateSettings(),
+					&Config{
+						ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+					},
+					next, p.processMetrics, processorhelper.WithCapabilities(consumerCapabilities))
 				require.NoError(t, err)
 
 				caps := mtp.Capabilities()

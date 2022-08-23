@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
 import (
@@ -21,7 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -200,7 +199,7 @@ func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, re
 		}
 	}
 
-	body, err := ioutil.ReadAll(bodyReader)
+	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errReadBodyRespBody, err)
 		return nil, false
@@ -215,7 +214,10 @@ func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWrite
 	}
 
 	resp.WriteHeader(http.StatusOK)
-	resp.Write(okRespBody)
+	_, err = resp.Write(okRespBody)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errNextConsumerRespBody, err)
+	}
 }
 
 func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Request) {
@@ -239,7 +241,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 
 	if len(msg.Datapoints) == 0 {
 		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
-		resp.Write(okRespBody)
+		_, _ = resp.Write(okRespBody)
 		return
 	}
 
@@ -285,7 +287,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 
 	if len(msg.Events) == 0 {
 		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
-		resp.Write(okRespBody)
+		_, _ = resp.Write(okRespBody)
 		return
 	}
 

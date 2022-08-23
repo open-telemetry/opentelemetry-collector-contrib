@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: receiver_creator
+note: Correct observer instance reference by updating watch_observers use ComponentID instead of just Type
+issues: [12801]
