@@ -135,9 +135,7 @@ func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_
 		messageVpnNameAttrKey = "service.instance.id"
 		solosVersionAttrKey   = "service.version"
 	)
-	if spanData.RouterName != nil {
-		attrMap.InsertString(routerNameAttrKey, *spanData.RouterName)
-	}
+	attrMap.InsertString(routerNameAttrKey, spanData.RouterName)
 	if spanData.MessageVpnName != nil {
 		attrMap.InsertString(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
@@ -286,7 +284,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	}
 	attrMap.InsertInt(peerPortAttrKey, int64(spanData.PeerPort))
 
-	attrMap.InsertBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
+	attrMap.InsertBool(droppedUserPropertiesAttrKey, spanData.DroppedApplicationMessageProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
 			u.insertUserProperty(attrMap, key, value.Value)
@@ -372,6 +370,10 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		name = "end"
 	case model_v1.SpanData_TransactionEvent_PREPARE:
 		name = "prepare"
+	case model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
+		name = "session_timeout"
+	case model_v1.SpanData_TransactionEvent_ROLLBACK_ONLY:
+		name = "rollback_only"
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction type %d", transactionEvent.GetType()))
 		recordRecoverableUnmarshallingError()
@@ -387,8 +389,8 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		initiator = "client"
 	case model_v1.SpanData_TransactionEvent_ADMIN:
 		initiator = "administrator"
-	case model_v1.SpanData_TransactionEvent_SESSION_TIMEOUT:
-		initiator = "session timeout"
+	case model_v1.SpanData_TransactionEvent_BROKER:
+		initiator = "broker"
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
 		recordRecoverableUnmarshallingError()
