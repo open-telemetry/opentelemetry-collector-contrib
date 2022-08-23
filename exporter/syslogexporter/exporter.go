@@ -29,6 +29,7 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"github.com/influxdata/go-syslog/v3/rfc5424"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
@@ -201,4 +202,9 @@ func newExporter(logger *zap.Logger, cfg Config, client sysLogClient) (*syslogEx
 func (e *syslogExporter) Shutdown(ctx context.Context) error {
 	//todo support context
 	return e.client.Close()
+}
+
+func (e *syslogExporter) Start(ctx context.Context, host component.Host) error {
+	// no need to init
+	return nil
 }
