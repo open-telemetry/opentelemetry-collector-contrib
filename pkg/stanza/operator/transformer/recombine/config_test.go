@@ -84,7 +84,7 @@ func TestConfig(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Run(t, defaultCfg())
+			tc.RunDeprecated(t, defaultCfg())
 		})
 	}
 }
