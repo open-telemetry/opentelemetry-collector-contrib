@@ -212,6 +212,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		replyToAttrKey                     = "messaging.solace.reply_to_topic"
 		receiveTimeAttrKey                 = "messaging.solace.broker_receive_time_unix_nano"
 		droppedUserPropertiesAttrKey       = "messaging.solace.dropped_user_properties"
+		deliveryModeAttrKey                = "messaging.solace.delivery_mode"
 		hostIPAttrKey                      = "net.host.ip"
 		hostPortAttrKey                    = "net.host.port"
 		peerIPAttrKey                      = "net.peer.ip"
@@ -233,6 +234,21 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	attrMap.InsertString(clientNameAttrKey, spanData.ClientName)
 	attrMap.InsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
 	attrMap.InsertString(destinationAttrKey, spanData.Topic)
+
+	var deliveryMode string
+	switch spanData.DeliveryMode {
+	case model_v1.SpanData_DIRECT:
+		deliveryMode = "DIRECT"
+	case model_v1.SpanData_NON_PERSISTENT:
+		deliveryMode = "NON_PERSISTENT"
+	case model_v1.SpanData_PERSISTENT:
+		deliveryMode = "PERSISTENT"
+	default:
+		deliveryMode = "UNKNOWN"
+		u.logger.Warn(fmt.Sprintf("Unknown delivery mode %d", spanData.DeliveryMode))
+		recordRecoverableUnmarshallingError()
+	}
+	attrMap.InsertString(deliveryModeAttrKey, deliveryMode)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
