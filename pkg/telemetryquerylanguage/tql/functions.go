@@ -24,9 +24,9 @@ type PathExpressionParser func(*Path) (GetSetter, error)
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
 // NewFunctionCall Visible for testing
-func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
-	if f, ok := functions[inv.Function]; ok {
-		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser, enumParser)
+func (p *Parser) NewFunctionCall(inv Invocation) (ExprFunc, error) {
+	if f, ok := p.Functions[inv.Function]; ok {
+		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
 			return nil, err
 		}
@@ -44,13 +44,13 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]reflect.Value, error) {
+func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value, error) {
 	var args []reflect.Value
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
 		if argType.Kind() == reflect.Slice {
-			err := buildSliceArg(inv, argType, i, &args, functions, pathParser, enumParser)
+			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
@@ -60,7 +60,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 			}
 
 			argDef := inv.Arguments[i]
-			err := buildArg(argDef, argType, i, &args, functions, pathParser, enumParser)
+			err := p.buildArg(argDef, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
@@ -69,8 +69,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 	return args, nil
 }
 
-func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
+func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
 	switch argType.Elem().Name() {
 	case reflect.String.String():
 		var arg []string
@@ -107,7 +106,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 	case "Getter":
 		var arg []Getter
 		for j := startingIndex; j < len(inv.Arguments); j++ {
-			val, err := NewGetter(inv.Arguments[j], functions, pathParser, enumParser)
+			val, err := p.NewGetter(inv.Arguments[j])
 			if err != nil {
 				return err
 			}
@@ -120,25 +119,24 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 	return nil
 }
 
-func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
+func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough
 	case "GetSetter":
-		arg, err := pathParser(argDef.Path)
+		arg, err := p.PathParser(argDef.Path)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Getter":
-		arg, err := NewGetter(argDef, functions, pathParser, enumParser)
+		arg, err := p.NewGetter(argDef)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Enum":
-		arg, err := enumParser(argDef.Enum)
+		arg, err := p.EnumParser(argDef.Enum)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}

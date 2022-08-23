@@ -17,6 +17,7 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
@@ -38,15 +39,37 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := tql.ParseQueries(c.Traces.Queries, traces.Functions(), tqltraces.ParsePath, tqltraces.ParseEnum)
+	logger, _ := zap.NewProduction()
+
+	tqlp := tql.Parser{
+		Functions:  traces.Functions(),
+		PathParser: tqltraces.ParsePath,
+		EnumParser: tqltraces.ParseEnum,
+		Logger:     logger,
+	}
+	_, err := tqlp.ParseQueries(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Metrics.Queries, metrics.Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+
+	tqlp = tql.Parser{
+		Functions:  metrics.Functions(),
+		PathParser: tqlmetrics.ParsePath,
+		EnumParser: tqlmetrics.ParseEnum,
+		Logger:     logger,
+	}
+	_, err = tqlp.ParseQueries(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Logs.Queries, logs.Functions(), tqllogs.ParsePath, tqllogs.ParseEnum)
+
+	tqlp = tql.Parser{
+		Functions:  logs.Functions(),
+		PathParser: tqllogs.ParsePath,
+		EnumParser: tqllogs.ParseEnum,
+		Logger:     logger,
+	}
+	_, err = tqlp.ParseQueries(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

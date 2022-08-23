@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
@@ -109,9 +110,16 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"hello": hello}
 
+	p := Parser{
+		Functions:  functions,
+		PathParser: testParsePath,
+		EnumParser: testParseEnum,
+		Logger:     zaptest.NewLogger(t),
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := NewGetter(tt.val, functions, testParsePath, testParseEnum)
+			reader, err := p.NewGetter(tt.val)
 			assert.NoError(t, err)
 			val := reader.Get(tqltest.TestTransformContext{
 				Item: tt.want,
@@ -121,7 +129,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := NewGetter(Value{}, functions, testParsePath, testParseEnum)
+		_, err := p.NewGetter(Value{})
 		assert.Error(t, err)
 	})
 }

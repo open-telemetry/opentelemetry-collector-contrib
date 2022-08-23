@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
@@ -32,6 +33,13 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_enum"] = functionWithEnum
+
+	p := Parser{
+		Functions:  functions,
+		PathParser: testParsePath,
+		EnumParser: testParseEnum,
+		Logger:     zaptest.NewLogger(t),
+	}
 
 	tests := []struct {
 		name string
@@ -134,16 +142,22 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
+			_, err := p.NewFunctionCall(tt.inv)
 			assert.Error(t, err)
 		})
 	}
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	functions := DefaultFunctionsForTests()
+	p := Parser{
+		Functions:  DefaultFunctionsForTests(),
+		PathParser: testParsePath,
+		EnumParser: testParseEnum,
+		Logger:     zaptest.NewLogger(t),
+	}
 
 	tests := []struct {
 		name string
@@ -411,7 +425,7 @@ func Test_NewFunctionCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
+			_, err := p.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
 		})
 	}

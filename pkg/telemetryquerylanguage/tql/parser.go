@@ -21,6 +21,7 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
@@ -192,7 +193,14 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
+type Parser struct {
+	Functions  map[string]interface{}
+	PathParser PathExpressionParser
+	EnumParser EnumParser
+	Logger     *zap.Logger
+}
+
+func (p *Parser) ParseQueries(statements []string) ([]Query, error) {
 	var queries []Query
 	var errors error
 
@@ -202,12 +210,12 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
+		function, err := p.NewFunctionCall(parsed.Invocation)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		expression, err := newBooleanExpressionEvaluator(parsed.WhereClause, functions, pathParser, enumParser)
+		expression, err := p.newBooleanExpressionEvaluator(parsed.WhereClause)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue

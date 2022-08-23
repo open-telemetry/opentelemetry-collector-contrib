@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
+	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect

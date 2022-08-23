@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
@@ -68,12 +69,19 @@ func fillTestAttributes(attrs pcommon.Map) {
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
+	tqlp := tql.Parser{
+		Functions:  Functions(),
+		PathParser: tqlmetrics.ParsePath,
+		EnumParser: tqlmetrics.ParseEnum,
+		Logger:     zaptest.NewLogger(t),
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+			evaluate, err := tqlp.NewFunctionCall(tt.inv)
 			assert.NoError(t, err)
 
 			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))

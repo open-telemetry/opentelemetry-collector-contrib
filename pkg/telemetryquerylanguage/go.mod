@@ -10,9 +10,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/multierr v1.8.0
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e
+	go.uber.org/zap v1.22.0
 )
 
 require (
+	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect

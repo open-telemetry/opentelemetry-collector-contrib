@@ -31,7 +31,13 @@ type Processor struct {
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, tqllogs.ParsePath, tqllogs.ParseEnum)
+	tqlp := tql.Parser{
+		Functions:  functions,
+		PathParser: tqllogs.ParsePath,
+		EnumParser: tqllogs.ParseEnum,
+		Logger:     settings.Logger,
+	}
+	queries, err := tqlp.ParseQueries(statements)
 	if err != nil {
 		return nil, err
 	}
