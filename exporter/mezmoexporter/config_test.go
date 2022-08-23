@@ -80,7 +80,7 @@ func TestLoadAllSettingsConfig(t *testing.T) {
 			NumConsumers: 7,
 			QueueSize:    17,
 		},
-		IngestURL: "https://alternate.logdna.com/log/ingest",
+		IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
 		IngestKey: "1234509876",
 	}
 	assert.Equal(t, &expectedCfg, e)
