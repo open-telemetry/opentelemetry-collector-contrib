@@ -96,7 +96,6 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	skip(t, "Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
 
 	targetsMap := getOpenMetricsTestData(true)
 	targets := make([]*testData, 0)

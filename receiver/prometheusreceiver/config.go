@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,6 +29,7 @@ import (
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/file"
+	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"go.opentelemetry.io/collector/config"
@@ -38,6 +40,10 @@ import (
 const (
 	// The key for Prometheus scraping configs.
 	prometheusConfigKey = "config"
+
+	// keys to access the http_sd_config from config root
+	targetAllocatorConfigKey       = "target_allocator"
+	targetAllocatorHTTPSDConfigKey = "http_sd_config"
 )
 
 // Config defines configuration for Prometheus receiver.
@@ -55,10 +61,23 @@ type Config struct {
 	UseStartTimeMetric   bool   `mapstructure:"use_start_time_metric"`
 	StartTimeMetricRegex string `mapstructure:"start_time_metric_regex"`
 
+	TargetAllocator *targetAllocator `mapstructure:"target_allocator"`
+
 	// ConfigPlaceholder is just an entry to make the configuration pass a check
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{} `mapstructure:"config"`
+}
+
+type targetAllocator struct {
+	Endpoint    string        `mapstructure:"endpoint"`
+	Interval    time.Duration `mapstructure:"interval"`
+	CollectorID string        `mapstructure:"collector_id"`
+	// ConfigPlaceholder is just an entry to make the configuration pass a check
+	// that requires that all keys present in the config actually exist on the
+	// structure, ie.: it will error if an unknown key is present.
+	ConfigPlaceholder interface{}        `mapstructure:"http_sd_config"`
+	HTTPSDConfig      *promHTTP.SDConfig `mapstructure:"-"`
 }
 
 var _ config.Receiver = (*Config)(nil)
@@ -129,9 +148,23 @@ func checkSDFile(filename string) error {
 // Validate checks the receiver configuration is valid.
 func (cfg *Config) Validate() error {
 	promConfig := cfg.PrometheusConfig
-	if promConfig == nil {
-		return nil // noop receiver
+	if promConfig != nil {
+		err := cfg.validatePromConfig(promConfig)
+		if err != nil {
+			return err
+		}
 	}
+
+	if cfg.TargetAllocator != nil {
+		err := cfg.validateTargetAllocatorConfig()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 	if len(promConfig.ScrapeConfigs) == 0 {
 		return errors.New("no Prometheus scrape_configs")
 	}
@@ -209,6 +242,24 @@ func (cfg *Config) Validate() error {
 	return nil
 }
 
+func (cfg *Config) validateTargetAllocatorConfig() error {
+	// validate targetAllocator
+	targetAllocatorConfig := cfg.TargetAllocator
+	if targetAllocatorConfig == nil {
+		return nil
+	}
+	// ensure valid endpoint
+	if _, err := url.ParseRequestURI(targetAllocatorConfig.Endpoint); err != nil {
+		return fmt.Errorf("TargetAllocator endpoint is not valid: %s", targetAllocatorConfig.Endpoint)
+	}
+	// ensure valid collectorID without variables
+	if targetAllocatorConfig.CollectorID == "" || strings.Contains(targetAllocatorConfig.CollectorID, "${") {
+		return fmt.Errorf("CollectorID is not a valid ID")
+	}
+
+	return nil
+}
+
 // Unmarshal a config.Parser into the config struct.
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if componentParser == nil {
@@ -235,6 +286,29 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	err = yaml.UnmarshalStrict(out, &cfg.PrometheusConfig)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %w", err)
+	}
+
+	// Unmarshal targetAllocator configs
+	targetAllocatorCfg, err := componentParser.Sub(targetAllocatorConfigKey)
+	if err != nil {
+		return err
+	}
+	targetAllocatorHTTPSDCfg, err := targetAllocatorCfg.Sub(targetAllocatorHTTPSDConfigKey)
+	if err != nil {
+		return err
+	}
+
+	targetAllocatorHTTPSDMap := targetAllocatorHTTPSDCfg.ToStringMap()
+	if len(targetAllocatorHTTPSDMap) != 0 {
+		targetAllocatorHTTPSDMap["url"] = "http://placeholder" // we have to set it as else the marshal will fail
+		httpSDConf, err := yaml.Marshal(targetAllocatorHTTPSDMap)
+		if err != nil {
+			return fmt.Errorf("prometheus receiver failed to marshal config to yaml: %w", err)
+		}
+		err = yaml.UnmarshalStrict(httpSDConf, &cfg.TargetAllocator.HTTPSDConfig)
+		if err != nil {
+			return fmt.Errorf("prometheus receiver failed to unmarshal yaml to prometheus config: %w", err)
+		}
 	}
 
 	return nil
