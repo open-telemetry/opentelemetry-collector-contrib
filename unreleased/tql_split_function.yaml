@@ -5,7 +5,7 @@ change_type: enhancement
 component: telemetryquerylanguage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add split function to convert a string attribute into an array of substrings separate by the delimiter.
+note: Add split factory function to separate a string by the delimiter, and returns an array of substrings.
 
 # One or more tracking issues related to the change
 issues: [11790]

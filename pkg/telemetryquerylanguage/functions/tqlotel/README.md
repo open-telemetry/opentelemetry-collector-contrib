@@ -5,6 +5,7 @@ The following functions are intended to be used in implementations of the Teleme
 Factory Functions
 - [SpanID](#spanid)
 - [TraceID](#traceid)
+- [Split](#split)
 
 Functions
 - [delete_key](#delete_key)
@@ -14,7 +15,7 @@ Functions
 - [limit](#limit)
 - [replace_all_matches](#replace_all_matches)
 - [replace_all_patterns](#replace_all_patterns)
-- [split](#split)
+
 
 ## SpanID
 
@@ -142,16 +143,17 @@ If one or more sections of `target` match `regex` they will get replaced with `r
 Examples:
 
 - `replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")`
-## split
 
-`split(target, delimiter)`
+## Split
 
-The `split` function converts a string attribute into an array of substrings split by the delimiter.
+`Split(target, delimiter)`
 
-`target` is a string attribute. `delimiter` is a string.
+The `Split` factory function separates a string by the delimiter, and returns an array of substrings.
 
-If the `target` is not a string, or the `target` is not exist, the `split` function will not change anything.
+`target` is a string. `delimiter` is a string.
+
+If the `target` is not a string or does not exist, the `Split` factory function will return `nil`.
 
 Examples:
-- If `attributes["flags"]` value is `"A|B|C"`, the following query will change the value to `["A", "B", "C"]`
-```split(attributes["flags"], "|")```
+
+- ```Split("A|B|C", "|")```

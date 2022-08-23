@@ -20,14 +20,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func Split(target tql.GetSetter, delimiter string) (tql.ExprFunc, error) {
+func Split(target tql.Getter, delimiter string) (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
 		if val := target.Get(ctx); val != nil {
 			if valStr, ok := val.(string); ok {
-				strSlice := strings.Split(valStr, delimiter)
-				if len(strSlice) > 0 {
-					target.Set(ctx, strSlice)
-				}
+				return strings.Split(valStr, delimiter)
 			}
 		}
 		return nil

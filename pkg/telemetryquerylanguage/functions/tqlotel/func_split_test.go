@@ -15,92 +15,69 @@
 package tqlotel
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_split(t *testing.T) {
-	target := &tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetItem().(pcommon.Value).StringVal()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			switch tv := val.(type) {
-			case string:
-				ctx.GetItem().(pcommon.Value).SetStringVal(tv)
-			case []string:
-				newSlice := pcommon.NewValueSlice()
-				for i := 0; i < len(tv); i++ {
-					newSlice.SliceVal().AppendEmpty().SetStringVal(tv[i])
-				}
-				newSlice.CopyTo(ctx.GetItem().(pcommon.Value))
-			default:
-				fmt.Printf("<Invalid value type %T>", tv)
-			}
-		},
-	}
-
 	tests := []struct {
 		name      string
-		target    tql.GetSetter
-		value     string
+		target    tql.Getter
 		delimiter string
-		want      func(pcommon.Value)
+		expected  interface{}
 	}{
 		{
-			name:      "split",
-			target:    target,
-			value:     "A|B|C",
-			delimiter: "|",
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("A")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("B")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("C")
+			name: "split string",
+			target: &tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return "A|B|C"
+				},
 			},
+			delimiter: "|",
+			expected:  []string{"A", "B", "C"},
 		},
 		{
-			name:      "split empty string",
-			target:    target,
-			value:     "",
-			delimiter: "|",
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("")
+			name: "split empty string",
+			target: &tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return ""
+				},
 			},
+			delimiter: "|",
+			expected:  []string{""},
 		},
 		{
-			name:      "delimiter empty",
-			target:    target,
-			value:     "A|B|C",
+			name: "split empty delimiter",
+			target: &tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return "A|B|C"
+				},
+			},
 			delimiter: "",
-			want: func(expectedValue pcommon.Value) {
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("A")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("|")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("B")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("|")
-				expectedValue.SliceVal().AppendEmpty().SetStringVal("C")
+			expected:  []string{"A", "|", "B", "|", "C"},
+		},
+		{
+			name: "split non-string",
+			target: &tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return 123
+				},
 			},
+			delimiter: "|",
+			expected:  nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scenarioValue := pcommon.NewValueString(tt.value)
-			ctx := tqltest.TestTransformContext{
-				Item: scenarioValue,
-			}
+			ctx := tqltest.TestTransformContext{}
 
 			exprFunc, _ := Split(tt.target, tt.delimiter)
-			exprFunc(ctx)
+			actual := exprFunc(ctx)
 
-			expected := pcommon.NewValueSlice()
-			tt.want(expected)
-
-			assert.Equal(t, expected, scenarioValue)
+			assert.Equal(t, tt.expected, actual)
 		})
 	}
 }
