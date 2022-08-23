@@ -200,7 +200,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 		return err // propagate any receive message error up to caller
 	}
 	// only set the disposition action after we have received a message successfully
-	disposition := service.ack
+	disposition := service.accept
 	defer func() { // on return of receiveMessage, we want to either ack or nack the message
 		if actionErr := disposition(ctx, msg); err == nil && actionErr != nil {
 			err = actionErr
@@ -214,7 +214,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 		s.settings.Logger.Error("Encountered error while unmarshalling message", zap.Error(unmarshalErr))
 		recordFatalUnmarshallingError()
 		if errors.Is(unmarshalErr, errUnknownTraceMessgeVersion) {
-			disposition = service.nack // if we don't know the version, reject the trace message since we will disable the receiver
+			disposition = service.failed // if we don't know the version, reject the trace message since we will disable the receiver
 			return unmarshalErr
 		}
 		recordDroppedSpanMessages() // if the error is some other unmarshalling error, we will ack the message and drop the content
@@ -226,7 +226,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	if forwardErr != nil {
 		if !consumererror.IsPermanent(forwardErr) { // reject the message if the error is not permanent so we can retry, don't increment dropped span messages
 			s.settings.Logger.Warn("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))
-			disposition = service.nack
+			disposition = service.failed
 		} else { // error is permanent, we want to accept the message and increment the number of dropped messages
 			s.settings.Logger.Warn("Encountered permanent error while forwarding traces to next receiver, will swallow trace", zap.Error(forwardErr))
 			recordDroppedSpanMessages()

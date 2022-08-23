@@ -397,14 +397,14 @@ func (m *mockMessagingService) receiveMessage(ctx context.Context) (*inboundMess
 	panic("did not expect receiveMessage to be called")
 }
 
-func (m *mockMessagingService) ack(ctx context.Context, msg *inboundMessage) error {
+func (m *mockMessagingService) accept(ctx context.Context, msg *inboundMessage) error {
 	if m.ackFunc != nil {
 		return m.ackFunc(ctx, msg)
 	}
 	panic("did not expect ack to be called")
 }
 
-func (m *mockMessagingService) nack(ctx context.Context, msg *inboundMessage) error {
+func (m *mockMessagingService) failed(ctx context.Context, msg *inboundMessage) error {
 	if m.nackFunc != nil {
 		return m.nackFunc(ctx, msg)
 	}
