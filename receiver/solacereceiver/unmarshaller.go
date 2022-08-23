@@ -472,6 +472,8 @@ func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key 
 		toMap.InsertString(k, v.StringValue)
 	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
 		toMap.InsertString(k, v.DestinationValue)
+	case *model_v1.SpanData_UserPropertyValue_CharacterValue:
+		toMap.InsertInt(k, int64(v.CharacterValue))
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
 		recordRecoverableUnmarshallingError()

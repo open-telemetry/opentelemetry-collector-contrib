@@ -1039,6 +1039,13 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 				assert.Equal(t, "some_dest", val.StringVal())
 			},
 		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 19924},
+			pcommon.ValueTypeInt,
+			func(val pcommon.Value) {
+				assert.Equal(t, int64(19924), val.IntVal())
+			},
+		},
 	}
 
 	unmarshaller := &solaceMessageUnmarshallerV1{
