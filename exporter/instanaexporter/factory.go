@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
-	instanaConfig "github.com/ibm-observability/instanaexporter/config"
+	instanaConfig "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/config"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 	stability = component.StabilityLevelInDevelopment
 )
 
-//NewFactory creates an Instana exporter factory
+// NewFactory creates an Instana exporter factory
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
@@ -58,23 +58,28 @@ func createDefaultConfig() config.Exporter {
 
 // createTracesExporter creates a trace exporter based on this configuration
 func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
-	cfg := config.(*instanaConfig.Config)
+	// TODO: Lines commented out until implementation is available
+	// cfg := config.(*instanaConfig.Config)
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	instanaExporter, err := newInstanaExporter(cfg, set)
+	// TODO: Lines commented out until implementation is available
+	var pushConvertedTraces consumer.ConsumeTracesFunc
+	/*instanaExporter, err := newInstanaExporter(cfg, set)
 	if err != nil {
 		cancel()
 		return nil, err
-	}
+	}*/
 
+	//TODO: Lines commented out until implementation is available
 	return exporterhelper.NewTracesExporterWithContext(
 		ctx,
 		set,
 		config,
-		instanaExporter.pushConvertedTraces,
+		// instanaExporter.pushConvertedTraces,
+		pushConvertedTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithStart(instanaExporter.start),
+		// exporterhelper.WithStart(instanaExporter.start),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
