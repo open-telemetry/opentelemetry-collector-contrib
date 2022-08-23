@@ -28,10 +28,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type Signal interface {
-	plog.Logs | pmetric.Metrics | ptrace.Traces
-}
-
 // router routes logs, metrics and traces using the configured attributes and
 // attribute sources.
 // Upon routing it also groups the logs, metrics and spans into a joint upper level
@@ -54,6 +50,11 @@ func newRouter[E component.Exporter](config Config, logger *zap.Logger) router[E
 		extractor: newExtractor(config.FromAttribute, logger),
 		exporters: make(map[string][]E),
 	}
+}
+
+type routedSignal[E component.Exporter, S plog.Logs | pmetric.Metrics | ptrace.Traces] struct {
+	signal    S
+	exporters []E
 }
 
 func (r *router[E]) RouteMetrics(ctx context.Context, tm pmetric.Metrics) []routedSignal[E, pmetric.Metrics] {
@@ -230,11 +231,6 @@ func (r *router[E]) routeTracesForContext(ctx context.Context, tr ptrace.Traces)
 	}
 }
 
-type routedSignal[E component.Exporter, S Signal] struct {
-	signal    S
-	exporters []E
-}
-
 func (r *router[E]) RouteLogs(ctx context.Context, tl plog.Logs) []routedSignal[E, plog.Logs] {
 	switch r.config.AttributeSource {
 	case resourceAttributeSource:
@@ -318,7 +314,7 @@ func (r *router[E]) routeLogsForContext(ctx context.Context, tl plog.Logs) route
 	}
 }
 
-func (r *router[E]) RegisterExportersForType(
+func (r *router[E]) registerExportersForType(
 	exporters map[config.DataType]map[config.ComponentID]component.Exporter,
 	typ config.DataType,
 ) error {
@@ -344,7 +340,7 @@ func (r *router[E]) registerExporters(exporters map[config.ComponentID]component
 	for id, exp := range exporters {
 		exporter, ok := exp.(E)
 		if !ok {
-			return fmt.Errorf("the exporter %q isn't a ... exporter", id.String())
+			return fmt.Errorf("the exporter %q isn't a %T exporter", id.String(), new(E))
 		}
 		available[id.String()] = exporter
 	}

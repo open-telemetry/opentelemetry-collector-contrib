@@ -68,15 +68,15 @@ func newProcessor(logger *zap.Logger, cfg config.Processor) *processorImp {
 func (e *processorImp) Start(_ context.Context, host component.Host) error {
 	exporters := host.GetExporters()
 
-	err := e.metricsRouter.RegisterExportersForType(exporters, config.MetricsDataType)
+	err := e.metricsRouter.registerExportersForType(exporters, config.MetricsDataType)
 	if err != nil {
 		return err
 	}
-	err = e.logsRouter.RegisterExportersForType(exporters, config.LogsDataType)
+	err = e.logsRouter.registerExportersForType(exporters, config.LogsDataType)
 	if err != nil {
 		return err
 	}
-	err = e.tracesRouter.RegisterExportersForType(exporters, config.TracesDataType)
+	err = e.tracesRouter.registerExportersForType(exporters, config.TracesDataType)
 	if err != nil {
 		return err
 	}
