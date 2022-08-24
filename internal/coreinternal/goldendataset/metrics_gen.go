@@ -135,6 +135,11 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 			histo := metric.Histogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
+		case pmetric.MetricDataTypeExponentialHistogram:
+			metric.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
+			histo := metric.ExponentialHistogram()
+			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			populateExpoHistogram(cfg, histo)
 		}
 	}
 }
@@ -213,4 +218,23 @@ func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 
 func getTimestamp(startTime uint64, stepSize uint64, i int) pcommon.Timestamp {
 	return pcommon.Timestamp(startTime + (stepSize * uint64(i+1)))
+}
+
+func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
+	pts := dh.DataPoints()
+	pts.EnsureCapacity(cfg.NumPtsPerMetric)
+	for i := 0; i < cfg.NumPtsPerMetric; i++ {
+		pt := pts.AppendEmpty()
+		pt.SetStartTimestamp(pcommon.Timestamp(cfg.StartTime))
+		ts := getTimestamp(cfg.StartTime, cfg.StepSize, i)
+		pt.SetTimestamp(ts)
+		populatePtAttributes(cfg, pt.Attributes())
+
+		pt.SetSum(100)
+		pt.SetCount(uint64(cfg.PtVal))
+		pt.SetScale(0)
+		pt.SetZeroCount(0)
+		pt.Positive().SetOffset(int32(cfg.PtVal))
+		pt.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{uint64(cfg.PtVal)}))
+	}
 }
