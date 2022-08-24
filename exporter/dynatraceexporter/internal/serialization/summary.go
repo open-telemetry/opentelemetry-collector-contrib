@@ -43,7 +43,7 @@ func serializeSummary(logger *zap.Logger, prefix string, metric pmetric.Metric, 
 
 		if err != nil {
 			logger.Warn(
-				"Error serializing histogram data point",
+				"Error serializing summary data point",
 				zap.String("name", metric.Name()),
 				zap.Error(err),
 			)
@@ -57,10 +57,19 @@ func serializeSummary(logger *zap.Logger, prefix string, metric pmetric.Metric, 
 }
 
 func summaryDataPointToSummary(dp pmetric.SummaryDataPoint) (float64, float64, float64) {
-	var min, max float64
-	if quantileValues := dp.QuantileValues(); quantileValues.Len() > 0 {
-		min = quantileValues.At(0).Value()
-		max = quantileValues.At(quantileValues.Len() - 1).Value()
+	if dp.QuantileValues().Len() == 0 {
+		return 0, 0, dp.Sum()
+	}
+
+	min, max := dp.QuantileValues().At(0).Value(), dp.QuantileValues().At(0).Value()
+	for bi := 1; bi < dp.QuantileValues().Len(); bi++ {
+		value := dp.QuantileValues().At(bi).Value()
+		if value < min {
+			min = value
+		}
+		if value > max {
+			max = value
+		}
 	}
 	return min, max, dp.Sum()
 }
