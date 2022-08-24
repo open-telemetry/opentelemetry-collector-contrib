@@ -694,7 +694,9 @@ metrics:
   elasticsearch.node.pipeline.ingest.documents.current:
     description: Total number of documents currently being ingested by a pipeline.
     unit: "{documents}"
-    gauge:
+    sum:
+      monotonic: false
+      aggregation: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
