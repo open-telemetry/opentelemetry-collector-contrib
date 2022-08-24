@@ -15,10 +15,10 @@
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/Shopify/sarama"
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -26,16 +26,10 @@ import (
 var errUnsupported = errors.New("unsupported serialization")
 
 type rawMarshaler struct {
-	marshaler jsoniter.API
 }
 
 func newRawMarshaler() rawMarshaler {
-	marshaler := jsoniter.Config{
-		SortMapKeys: true,
-	}.Froze()
-	return rawMarshaler{
-		marshaler: marshaler,
-	}
+	return rawMarshaler{}
 }
 
 func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
@@ -92,7 +86,7 @@ func (r rawMarshaler) interfaceAsBytes(value interface{}) ([]byte, error) {
 	if value == nil {
 		return []byte{}, nil
 	}
-	res, err := r.marshaler.Marshal(value)
+	res, err := json.Marshal(value)
 	return res, err
 }
 

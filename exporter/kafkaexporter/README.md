@@ -23,7 +23,7 @@ The following settings can be optionally configured:
     - `jaeger_proto`: the payload is serialized to a single Jaeger proto `Span`, and keyed by TraceID.
     - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.\
   - The following encodings are valid *only* for **logs**.
-    - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON.
+    - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `auth`
   - `plain_text`
     - `username`: The username to use.
