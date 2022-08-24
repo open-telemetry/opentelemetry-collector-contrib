@@ -43,14 +43,14 @@ func TestSpan_validateMatchesConfiguration_InvalidConfig(t *testing.T) {
 		{
 			name:        "empty_property",
 			property:    filterconfig.MatchProperties{},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "empty_service_span_names_and_attributes",
 			property: filterconfig.MatchProperties{
 				Services: []string{},
 			},
-			errorString: "at least one of \"services\", \"span_names\", \"attributes\", \"libraries\" or \"resources\" field must be specified",
+			errorString: filterconfig.ErrMissingRequiredField.Error(),
 		},
 		{
 			name: "log_properties",
@@ -144,6 +144,22 @@ func TestSpan_Matching_False(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
+		{
+			name: "span_kind_doesnt_match_regexp",
+			properties: &filterconfig.MatchProperties{
+				Config:     *createConfig(filterset.Regexp),
+				Attributes: []filterconfig.Attribute{},
+				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+			},
+		},
+		{
+			name: "span_kind_doesnt_match_strict",
+			properties: &filterconfig.MatchProperties{
+				Config:     *createConfig(filterset.Strict),
+				Attributes: []filterconfig.Attribute{},
+				SpanKinds:  []string{ptrace.SpanKindProducer.String()},
+			},
+		},
 	}
 
 	span := ptrace.NewSpan()
@@ -218,15 +234,37 @@ func TestSpan_Matching_True(t *testing.T) {
 				Attributes: []filterconfig.Attribute{},
 			},
 		},
+		{
+			name: "span_kind_match_strict",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Strict),
+				SpanKinds: []string{
+					ptrace.SpanKindClient.String(),
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+		},
+		{
+			name: "span_kind_match_regexp",
+			properties: &filterconfig.MatchProperties{
+				Config: *createConfig(filterset.Regexp),
+				SpanKinds: []string{
+					"CLIENT",
+				},
+				Attributes: []filterconfig.Attribute{},
+			},
+		},
 	}
 
 	span := ptrace.NewSpan()
 	span.SetName("spanName")
+
 	span.Attributes().PutString("keyString", "arithmetic")
 	span.Attributes().PutInt("keyInt", 123)
 	span.Attributes().PutDouble("keyDouble", 3245.6)
 	span.Attributes().PutBool("keyBool", true)
 	span.Attributes().PutString("keyExists", "present")
+	span.SetKind(ptrace.SpanKindClient)
 	assert.NotNil(t, span)
 
 	resource := pcommon.NewResource()

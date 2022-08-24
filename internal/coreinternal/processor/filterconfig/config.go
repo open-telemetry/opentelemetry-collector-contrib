@@ -125,7 +125,17 @@ type MatchProperties struct {
 	// A match occurs if the span's implementation library matches at least one item in this list.
 	// This is an optional field.
 	Libraries []InstrumentationLibrary `mapstructure:"libraries"`
+
+	// SpanKinds specify the list of items to match the span kind against.
+	// A match occurs if the span's span kind matches at least one item in this list.
+	SpanKinds []string `mapstructure:"span_kinds"`
 }
+
+var (
+	ErrMissingRequiredField    = errors.New(`at least one of "attributes", "libraries",  or "resources" field must be specified`)
+	ErrInvalidLogField         = errors.New("services, span_names, and span_kinds are not valid for log records")
+	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
+)
 
 // ValidateForSpans validates properties for spans.
 func (mp *MatchProperties) ValidateForSpans() error {
@@ -142,8 +152,8 @@ func (mp *MatchProperties) ValidateForSpans() error {
 	}
 
 	if len(mp.Services) == 0 && len(mp.SpanNames) == 0 && len(mp.Attributes) == 0 &&
-		len(mp.Libraries) == 0 && len(mp.Resources) == 0 {
-		return errors.New(`at least one of "services", "span_names", "attributes", "libraries" or "resources" field must be specified`)
+		len(mp.Libraries) == 0 && len(mp.Resources) == 0 && len(mp.SpanKinds) == 0 {
+		return ErrMissingRequiredField
 	}
 
 	return nil
@@ -151,14 +161,15 @@ func (mp *MatchProperties) ValidateForSpans() error {
 
 // ValidateForLogs validates properties for logs.
 func (mp *MatchProperties) ValidateForLogs() error {
-	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 {
-		return errors.New("neither services nor span_names should be specified for log records")
+	if len(mp.SpanNames) > 0 || len(mp.Services) > 0 || len(mp.SpanKinds) > 0 {
+		return ErrInvalidLogField
 	}
 
 	if len(mp.Attributes) == 0 && len(mp.Libraries) == 0 &&
 		len(mp.Resources) == 0 && len(mp.LogBodies) == 0 &&
-		len(mp.LogSeverityTexts) == 0 && mp.LogSeverityNumber == nil {
-		return errors.New(`at least one of "attributes", "libraries", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
+		len(mp.LogSeverityTexts) == 0 && mp.LogSeverityNumber == nil &&
+		len(mp.SpanKinds) == 0 {
+		return ErrMissingRequiredLogField
 	}
 
 	return nil
