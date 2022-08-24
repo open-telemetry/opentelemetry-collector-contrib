@@ -9,7 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.6
-	github.com/aws/aws-sdk-go v1.44.77
+	github.com/aws/aws-sdk-go v1.44.83
 	github.com/cenkalti/backoff/v4 v4.1.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.58.0
@@ -23,12 +23,12 @@ require (
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.22.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
-	k8s.io/apimachinery v0.24.3
-	k8s.io/client-go v0.24.3
+	k8s.io/apimachinery v0.24.4
+	k8s.io/client-go v0.24.4
 )
 
 require (
-	cloud.google.com/go/compute v1.8.0 // indirect
+	cloud.google.com/go/compute v1.9.0 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
@@ -110,7 +110,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.24.3 // indirect
+	k8s.io/api v0.24.4 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect

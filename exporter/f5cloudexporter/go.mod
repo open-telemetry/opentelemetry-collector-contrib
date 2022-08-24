@@ -7,11 +7,11 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	golang.org/x/oauth2 v0.0.0-20220622183110-fd043fe589d2
-	google.golang.org/api v0.92.0
+	google.golang.org/api v0.93.0
 )
 
 require (
-	cloud.google.com/go/compute v1.8.0 // indirect
+	cloud.google.com/go/compute v1.9.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect

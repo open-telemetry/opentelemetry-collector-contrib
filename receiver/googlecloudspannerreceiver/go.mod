@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
 	go.uber.org/zap v1.22.0
-	google.golang.org/api v0.92.0
+	google.golang.org/api v0.93.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
@@ -25,7 +25,7 @@ require (
 
 require (
 	cloud.google.com/go v0.102.1 // indirect
-	cloud.google.com/go/compute v1.8.0 // indirect
+	cloud.google.com/go/compute v1.9.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
