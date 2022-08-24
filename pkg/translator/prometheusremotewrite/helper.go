@@ -494,6 +494,9 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 
 // addResourceTargetInfo converts the resource to the target info metric
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, tsMap map[string]*prompb.TimeSeries) {
+	if settings.DisableTargetInfo {
+		return
+	}
 	// Use resource attributes (other than those used for job+instance) as the
 	// metric labels for the target info metric
 	attributes := pcommon.NewMap()
