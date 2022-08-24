@@ -37,20 +37,23 @@ type tracesUnmarshaller interface {
 }
 
 // newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
-func newTracesUnmarshaller(logger *zap.Logger) tracesUnmarshaller {
+func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) tracesUnmarshaller {
 	return &solaceTracesUnmarshaller{
-		logger: logger,
+		logger:  logger,
+		metrics: metrics,
 		// v1 unmarshaller is implemented by solaceMessageUnmarshallerV1
 		v1: &solaceMessageUnmarshallerV1{
-			logger: logger,
+			logger:  logger,
+			metrics: metrics,
 		},
 	}
 }
 
 // solaceTracesUnmarshaller implements tracesUnmarshaller.
 type solaceTracesUnmarshaller struct {
-	logger *zap.Logger
-	v1     tracesUnmarshaller
+	logger  *zap.Logger
+	metrics *opencensusMetrics
+	v1      tracesUnmarshaller
 }
 
 var (
@@ -85,7 +88,8 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (*ptrace.T
 }
 
 type solaceMessageUnmarshallerV1 struct {
-	logger *zap.Logger
+	logger  *zap.Logger
+	metrics *opencensusMetrics
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -244,7 +248,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	default:
 		deliveryMode = "UNKNOWN"
 		u.logger.Warn(fmt.Sprintf("Unknown delivery mode %d", spanData.DeliveryMode))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.InsertString(deliveryModeAttrKey, deliveryMode)
 
@@ -271,7 +275,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		attrMap.InsertString(hostIPAttrKey, net.IP(spanData.HostIp).String())
 	} else {
 		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.InsertInt(hostPortAttrKey, int64(spanData.HostPort))
 
@@ -280,7 +284,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		attrMap.InsertString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
 	} else {
 		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	attrMap.InsertInt(peerPortAttrKey, int64(spanData.PeerPort))
 
@@ -329,7 +333,7 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 		destinationType = queueKind
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown destination type %T", casted))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 		return
 	}
 	clientEvent := clientSpan.Events().AppendEmpty()
@@ -376,7 +380,7 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		name = "rollback_only"
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction type %d", transactionEvent.GetType()))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 		return // exit when we don't have a valid type since we should not add a span without a name
 	}
 	clientEvent := clientSpan.Events().AppendEmpty()
@@ -393,7 +397,7 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		initiator = "broker"
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 	clientEvent.Attributes().InsertString(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
@@ -414,7 +418,7 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		clientEvent.Attributes().InsertString(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 }
 
@@ -424,7 +428,7 @@ func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
 		// may be cases where the rgmid is empty or nil, len(rgmid) will return 0 if nil
 		if len(rgmid) > 0 {
 			u.logger.Warn("Received invalid length or version for rgmid", zap.Int8("version", int8(rgmid[0])), zap.Int("length", len(rgmid)))
-			recordRecoverableUnmarshallingError()
+			u.metrics.recordRecoverableUnmarshallingError()
 		}
 		return hex.EncodeToString(rgmid)
 	}
@@ -478,6 +482,6 @@ func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key 
 		toMap.InsertInt(k, int64(v.CharacterValue))
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
-		recordRecoverableUnmarshallingError()
+		u.metrics.recordRecoverableUnmarshallingError()
 	}
 }

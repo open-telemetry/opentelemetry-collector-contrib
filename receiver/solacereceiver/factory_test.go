@@ -21,6 +21,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
@@ -92,6 +94,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	castedReceiver, ok := receiver.(*solaceTracesReceiver)
 	assert.True(t, ok)
 	assert.Equal(t, castedReceiver.config, rcvCfg)
+	defer unregisterMetrics(castedReceiver.metrics)
 }
 
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
@@ -126,6 +129,29 @@ func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
 	factory := factories.Receivers[componentType]
 	_, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
+}
+
+func TestCreateTracesReceiverBadMetrics(t *testing.T) {
+	// register a metric first with the same name
+	statName := "solacereceiver/primary/failed_reconnections"
+	stat := stats.Int64(statName, "", stats.UnitDimensionless)
+	view.Register(&view.View{
+		Name:        buildReceiverCustomMetricName(statName),
+		Description: "some description",
+		Measure:     stat,
+		Aggregation: view.Sum(),
+	})
+
+	factories := getTestNopFactories(t)
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	assert.NoError(t, err)
+	factory := factories.Receivers[componentType]
+	rcvCfg, ok := cfg.Receivers[config.NewComponentIDWithName(componentType, "primary")]
+	assert.True(t, ok)
+	receiver, err := factory.CreateTracesReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(),
+		rcvCfg, consumertest.NewNop())
+	assert.Error(t, err)
+	assert.Nil(t, receiver)
 }
 
 func getTestNopFactories(t *testing.T) component.Factories {

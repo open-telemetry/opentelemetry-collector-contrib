@@ -240,7 +240,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTracesUnmarshaller(zap.NewNop())
+			u := newTracesUnmarshaller(zap.NewNop(), newTestMetrics(t))
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
 				require.Error(t, err)
@@ -305,11 +305,11 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapResourceSpanAttributes(tt.spanData, &actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -372,7 +372,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapClientSpanData(tt.data, &actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -549,11 +549,11 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapClientSpanAttributes(tt.spanData, &actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
 }
@@ -839,14 +839,14 @@ func TestUnmarshallerEvents(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(&expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapEvents(tt.spanData, &actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, &expected, &actual)
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.unmarshallingErrors)
 		})
 	}
 }
@@ -923,10 +923,10 @@ func TestUnmarshallerRGMID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
+			u := newTestV1Unmarshaller(t)
 			actual := u.rgmidToString(tt.in)
 			assert.Equal(t, tt.expected, actual)
-			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.numErr)
+			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.numErr)
 		})
 	}
 }
@@ -1068,13 +1068,16 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 }
 
 func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing.T) {
-	unmarshaller := &solaceMessageUnmarshallerV1{
-		logger: zap.NewNop(),
-	}
+	u := newTestV1Unmarshaller(t)
 	const key = "some-property"
 	attributeMap := pcommon.NewMap()
-	unmarshaller.insertUserProperty(&attributeMap, key, "invalid data type")
+	u.insertUserProperty(&attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
-	validateMetric(t, viewRecoverableUnmarshallingErrors, 1)
+	validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, 1)
+}
+
+func newTestV1Unmarshaller(t *testing.T) *solaceMessageUnmarshallerV1 {
+	m := newTestMetrics(t)
+	return &solaceMessageUnmarshallerV1{zap.NewNop(), m}
 }
