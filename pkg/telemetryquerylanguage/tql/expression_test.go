@@ -110,12 +110,12 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"hello": hello}
 
-	p := Parser{
-		Functions:  functions,
-		PathParser: testParsePath,
-		EnumParser: testParseEnum,
-		Logger:     zaptest.NewLogger(t),
-	}
+	p := NewParser(
+		functions,
+		testParsePath,
+		testParseEnum,
+		zaptest.NewLogger(t),
+	)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

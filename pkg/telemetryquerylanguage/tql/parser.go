@@ -194,10 +194,19 @@ func (n *IsNil) Capture(_ []string) error {
 type EnumSymbol string
 
 type Parser struct {
-	Functions  map[string]interface{}
-	PathParser PathExpressionParser
-	EnumParser EnumParser
-	Logger     *zap.Logger
+	functions  map[string]interface{}
+	pathParser PathExpressionParser
+	enumParser EnumParser
+	logger     *zap.Logger
+}
+
+func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, logger *zap.Logger) Parser {
+	return Parser{
+		functions:  functions,
+		pathParser: pathParser,
+		enumParser: enumParser,
+		logger:     logger,
+	}
 }
 
 func (p *Parser) ParseQueries(statements []string) ([]Query, error) {

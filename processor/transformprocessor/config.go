@@ -39,36 +39,36 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	logger, _ := zap.NewProduction()
+	logger := zap.NewNop()
 
-	tqlp := tql.Parser{
-		Functions:  traces.Functions(),
-		PathParser: tqltraces.ParsePath,
-		EnumParser: tqltraces.ParseEnum,
-		Logger:     logger,
-	}
+	tqlp := tql.NewParser(
+		traces.Functions(),
+		tqltraces.ParsePath,
+		tqltraces.ParseEnum,
+		logger,
+	)
 	_, err := tqlp.ParseQueries(c.Traces.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	tqlp = tql.Parser{
-		Functions:  metrics.Functions(),
-		PathParser: tqlmetrics.ParsePath,
-		EnumParser: tqlmetrics.ParseEnum,
-		Logger:     logger,
-	}
+	tqlp = tql.NewParser(
+		metrics.Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		logger,
+	)
 	_, err = tqlp.ParseQueries(c.Metrics.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
 
-	tqlp = tql.Parser{
-		Functions:  logs.Functions(),
-		PathParser: tqllogs.ParsePath,
-		EnumParser: tqllogs.ParseEnum,
-		Logger:     logger,
-	}
+	tqlp = tql.NewParser(
+		logs.Functions(),
+		tqllogs.ParsePath,
+		tqllogs.ParseEnum,
+		logger,
+	)
 	_, err = tqlp.ParseQueries(c.Logs.Queries)
 	if err != nil {
 		errors = multierr.Append(errors, err)

@@ -94,7 +94,7 @@ func (p *Parser) NewGetter(val Value) (Getter, error) {
 	}
 
 	if val.Enum != nil {
-		enum, err := p.EnumParser(val.Enum)
+		enum, err := p.enumParser(val.Enum)
 		if err != nil {
 			return nil, err
 		}
@@ -102,7 +102,7 @@ func (p *Parser) NewGetter(val Value) (Getter, error) {
 	}
 
 	if val.Path != nil {
-		return p.PathParser(val.Path)
+		return p.pathParser(val.Path)
 	}
 
 	if val.Invocation == nil {

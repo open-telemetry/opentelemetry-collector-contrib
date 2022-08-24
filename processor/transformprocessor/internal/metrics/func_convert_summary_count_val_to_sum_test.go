@@ -69,12 +69,12 @@ func fillTestAttributes(attrs pcommon.Map) {
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
-	tqlp := tql.Parser{
-		Functions:  Functions(),
-		PathParser: tqlmetrics.ParsePath,
-		EnumParser: tqlmetrics.ParseEnum,
-		Logger:     zaptest.NewLogger(t),
-	}
+	tqlp := tql.NewParser(
+		Functions(),
+		tqlmetrics.ParsePath,
+		tqlmetrics.ParseEnum,
+		zaptest.NewLogger(t),
+	)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

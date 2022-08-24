@@ -36,12 +36,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_enum"] = functionWithEnum
 	functions["testing_logger_first"] = functionWithLoggerFirst
 
-	p := Parser{
-		Functions:  functions,
-		PathParser: testParsePath,
-		EnumParser: testParseEnum,
-		Logger:     zaptest.NewLogger(t),
-	}
+	p := NewParser(
+		functions,
+		testParsePath,
+		testParseEnum,
+		zaptest.NewLogger(t),
+	)
 
 	tests := []struct {
 		name string
@@ -211,12 +211,12 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := Parser{
-		Functions:  DefaultFunctionsForTests(),
-		PathParser: testParsePath,
-		EnumParser: testParseEnum,
-		Logger:     zaptest.NewLogger(t),
-	}
+	p := NewParser(
+		DefaultFunctionsForTests(),
+		testParsePath,
+		testParseEnum,
+		zaptest.NewLogger(t),
+	)
 
 	tests := []struct {
 		name string

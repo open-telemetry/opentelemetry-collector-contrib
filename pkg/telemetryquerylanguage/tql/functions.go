@@ -25,7 +25,7 @@ type EnumParser func(*EnumSymbol) (*Enum, error)
 
 // NewFunctionCall Visible for testing
 func (p *Parser) NewFunctionCall(inv Invocation) (ExprFunc, error) {
-	if f, ok := p.Functions[inv.Function]; ok {
+	if f, ok := p.functions[inv.Function]; ok {
 		args, err := p.buildArgs(inv, reflect.TypeOf(f))
 		if err != nil {
 			return nil, err
@@ -65,7 +65,7 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 		case reflect.Pointer:
 			switch argType.Elem().String() {
 			case "zap.Logger":
-				args = append(args, reflect.ValueOf(p.Logger))
+				args = append(args, reflect.ValueOf(p.logger))
 			default:
 				return nil, fmt.Errorf("unsupported pointer to type '%s' for function '%v'", argType.Elem().String(), inv.Function)
 			}
@@ -145,7 +145,7 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 	case "Setter":
 		fallthrough
 	case "GetSetter":
-		arg, err := p.PathParser(argDef.Path)
+		arg, err := p.pathParser(argDef.Path)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v %w", index, err)
 		}
@@ -157,7 +157,7 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case "Enum":
-		arg, err := p.EnumParser(argDef.Enum)
+		arg, err := p.enumParser(argDef.Enum)
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v must be an Enum", index)
 		}
