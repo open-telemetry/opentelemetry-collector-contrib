@@ -72,7 +72,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	// verify
-	assert.Contains(t, exp.router.tracesExporters["acme"], otlpExp)
+	assert.Contains(t, exp.tracesRouter.exporters["acme"], otlpExp)
 }
 
 func TestTraces_ErrorRequestedExporterNotFoundForRoute(t *testing.T) {
