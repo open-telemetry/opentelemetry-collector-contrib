@@ -6,3 +6,6 @@ component: tailsampling
 
 # A brief description of the change
 note: Add support for all sampling policies in and & composite policy
+
+# One or more tracking issues related to the change
+issues: [11505]
