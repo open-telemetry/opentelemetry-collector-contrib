@@ -17,8 +17,10 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.etcd.io/bbolt"
@@ -215,25 +217,28 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	var openErr error
 	// replace current db file with compacted db file
 	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed
-	renameErr := os.Rename(compactedDbPath, dbPath)
+	moveErr := moveFileWithFallback(compactedDbPath, dbPath)
 	c.db, openErr = bbolt.Open(dbPath, 0600, options)
 
 	// if we got errors for both rename and open, we'd rather return the open one
 	// this should not happen in any kind of normal circumstance - maybe we should panic instead?
 	if openErr != nil {
-		c.logger.Error("failed opening database after compaction",
-			zap.String(directoryKey, dbPath),
-			zap.String(tempDirectoryKey, file.Name()),
-			zap.Error(openErr))
-		return openErr
+		return fmt.Errorf("failed to open db after compaction: %w", openErr)
 	}
-	if renameErr != nil {
-		c.logger.Warn("error moving compacted database, compaction aborted",
-			zap.String(directoryKey, c.db.Path()),
-			zap.String(tempDirectoryKey, file.Name()),
-			zap.Error(renameErr),
-		)
-		return renameErr
+	if moveErr != nil {
+		// if we only failed the remove, we're mostly ok and should just log a warning
+		var pathErr *os.PathError
+		if errors.As(err, &pathErr) {
+			if pathErr.Op == "remove" {
+				c.logger.Warn("failed to remove temporary db after compaction",
+					zap.String(directoryKey, c.db.Path()),
+					zap.String(tempDirectoryKey, file.Name()),
+					zap.Error(moveErr),
+				)
+				return nil
+			}
+		}
+		return fmt.Errorf("failed to move compacted database, compaction aborted: %w", moveErr)
 	}
 
 	c.logger.Info("finished compaction",
@@ -315,4 +320,36 @@ func (c *fileStorageClient) getDbSize() (totalSizeResult int64, dataSizeResult i
 	dbStats := c.db.Stats()
 	dataSize := totalSize - int64(dbStats.FreeAlloc)
 	return totalSize, dataSize, nil
+}
+
+// moveFileWithFallback is the equivalent of os.Rename, except it falls back to
+// a non-atomic Truncate and Copy if the arguments are on different filesystems
+func moveFileWithFallback(src string, dest string) error {
+	var err error
+	if err = os.Rename(src, dest); err == nil {
+		return nil
+	}
+
+	// EXDEV is the error code for linking cross-device, we want to continue if we encounter it
+	// other errors, we simply return as-is
+	if !errors.Is(err, syscall.EXDEV) {
+		return err
+	}
+
+	// if we're trying to rename across devices, try truncate and copy instead
+	data, err := os.ReadFile(src) // assuming the file isn't too big
+	if err != nil {
+		return err
+	}
+
+	if err = os.Truncate(dest, 0); err != nil {
+		return err
+	}
+
+	if err = os.WriteFile(dest, data, 0600); err != nil {
+		return err
+	}
+
+	err = os.Remove(src)
+	return err
 }
