@@ -247,8 +247,6 @@ func TestPeriodicallyResolve(t *testing.T) {
 }
 
 func TestPeriodicallyResolveFailure(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
-
 	// prepare
 	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
 	require.NoError(t, err)
@@ -288,7 +286,7 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, int64(2), counter.Load())
+	assert.GreaterOrEqual(t, counter.Load(), int64(2))
 	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 

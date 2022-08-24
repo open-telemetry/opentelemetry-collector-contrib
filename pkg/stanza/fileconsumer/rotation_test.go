@@ -27,7 +27,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -262,7 +261,7 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		tempDir := t.TempDir()
 		cfg := NewConfig().includeDir(tempDir)
 		cfg.StartAt = "beginning"
-		cfg.PollInterval = helper.NewDuration(tc.pollInterval)
+		cfg.PollInterval = tc.pollInterval
 		emitCalls := make(chan *emitParams, tc.totalLines)
 		operator := buildTestManagerWithEmit(t, cfg, emitCalls)
 

@@ -26,14 +26,14 @@ import (
 
 // FlusherConfig is a configuration of Flusher helper
 type FlusherConfig struct {
-	Period Duration `mapstructure:"force_flush_period"  json:"force_flush_period" yaml:"force_flush_period"`
+	Period time.Duration `mapstructure:"force_flush_period"  json:"force_flush_period" yaml:"force_flush_period"`
 }
 
 // NewFlusherConfig creates a default Flusher config
 func NewFlusherConfig() FlusherConfig {
 	return FlusherConfig{
 		// Empty or `0s` means that we will never force flush
-		Period: Duration{Duration: time.Millisecond * 500},
+		Period: time.Millisecond * 500,
 	}
 }
 
@@ -41,7 +41,7 @@ func NewFlusherConfig() FlusherConfig {
 func (c *FlusherConfig) Build() *Flusher {
 	return &Flusher{
 		lastDataChange:     time.Now(),
-		forcePeriod:        c.Period.Raw(),
+		forcePeriod:        c.Period,
 		previousDataLength: 0,
 	}
 }

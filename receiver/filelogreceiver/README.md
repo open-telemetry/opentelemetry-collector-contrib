@@ -16,7 +16,7 @@ Tails and parses logs from files.
 | `exclude`                    | []               | A list of file glob patterns to exclude from reading                                                               |
 | `start_at`                   | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`                            |
 | `multiline`                  |                  | A `multiline` configuration block. See below for more details                                                      |
-| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes [duration](../../pkg/stanza/docs/types/duration.md) as value. Zero means waiting for new data forever |
+| `force_flush_period`         | `500ms`          | Time since last read of data from file, after which currently buffered log should be send to pipeline. Takes `time.Duration` (e.g. `10s`, `1m`, or `500ms`) as value. Zero means waiting for new data forever |
 | `encoding`                   | `utf-8`          | The encoding of the file being read. See the list of supported encodings below for available options               |
 | `include_file_name`          | `true`           | Whether to add the file name as the attribute `log.file.name`. |
 | `include_file_path`          | `false`          | Whether to add the file path as the attribute `log.file.path`. |
@@ -30,6 +30,7 @@ Tails and parses logs from files.
 | `resource`                   | {}               | A map of `key: value` pairs to add to the entry's resource                                                    |
 | `operators`                  | []               | An array of [operators](../../pkg/stanza/docs/operators/README.md#what-operators-are-available). See below for more details |
 | `converter`                  | <pre lang="jsonp">{<br>  max_flush_count: 100,<br>  flush_interval: 100ms,<br>  worker_count: max(1,runtime.NumCPU()/4)<br>}</pre> | A map of `key: value` pairs to configure the [`entry.Entry`][entry_link] to [`plog.LogRecord`][pdata_logrecord_link] converter, more info can be found [here][converter_link] |
+| `storage`                   |                  | The ID of a storage extension. The extension will be used to store file checkpoints, which allows the receiver to pick up where it left off in the case of a collector restart. |
 
 [entry_link]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/stanza/entry/entry.go
 [pdata_logrecord_link]: https://github.com/open-telemetry/opentelemetry-collector/blob/v0.40.0/model/pdata/generated_log.go#L553-L564
