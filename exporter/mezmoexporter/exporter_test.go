@@ -62,6 +62,21 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 	return logs
 }
 
+func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	for i := 0; i < numberOfLogs; i++ {
+		logRecord := sl.LogRecords().AppendEmpty()
+		logRecord.Body().SetStringVal("minimal attribute log")
+	}
+
+	return logs
+}
+
 // Creates a logs set that exceeds the maximum message side we can send in one HTTP POST
 func createMaxLogData() plog.Logs {
 	logs := plog.NewLogs()
@@ -197,6 +212,38 @@ func TestLogsExporter(t *testing.T) {
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
+}
+
+func TestAddsRequiredAttributes(t *testing.T) {
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+
+			lines := body.Lines
+			for _, line := range lines {
+				assert.True(t, line.Timestamp > 0)
+				assert.Equal(t, line.Level, "info")
+				assert.Equal(t, line.App, "")
+				assert.Equal(t, line.Line, "minimal attribute log")
+			}
+
+			return http.StatusOK, ""
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	log, _ := createLogger()
+	config := &Config{
+		IngestURL: server.url,
+	}
+	exporter := createExporter(t, config, log)
+
+	logs := createMinimalAttributesLogData(4)
+	err := exporter.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
 }
 
 func Test404IngestError(t *testing.T) {

@@ -155,6 +155,11 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 }
 
 func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries) error {
+	// There are no metrics to export, so return.
+	if len(tsMap) == 0 {
+		return nil
+	}
+
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, maxBatchByteSize)
 	if err != nil {

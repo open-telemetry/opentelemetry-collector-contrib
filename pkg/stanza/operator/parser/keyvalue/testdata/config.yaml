@@ -1,0 +1,32 @@
+default:
+  type: key_value_parser
+delimiter:
+  type: key_value_parser
+  delimiter: ";"
+on_error_drop:
+  type: key_value_parser
+  on_error: drop
+pair_delimiter:
+  type: key_value_parser
+  pair_delimiter: ";"
+parse_from_simple:
+  type: key_value_parser
+  parse_from: body.from
+parse_to_simple:
+  type: key_value_parser
+  parse_to: body.log
+severity:
+  type: key_value_parser
+  severity:
+    parse_from: body.severity_field
+    mapping:
+      critical: 5xx
+      error: 4xx
+      info: 3xx
+      debug: 2xx
+timestamp:
+  type: key_value_parser
+  timestamp:
+    parse_from: body.timestamp_field
+    layout_type: strptime
+    layout: '%Y-%m-%d'
