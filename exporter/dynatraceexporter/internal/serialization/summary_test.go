@@ -47,6 +47,30 @@ func Test_serializeSummaryPoint(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "prefix.delta_empty_quantile,key=value gauge,min=0,max=0,sum=9.5,count=2 1626438600000", got)
 	})
+
+	t.Run("mean quantile > max", func(t *testing.T) {
+		summaryMeanQuantile := pmetric.NewSummaryDataPoint()
+		fillTestValueAtQuantileSlice(summaryMeanQuantile.QuantileValues(), []float64{1, 2, 3, 4, 5, 6, 7})
+		summaryMeanQuantile.SetCount(2)
+		summaryMeanQuantile.SetSum(25.0)
+		summaryMeanQuantile.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeSummaryPoint("delta_mean_quantile", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), summaryMeanQuantile)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.delta_mean_quantile,key=value gauge,min=1,max=12.5,sum=25,count=2 1626438600000", got)
+	})
+
+	t.Run("mean quantile < min", func(t *testing.T) {
+		summaryMeanQuantile := pmetric.NewSummaryDataPoint()
+		fillTestValueAtQuantileSlice(summaryMeanQuantile.QuantileValues(), []float64{10, 11, 12, 13, 14, 15})
+		summaryMeanQuantile.SetCount(2)
+		summaryMeanQuantile.SetSum(10)
+		summaryMeanQuantile.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
+
+		got, err := serializeSummaryPoint("delta_mean_quantile", "prefix", dimensions.NewNormalizedDimensionList(dimensions.NewDimension("key", "value")), summaryMeanQuantile)
+		assert.NoError(t, err)
+		assert.Equal(t, "prefix.delta_mean_quantile,key=value gauge,min=5,max=15,sum=10,count=2 1626438600000", got)
+	})
 }
 
 func Test_serializeSummary(t *testing.T) {
@@ -75,9 +99,8 @@ func Test_serializeSummary(t *testing.T) {
 }
 
 func fillTestValueAtQuantileSlice(tv pmetric.ValueAtQuantileSlice, values []float64) {
-	l := 7
 	tv.EnsureCapacity(len(values))
-	for i := 0; i < l; i++ {
+	for i := 0; i < len(values); i++ {
 		fillTestValueAtQuantile(tv.AppendEmpty(), values[i])
 	}
 }

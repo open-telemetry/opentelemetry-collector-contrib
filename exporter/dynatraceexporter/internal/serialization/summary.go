@@ -71,5 +71,14 @@ func summaryDataPointToSummary(dp pmetric.SummaryDataPoint) (float64, float64, f
 			max = value
 		}
 	}
+	if dp.Count() > 0 {
+		mean := dp.Sum() / float64(dp.Count())
+		if min > mean {
+			min = mean
+		}
+		if max < mean {
+			max = mean
+		}
+	}
 	return min, max, dp.Sum()
 }
