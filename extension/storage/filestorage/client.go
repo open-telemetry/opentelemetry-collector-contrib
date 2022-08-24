@@ -212,22 +212,35 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	c.db.Close()
 	compactedDb.Close()
 
+	var openErr error
 	// replace current db file with compacted db file
-	if err = os.Remove(dbPath); err != nil {
-		return err
-	}
+	// we reopen the DB file irrespective of the success of the replace, as we can't leave it closed
+	renameErr := os.Rename(compactedDbPath, dbPath)
+	c.db, openErr = bbolt.Open(dbPath, 0600, options)
 
-	if err = os.Rename(compactedDbPath, dbPath); err != nil {
-		return err
+	// if we got errors for both rename and open, we'd rather return the open one
+	// this should not happen in any kind of normal circumstance - maybe we should panic instead?
+	if openErr != nil {
+		c.logger.Error("failed opening database after compaction",
+			zap.String(directoryKey, dbPath),
+			zap.String(tempDirectoryKey, file.Name()),
+			zap.Error(openErr))
+		return openErr
 	}
-
-	c.db, err = bbolt.Open(dbPath, 0600, options)
+	if renameErr != nil {
+		c.logger.Warn("error moving compacted database, compaction aborted",
+			zap.String(directoryKey, c.db.Path()),
+			zap.String(tempDirectoryKey, file.Name()),
+			zap.Error(renameErr),
+		)
+		return renameErr
+	}
 
 	c.logger.Info("finished compaction",
 		zap.String(directoryKey, dbPath),
 		zap.Duration(elapsedKey, time.Since(compactionStart)))
 
-	return err
+	return nil
 }
 
 // startCompactionLoop provides asynchronous compaction function
