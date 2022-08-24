@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.58.0
 	github.com/stretchr/testify v1.8.0
-	github.com/wavefronthq/wavefront-sdk-go v0.9.11
+	github.com/wavefronthq/wavefront-sdk-go v0.10.2
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
 	go.opentelemetry.io/collector/semconv v0.58.0
