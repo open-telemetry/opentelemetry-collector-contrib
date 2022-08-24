@@ -238,3 +238,22 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: []
+  # Adding New Metrics 
+  mongodb.operation.scanAndOrder:
+    description: The total number of queries that return sorted numbers that cannot perform the sort operation using an index.
+    unit: "{queries}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.operation.writeConflict:
+    description: The total number of queries that encountered write conflicts.
+    unit: "{queries}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: []
