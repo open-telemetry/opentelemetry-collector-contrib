@@ -43,6 +43,9 @@ type router[E component.Exporter] struct {
 	exporters        map[string][]E
 }
 
+// newRouter creates a new router instance with its type parameter constrained
+// to component.Exporter. router can be instantiated with component.TracesExporter,
+// component.MetricsExporter, and component.LogsExporter type arguments.
 func newRouter[E component.Exporter](config Config, logger *zap.Logger) router[E] {
 	return router[E]{
 		config:    config,
@@ -52,7 +55,13 @@ func newRouter[E component.Exporter](config Config, logger *zap.Logger) router[E
 	}
 }
 
-type routedSignal[E component.Exporter, S plog.Logs | pmetric.Metrics | ptrace.Traces] struct {
+// signal is a type constraint that permits plog.Logs, pmetric.Metrics,
+// and ptrace.Traces types.
+type signal interface {
+	plog.Logs | pmetric.Metrics | ptrace.Traces
+}
+
+type routedSignal[E component.Exporter, S signal] struct {
 	signal    S
 	exporters []E
 }
