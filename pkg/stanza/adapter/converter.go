@@ -338,7 +338,11 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 	dest.SetObservedTimestamp(pcommon.NewTimestampFromTime(ent.ObservedTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
-	dest.SetSeverityText(sevTextMap[ent.Severity])
+	if ent.SeverityText == "" {
+		dest.SetSeverityText(defaultSevTextMap[ent.Severity])
+	} else {
+		dest.SetSeverityText(ent.SeverityText)
+	}
 
 	insertToAttributeMap(ent.Attributes, dest.Attributes())
 	insertToAttributeVal(ent.Body, dest.Body())
@@ -510,32 +514,32 @@ var sevMap = map[entry.Severity]plog.SeverityNumber{
 	entry.Fatal4:  plog.SeverityNumberFATAL4,
 }
 
-var sevTextMap = map[entry.Severity]string{
+var defaultSevTextMap = map[entry.Severity]string{
 	entry.Default: "",
-	entry.Trace:   "Trace",
-	entry.Trace2:  "Trace2",
-	entry.Trace3:  "Trace3",
-	entry.Trace4:  "Trace4",
-	entry.Debug:   "Debug",
-	entry.Debug2:  "Debug2",
-	entry.Debug3:  "Debug3",
-	entry.Debug4:  "Debug4",
-	entry.Info:    "Info",
-	entry.Info2:   "Info2",
-	entry.Info3:   "Info3",
-	entry.Info4:   "Info4",
-	entry.Warn:    "Warn",
-	entry.Warn2:   "Warn2",
-	entry.Warn3:   "Warn3",
-	entry.Warn4:   "Warn4",
-	entry.Error:   "Error",
-	entry.Error2:  "Error2",
-	entry.Error3:  "Error3",
-	entry.Error4:  "Error4",
-	entry.Fatal:   "Fatal",
-	entry.Fatal2:  "Fatal2",
-	entry.Fatal3:  "Fatal3",
-	entry.Fatal4:  "Fatal4",
+	entry.Trace:   "TRACE",
+	entry.Trace2:  "TRACE2",
+	entry.Trace3:  "TRACE3",
+	entry.Trace4:  "TRACE4",
+	entry.Debug:   "DEBUG",
+	entry.Debug2:  "DEBUG2",
+	entry.Debug3:  "DEBUG3",
+	entry.Debug4:  "DEBUG4",
+	entry.Info:    "INFO",
+	entry.Info2:   "INFO2",
+	entry.Info3:   "INFO3",
+	entry.Info4:   "INFO4",
+	entry.Warn:    "WARN",
+	entry.Warn2:   "WARN2",
+	entry.Warn3:   "WARN3",
+	entry.Warn4:   "WARN4",
+	entry.Error:   "ERROR",
+	entry.Error2:  "ERROR2",
+	entry.Error3:  "ERROR3",
+	entry.Error4:  "ERROR4",
+	entry.Fatal:   "FATAL",
+	entry.Fatal2:  "FATAL2",
+	entry.Fatal3:  "FATAL3",
+	entry.Fatal4:  "FATAL4",
 }
 
 // pairSep is chosen to be an invalid byte for a utf-8 sequence

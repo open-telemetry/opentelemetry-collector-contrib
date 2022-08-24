@@ -18,25 +18,27 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join(".", "testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(cfg.Receivers))
+	cfg := factory.CreateDefaultConfig()
 
-	r := cfg.Receivers[config.NewComponentID(typeStr)].(*Config)
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
+
+	assert.NoError(t, cfg.Validate())
+
 	require.Equal(t, &Config{
 		ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 		RecordType:       "cwmetrics",
@@ -50,5 +52,5 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
-	}, r)
+	}, cfg)
 }

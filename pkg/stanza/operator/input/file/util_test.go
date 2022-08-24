@@ -28,13 +28,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func newDefaultConfig(tempDir string) *Config {
 	cfg := NewConfigWithID("testfile")
-	cfg.PollInterval = helper.Duration{Duration: 200 * time.Millisecond}
+	cfg.PollInterval = 200 * time.Millisecond
 	cfg.StartAt = "beginning"
 	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 	cfg.OutputIDs = []string{"fake"}
