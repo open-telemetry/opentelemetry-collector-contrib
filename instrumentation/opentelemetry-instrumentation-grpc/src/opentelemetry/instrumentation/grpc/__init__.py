@@ -43,7 +43,8 @@ Usage Client
         SimpleSpanProcessor(ConsoleSpanExporter())
     )
 
-    instrumentor = GrpcInstrumentorClient().instrument()
+    grpc_client_instrumentor = GrpcInstrumentorClient()
+    grpc_client_instrumentor.instrument()
 
     def run():
         with grpc.insecure_channel("localhost:50051") as channel:
@@ -180,7 +181,7 @@ class GrpcInstrumentorClient(BaseInstrumentor):
     Usage::
 
         grpc_client_instrumentor = GrpcInstrumentorClient()
-        grpc.client_instrumentor.instrument()
+        grpc_client_instrumentor.instrument()
 
     """
 
