@@ -19,7 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"sync"
@@ -36,6 +36,7 @@ import (
 	"github.com/jaegertracing/jaeger/cmd/collector/app/handler"
 	collectorSampling "github.com/jaegertracing/jaeger/cmd/collector/app/sampling"
 	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger/pkg/metrics"
 	staticStrategyStore "github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/jaegertracing/jaeger/thrift-gen/agent"
@@ -43,7 +44,6 @@ import (
 	"github.com/jaegertracing/jaeger/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"github.com/jaegertracing/jaeger/thrift-gen/zipkincore"
-	"github.com/uber/jaeger-lib/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -338,7 +338,7 @@ func (jr *jReceiver) buildProcessor(address string, cfg ServerConfigUDP, factory
 }
 
 func (jr *jReceiver) decodeThriftHTTPBody(r *http.Request) (*jaeger.Batch, *httpError) {
-	bodyBytes, err := ioutil.ReadAll(r.Body)
+	bodyBytes, err := io.ReadAll(r.Body)
 	r.Body.Close()
 	if err != nil {
 		return nil, &httpError{

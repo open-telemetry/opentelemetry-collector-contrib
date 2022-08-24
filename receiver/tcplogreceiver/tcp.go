@@ -17,18 +17,20 @@ package tcplogreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 )
 
-const typeStr = "tcplog"
+const (
+	typeStr   = "tcplog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for tcp receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -47,7 +49,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{},
+		Config: *tcp.NewConfig(),
 	}
 }
 
@@ -58,19 +60,12 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // TCPLogConfig defines configuration for the tcp receiver
 type TCPLogConfig struct {
+	tcp.Config         `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*TCPLogConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := tcp.NewConfig("tcp_input")
-
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-
-	return &operator.Config{Builder: inputCfg}, nil
+	return &operator.Config{Builder: &logConfig.Config}, nil
 }

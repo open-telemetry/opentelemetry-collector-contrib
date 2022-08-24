@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package wavefrontreceiver
 
 import (
@@ -47,7 +46,10 @@ func Test_wavefrontreceiver_EndToEnd(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	defer rcvr.Shutdown(context.Background())
+
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
 	tests := []struct {
 		name string

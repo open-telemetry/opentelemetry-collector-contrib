@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package cwlogs
 
 import (
@@ -78,9 +77,7 @@ func (svc *mockCloudWatchLogsClient) DescribeLogStreams(input *cloudwatchlogs.De
 	return args.Get(0).(*cloudwatchlogs.DescribeLogStreamsOutput), args.Error(1)
 }
 
-//
 // Tests
-//
 var previousSequenceToken = "0000"
 var expectedNextSequenceToken = "1111"
 var logGroup = "logGroup"
@@ -186,7 +183,7 @@ func TestPutLogEvents_InvalidSequenceTokenException(t *testing.T) {
 		NextSequenceToken: &expectedNextSequenceToken}
 	awsErr := &cloudwatchlogs.InvalidSequenceTokenException{ExpectedSequenceToken: &expectedNextSequenceToken}
 
-	//the test framework does not support return different result sequentially for the same method call.
+	// the test framework does not support return different result sequentially for the same method call.
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
 	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
 

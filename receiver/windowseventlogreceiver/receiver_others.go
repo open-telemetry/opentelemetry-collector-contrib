@@ -27,11 +27,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-const typeStr = "windowseventlog"
+const (
+	typeStr   = "windowseventlog"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for windowseventlog receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -51,7 +54,6 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			Operators:        adapter.OperatorConfigs{},
 			Converter:        adapter.ConverterConfig{},
 		},
-		Input: adapter.InputConfig{},
 	}
 }
 
@@ -68,5 +70,4 @@ func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, 
 // WindowsLogConfig defines configuration for the windowseventlog receiver
 type WindowsLogConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }

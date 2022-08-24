@@ -75,9 +75,10 @@ func newSAPMTracesExporter(cfg *Config, set component.ExporterCreateSettings) (c
 		return nil, err
 	}
 
-	te, err := exporterhelper.NewTracesExporter(
-		cfg,
+	te, err := exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		se.pushTraceData,
 		exporterhelper.WithShutdown(se.Shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
@@ -119,7 +120,15 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	// so need to remove that after conversion.
 	filterToken(batches)
 
-	err = se.client.ExportWithAccessToken(ctx, batches, accessToken)
+	ingestResponse, err := se.client.ExportWithAccessTokenAndGetResponse(ctx, batches, accessToken)
+	if se.config.LogDetailedResponse && ingestResponse != nil {
+		if ingestResponse.Err != nil {
+			se.logger.Debug("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
+		} else {
+			se.logger.Debug("Detailed response from ingest", zap.ByteString("response", ingestResponse.Body))
+		}
+	}
+
 	if err != nil {
 		sendErr := &sapmclient.ErrSend{}
 		if errors.As(err, &sendErr) && sendErr.Permanent {

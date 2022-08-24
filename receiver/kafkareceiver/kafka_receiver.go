@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver"
 
 import (
@@ -224,7 +223,7 @@ func (c *kafkaMetricsConsumer) Start(context.Context, component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, metricsConsumerGroup)
+	go c.consumeLoop(ctx, metricsConsumerGroup) // nolint:errcheck
 	<-metricsConsumerGroup.ready
 	return nil
 }
@@ -304,7 +303,7 @@ func (c *kafkaLogsConsumer) Start(context.Context, component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 	}
-	go c.consumeLoop(ctx, logsConsumerGroup)
+	go c.consumeLoop(ctx, logsConsumerGroup) // nolint:errcheck
 	<-logsConsumerGroup.ready
 	return nil
 }

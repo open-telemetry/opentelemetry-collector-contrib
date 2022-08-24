@@ -30,6 +30,7 @@ import (
 
 const (
 	typeStr               = "collectd"
+	stability             = component.StabilityLevelAlpha
 	defaultBindEndpoint   = "localhost:8081"
 	defaultTimeout        = time.Second * 30
 	defaultEncodingFormat = "json"
@@ -40,7 +41,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 func createDefaultConfig() config.Receiver {
 	return &Config{

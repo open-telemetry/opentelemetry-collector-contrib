@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package golden
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -34,13 +33,13 @@ func TestWriteMetrics(t *testing.T) {
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
 	actualFile := filepath.Join(t.TempDir(), "metrics.json")
-	WriteMetrics(actualFile, metrics)
+	require.NoError(t, WriteMetrics(actualFile, metrics))
 
-	actualBytes, err := ioutil.ReadFile(actualFile)
+	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
-	expectedBytes, err := ioutil.ReadFile(expectedFile)
+	expectedBytes, err := os.ReadFile(expectedFile)
 	require.NoError(t, err)
 
 	if runtime.GOOS == "windows" {

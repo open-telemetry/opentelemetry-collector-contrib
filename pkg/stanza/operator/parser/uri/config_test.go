@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -70,7 +70,7 @@ func TestParserGoldenConfig(t *testing.T) {
 			Expect: func() *Config {
 				cfg := defaultCfg()
 				parseField := entry.NewBodyField("severity_field")
-				severityField := helper.NewConfig()
+				severityField := helper.NewSeverityConfig()
 				severityField.ParseFrom = &parseField
 				mapping := map[interface{}]interface{}{
 					"critical": "5xx",
@@ -87,11 +87,11 @@ func TestParserGoldenConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			tc.Run(t, defaultCfg())
+			tc.RunDeprecated(t, defaultCfg())
 		})
 	}
 }
 
 func defaultCfg() *Config {
-	return NewConfig("uri_parser")
+	return NewConfig()
 }

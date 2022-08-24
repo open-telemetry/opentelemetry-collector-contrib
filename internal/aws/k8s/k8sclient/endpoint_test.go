@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package k8sclient
 
 import (
@@ -376,7 +375,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	for i := range arrays {
 		arrays[i] = endpointsArray[i]
 	}
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[string][]string{
 		"namespace:default,podName:redis-master-rh2bd":           {"redis-master"},
@@ -396,7 +395,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 
-	client.store.Replace(convertToInterfaceArray(endpointsArray), "")
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
 
 	expectedMap := map[Service]int{
 		NewService("redis-slave", "default"):  2,

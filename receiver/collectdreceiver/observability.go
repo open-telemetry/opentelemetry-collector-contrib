@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
 import (
@@ -23,7 +22,7 @@ import (
 )
 
 func init() {
-	view.Register(
+	_ = view.Register(
 		viewInvalidRequests,
 		viewRequestsReceived,
 		viewMetricsReceived,

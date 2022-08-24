@@ -63,6 +63,6 @@ metrics:
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | checkpoint | The number of checkpoints completed or that failed. | completed, failed |
-| garbage_collector_name | The names for the parallel scavenge and garbage first garbage collectors. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
-| operator_name | The operator name. |  |
+| garbage_collector_name (name) | The names for the parallel scavenge and garbage first garbage collectors. | PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation |
+| operator_name (name) | The operator name. |  |
 | record | The number of records received in, sent out or dropped due to arriving late. | in, out, dropped |

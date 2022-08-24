@@ -65,3 +65,18 @@ with detailed sample configurations [here](./testdata/config.yaml).
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
+
+## Feature Gates
+
+See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/service/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+
+**ALPHA**: `receiver.dockerstats.useScraperV2`
+
+The feature gate `receiver.dockerstatsd.useScraperV2` once enabled allows collection of selective metrics that is described in [documentation.md](./documentation.md). When the feature gate is disabled, the metrics settings are mostly ignored and not configurable with minor variation in metric name and attributes.
+
+This is considered a breaking change for existing users of this receiver, and it is recommended to migrate to the new implementation when possible. Any new users planning to adopt this receiver should enable this feature gate to avoid having to migrate any visualisations or alerts.
+
+This feature gate will eventually be enabled by default, and eventually the old implementation will be removed. It aims 
+to give users time to migrate to the new implementation. The target release for this featuregate to be enabled by default 
+is 0.60.0.

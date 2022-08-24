@@ -22,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/service/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -30,6 +29,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "prometheus"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a new Prometheus exporter factory.
@@ -37,7 +38,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporter(createMetricsExporter))
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -46,12 +47,12 @@ func createDefaultConfig() config.Exporter {
 		ConstLabels:       map[string]string{},
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
-		skipSanitizeLabel: featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID),
+		EnableOpenMetrics: false,
 	}
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -62,9 +63,10 @@ func createMetricsExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),

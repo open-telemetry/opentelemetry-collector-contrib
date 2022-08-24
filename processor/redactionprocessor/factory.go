@@ -27,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "redaction"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 )
 
 // NewFactory creates a factory for the redaction processor.
@@ -34,7 +36,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
+		component.WithTracesProcessor(createTracesProcessor, stability),
 	)
 }
 
@@ -47,19 +49,21 @@ func createDefaultConfig() config.Processor {
 // createTracesProcessor creates an instance of redaction for processing traces
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 ) (component.TracesProcessor, error) {
 	oCfg := cfg.(*Config)
 
-	redaction, err := newRedaction(ctx, oCfg, params.Logger, next)
+	redaction, err := newRedaction(ctx, oCfg, set.Logger, next)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
 		return nil, fmt.Errorf("error creating a redaction processor: %w", err)
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		next,
 		redaction.processTraces,

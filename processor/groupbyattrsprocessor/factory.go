@@ -29,6 +29,8 @@ import (
 const (
 	// typeStr is the value of "type" for this processor in the configuration.
 	typeStr config.Type = "groupbyattrs"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var (
@@ -47,9 +49,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
@@ -81,15 +83,17 @@ func createGroupByAttrsProcessor(logger *zap.Logger, attributes []string) *group
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processTraces,
@@ -98,15 +102,17 @@ func createTracesProcessor(
 
 // createLogsProcessor creates a logs processor based on this config.
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processLogs,
@@ -115,15 +121,17 @@ func createLogsProcessor(
 
 // createMetricsProcessor creates a metrics processor based on this config.
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 
 	oCfg := cfg.(*Config)
-	gap := createGroupByAttrsProcessor(params.Logger, oCfg.GroupByKeys)
+	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		gap.processMetrics,

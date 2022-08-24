@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package adapter
 
 import (
@@ -30,7 +29,8 @@ import (
 func TestStorage(t *testing.T) {
 	ctx := context.Background()
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "test")
+	host := storagetest.NewStorageHost().
+		WithFileBackedStorageExtension("test", t.TempDir())
 	require.NoError(t, r.Start(ctx, host))
 
 	myBytes := []byte("my_value")
@@ -67,12 +67,14 @@ func TestStorage(t *testing.T) {
 
 	_, err = r.storageClient.Get(ctx, "key")
 	require.Error(t, err)
-	require.Equal(t, "database not open", err.Error())
+	require.Equal(t, "client closed", err.Error())
 }
 
 func TestFailOnMultipleStorageExtensions(t *testing.T) {
 	r := createReceiver(t)
-	host := storagetest.NewStorageHost(t, t.TempDir(), "one", "two")
+	host := storagetest.NewStorageHost().
+		WithInMemoryStorageExtension("one").
+		WithInMemoryStorageExtension("two")
 	err := r.Start(context.Background(), host)
 	require.Error(t, err)
 	require.Equal(t, "storage client: multiple storage extensions found", err.Error())
@@ -83,7 +85,7 @@ func createReceiver(t *testing.T) *receiver {
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
-	factory := NewFactory(TestReceiverType{})
+	factory := NewFactory(TestReceiverType{}, component.StabilityLevelInDevelopment)
 
 	logsReceiver, err := factory.CreateLogsReceiver(
 		context.Background(),
@@ -96,20 +98,4 @@ func createReceiver(t *testing.T) *receiver {
 	r, ok := logsReceiver.(*receiver)
 	require.True(t, ok)
 	return r
-}
-
-func TestPersisterImplementation(t *testing.T) {
-	ctx := context.Background()
-	myBytes := []byte("string")
-	p := newMockPersister()
-
-	err := p.Set(ctx, "key", myBytes)
-	require.NoError(t, err)
-
-	val, err := p.Get(ctx, "key")
-	require.NoError(t, err)
-	require.Equal(t, myBytes, val)
-
-	err = p.Delete(ctx, "key")
-	require.NoError(t, err)
 }

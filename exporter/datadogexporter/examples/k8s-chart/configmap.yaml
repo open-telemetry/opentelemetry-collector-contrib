@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-agent-conf
+  labels:
+    app: opentelemetry
+    component: otel-agent-conf
+data:
+  otel-agent-config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    exporters:
+      datadog:
+        api:
+          key: <YOUR_API_KEY_HERE>
+    processors:
+      resourcedetection:
+        # ensures host.name and other important resource tags 
+        # get picked up
+        detectors: [system, env, docker]
+        timeout: 5s
+        override: false
+      # adds various tags related to k8s
+      k8sattributes:
+      batch:
+        timeout: 10s
+    service:
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [resourcedetection, k8sattributes, batch]
+          exporters: [datadog]
+        traces:
+          receivers: [otlp]
+          processors: [resourcedetection, k8sattributes, batch]
+          exporters: [datadog]

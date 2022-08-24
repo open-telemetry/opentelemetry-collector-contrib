@@ -19,11 +19,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/model/source"
-
+	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/provider"
 )
 
 var _ provider.ClusterNameProvider = (*StringProvider)(nil)

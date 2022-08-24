@@ -31,10 +31,12 @@ const (
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(
+	return component.NewExtensionFactoryWithStabilityLevel(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelBeta,
+	)
 }
 
 func createDefaultConfig() config.Extension {
@@ -45,7 +47,8 @@ func createDefaultConfig() config.Extension {
 		},
 		GRPCServerSettings: &configgrpc.GRPCServerSettings{
 			NetAddr: confignet.NetAddr{
-				Endpoint: ":14250",
+				Endpoint:  ":14250",
+				Transport: "tcp",
 			},
 		},
 		Source: Source{},

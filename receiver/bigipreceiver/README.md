@@ -1,10 +1,10 @@
 # F5 Big-IP Receiver
 
-| Status                   |         |
-| ------------------------ |---------|
-| Stability                | [beta]  |
-| Supported pipeline types | metrics |
-| Distributions            | none    |
+| Status                   |           |
+| ------------------------ |-----------|
+| Stability                | [beta]    |
+| Supported pipeline types | metrics   |
+| Distributions            | [contrib] |
 
 This receiver fetches stats from a F5 Big-IP node using F5's [iControl REST API](https://clouddocs.f5.com/api/icontrol-rest).
 
@@ -44,3 +44,5 @@ The full list of settings exposed for this receiver are documented [here](./conf
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
+[contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+

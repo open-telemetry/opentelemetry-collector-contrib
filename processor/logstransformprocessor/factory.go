@@ -30,6 +30,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "logstransform"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -39,7 +41,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsProcessor(createLogsProcessor))
+		component.WithLogsProcessor(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -57,8 +59,8 @@ func createDefaultConfig() config.Processor {
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	pCfg, ok := cfg.(*Config)
@@ -76,10 +78,12 @@ func createLogsProcessor(
 
 	proc := &logsTransformProcessor{
 		id:     cfg.ID(),
-		logger: params.Logger,
+		logger: set.Logger,
 		config: pCfg,
 	}
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processLogs,

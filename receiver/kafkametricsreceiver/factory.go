@@ -21,10 +21,13 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 const (
 	typeStr           = "kafkametrics"
+	stability         = component.StabilityLevelBeta
 	defaultBroker     = "localhost:9092"
 	defaultGroupMatch = ".*"
 	defaultTopicMatch = "^[^_].*$"
@@ -36,7 +39,7 @@ func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
 func createDefaultConfig() config.Receiver {
@@ -46,6 +49,7 @@ func createDefaultConfig() config.Receiver {
 		GroupMatch:                defaultGroupMatch,
 		TopicMatch:                defaultTopicMatch,
 		ClientID:                  defaultClientID,
+		Metrics:                   metadata.DefaultMetricsSettings(),
 	}
 }
 

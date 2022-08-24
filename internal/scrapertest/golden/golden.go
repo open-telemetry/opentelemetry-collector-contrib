@@ -12,19 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package golden // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 // ReadMetrics reads a pmetric.Metrics from the specified file
 func ReadMetrics(filePath string) (pmetric.Metrics, error) {
-	expectedFileBytes, err := ioutil.ReadFile(filePath)
+	expectedFileBytes, err := os.ReadFile(filePath)
 	if err != nil {
 		return pmetric.Metrics{}, err
 	}
@@ -39,11 +38,13 @@ func WriteMetrics(filePath string, metrics pmetric.Metrics) error {
 		return err
 	}
 	var jsonVal map[string]interface{}
-	json.Unmarshal(fileBytes, &jsonVal)
+	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+		return err
+	}
 	b, err := json.MarshalIndent(jsonVal, "", "   ")
 	if err != nil {
 		return err
 	}
 	b = append(b, []byte("\n")...)
-	return ioutil.WriteFile(filePath, b, 0600)
+	return os.WriteFile(filePath, b, 0600)
 }

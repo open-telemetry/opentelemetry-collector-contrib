@@ -22,16 +22,51 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver/internal/metadata"
 )
 
+const (
+	emitMetricsWithDirectionAttributeFeatureGateID    = "receiver.memcached.emitMetricsWithDirectionAttribute"
+	emitMetricsWithoutDirectionAttributeFeatureGateID = "receiver.memcached.emitMetricsWithoutDirectionAttribute"
+)
+
+var (
+	emitMetricsWithDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithDirectionAttributeFeatureGateID,
+		Enabled: true,
+		Description: "Some memcached metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the old metrics with the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/memcachedreceiver/README.md#feature-gate-configurations",
+	}
+
+	emitMetricsWithoutDirectionAttributeFeatureGate = featuregate.Gate{
+		ID:      emitMetricsWithoutDirectionAttributeFeatureGateID,
+		Enabled: false,
+		Description: "Some memcached metrics reported are transitioning from being reported with a direction " +
+			"attribute to being reported with the direction included in the metric name to adhere to the " +
+			"OpenTelemetry specification. This feature gate controls emitting the new metrics without the direction " +
+			"attribute. For more details, see: " +
+			"https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/memcachedreceiver/README.md#feature-gate-configurations",
+	}
+)
+
+func init() {
+	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
+	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
+}
+
 type memcachedScraper struct {
-	logger    *zap.Logger
-	config    *Config
-	mb        *metadata.MetricsBuilder
-	newClient newMemcachedClientFunc
+	logger                               *zap.Logger
+	config                               *Config
+	mb                                   *metadata.MetricsBuilder
+	newClient                            newMemcachedClientFunc
+	emitMetricsWithDirectionAttribute    bool
+	emitMetricsWithoutDirectionAttribute bool
 }
 
 func newMemcachedScraper(
@@ -39,10 +74,12 @@ func newMemcachedScraper(
 	config *Config,
 ) memcachedScraper {
 	return memcachedScraper{
-		logger:    settings.Logger,
-		config:    config,
-		newClient: newMemcachedClient,
-		mb:        metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		logger:                               settings.Logger,
+		config:                               config,
+		newClient:                            newMemcachedClient,
+		mb:                                   metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(emitMetricsWithDirectionAttributeFeatureGateID),
+		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(emitMetricsWithoutDirectionAttributeFeatureGateID),
 	}
 }
 
@@ -110,11 +147,21 @@ func (r *memcachedScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				}
 			case "bytes_read":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionReceived)
+					if r.emitMetricsWithDirectionAttribute {
+						r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionReceived)
+					}
+					if r.emitMetricsWithoutDirectionAttribute {
+						r.mb.RecordMemcachedNetworkReceivedDataPoint(now, parsedV)
+					}
 				}
 			case "bytes_written":
 				if parsedV, ok := r.parseInt(k, v); ok {
-					r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionSent)
+					if r.emitMetricsWithDirectionAttribute {
+						r.mb.RecordMemcachedNetworkDataPoint(now, parsedV, metadata.AttributeDirectionSent)
+					}
+					if r.emitMetricsWithoutDirectionAttribute {
+						r.mb.RecordMemcachedNetworkSentDataPoint(now, parsedV)
+					}
 				}
 			case "get_hits":
 				if parsedV, ok := r.parseInt(k, v); ok {

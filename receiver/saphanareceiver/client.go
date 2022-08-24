@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
 import (
@@ -124,8 +123,8 @@ func (c *sapHanaClient) Connect(ctx context.Context) error {
 		return fmt.Errorf("error generating TLS config for SAP HANA connection: %w", err)
 	}
 	connector.SetTLSConfig(tls)
-
 	connector.SetApplicationName("OpenTelemetry Collector")
+
 	client := c.connectionFactory.getConnection(connector)
 
 	err = client.PingContext(ctx)

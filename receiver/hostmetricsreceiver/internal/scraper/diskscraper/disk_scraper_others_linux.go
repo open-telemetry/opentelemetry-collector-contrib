@@ -39,7 +39,13 @@ func (s *scraper) recordDiskWeightedIOTimeMetric(now pcommon.Timestamp, ioCounte
 
 func (s *scraper) recordDiskMergedMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedReadCount), device, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedWriteCount), device, metadata.AttributeDirectionWrite)
+		if s.emitMetricsWithDirectionAttribute {
+			s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedReadCount), device, metadata.AttributeDirectionRead)
+			s.mb.RecordSystemDiskMergedDataPoint(now, int64(ioCounter.MergedWriteCount), device, metadata.AttributeDirectionWrite)
+		}
+		if s.emitMetricsWithoutDirectionAttribute {
+			s.mb.RecordSystemDiskMergedReadDataPoint(now, int64(ioCounter.MergedReadCount), device)
+			s.mb.RecordSystemDiskMergedWriteDataPoint(now, int64(ioCounter.MergedWriteCount), device)
+		}
 	}
 }

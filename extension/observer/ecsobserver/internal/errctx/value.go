@@ -43,9 +43,9 @@ type ErrorWithValue interface {
 //
 // It is a good practice to define the key as a constant strange instead of inline literal.
 //
-// 	const taskErrKey = "task"
-// 	return errctx.WithValue(taskErrKey, myTask)
-//  task, ok := errctx.ValueFrom(err, taskErrKey)
+//		const taskErrKey = "task"
+//		return errctx.WithValue(taskErrKey, myTask)
+//	 task, ok := errctx.ValueFrom(err, taskErrKey)
 func WithValue(err error, key string, val interface{}) error {
 	if err == nil {
 		return nil

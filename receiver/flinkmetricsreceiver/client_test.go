@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -587,7 +585,7 @@ func loadAPIResponseData(t *testing.T, folder, fileName string) []byte {
 	t.Helper()
 	fullPath := filepath.Join("testdata", folder, fileName)
 
-	data, err := ioutil.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
 	require.NoError(t, err)
 
 	return data

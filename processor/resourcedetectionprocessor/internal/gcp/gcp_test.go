@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -40,13 +41,14 @@ func TestDetect(t *testing.T) {
 	}{
 		{
 			desc: "zonal GKE cluster",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:           "my-project",
 				cloudPlatform:       gcp.GKE,
+				gceHostName:         "my-gke-node-1234",
 				gkeHostID:           "1472385723456792345",
 				gkeClusterName:      "my-cluster",
 				gkeAvailabilityZone: "us-central1-c",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
@@ -54,17 +56,39 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeK8SClusterName:        "my-cluster",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
 			}),
 		},
 		{
 			desc: "regional GKE cluster",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:      "my-project",
 				cloudPlatform:  gcp.GKE,
+				gceHostName:    "my-gke-node-1234",
 				gkeHostID:      "1472385723456792345",
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
-			}},
+			}),
+			expectedResource: internal.NewResource(map[string]interface{}{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPKubernetesEngine,
+				conventions.AttributeK8SClusterName: "my-cluster",
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeHostID:         "1472385723456792345",
+				conventions.AttributeHostName:       "my-gke-node-1234",
+			}),
+		},
+		{
+			desc: "regional GKE cluster with workload identity",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:      "my-project",
+				cloudPlatform:  gcp.GKE,
+				gceHostNameErr: fmt.Errorf("metadata endpoint is concealed"),
+				gkeHostID:      "1472385723456792345",
+				gkeClusterName: "my-cluster",
+				gkeRegion:      "us-central1",
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
@@ -76,7 +100,7 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "GCE",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:           "my-project",
 				cloudPlatform:       gcp.GCE,
 				gceHostID:           "1472385723456792345",
@@ -84,7 +108,7 @@ func TestDetect(t *testing.T) {
 				gceHostType:         "n1-standard1",
 				gceAvailabilityZone: "us-central1-c",
 				gceRegion:           "us-central1",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
@@ -98,14 +122,14 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "Cloud Run",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
 				cloudPlatform:   gcp.CloudRun,
 				faaSID:          "1472385723456792345",
 				faaSCloudRegion: "us-central1",
 				faaSName:        "my-service",
 				faaSVersion:     "123456",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
@@ -118,14 +142,14 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "Cloud Functions",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
 				cloudPlatform:   gcp.CloudFunctions,
 				faaSID:          "1472385723456792345",
 				faaSCloudRegion: "us-central1",
 				faaSName:        "my-service",
 				faaSVersion:     "123456",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
@@ -138,7 +162,7 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "App Engine Standard",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:                 "my-project",
 				cloudPlatform:             gcp.AppEngineStandard,
 				appEngineServiceInstance:  "1472385723456792345",
@@ -146,7 +170,7 @@ func TestDetect(t *testing.T) {
 				appEngineRegion:           "us-central1",
 				appEngineServiceName:      "my-service",
 				appEngineServiceVersion:   "123456",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
@@ -160,7 +184,7 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "App Engine Flex",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:                 "my-project",
 				cloudPlatform:             gcp.AppEngineFlex,
 				appEngineServiceInstance:  "1472385723456792345",
@@ -168,7 +192,7 @@ func TestDetect(t *testing.T) {
 				appEngineRegion:           "us-central1",
 				appEngineServiceName:      "my-service",
 				appEngineServiceVersion:   "123456",
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID:        "my-project",
@@ -182,10 +206,10 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "Unknown Platform",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				projectID:     "my-project",
 				cloudPlatform: gcp.UnknownPlatform,
-			}},
+			}),
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
 				conventions.AttributeCloudAccountID: "my-project",
@@ -193,9 +217,9 @@ func TestDetect(t *testing.T) {
 		},
 		{
 			desc: "error",
-			detector: &detector{detector: &fakeGCPDetector{
+			detector: newTestDetector(&fakeGCPDetector{
 				err: fmt.Errorf("failed to get metadata"),
-			}},
+			}),
 			expectErr: true,
 			expectedResource: internal.NewResource(map[string]interface{}{
 				conventions.AttributeCloudProvider: conventions.AttributeCloudProviderGCP,
@@ -214,6 +238,13 @@ func TestDetect(t *testing.T) {
 			res.Attributes().Sort()
 			assert.Equal(t, tc.expectedResource, res, "Resource object returned is incorrect")
 		})
+	}
+}
+
+func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
+	return &detector{
+		logger:   zap.NewNop(),
+		detector: gcpDetector,
 	}
 }
 
@@ -240,6 +271,7 @@ type fakeGCPDetector struct {
 	gceHostType               string
 	gceHostID                 string
 	gceHostName               string
+	gceHostNameErr            error
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -372,7 +404,7 @@ func (f *fakeGCPDetector) GCEHostName() (string, error) {
 	if f.err != nil {
 		return "", f.err
 	}
-	return f.gceHostName, nil
+	return f.gceHostName, f.gceHostNameErr
 }
 
 func TestDeduplicateDetectors(t *testing.T) {

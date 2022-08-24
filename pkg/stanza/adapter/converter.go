@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
 import (
@@ -39,40 +38,39 @@ import (
 //
 // The diagram below illustrates the internal communication inside the Converter:
 //
-//            ┌─────────────────────────────────┐
-//            │ Batch()                         │
-//  ┌─────────┤  Ingests batches of log entries │
-//  │         │  and sends them onto workerChan │
-//  │         └─────────────────────────────────┘
-//  │
-//  │ ┌───────────────────────────────────────────────────┐
-//  ├─► workerLoop()                                      │
-//  │ │ ┌─────────────────────────────────────────────────┴─┐
-//  ├─┼─► workerLoop()                                      │
-//  │ │ │ ┌─────────────────────────────────────────────────┴─┐
-//  └─┼─┼─► workerLoop()                                      │
-//    └─┤ │   consumes sent log entries from workerChan,      │
-//      │ │   translates received entries to plog.LogRecords,│
-//      └─┤   hashes them to generate an ID, and sends them   │
-//        │   onto batchChan                                  │
-//        └─────────────────────────┬─────────────────────────┘
-//                                  │
-//                                  ▼
-//      ┌─────────────────────────────────────────────────────┐
-//      │ aggregationLoop()                                   │
-//      │   consumes from batchChan, aggregates log records   │
-//      │   by marshaled Resource and sends the               │
-//      │   aggregated buffer to flushChan                    │
-//      └───────────────────────────┬─────────────────────────┘
-//                                  │
-//                                  ▼
-//      ┌─────────────────────────────────────────────────────┐
-//      │ flushLoop()                                         │
-//      │   receives log records from flushChan and sends     │
-//      │   them onto pLogsChan which is consumed by          │
-//      │   downstream consumers via OutChannel()             │
-//      └─────────────────────────────────────────────────────┘
-//
+//	          ┌─────────────────────────────────┐
+//	          │ Batch()                         │
+//	┌─────────┤  Ingests batches of log entries │
+//	│         │  and sends them onto workerChan │
+//	│         └─────────────────────────────────┘
+//	│
+//	│ ┌───────────────────────────────────────────────────┐
+//	├─► workerLoop()                                      │
+//	│ │ ┌─────────────────────────────────────────────────┴─┐
+//	├─┼─► workerLoop()                                      │
+//	│ │ │ ┌─────────────────────────────────────────────────┴─┐
+//	└─┼─┼─► workerLoop()                                      │
+//	  └─┤ │   consumes sent log entries from workerChan,      │
+//	    │ │   translates received entries to plog.LogRecords,│
+//	    └─┤   hashes them to generate an ID, and sends them   │
+//	      │   onto batchChan                                  │
+//	      └─────────────────────────┬─────────────────────────┘
+//	                                │
+//	                                ▼
+//	    ┌─────────────────────────────────────────────────────┐
+//	    │ aggregationLoop()                                   │
+//	    │   consumes from batchChan, aggregates log records   │
+//	    │   by marshaled Resource and sends the               │
+//	    │   aggregated buffer to flushChan                    │
+//	    └───────────────────────────┬─────────────────────────┘
+//	                                │
+//	                                ▼
+//	    ┌─────────────────────────────────────────────────────┐
+//	    │ flushLoop()                                         │
+//	    │   receives log records from flushChan and sends     │
+//	    │   them onto pLogsChan which is consumed by          │
+//	    │   downstream consumers via OutChannel()             │
+//	    └─────────────────────────────────────────────────────┘
 type Converter struct {
 	// pLogsChan is a channel on which aggregated logs will be sent to.
 	pLogsChan chan plog.Logs
@@ -340,7 +338,11 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 	dest.SetObservedTimestamp(pcommon.NewTimestampFromTime(ent.ObservedTimestamp))
 	dest.SetSeverityNumber(sevMap[ent.Severity])
-	dest.SetSeverityText(sevTextMap[ent.Severity])
+	if ent.SeverityText == "" {
+		dest.SetSeverityText(defaultSevTextMap[ent.Severity])
+	} else {
+		dest.SetSeverityText(ent.SeverityText)
+	}
 
 	insertToAttributeMap(ent.Attributes, dest.Attributes())
 	insertToAttributeVal(ent.Body, dest.Body())
@@ -359,8 +361,8 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := dest.Flags()
-		flags = flags & 0xFFFFFF00
-		flags = flags | uint32(ent.TraceFlags[0])
+		flags &= 0xFFFFFF00
+		flags |= uint32(ent.TraceFlags[0])
 		dest.SetFlags(flags)
 	}
 }
@@ -374,7 +376,7 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case []string:
 		toStringArray(t).CopyTo(dest)
 	case []byte:
-		dest.SetMBytesVal(t)
+		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
@@ -427,7 +429,7 @@ func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
 			arr := toStringArray(t)
 			dest.Insert(k, arr)
 		case []byte:
-			dest.InsertMBytes(k, t)
+			dest.InsertBytes(k, pcommon.NewImmutableByteSlice(t))
 		case int64:
 			dest.InsertInt(k, t)
 		case int32:
@@ -512,32 +514,32 @@ var sevMap = map[entry.Severity]plog.SeverityNumber{
 	entry.Fatal4:  plog.SeverityNumberFATAL4,
 }
 
-var sevTextMap = map[entry.Severity]string{
+var defaultSevTextMap = map[entry.Severity]string{
 	entry.Default: "",
-	entry.Trace:   "Trace",
-	entry.Trace2:  "Trace2",
-	entry.Trace3:  "Trace3",
-	entry.Trace4:  "Trace4",
-	entry.Debug:   "Debug",
-	entry.Debug2:  "Debug2",
-	entry.Debug3:  "Debug3",
-	entry.Debug4:  "Debug4",
-	entry.Info:    "Info",
-	entry.Info2:   "Info2",
-	entry.Info3:   "Info3",
-	entry.Info4:   "Info4",
-	entry.Warn:    "Warn",
-	entry.Warn2:   "Warn2",
-	entry.Warn3:   "Warn3",
-	entry.Warn4:   "Warn4",
-	entry.Error:   "Error",
-	entry.Error2:  "Error2",
-	entry.Error3:  "Error3",
-	entry.Error4:  "Error4",
-	entry.Fatal:   "Fatal",
-	entry.Fatal2:  "Fatal2",
-	entry.Fatal3:  "Fatal3",
-	entry.Fatal4:  "Fatal4",
+	entry.Trace:   "TRACE",
+	entry.Trace2:  "TRACE2",
+	entry.Trace3:  "TRACE3",
+	entry.Trace4:  "TRACE4",
+	entry.Debug:   "DEBUG",
+	entry.Debug2:  "DEBUG2",
+	entry.Debug3:  "DEBUG3",
+	entry.Debug4:  "DEBUG4",
+	entry.Info:    "INFO",
+	entry.Info2:   "INFO2",
+	entry.Info3:   "INFO3",
+	entry.Info4:   "INFO4",
+	entry.Warn:    "WARN",
+	entry.Warn2:   "WARN2",
+	entry.Warn3:   "WARN3",
+	entry.Warn4:   "WARN4",
+	entry.Error:   "ERROR",
+	entry.Error2:  "ERROR2",
+	entry.Error3:  "ERROR3",
+	entry.Error4:  "ERROR4",
+	entry.Fatal:   "FATAL",
+	entry.Fatal2:  "FATAL2",
+	entry.Fatal3:  "FATAL3",
+	entry.Fatal4:  "FATAL4",
 }
 
 // pairSep is chosen to be an invalid byte for a utf-8 sequence
@@ -578,7 +580,7 @@ func HashResource(resource map[string]interface{}) uint64 {
 		case []byte:
 			fnvHash.Write(t)
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-			binary.Write(fnvHash, binary.BigEndian, t)
+			binary.Write(fnvHash, binary.BigEndian, t) // nolint - nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
 			fnvHash.Write(b)

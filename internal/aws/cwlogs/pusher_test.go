@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck,gocritic
 package cwlogs
 
 import (
@@ -50,10 +49,17 @@ func TestConcurrentPushAndFlush(t *testing.T) {
 	for i := 0; i < concurrency; i++ {
 		go func(ii int) {
 			for j := 0; j < 10; j++ {
-				emfPusher.AddLogEntry(NewEvent(current, fmt.Sprintf("batch-%d-%d", ii, j)))
+				err := emfPusher.AddLogEntry(NewEvent(current, fmt.Sprintf("batch-%d-%d", ii, j)))
+				if err != nil {
+					t.Errorf("Error adding log entry: %v", err)
+				}
 			}
 			time.Sleep(1000 * time.Millisecond)
-			emfPusher.ForceFlush()
+			err := emfPusher.ForceFlush()
+			if err != nil {
+				t.Errorf("Error flushing: %v", err)
+
+			}
 			wg.Done()
 		}(i)
 	}
@@ -75,9 +81,7 @@ func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 	return p
 }
 
-//
-//  logEvent Tests
-//
+// logEvent Tests
 func TestLogEvent_eventPayloadBytes(t *testing.T) {
 	testMessage := "test message"
 	logEvent := NewEvent(0, testMessage)
@@ -111,9 +115,7 @@ func TestValidateLogEventFailed(t *testing.T) {
 	assert.Equal(t, "the log entry's timestamp is older than 14 days or more than 2 hours in the future", err.Error())
 }
 
-//
-//  eventBatch Tests
-//
+// eventBatch Tests
 func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
 	min := time.Date(2017, time.June, 20, 23, 38, 0, 0, time.Local)
 	max := min.Add(23 * time.Hour)
@@ -122,21 +124,21 @@ func TestLogEventBatch_timestampWithin24Hours(t *testing.T) {
 		minTimestampMs: min.UnixNano() / 1e6,
 	}
 
-	//less than the min
+	// less than the min
 	target := min.Add(-1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(-1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
-	//more than the max
+	// more than the max
 	target = max.Add(1 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
 	target = target.Add(1 * time.Millisecond)
 	assert.False(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 
-	//in between min and max
+	// in between min and max
 	target = min.Add(2 * time.Hour)
 	assert.True(t, logEventBatch.isActive(aws.Int64(target.UnixNano()/1e6)))
 }
@@ -208,7 +210,7 @@ func TestPusher_addLogEventBatch(t *testing.T) {
 	assert.Equal(t, cap, len(p.logEventBatch.putLogEventsInput.LogEvents))
 
 	assert.NotNil(t, p.addLogEvent(logEvent))
-	//the actual log event add operation happens after the func newLogEventBatchIfNeeded
+	// the actual log event add operation happens after the func newLogEventBatchIfNeeded
 	assert.Equal(t, 1, len(p.logEventBatch.putLogEventsInput.LogEvents))
 
 	p.logEventBatch.byteTotal = maxRequestPayloadBytes - logEvent.eventPayloadBytes() + 1
@@ -238,7 +240,10 @@ func TestAddLogEventWithValidation(t *testing.T) {
 	logEvent := NewEvent(timestampMs, largeEventContent)
 	expectedTruncatedContent := (*logEvent.InputLogEvent.Message)[0:(defaultMaxEventPayloadBytes-perEventHeaderBytes-len(truncatedSuffix))] + truncatedSuffix
 
-	p.AddLogEntry(logEvent)
+	err := p.AddLogEntry(logEvent)
+	if err != nil {
+		t.Errorf("Error adding log entry: %v", err)
+	}
 	assert.Equal(t, expectedTruncatedContent, *logEvent.InputLogEvent.Message)
 
 	logEvent = NewEvent(timestampMs, "")

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package spanprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 
 import (
@@ -227,13 +226,14 @@ func (sp *spanProcessor) processToAttributes(span ptrace.Span) {
 func (sp *spanProcessor) processUpdateStatus(span ptrace.Span) {
 	cfg := sp.config.SetStatus
 	if cfg != nil {
-		if cfg.Code == statusCodeOk {
+		switch cfg.Code {
+		case statusCodeOk:
 			span.Status().SetCode(ptrace.StatusCodeOk)
 			span.Status().SetMessage("")
-		} else if cfg.Code == statusCodeError {
+		case statusCodeError:
 			span.Status().SetCode(ptrace.StatusCodeError)
 			span.Status().SetMessage(cfg.Description)
-		} else if cfg.Code == statusCodeUnset {
+		case statusCodeUnset:
 			span.Status().SetCode(ptrace.StatusCodeUnset)
 			span.Status().SetMessage("")
 		}

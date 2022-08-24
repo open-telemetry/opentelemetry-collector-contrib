@@ -20,18 +20,20 @@ package journaldreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/journald"
 )
 
-const typeStr = "journald"
+const (
+	typeStr   = "journald"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a factory for journald receiver
 func NewFactory() component.ReceiverFactory {
-	return adapter.NewFactory(ReceiverType{})
+	return adapter.NewFactory(ReceiverType{}, stability)
 }
 
 // ReceiverType implements adapter.LogReceiverType
@@ -50,7 +52,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{},
+		Config: *journald.NewConfig(),
 	}
 }
 
@@ -62,18 +64,11 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 // JournaldConfig defines configuration for the journald receiver
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
+	journald.Config    `mapstructure:",squash"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*JournaldConfig)
-	yamlBytes, _ := yaml.Marshal(logConfig.Input)
-	inputCfg := journald.NewConfig("journald_input")
-
-	if err := yaml.Unmarshal(yamlBytes, &inputCfg); err != nil {
-		return nil, err
-	}
-
-	return &operator.Config{Builder: inputCfg}, nil
+	return &operator.Config{Builder: &logConfig.Config}, nil
 }

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxreceiver
 
 import (
@@ -23,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -107,8 +105,11 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 	r.RegisterMetricsConsumer(sink)
 
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 	runtime.Gosched()
-	defer r.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	unixSecs := int64(1574092046)
 	unixNSecs := int64(11 * time.Millisecond)
@@ -177,7 +178,9 @@ func Test_signalfxeceiver_EndToEnd(t *testing.T) {
 		}
 		return false
 	}, 10*time.Second, 5*time.Millisecond, "failed to wait for the port to be open")
-	defer exp.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	}()
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), want))
 
 	mds := sink.AllMetrics()
@@ -351,7 +354,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			rcv.handleDatapointReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -526,7 +529,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			rcv.handleEventReq(w, tt.req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -550,7 +553,9 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 	r := newReceiver(componenttest.NewNopReceiverCreateSettings(), *cfg)
 	r.RegisterMetricsConsumer(sink)
-	defer r.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, r.Shutdown(context.Background()))
+	}()
 
 	mh := newAssertNoErrorHost(t)
 	require.NoError(t, r.Start(context.Background(), mh), "should not have failed to start metric reception")
@@ -667,7 +672,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			rcv.handleDatapointReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -744,7 +749,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			rcv.handleEventReq(w, req)
 
 			resp := w.Result()
-			respBytes, err := ioutil.ReadAll(resp.Body)
+			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
 			var bodyStr string

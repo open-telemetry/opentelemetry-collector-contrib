@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package filelogreceiver
 
 import (
@@ -31,12 +30,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -47,25 +47,25 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentID("filelog").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	assert.Equal(t, testdataConfigYamlAsMap(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
-	cfg := testdataConfigYamlAsMap()
-	cfg.Input["include"] = "not an array"
+	cfg := testdataConfigYaml()
+	cfg.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -84,7 +84,7 @@ func TestReadStaticFile(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataConfigYamlAsMap()
+	cfg := testdataConfigYaml()
 	cfg.Converter.MaxFlushCount = 10
 	cfg.Converter.FlushInterval = time.Millisecond
 
@@ -105,7 +105,7 @@ func TestReadStaticFile(t *testing.T) {
 	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		e.Severity = severity
 		e.AddAttribute("file_name", "simple.log")
 		require.NoError(t, c.Batch([]*entry.Entry{e}))
@@ -173,7 +173,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	f := NewFactory()
 	sink := new(consumertest.LogsSink)
 
-	cfg := testdataRotateTestYamlAsMap(tempDir)
+	cfg := rotationTestConfig(tempDir)
 	cfg.Converter.MaxFlushCount = 1
 	cfg.Converter.FlushInterval = time.Millisecond
 
@@ -202,7 +202,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		// Build the expected set by converting entries to pdata Logs...
 		e := entry.New()
 		e.Timestamp = expectedTimestamp
-		e.Set(entry.NewBodyField("msg"), msg)
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
 		require.NoError(t, converter.Batch([]*entry.Entry{e}))
 
 		// ... and write the logs lines to the actual file consumed by receiver.
@@ -253,7 +253,7 @@ func expectNLogs(sink *consumertest.LogsSink, expected int) func() bool {
 	return func() bool { return sink.LogRecordCount() == expected }
 }
 
-func testdataConfigYamlAsMap() *FileLogConfig {
+func testdataConfigYaml() *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -275,16 +275,16 @@ func testdataConfigYamlAsMap() *FileLogConfig {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Input: adapter.InputConfig{
-			"include": []interface{}{
-				"testdata/simple.log",
-			},
-			"start_at": "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{"testdata/simple.log"}
+			c.StartAt = "beginning"
+			return *c
+		}(),
 	}
 }
 
-func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
+func rotationTestConfig(tempDir string) *FileLogConfig {
 	return &FileLogConfig{
 		BaseConfig: adapter.BaseConfig{
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
@@ -300,14 +300,13 @@ func testdataRotateTestYamlAsMap(tempDir string) *FileLogConfig {
 			},
 			Converter: adapter.ConverterConfig{},
 		},
-		Input: adapter.InputConfig{
-			"type": "file_input",
-			"include": []interface{}{
-				fmt.Sprintf("%s/*", tempDir),
-			},
-			"include_file_name": false,
-			"poll_interval":     "10ms",
-			"start_at":          "beginning",
-		},
+		Config: func() file.Config {
+			c := file.NewConfig()
+			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
+			c.StartAt = "beginning"
+			c.PollInterval = 10 * time.Millisecond
+			c.IncludeFileName = false
+			return *c
+		}(),
 	}
 }

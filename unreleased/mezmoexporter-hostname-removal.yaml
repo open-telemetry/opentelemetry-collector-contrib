@@ -1,0 +1,29 @@
+# One of 'breaking', 'deprecation', 'new_component', 'enhancement', 'bug_fix'
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: exporter/mezmoexporter
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: | 
+  This change removes the hardcoded "otel" hostname that was embedded
+  in outgoing logs data.
+
+# One or more tracking issues related to the change
+issues: [13410]
+
+# (Optional) One or more lines of additional information to render under the primary note.
+# These lines will be padded with 2 spaces and then inserted directly into the document.
+# Use pipe (|) for multiline entries.
+subtext: |
+  It is replaced by:
+
+    1. Sending to a new collector endpoint that does not require the
+    hostname parameter.
+
+    2. Recognizing the "host.name" resource attribute and using that
+    value to fill in log metadata recognized upstream.
+
+    This is a breaking change, and as such will generate a startup
+    error if the exporter is configured to send to an endpoint that
+    does not support this feature.

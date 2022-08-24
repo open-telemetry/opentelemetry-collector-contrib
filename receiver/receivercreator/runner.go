@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
+	"go.uber.org/zap"
 )
 
 // runner starts and stops receiver instances.
@@ -98,9 +99,8 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	if err := config.UnmarshalReceiver(mergedConfig, receiverCfg); err != nil {
 		return nil, fmt.Errorf("failed to load template config: %w", err)
 	}
-	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}.
-	// TODO: Need to make sure this is unique (just endpoint is probably not totally sufficient).
-	receiverCfg.SetIDName(fmt.Sprintf("%s/%s{endpoint=%q}", receiver.id.Name(), run.idNamespace, cast.ToString(mergedConfig.Get(endpointConfigKey))))
+	// Sets dynamically created receiver to something like receiver_creator/1/redis{endpoint="localhost:6380"}/<EndpointID>.
+	receiverCfg.SetIDName(fmt.Sprintf("%s/%s{endpoint=%q}/%s", receiver.id.Name(), run.idNamespace, cast.ToString(mergedConfig.Get(endpointConfigKey)), receiver.endpointID))
 	return receiverCfg, nil
 }
 
@@ -110,5 +110,7 @@ func (run *receiverRunner) createRuntimeReceiver(
 	cfg config.Receiver,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	return factory.CreateMetricsReceiver(context.Background(), run.params, cfg, nextConsumer)
+	runParams := run.params
+	runParams.Logger = runParams.Logger.With(zap.String("name", cfg.ID().String()))
+	return factory.CreateMetricsReceiver(context.Background(), runParams, cfg, nextConsumer)
 }

@@ -185,8 +185,8 @@ func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
 // extractGroupingAttributes extracts the keys and values of the specified Attributes
 // that match with the attributes keys that is used for grouping
 // Returns:
-//  - whether any attribute matched (true) or none (false)
-//  - the extracted AttributeMap of matching keys and their corresponding values
+//   - whether any attribute matched (true) or none (false)
+//   - the extracted AttributeMap of matching keys and their corresponding values
 func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map) (bool, pcommon.Map) {
 
 	groupingAttributes := pcommon.NewMap()

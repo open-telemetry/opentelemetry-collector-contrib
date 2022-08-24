@@ -17,20 +17,26 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/fileconsumer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
+const operatorType = "file_input"
+
 func init() {
-	operator.Register("file_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new input config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "file_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		Config:      *fileconsumer.NewConfig(),
 	}
 }
@@ -48,32 +54,33 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	fileNameField := entry.NewNilField()
+	preEmitOptions := []preEmitOption{}
 	if c.IncludeFileName {
-		fileNameField = entry.NewAttributeField("log.file.name")
+		preEmitOptions = append(preEmitOptions, setFileName)
 	}
-
-	filePathField := entry.NewNilField()
 	if c.IncludeFilePath {
-		filePathField = entry.NewAttributeField("log.file.path")
+		preEmitOptions = append(preEmitOptions, setFilePath)
 	}
-
-	fileNameResolvedField := entry.NewNilField()
 	if c.IncludeFileNameResolved {
-		fileNameResolvedField = entry.NewAttributeField("log.file.name_resolved")
+		preEmitOptions = append(preEmitOptions, setFileNameResolved)
+	}
+	if c.IncludeFilePathResolved {
+		preEmitOptions = append(preEmitOptions, setFilePathResolved)
 	}
 
-	filePathResolvedField := entry.NewNilField()
-	if c.IncludeFilePathResolved {
-		filePathResolvedField = entry.NewAttributeField("log.file.path_resolved")
+	var toBody toBodyFunc = func(token []byte) interface{} {
+		return string(token)
+	}
+	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
+		toBody = func(token []byte) interface{} {
+			return token
+		}
 	}
 
 	input := &Input{
-		InputOperator:         inputOperator,
-		FilePathField:         filePathField,
-		FileNameField:         fileNameField,
-		FilePathResolvedField: filePathResolvedField,
-		FileNameResolvedField: fileNameResolvedField,
+		InputOperator:  inputOperator,
+		toBody:         toBody,
+		preEmitOptions: preEmitOptions,
 	}
 
 	input.fileConsumer, err = c.Config.Build(logger, input.emit)

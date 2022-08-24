@@ -8,19 +8,22 @@ receivers:
       columns: "name,messages"
       key: ["foo","bar"]
     use_service_account: true
-    tls_enabled: true
-    tls_config:
+    tls:
       ca_file: "path"
       cert_file: "path"
       key_file: "path"
+      insecure: false
       insecure_skip_verify: true
   prometheus_simple/partial_settings:
     collection_interval: 30s
     endpoint: "localhost:1234"
+    tls:
+      insecure: true
   prometheus_simple/partial_tls_settings:
-    tls_enabled: true
     collection_interval: 30s
     endpoint: "localhost:1234"
+    tls:
+      insecure: false
 
 
 processors:

@@ -12,23 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -75,6 +76,21 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	})
+
+	t.Run("scrape returns nothing", func(t *testing.T) {
+		mockClient := new(MockClient)
+		mockClient.On("GetStats", "_local").Return(map[string]interface{}{}, nil)
+		scraper := newCouchdbScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
+		scraper.client = mockClient
+
+		metrics, err := scraper.scrape(context.Background())
+		require.Error(t, err)
+		assert.Equal(t, 0, metrics.DataPointCount(), "Expected 0 datapoints to be collected")
+
+		var partialScrapeErr scrapererror.PartialScrapeError
+		require.True(t, errors.As(err, &partialScrapeErr), "returned error was not PartialScrapeError")
+		require.True(t, partialScrapeErr.Failed > 0, "Expected scrape failures, but none were recorded!")
 	})
 
 	t.Run("scrape error: failed to connect to client", func(t *testing.T) {
@@ -181,7 +197,7 @@ func getStats(filename string) (map[string]interface{}, error) {
 	}
 	defer file.Close()
 
-	body, err := ioutil.ReadAll(file)
+	body, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
@@ -206,10 +222,8 @@ func (_m *MockClient) Get(path string) ([]byte, error) {
 	var r0 []byte
 	if rf, ok := ret.Get(0).(func(string) []byte); ok {
 		r0 = rf(path)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]byte)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).([]byte)
 	}
 
 	var r1 error
@@ -229,10 +243,8 @@ func (_m *MockClient) GetStats(nodeName string) (map[string]interface{}, error) 
 	var r0 map[string]interface{}
 	if rf, ok := ret.Get(0).(func(string) map[string]interface{}); ok {
 		r0 = rf(nodeName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[string]interface{})
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(map[string]interface{})
 	}
 
 	var r1 error

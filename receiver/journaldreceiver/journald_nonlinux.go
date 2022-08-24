@@ -28,19 +28,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
-const typeStr = "journald"
+const (
+	typeStr   = "journald"
+	stability = component.StabilityLevelAlpha
+)
 
 // NewFactory creates a dummy factory.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsReceiver(createLogsReceiver))
+		component.WithLogsReceiver(createLogsReceiver, stability))
 }
 
 type JournaldConfig struct {
 	adapter.BaseConfig `mapstructure:",squash"`
-	Input              adapter.InputConfig `mapstructure:",remain"`
 }
 
 func createDefaultConfig() config.Receiver {
@@ -49,7 +51,6 @@ func createDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Input: adapter.InputConfig{},
 	}
 }
 
@@ -59,6 +60,5 @@ func createLogsReceiver(
 	cfg config.Receiver,
 	consumer consumer.Logs,
 ) (component.LogsReceiver, error) {
-
 	return nil, fmt.Errorf("journald is only supported on linux")
 }

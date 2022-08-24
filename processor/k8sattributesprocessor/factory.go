@@ -32,6 +32,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "k8sattributes"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
@@ -43,9 +45,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor),
-		component.WithMetricsProcessor(createMetricsProcessor),
-		component.WithLogsProcessor(createLogsProcessor),
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
 	)
 }
 
@@ -85,18 +87,20 @@ func createMetricsProcessor(
 }
 
 func createTracesProcessorWithOptions(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	next consumer.Traces,
 	options ...option,
 ) (component.TracesProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		next,
 		kp.processTraces,
@@ -106,18 +110,20 @@ func createTracesProcessorWithOptions(
 }
 
 func createMetricsProcessorWithOptions(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextMetricsConsumer consumer.Metrics,
 	options ...option,
 ) (component.MetricsProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextMetricsConsumer,
 		kp.processMetrics,
@@ -127,18 +133,20 @@ func createMetricsProcessorWithOptions(
 }
 
 func createLogsProcessorWithOptions(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextLogsConsumer consumer.Logs,
 	options ...option,
 ) (component.LogsProcessor, error) {
-	kp, err := createKubernetesProcessor(params, cfg, options...)
+	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextLogsConsumer,
 		kp.processLogs,
@@ -155,6 +163,7 @@ func createKubernetesProcessor(
 	kp := &kubernetesprocessor{logger: params.Logger}
 
 	warnDeprecatedMetadataConfig(kp.logger, cfg)
+	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
 
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
@@ -251,4 +260,43 @@ func errWrongKeyConfig(cfg config.Processor) error {
 	}
 
 	return nil
+}
+
+func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg config.Processor) {
+	oCfg := cfg.(*Config)
+	deprecated := ""
+	actual := ""
+	for _, assoc := range oCfg.Association {
+		if assoc.From == "" && assoc.Name == "" {
+			continue
+		}
+
+		deprecated += fmt.Sprintf(`
+- from: %s`, assoc.From)
+		actual += fmt.Sprintf(`
+- sources:
+  - from: %s`, assoc.From)
+
+		if assoc.Name != "" {
+			deprecated += fmt.Sprintf(`
+  name: %s`, assoc.Name)
+		}
+
+		if assoc.From != kube.ConnectionSource {
+			actual += fmt.Sprintf(`
+    name: %s`, assoc.Name)
+		}
+	}
+
+	if deprecated != "" {
+		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
+
+pod_association:%s
+
+with
+
+pod_association:%s
+
+`, deprecated, actual))
+	}
 }

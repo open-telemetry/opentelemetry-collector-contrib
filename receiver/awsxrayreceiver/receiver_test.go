@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package awsxrayreceiver
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -120,16 +119,20 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestSegmentsPassedToConsumer")
 
 	addr, rcvr, _ := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
-	defer rcvr.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
-	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
+	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "ddbSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
@@ -148,14 +151,18 @@ func TestSegmentsPassedToConsumer(t *testing.T) {
 func TestTranslatorErrorsOut(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
 	receiverID := config.NewComponentID("TestTranslatorErrorsOut")
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID, nil, true, tt.ToReceiverCreateSettings())
-	defer rcvr.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
 	err = writePacket(t, addr, segmentHeader+"invalidSegment")
 	assert.NoError(t, err, "can not write packet in the "+receiverID.String()+" case")
@@ -166,13 +173,15 @@ func TestTranslatorErrorsOut(t *testing.T) {
 			"X-Ray segment to OT traces conversion failed")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 0, 1))
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 1, 1))
 }
 
 func TestSegmentsConsumerErrorsOut(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
@@ -180,9 +189,11 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 
 	addr, rcvr, recordedLogs := createAndOptionallyStartReceiver(t, receiverID,
 		consumertest.NewErr(errors.New("can't consume traces")), true, tt.ToReceiverCreateSettings())
-	defer rcvr.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
 
-	content, err := ioutil.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
+	content, err := os.ReadFile(filepath.Join("../../internal/aws/xray", "testdata", "serverSample.txt"))
 	assert.NoError(t, err, "can not read raw segment")
 
 	err = writePacket(t, addr, segmentHeader+string(content))
@@ -194,13 +205,15 @@ func TestSegmentsConsumerErrorsOut(t *testing.T) {
 			"Trace consumer errored out")
 	}, 10*time.Second, 5*time.Millisecond, "poller should log warning because consumer errored out")
 
-	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 0, 1))
+	assert.NoError(t, obsreporttest.CheckReceiverTraces(tt, receiverID, udppoller.Transport, 1, 1))
 }
 
 func TestPollerCloseError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
@@ -215,7 +228,9 @@ func TestPollerCloseError(t *testing.T) {
 func TestProxyCloseError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 
@@ -230,7 +245,9 @@ func TestProxyCloseError(t *testing.T) {
 func TestBothPollerAndProxyCloseError(t *testing.T) {
 	tt, err := obsreporttest.SetupTelemetry()
 	assert.NoError(t, err, "SetupTelemetry should succeed")
-	defer tt.Shutdown(context.Background())
+	defer func() {
+		assert.NoError(t, tt.Shutdown(context.Background()))
+	}()
 
 	t.Setenv(defaultRegionEnvName, mockRegion)
 

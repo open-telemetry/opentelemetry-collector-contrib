@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package elasticsearchreceiver
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -36,6 +35,7 @@ import (
 )
 
 const fullExpectedMetricsPath = "./testdata/expected_metrics/full.json"
+const fullExpectedMetricsWithoutDirectionPath = "./testdata/expected_metrics/fullWithoutDirection.json"
 const skipClusterExpectedMetricsPath = "./testdata/expected_metrics/clusterSkip.json"
 const noNodesExpectedMetricsPath = "./testdata/expected_metrics/noNodes.json"
 
@@ -59,7 +59,32 @@ func TestScraper(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+}
+
+func TestScraperMetricsWithoutDirection(t *testing.T) {
+	t.Parallel()
+
+	sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+	sc.emitMetricsWithDirectionAttribute = false
+	sc.emitMetricsWithoutDirectionAttribute = true
+
+	err := sc.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
+	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
+
+	sc.client = &mockClient
+
+	expectedMetrics, err := golden.ReadMetrics(fullExpectedMetricsWithoutDirectionPath)
+	require.NoError(t, err)
+
+	actualMetrics, err := sc.scrape(context.Background())
+	require.NoError(t, err)
+
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperSkipClusterMetrics(t *testing.T) {
@@ -85,7 +110,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperNoNodesMetrics(t *testing.T) {
@@ -111,7 +136,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	actualMetrics, err := sc.scrape(context.Background())
 	require.NoError(t, err)
 
-	scrapertest.CompareMetrics(expectedMetrics, actualMetrics)
+	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -244,7 +269,7 @@ func TestScrapingError(t *testing.T) {
 }
 
 func clusterHealth(t *testing.T) *model.ClusterHealth {
-	healthJSON, err := ioutil.ReadFile("./testdata/sample_payloads/health.json")
+	healthJSON, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
 
 	clusterHealth := model.ClusterHealth{}
@@ -254,7 +279,7 @@ func clusterHealth(t *testing.T) *model.ClusterHealth {
 }
 
 func nodeStats(t *testing.T) *model.NodeStats {
-	nodeJSON, err := ioutil.ReadFile("./testdata/sample_payloads/nodes_linux.json")
+	nodeJSON, err := os.ReadFile("./testdata/sample_payloads/nodes_linux.json")
 	require.NoError(t, err)
 
 	nodeStats := model.NodeStats{}

@@ -23,6 +23,7 @@ import (
 type metricsTransformTest struct {
 	name       string // test name
 	transforms []internalTransform
+	spipOCTest bool // skip test on the deprecated OpenCensus data model
 	in         []*metricspb.Metric
 	out        []*metricspb.Metric
 }
@@ -681,8 +682,8 @@ var (
 				metricBuilder().setName("metric1").setLabels([]string{"label1", "label2"}).
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
 					addTimeseries(1, []string{"label1-value1", "label2-value1"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value2"}).
-					addTimeseries(1, []string{"label1-value1", "label2-value3"}).
+					addTimeseries(2, []string{"label1-value1", "label2-value2"}).
+					addTimeseries(0, []string{"label1-value1", "label2-value3"}).
 					addDistributionPoints(0, 3, 6, []float64{1, 2, 3}, []int64{0, 1, 1, 1}).  // pointGroup1: {1, 2, 3}, SumOfSquaredDeviation = 2
 					addDistributionPoints(1, 5, 10, []float64{1, 2, 3}, []int64{0, 2, 1, 2}). // pointGroup2: {1, 2, 3, 3, 1}, SumOfSquaredDeviation = 4
 					addDistributionPoints(2, 7, 14, []float64{1, 2, 3}, []int64{0, 3, 1, 3}). // pointGroup3: {1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 6
@@ -691,7 +692,7 @@ var (
 			out: []*metricspb.Metric{
 				metricBuilder().setName("metric1").setLabels([]string{"label1"}).
 					setDataType(metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION).
-					addTimeseries(1, []string{"label1-value1"}).
+					addTimeseries(0, []string{"label1-value1"}).
 					addDistributionPoints(0, 15, 30, []float64{1, 2, 3}, []int64{0, 6, 3, 6}). // pointGroupCombined: {1, 2, 3, 1, 2, 3, 3, 1, 1, 1, 2, 3, 3, 1, 3}, SumOfSquaredDeviation = 12
 					build(),
 			},
@@ -2077,6 +2078,33 @@ var (
 					addInt64Point(0, 4, 2).
 					build(),
 			},
+		},
+		{
+			name:       "delete_all_metric_datapoints",
+			spipOCTest: true,
+			transforms: []internalTransform{
+				{
+					MetricIncludeFilter: internalFilterStrict{include: "metric"},
+					Action:              Update,
+					Operations: []internalOperation{
+						{
+							configOperation: Operation{
+								Action:     DeleteLabelValue,
+								Label:      "label1",
+								LabelValue: "label1value1",
+							},
+						},
+					},
+				},
+			},
+			in: []*metricspb.Metric{
+				metricBuilder().setName("metric").setLabels([]string{"label1", "label2"}).
+					setDataType(metricspb.MetricDescriptor_GAUGE_INT64).
+					addTimeseries(1, []string{"label1value1", "label2value"}).
+					addInt64Point(0, 3, 2).
+					build(),
+			},
+			out: []*metricspb.Metric{},
 		},
 	}
 )

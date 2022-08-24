@@ -24,26 +24,34 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+)
+
+const (
+	targetMetricName = "target_info"
+)
+
+var (
+	separatorString = string([]byte{model.SeparatorByte})
 )
 
 type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps    bool
-	namespace         string
-	constLabels       prometheus.Labels
-	skipSanitizeLabel bool
+	sendTimestamps bool
+	namespace      string
+	constLabels    prometheus.Labels
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:       newAccumulator(logger, config.MetricExpiration),
-		logger:            logger,
-		namespace:         sanitize(config.Namespace, config.skipSanitizeLabel),
-		sendTimestamps:    config.SendTimestamps,
-		constLabels:       config.ConstLabels,
-		skipSanitizeLabel: config.skipSanitizeLabel,
+		accumulator:    newAccumulator(logger, config.MetricExpiration),
+		logger:         logger,
+		namespace:      prometheustranslator.CleanUpString(config.Namespace),
+		sendTimestamps: config.SendTimestamps,
+		constLabels:    config.ConstLabels,
 	}
 }
 
@@ -52,7 +60,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 func (c *collector) Describe(_ chan<- *prometheus.Desc) {}
 
 /*
-	Processing
+Processing
 */
 func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 	return c.accumulator.Accumulate(rm)
@@ -75,19 +83,12 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 	return nil, errUnknownMetricType
 }
 
-func (c *collector) metricName(namespace string, metric pmetric.Metric) string {
-	if namespace != "" {
-		return namespace + "_" + sanitize(metric.Name(), c.skipSanitizeLabel)
-	}
-	return sanitize(metric.Name(), c.skipSanitizeLabel)
-}
-
 func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string) {
 	keys := make([]string, 0, attributes.Len()+2) // +2 for job and instance labels.
 	values := make([]string, 0, attributes.Len()+2)
 
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		keys = append(keys, sanitize(k, c.skipSanitizeLabel))
+		keys = append(keys, prometheustranslator.NormalizeLabel(k))
 		values = append(values, v.AsString())
 		return true
 	})
@@ -108,7 +109,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		c.metricName(c.namespace, metric),
+		prometheustranslator.BuildPromCompliantName(metric, c.namespace),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -216,9 +217,34 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 		points[bucket] = cumCount
 	}
 
+	arrLen := ip.Exemplars().Len()
+	exemplars := make([]prometheus.Exemplar, arrLen)
+	for i := 0; i < arrLen; i++ {
+		e := ip.Exemplars().At(i)
+
+		labels := make(prometheus.Labels, e.FilteredAttributes().Len())
+		e.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			labels[k] = v.AsString()
+			return true
+		})
+
+		exemplars[i] = prometheus.Exemplar{
+			Value:     e.DoubleVal(),
+			Labels:    labels,
+			Timestamp: e.Timestamp().AsTime(),
+		}
+	}
+
 	m, err := prometheus.NewConstHistogram(desc, ip.Count(), ip.Sum(), points, attributes...)
 	if err != nil {
 		return nil, err
+	}
+
+	if arrLen > 0 {
+		m, err = prometheus.NewMetricWithExemplars(m, exemplars...)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if c.sendTimestamps {
@@ -227,13 +253,110 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 	return m, nil
 }
 
+func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
+	var metrics []prometheus.Metric
+	var lastErr error
+
+	// deduplicate resourceAttrs by job and instance
+	deduplicatedResourceAttrs := make([]pcommon.Map, 0, len(resourceAttrs))
+	seenResource := map[string]struct{}{}
+	for _, attrs := range resourceAttrs {
+		sig := resourceSignature(attrs)
+		if sig == "" {
+			continue
+		}
+		if _, ok := seenResource[resourceSignature(attrs)]; !ok {
+			seenResource[resourceSignature(attrs)] = struct{}{}
+			deduplicatedResourceAttrs = append(deduplicatedResourceAttrs, attrs)
+		}
+	}
+
+	for _, rAttributes := range deduplicatedResourceAttrs {
+		// map ensures no duplicate label name
+		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.
+
+		// Use resource attributes (other than those used for job+instance) as the
+		// metric labels for the target info metric
+		attributes := pcommon.NewMap()
+		rAttributes.CopyTo(attributes)
+		attributes.RemoveIf(func(k string, _ pcommon.Value) bool {
+			switch k {
+			case conventions.AttributeServiceName, conventions.AttributeServiceNamespace, conventions.AttributeServiceInstanceID:
+				// Remove resource attributes used for job + instance
+				return true
+			default:
+				return false
+			}
+		})
+
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			finalKey := prometheustranslator.NormalizeLabel(k)
+			if existingVal, ok := labels[finalKey]; ok {
+				labels[finalKey] = existingVal + ";" + v.AsString()
+			} else {
+				labels[finalKey] = v.AsString()
+			}
+
+			return true
+		})
+
+		// Map service.name + service.namespace to job
+		if serviceName, ok := rAttributes.Get(conventions.AttributeServiceName); ok {
+			val := serviceName.AsString()
+			if serviceNamespace, ok := rAttributes.Get(conventions.AttributeServiceNamespace); ok {
+				val = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), val)
+			}
+			labels[model.JobLabel] = val
+		}
+		// Map service.instance.id to instance
+		if instance, ok := rAttributes.Get(conventions.AttributeServiceInstanceID); ok {
+			labels[model.InstanceLabel] = instance.AsString()
+		}
+
+		name := targetMetricName
+		if len(c.namespace) > 0 {
+			name = c.namespace + "_" + name
+		}
+
+		keys := make([]string, 0, len(labels))
+		values := make([]string, 0, len(labels))
+		for key, value := range labels {
+			keys = append(keys, key)
+			values = append(values, value)
+		}
+
+		metric, err := prometheus.NewConstMetric(
+			prometheus.NewDesc(name, "Target metadata", keys, nil),
+			prometheus.GaugeValue,
+			1,
+			values...,
+		)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		metrics = append(metrics, metric)
+	}
+	return metrics, lastErr
+}
+
 /*
-	Reporting
+Reporting
 */
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
 	c.logger.Debug("collect called")
 
 	inMetrics, resourceAttrs := c.accumulator.Collect()
+
+	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
+	if err != nil {
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", targetMetricName, err.Error()))
+	}
+	for _, m := range targetMetrics {
+		ch <- m
+		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
+	}
 
 	for i := range inMetrics {
 		pMetric := inMetrics[i]
@@ -248,4 +371,27 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- m
 		c.logger.Debug(fmt.Sprintf("metric served: %s", m.Desc().String()))
 	}
+}
+
+func resourceSignature(attributes pcommon.Map) string {
+	job := ""
+	instance := ""
+
+	// Map service.name + service.namespace to job
+	if serviceName, ok := attributes.Get(conventions.AttributeServiceName); ok {
+		job = serviceName.AsString()
+		if serviceNamespace, ok := attributes.Get(conventions.AttributeServiceNamespace); ok {
+			job = fmt.Sprintf("%s/%s", serviceNamespace.AsString(), job)
+		}
+	}
+	// Map service.instance.id to instance
+	if inst, ok := attributes.Get(conventions.AttributeServiceInstanceID); ok {
+		instance = inst.AsString()
+	}
+
+	if job == "" && instance == "" {
+		return ""
+	}
+
+	return job + separatorString + instance
 }

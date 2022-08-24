@@ -16,7 +16,6 @@
 //go:build !windows
 // +build !windows
 
-// nolint:errcheck
 package dbstorage
 
 import (
@@ -37,8 +36,11 @@ func TestExtensionIntegrity(t *testing.T) {
 	ctx := context.Background()
 	se := newTestExtension(t)
 	err := se.Start(context.Background(), componenttest.NewNopHost())
-	defer se.Shutdown(context.Background())
 	assert.NoError(t, err)
+	defer func() {
+		err = se.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
 	type mockComponent struct {
 		kind component.Kind

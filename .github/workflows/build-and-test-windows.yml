@@ -8,6 +8,10 @@ on:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
 jobs:
   windows-unittest-matrix:
     strategy:
@@ -34,7 +38,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.17
+          go-version: 1.19
       - name: Cache Go
         uses: actions/cache@v3
         with:
@@ -42,11 +46,26 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        env:
+          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+          # Cache downloads for this workflow consistently run in under 10 minutes
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
       - name: Run Unit tests
         run: make gotest GROUP=${{ matrix.group }}
   windows-unittest:
+    if: ${{ always() }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:
-      - name: Unit Tests Complete
-        run: echo "Windows unit tests complete"
+      - name: Print result
+        run: echo ${{ needs.windows-unittest-matrix.result }}
+      - name: Interpret result
+        shell: bash
+        run: |
+          if [[ success == ${{ needs.windows-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi

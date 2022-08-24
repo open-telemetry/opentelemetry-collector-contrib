@@ -29,10 +29,13 @@ import (
 
 const (
 	// hecPath is the default HEC path on the Splunk instance.
-	hecPath                      = "services/collector"
-	maxContentLengthLogsLimit    = 2 * 1024 * 1024
-	maxContentLengthMetricsLimit = 2 * 1024 * 1024
-	maxContentLengthTracesLimit  = 2 * 1024 * 1024
+	hecPath                          = "services/collector"
+	defaultContentLengthLogsLimit    = 2 * 1024 * 1024
+	defaultContentLengthMetricsLimit = 2 * 1024 * 1024
+	defaultContentLengthTracesLimit  = 2 * 1024 * 1024
+	maxContentLengthLogsLimit        = 800 * 1024 * 1024
+	maxContentLengthMetricsLimit     = 800 * 1024 * 1024
+	maxContentLengthTracesLimit      = 800 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -80,13 +83,16 @@ type Config struct {
 	// Disable GZip compression. Defaults to false.
 	DisableCompression bool `mapstructure:"disable_compression"`
 
-	// Maximum log data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	// Maximum log payload size in bytes. Default value is 2097152 bytes (2MiB).
+	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthLogs uint `mapstructure:"max_content_length_logs"`
 
-	// Maximum metric data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	// Maximum metric payload size in bytes. Default value is 2097152 bytes (2MiB).
+	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthMetrics uint `mapstructure:"max_content_length_metrics"`
 
-	// Maximum trace data size in bytes per HTTP post. Defaults to the backend limit of 2097152 bytes (2MiB).
+	// Maximum trace payload size in bytes. Default value is 2097152 bytes (2MiB).
+	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
 
 	// TLSSetting struct exposes TLS client configuration.

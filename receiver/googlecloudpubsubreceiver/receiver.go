@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
 import (
@@ -21,7 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strings"
 	"sync"
 
@@ -149,13 +148,12 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 }
 
 func decompress(payload []byte, compression compression) ([]byte, error) {
-	switch compression {
-	case gZip:
+	if compression == gZip {
 		reader, err := gzip.NewReader(bytes.NewReader(payload))
 		if err != nil {
 			return nil, err
 		}
-		return ioutil.ReadAll(reader)
+		return io.ReadAll(reader)
 	}
 	return payload, nil
 }
@@ -241,14 +239,12 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 	}
 
 	ceContentEncoding := attributes["content-encoding"]
-	switch ceContentEncoding {
-	case "gzip":
+	if ceContentEncoding == "gzip" {
 		otlpCompression = gZip
 	}
 
 	if otlpCompression == uncompressed && receiver.config.Compression != "" {
-		switch receiver.config.Compression {
-		case "gzip":
+		if receiver.config.Compression == "gzip" {
 			otlpCompression = gZip
 		}
 	}

@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package riakreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver"
 
 import (
@@ -77,25 +76,25 @@ func (r *riakScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var errors scrapererror.ScrapeErrors
-	//scrape node.operation.count metric
+	// scrape node.operation.count metric
 	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodeGets, metadata.AttributeRequestGet)
 	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodePuts, metadata.AttributeRequestPut)
 
-	//scrape node.operation.time.mean metric
+	// scrape node.operation.time.mean metric
 	r.mb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodeGetFsmTimeMean, metadata.AttributeRequestGet)
 	r.mb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodePutFsmTimeMean, metadata.AttributeRequestPut)
 
-	//scrape node.read_repair.count metric
+	// scrape node.read_repair.count metric
 	r.mb.RecordRiakNodeReadRepairCountDataPoint(now, stat.ReadRepairs)
 
-	//scrape node.memory.limit metric
+	// scrape node.memory.limit metric
 	r.mb.RecordRiakMemoryLimitDataPoint(now, stat.MemAllocated)
 
-	//scrape vnode.operation.count metric
+	// scrape vnode.operation.count metric
 	r.mb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodeGets, metadata.AttributeRequestGet)
 	r.mb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodePuts, metadata.AttributeRequestPut)
 
-	//scrape vnode.index.operation.count metric
+	// scrape vnode.index.operation.count metric
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexReads, metadata.AttributeOperationRead)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)

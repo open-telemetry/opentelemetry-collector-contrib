@@ -43,6 +43,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "resourcedetection"
+	// The stability level of the processor.
+	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -83,9 +85,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor),
-		component.WithMetricsProcessor(f.createMetricsProcessor),
-		component.WithLogsProcessor(f.createLogsProcessor))
+		component.WithTracesProcessor(f.createTracesProcessor, stability),
+		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
+		component.WithLogsProcessor(f.createLogsProcessor, stability))
 }
 
 // Type gets the type of the Option config created by this factory.
@@ -112,17 +114,19 @@ func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 }
 
 func (f *factory) createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces,
 ) (component.TracesProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewTracesProcessor(
+	return processorhelper.NewTracesProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processTraces,
@@ -131,17 +135,19 @@ func (f *factory) createTracesProcessor(
 }
 
 func (f *factory) createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processMetrics,
@@ -150,17 +156,19 @@ func (f *factory) createMetricsProcessor(
 }
 
 func (f *factory) createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs,
 ) (component.LogsProcessor, error) {
-	rdp, err := f.getResourceDetectionProcessor(params, cfg)
+	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return processorhelper.NewLogsProcessor(
+	return processorhelper.NewLogsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		rdp.processLogs,

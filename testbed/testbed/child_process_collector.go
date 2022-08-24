@@ -12,14 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -103,7 +101,7 @@ func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup 
 		// NoOp
 	}
 	var file *os.File
-	file, err = ioutil.TempFile("", "agent*.yaml")
+	file, err = os.CreateTemp("", "agent*.yaml")
 	if err != nil {
 		log.Printf("%s", err)
 		return configCleanup, err
@@ -307,7 +305,7 @@ func (cp *childProcessCollector) WatchResourceConsumption() error {
 	ticker := time.NewTicker(cp.resourceSpec.ResourceCheckPeriod)
 	defer ticker.Stop()
 
-	//on first start must be under the cpu and ram max usage add a max minute delay
+	// on first start must be under the cpu and ram max usage add a max minute delay
 	for start := time.Now(); time.Since(start) < time.Minute; {
 		cp.fetchRAMUsage()
 		cp.fetchCPUUsage()
@@ -382,7 +380,7 @@ func (cp *childProcessCollector) fetchCPUUsage() {
 
 	// Calculate elapsed and process CPU time deltas in seconds
 	deltaElapsedTime := now.Sub(cp.lastElapsedTime).Seconds()
-	deltaCPUTime := times.Total() - cp.lastProcessTimes.Total()
+	deltaCPUTime := totalCPU(times) - totalCPU(cp.lastProcessTimes)
 	if deltaCPUTime < 0 {
 		// We sometimes get negative difference when the process is terminated.
 		deltaCPUTime = 0
@@ -450,7 +448,7 @@ func (cp *childProcessCollector) GetTotalConsumption() *ResourceConsumption {
 
 		if elapsedDuration > 0 {
 			// Calculate average CPU usage since start of process
-			rc.CPUPercentAvg = cp.lastProcessTimes.Total() / elapsedDuration * 100.0
+			rc.CPUPercentAvg = totalCPU(cp.lastProcessTimes) / elapsedDuration * 100.0
 		}
 		rc.CPUPercentMax = cp.cpuPercentMax
 
@@ -471,4 +469,12 @@ func containsConfig(s []string) bool {
 		}
 	}
 	return false
+}
+
+// Copied from cpu.TimesStat.Total(), since that func is deprecated.
+func totalCPU(c *cpu.TimesStat) float64 {
+	total := c.User + c.System + c.Idle + c.Nice + c.Iowait + c.Irq +
+		c.Softirq + c.Steal + c.Guest + c.GuestNice
+
+	return total
 }

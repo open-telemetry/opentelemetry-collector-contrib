@@ -23,14 +23,18 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
-const typeStr = "mezmo"
+const (
+	typeStr = "mezmo"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
+)
 
 // NewFactory creates a factory for Mezmo exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporter(createLogsExporter),
+		component.WithLogsExporter(createLogsExporter, stability),
 	)
 }
 
@@ -60,9 +64,10 @@ func createLogsExporter(ctx context.Context, settings component.ExporterCreateSe
 
 	exp := newLogsExporter(expCfg, settings.TelemetrySettings, settings.BuildInfo, log)
 
-	return exporterhelper.NewLogsExporter(
-		expCfg,
+	return exporterhelper.NewLogsExporterWithContext(
+		ctx,
 		settings,
+		expCfg,
 		exp.pushLogData,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),

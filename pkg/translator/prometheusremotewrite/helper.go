@@ -22,7 +22,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/prometheus/common/model"
@@ -32,12 +31,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.opentelemetry.io/collector/service/featuregate"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 const (
-	dropSanitization = "pkg.translator.prometheusremotewrite.PermissiveLabelSanitization"
-
 	nameStr     = "__name__"
 	sumStr      = "_sum"
 	countStr    = "_count"
@@ -45,7 +43,6 @@ const (
 	leStr       = "le"
 	quantileStr = "quantile"
 	pInfStr     = "+Inf"
-	keyStr      = "key"
 	// maxExemplarRunes is the maximum number of UTF-8 exemplar characters
 	// according to the prometheus specification
 	// https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#exemplars
@@ -55,18 +52,8 @@ const (
 	traceIDKey       = "trace_id"
 	spanIDKey        = "span_id"
 	infoType         = "info"
-	targetMetricName = "target"
+	targetMetricName = "target_info"
 )
-
-var dropSanitizationGate = featuregate.Gate{
-	ID:          dropSanitization,
-	Enabled:     false,
-	Description: "Controls whether to change labels starting with '_' to 'key_'",
-}
-
-func init() {
-	featuregate.GetRegistry().MustRegister(dropSanitizationGate)
-}
 
 type bucketBoundsData struct {
 	sig   string
@@ -150,7 +137,9 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 }
 
 // timeSeries return a string signature in the form of:
-// 		TYPE-label1-value1- ...  -labelN-valueN
+//
+//	TYPE-label1-value1- ...  -labelN-valueN
+//
 // the label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
 func timeSeriesSignature(datatype string, labels *[]prompb.Label) string {
@@ -184,7 +173,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	attributes.CopyTo(cloneAttributes)
 	cloneAttributes.Sort()
 	cloneAttributes.Range(func(key string, value pcommon.Value) bool {
-		var finalKey = sanitize(key)
+		var finalKey = prometheustranslator.NormalizeLabel(key)
 		if existingLabel, alreadyExists := l[finalKey]; alreadyExists {
 			existingLabel.Value = existingLabel.Value + ";" + value.AsString()
 			l[finalKey] = existingLabel
@@ -239,7 +228,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		// internal labels should be maintained
 		name := extras[i]
 		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
-			name = sanitize(name)
+			name = prometheustranslator.NormalizeLabel(name)
 		}
 		l[name] = prompb.Label{
 			Name:  name,
@@ -253,16 +242,6 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	}
 
 	return s
-}
-
-// getPromMetricName creates a Prometheus metric name by attaching namespace prefix for Monotonic metrics.
-func getPromMetricName(metric pmetric.Metric, ns string) string {
-	name := metric.Name()
-	if len(ns) > 0 {
-		name = ns + "_" + name
-	}
-
-	return sanitize(name)
 }
 
 // validateMetrics returns a bool representing whether the metric has a valid type and temporality combination and a
@@ -285,7 +264,7 @@ func validateMetrics(metric pmetric.Metric) bool {
 // to its corresponding time series in tsMap
 func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	// create parameters for addSample
-	name := getPromMetricName(metric, settings.Namespace)
+	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		// convert ns to ms
@@ -297,7 +276,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	addSample(tsMap, sample, labels, metric.DataType().String())
@@ -308,13 +287,13 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := getPromMetricName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -326,7 +305,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -350,7 +329,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
 		}
-		if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+		if pt.Flags().NoRecordedValue() {
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
@@ -363,10 +342,12 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	infBucket := &prompb.Sample{
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
-		cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
+		if pt.BucketCounts().Len() > 0 {
+			cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
+		}
 		infBucket.Value = float64(cumulativeCount)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
@@ -472,13 +453,13 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	tsMap map[string]*prompb.TimeSeries) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
-	baseName := getPromMetricName(metric, settings.Namespace)
+	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
@@ -489,7 +470,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
@@ -502,7 +483,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			Value:     qt.Value(),
 			Timestamp: time,
 		}
-		if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+		if pt.Flags().NoRecordedValue() {
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
@@ -513,14 +494,6 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 
 // addResourceTargetInfo converts the resource to the target info metric
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, tsMap map[string]*prompb.TimeSeries) {
-	if resource.Attributes().Len() == 0 {
-		return
-	}
-	// create parameters for addSample
-	name := targetMetricName
-	if len(settings.Namespace) > 0 {
-		name = settings.Namespace + "_" + name
-	}
 	// Use resource attributes (other than those used for job+instance) as the
 	// metric labels for the target info metric
 	attributes := pcommon.NewMap()
@@ -534,6 +507,15 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 			return false
 		}
 	})
+	if attributes.Len() == 0 {
+		// If we only have job + instance, then target_info isn't useful, so don't add it.
+		return
+	}
+	// create parameters for addSample
+	name := targetMetricName
+	if len(settings.Namespace) > 0 {
+		name = settings.Namespace + "_" + name
+	}
 	labels := createAttributes(resource, attributes, settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: float64(1),
@@ -541,36 +523,6 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		Timestamp: convertTimeStamp(timestamp),
 	}
 	addSample(tsMap, sample, labels, infoType)
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitize replaces non-alphanumeric characters with underscores in s.
-func sanitize(s string) string {
-	if len(s) == 0 {
-		return s
-	}
-
-	// Note: No length limit for label keys because Prometheus doesn't
-	// define a length limit, thus we should NOT be truncating label keys.
-	// See https://github.com/orijtech/prometheus-go-metrics-exporter/issues/4.
-	s = strings.Map(sanitizeRune, s)
-	if unicode.IsDigit(rune(s[0])) {
-		s = keyStr + "_" + s
-	}
-	if !featuregate.GetRegistry().IsEnabled(dropSanitizationGate.ID) && s[0] == '_' {
-		s = keyStr + s
-	}
-	return s
-}
-
-// copied from prometheus-go-metric-exporter
-// sanitizeRune converts anything that is not a letter or digit to an underscore
-func sanitizeRune(r rune) rune {
-	if unicode.IsLetter(r) || unicode.IsDigit(r) {
-		return r
-	}
-	// Everything else turns into an underscore
-	return '_'
 }
 
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms

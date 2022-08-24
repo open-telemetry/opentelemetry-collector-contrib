@@ -118,11 +118,30 @@ metrics:
     unit: "{file_descriptors}"
     gauge:
       value_type: int
+  # produced when receiver.zookeeperreceiver.emitMetricsWithDirectionAttribute feature gate is enabled
   zookeeper.packet.count:
     enabled: true
     description: The number of ZooKeeper packets received or sent by a server.
     unit: "{packets}"
     attributes: [direction]
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+  # produced when receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  zookeeper.packet.sent.count:
+    enabled: true
+    description: The number of ZooKeeper packets sent by a server.
+    unit: "{packets}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+  # produced when receiver.zookeeperreceiver.emitMetricsWithoutDirectionAttribute feature gate is enabled
+  zookeeper.packet.received.count:
+    enabled: true
+    description: The number of ZooKeeper packets received by a server.
+    unit: "{packets}"
     sum:
       value_type: int
       monotonic: true

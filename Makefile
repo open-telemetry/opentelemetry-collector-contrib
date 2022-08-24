@@ -56,7 +56,7 @@ all-groups:
 	@echo "\nother: $(OTHER_MODS)"
 
 .PHONY: all
-all: all-common gotest otelcontribcol otelcontribcol-unstable
+all: install-tools all-common gotest otelcontribcol otelcontribcol-unstable
 
 .PHONY: all-common
 all-common:
@@ -101,6 +101,10 @@ gofmt:
 .PHONY: golint
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
+
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
 
 .PHONY: goporto
 goporto:
@@ -258,6 +262,27 @@ generate:
 	cd cmd/mdatagen && $(GOCMD) install .
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
 
+.PHONY: chlog-install
+chlog-install:
+	cd cmd/chloggen && $(GOCMD) install .
+
+FILENAME?=$(shell git branch --show-current)
+.PHONY: chlog-new
+chlog-new: chlog-install
+	chloggen new -filename $(FILENAME)
+
+.PHONY: chlog-validate
+chlog-validate: chlog-install
+	chloggen validate
+
+.PHONY: chlog-preview
+chlog-preview: chlog-install
+	chloggen update -dry
+
+.PHONY: chlog-update
+chlog-update: chlog-install
+	chloggen update -version $(VERSION)
+
 # Build the Collector executable.
 .PHONY: otelcontribcol
 otelcontribcol:
@@ -310,7 +335,7 @@ build-examples:
 .PHONY: deb-rpm-package
 %-package: ARCH ?= amd64
 %-package:
-	$(MAKE) otelcontribcol-linux_$(ARCH)
+	GOOS=linux GOARCH=$(ARCH) $(MAKE) otelcontribcol
 	docker build -t otelcontribcol-fpm internal/buildscripts/packaging/fpm
 	docker run --rm -v $(CURDIR):/repo -e PACKAGE=$* -e VERSION=$(VERSION) -e ARCH=$(ARCH) otelcontribcol-fpm
 
@@ -335,7 +360,8 @@ endef
 CERT_DIRS := receiver/sapmreceiver/testdata \
              receiver/signalfxreceiver/testdata \
              receiver/splunkhecreceiver/testdata \
-             receiver/mongodbatlasreceiver/testdata/alerts/certs
+             receiver/mongodbatlasreceiver/testdata/alerts/cert \
+             receiver/mongodbreceiver/testdata/certs
 
 # Generate certificates for unit tests relying on certificates.
 .PHONY: certs
@@ -355,3 +381,38 @@ multimod-prerelease: install-tools
 crosslink: install-tools
 	@echo "Executing crosslink"
 	crosslink --root=$(shell pwd)
+
+.PHONY: clean
+clean:
+	@echo "Removing coverage files"
+	find . -type f -name 'coverage.txt' -delete
+	find . -type f -name 'coverage.html' -delete
+	find . -type f -name 'integration-coverage.txt' -delete
+	find . -type f -name 'integration-coverage.html' -delete
+
+.PHONY: genconfigdocs
+genconfigdocs:
+	cd cmd/configschema && $(GOCMD) run ./docsgen all
+
+.PHONY: generate-all-labels
+generate-all-labels:
+	$(MAKE) generate-labels TYPE="cmd" COLOR="#483C32"
+	$(MAKE) generate-labels TYPE="pkg" COLOR="#F9DE22"
+	$(MAKE) generate-labels TYPE="extension" COLOR="#FF794D"
+	$(MAKE) generate-labels TYPE="receiver" COLOR="#E91B7B"
+	$(MAKE) generate-labels TYPE="processor" COLOR="#800080"
+	$(MAKE) generate-labels TYPE="exporter" COLOR="#50C878"
+
+.PHONY: generate-labels
+generate-labels:
+	if [ -z $${TYPE+x} ] || [ -z $${COLOR+x} ]; then \
+		echo "Must provide a TYPE and COLOR"; \
+		exit 1; \
+	fi; \
+	echo "Generating labels for $${TYPE}" ; \
+	COMPONENTS=$$(find ./$${TYPE} -type d -maxdepth 1 -mindepth 1 -exec basename \{\} \;); \
+	for comp in $${COMPONENTS}; do \
+		NAME=$${comp//"$${TYPE}"}; \
+		gh label create "$${TYPE}/$${NAME}" -c "$${COLOR}"; \
+	done; \
+	exit 0

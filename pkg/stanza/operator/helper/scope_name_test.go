@@ -16,7 +16,7 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -155,7 +155,7 @@ func TestGoldenScopeNameParserConfig(t *testing.T) {
 }
 
 func ScopeConfigFromFileViaYaml(file string) (*ScopeNameParser, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
@@ -170,7 +170,7 @@ func ScopeConfigFromFileViaYaml(file string) (*ScopeNameParser, error) {
 }
 
 func ScopeConfigFromFileViaMapstructure(file string, result *ScopeNameParser) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}

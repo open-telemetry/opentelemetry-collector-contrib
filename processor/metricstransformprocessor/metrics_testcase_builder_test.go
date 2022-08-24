@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metricstransformprocessor
 
 import (
@@ -99,8 +98,7 @@ func (b builder) addInt64Point(tidx int, val int64, timestampVal int64) builder 
 			Int64Value: val,
 		},
 	}
-	points := b.metric.Timeseries[tidx].Points
-	b.metric.Timeseries[tidx].Points = append(points, point)
+	b.metric.Timeseries[tidx].Points = append(b.metric.Timeseries[tidx].Points, point)
 	return b
 }
 
@@ -115,8 +113,7 @@ func (b builder) addDoublePoint(tidx int, val float64, timestampVal int64) build
 			DoubleValue: val,
 		},
 	}
-	points := b.metric.Timeseries[tidx].Points
-	b.metric.Timeseries[tidx].Points = append(points, point)
+	b.metric.Timeseries[tidx].Points = append(b.metric.Timeseries[tidx].Points, point)
 	return b
 }
 
@@ -148,8 +145,7 @@ func (b builder) addDistributionPoints(tidx int, count int64, sum float64, bound
 			},
 		},
 	}
-	points := b.metric.Timeseries[tidx].Points
-	b.metric.Timeseries[tidx].Points = append(points, point)
+	b.metric.Timeseries[tidx].Points = append(b.metric.Timeseries[tidx].Points, point)
 	return b
 }
 

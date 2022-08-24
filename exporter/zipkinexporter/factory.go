@@ -28,6 +28,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "zipkin"
+	// The stability level of the exporter.
+	stability = component.StabilityLevelBeta
 
 	defaultTimeout = time.Second * 5
 
@@ -41,7 +43,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter))
+		component.WithTracesExporter(createTracesExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -60,7 +62,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -75,9 +77,10 @@ func createTracesExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(
-		zc,
+	return exporterhelper.NewTracesExporterWithContext(
+		ctx,
 		set,
+		cfg,
 		ze.pushTraces,
 		exporterhelper.WithStart(ze.start),
 		// explicitly disable since we rely on http.Client timeout logic.

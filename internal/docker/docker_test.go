@@ -16,14 +16,13 @@
 // +build !windows
 
 // TODO review if tests should succeed on Windows
-// nolint:errcheck
+
 package docker
 
 import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -61,12 +60,12 @@ func TestInvalidExclude(t *testing.T) {
 }
 
 func tmpSock(t *testing.T) (net.Listener, string) {
-	f, err := ioutil.TempFile(os.TempDir(), "testsock")
+	f, err := os.CreateTemp(os.TempDir(), "testsock")
 	if err != nil {
 		t.Fatal(err)
 	}
 	addr := f.Name()
-	os.Remove(addr)
+	assert.NoError(t, os.Remove(addr))
 
 	listener, err := net.Listen("unix", addr)
 	if err != nil {
@@ -78,8 +77,13 @@ func tmpSock(t *testing.T) (net.Listener, string) {
 
 func TestWatchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -97,7 +101,6 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.LoadContainerList(context.Background())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
-
 	observed, logs := observer.New(zapcore.WarnLevel)
 	cli, err = NewDockerClient(config, zap.New(observed))
 	assert.NotNil(t, cli)
@@ -119,8 +122,13 @@ func TestWatchingTimeouts(t *testing.T) {
 
 func TestFetchingTimeouts(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -170,8 +178,13 @@ func TestFetchingTimeouts(t *testing.T) {
 
 func TestToStatsJSONErrorHandling(t *testing.T) {
 	listener, addr := tmpSock(t)
-	defer listener.Close()
-	defer os.Remove(addr)
+	defer func() {
+		assert.NoError(t, listener.Close())
+	}()
+
+	defer func() {
+		assert.NoError(t, os.Remove(addr))
+	}()
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
@@ -192,7 +205,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err := cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("")),
+			Body: io.NopCloser(strings.NewReader("")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)
@@ -200,7 +213,7 @@ func TestToStatsJSONErrorHandling(t *testing.T) {
 
 	statsJSON, err = cli.toStatsJSON(
 		dtypes.ContainerStats{
-			Body: ioutil.NopCloser(strings.NewReader("{\"Networks\": 123}")),
+			Body: io.NopCloser(strings.NewReader("{\"Networks\": 123}")),
 		}, dc,
 	)
 	assert.Nil(t, statsJSON)
@@ -214,7 +227,8 @@ func TestEventLoopHandlesError(t *testing.T) {
 		if strings.Contains(r.URL.Path, "/events") {
 			wg.Done()
 		}
-		w.Write([]byte{})
+		_, err := w.Write([]byte{})
+		require.NoError(t, err)
 	}))
 	defer srv.Close()
 

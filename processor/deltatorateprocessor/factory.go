@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package deltatorateprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor"
 
 import (
@@ -28,6 +27,8 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "deltatorate"
+	// The stability level of the processor.
+	stability = component.StabilityLevelInDevelopment
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -37,7 +38,7 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsProcessor(createMetricsProcessor))
+		component.WithMetricsProcessor(createMetricsProcessor, stability))
 }
 
 func createDefaultConfig() config.Processor {
@@ -48,7 +49,7 @@ func createDefaultConfig() config.Processor {
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics,
 ) (component.MetricsProcessor, error) {
@@ -57,10 +58,11 @@ func createMetricsProcessor(
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	processorConfig.Validate()
-	metricsProcessor := newDeltaToRateProcessor(processorConfig, params.Logger)
+	metricsProcessor := newDeltaToRateProcessor(processorConfig, set.Logger)
 
-	return processorhelper.NewMetricsProcessor(
+	return processorhelper.NewMetricsProcessorWithCreateSettings(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,

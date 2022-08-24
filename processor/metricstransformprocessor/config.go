@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
@@ -25,9 +24,6 @@ const (
 
 	// MatchTypeFieldName is the mapstructure field name for MatchType field
 	MatchTypeFieldName = "match_type"
-
-	// MetricNameFieldName is the mapstructure field name for MetricName field
-	MetricNameFieldName = "metric_name"
 
 	// ActionFieldName is the mapstructure field name for Action field
 	ActionFieldName = "action"
@@ -73,10 +69,6 @@ type Transform struct {
 	// MetricIncludeFilter is used to select the metric(s) to operate on.
 	// REQUIRED
 	MetricIncludeFilter FilterConfig `mapstructure:",squash"`
-
-	// MetricName is used to select the metric to operate on.
-	// DEPRECATED. Use MetricIncludeFilter instead.
-	MetricName string `mapstructure:"metric_name"`
 
 	// --- SPECIFY THE ACTION TO TAKE ON THE MATCHED METRIC(S) ---
 
