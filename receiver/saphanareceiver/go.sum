@@ -2,8 +2,8 @@ cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/SAP/go-hdb v0.107.3 h1:tX7CI+fsUFVNzR9LIAuX1mzyzRtuMiUkvuVVUgNSGss=
-github.com/SAP/go-hdb v0.107.3/go.mod h1:EAlLPK5So38imnv2/aBADHZBjl76RVIWvu9Tkiu6LbY=
+github.com/SAP/go-hdb v0.108.0 h1:xZm5pEi6zysNArlpUydB6b2gjmHuF1gFMyXzeESCYss=
+github.com/SAP/go-hdb v0.108.0/go.mod h1:7uX6xWAbTJUg2qI+skGqF0UevHJ77VBdI5H5r9JQFws=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
