@@ -205,6 +205,7 @@ from opentelemetry.instrumentation.django.middleware.otel_middleware import (
 from opentelemetry.instrumentation.django.package import _instruments
 from opentelemetry.instrumentation.django.version import __version__
 from opentelemetry.instrumentation.instrumentor import BaseInstrumentor
+from opentelemetry.metrics import get_meter
 from opentelemetry.trace import get_tracer
 
 DJANGO_2_0 = django_version >= (2, 0)
@@ -244,19 +245,29 @@ class DjangoInstrumentor(BaseInstrumentor):
             return
 
         tracer_provider = kwargs.get("tracer_provider")
+        meter_provider = kwargs.get("meter_provider")
         tracer = get_tracer(
             __name__,
             __version__,
             tracer_provider=tracer_provider,
         )
-
+        meter = get_meter(__name__, __version__, meter_provider=meter_provider)
         _DjangoMiddleware._tracer = tracer
-
+        _DjangoMiddleware._meter = meter
         _DjangoMiddleware._otel_request_hook = kwargs.pop("request_hook", None)
         _DjangoMiddleware._otel_response_hook = kwargs.pop(
             "response_hook", None
         )
-
+        _DjangoMiddleware._duration_histogram = meter.create_histogram(
+            name="http.server.duration",
+            unit="ms",
+            description="measures the duration of the inbound http request",
+        )
+        _DjangoMiddleware._active_request_counter = meter.create_up_down_counter(
+            name="http.server.active_requests",
+            unit="requests",
+            description="measures the number of concurent HTTP requests those are currently in flight",
+        )
         # This can not be solved, but is an inherent problem of this approach:
         # the order of middleware entries matters, and here you have no control
         # on that:

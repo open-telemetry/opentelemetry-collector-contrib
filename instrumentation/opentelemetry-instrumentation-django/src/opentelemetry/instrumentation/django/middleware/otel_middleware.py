@@ -15,6 +15,7 @@
 import types
 from logging import getLogger
 from time import time
+from timeit import default_timer
 from typing import Callable
 
 from django import VERSION as django_version
@@ -41,7 +42,12 @@ from opentelemetry.instrumentation.wsgi import (
 from opentelemetry.instrumentation.wsgi import wsgi_getter
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace import Span, SpanKind, use_span
-from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
+from opentelemetry.util.http import (
+    _parse_active_request_count_attrs,
+    _parse_duration_attrs,
+    get_excluded_urls,
+    get_traced_request_attrs,
+)
 
 try:
     from django.core.urlresolvers import (  # pylint: disable=no-name-in-module
@@ -139,10 +145,19 @@ class _DjangoMiddleware(MiddlewareMixin):
     _environ_token = "opentelemetry-instrumentor-django.token"
     _environ_span_key = "opentelemetry-instrumentor-django.span_key"
     _environ_exception_key = "opentelemetry-instrumentor-django.exception_key"
-
+    _environ_active_request_attr_key = (
+        "opentelemetry-instrumentor-django.active_request_attr_key"
+    )
+    _environ_duration_attr_key = (
+        "opentelemetry-instrumentor-django.duration_attr_key"
+    )
+    _environ_timer_key = "opentelemetry-instrumentor-django.timer_key"
     _traced_request_attrs = get_traced_request_attrs("DJANGO")
     _excluded_urls = get_excluded_urls("DJANGO")
     _tracer = None
+    _meter = None
+    _duration_histogram = None
+    _active_request_counter = None
 
     _otel_request_hook: Callable[[Span, HttpRequest], None] = None
     _otel_response_hook: Callable[
@@ -171,6 +186,7 @@ class _DjangoMiddleware(MiddlewareMixin):
         except Resolver404:
             return f"HTTP {request.method}"
 
+    # pylint: disable=too-many-locals
     def process_request(self, request):
         # request.META is a dictionary containing all available HTTP headers
         # Read more about request.META here:
@@ -185,7 +201,6 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         # pylint:disable=W0212
         request._otel_start_time = time()
-
         request_meta = request.META
 
         if is_asgi_request:
@@ -208,7 +223,16 @@ class _DjangoMiddleware(MiddlewareMixin):
         )
 
         attributes = collect_request_attributes(carrier)
+        active_requests_count_attrs = _parse_active_request_count_attrs(
+            attributes
+        )
+        duration_attrs = _parse_duration_attrs(attributes)
 
+        request.META[
+            self._environ_active_request_attr_key
+        ] = active_requests_count_attrs
+        request.META[self._environ_duration_attr_key] = duration_attrs
+        self._active_request_counter.add(1, active_requests_count_attrs)
         if span.is_recording():
             attributes = extract_attributes_from_object(
                 request, self._traced_request_attrs, attributes
@@ -242,7 +266,8 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         activation = use_span(span, end_on_exit=True)
         activation.__enter__()  # pylint: disable=E1101
-
+        request_start_time = default_timer()
+        request.META[self._environ_timer_key] = request_start_time
         request.META[self._environ_activation_key] = activation
         request.META[self._environ_span_key] = span
         if token:
@@ -281,6 +306,7 @@ class _DjangoMiddleware(MiddlewareMixin):
             request.META[self._environ_exception_key] = exception
 
     # pylint: disable=too-many-branches
+    # pylint: disable=too-many-locals
     def process_response(self, request, response):
         if self._excluded_urls.url_disabled(request.build_absolute_uri("?")):
             return response
@@ -291,6 +317,17 @@ class _DjangoMiddleware(MiddlewareMixin):
 
         activation = request.META.pop(self._environ_activation_key, None)
         span = request.META.pop(self._environ_span_key, None)
+        active_requests_count_attrs = request.META.pop(
+            self._environ_active_request_attr_key, None
+        )
+        duration_attrs = request.META.pop(
+            self._environ_duration_attr_key, None
+        )
+        if duration_attrs:
+            duration_attrs[
+                SpanAttributes.HTTP_STATUS_CODE
+            ] = response.status_code
+        request_start_time = request.META.pop(self._environ_timer_key, None)
 
         if activation and span:
             if is_asgi_request:
@@ -341,6 +378,12 @@ class _DjangoMiddleware(MiddlewareMixin):
             else:
                 activation.__exit__(None, None, None)
 
+        if request_start_time is not None:
+            duration = max(
+                round((default_timer() - request_start_time) * 1000), 0
+            )
+            self._duration_histogram.record(duration, duration_attrs)
+        self._active_request_counter.add(-1, active_requests_count_attrs)
         if request.META.get(self._environ_token, None) is not None:
             detach(request.META.get(self._environ_token))
             request.META.pop(self._environ_token)

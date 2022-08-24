@@ -14,3 +14,4 @@
 
 
 _instruments = ("django >= 1.10",)
+_supports_metrics = True
