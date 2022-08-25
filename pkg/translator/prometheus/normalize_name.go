@@ -110,7 +110,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	}
 
 	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
-	metricName = CleanUpStringForMetricName(metric.Name())
+	metricName = CleanUpString(metric.Name())
 
 	// Namespace?
 	if namespace != "" {
@@ -131,7 +131,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	// Split metric name in "tokens" (remove all non-alphanumeric)
 	nameTokens := strings.FieldsFunc(
 		metric.Name(),
-		func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && string(r) != "_" },
+		func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) },
 	)
 
 	// Split unit at the '/' if any
@@ -164,7 +164,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 
 	// Append _total for Counters
 	if metric.DataType() == pmetric.MetricDataTypeSum && metric.Sum().IsMonotonic() {
-		nameTokens = appendSuffixIfMissing(nameTokens, "total")
+		nameTokens = append(removeItem(nameTokens, "total"), "total")
 	}
 
 	// Append _ratio for metrics with unit "1"
@@ -173,7 +173,7 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 	// Until these issues have been fixed, we're appending `_ratio` for gauges ONLY
 	// Theoretically, counters could be ratios as well, but it's absurd (for mathematical reasons)
 	if metric.Unit() == "1" && metric.DataType() == pmetric.MetricDataTypeGauge {
-		nameTokens = appendSuffixIfMissing(nameTokens, "ratio")
+		nameTokens = append(removeItem(nameTokens, "ratio"), "ratio")
 	}
 
 	// Namespace?
@@ -197,10 +197,6 @@ func CleanUpString(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
 }
 
-func CleanUpStringForMetricName(s string) string {
-	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && string(r) != "_" }), "_")
-}
-
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit
 // Returns the specified unit if not found in unitMap
 func unitMapGetOrDefault(unit string) string {
@@ -222,9 +218,7 @@ func perUnitMapGetOrDefault(perUnit string) string {
 // Returns whether the slice contains the specified value
 func contains(slice []string, value string) bool {
 	for _, sliceEntry := range slice {
-		if strings.Contains(sliceEntry, "_") {
-			return contains(strings.FieldsFunc(sliceEntry, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), value)
-		} else if sliceEntry == value {
+		if sliceEntry == value {
 			return true
 		}
 	}
@@ -239,25 +233,5 @@ func removeItem(slice []string, value string) []string {
 			newSlice = append(newSlice, sliceEntry)
 		}
 	}
-	return newSlice
-}
-
-func appendSuffixIfMissing(slice []string, value string) []string {
-	if len(slice) == 0 {
-		return []string{value}
-	}
-
-	if strings.HasSuffix(slice[len(slice)-1], value) {
-		return slice
-	}
-
-	newSlice := make([]string, 0, len(slice))
-	for _, sliceEntry := range slice {
-		if sliceEntry != value {
-			newSlice = append(newSlice, sliceEntry)
-		}
-	}
-	newSlice = append(newSlice, value)
-
 	return newSlice
 }
