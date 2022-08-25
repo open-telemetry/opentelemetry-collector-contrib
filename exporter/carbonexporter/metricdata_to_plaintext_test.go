@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
 )
 
 func Test_sanitizeTagKey(t *testing.T) {
@@ -152,7 +152,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 
 	doubleVal := 1234.5678
 	expectedDobuleValStr := strconv.FormatFloat(doubleVal, 'g', -1, 64)
-	doublePt := metricstestutil.Double(tsUnix, doubleVal)
+	doublePt := ocmetricstestutil.Double(tsUnix, doubleVal)
 	int64Val := int64(123)
 	expectedInt64ValStr := "123"
 	int64Pt := &metricspb.Point{
@@ -162,19 +162,19 @@ func Test_metricDataToPlaintext(t *testing.T) {
 
 	distributionBounds := []float64{1.5, 2, 4}
 	distributionCounts := []int64{4, 2, 3, 7}
-	distributionTimeSeries := metricstestutil.Timeseries(
+	distributionTimeSeries := ocmetricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
+		ocmetricstestutil.DistPt(tsUnix, distributionBounds, distributionCounts))
 	distributionPoints := distributionTimeSeries.GetPoints()
 	require.Equal(t, 1, len(distributionPoints))
 	distribubionPoint := distributionPoints[0].Value.(*metricspb.Point_DistributionValue)
 	distributionValue := distribubionPoint.DistributionValue
 
-	summaryTimeSeries := metricstestutil.Timeseries(
+	summaryTimeSeries := ocmetricstestutil.Timeseries(
 		tsUnix,
 		values,
-		metricstestutil.SummPt(
+		ocmetricstestutil.SummPt(
 			tsUnix,
 			11,
 			111,
@@ -197,14 +197,14 @@ func Test_metricDataToPlaintext(t *testing.T) {
 				return []*agentmetricspb.ExportMetricsServiceRequest{
 					{
 						Metrics: []*metricspb.Metric{
-							metricstestutil.Gauge("gauge_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-							metricstestutil.GaugeInt("gauge_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+							ocmetricstestutil.Gauge("gauge_double_no_dims", nil, ocmetricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							ocmetricstestutil.GaugeInt("gauge_int_no_dims", nil, ocmetricstestutil.Timeseries(tsUnix, nil, int64Pt)),
 						},
 					},
 					{
 						Metrics: []*metricspb.Metric{
-							metricstestutil.Cumulative("cumulative_double_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, doublePt)),
-							metricstestutil.CumulativeInt("cumulative_int_no_dims", nil, metricstestutil.Timeseries(tsUnix, nil, int64Pt)),
+							ocmetricstestutil.Cumulative("cumulative_double_no_dims", nil, ocmetricstestutil.Timeseries(tsUnix, nil, doublePt)),
+							ocmetricstestutil.CumulativeInt("cumulative_int_no_dims", nil, ocmetricstestutil.Timeseries(tsUnix, nil, int64Pt)),
 						},
 					},
 				}
@@ -223,10 +223,10 @@ func Test_metricDataToPlaintext(t *testing.T) {
 				return []*agentmetricspb.ExportMetricsServiceRequest{
 					{
 						Metrics: []*metricspb.Metric{
-							metricstestutil.Gauge("gauge_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-							metricstestutil.GaugeInt("gauge_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
-							metricstestutil.Cumulative("cumulative_double_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, doublePt)),
-							metricstestutil.CumulativeInt("cumulative_int_with_dims", keys, metricstestutil.Timeseries(tsUnix, values, int64Pt)),
+							ocmetricstestutil.Gauge("gauge_double_with_dims", keys, ocmetricstestutil.Timeseries(tsUnix, values, doublePt)),
+							ocmetricstestutil.GaugeInt("gauge_int_with_dims", keys, ocmetricstestutil.Timeseries(tsUnix, values, int64Pt)),
+							ocmetricstestutil.Cumulative("cumulative_double_with_dims", keys, ocmetricstestutil.Timeseries(tsUnix, values, doublePt)),
+							ocmetricstestutil.CumulativeInt("cumulative_int_with_dims", keys, ocmetricstestutil.Timeseries(tsUnix, values, int64Pt)),
 						},
 					},
 				}
@@ -245,7 +245,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 				return []*agentmetricspb.ExportMetricsServiceRequest{
 					{
 						Metrics: []*metricspb.Metric{
-							metricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
+							ocmetricstestutil.GaugeDist("distrib", keys, distributionTimeSeries),
 						},
 					},
 				}
@@ -264,7 +264,7 @@ func Test_metricDataToPlaintext(t *testing.T) {
 				return []*agentmetricspb.ExportMetricsServiceRequest{
 					{
 						Metrics: []*metricspb.Metric{
-							metricstestutil.Summary("summary", keys, summaryTimeSeries),
+							ocmetricstestutil.Summary("summary", keys, summaryTimeSeries),
 						},
 					},
 				}

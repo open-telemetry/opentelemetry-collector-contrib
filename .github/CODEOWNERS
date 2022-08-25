@@ -45,6 +45,7 @@ exporter/googlemanagedprometheusexporter/            @open-telemetry/collector-c
 exporter/googlecloudpubsubexporter/                  @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/humioexporter/                              @open-telemetry/collector-contrib-approvers @xitric
 exporter/influxdbexporter/                           @open-telemetry/collector-contrib-approvers @jacobmarble
+exporter/instanaexporter/                            @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
 exporter/jaegerexporter/                             @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/jaegerthrifthttpexporter/                   @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay
 exporter/kafkaexporter/                              @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
