@@ -240,11 +240,11 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 	var deliveryMode string
 	switch spanData.DeliveryMode {
 	case model_v1.SpanData_DIRECT:
-		deliveryMode = "DIRECT"
+		deliveryMode = "direct"
 	case model_v1.SpanData_NON_PERSISTENT:
-		deliveryMode = "NON_PERSISTENT"
+		deliveryMode = "non_persistent"
 	case model_v1.SpanData_PERSISTENT:
-		deliveryMode = "PERSISTENT"
+		deliveryMode = "persistent"
 	default:
 		deliveryMode = "UNKNOWN"
 		u.logger.Warn(fmt.Sprintf("Unknown delivery mode %d", spanData.DeliveryMode))
