@@ -266,6 +266,76 @@ func TestProcess(t *testing.T) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().InsertString("attr1", "test1")
 			},
 		},
+		{
+			query: []string{
+				`drop_datapoint() where metric.name == "operationA" and value_double == 1.0`,
+				`set(attributes["test"], "pass") where metric.name == "operationA"`,
+			},
+			want: func(td pmetric.Metrics) {
+				count := 0
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {
+					if count == 0 {
+						count++
+						return true
+					}
+					return false
+				})
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: []string{
+				`set(attributes["test"], "pass") where metric.name == "operationA"`,
+				`drop_datapoint() where metric.name == "operationA" and value_double == 1.0`,
+			},
+			want: func(td pmetric.Metrics) {
+				count := 0
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {
+					if count == 0 {
+						count++
+						return true
+					}
+					return false
+				})
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: []string{
+				`drop_datapoint() where metric.name == "operationB" and count != 1`,
+				`set(attributes["test"], "pass") where metric.name == "operationB"`,
+			},
+			want: func(td pmetric.Metrics) {
+				count := 0
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
+					if count == 0 {
+						count++
+						return false
+					}
+					return true
+				})
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Histogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
+		{
+			query: []string{
+				`drop_metric() where metric.name == "operationA" or metric.name == "operationB"`,
+				`set(attributes["test"], "pass")`,
+			},
+			want: func(td pmetric.Metrics) {
+				count := 0
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().RemoveIf(func(dp pmetric.Metric) bool {
+					if count < 2 {
+						count++
+						return true
+					}
+					return false
+				})
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Summary().DataPoints().At(0).Attributes().InsertString("test", "pass")
+			},
+		},
 	}
 
 	for _, tt := range tests {

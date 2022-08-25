@@ -28,6 +28,8 @@ func Test_DefaultFunctions(t *testing.T) {
 	expectedFunctions["convert_gauge_to_sum"] = convertGaugeToSum
 	expectedFunctions["convert_summary_sum_val_to_sum"] = convertSummarySumValToSum
 	expectedFunctions["convert_summary_count_val_to_sum"] = convertSummaryCountValToSum
+	expectedFunctions["drop_datapoint"] = dropDataPoint
+	expectedFunctions["drop_metric"] = dropDataPoint
 
 	actual := Functions()
 

@@ -24,6 +24,8 @@ var registry = map[string]interface{}{
 	"convert_gauge_to_sum":             convertGaugeToSum,
 	"convert_summary_sum_val_to_sum":   convertSummarySumValToSum,
 	"convert_summary_count_val_to_sum": convertSummaryCountValToSum,
+	"drop_datapoint":                   dropDataPoint,
+	"drop_metric":                      dropMetric,
 }
 
 func init() {
