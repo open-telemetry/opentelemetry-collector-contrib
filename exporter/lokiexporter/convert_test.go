@@ -167,7 +167,7 @@ func TestConvertAttributesToLabels(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			out := convertAttributesToLabels(zap.NewNop(), tC.attrsAvailable, tC.attrsToSelect)
+			out := convertAttributesToLabels(tC.attrsAvailable, tC.attrsToSelect)
 			assert.Equal(t, tC.expected, out)
 		})
 	}

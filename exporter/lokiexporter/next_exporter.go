@@ -50,7 +50,7 @@ func newNextExporter(config *Config, settings component.TelemetrySettings) *next
 }
 
 func (l *nextLokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	pushReq, _ := logDataToLoki(l.settings.Logger, ld)
+	pushReq := logDataToLoki(l.settings.Logger, ld)
 	if len(pushReq.Streams) == 0 {
 		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
 	}
@@ -109,7 +109,7 @@ func (l *nextLokiExporter) stop(context.Context) (err error) {
 	return nil
 }
 
-func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest, numDroppedLogs int) {
+func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) {
 	var errs error
 
 	streams := make(map[string]*logproto.Stream)
@@ -133,7 +133,6 @@ func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest, 
 				entry, err := convertLogToJSONEntry(log, resource)
 				if err != nil {
 					// Couldn't convert so dropping log.
-					numDroppedLogs++
 					errs = multierr.Append(
 						errs,
 						errors.New(
@@ -173,5 +172,5 @@ func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest, 
 		i++
 	}
 
-	return pr, numDroppedLogs
+	return pr
 }

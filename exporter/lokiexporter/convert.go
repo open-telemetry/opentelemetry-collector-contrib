@@ -39,19 +39,19 @@ func convertAttributesAndMerge(logger *zap.Logger, logAttrs pcommon.Map, resAttr
 	// the value can be a single resource name to use as label
 	// or a slice of string values
 	if resourcesToLabel, found := logAttrs.Get(hintResources); found {
-		labels := convertAttributesToLabels(logger, resAttrs, resourcesToLabel)
+		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
 
 	if attributesToLabel, found := logAttrs.Get(hintAttributes); found {
-		labels := convertAttributesToLabels(logger, logAttrs, attributesToLabel)
+		labels := convertAttributesToLabels(logAttrs, attributesToLabel)
 		out = out.Merge(labels)
 	}
 
 	return out
 }
 
-func convertAttributesToLabels(logger *zap.Logger, attributes pcommon.Map, attrsToSelect pcommon.Value) model.LabelSet {
+func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Value) model.LabelSet {
 	out := model.LabelSet{}
 
 	attrs := parseAttributeNames(attrsToSelect)
