@@ -37,6 +37,12 @@ attributes:
     enum:
       - hit
       - miss
+  lock:
+    description: The type of lock.
+    enum:
+      - read
+      - write
+      - total
 
 metrics:
   mongodb.cache.operations:
@@ -238,3 +244,21 @@ metrics:
       aggregation: cumulative
       monotonic: false
     attributes: []
+  mongodb.global_lock.current_queue:
+    description: The total number of operations waiting for a lock.
+    unit: "{operations}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [lock]
+  mongodb.global_lock.active_clients:
+    description: The total number of active client connections.
+    unit: "{connections}"
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    attributes: [lock]

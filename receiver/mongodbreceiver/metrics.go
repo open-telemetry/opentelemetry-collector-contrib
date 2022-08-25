@@ -42,6 +42,12 @@ var documentMap = map[string]metadata.AttributeOperation{
 	"deleted":  metadata.AttributeOperationDelete,
 }
 
+var lockMap = map[string]metadata.AttributeLock{
+	"readers": metadata.AttributeLockRead,
+	"writers": metadata.AttributeLockWrite,
+	"total":   metadata.AttributeLockTotal,
+}
+
 const (
 	collectMetricError          = "failed to collect metric %s: %w"
 	collectMetricWithAttributes = "failed to collect metric %s with attribute(s) %s: %w"
@@ -207,6 +213,32 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 		return
 	}
 	s.mb.RecordMongodbSessionCountDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordGlobalLockQueue(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for lockKey, lockAttribute := range lockMap {
+		metricPath := []string{"globalLock", "currentQueue", lockKey}
+		metricName := "mongodb.global_lock.current_queue"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, lockKey, err))
+			continue
+		}
+		s.mb.RecordMongodbGlobalLockCurrentQueueDataPoint(now, val, lockAttribute)
+	}
+}
+
+func (s *mongodbScraper) recordGlobalLockActiveClients(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for lockKey, lockAttribute := range lockMap {
+		metricPath := []string{"globalLock", "activeClients", lockKey}
+		metricName := "mongodb.global_lock.active_clients"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, lockKey, err))
+			continue
+		}
+		s.mb.RecordMongodbGlobalLockActiveClientsDataPoint(now, val, lockAttribute)
+	}
 }
 
 // Admin Stats

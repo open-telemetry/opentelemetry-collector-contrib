@@ -17,6 +17,8 @@ These are the metrics available for this scraper.
 | **mongodb.database.count** | The number of existing databases. | {databases} | Sum(Int) | <ul> </ul> |
 | **mongodb.document.operation.count** | The number of document operations executed. | {documents} | Sum(Int) | <ul> <li>database</li> <li>operation</li> </ul> |
 | **mongodb.extent.count** | The number of extents. | {extents} | Sum(Int) | <ul> <li>database</li> </ul> |
+| **mongodb.global_lock.active_clients** | The total number of active client connections. | {connections} | Sum(Int) | <ul> <li>lock</li> </ul> |
+| **mongodb.global_lock.current_queue** | The total number of operations waiting for a lock. | {operations} | Sum(Int) | <ul> <li>lock</li> </ul> |
 | **mongodb.global_lock.time** | The time the global lock has been held. | ms | Sum(Int) | <ul> </ul> |
 | **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |
 | **mongodb.index.count** | The number of indexes. | {indexes} | Sum(Int) | <ul> <li>database</li> </ul> |
@@ -53,6 +55,7 @@ metrics:
 | collection | The name of a collection. |  |
 | connection_type (type) | The status of the connection. | active, available, current |
 | database | The name of a database. |  |
+| lock | The type of lock. | read, write, total |
 | memory_type (type) | The type of memory used. | resident, virtual |
 | operation | The MongoDB operation being counted. | insert, query, update, delete, getmore, command |
 | type | The result of a cache request. | hit, miss |

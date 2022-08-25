@@ -17,28 +17,30 @@ type MetricSettings struct {
 
 // MetricsSettings provides settings for mongodbreceiver metrics.
 type MetricsSettings struct {
-	MongodbCacheOperations        MetricSettings `mapstructure:"mongodb.cache.operations"`
-	MongodbCollectionCount        MetricSettings `mapstructure:"mongodb.collection.count"`
-	MongodbConnectionCount        MetricSettings `mapstructure:"mongodb.connection.count"`
-	MongodbCursorCount            MetricSettings `mapstructure:"mongodb.cursor.count"`
-	MongodbCursorTimeoutCount     MetricSettings `mapstructure:"mongodb.cursor.timeout.count"`
-	MongodbDataSize               MetricSettings `mapstructure:"mongodb.data.size"`
-	MongodbDatabaseCount          MetricSettings `mapstructure:"mongodb.database.count"`
-	MongodbDocumentOperationCount MetricSettings `mapstructure:"mongodb.document.operation.count"`
-	MongodbExtentCount            MetricSettings `mapstructure:"mongodb.extent.count"`
-	MongodbGlobalLockTime         MetricSettings `mapstructure:"mongodb.global_lock.time"`
-	MongodbIndexAccessCount       MetricSettings `mapstructure:"mongodb.index.access.count"`
-	MongodbIndexCount             MetricSettings `mapstructure:"mongodb.index.count"`
-	MongodbIndexSize              MetricSettings `mapstructure:"mongodb.index.size"`
-	MongodbMemoryUsage            MetricSettings `mapstructure:"mongodb.memory.usage"`
-	MongodbNetworkIoReceive       MetricSettings `mapstructure:"mongodb.network.io.receive"`
-	MongodbNetworkIoTransmit      MetricSettings `mapstructure:"mongodb.network.io.transmit"`
-	MongodbNetworkRequestCount    MetricSettings `mapstructure:"mongodb.network.request.count"`
-	MongodbObjectCount            MetricSettings `mapstructure:"mongodb.object.count"`
-	MongodbOperationCount         MetricSettings `mapstructure:"mongodb.operation.count"`
-	MongodbOperationTime          MetricSettings `mapstructure:"mongodb.operation.time"`
-	MongodbSessionCount           MetricSettings `mapstructure:"mongodb.session.count"`
-	MongodbStorageSize            MetricSettings `mapstructure:"mongodb.storage.size"`
+	MongodbCacheOperations         MetricSettings `mapstructure:"mongodb.cache.operations"`
+	MongodbCollectionCount         MetricSettings `mapstructure:"mongodb.collection.count"`
+	MongodbConnectionCount         MetricSettings `mapstructure:"mongodb.connection.count"`
+	MongodbCursorCount             MetricSettings `mapstructure:"mongodb.cursor.count"`
+	MongodbCursorTimeoutCount      MetricSettings `mapstructure:"mongodb.cursor.timeout.count"`
+	MongodbDataSize                MetricSettings `mapstructure:"mongodb.data.size"`
+	MongodbDatabaseCount           MetricSettings `mapstructure:"mongodb.database.count"`
+	MongodbDocumentOperationCount  MetricSettings `mapstructure:"mongodb.document.operation.count"`
+	MongodbExtentCount             MetricSettings `mapstructure:"mongodb.extent.count"`
+	MongodbGlobalLockActiveClients MetricSettings `mapstructure:"mongodb.global_lock.active_clients"`
+	MongodbGlobalLockCurrentQueue  MetricSettings `mapstructure:"mongodb.global_lock.current_queue"`
+	MongodbGlobalLockTime          MetricSettings `mapstructure:"mongodb.global_lock.time"`
+	MongodbIndexAccessCount        MetricSettings `mapstructure:"mongodb.index.access.count"`
+	MongodbIndexCount              MetricSettings `mapstructure:"mongodb.index.count"`
+	MongodbIndexSize               MetricSettings `mapstructure:"mongodb.index.size"`
+	MongodbMemoryUsage             MetricSettings `mapstructure:"mongodb.memory.usage"`
+	MongodbNetworkIoReceive        MetricSettings `mapstructure:"mongodb.network.io.receive"`
+	MongodbNetworkIoTransmit       MetricSettings `mapstructure:"mongodb.network.io.transmit"`
+	MongodbNetworkRequestCount     MetricSettings `mapstructure:"mongodb.network.request.count"`
+	MongodbObjectCount             MetricSettings `mapstructure:"mongodb.object.count"`
+	MongodbOperationCount          MetricSettings `mapstructure:"mongodb.operation.count"`
+	MongodbOperationTime           MetricSettings `mapstructure:"mongodb.operation.time"`
+	MongodbSessionCount            MetricSettings `mapstructure:"mongodb.session.count"`
+	MongodbStorageSize             MetricSettings `mapstructure:"mongodb.storage.size"`
 }
 
 func DefaultMetricsSettings() MetricsSettings {
@@ -68,6 +70,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		MongodbExtentCount: MetricSettings{
+			Enabled: true,
+		},
+		MongodbGlobalLockActiveClients: MetricSettings{
+			Enabled: true,
+		},
+		MongodbGlobalLockCurrentQueue: MetricSettings{
 			Enabled: true,
 		},
 		MongodbGlobalLockTime: MetricSettings{
@@ -140,6 +148,36 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"active":    AttributeConnectionTypeActive,
 	"available": AttributeConnectionTypeAvailable,
 	"current":   AttributeConnectionTypeCurrent,
+}
+
+// AttributeLock specifies the a value lock attribute.
+type AttributeLock int
+
+const (
+	_ AttributeLock = iota
+	AttributeLockRead
+	AttributeLockWrite
+	AttributeLockTotal
+)
+
+// String returns the string representation of the AttributeLock.
+func (av AttributeLock) String() string {
+	switch av {
+	case AttributeLockRead:
+		return "read"
+	case AttributeLockWrite:
+		return "write"
+	case AttributeLockTotal:
+		return "total"
+	}
+	return ""
+}
+
+// MapAttributeLock is a helper map of string to AttributeLock attribute value.
+var MapAttributeLock = map[string]AttributeLock{
+	"read":  AttributeLockRead,
+	"write": AttributeLockWrite,
+	"total": AttributeLockTotal,
 }
 
 // AttributeMemoryType specifies the a value memory_type attribute.
@@ -702,6 +740,112 @@ func (m *metricMongodbExtentCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMongodbExtentCount(settings MetricSettings) metricMongodbExtentCount {
 	m := metricMongodbExtentCount{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbGlobalLockActiveClients struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.global_lock.active_clients metric with initial data.
+func (m *metricMongodbGlobalLockActiveClients) init() {
+	m.data.SetName("mongodb.global_lock.active_clients")
+	m.data.SetDescription("The total number of active client connections.")
+	m.data.SetUnit("{connections}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbGlobalLockActiveClients) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("lock", lockAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbGlobalLockActiveClients) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbGlobalLockActiveClients) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbGlobalLockActiveClients(settings MetricSettings) metricMongodbGlobalLockActiveClients {
+	m := metricMongodbGlobalLockActiveClients{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMongodbGlobalLockCurrentQueue struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mongodb.global_lock.current_queue metric with initial data.
+func (m *metricMongodbGlobalLockCurrentQueue) init() {
+	m.data.SetName("mongodb.global_lock.current_queue")
+	m.data.SetDescription("The total number of operations waiting for a lock.")
+	m.data.SetUnit("{operations}")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMongodbGlobalLockCurrentQueue) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().InsertString("lock", lockAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMongodbGlobalLockCurrentQueue) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMongodbGlobalLockCurrentQueue) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMongodbGlobalLockCurrentQueue(settings MetricSettings) metricMongodbGlobalLockCurrentQueue {
+	m := metricMongodbGlobalLockCurrentQueue{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1393,33 +1537,35 @@ func newMetricMongodbStorageSize(settings MetricSettings) metricMongodbStorageSi
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user settings.
 type MetricsBuilder struct {
-	startTime                           pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                     int                 // maximum observed number of metrics per resource.
-	resourceCapacity                    int                 // maximum observed number of resource attributes.
-	metricsBuffer                       pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                           component.BuildInfo // contains version information
-	metricMongodbCacheOperations        metricMongodbCacheOperations
-	metricMongodbCollectionCount        metricMongodbCollectionCount
-	metricMongodbConnectionCount        metricMongodbConnectionCount
-	metricMongodbCursorCount            metricMongodbCursorCount
-	metricMongodbCursorTimeoutCount     metricMongodbCursorTimeoutCount
-	metricMongodbDataSize               metricMongodbDataSize
-	metricMongodbDatabaseCount          metricMongodbDatabaseCount
-	metricMongodbDocumentOperationCount metricMongodbDocumentOperationCount
-	metricMongodbExtentCount            metricMongodbExtentCount
-	metricMongodbGlobalLockTime         metricMongodbGlobalLockTime
-	metricMongodbIndexAccessCount       metricMongodbIndexAccessCount
-	metricMongodbIndexCount             metricMongodbIndexCount
-	metricMongodbIndexSize              metricMongodbIndexSize
-	metricMongodbMemoryUsage            metricMongodbMemoryUsage
-	metricMongodbNetworkIoReceive       metricMongodbNetworkIoReceive
-	metricMongodbNetworkIoTransmit      metricMongodbNetworkIoTransmit
-	metricMongodbNetworkRequestCount    metricMongodbNetworkRequestCount
-	metricMongodbObjectCount            metricMongodbObjectCount
-	metricMongodbOperationCount         metricMongodbOperationCount
-	metricMongodbOperationTime          metricMongodbOperationTime
-	metricMongodbSessionCount           metricMongodbSessionCount
-	metricMongodbStorageSize            metricMongodbStorageSize
+	startTime                            pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                      int                 // maximum observed number of metrics per resource.
+	resourceCapacity                     int                 // maximum observed number of resource attributes.
+	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                            component.BuildInfo // contains version information
+	metricMongodbCacheOperations         metricMongodbCacheOperations
+	metricMongodbCollectionCount         metricMongodbCollectionCount
+	metricMongodbConnectionCount         metricMongodbConnectionCount
+	metricMongodbCursorCount             metricMongodbCursorCount
+	metricMongodbCursorTimeoutCount      metricMongodbCursorTimeoutCount
+	metricMongodbDataSize                metricMongodbDataSize
+	metricMongodbDatabaseCount           metricMongodbDatabaseCount
+	metricMongodbDocumentOperationCount  metricMongodbDocumentOperationCount
+	metricMongodbExtentCount             metricMongodbExtentCount
+	metricMongodbGlobalLockActiveClients metricMongodbGlobalLockActiveClients
+	metricMongodbGlobalLockCurrentQueue  metricMongodbGlobalLockCurrentQueue
+	metricMongodbGlobalLockTime          metricMongodbGlobalLockTime
+	metricMongodbIndexAccessCount        metricMongodbIndexAccessCount
+	metricMongodbIndexCount              metricMongodbIndexCount
+	metricMongodbIndexSize               metricMongodbIndexSize
+	metricMongodbMemoryUsage             metricMongodbMemoryUsage
+	metricMongodbNetworkIoReceive        metricMongodbNetworkIoReceive
+	metricMongodbNetworkIoTransmit       metricMongodbNetworkIoTransmit
+	metricMongodbNetworkRequestCount     metricMongodbNetworkRequestCount
+	metricMongodbObjectCount             metricMongodbObjectCount
+	metricMongodbOperationCount          metricMongodbOperationCount
+	metricMongodbOperationTime           metricMongodbOperationTime
+	metricMongodbSessionCount            metricMongodbSessionCount
+	metricMongodbStorageSize             metricMongodbStorageSize
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -1434,31 +1580,33 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                       pmetric.NewMetrics(),
-		buildInfo:                           buildInfo,
-		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(settings.MongodbCacheOperations),
-		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(settings.MongodbCollectionCount),
-		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(settings.MongodbConnectionCount),
-		metricMongodbCursorCount:            newMetricMongodbCursorCount(settings.MongodbCursorCount),
-		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(settings.MongodbCursorTimeoutCount),
-		metricMongodbDataSize:               newMetricMongodbDataSize(settings.MongodbDataSize),
-		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(settings.MongodbDatabaseCount),
-		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(settings.MongodbDocumentOperationCount),
-		metricMongodbExtentCount:            newMetricMongodbExtentCount(settings.MongodbExtentCount),
-		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(settings.MongodbGlobalLockTime),
-		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(settings.MongodbIndexAccessCount),
-		metricMongodbIndexCount:             newMetricMongodbIndexCount(settings.MongodbIndexCount),
-		metricMongodbIndexSize:              newMetricMongodbIndexSize(settings.MongodbIndexSize),
-		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(settings.MongodbMemoryUsage),
-		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(settings.MongodbNetworkIoReceive),
-		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(settings.MongodbNetworkIoTransmit),
-		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(settings.MongodbNetworkRequestCount),
-		metricMongodbObjectCount:            newMetricMongodbObjectCount(settings.MongodbObjectCount),
-		metricMongodbOperationCount:         newMetricMongodbOperationCount(settings.MongodbOperationCount),
-		metricMongodbOperationTime:          newMetricMongodbOperationTime(settings.MongodbOperationTime),
-		metricMongodbSessionCount:           newMetricMongodbSessionCount(settings.MongodbSessionCount),
-		metricMongodbStorageSize:            newMetricMongodbStorageSize(settings.MongodbStorageSize),
+		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                        pmetric.NewMetrics(),
+		buildInfo:                            buildInfo,
+		metricMongodbCacheOperations:         newMetricMongodbCacheOperations(settings.MongodbCacheOperations),
+		metricMongodbCollectionCount:         newMetricMongodbCollectionCount(settings.MongodbCollectionCount),
+		metricMongodbConnectionCount:         newMetricMongodbConnectionCount(settings.MongodbConnectionCount),
+		metricMongodbCursorCount:             newMetricMongodbCursorCount(settings.MongodbCursorCount),
+		metricMongodbCursorTimeoutCount:      newMetricMongodbCursorTimeoutCount(settings.MongodbCursorTimeoutCount),
+		metricMongodbDataSize:                newMetricMongodbDataSize(settings.MongodbDataSize),
+		metricMongodbDatabaseCount:           newMetricMongodbDatabaseCount(settings.MongodbDatabaseCount),
+		metricMongodbDocumentOperationCount:  newMetricMongodbDocumentOperationCount(settings.MongodbDocumentOperationCount),
+		metricMongodbExtentCount:             newMetricMongodbExtentCount(settings.MongodbExtentCount),
+		metricMongodbGlobalLockActiveClients: newMetricMongodbGlobalLockActiveClients(settings.MongodbGlobalLockActiveClients),
+		metricMongodbGlobalLockCurrentQueue:  newMetricMongodbGlobalLockCurrentQueue(settings.MongodbGlobalLockCurrentQueue),
+		metricMongodbGlobalLockTime:          newMetricMongodbGlobalLockTime(settings.MongodbGlobalLockTime),
+		metricMongodbIndexAccessCount:        newMetricMongodbIndexAccessCount(settings.MongodbIndexAccessCount),
+		metricMongodbIndexCount:              newMetricMongodbIndexCount(settings.MongodbIndexCount),
+		metricMongodbIndexSize:               newMetricMongodbIndexSize(settings.MongodbIndexSize),
+		metricMongodbMemoryUsage:             newMetricMongodbMemoryUsage(settings.MongodbMemoryUsage),
+		metricMongodbNetworkIoReceive:        newMetricMongodbNetworkIoReceive(settings.MongodbNetworkIoReceive),
+		metricMongodbNetworkIoTransmit:       newMetricMongodbNetworkIoTransmit(settings.MongodbNetworkIoTransmit),
+		metricMongodbNetworkRequestCount:     newMetricMongodbNetworkRequestCount(settings.MongodbNetworkRequestCount),
+		metricMongodbObjectCount:             newMetricMongodbObjectCount(settings.MongodbObjectCount),
+		metricMongodbOperationCount:          newMetricMongodbOperationCount(settings.MongodbOperationCount),
+		metricMongodbOperationTime:           newMetricMongodbOperationTime(settings.MongodbOperationTime),
+		metricMongodbSessionCount:            newMetricMongodbSessionCount(settings.MongodbSessionCount),
+		metricMongodbStorageSize:             newMetricMongodbStorageSize(settings.MongodbStorageSize),
 	}
 	for _, op := range options {
 		op(mb)
@@ -1527,6 +1675,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbDatabaseCount.emit(ils.Metrics())
 	mb.metricMongodbDocumentOperationCount.emit(ils.Metrics())
 	mb.metricMongodbExtentCount.emit(ils.Metrics())
+	mb.metricMongodbGlobalLockActiveClients.emit(ils.Metrics())
+	mb.metricMongodbGlobalLockCurrentQueue.emit(ils.Metrics())
 	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
 	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
 	mb.metricMongodbIndexCount.emit(ils.Metrics())
@@ -1602,6 +1752,16 @@ func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommo
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
 func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
 	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+}
+
+// RecordMongodbGlobalLockActiveClientsDataPoint adds a data point to mongodb.global_lock.active_clients metric.
+func (mb *MetricsBuilder) RecordMongodbGlobalLockActiveClientsDataPoint(ts pcommon.Timestamp, val int64, lockAttributeValue AttributeLock) {
+	mb.metricMongodbGlobalLockActiveClients.recordDataPoint(mb.startTime, ts, val, lockAttributeValue.String())
+}
+
+// RecordMongodbGlobalLockCurrentQueueDataPoint adds a data point to mongodb.global_lock.current_queue metric.
+func (mb *MetricsBuilder) RecordMongodbGlobalLockCurrentQueueDataPoint(ts pcommon.Timestamp, val int64, lockAttributeValue AttributeLock) {
+	mb.metricMongodbGlobalLockCurrentQueue.recordDataPoint(mb.startTime, ts, val, lockAttributeValue.String())
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.

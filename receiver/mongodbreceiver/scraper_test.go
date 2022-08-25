@@ -93,6 +93,12 @@ var (
 				"failed to collect metric mongodb.memory.usage with attribute(s) virtual, fakedatabase: could not find key for metric",
 				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: could not find key for index access metric",
 				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: could not find key for index access metric",
+				"failed to collect metric mongodb.global_lock.active_clients with attribute(s) readers: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.active_clients with attribute(s) writers: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.active_clients with attribute(s) total: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.current_queue with attribute(s) readers: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.current_queue with attribute(s) writers: could not find key for metric",
+				"failed to collect metric mongodb.global_lock.current_queue with attribute(s) total: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(

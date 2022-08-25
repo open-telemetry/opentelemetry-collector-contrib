@@ -104,6 +104,106 @@
                      "unit": "ms"
                   },
                   {
+                     "description": "The total number of operations waiting for a lock.",
+                     "name": "mongodb.global_lock.current_queue",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "unit": "{operations}"
+                  },
+                  {
+                     "description": "The total number of active client connections.",
+                     "name": "mongodb.global_lock.active_clients",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "read"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "write"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "16",
+                              "attributes": [
+                                 {
+                                    "key": "lock",
+                                    "value": {
+                                       "stringValue": "total"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           }
+                        ],
+                        "isMonotonic": false
+                     },
+                     "unit": "{connections}"
+                  },
+                  {
                      "description": "The number of bytes received.",
                      "name": "mongodb.network.io.receive",
                      "sum": {
