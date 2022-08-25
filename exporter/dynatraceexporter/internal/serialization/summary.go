@@ -1,4 +1,4 @@
-package serialization
+package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 
 import (
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
