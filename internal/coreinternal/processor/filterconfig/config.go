@@ -134,7 +134,7 @@ type MatchProperties struct {
 var (
 	ErrMissingRequiredField    = errors.New(`at least one of "attributes", "libraries",  or "resources" field must be specified`)
 	ErrInvalidLogField         = errors.New("services, span_names, and span_kinds are not valid for log records")
-	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies" or "log_severity_texts" field must be specified`)
+	ErrMissingRequiredLogField = errors.New(`at least one of "attributes", "libraries", "span_kinds", "resources", "log_bodies", "log_severity_texts" or "log_severity_number" field must be specified`)
 )
 
 // ValidateForSpans validates properties for spans.

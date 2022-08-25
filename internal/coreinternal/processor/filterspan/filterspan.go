@@ -84,7 +84,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (Matcher, error) {
 	if len(mp.SpanKinds) > 0 {
 		kindFS, err = filterset.CreateFilterSet(mp.SpanKinds, &mp.Config)
 		if err != nil {
-			return nil, fmt.Errorf("error creating span kind filters: %v", err)
+			return nil, fmt.Errorf("error creating span kind filters: %w", err)
 		}
 	}
 
