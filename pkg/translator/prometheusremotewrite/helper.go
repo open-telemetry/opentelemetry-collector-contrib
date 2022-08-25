@@ -16,6 +16,7 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"log"
 	"math"
 	"sort"
@@ -54,6 +55,12 @@ const (
 	infoType         = "info"
 	targetMetricName = "target_info"
 )
+
+var disableNormalizationGate = featuregate.Gate{
+	ID:          "exporter.prometheus.disableNormalization",
+	Enabled:     false,
+	Description: "Controls whether metrics names are automatically normalized to follow Prometheus naming convention",
+}
 
 type bucketBoundsData struct {
 	sig   string
@@ -264,7 +271,7 @@ func validateMetrics(metric pmetric.Metric) bool {
 // to its corresponding time series in tsMap
 func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	// create parameters for addSample
-	name := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	name := metricName(metric, settings.Namespace)
 	labels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		// convert ns to ms
@@ -287,7 +294,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon.Resource, metric pmetric.Metric, settings Settings, tsMap map[string]*prompb.TimeSeries) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := metricName(metric, settings.Namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
@@ -453,7 +460,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 	tsMap map[string]*prompb.TimeSeries) {
 	time := convertTimeStamp(pt.Timestamp())
 	// sum and count of the summary should append suffix to baseName
-	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
+	baseName := metricName(metric, settings.Namespace)
 	// treat sum as a sample in an individual TimeSeries
 	sum := &prompb.Sample{
 		Value:     pt.Sum(),
@@ -531,4 +538,16 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 // convertTimeStamp converts OTLP timestamp in ns to timestamp in ms
 func convertTimeStamp(timestamp pcommon.Timestamp) int64 {
 	return timestamp.AsTime().UnixNano() / (int64(time.Millisecond) / int64(time.Nanosecond))
+}
+
+func metricName(metric pmetric.Metric, namespace string) string {
+	if featuregate.GetRegistry().IsEnabled(disableNormalizationGate.ID) {
+		if namespace != "" {
+			return namespace + "_" + metric.Name()
+		} else {
+			return metric.Name()
+		}
+	}
+
+	return prometheustranslator.BuildPromCompliantName(metric, namespace)
 }

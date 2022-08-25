@@ -16,6 +16,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"go.opentelemetry.io/collector/service/featuregate"
 	"sort"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -35,6 +36,12 @@ const (
 var (
 	separatorString = string([]byte{model.SeparatorByte})
 )
+
+var disableNormalizationGate = featuregate.Gate{
+	ID:          "exporter.prometheus.disableNormalization",
+	Enabled:     false,
+	Description: "Controls whether metrics names are automatically normalized to follow Prometheus naming convention",
+}
 
 type collector struct {
 	accumulator accumulator
@@ -109,7 +116,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		prometheustranslator.BuildPromCompliantName(metric, c.namespace),
+		metricName(metric, c.namespace),
 		metric.Description(),
 		keys,
 		c.constLabels,
@@ -394,4 +401,16 @@ func resourceSignature(attributes pcommon.Map) string {
 	}
 
 	return job + separatorString + instance
+}
+
+func metricName(metric pmetric.Metric, namespace string) string {
+	if featuregate.GetRegistry().IsEnabled(disableNormalizationGate.ID) {
+		if namespace != "" {
+			return namespace + "_" + metric.Name()
+		} else {
+			return metric.Name()
+		}
+	}
+
+	return prometheustranslator.BuildPromCompliantName(metric, namespace)
 }
