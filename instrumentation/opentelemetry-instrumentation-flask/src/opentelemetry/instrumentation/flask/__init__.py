@@ -141,6 +141,7 @@ API
 """
 
 from logging import getLogger
+from time import time_ns
 from timeit import default_timer
 from typing import Collection
 
@@ -157,7 +158,6 @@ from opentelemetry.instrumentation.propagators import (
 from opentelemetry.instrumentation.utils import _start_internal_or_server_span
 from opentelemetry.metrics import get_meter
 from opentelemetry.semconv.trace import SpanAttributes
-from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, parse_excluded_urls
 
 _logger = getLogger(__name__)
@@ -191,7 +191,7 @@ def _rewrapped_app(
         # In theory, we could start the span here and use
         # update_name later but that API is "highly discouraged" so
         # we better avoid it.
-        wrapped_app_environ[_ENVIRON_STARTTIME_KEY] = _time_ns()
+        wrapped_app_environ[_ENVIRON_STARTTIME_KEY] = time_ns()
         start = default_timer()
         attributes = otel_wsgi.collect_request_attributes(wrapped_app_environ)
         active_requests_count_attrs = (

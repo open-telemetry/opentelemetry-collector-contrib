@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import functools
+from time import time_ns
 
 from tornado.httpclient import HTTPError, HTTPRequest
 
@@ -21,7 +22,6 @@ from opentelemetry.instrumentation.utils import http_status_to_status_code
 from opentelemetry.propagate import inject
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
-from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import remove_url_credentials
 
 
@@ -42,7 +42,7 @@ def _normalize_request(args, kwargs):
 
 
 def fetch_async(tracer, request_hook, response_hook, func, _, args, kwargs):
-    start_time = _time_ns()
+    start_time = time_ns()
 
     # Return immediately if no args were provided (error)
     # or original_request is set (meaning we are in a redirect step).

@@ -143,6 +143,7 @@ API
 
 from logging import getLogger
 from sys import exc_info
+from time import time_ns
 from typing import Collection
 
 import falcon
@@ -164,7 +165,6 @@ from opentelemetry.instrumentation.utils import (
 )
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status
-from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import get_excluded_urls, get_traced_request_attrs
 
 _logger = getLogger(__name__)
@@ -253,7 +253,7 @@ class _InstrumentedFalconAPI(getattr(falcon, _instrument_app)):
         if self._otel_excluded_urls.url_disabled(env.get("PATH_INFO", "/")):
             return super().__call__(env, start_response)
 
-        start_time = _time_ns()
+        start_time = time_ns()
 
         span, token = _start_internal_or_server_span(
             tracer=self._otel_tracer,

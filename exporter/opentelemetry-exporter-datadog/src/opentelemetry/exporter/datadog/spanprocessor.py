@@ -16,13 +16,13 @@ import collections
 import logging
 import threading
 import typing
+from time import time_ns
 
 from opentelemetry.context import Context, attach, detach, set_value
 from opentelemetry.instrumentation.utils import _SUPPRESS_INSTRUMENTATION_KEY
 from opentelemetry.sdk.trace import Span, SpanProcessor
 from opentelemetry.sdk.trace.export import SpanExporter
 from opentelemetry.trace import INVALID_TRACE_ID
-from opentelemetry.util._time import _time_ns
 
 logger = logging.getLogger(__name__)
 
@@ -128,9 +128,9 @@ class DatadogExportSpanProcessor(SpanProcessor):
                         break
 
             # substract the duration of this export call to the next timeout
-            start = _time_ns()
+            start = time_ns()
             self.export()
-            end = _time_ns()
+            end = time_ns()
             duration = (end - start) / 1e9
             timeout = self.schedule_delay_millis / 1e3 - duration
 

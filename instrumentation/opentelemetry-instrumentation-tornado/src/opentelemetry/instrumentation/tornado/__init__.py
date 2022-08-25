@@ -156,6 +156,7 @@ API
 from collections import namedtuple
 from functools import partial
 from logging import getLogger
+from time import time_ns
 from typing import Collection
 
 import tornado.web
@@ -179,7 +180,6 @@ from opentelemetry.instrumentation.utils import (
 from opentelemetry.propagators import textmap
 from opentelemetry.semconv.trace import SpanAttributes
 from opentelemetry.trace.status import Status, StatusCode
-from opentelemetry.util._time import _time_ns
 from opentelemetry.util.http import (
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
@@ -290,7 +290,7 @@ def _wrap(cls, method_name, wrapper):
 
 
 def _prepare(tracer, request_hook, func, handler, args, kwargs):
-    start_time = _time_ns()
+    start_time = time_ns()
     request = handler.request
     if _excluded_urls.url_disabled(request.uri):
         return func(*args, **kwargs)
@@ -423,7 +423,7 @@ def _finish_span(tracer, handler, error=None):
         if isinstance(error, tornado.web.HTTPError):
             status_code = error.status_code
             if not ctx and status_code == 404:
-                ctx = _start_span(tracer, handler, _time_ns())
+                ctx = _start_span(tracer, handler, time_ns())
         else:
             status_code = 500
             reason = None
