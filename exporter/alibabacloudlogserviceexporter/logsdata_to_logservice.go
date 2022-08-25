@@ -171,7 +171,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogFlags),
-		Value: proto.String(strconv.FormatUint(uint64(lr.Flags()), 16)),
+		Value: proto.String(strconv.FormatUint(uint64(lr.FlagsStruct().AsRaw()), 16)),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{

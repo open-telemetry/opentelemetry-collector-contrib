@@ -44,7 +44,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 				logger:     zap.NewExample(),
 			}
 
-			mtp, err := processorhelper.NewMetricsProcessorWithCreateSettings(
+			mtp, err := processorhelper.NewMetricsProcessor(
 				context.Background(),
 				componenttest.NewNopProcessorCreateSettings(),
 				&Config{
@@ -108,7 +108,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessorWithCreateSettings(context.Background(), componenttest.NewNopProcessorCreateSettings(), &Config{}, consumertest.NewNop(), p.processMetrics)
+	mtp, _ := processorhelper.NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &Config{}, consumertest.NewNop(), p.processMetrics)
 
 	b.ResetTimer()
 

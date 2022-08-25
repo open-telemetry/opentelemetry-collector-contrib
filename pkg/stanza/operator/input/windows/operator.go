@@ -43,22 +43,20 @@ func NewConfig() *Config {
 // NewConfig will return an event log config with default values.
 func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, operatorType),
-		MaxReads:    100,
-		StartAt:     "end",
-		PollInterval: helper.Duration{
-			Duration: 1 * time.Second,
-		},
+		InputConfig:  helper.NewInputConfig(operatorID, operatorType),
+		MaxReads:     100,
+		StartAt:      "end",
+		PollInterval: 1 * time.Second,
 	}
 }
 
 // Config is the configuration of a windows event log operator.
 type Config struct {
 	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
-	Channel            string          `mapstructure:"channel" json:"channel" yaml:"channel"`
-	MaxReads           int             `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty" json:"start_at,omitempty" yaml:"start_at,omitempty"`
-	PollInterval       helper.Duration `mapstructure:"poll_interval,omitempty" json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
+	Channel            string        `mapstructure:"channel" json:"channel" yaml:"channel"`
+	MaxReads           int           `mapstructure:"max_reads,omitempty" json:"max_reads,omitempty" yaml:"max_reads,omitempty"`
+	StartAt            string        `mapstructure:"start_at,omitempty" json:"start_at,omitempty" yaml:"start_at,omitempty"`
+	PollInterval       time.Duration `mapstructure:"poll_interval,omitempty" json:"poll_interval,omitempty" yaml:"poll_interval,omitempty"`
 }
 
 // Build will build a windows event log operator.
@@ -99,7 +97,7 @@ type Input struct {
 	channel      string
 	maxReads     int
 	startAt      string
-	pollInterval helper.Duration
+	pollInterval time.Duration
 	persister    operator.Persister
 	cancel       context.CancelFunc
 	wg           sync.WaitGroup
@@ -155,7 +153,7 @@ func (e *Input) Stop() error {
 func (e *Input) readOnInterval(ctx context.Context) {
 	defer e.wg.Done()
 
-	ticker := time.NewTicker(e.pollInterval.Raw())
+	ticker := time.NewTicker(e.pollInterval)
 	defer ticker.Stop()
 
 	for {

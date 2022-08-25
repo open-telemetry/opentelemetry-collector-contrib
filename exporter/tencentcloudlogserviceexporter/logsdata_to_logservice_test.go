@@ -46,7 +46,7 @@ func getComplexAttributeValueMap() pcommon.Value {
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
-	mapValReal.InsertNull("null")
+	mapValReal.Insert("null", pcommon.NewValueEmpty())
 	arrayVal := pcommon.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
@@ -100,7 +100,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 		logRecord.Attributes().InsertString("my-label", "myapp-type")
 		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.Attributes().InsertNull("null-value")
+		logRecord.Attributes().Insert("null-value", pcommon.NewValueEmpty())
 
 		logRecord.SetTimestamp(ts)
 	}

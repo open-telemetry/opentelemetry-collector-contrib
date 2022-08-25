@@ -135,9 +135,8 @@ service:
 
 #### Transition from metrics with "direction" attribute
 
-Some host metrics reported are transitioning from being reported with a `direction` attribute to being reported with the
-direction included in the metric name to adhere to the OpenTelemetry specification
-(https://github.com/open-telemetry/opentelemetry-specification/pull/2617):
+There is a proposal to change some host metrics from being reported with a `direction` attribute to being
+reported with the direction included in the metric name.
 
 - `disk` scraper metrics:
   - `system.disk.io` will become:
@@ -184,31 +183,8 @@ The following feature gates control the transition process:
 
 ##### Transition schedule:
 
-1. v0.55.0, July 2022:
-
-- Most of the scrapers except for `disk` scraper can emit the new metrics without the `direction` attribute if 
-  feature gates enabled.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-2. v0.56.0, July 2022:
-
-- The new metrics are available for all scrapers, but disabled by default, they can be enabled with the feature gates.
-- The old metrics with `direction` attribute are deprecated with a warning.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is enabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is disabled by default.
-
-3. v0.58.0, August 2022:
-
-- The new metrics are enabled by default, deprecated metrics disabled, they can be enabled with the feature gates.
-- `receiver.hostmetricsreceiver.emitMetricsWithDirectionAttribute` is disabled by default.
-- `receiver.hostmetricsreceiver.emitMetricsWithoutDirectionAttribute` is enabled by default.
-
-4. v0.60.0, September 2022:
-
-- The feature gates are removed.
-- The new metrics without `direction` attribute are always emitted.
-- The deprecated metrics with `direction` attribute are no longer available.
+The final decision on the transition is not finalized yet. The transition is on hold until
+https://github.com/open-telemetry/opentelemetry-specification/issues/2726 is resolved.
 
 ##### Usage:
 

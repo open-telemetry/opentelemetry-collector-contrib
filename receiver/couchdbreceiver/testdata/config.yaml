@@ -1,19 +1,5 @@
-receivers:
-  couchdb:
-    endpoint: http://localhost:5984
-    username: otelu
-    password: $COUCHDB_PASSWORD
-    collection_interval: 60s
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    metrics:
-     receivers: [couchdb]
-     processors: [nop]
-     exporters: [nop]
+couchdb:
+  endpoint: http://localhost:5984
+  username: otelu
+  password: $COUCHDB_PASSWORD
+  collection_interval: 60s

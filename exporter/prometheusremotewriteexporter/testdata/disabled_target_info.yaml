@@ -1,0 +1,20 @@
+receivers:
+    nop:
+
+processors:
+    nop:
+
+exporters:
+    prometheusremotewrite:
+        endpoint: "localhost:8888"
+        target_info:
+            enabled: false
+
+service:
+    pipelines:
+        metrics:
+            receivers: [nop]
+            processors: [nop]
+            exporters: [prometheusremotewrite]
+
+

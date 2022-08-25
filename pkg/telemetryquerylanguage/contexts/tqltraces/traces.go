@@ -167,7 +167,6 @@ func accessResource() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
-				ctx.GetResource().Attributes().Clear()
 				newRes.CopyTo(ctx.GetResource())
 			}
 		},
@@ -181,7 +180,6 @@ func accessResourceAttributes() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetResource().Attributes().Clear()
 				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
 		},
@@ -399,7 +397,6 @@ func accessAttributes() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetItem().(ptrace.Span).Attributes().Clear()
 				attrs.CopyTo(ctx.GetItem().(ptrace.Span).Attributes())
 			}
 		},

@@ -147,7 +147,7 @@ func doInit(numStream int, t *testing.T) (*swExporter, *grpc.Server, *mockLogHan
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporterWithContext(
+	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		tt,

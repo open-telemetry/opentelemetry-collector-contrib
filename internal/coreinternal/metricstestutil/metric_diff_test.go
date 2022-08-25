@@ -30,19 +30,6 @@ func TestSameMetrics(t *testing.T) {
 	assert.Nil(t, diffs)
 }
 
-func diffMetricData(expected pmetric.Metrics, actual pmetric.Metrics) []*MetricDiff {
-	expectedRMSlice := expected.ResourceMetrics()
-	actualRMSlice := actual.ResourceMetrics()
-	return diffRMSlices(toSlice(expectedRMSlice), toSlice(actualRMSlice))
-}
-
-func toSlice(s pmetric.ResourceMetricsSlice) (out []pmetric.ResourceMetrics) {
-	for i := 0; i < s.Len(); i++ {
-		out = append(out, s.At(i))
-	}
-	return out
-}
-
 func TestDifferentValues(t *testing.T) {
 	expected := goldendataset.MetricsFromCfg(goldendataset.DefaultCfg())
 	cfg := goldendataset.DefaultCfg()
@@ -79,5 +66,31 @@ func TestHistogram(t *testing.T) {
 	cfg2.PtVal = 2
 	actual := goldendataset.MetricsFromCfg(cfg2)
 	diffs := diffMetricData(expected, actual)
+	assert.Len(t, diffs, 3)
+}
+
+func TestAttributes(t *testing.T) {
+	cfg1 := goldendataset.DefaultCfg()
+	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.NumPtLabels = 1
+	expected := goldendataset.MetricsFromCfg(cfg1)
+	cfg2 := goldendataset.DefaultCfg()
+	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.NumPtLabels = 2
+	actual := goldendataset.MetricsFromCfg(cfg2)
+	diffs := DiffMetrics(nil, expected, actual)
+	assert.Len(t, diffs, 1)
+}
+
+func TestExponentialHistogram(t *testing.T) {
+	cfg1 := goldendataset.DefaultCfg()
+	cfg1.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg1.PtVal = 1
+	expected := goldendataset.MetricsFromCfg(cfg1)
+	cfg2 := goldendataset.DefaultCfg()
+	cfg2.MetricDescriptorType = pmetric.MetricDataTypeHistogram
+	cfg2.PtVal = 3
+	actual := goldendataset.MetricsFromCfg(cfg2)
+	diffs := DiffMetrics(nil, expected, actual)
 	assert.Len(t, diffs, 3)
 }
