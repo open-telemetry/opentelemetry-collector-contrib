@@ -57,7 +57,7 @@ const (
 )
 
 var disableNormalizationGate = featuregate.Gate{
-	ID:          "exporter.prometheus.disableNormalization",
+	ID:          "exporter.prometheusremotewrite.disableNormalization",
 	Enabled:     false,
 	Description: "Controls whether metrics names are automatically normalized to follow Prometheus naming convention",
 }
