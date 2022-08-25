@@ -23,7 +23,7 @@ var registry = map[string]interface{}{
 	"TraceID":              tqlotel.TraceID,
 	"SpanID":               tqlotel.SpanID,
 	"IsMatch":              tqlcommon.IsMatch,
-	"Join":                 tqlcommon.Join,
+	"Concat":               tqlcommon.Concat,
 	"keep_keys":            tqlotel.KeepKeys,
 	"set":                  tqlcommon.Set,
 	"truncate_all":         tqlotel.TruncateAll,

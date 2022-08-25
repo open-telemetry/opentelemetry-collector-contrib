@@ -23,7 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
-func Test_join(t *testing.T) {
+func Test_concat(t *testing.T) {
 	tests := []struct {
 		name      string
 		delimiter string
@@ -31,7 +31,7 @@ func Test_join(t *testing.T) {
 		expected  string
 	}{
 		{
-			name:      "join strings",
+			name:      "concat strings",
 			delimiter: " ",
 			vals: []tql.StandardGetSetter{
 				{
@@ -235,7 +235,7 @@ func Test_join(t *testing.T) {
 				getters[i] = val
 			}
 
-			exprFunc, _ := Join(tt.delimiter, getters)
+			exprFunc, _ := Concat(tt.delimiter, getters)
 			actual := exprFunc(ctx)
 
 			assert.Equal(t, tt.expected, actual)
