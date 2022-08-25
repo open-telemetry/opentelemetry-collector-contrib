@@ -19,11 +19,19 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 )
 
+type routingKey int
+
+const (
+	traceIDRouting routingKey = iota
+	svcRouting
+)
+
 // Config defines configuration for the exporter.
 type Config struct {
 	config.ExporterSettings `mapstructure:",squash"`
 	Protocol                Protocol         `mapstructure:"protocol"`
 	Resolver                ResolverSettings `mapstructure:"resolver"`
+	RoutingKey              string           `mapstructure:"routing_key"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.

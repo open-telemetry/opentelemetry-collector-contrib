@@ -15,7 +15,6 @@
 package prometheusreceiver
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -97,7 +96,6 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []*pmetric.ResourceMet
 
 // Test open metrics negative test cases
 func TestOpenMetricsNegative(t *testing.T) {
-	skip(t, "Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9119")
 
 	targetsMap := getOpenMetricsTestData(true)
 	targets := make([]*testData, 0)
@@ -147,7 +145,7 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 
 func readTestCase(testName string) (string, error) {
 	filePath := filepath.Join(testDir, testName, "metrics")
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Printf("failed opening file: %s", filePath)
 		return "", err

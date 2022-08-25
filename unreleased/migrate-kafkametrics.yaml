@@ -1,0 +1,6 @@
+change_type: enhancement
+component: kafkametricsreceiver
+note: Migrate receiver to the new metrics builder
+issues: [7142]
+subtext: |-
+  This allows users to disable particular metrics in through user settings.

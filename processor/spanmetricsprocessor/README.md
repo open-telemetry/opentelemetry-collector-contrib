@@ -1,5 +1,11 @@
 # Span Metrics Processor
 
+| Status                   |                     |
+| ------------------------ |---------------------|
+| Stability                | [in development]    |
+| Supported pipeline types | traces              |
+| Distributions            | [contrib]           |
+
 **Note:** Currently experimental and subject to breaking changes (e.g. change from processor to exporter/translator component).
 See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/403.
 
@@ -131,3 +137,6 @@ service:
 ### More Examples
 
 For more example configuration covering various other use cases, please visit the [testdata directory](./testdata).
+
+[in development]:https://github.com/open-telemetry/opentelemetry-collector#in-development
+[contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib

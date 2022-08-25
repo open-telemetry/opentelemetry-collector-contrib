@@ -30,18 +30,25 @@ import (
 )
 
 const (
+	operatorType = "udp_input"
+
 	// Maximum UDP packet size
 	MaxUDPSize = 64 * 1024
 )
 
 func init() {
-	operator.Register("udp_input", func() operator.Builder { return NewConfig("") })
+	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
 // NewConfig creates a new UDP input config with default values
-func NewConfig(operatorID string) *Config {
+func NewConfig() *Config {
+	return NewConfigWithID(operatorType)
+}
+
+// NewConfigWithID creates a new UDP input config with default values
+func NewConfigWithID(operatorID string) *Config {
 	return &Config{
-		InputConfig: helper.NewInputConfig(operatorID, "udp_input"),
+		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			Encoding: helper.NewEncodingConfig(),
 			Multiline: helper.MultilineConfig{
@@ -54,8 +61,8 @@ func NewConfig(operatorID string) *Config {
 
 // Config is the configuration of a udp input operator.
 type Config struct {
-	helper.InputConfig `yaml:",inline"`
-	BaseConfig         `yaml:",inline"`
+	helper.InputConfig `mapstructure:",squash" yaml:",inline"`
+	BaseConfig         `mapstructure:",squash" yaml:",inline"`
 }
 
 // BaseConfig is the details configuration of a udp input operator.

@@ -32,7 +32,7 @@ import (
 )
 
 func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.Regex = regex
 	if cacheSize > 0 {
 		cfg.Cache.Size = cacheSize
@@ -43,7 +43,7 @@ func newTestParser(t *testing.T, regex string, cacheSize uint16) *Parser {
 }
 
 func TestParserBuildFailure(t *testing.T) {
-	cfg := NewConfig("test")
+	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
 	_, err := cfg.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -141,7 +141,7 @@ func TestParserRegex(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -165,7 +165,7 @@ func TestParserRegex(t *testing.T) {
 
 func TestBuildParserRegex(t *testing.T) {
 	newBasicParser := func() *Config {
-		cfg := NewConfig("test")
+		cfg := NewConfigWithID("test")
 		cfg.OutputIDs = []string{"test"}
 		cfg.Regex = "(?P<all>.*)"
 		return cfg
@@ -209,7 +209,7 @@ func TestBuildParserRegex(t *testing.T) {
 }
 
 func TestConfig(t *testing.T) {
-	expect := NewConfig("test")
+	expect := NewConfigWithID("test")
 	expect.Regex = "test123"
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
@@ -269,7 +269,7 @@ const benchParsePattern = `^(?P<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9
 var benchParsePatterns = benchParseInput()
 
 func newTestBenchParser(t *testing.T, cacheSize uint16) *Parser {
-	cfg := NewConfig("bench")
+	cfg := NewConfigWithID("bench")
 	cfg.Regex = benchParsePattern
 	cfg.Cache.Size = cacheSize
 

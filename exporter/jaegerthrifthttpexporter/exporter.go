@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/apache/thrift/lib/go/thrift"
@@ -34,18 +33,16 @@ import (
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
-func newTracesExporter(
-	config *Config,
-	params component.ExporterCreateSettings,
-) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, params component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := &jaegerThriftHTTPSender{
 		config:   config,
 		settings: params.TelemetrySettings,
 	}
 
-	return exporterhelper.NewTracesExporter(
-		config,
+	return exporterhelper.NewTracesExporterWithContext(
+		context.TODO(),
 		params,
+		config,
 		s.pushTraceData,
 		exporterhelper.WithStart(s.start),
 	)
@@ -97,7 +94,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		_, _ = io.Copy(ioutil.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 
 		if resp.StatusCode >= http.StatusBadRequest {

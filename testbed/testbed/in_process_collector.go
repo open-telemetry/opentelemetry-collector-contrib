@@ -17,7 +17,6 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"sync"
 	"time"
@@ -58,7 +57,7 @@ func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup fu
 func (ipp *inProcessCollector) Start(args StartParams) error {
 	var err error
 
-	confFile, err := ioutil.TempFile(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	if err != nil {
 		return err
 	}
@@ -72,8 +71,10 @@ func (ipp *inProcessCollector) Start(args StartParams) error {
 	fmp := fileprovider.New()
 	configProvider, err := service.NewConfigProvider(
 		service.ConfigProviderSettings{
-			Locations:    []string{ipp.configFile},
-			MapProviders: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{ipp.configFile},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
 		})
 	if err != nil {
 		return err

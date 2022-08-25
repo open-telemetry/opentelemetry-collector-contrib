@@ -104,9 +104,10 @@ func newEmfExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporter(
-		config,
+	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+		context.TODO(),
 		set,
+		config,
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
 	)

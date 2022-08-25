@@ -43,7 +43,7 @@ func Test_loadAndCreateRuntimeReceiver(t *testing.T) {
 	nopConfig := loadedConfig.(*nopWithEndpointConfig)
 	// Verify that the overridden endpoint is used instead of the one in the config file.
 	assert.Equal(t, "localhost:12345", nopConfig.Endpoint)
-	expectedID := `nop/1/receiver_creator/1{endpoint="localhost:12345"}`
+	expectedID := `nop/1/receiver_creator/1{endpoint="localhost:12345"}/endpoint.id`
 	assert.Equal(t, expectedID, nopConfig.ID().String())
 
 	// Test that metric receiver can be created from loaded config and it logs its id for the "name" field.

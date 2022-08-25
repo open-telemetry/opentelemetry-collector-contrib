@@ -67,13 +67,19 @@ func Test_FromMetrics(t *testing.T) {
 		attrMap.CopyTo(dp.Attributes())
 	}
 
-	initHistDP := func(dp pmetric.HistogramDataPoint) {
+	initHistDPNoOptional := func(dp pmetric.HistogramDataPoint) {
 		dp.SetTimestamp(ts)
 		dp.SetCount(16)
-		dp.SetSum(100.0)
 		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4}))
 		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 7}))
 		attrMap.CopyTo(dp.Attributes())
+	}
+
+	initHistDP := func(dp pmetric.HistogramDataPoint) {
+		initHistDPNoOptional(dp)
+		dp.SetSum(100.0)
+		dp.SetMin(0.1)
+		dp.SetMax(11.11)
 	}
 
 	tests := []struct {
@@ -268,6 +274,32 @@ func Test_FromMetrics(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("histogram_count", &sfxMetricTypeCumulativeCounter, labelMap, 16),
 				doubleSFxDataPoint("histogram_sum", &sfxMetricTypeCumulativeCounter, labelMap, 100.0),
+				doubleSFxDataPoint("histogram_min", &sfxMetricTypeGauge, labelMap, 0.1),
+				doubleSFxDataPoint("histogram_max", &sfxMetricTypeGauge, labelMap, 11.11),
+				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
+					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
+				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
+					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "2"}, labelMap), 6),
+				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
+					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "4"}, labelMap), 9),
+				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
+					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "+Inf"}, labelMap), 16),
+			},
+		},
+		{
+			name: "histogram_no_optional",
+			metricsFn: func() pmetric.Metrics {
+				out := pmetric.NewMetrics()
+				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+				m := ilm.Metrics().AppendEmpty()
+				m.SetName("histogram")
+				m.SetDataType(pmetric.MetricDataTypeHistogram)
+				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				initHistDPNoOptional(m.Histogram().DataPoints().AppendEmpty())
+				return out
+			},
+			wantSfxDataPoints: []*sfxpb.DataPoint{
+				int64SFxDataPoint("histogram_count", &sfxMetricTypeCumulativeCounter, labelMap, 16),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("histogram_bucket", &sfxMetricTypeCumulativeCounter,
@@ -293,6 +325,8 @@ func Test_FromMetrics(t *testing.T) {
 			wantSfxDataPoints: []*sfxpb.DataPoint{
 				int64SFxDataPoint("delta_histogram_count", &sfxMetricTypeCounter, labelMap, 16),
 				doubleSFxDataPoint("delta_histogram_sum", &sfxMetricTypeCounter, labelMap, 100.0),
+				doubleSFxDataPoint("delta_histogram_min", &sfxMetricTypeGauge, labelMap, 0.1),
+				doubleSFxDataPoint("delta_histogram_max", &sfxMetricTypeGauge, labelMap, 11.11),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,
 					maps.MergeStringMaps(map[string]string{bucketDimensionKey: "1"}, labelMap), 4),
 				int64SFxDataPoint("delta_histogram_bucket", &sfxMetricTypeCounter,

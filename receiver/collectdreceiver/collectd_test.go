@@ -16,7 +16,7 @@ package collectdreceiver
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -51,7 +51,7 @@ func loadFromJSON(path string) ([]byte, error) {
 	}
 	defer jsonFile.Close()
 
-	return ioutil.ReadAll(jsonFile)
+	return io.ReadAll(jsonFile)
 }
 
 func TestDecodeMetrics(t *testing.T) {

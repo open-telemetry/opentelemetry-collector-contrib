@@ -21,23 +21,25 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
+	t.Parallel()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "tail_sampling_config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Processors[factory.Type()] = factory
+	cfg := factory.CreateDefaultConfig()
 
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "tail_sampling_config.yaml"), factories)
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalProcessor(sub, cfg))
 
-	assert.Equal(t, cfg.Processors[config.NewComponentID(typeStr)],
+	assert.Equal(t,
+		cfg,
 		&Config{
 			ProcessorSettings:       config.NewProcessorSettings(config.NewComponentID(typeStr)),
 			DecisionWait:            10 * time.Second,

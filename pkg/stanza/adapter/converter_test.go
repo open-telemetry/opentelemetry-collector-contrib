@@ -154,6 +154,7 @@ func TestConvert(t *testing.T) {
 	ent := func() *entry.Entry {
 		e := entry.New()
 		e.Severity = entry.Error
+		e.SeverityText = "E"
 		e.Resource = map[string]interface{}{
 			"bool":   true,
 			"int":    123,
@@ -201,7 +202,7 @@ func TestConvert(t *testing.T) {
 	lr := logs.At(0)
 
 	assert.Equal(t, plog.SeverityNumberERROR, lr.SeverityNumber())
-	assert.Equal(t, "Error", lr.SeverityText())
+	assert.Equal(t, "E", lr.SeverityText())
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
 		m := pcommon.NewMap()
@@ -755,40 +756,94 @@ func convertAndDrill(entry *entry.Entry) plog.LogRecord {
 func TestConvertSeverity(t *testing.T) {
 	cases := []struct {
 		severity       entry.Severity
+		severityText   string
 		expectedNumber plog.SeverityNumber
 		expectedText   string
 	}{
-		{entry.Default, plog.SeverityNumberUNDEFINED, ""},
-		{entry.Trace, plog.SeverityNumberTRACE, "Trace"},
-		{entry.Trace2, plog.SeverityNumberTRACE2, "Trace2"},
-		{entry.Trace3, plog.SeverityNumberTRACE3, "Trace3"},
-		{entry.Trace4, plog.SeverityNumberTRACE4, "Trace4"},
-		{entry.Debug, plog.SeverityNumberDEBUG, "Debug"},
-		{entry.Debug2, plog.SeverityNumberDEBUG2, "Debug2"},
-		{entry.Debug3, plog.SeverityNumberDEBUG3, "Debug3"},
-		{entry.Debug4, plog.SeverityNumberDEBUG4, "Debug4"},
-		{entry.Info, plog.SeverityNumberINFO, "Info"},
-		{entry.Info2, plog.SeverityNumberINFO2, "Info2"},
-		{entry.Info3, plog.SeverityNumberINFO3, "Info3"},
-		{entry.Info4, plog.SeverityNumberINFO4, "Info4"},
-		{entry.Warn, plog.SeverityNumberWARN, "Warn"},
-		{entry.Warn2, plog.SeverityNumberWARN2, "Warn2"},
-		{entry.Warn3, plog.SeverityNumberWARN3, "Warn3"},
-		{entry.Warn4, plog.SeverityNumberWARN4, "Warn4"},
-		{entry.Error, plog.SeverityNumberERROR, "Error"},
-		{entry.Error2, plog.SeverityNumberERROR2, "Error2"},
-		{entry.Error3, plog.SeverityNumberERROR3, "Error3"},
-		{entry.Error4, plog.SeverityNumberERROR4, "Error4"},
-		{entry.Fatal, plog.SeverityNumberFATAL, "Fatal"},
-		{entry.Fatal2, plog.SeverityNumberFATAL2, "Fatal2"},
-		{entry.Fatal3, plog.SeverityNumberFATAL3, "Fatal3"},
-		{entry.Fatal4, plog.SeverityNumberFATAL4, "Fatal4"},
+		{entry.Default, "", plog.SeverityNumberUNDEFINED, ""},
+		{entry.Trace, "Trace", plog.SeverityNumberTRACE, "Trace"},
+		{entry.Trace2, "Trace2", plog.SeverityNumberTRACE2, "Trace2"},
+		{entry.Trace3, "Trace3", plog.SeverityNumberTRACE3, "Trace3"},
+		{entry.Trace4, "Trace4", plog.SeverityNumberTRACE4, "Trace4"},
+		{entry.Debug, "Debug", plog.SeverityNumberDEBUG, "Debug"},
+		{entry.Debug2, "Debug2", plog.SeverityNumberDEBUG2, "Debug2"},
+		{entry.Debug3, "Debug3", plog.SeverityNumberDEBUG3, "Debug3"},
+		{entry.Debug4, "Debug4", plog.SeverityNumberDEBUG4, "Debug4"},
+		{entry.Info, "Info", plog.SeverityNumberINFO, "Info"},
+		{entry.Info2, "Info2", plog.SeverityNumberINFO2, "Info2"},
+		{entry.Info3, "Info3", plog.SeverityNumberINFO3, "Info3"},
+		{entry.Info4, "Info4", plog.SeverityNumberINFO4, "Info4"},
+		{entry.Warn, "Warn", plog.SeverityNumberWARN, "Warn"},
+		{entry.Warn2, "Warn2", plog.SeverityNumberWARN2, "Warn2"},
+		{entry.Warn3, "Warn3", plog.SeverityNumberWARN3, "Warn3"},
+		{entry.Warn4, "Warn4", plog.SeverityNumberWARN4, "Warn4"},
+		{entry.Error, "Error", plog.SeverityNumberERROR, "Error"},
+		{entry.Error2, "Error2", plog.SeverityNumberERROR2, "Error2"},
+		{entry.Error3, "Error3", plog.SeverityNumberERROR3, "Error3"},
+		{entry.Error4, "Error4", plog.SeverityNumberERROR4, "Error4"},
+		{entry.Fatal, "Fatal", plog.SeverityNumberFATAL, "Fatal"},
+		{entry.Fatal2, "Fatal2", plog.SeverityNumberFATAL2, "Fatal2"},
+		{entry.Fatal3, "Fatal3", plog.SeverityNumberFATAL3, "Fatal3"},
+		{entry.Fatal4, "Fatal4", plog.SeverityNumberFATAL4, "Fatal4"},
+
+		// Original severity text should be preserved if present
+		{entry.Trace, "other", plog.SeverityNumberTRACE, "other"},
+		{entry.Trace2, "other", plog.SeverityNumberTRACE2, "other"},
+		{entry.Trace3, "other", plog.SeverityNumberTRACE3, "other"},
+		{entry.Trace4, "other", plog.SeverityNumberTRACE4, "other"},
+		{entry.Debug, "other", plog.SeverityNumberDEBUG, "other"},
+		{entry.Debug2, "other", plog.SeverityNumberDEBUG2, "other"},
+		{entry.Debug3, "other", plog.SeverityNumberDEBUG3, "other"},
+		{entry.Debug4, "other", plog.SeverityNumberDEBUG4, "other"},
+		{entry.Info, "other", plog.SeverityNumberINFO, "other"},
+		{entry.Info2, "other", plog.SeverityNumberINFO2, "other"},
+		{entry.Info3, "other", plog.SeverityNumberINFO3, "other"},
+		{entry.Info4, "other", plog.SeverityNumberINFO4, "other"},
+		{entry.Warn, "other", plog.SeverityNumberWARN, "other"},
+		{entry.Warn2, "other", plog.SeverityNumberWARN2, "other"},
+		{entry.Warn3, "other", plog.SeverityNumberWARN3, "other"},
+		{entry.Warn4, "other", plog.SeverityNumberWARN4, "other"},
+		{entry.Error, "other", plog.SeverityNumberERROR, "other"},
+		{entry.Error2, "other", plog.SeverityNumberERROR2, "other"},
+		{entry.Error3, "other", plog.SeverityNumberERROR3, "other"},
+		{entry.Error4, "other", plog.SeverityNumberERROR4, "other"},
+		{entry.Fatal, "other", plog.SeverityNumberFATAL, "other"},
+		{entry.Fatal2, "other", plog.SeverityNumberFATAL2, "other"},
+		{entry.Fatal3, "other", plog.SeverityNumberFATAL3, "other"},
+		{entry.Fatal4, "other", plog.SeverityNumberFATAL4, "other"},
+
+		// Sev text should be set to severity "Short Name" if not present
+		{entry.Trace, "", plog.SeverityNumberTRACE, "TRACE"},
+		{entry.Trace2, "", plog.SeverityNumberTRACE2, "TRACE2"},
+		{entry.Trace3, "", plog.SeverityNumberTRACE3, "TRACE3"},
+		{entry.Trace4, "", plog.SeverityNumberTRACE4, "TRACE4"},
+		{entry.Debug, "", plog.SeverityNumberDEBUG, "DEBUG"},
+		{entry.Debug2, "", plog.SeverityNumberDEBUG2, "DEBUG2"},
+		{entry.Debug3, "", plog.SeverityNumberDEBUG3, "DEBUG3"},
+		{entry.Debug4, "", plog.SeverityNumberDEBUG4, "DEBUG4"},
+		{entry.Info, "", plog.SeverityNumberINFO, "INFO"},
+		{entry.Info2, "", plog.SeverityNumberINFO2, "INFO2"},
+		{entry.Info3, "", plog.SeverityNumberINFO3, "INFO3"},
+		{entry.Info4, "", plog.SeverityNumberINFO4, "INFO4"},
+		{entry.Warn, "", plog.SeverityNumberWARN, "WARN"},
+		{entry.Warn2, "", plog.SeverityNumberWARN2, "WARN2"},
+		{entry.Warn3, "", plog.SeverityNumberWARN3, "WARN3"},
+		{entry.Warn4, "", plog.SeverityNumberWARN4, "WARN4"},
+		{entry.Error, "", plog.SeverityNumberERROR, "ERROR"},
+		{entry.Error2, "", plog.SeverityNumberERROR2, "ERROR2"},
+		{entry.Error3, "", plog.SeverityNumberERROR3, "ERROR3"},
+		{entry.Error4, "", plog.SeverityNumberERROR4, "ERROR4"},
+		{entry.Fatal, "", plog.SeverityNumberFATAL, "FATAL"},
+		{entry.Fatal2, "", plog.SeverityNumberFATAL2, "FATAL2"},
+		{entry.Fatal3, "", plog.SeverityNumberFATAL3, "FATAL3"},
+		{entry.Fatal4, "", plog.SeverityNumberFATAL4, "FATAL4"},
 	}
 
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%v", tc.severity), func(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
+			entry.SeverityText = tc.severityText
 			log := convertAndDrill(entry)
 			require.Equal(t, tc.expectedNumber, log.SeverityNumber())
 			require.Equal(t, tc.expectedText, log.SeverityText())
