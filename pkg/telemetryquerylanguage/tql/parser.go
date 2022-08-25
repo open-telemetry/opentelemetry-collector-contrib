@@ -21,7 +21,6 @@ import (
 	"github.com/alecthomas/participle/v2"
 	"github.com/alecthomas/participle/v2/lexer"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 )
 
 // ParsedQuery represents a parsed query. It is the entry point into the query DSL.
@@ -197,10 +196,10 @@ type Parser struct {
 	functions  map[string]interface{}
 	pathParser PathExpressionParser
 	enumParser EnumParser
-	logger     *zap.Logger
+	logger     Logger
 }
 
-func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, logger *zap.Logger) Parser {
+func NewParser(functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser, logger Logger) Parser {
 	return Parser{
 		functions:  functions,
 		pathParser: pathParser,

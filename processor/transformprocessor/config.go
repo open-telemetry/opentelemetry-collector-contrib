@@ -17,7 +17,6 @@ package transformprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
@@ -39,13 +38,12 @@ var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	logger := zap.NewNop()
 
 	tqlp := tql.NewParser(
 		traces.Functions(),
 		tqltraces.ParsePath,
 		tqltraces.ParseEnum,
-		logger,
+		tql.NoOpLogger{},
 	)
 	_, err := tqlp.ParseQueries(c.Traces.Queries)
 	if err != nil {
@@ -56,7 +54,7 @@ func (c *Config) Validate() error {
 		metrics.Functions(),
 		tqlmetrics.ParsePath,
 		tqlmetrics.ParseEnum,
-		logger,
+		tql.NoOpLogger{},
 	)
 	_, err = tqlp.ParseQueries(c.Metrics.Queries)
 	if err != nil {
@@ -67,7 +65,7 @@ func (c *Config) Validate() error {
 		logs.Functions(),
 		tqllogs.ParsePath,
 		tqllogs.ParseEnum,
-		logger,
+		tql.NoOpLogger{},
 	)
 	_, err = tqlp.ParseQueries(c.Logs.Queries)
 	if err != nil {

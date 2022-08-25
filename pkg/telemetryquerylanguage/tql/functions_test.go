@@ -19,8 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
@@ -40,7 +38,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 		functions,
 		testParsePath,
 		testParseEnum,
-		zaptest.NewLogger(t),
+		NoOpLogger{},
 	)
 
 	tests := []struct {
@@ -215,7 +213,7 @@ func Test_NewFunctionCall(t *testing.T) {
 		DefaultFunctionsForTests(),
 		testParsePath,
 		testParseEnum,
-		zaptest.NewLogger(t),
+		NoOpLogger{},
 	)
 
 	tests := []struct {
@@ -632,19 +630,19 @@ func functionWithEnum(_ Enum) (ExprFunc, error) {
 	}, nil
 }
 
-func functionWithLoggerFirst(_ *zap.Logger, _ string, _ string, _ int64) (ExprFunc, error) {
+func functionWithLoggerFirst(_ Logger, _ string, _ string, _ int64) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithLoggerMiddle(_ string, _ string, _ *zap.Logger, _ int64) (ExprFunc, error) {
+func functionWithLoggerMiddle(_ string, _ string, _ Logger, _ int64) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil
 }
 
-func functionWithLoggerLast(_ string, _ string, _ int64, _ *zap.Logger) (ExprFunc, error) {
+func functionWithLoggerLast(_ string, _ string, _ int64, _ Logger) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
 	}, nil

@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/telemetryquerylanguage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow *zap.Logger to be specified as an argument type in TQL functions.
+note: Add a Logger interface and allow it to be specified as an argument type in TQL functions.
 
 # One or more tracking issues related to the change
 issues: [9730]

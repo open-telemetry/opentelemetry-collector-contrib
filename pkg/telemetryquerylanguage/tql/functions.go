@@ -54,22 +54,16 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		switch argType.Kind() {
-		case reflect.Slice:
+		if argType.Kind() == reflect.Slice {
 			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
 			// Slice arguments must be the final argument in an invocation.
 			return args, nil
-		case reflect.Pointer:
-			switch argType.Elem().String() {
-			case "zap.Logger":
-				args = append(args, reflect.ValueOf(p.logger))
-			default:
-				return nil, fmt.Errorf("unsupported pointer to type '%s' for function '%v'", argType.Elem().String(), inv.Function)
-			}
-		default:
+		} else if argType.Kind() == reflect.Interface && argType.Name() == "Logger" {
+			args = append(args, reflect.ValueOf(p.logger))
+		} else {
 			if DSLArgumentIndex >= len(inv.Arguments) {
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}

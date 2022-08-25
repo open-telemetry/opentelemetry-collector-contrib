@@ -20,7 +20,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
@@ -73,7 +72,7 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 		Functions(),
 		tqlmetrics.ParsePath,
 		tqlmetrics.ParseEnum,
-		zaptest.NewLogger(t),
+		tql.NoOpLogger{},
 	)
 
 	for _, tt := range tests {

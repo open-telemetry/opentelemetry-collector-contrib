@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
@@ -35,7 +36,7 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 		functions,
 		tqllogs.ParsePath,
 		tqllogs.ParseEnum,
-		settings.Logger,
+		common.NewTQLLogger(settings.Logger),
 	)
 	queries, err := tqlp.ParseQueries(statements)
 	if err != nil {

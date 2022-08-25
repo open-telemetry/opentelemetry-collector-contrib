@@ -18,7 +18,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
@@ -114,7 +113,7 @@ func Test_newGetter(t *testing.T) {
 		functions,
 		testParsePath,
 		testParseEnum,
-		zaptest.NewLogger(t),
+		NoOpLogger{},
 	)
 
 	for _, tt := range tests {
