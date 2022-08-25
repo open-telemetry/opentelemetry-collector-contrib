@@ -32,7 +32,7 @@ func newLogsExporter(set component.ExporterCreateSettings, cfg config.Exporter) 
 
 	l.client = newLogServiceClient(cfg.(*Config), set.Logger)
 
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		set,
 		cfg,

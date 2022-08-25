@@ -28,7 +28,7 @@ const (
 
 // NewFactory creates a factory for asapauthextension.
 func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactoryWithStabilityLevel(
+	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
 		createExtension,

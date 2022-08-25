@@ -70,7 +70,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 	}*/
 
 	//TODO: Lines commented out until implementation is available
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		config,

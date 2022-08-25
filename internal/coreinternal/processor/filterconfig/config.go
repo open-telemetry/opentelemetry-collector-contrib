@@ -191,7 +191,7 @@ type InstrumentationLibrary struct {
 // LogSeverityNumberMatchProperties defines how to match based on a log record's SeverityNumber field.
 type LogSeverityNumberMatchProperties struct {
 	// Min is the lowest severity that may be matched.
-	// e.g. if this is plog.SeverityNumberINFO, INFO, WARN, ERROR, and FATAL logs will match.
+	// e.g. if this is plog.SeverityNumberInfo, INFO, WARN, ERROR, and FATAL logs will match.
 	Min plog.SeverityNumber `mapstructure:"min"`
 
 	// MatchUndefined controls whether logs with "undefined" severity matches.

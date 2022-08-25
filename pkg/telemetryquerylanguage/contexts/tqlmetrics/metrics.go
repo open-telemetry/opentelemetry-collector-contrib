@@ -584,13 +584,13 @@ func accessFlags() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags().AsRaw())
 			case pmetric.HistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags().AsRaw())
 			case pmetric.ExponentialHistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags().AsRaw())
 			case pmetric.SummaryDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags().AsRaw())
 			}
 			return nil
 		},
@@ -609,13 +609,6 @@ func accessFlags() tql.StandardGetSetter {
 			}
 		},
 	}
-}
-
-func flagsValue(flags pmetric.MetricDataPointFlags) int64 {
-	if flags.NoRecordedValue() {
-		return 1
-	}
-	return 0
 }
 
 func setFlagsValue(flags pmetric.MetricDataPointFlags, value int64) {

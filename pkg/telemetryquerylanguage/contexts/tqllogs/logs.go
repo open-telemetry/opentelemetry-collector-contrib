@@ -45,31 +45,31 @@ func (ctx LogTransformContext) GetResource() pcommon.Resource {
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(plog.SeverityNumberUNDEFINED),
-	"SEVERITY_NUMBER_TRACE":       tql.Enum(plog.SeverityNumberTRACE),
-	"SEVERITY_NUMBER_TRACE2":      tql.Enum(plog.SeverityNumberTRACE2),
-	"SEVERITY_NUMBER_TRACE3":      tql.Enum(plog.SeverityNumberTRACE3),
-	"SEVERITY_NUMBER_TRACE4":      tql.Enum(plog.SeverityNumberTRACE4),
-	"SEVERITY_NUMBER_DEBUG":       tql.Enum(plog.SeverityNumberDEBUG),
-	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(plog.SeverityNumberDEBUG2),
-	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(plog.SeverityNumberDEBUG3),
-	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(plog.SeverityNumberDEBUG4),
-	"SEVERITY_NUMBER_INFO":        tql.Enum(plog.SeverityNumberINFO),
-	"SEVERITY_NUMBER_INFO2":       tql.Enum(plog.SeverityNumberINFO2),
-	"SEVERITY_NUMBER_INFO3":       tql.Enum(plog.SeverityNumberINFO3),
-	"SEVERITY_NUMBER_INFO4":       tql.Enum(plog.SeverityNumberINFO4),
-	"SEVERITY_NUMBER_WARN":        tql.Enum(plog.SeverityNumberWARN),
-	"SEVERITY_NUMBER_WARN2":       tql.Enum(plog.SeverityNumberWARN2),
-	"SEVERITY_NUMBER_WARN3":       tql.Enum(plog.SeverityNumberWARN3),
-	"SEVERITY_NUMBER_WARN4":       tql.Enum(plog.SeverityNumberWARN4),
-	"SEVERITY_NUMBER_ERROR":       tql.Enum(plog.SeverityNumberERROR),
-	"SEVERITY_NUMBER_ERROR2":      tql.Enum(plog.SeverityNumberERROR2),
-	"SEVERITY_NUMBER_ERROR3":      tql.Enum(plog.SeverityNumberERROR3),
-	"SEVERITY_NUMBER_ERROR4":      tql.Enum(plog.SeverityNumberERROR4),
-	"SEVERITY_NUMBER_FATAL":       tql.Enum(plog.SeverityNumberFATAL),
-	"SEVERITY_NUMBER_FATAL2":      tql.Enum(plog.SeverityNumberFATAL2),
-	"SEVERITY_NUMBER_FATAL3":      tql.Enum(plog.SeverityNumberFATAL3),
-	"SEVERITY_NUMBER_FATAL4":      tql.Enum(plog.SeverityNumberFATAL4),
+	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(plog.SeverityNumberUndefined),
+	"SEVERITY_NUMBER_TRACE":       tql.Enum(plog.SeverityNumberTrace),
+	"SEVERITY_NUMBER_TRACE2":      tql.Enum(plog.SeverityNumberTrace2),
+	"SEVERITY_NUMBER_TRACE3":      tql.Enum(plog.SeverityNumberTrace3),
+	"SEVERITY_NUMBER_TRACE4":      tql.Enum(plog.SeverityNumberTrace4),
+	"SEVERITY_NUMBER_DEBUG":       tql.Enum(plog.SeverityNumberDebug),
+	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(plog.SeverityNumberDebug2),
+	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(plog.SeverityNumberDebug3),
+	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(plog.SeverityNumberDebug4),
+	"SEVERITY_NUMBER_INFO":        tql.Enum(plog.SeverityNumberInfo),
+	"SEVERITY_NUMBER_INFO2":       tql.Enum(plog.SeverityNumberInfo2),
+	"SEVERITY_NUMBER_INFO3":       tql.Enum(plog.SeverityNumberInfo3),
+	"SEVERITY_NUMBER_INFO4":       tql.Enum(plog.SeverityNumberInfo4),
+	"SEVERITY_NUMBER_WARN":        tql.Enum(plog.SeverityNumberWarn),
+	"SEVERITY_NUMBER_WARN2":       tql.Enum(plog.SeverityNumberWarn2),
+	"SEVERITY_NUMBER_WARN3":       tql.Enum(plog.SeverityNumberWarn3),
+	"SEVERITY_NUMBER_WARN4":       tql.Enum(plog.SeverityNumberWarn4),
+	"SEVERITY_NUMBER_ERROR":       tql.Enum(plog.SeverityNumberError),
+	"SEVERITY_NUMBER_ERROR2":      tql.Enum(plog.SeverityNumberError2),
+	"SEVERITY_NUMBER_ERROR3":      tql.Enum(plog.SeverityNumberError3),
+	"SEVERITY_NUMBER_ERROR4":      tql.Enum(plog.SeverityNumberError4),
+	"SEVERITY_NUMBER_FATAL":       tql.Enum(plog.SeverityNumberFatal),
+	"SEVERITY_NUMBER_FATAL2":      tql.Enum(plog.SeverityNumberFatal2),
+	"SEVERITY_NUMBER_FATAL3":      tql.Enum(plog.SeverityNumberFatal3),
+	"SEVERITY_NUMBER_FATAL4":      tql.Enum(plog.SeverityNumberFatal4),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {
@@ -333,13 +333,21 @@ func accessDroppedAttributesCount() tql.StandardGetSetter {
 func accessFlags() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(plog.LogRecord).Flags())
+			return int64(ctx.GetItem().(plog.LogRecord).FlagsStruct().AsRaw())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(plog.LogRecord).SetFlags(uint32(i))
+				setFlagsValue(ctx.GetItem().(plog.LogRecord).FlagsStruct(), i)
 			}
 		},
+	}
+}
+
+func setFlagsValue(flags plog.LogRecordFlags, value int64) {
+	if value&1 != 0 {
+		flags.SetIsSampled(true)
+	} else {
+		flags.SetIsSampled(false)
 	}
 }
 
