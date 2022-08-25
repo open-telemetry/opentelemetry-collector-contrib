@@ -60,6 +60,16 @@ func Test_split(t *testing.T) {
 			expected:  []string{"A", "|", "B", "|", "C"},
 		},
 		{
+			name: "split empty string and empty delimiter",
+			target: &tql.StandardGetSetter{
+				Getter: func(ctx tql.TransformContext) interface{} {
+					return ""
+				},
+			},
+			delimiter: "",
+			expected:  []string{},
+		},
+		{
 			name: "split non-string",
 			target: &tql.StandardGetSetter{
 				Getter: func(ctx tql.TransformContext) interface{} {
