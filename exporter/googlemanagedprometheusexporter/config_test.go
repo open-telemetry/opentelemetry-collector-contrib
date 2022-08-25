@@ -65,5 +65,6 @@ func TestLoadConfig(t *testing.T) {
 				NumConsumers: 2,
 				QueueSize:    10,
 			},
+			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		})
 }
