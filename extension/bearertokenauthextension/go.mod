@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.0
-	go.uber.org/zap v1.22.0
-	google.golang.org/grpc v1.48.0
+	go.uber.org/zap v1.23.0
+	google.golang.org/grpc v1.49.0
 )
 
 require (
