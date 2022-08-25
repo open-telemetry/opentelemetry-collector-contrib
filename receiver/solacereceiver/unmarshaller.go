@@ -427,7 +427,7 @@ func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key 
 	k := userPropertiesAttrKeyPrefix + key
 	switch v := value.(type) {
 	case *model_v1.SpanData_UserPropertyValue_NullValue:
-		toMap.InsertNull(k)
+		toMap.Insert(k, pcommon.NewValueEmpty())
 	case *model_v1.SpanData_UserPropertyValue_BoolValue:
 		toMap.InsertBool(k, v.BoolValue)
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:

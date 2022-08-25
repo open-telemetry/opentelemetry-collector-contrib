@@ -729,7 +729,7 @@ func generateLargeEventBatch() plog.Logs {
 	for i := 0; i < batchSize; i++ {
 		lr := logs.AppendEmpty()
 		lr.Attributes().InsertString("k0", "k1")
-		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
+		lr.Attributes().Insert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 	}
 

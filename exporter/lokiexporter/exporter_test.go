@@ -564,7 +564,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertNull("severity")
+		am.Insert("severity", pcommon.NewValueEmpty())
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -581,7 +581,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 	lr.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
 	lr.SetSeverityText("DEBUG")
-	lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
+	lr.SetSeverityNumber(plog.SeverityNumberDebug)
 	lr.Attributes().Insert("payment_method", pcommon.NewValueString("credit_card"))
 
 	ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
@@ -760,12 +760,12 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "severityN",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				lr.SetSeverityNumber(plog.SeverityNumberDebug)
 				return lr
 			}(),
 			expected: func() model.LabelSet {
 				ls := model.LabelSet{}
-				ls[model.LabelName("severityN")] = model.LabelValue(plog.SeverityNumberDEBUG.String())
+				ls[model.LabelName("severityN")] = model.LabelValue(plog.SeverityNumberDebug.String())
 				return ls
 			}(),
 		},

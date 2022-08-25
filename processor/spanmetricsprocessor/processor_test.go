@@ -627,7 +627,7 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().InsertInt(intAttrName, 99)
 	s.Attributes().InsertDouble(doubleAttrName, 99.99)
 	s.Attributes().InsertBool(boolAttrName, true)
-	s.Attributes().InsertNull(nullAttrName)
+	s.Attributes().Insert(nullAttrName, pcommon.NewValueEmpty())
 	s.Attributes().Insert(mapAttrName, pcommon.NewValueMap())
 	s.Attributes().Insert(arrayAttrName, pcommon.NewValueSlice())
 	s.SetTraceID(pcommon.NewTraceID([16]byte{byte(42)}))

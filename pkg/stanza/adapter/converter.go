@@ -360,10 +360,8 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	if ent.TraceFlags != nil {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
-		flags := dest.Flags()
-		flags &= 0xFFFFFF00
-		flags |= uint32(ent.TraceFlags[0])
-		dest.SetFlags(flags)
+		flags := uint32(ent.TraceFlags[0])
+		dest.FlagsStruct().SetIsSampled(flags&1 != 0)
 	}
 }
 
@@ -487,31 +485,31 @@ func toStringArray(strArr []string) pcommon.Value {
 }
 
 var sevMap = map[entry.Severity]plog.SeverityNumber{
-	entry.Default: plog.SeverityNumberUNDEFINED,
-	entry.Trace:   plog.SeverityNumberTRACE,
-	entry.Trace2:  plog.SeverityNumberTRACE2,
-	entry.Trace3:  plog.SeverityNumberTRACE3,
-	entry.Trace4:  plog.SeverityNumberTRACE4,
-	entry.Debug:   plog.SeverityNumberDEBUG,
-	entry.Debug2:  plog.SeverityNumberDEBUG2,
-	entry.Debug3:  plog.SeverityNumberDEBUG3,
-	entry.Debug4:  plog.SeverityNumberDEBUG4,
-	entry.Info:    plog.SeverityNumberINFO,
-	entry.Info2:   plog.SeverityNumberINFO2,
-	entry.Info3:   plog.SeverityNumberINFO3,
-	entry.Info4:   plog.SeverityNumberINFO4,
-	entry.Warn:    plog.SeverityNumberWARN,
-	entry.Warn2:   plog.SeverityNumberWARN2,
-	entry.Warn3:   plog.SeverityNumberWARN3,
-	entry.Warn4:   plog.SeverityNumberWARN4,
-	entry.Error:   plog.SeverityNumberERROR,
-	entry.Error2:  plog.SeverityNumberERROR2,
-	entry.Error3:  plog.SeverityNumberERROR3,
-	entry.Error4:  plog.SeverityNumberERROR4,
-	entry.Fatal:   plog.SeverityNumberFATAL,
-	entry.Fatal2:  plog.SeverityNumberFATAL2,
-	entry.Fatal3:  plog.SeverityNumberFATAL3,
-	entry.Fatal4:  plog.SeverityNumberFATAL4,
+	entry.Default: plog.SeverityNumberUndefined,
+	entry.Trace:   plog.SeverityNumberTrace,
+	entry.Trace2:  plog.SeverityNumberTrace2,
+	entry.Trace3:  plog.SeverityNumberTrace3,
+	entry.Trace4:  plog.SeverityNumberTrace4,
+	entry.Debug:   plog.SeverityNumberDebug,
+	entry.Debug2:  plog.SeverityNumberDebug2,
+	entry.Debug3:  plog.SeverityNumberDebug3,
+	entry.Debug4:  plog.SeverityNumberDebug4,
+	entry.Info:    plog.SeverityNumberInfo,
+	entry.Info2:   plog.SeverityNumberInfo2,
+	entry.Info3:   plog.SeverityNumberInfo3,
+	entry.Info4:   plog.SeverityNumberInfo4,
+	entry.Warn:    plog.SeverityNumberWarn,
+	entry.Warn2:   plog.SeverityNumberWarn2,
+	entry.Warn3:   plog.SeverityNumberWarn3,
+	entry.Warn4:   plog.SeverityNumberWarn4,
+	entry.Error:   plog.SeverityNumberError,
+	entry.Error2:  plog.SeverityNumberError2,
+	entry.Error3:  plog.SeverityNumberError3,
+	entry.Error4:  plog.SeverityNumberError4,
+	entry.Fatal:   plog.SeverityNumberFatal,
+	entry.Fatal2:  plog.SeverityNumberFatal2,
+	entry.Fatal3:  plog.SeverityNumberFatal3,
+	entry.Fatal4:  plog.SeverityNumberFatal4,
 }
 
 var defaultSevTextMap = map[entry.Severity]string{
