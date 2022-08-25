@@ -85,7 +85,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))
-				lr.SetSeverityNumber(plog.SeverityNumberINFO)
+				lr.SetSeverityNumber(plog.SeverityNumberInfo)
 
 				lr.Body().SetStringVal(payload)
 
@@ -160,7 +160,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 35, 0, time.UTC)))
-				lr.SetSeverityNumber(plog.SeverityNumberINFO)
+				lr.SetSeverityNumber(plog.SeverityNumberInfo)
 
 				lr.Body().SetStringVal(payload)
 
@@ -192,19 +192,19 @@ func TestSeverityFromAlert(t *testing.T) {
 	}{
 		{
 			alert: model.Alert{Status: "OPEN"},
-			s:     plog.SeverityNumberWARN,
+			s:     plog.SeverityNumberWarn,
 		},
 		{
 			alert: model.Alert{Status: "TRACKING"},
-			s:     plog.SeverityNumberINFO,
+			s:     plog.SeverityNumberInfo,
 		},
 		{
 			alert: model.Alert{Status: "CLOSED"},
-			s:     plog.SeverityNumberINFO,
+			s:     plog.SeverityNumberInfo,
 		},
 		{
 			alert: model.Alert{Status: "INFORMATIONAL"},
-			s:     plog.SeverityNumberINFO,
+			s:     plog.SeverityNumberInfo,
 		},
 	}
 
@@ -521,10 +521,10 @@ func compareScopeLogs(expected, actual plog.ScopeLogs) error {
 }
 
 func compareLogRecord(expected, actual plog.LogRecord) error {
-	if expected.Flags() != actual.Flags() {
+	if expected.FlagsStruct().AsRaw() != actual.FlagsStruct().AsRaw() {
 		return fmt.Errorf("log record Flags doesn't match (expected: %d, actual: %d)",
-			expected.Flags(),
-			actual.Flags())
+			expected.FlagsStruct().AsRaw(),
+			actual.FlagsStruct().AsRaw())
 	}
 
 	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {

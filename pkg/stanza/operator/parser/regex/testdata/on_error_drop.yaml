@@ -1,2 +1,0 @@
-type: regex_parser
-on_error: "drop"

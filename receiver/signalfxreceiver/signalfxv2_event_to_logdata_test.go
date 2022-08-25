@@ -65,7 +65,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		propMap.InsertBool("isActive", true)
 		propMap.InsertInt("rack", 5)
 		propMap.InsertDouble("temp", 40.5)
-		propMap.InsertNull("nullProp")
+		propMap.Insert("nullProp", pcommon.NewValueEmpty())
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
 		attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))

@@ -84,7 +84,7 @@ func createTracesExporter(
 
 	exporter := newTracesExporter(cfg, set.TelemetrySettings)
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
