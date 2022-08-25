@@ -279,9 +279,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = "foo"
 				return pt
 			}(),
-			wantMetricsData: func() pmetric.Metrics {
-				return pmetric.NewMetrics()
-			}(),
+			wantMetricsData:       pmetric.NewMetrics(),
 			hecConfig:             defaultTestingHecConfig,
 			wantDroppedTimeseries: 1,
 		},
@@ -293,9 +291,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 				pt.Fields["metric_name:single"] = &value
 				return pt
 			}(),
-			wantMetricsData: func() pmetric.Metrics {
-				return pmetric.NewMetrics()
-			}(),
+			wantMetricsData:       pmetric.NewMetrics(),
 			wantDroppedTimeseries: 1,
 			hecConfig:             defaultTestingHecConfig,
 		},

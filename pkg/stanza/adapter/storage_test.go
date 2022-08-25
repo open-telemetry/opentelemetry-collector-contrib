@@ -99,19 +99,3 @@ func createReceiver(t *testing.T) *receiver {
 	require.True(t, ok)
 	return r
 }
-
-func TestPersisterImplementation(t *testing.T) {
-	ctx := context.Background()
-	myBytes := []byte("string")
-	p := newMockPersister()
-
-	err := p.Set(ctx, "key", myBytes)
-	require.NoError(t, err)
-
-	val, err := p.Get(ctx, "key")
-	require.NoError(t, err)
-	require.Equal(t, myBytes, val)
-
-	err = p.Delete(ctx, "key")
-	require.NoError(t, err)
-}

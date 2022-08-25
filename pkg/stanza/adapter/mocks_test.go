@@ -19,13 +19,11 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -128,14 +126,4 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 		return nil, errors.New("unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
-}
-
-func newMockPersister() *persister {
-	return &persister{
-		client: storagetest.NewInMemoryClient(
-			component.KindReceiver,
-			config.NewComponentID("foolog"),
-			"test",
-		),
-	}
 }

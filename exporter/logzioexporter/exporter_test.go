@@ -67,7 +67,7 @@ func initResource1(r pcommon.Resource) {
 func fillLogOne(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
 	log.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
 	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
@@ -95,7 +95,7 @@ func fillLogOne(log plog.LogRecord) {
 func fillLogTwo(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
@@ -107,7 +107,7 @@ func fillLogTwo(log plog.LogRecord) {
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()

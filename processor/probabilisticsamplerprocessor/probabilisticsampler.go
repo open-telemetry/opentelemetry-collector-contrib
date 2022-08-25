@@ -63,7 +63,7 @@ func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettin
 		hashSeed:           cfg.HashSeed,
 	}
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,

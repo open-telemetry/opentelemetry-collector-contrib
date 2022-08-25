@@ -74,7 +74,7 @@ func TestSerializeBody(t *testing.T) {
 	complexmap.MapVal().InsertInt("keyint", 1)
 	complexmap.MapVal().InsertDouble("keyint", 1)
 	complexmap.MapVal().InsertBool("keybool", true)
-	complexmap.MapVal().InsertNull("keynull")
+	complexmap.MapVal().Insert("keynull", pcommon.NewValueEmpty())
 	complexmap.MapVal().Insert("keyarr", arrayval)
 	complexmap.MapVal().Insert("keymap", simplemap)
 	complexmap.MapVal().Insert("keyempty", pcommon.NewValueEmpty())
