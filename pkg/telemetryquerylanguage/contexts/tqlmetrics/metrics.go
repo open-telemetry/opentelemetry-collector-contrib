@@ -188,7 +188,6 @@ func accessResource() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
-				ctx.GetResource().Attributes().Clear()
 				newRes.CopyTo(ctx.GetResource())
 			}
 		},
@@ -202,7 +201,6 @@ func accessResourceAttributes() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetResource().Attributes().Clear()
 				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
 		},
@@ -394,22 +392,18 @@ func accessAttributes() tql.StandardGetSetter {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.NumberDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
 				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.HistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.SummaryDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
 				}
 			}
