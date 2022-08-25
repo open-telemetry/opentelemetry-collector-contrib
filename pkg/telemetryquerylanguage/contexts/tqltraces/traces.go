@@ -167,7 +167,7 @@ func accessResource() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
-				newRes.CopyTo(ctx.GetResource())
+				newRes.MoveTo(ctx.GetResource())
 			}
 		},
 	}
@@ -204,7 +204,7 @@ func accessInstrumentationScope() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
+				newIl.MoveTo(ctx.GetInstrumentationScope())
 			}
 		},
 	}
@@ -492,7 +492,7 @@ func accessStatus() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if status, ok := val.(ptrace.SpanStatus); ok {
-				status.CopyTo(ctx.GetItem().(ptrace.Span).Status())
+				status.MoveTo(ctx.GetItem().(ptrace.Span).Status())
 			}
 		},
 	}

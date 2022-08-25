@@ -295,6 +295,9 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 
+			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+			tt.modified(exNumberDataPoint)
+
 			ctx := MetricTransformContext{
 				DataPoint:            numberDataPoint,
 				Metric:               pmetric.NewMetric(),
@@ -306,9 +309,6 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
-
-			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
-			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
@@ -626,6 +626,9 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 
 			numberDataPoint := createHistogramDataPointTelemetry()
 
+			exNumberDataPoint := createHistogramDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
+
 			ctx := MetricTransformContext{
 				DataPoint:            numberDataPoint,
 				Metric:               pmetric.NewMetric(),
@@ -637,9 +640,6 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
-
-			exNumberDataPoint := createHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
@@ -1053,6 +1053,9 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 			numberDataPoint := createExpoHistogramDataPointTelemetry()
 
+			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
+
 			ctx := MetricTransformContext{
 				DataPoint:            numberDataPoint,
 				Metric:               pmetric.NewMetric(),
@@ -1064,9 +1067,6 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
-
-			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
@@ -1365,6 +1365,9 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 
 			numberDataPoint := createSummaryDataPointTelemetry()
 
+			exNumberDataPoint := createSummaryDataPointTelemetry()
+			tt.modified(exNumberDataPoint)
+
 			ctx := MetricTransformContext{
 				DataPoint:            numberDataPoint,
 				Metric:               pmetric.NewMetric(),
@@ -1376,9 +1379,6 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
-
-			exNumberDataPoint := createSummaryDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
@@ -1560,6 +1560,9 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 
 			metric := createMetricTelemetry()
 
+			exMetric := createMetricTelemetry()
+			tt.modified(exMetric)
+
 			ctx := MetricTransformContext{
 				DataPoint:            pmetric.NewNumberDataPoint(),
 				Metric:               metric,
@@ -1571,9 +1574,6 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
-
-			exMetric := createMetricTelemetry()
-			tt.modified(exMetric)
 
 			assert.Equal(t, exMetric, metric)
 		})

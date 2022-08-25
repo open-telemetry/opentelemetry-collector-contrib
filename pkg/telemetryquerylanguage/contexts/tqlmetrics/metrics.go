@@ -188,7 +188,7 @@ func accessResource() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
-				newRes.CopyTo(ctx.GetResource())
+				newRes.MoveTo(ctx.GetResource())
 			}
 		},
 	}
@@ -225,7 +225,7 @@ func accessInstrumentationScope() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
+				newIl.MoveTo(ctx.GetInstrumentationScope())
 			}
 		},
 	}
@@ -762,7 +762,7 @@ func accessPositive() tql.StandardGetSetter {
 			if newPositive, ok := val.(pmetric.Buckets); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					newPositive.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive())
+					newPositive.MoveTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Positive())
 				}
 			}
 		},
@@ -822,7 +822,7 @@ func accessNegative() tql.StandardGetSetter {
 			if newNegative, ok := val.(pmetric.Buckets); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.ExponentialHistogramDataPoint:
-					newNegative.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative())
+					newNegative.MoveTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Negative())
 				}
 			}
 		},
