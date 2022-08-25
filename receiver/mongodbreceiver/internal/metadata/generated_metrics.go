@@ -150,34 +150,34 @@ var MapAttributeConnectionType = map[string]AttributeConnectionType{
 	"current":   AttributeConnectionTypeCurrent,
 }
 
-// AttributeLock specifies the a value lock attribute.
-type AttributeLock int
+// AttributeGlobalLockType specifies the a value global_lock_type attribute.
+type AttributeGlobalLockType int
 
 const (
-	_ AttributeLock = iota
-	AttributeLockRead
-	AttributeLockWrite
-	AttributeLockTotal
+	_ AttributeGlobalLockType = iota
+	AttributeGlobalLockTypeRead
+	AttributeGlobalLockTypeWrite
+	AttributeGlobalLockTypeTotal
 )
 
-// String returns the string representation of the AttributeLock.
-func (av AttributeLock) String() string {
+// String returns the string representation of the AttributeGlobalLockType.
+func (av AttributeGlobalLockType) String() string {
 	switch av {
-	case AttributeLockRead:
+	case AttributeGlobalLockTypeRead:
 		return "read"
-	case AttributeLockWrite:
+	case AttributeGlobalLockTypeWrite:
 		return "write"
-	case AttributeLockTotal:
+	case AttributeGlobalLockTypeTotal:
 		return "total"
 	}
 	return ""
 }
 
-// MapAttributeLock is a helper map of string to AttributeLock attribute value.
-var MapAttributeLock = map[string]AttributeLock{
-	"read":  AttributeLockRead,
-	"write": AttributeLockWrite,
-	"total": AttributeLockTotal,
+// MapAttributeGlobalLockType is a helper map of string to AttributeGlobalLockType attribute value.
+var MapAttributeGlobalLockType = map[string]AttributeGlobalLockType{
+	"read":  AttributeGlobalLockTypeRead,
+	"write": AttributeGlobalLockTypeWrite,
+	"total": AttributeGlobalLockTypeTotal,
 }
 
 // AttributeMemoryType specifies the a value memory_type attribute.
@@ -764,7 +764,7 @@ func (m *metricMongodbGlobalLockActiveClients) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbGlobalLockActiveClients) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockAttributeValue string) {
+func (m *metricMongodbGlobalLockActiveClients) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, globalLockTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -772,7 +772,7 @@ func (m *metricMongodbGlobalLockActiveClients) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("lock", lockAttributeValue)
+	dp.Attributes().InsertString("global_lock_type", globalLockTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -817,7 +817,7 @@ func (m *metricMongodbGlobalLockCurrentQueue) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMongodbGlobalLockCurrentQueue) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, lockAttributeValue string) {
+func (m *metricMongodbGlobalLockCurrentQueue) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, globalLockTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -825,7 +825,7 @@ func (m *metricMongodbGlobalLockCurrentQueue) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("lock", lockAttributeValue)
+	dp.Attributes().InsertString("global_lock_type", globalLockTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1755,13 +1755,13 @@ func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp
 }
 
 // RecordMongodbGlobalLockActiveClientsDataPoint adds a data point to mongodb.global_lock.active_clients metric.
-func (mb *MetricsBuilder) RecordMongodbGlobalLockActiveClientsDataPoint(ts pcommon.Timestamp, val int64, lockAttributeValue AttributeLock) {
-	mb.metricMongodbGlobalLockActiveClients.recordDataPoint(mb.startTime, ts, val, lockAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbGlobalLockActiveClientsDataPoint(ts pcommon.Timestamp, val int64, globalLockTypeAttributeValue AttributeGlobalLockType) {
+	mb.metricMongodbGlobalLockActiveClients.recordDataPoint(mb.startTime, ts, val, globalLockTypeAttributeValue.String())
 }
 
 // RecordMongodbGlobalLockCurrentQueueDataPoint adds a data point to mongodb.global_lock.current_queue metric.
-func (mb *MetricsBuilder) RecordMongodbGlobalLockCurrentQueueDataPoint(ts pcommon.Timestamp, val int64, lockAttributeValue AttributeLock) {
-	mb.metricMongodbGlobalLockCurrentQueue.recordDataPoint(mb.startTime, ts, val, lockAttributeValue.String())
+func (mb *MetricsBuilder) RecordMongodbGlobalLockCurrentQueueDataPoint(ts pcommon.Timestamp, val int64, globalLockTypeAttributeValue AttributeGlobalLockType) {
+	mb.metricMongodbGlobalLockCurrentQueue.recordDataPoint(mb.startTime, ts, val, globalLockTypeAttributeValue.String())
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.

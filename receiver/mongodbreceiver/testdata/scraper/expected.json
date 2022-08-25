@@ -113,7 +113,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "read"
                                     }
@@ -126,7 +126,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "write"
                                     }
@@ -139,7 +139,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "total"
                                     }
@@ -163,7 +163,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "read"
                                     }
@@ -176,7 +176,7 @@
                               "asInt": "0",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "write"
                                     }
@@ -189,7 +189,7 @@
                               "asInt": "16",
                               "attributes": [
                                  {
-                                    "key": "lock",
+                                    "key": "global_lock_type",
                                     "value": {
                                        "stringValue": "total"
                                     }

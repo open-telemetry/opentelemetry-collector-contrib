@@ -37,7 +37,7 @@ attributes:
     enum:
       - hit
       - miss
-  lock:
+  global_lock_type:
     description: The type of lock.
     enum:
       - read
@@ -252,7 +252,7 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
-    attributes: [lock]
+    attributes: [global_lock_type]
   mongodb.global_lock.active_clients:
     description: The total number of active client connections.
     unit: "{connections}"
@@ -261,4 +261,4 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: false
-    attributes: [lock]
+    attributes: [global_lock_type]

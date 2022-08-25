@@ -42,10 +42,10 @@ var documentMap = map[string]metadata.AttributeOperation{
 	"deleted":  metadata.AttributeOperationDelete,
 }
 
-var lockMap = map[string]metadata.AttributeLock{
-	"readers": metadata.AttributeLockRead,
-	"writers": metadata.AttributeLockWrite,
-	"total":   metadata.AttributeLockTotal,
+var lockMap = map[string]metadata.AttributeGlobalLockType{
+	"readers": metadata.AttributeGlobalLockTypeRead,
+	"writers": metadata.AttributeGlobalLockTypeWrite,
+	"total":   metadata.AttributeGlobalLockTypeTotal,
 }
 
 const (
