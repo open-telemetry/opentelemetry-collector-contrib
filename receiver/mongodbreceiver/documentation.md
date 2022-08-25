@@ -27,13 +27,18 @@ These are the metrics available for this scraper.
 | **mongodb.network.request.count** | The number of requests received by the server. | {requests} | Sum(Int) | <ul> </ul> |
 | **mongodb.object.count** | The number of objects. | {objects} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.operation.count** | The number of operations executed. | {operations} | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **mongodb.operation.scanAndOrder** | The total number of queries that return sorted numbers that cannot perform the sort operation using an index. | {queries} | Sum(Int) | <ul> </ul> |
 | **mongodb.operation.time** | The total time spent performing operations. | ms | Sum(Int) | <ul> <li>operation</li> </ul> |
-| **mongodb.operation.writeConflict** | The total number of queries that encountered write conflicts. | {queries} | Sum(Int) | <ul> </ul> |
 | **mongodb.session.count** | The total number of active sessions. | {sessions} | Sum(Int) | <ul> </ul> |
 | **mongodb.storage.size** | The total amount of storage allocated to this collection. If collection data is compressed it reflects the compressed size. | By | Sum(Int) | <ul> <li>database</li> </ul> |
 
-**Highlighted metrics** are emitted by default.
+**Highlighted metrics** are emitted by default. Other metrics are optional and not emitted by default.
+Any metric can be enabled or disabled with the following scraper configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: <true|false>
+```
 
 ## Resource attributes
 
