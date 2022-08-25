@@ -20,12 +20,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/exponential/mapping/logarithm"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/correctnesstests/metrics"
 )
 
 func Test_ParseMessageToMetric(t *testing.T) {
@@ -1233,8 +1233,8 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				err = p.Aggregate(line)
 				assert.NoError(t, err)
 			}
-			var nodiffs []*metrics.MetricDiff
-			assert.Equal(t, nodiffs, metrics.DiffMetrics(nodiffs, tt.expected, p.GetMetrics()))
+			var nodiffs []*metricstestutil.MetricDiff
+			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tt.expected, p.GetMetrics()))
 		})
 	}
 }
