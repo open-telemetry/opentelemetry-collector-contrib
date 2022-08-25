@@ -160,7 +160,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.Attributes().InsertString("myindex", "myindex")
 				logRecord.Attributes().InsertString("myhost", "myhost")
 				logRecord.SetSeverityText("DEBUG")
-				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
@@ -414,7 +414,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().InsertString("custom", "custom")
 				logRecord.SetSeverityText("DEBUG")
-				logRecord.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				logRecord.SetSeverityNumber(plog.SeverityNumberDebug)
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
@@ -426,7 +426,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				return config
 			},
 			wantSplunkEvents: []*splunk.Event{
-				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.severity.number": plog.SeverityNumberDEBUG, "otel.log.severity.text": "DEBUG"},
+				commonLogSplunkEvent("mylog", ts, map[string]interface{}{"custom": "custom", "otel.log.severity.number": plog.SeverityNumberDebug, "otel.log.severity.text": "DEBUG"},
 					"myhost", "myapp", "myapp-type"),
 			},
 		},

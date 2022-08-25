@@ -180,7 +180,7 @@ func (f *factory) createMetricsExporter(
 		pushMetricsFn = exp.PushMetricsDataScrubbed
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
@@ -251,7 +251,7 @@ func (f *factory) createTracesExporter(
 		}
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,

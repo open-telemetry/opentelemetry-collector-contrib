@@ -58,7 +58,7 @@ func TestUnknownSeverity(t *testing.T) {
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
-	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUNDEFINED)
+	assert.Equal(t, logEntry.SeverityNumber(), plog.SeverityNumberUndefined)
 	assert.Equal(t, logEntry.SeverityText(), "")
 }
 

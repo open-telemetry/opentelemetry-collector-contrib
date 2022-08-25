@@ -2,6 +2,10 @@
 
 This guide is specific to the Telemetry Query Language.  All guidelines in [Collector Contrib's CONTRIBUTING.MD](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md) must also be followed.
 
+## General Guidelines
+
+- Changes to the Telemetry Query Language should be made independent of any component that depend on the package.  Whenever possible, try not to submit PRs that change both the TQL and a dependent component.  Instead, submit a PR that updates the TQL and then, once merged, update the component as needed.
+
 ## New Values
 
 When adding new values to the grammar you must:

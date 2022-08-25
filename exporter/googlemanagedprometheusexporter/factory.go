@@ -62,6 +62,7 @@ func createMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
+  
 	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		params,

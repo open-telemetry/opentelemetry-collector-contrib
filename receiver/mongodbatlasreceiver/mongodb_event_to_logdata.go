@@ -38,16 +38,16 @@ const layout = "2006-01-02T15:04:05.000-07:00"
 
 // Severity mapping of the mongodb atlas logs
 var severityMap = map[string]plog.SeverityNumber{
-	"F":  plog.SeverityNumberFATAL,
-	"E":  plog.SeverityNumberERROR,
-	"W":  plog.SeverityNumberWARN,
-	"I":  plog.SeverityNumberINFO,
-	"D":  plog.SeverityNumberDEBUG,
-	"D1": plog.SeverityNumberDEBUG,
-	"D2": plog.SeverityNumberDEBUG2,
-	"D3": plog.SeverityNumberDEBUG3,
-	"D4": plog.SeverityNumberDEBUG4,
-	"D5": plog.SeverityNumberDEBUG4,
+	"F":  plog.SeverityNumberFatal,
+	"E":  plog.SeverityNumberError,
+	"W":  plog.SeverityNumberWarn,
+	"I":  plog.SeverityNumberInfo,
+	"D":  plog.SeverityNumberDebug,
+	"D1": plog.SeverityNumberDebug,
+	"D2": plog.SeverityNumberDebug2,
+	"D3": plog.SeverityNumberDebug3,
+	"D4": plog.SeverityNumberDebug4,
+	"D5": plog.SeverityNumberDebug4,
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
@@ -81,7 +81,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		lr.Body().SetStringVal(string(data))
 		// Since Audit Logs don't have a severity/level
 		// Set the "SeverityNumber" and "SeverityText" to INFO
-		lr.SetSeverityNumber(plog.SeverityNumberINFO)
+		lr.SetSeverityNumber(plog.SeverityNumberInfo)
 		lr.SetSeverityText("INFO")
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
