@@ -37,7 +37,7 @@ func NewBatchPerResourceTraces(attrKey string, next consumer.Traces) consumer.Tr
 }
 
 // Capabilities implements the consumer interface.
-func (bt batchTraces) Capabilities() consumer.Capabilities {
+func (bt *batchTraces) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -64,8 +64,7 @@ func (bt *batchTraces) ConsumeTraces(ctx context.Context, td ptrace.Traces) erro
 		}
 
 		// Append ResourceSpan to ptrace.Traces for this attribute value.
-		tgt := tracesForAttr.ResourceSpans().AppendEmpty()
-		rs.CopyTo(tgt)
+		rs.MoveTo(tracesForAttr.ResourceSpans().AppendEmpty())
 	}
 
 	var errs error
@@ -88,7 +87,7 @@ func NewBatchPerResourceMetrics(attrKey string, next consumer.Metrics) consumer.
 }
 
 // Capabilities implements the consumer interface.
-func (bt batchMetrics) Capabilities() consumer.Capabilities {
+func (bt *batchMetrics) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -115,8 +114,7 @@ func (bt *batchMetrics) ConsumeMetrics(ctx context.Context, td pmetric.Metrics) 
 		}
 
 		// Append ResourceSpan to pmetric.Metrics for this attribute value.
-		tgt := metricsForAttr.ResourceMetrics().AppendEmpty()
-		rm.CopyTo(tgt)
+		rm.MoveTo(metricsForAttr.ResourceMetrics().AppendEmpty())
 	}
 
 	var errs error
@@ -139,7 +137,7 @@ func NewBatchPerResourceLogs(attrKey string, next consumer.Logs) consumer.Logs {
 }
 
 // Capabilities implements the consumer interface.
-func (bt batchLogs) Capabilities() consumer.Capabilities {
+func (bt *batchLogs) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
@@ -166,8 +164,7 @@ func (bt *batchLogs) ConsumeLogs(ctx context.Context, td plog.Logs) error {
 		}
 
 		// Append ResourceSpan to plog.Logs for this attribute value.
-		tgt := logsForAttr.ResourceLogs().AppendEmpty()
-		rl.CopyTo(tgt)
+		rl.MoveTo(logsForAttr.ResourceLogs().AppendEmpty())
 	}
 
 	var errs error

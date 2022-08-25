@@ -59,13 +59,14 @@ func TestSplitTracesSameResource(t *testing.T) {
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.TracesSink)
 	bpr := NewBatchPerResourceTraces("same_attr_val", sink)
 	assert.NoError(t, bpr.ConsumeTraces(context.Background(), inBatch))
 	outBatches := sink.AllTraces()
 	require.Len(t, outBatches, 1)
-	assert.Equal(t, inBatch, outBatches[0])
+	assert.Equal(t, expected, outBatches[0])
 }
 
 func TestSplitTracesIntoDifferentBatches(t *testing.T) {
@@ -79,6 +80,7 @@ func TestSplitTracesIntoDifferentBatches(t *testing.T) {
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.TracesSink)
 	bpr := NewBatchPerResourceTraces("attr_key", sink)
@@ -86,23 +88,24 @@ func TestSplitTracesIntoDifferentBatches(t *testing.T) {
 	outBatches := sink.AllTraces()
 	require.Len(t, outBatches, 5)
 	sortTraces(outBatches, "attr_key")
-	assert.Equal(t, newTraces(inBatch.ResourceSpans().At(8)), outBatches[0])
-	assert.Equal(t, newTraces(inBatch.ResourceSpans().At(0), inBatch.ResourceSpans().At(4)), outBatches[1])
-	assert.Equal(t, newTraces(inBatch.ResourceSpans().At(1), inBatch.ResourceSpans().At(5)), outBatches[2])
-	assert.Equal(t, newTraces(inBatch.ResourceSpans().At(2), inBatch.ResourceSpans().At(6)), outBatches[3])
-	assert.Equal(t, newTraces(inBatch.ResourceSpans().At(3), inBatch.ResourceSpans().At(7)), outBatches[4])
+	assert.Equal(t, newTraces(expected.ResourceSpans().At(8)), outBatches[0])
+	assert.Equal(t, newTraces(expected.ResourceSpans().At(0), expected.ResourceSpans().At(4)), outBatches[1])
+	assert.Equal(t, newTraces(expected.ResourceSpans().At(1), expected.ResourceSpans().At(5)), outBatches[2])
+	assert.Equal(t, newTraces(expected.ResourceSpans().At(2), expected.ResourceSpans().At(6)), outBatches[3])
+	assert.Equal(t, newTraces(expected.ResourceSpans().At(3), expected.ResourceSpans().At(7)), outBatches[4])
 }
 
 func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewBatchPerResourceMetrics("attr_key", sink)
 	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 1)
-	assert.Equal(t, inBatch, outBatches[0])
+	assert.Equal(t, expected, outBatches[0])
 }
 
 func TestSplitMetricsReturnError(t *testing.T) {
@@ -121,13 +124,14 @@ func TestSplitMetricsSameResource(t *testing.T) {
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewBatchPerResourceMetrics("same_attr_val", sink)
 	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 1)
-	assert.Equal(t, inBatch, outBatches[0])
+	assert.Equal(t, expected, outBatches[0])
 }
 
 func TestSplitMetricsIntoDifferentBatches(t *testing.T) {
@@ -141,6 +145,7 @@ func TestSplitMetricsIntoDifferentBatches(t *testing.T) {
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
 	bpr := NewBatchPerResourceMetrics("attr_key", sink)
@@ -148,23 +153,24 @@ func TestSplitMetricsIntoDifferentBatches(t *testing.T) {
 	outBatches := sink.AllMetrics()
 	require.Len(t, outBatches, 5)
 	sortMetrics(outBatches, "attr_key")
-	assert.Equal(t, newMetrics(inBatch.ResourceMetrics().At(8)), outBatches[0])
-	assert.Equal(t, newMetrics(inBatch.ResourceMetrics().At(0), inBatch.ResourceMetrics().At(4)), outBatches[1])
-	assert.Equal(t, newMetrics(inBatch.ResourceMetrics().At(1), inBatch.ResourceMetrics().At(5)), outBatches[2])
-	assert.Equal(t, newMetrics(inBatch.ResourceMetrics().At(2), inBatch.ResourceMetrics().At(6)), outBatches[3])
-	assert.Equal(t, newMetrics(inBatch.ResourceMetrics().At(3), inBatch.ResourceMetrics().At(7)), outBatches[4])
+	assert.Equal(t, newMetrics(expected.ResourceMetrics().At(8)), outBatches[0])
+	assert.Equal(t, newMetrics(expected.ResourceMetrics().At(0), expected.ResourceMetrics().At(4)), outBatches[1])
+	assert.Equal(t, newMetrics(expected.ResourceMetrics().At(1), expected.ResourceMetrics().At(5)), outBatches[2])
+	assert.Equal(t, newMetrics(expected.ResourceMetrics().At(2), expected.ResourceMetrics().At(6)), outBatches[3])
+	assert.Equal(t, newMetrics(expected.ResourceMetrics().At(3), expected.ResourceMetrics().At(7)), outBatches[4])
 }
 
 func TestSplitLogsOneResourceLogs(t *testing.T) {
 	inBatch := plog.NewLogs()
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
 	bpr := NewBatchPerResourceLogs("attr_key", sink)
 	assert.NoError(t, bpr.ConsumeLogs(context.Background(), inBatch))
 	outBatches := sink.AllLogs()
 	require.Len(t, outBatches, 1)
-	assert.Equal(t, inBatch, outBatches[0])
+	assert.Equal(t, expected, outBatches[0])
 }
 
 func TestSplitLogsReturnError(t *testing.T) {
@@ -183,13 +189,14 @@ func TestSplitLogsSameResource(t *testing.T) {
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
 	bpr := NewBatchPerResourceLogs("same_attr_val", sink)
 	assert.NoError(t, bpr.ConsumeLogs(context.Background(), inBatch))
 	outBatches := sink.AllLogs()
 	require.Len(t, outBatches, 1)
-	assert.Equal(t, inBatch, outBatches[0])
+	assert.Equal(t, expected, outBatches[0])
 }
 
 func TestSplitLogsIntoDifferentBatches(t *testing.T) {
@@ -203,6 +210,7 @@ func TestSplitLogsIntoDifferentBatches(t *testing.T) {
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
 	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
 	bpr := NewBatchPerResourceLogs("attr_key", sink)
@@ -210,11 +218,11 @@ func TestSplitLogsIntoDifferentBatches(t *testing.T) {
 	outBatches := sink.AllLogs()
 	require.Len(t, outBatches, 5)
 	sortLogs(outBatches, "attr_key")
-	assert.Equal(t, newLogs(inBatch.ResourceLogs().At(8)), outBatches[0])
-	assert.Equal(t, newLogs(inBatch.ResourceLogs().At(0), inBatch.ResourceLogs().At(4)), outBatches[1])
-	assert.Equal(t, newLogs(inBatch.ResourceLogs().At(1), inBatch.ResourceLogs().At(5)), outBatches[2])
-	assert.Equal(t, newLogs(inBatch.ResourceLogs().At(2), inBatch.ResourceLogs().At(6)), outBatches[3])
-	assert.Equal(t, newLogs(inBatch.ResourceLogs().At(3), inBatch.ResourceLogs().At(7)), outBatches[4])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(8)), outBatches[0])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(0), expected.ResourceLogs().At(4)), outBatches[1])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(1), expected.ResourceLogs().At(5)), outBatches[2])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(2), expected.ResourceLogs().At(6)), outBatches[3])
+	assert.Equal(t, newLogs(expected.ResourceLogs().At(3), expected.ResourceLogs().At(7)), outBatches[4])
 }
 
 func newTraces(rss ...ptrace.ResourceSpans) ptrace.Traces {
