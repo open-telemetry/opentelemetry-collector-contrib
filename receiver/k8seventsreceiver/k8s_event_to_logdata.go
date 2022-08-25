@@ -35,8 +35,8 @@ const (
 // Only two types of events are created as of now.
 // For more info: https://docs.openshift.com/container-platform/4.9/rest_api/metadata_apis/event-core-v1.html
 var severityMap = map[string]plog.SeverityNumber{
-	"normal":  plog.SeverityNumberINFO,
-	"warning": plog.SeverityNumberWARN,
+	"normal":  plog.SeverityNumberInfo,
+	"warning": plog.SeverityNumberWarn,
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.

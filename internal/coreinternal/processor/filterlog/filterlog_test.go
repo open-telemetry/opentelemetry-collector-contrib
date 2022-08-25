@@ -128,14 +128,14 @@ func TestLogRecord_Matching_False(t *testing.T) {
 			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
-					Min: plog.SeverityNumberINFO,
+					Min: plog.SeverityNumberInfo,
 				},
 			},
 		},
 	}
 
 	lr := plog.NewLogRecord()
-	lr.SetSeverityNumber(plog.SeverityNumberTRACE)
+	lr.SetSeverityNumber(plog.SeverityNumberTrace)
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -188,7 +188,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 			properties: &filterconfig.MatchProperties{
 				Config: *createConfig(filterset.Regexp),
 				LogSeverityNumber: &filterconfig.LogSeverityNumberMatchProperties{
-					Min: plog.SeverityNumberDEBUG,
+					Min: plog.SeverityNumberDebug,
 				},
 			},
 		},
@@ -198,7 +198,7 @@ func TestLogRecord_Matching_True(t *testing.T) {
 	lr.Attributes().InsertString("abc", "def")
 	lr.Body().SetStringVal("AUTHENTICATION FAILED")
 	lr.SetSeverityText("debug")
-	lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
+	lr.SetSeverityNumber(plog.SeverityNumberDebug)
 
 	for _, tc := range testcases {
 		t.Run(tc.name, func(t *testing.T) {
