@@ -69,7 +69,8 @@ var _ observer.Observable = (*mockObserver)(nil)
 func TestMockedEndToEnd(t *testing.T) {
 	host, cfg := exampleCreatorFactory(t)
 	host.extensions = map[config.ComponentID]component.Extension{
-		config.NewComponentID("mock_observer"): &mockObserver{},
+		config.NewComponentID("mock_observer"):                      &mockObserver{},
+		config.NewComponentIDWithName("mock_observer", "with_name"): &mockObserver{},
 	}
 	dynCfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "1")]
 	factory := NewFactory()
@@ -90,8 +91,8 @@ func TestMockedEndToEnd(t *testing.T) {
 	defer shutdown()
 
 	require.Eventuallyf(t, func() bool {
-		return dyn.observerHandler.receiversByEndpointID.Size() == 1
-	}, 1*time.Second, 100*time.Millisecond, "expected 1 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
+		return dyn.observerHandler.receiversByEndpointID.Size() == 2
+	}, 1*time.Second, 100*time.Millisecond, "expected 2 receiver but got %v", dyn.observerHandler.receiversByEndpointID)
 
 	// Test that we can send metrics.
 	for _, receiver := range dyn.observerHandler.receiversByEndpointID.Values() {
@@ -126,7 +127,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	}
 
 	// TODO: Will have to rework once receivers are started asynchronously to Start().
-	assert.Len(t, mockConsumer.AllMetrics(), 1)
+	assert.Len(t, mockConsumer.AllMetrics(), 2)
 }
 
 func TestLoggingHost(t *testing.T) {

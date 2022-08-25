@@ -33,6 +33,10 @@ jobs:
             ~/go/pkg/mod
             ~/.cache/go-build
           key: loadtest-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        env:
+          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+          # Cache downloads for this workflow consistently run in under 2 minutes
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
       - name: Install Dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload

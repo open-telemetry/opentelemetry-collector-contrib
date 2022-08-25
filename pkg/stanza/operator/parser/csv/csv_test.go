@@ -65,14 +65,14 @@ func TestParserByteFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse([]byte("invalid"))
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "wrong number of fields")
+	require.Contains(t, err.Error(), "wrong number of fields: expected 3, found 1")
 }
 
 func TestParserInvalidType(t *testing.T) {

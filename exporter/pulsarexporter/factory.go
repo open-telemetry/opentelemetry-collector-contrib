@@ -26,7 +26,7 @@ import (
 const (
 	typeStr = "pulsar"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"

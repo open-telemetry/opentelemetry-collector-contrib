@@ -1,2 +1,2 @@
 type: file_input
-poll_interval: 1
+poll_interval: 1000000000
