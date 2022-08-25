@@ -10,7 +10,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.13.0
 	go.opentelemetry.io/collector v0.58.0
 	go.opentelemetry.io/collector/pdata v0.58.0
-	go.uber.org/zap v1.22.0
+	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 
 )
@@ -69,7 +69,7 @@ require (
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
-	google.golang.org/grpc v1.48.0 // indirect
+	google.golang.org/grpc v1.49.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
