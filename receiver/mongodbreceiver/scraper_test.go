@@ -557,10 +557,10 @@ func TestScraperScrape(t *testing.T) {
 			} else {
 				if strings.Contains(err.Error(), ";") {
 					// metrics with attributes use a map and errors can be returned in random order so sorting is required.
-					// The first error message would noe have a leading whitespace and hence split on "; "
+					// The first error message would not have a leading whitespace and hence split on "; "
 					actualErrs := strings.Split(err.Error(), "; ")
 					sort.Strings(actualErrs)
-					// The first error message would noe have a leading whitespace and hence split on "; "
+					// The first error message would not have a leading whitespace and hence split on "; "
 					expectedErrs := strings.Split(tc.expectedErr.Error(), "; ")
 					sort.Strings(expectedErrs)
 					require.Equal(t, actualErrs, expectedErrs)
