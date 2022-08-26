@@ -42,6 +42,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter

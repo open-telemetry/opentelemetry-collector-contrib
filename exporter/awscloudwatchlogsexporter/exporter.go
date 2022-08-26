@@ -84,7 +84,7 @@ func newCwLogsExporter(config config.Exporter, params component.ExporterCreateSe
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		context.TODO(),
 		params,
 		config,
@@ -190,7 +190,7 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord) (*clou
 		SeverityNumber:         int32(log.SeverityNumber()),
 		SeverityText:           log.SeverityText(),
 		DroppedAttributesCount: log.DroppedAttributesCount(),
-		Flags:                  log.Flags(),
+		Flags:                  log.FlagsStruct().AsRaw(),
 	}
 	if traceID := log.TraceID(); !traceID.IsEmpty() {
 		body.TraceID = traceID.HexString()
