@@ -52,7 +52,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 			// This gives us an unambiguous way of determining that a log record
 			// represents a SignalFx event, even if category is missing from the
 			// event.
-			attrs.InsertNull(splunk.SFxEventCategoryKey)
+			attrs.Insert(splunk.SFxEventCategoryKey, pcommon.NewValueEmpty())
 		}
 
 		for _, dim := range event.Dimensions {
@@ -79,7 +79,7 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 				default:
 					// If there is no property value, just insert a null to
 					// record that the key was present.
-					propMap.InsertNull(prop.Key)
+					propMap.Insert(prop.Key, pcommon.NewValueEmpty())
 				}
 			}
 

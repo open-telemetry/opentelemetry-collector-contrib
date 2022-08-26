@@ -71,7 +71,7 @@ func createMetricsExporter(
 
 	exp := newMetricsExporter(set, cfg)
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
