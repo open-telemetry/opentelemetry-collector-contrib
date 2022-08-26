@@ -204,7 +204,7 @@ func (b *metricBuilder) Build() (*pmetric.MetricSlice, int, int, error) {
 	}
 
 	for _, mf := range b.families {
-		ts, dts := mf.ToMetric(&b.metrics)
+		ts, dts := mf.toMetric(b.metrics)
 		b.numTimeseries += ts
 		b.droppedTimeseries += dts
 	}

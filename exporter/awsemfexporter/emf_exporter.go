@@ -104,7 +104,7 @@ func newEmfExporter(
 		return nil, err
 	}
 
-	exporter, err := exporterhelper.NewMetricsExporterWithContext(
+	exporter, err := exporterhelper.NewMetricsExporter(
 		context.TODO(),
 		set,
 		config,
