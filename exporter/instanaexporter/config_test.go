@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestConfig_Validate(t *testing.T) {
+func TestConfigValidate(t *testing.T) {
 	t.Run("Empty configuration", func(t *testing.T) {
 		c := &Config{}
 		err := c.Validate()
