@@ -573,8 +573,8 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res := pcommon.NewResource()
-	res.Attributes().Insert("host.name", pcommon.NewValueString("something"))
-	res.Attributes().Insert("pod.name", pcommon.NewValueString("something123"))
+	res.Attributes().UpsertString("host.name", "something")
+	res.Attributes().UpsertString("pod.name", "something123")
 
 	lr := plog.NewLogRecord()
 	lr.Body().SetStringVal("Payment succeeded")
@@ -582,7 +582,7 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	lr.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
 	lr.SetSeverityText("DEBUG")
 	lr.SetSeverityNumber(plog.SeverityNumberDebug)
-	lr.Attributes().Insert("payment_method", pcommon.NewValueString("credit_card"))
+	lr.Attributes().UpsertString("payment_method", "credit_card")
 
 	ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr.SetTimestamp(ts)
@@ -698,7 +698,7 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 	res := pcommon.NewResource()
-	res.Attributes().Insert("host.name", pcommon.NewValueString("something"))
+	res.Attributes().UpsertString("host.name", "something")
 
 	exp := newExporter(&Config{}, componenttest.NewNopTelemetrySettings())
 	entry, err := exp.convertLogToJSONEntry(lr, res)

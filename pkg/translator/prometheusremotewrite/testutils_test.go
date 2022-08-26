@@ -220,7 +220,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleVal(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().Insert(attributeKey, pcommon.NewValueString(attributeValue))
+	e.FilteredAttributes().UpsertString(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
