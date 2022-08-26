@@ -578,7 +578,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pmetric.ResourceMe
 	expectedAttributes.Update("service.name", pcommon.NewValueString("honor_labels_test"))
 	expectedAttributes.Update("service.instance.id", pcommon.NewValueString("hostname:8080"))
 	expectedAttributes.Update("net.host.port", pcommon.NewValueString("8080"))
-	expectedAttributes.Insert("net.host.name", pcommon.NewValueString("hostname"))
+	expectedAttributes.InsertString("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -665,7 +665,7 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pmetric.Resourc
 	wantAttributes.Update("service.name", pcommon.NewValueString("not-target1"))
 	wantAttributes.Update("service.instance.id", pcommon.NewValueString("relabeled-instance"))
 	wantAttributes.Update("net.host.port", pcommon.NewValueString(""))
-	wantAttributes.Insert("net.host.name", pcommon.NewValueString("relabeled-instance"))
+	wantAttributes.InsertString("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()

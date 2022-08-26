@@ -198,7 +198,7 @@ func newTestTracesWithAttributes() ptrace.Traces {
 		s.SetTraceID(pcommon.NewTraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
 		s.SetSpanID(pcommon.NewSpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
 		for j := 0; j < 5; j++ {
-			s.Attributes().Insert(fmt.Sprintf("k%d", j), pcommon.NewValueString(fmt.Sprintf("v%d", j)))
+			s.Attributes().UpsertString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
 		s.SetKind(ptrace.SpanKindServer)
 	}
