@@ -96,7 +96,7 @@ func (p *Processor) handleSummaryDataPoints(dps pmetric.SummaryDataPointSlice, m
 	}
 }
 
-func (p *Processor) callFunctions(ctx tqlmetrics.TransformContext) {
+func (p *Processor) callFunctions(ctx tql.TransformContext) {
 	for _, statement := range p.queries {
 		if statement.Condition(ctx) {
 			statement.Function(ctx)
