@@ -35,7 +35,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, _, _ := createTelemetry()
+	refLog, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.UpsertString("hello", "world")
@@ -381,237 +381,29 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "instrumentation_scope name",
+			name: "instrumentation_scope",
 			path: []tql.Field{
 				{
 					Name: "instrumentation_scope",
 				},
-				{
-					Name: "name",
-				},
 			},
-			orig:   "library",
-			newVal: "park",
+			orig:   refIS,
+			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				il.SetName("park")
+				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
 		},
 		{
-			name: "instrumentation_scope version",
-			path: []tql.Field{
-				{
-					Name: "instrumentation_scope",
-				},
-				{
-					Name: "version",
-				},
-			},
-			orig:   "version",
-			newVal: "next",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				il.SetVersion("next")
-			},
-		},
-		{
-			name: "resource attributes",
+			name: "resource",
 			path: []tql.Field{
 				{
 					Name: "resource",
 				},
-				{
-					Name: "attributes",
-				},
 			},
-			orig:   refLog.Attributes(),
-			newVal: newAttrs,
+			orig:   refResource,
+			newVal: pcommon.NewResource(),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Clear()
-				newAttrs.CopyTo(resource.Attributes())
-			},
-		},
-		{
-			name: "resource attributes string",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("str"),
-				},
-			},
-			orig:   "val",
-			newVal: "newVal",
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertString("str", "newVal")
-			},
-		},
-		{
-			name: "resource attributes bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bool"),
-				},
-			},
-			orig:   true,
-			newVal: false,
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBool("bool", false)
-			},
-		},
-		{
-			name: "resource attributes int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("int"),
-				},
-			},
-			orig:   int64(10),
-			newVal: int64(20),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertInt("int", 20)
-			},
-		},
-		{
-			name: "resource attributes float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("double"),
-				},
-			},
-			orig:   float64(1.2),
-			newVal: float64(2.4),
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertDouble("double", 2.4)
-			},
-		},
-		{
-			name: "resource attributes bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bytes"),
-				},
-			},
-			orig:   []byte{1, 3, 2},
-			newVal: []byte{2, 3, 4},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-			},
-		},
-		{
-			name: "resource attributes array string",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_str"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_str")
-				return val.SliceVal()
-			}(),
-			newVal: []string{"new"},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_str", newArrStr)
-			},
-		},
-		{
-			name: "resource attributes array bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bool"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_bool")
-				return val.SliceVal()
-			}(),
-			newVal: []bool{false},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bool", newArrBool)
-			},
-		},
-		{
-			name: "resource attributes array int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_int"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_int")
-				return val.SliceVal()
-			}(),
-			newVal: []int64{20},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_int", newArrInt)
-			},
-		},
-		{
-			name: "resource attributes array float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_float"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_float")
-				return val.SliceVal()
-			}(),
-			newVal: []float64{2.0},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_float", newArrFloat)
-			},
-		},
-		{
-			name: "resource attributes array bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bytes"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refLog.Attributes().Get("arr_bytes")
-				return val.SliceVal()
-			}(),
-			newVal: [][]byte{{9, 6, 4}},
-			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bytes", newArrBytes)
+				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}

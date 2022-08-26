@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/internal/tqlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
@@ -92,26 +93,9 @@ func ParsePath(val *tql.Path) (tql.GetSetter, error) {
 func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
-		if len(path) == 1 {
-			return accessResource(), nil
-		}
-		if path[1].Name == "attributes" {
-			mapKey := path[1].MapKey
-			if mapKey == nil {
-				return accessResourceAttributes(), nil
-			}
-			return accessResourceAttributesKey(mapKey), nil
-		}
+		return tqlcommon.ResourcePathGetSetter(path[1:])
 	case "instrumentation_scope":
-		if len(path) == 1 {
-			return accessInstrumentationScope(), nil
-		}
-		switch path[1].Name {
-		case "name":
-			return accessInstrumentationScopeName(), nil
-		case "version":
-			return accessInstrumentationScopeVersion(), nil
-		}
+		return tqlcommon.ScopePathGetSetter(path[1:])
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -149,82 +133,6 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
-}
-
-func accessResource() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newRes, ok := val.(pcommon.Resource); ok {
-				newRes.CopyTo(ctx.GetResource())
-			}
-		},
-	}
-}
-
-func accessResourceAttributes() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource().Attributes()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(ctx.GetResource().Attributes())
-			}
-		},
-	}
-}
-
-func accessResourceAttributesKey(mapKey *string) tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetResource().Attributes(), *mapKey)
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
-		},
-	}
-}
-
-func accessInstrumentationScope() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeName() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Name()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetName(str)
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeVersion() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Version()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetVersion(str)
-			}
-		},
-	}
 }
 
 func accessTimeUnixNano() tql.StandardGetSetter {
@@ -282,10 +190,10 @@ func accessSeverityText() tql.StandardGetSetter {
 func accessBody() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return getValue(ctx.GetItem().(plog.LogRecord).Body())
+			return tqlcommon.GetValue(ctx.GetItem().(plog.LogRecord).Body())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setValue(ctx.GetItem().(plog.LogRecord).Body(), val)
+			tqlcommon.SetValue(ctx.GetItem().(plog.LogRecord).Body(), val)
 		},
 	}
 }
@@ -306,10 +214,10 @@ func accessAttributes() tql.StandardGetSetter {
 func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey)
+			return tqlcommon.GetMapValue(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey)
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey, val)
+			tqlcommon.SetMapValue(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey, val)
 		},
 	}
 }
@@ -401,133 +309,6 @@ func accessStringSpanID() tql.StandardGetSetter {
 				}
 			}
 		},
-	}
-}
-
-func getAttr(attrs pcommon.Map, mapKey string) interface{} {
-	val, ok := attrs.Get(mapKey)
-	if !ok {
-		return nil
-	}
-	return getValue(val)
-}
-
-func getValue(val pcommon.Value) interface{} {
-	switch val.Type() {
-	case pcommon.ValueTypeString:
-		return val.StringVal()
-	case pcommon.ValueTypeBool:
-		return val.BoolVal()
-	case pcommon.ValueTypeInt:
-		return val.IntVal()
-	case pcommon.ValueTypeDouble:
-		return val.DoubleVal()
-	case pcommon.ValueTypeMap:
-		return val.MapVal()
-	case pcommon.ValueTypeSlice:
-		return val.SliceVal()
-	case pcommon.ValueTypeBytes:
-		return val.BytesVal().AsRaw()
-	}
-	return nil
-}
-
-func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		attrs.UpsertString(mapKey, v)
-	case bool:
-		attrs.UpsertBool(mapKey, v)
-	case int64:
-		attrs.UpsertInt(mapKey, v)
-	case float64:
-		attrs.UpsertDouble(mapKey, v)
-	case []byte:
-		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
-	case []string:
-		arr := pcommon.NewValueSlice()
-		for _, str := range v {
-			arr.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []bool:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []int64:
-		arr := pcommon.NewValueSlice()
-		for _, i := range v {
-			arr.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []float64:
-		arr := pcommon.NewValueSlice()
-		for _, f := range v {
-			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-		attrs.Upsert(mapKey, arr)
-	case [][]byte:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-		attrs.Upsert(mapKey, arr)
-	default:
-		// TODO(anuraaga): Support set of map type.
-	}
-}
-
-func setValue(value pcommon.Value, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		value.SetStringVal(v)
-	case bool:
-		value.SetBoolVal(v)
-	case int64:
-		value.SetIntVal(v)
-	case float64:
-		value.SetDoubleVal(v)
-	case []byte:
-		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
-	case []string:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, str := range v {
-			value.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-	case []bool:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-	case []int64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, i := range v {
-			value.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-	case []float64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, f := range v {
-			value.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-	case [][]byte:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-	default:
-		// TODO(anuraaga): Support set of map type.
 	}
 }
 
