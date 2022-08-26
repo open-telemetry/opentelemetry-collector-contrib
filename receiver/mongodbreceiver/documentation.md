@@ -23,6 +23,10 @@ These are the metrics available for this scraper.
 | **mongodb.index.access.count** | The number of times an index has been accessed. | {accesses} | Sum(Int) | <ul> <li>database</li> <li>collection</li> </ul> |
 | **mongodb.index.count** | The number of indexes. | {indexes} | Sum(Int) | <ul> <li>database</li> </ul> |
 | **mongodb.index.size** | Sum of the space allocated to all indexes in the database, including free index space. | By | Sum(Int) | <ul> <li>database</li> </ul> |
+| **mongodb.locks.acquire_count** | Number of times the lock was acquired in the specified mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| **mongodb.locks.acquire_wait_count** | Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| **mongodb.locks.deadlock_count** | Number of times the lock acquisitions encountered deadlocks. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
+| **mongodb.locks.time_acquiring_micros** | Cumulative wait time in microseconds for the lock acquisitions. | {count} | Sum(Int) | <ul> <li>database</li> <li>lock_type</li> <li>lock_mode</li> </ul> |
 | **mongodb.memory.usage** | The amount of memory used. | By | Sum(Int) | <ul> <li>database</li> <li>memory_type</li> </ul> |
 | **mongodb.network.io.receive** | The number of bytes received. | By | Sum(Int) | <ul> </ul> |
 | **mongodb.network.io.transmit** | The number of by transmitted. | By | Sum(Int) | <ul> </ul> |
@@ -56,6 +60,8 @@ metrics:
 | connection_type (type) | The status of the connection. | active, available, current |
 | database | The name of a database. |  |
 | global_lock_type | The type of lock. | read, write, total |
+| lock_mode | The mode of Lock | shared_lock_R, exclusive_lock_W, intent_shared_r, intent_exclusive_w |
+| lock_type | The Type of Lock | ParallelBatchWriterMode, ReplicationStateTransition, Global, Database, Collection, Mutex, Metadata, oplog |
 | memory_type (type) | The type of memory used. | resident, virtual |
 | operation | The MongoDB operation being counted. | insert, query, update, delete, getmore, command |
 | type | The result of a cache request. | hit, miss |
