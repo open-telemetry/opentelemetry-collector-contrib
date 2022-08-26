@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.uber.org/zap"
 )
 
@@ -102,4 +103,30 @@ func (c *Config) UnmarshalYAML(unmarshal func(interface{}) error) error {
 // MarshalYAML will marshal a config to YAML.
 func (c Config) MarshalYAML() (interface{}, error) {
 	return c.Builder, nil
+}
+
+func (c *Config) Unmarshal(component *confmap.Conf) error {
+	if !component.IsSet("type") {
+		return fmt.Errorf("missing required field 'type'")
+	}
+
+	typeInterface := component.Get("type")
+
+	typeString, ok := typeInterface.(string)
+	if !ok {
+		return fmt.Errorf("non-string type %T for field 'type'", typeInterface)
+	}
+
+	builderFunc, ok := DefaultRegistry.Lookup(typeString)
+	if !ok {
+		return fmt.Errorf("unsupported type '%s'", typeString)
+	}
+
+	builder := builderFunc()
+	if err := component.UnmarshalExact(builder); err != nil {
+		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
+	}
+
+	c.Builder = builder
+	return nil
 }

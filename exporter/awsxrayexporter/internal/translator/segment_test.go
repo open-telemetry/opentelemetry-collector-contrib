@@ -746,7 +746,7 @@ func TestFilteredAttributesMetadata(t *testing.T) {
 	attrs.InsertInt("int_value", 123)
 	attrs.InsertDouble("float_value", 456.78)
 	attrs.InsertBool("bool_value", false)
-	attrs.InsertNull("null_value")
+	attrs.Insert("null_value", pcommon.NewValueEmpty())
 
 	arrayValue := pcommon.NewValueSlice()
 	arrayValue.SliceVal().AppendEmpty().SetIntVal(12)

@@ -42,7 +42,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -89,13 +89,13 @@ func TestConsumeMetricsData(t *testing.T) {
 		},
 		Resource: &resourcepb.Resource{Type: "test"},
 		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge(
+			ocmetricstestutil.Gauge(
 				"test_gauge",
 				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
-					metricstestutil.Double(time.Now(), 123))),
+					ocmetricstestutil.Double(time.Now(), 123))),
 		},
 	}
 	tests := []struct {
@@ -199,10 +199,10 @@ func generateLargeBatch() *agentmetricspb.ExportMetricsServiceRequest {
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
 		md.Metrics = append(md.Metrics,
-			metricstestutil.Gauge(
+			ocmetricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{

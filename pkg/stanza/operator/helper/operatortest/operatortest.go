@@ -27,13 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
-// ConfigUnmarshalTest is used for testing golden configs
-type ConfigUnmarshalTest struct {
-	Name      string
-	Expect    interface{}
-	ExpectErr bool
-}
-
 func configFromFileViaYaml(file string, config interface{}) error {
 	bytes, err := os.ReadFile(file) // #nosec - configs load based on user specified directory
 	if err != nil {
@@ -77,7 +70,7 @@ func configFromFileViaMapstructure(file string, config interface{}) error {
 }
 
 // Run Unmarshalls yaml files and compares them against the expected.
-func (c ConfigUnmarshalTest) Run(t *testing.T, config interface{}) {
+func (c ConfigUnmarshalTest) RunDeprecated(t *testing.T, config interface{}) {
 	mapConfig := config
 	yamlConfig := config
 	yamlErr := configFromFileViaYaml(path.Join(".", "testdata", fmt.Sprintf("%s.yaml", c.Name)), yamlConfig)

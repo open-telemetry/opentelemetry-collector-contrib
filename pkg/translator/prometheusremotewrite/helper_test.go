@@ -476,6 +476,12 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			expected: map[string]*prompb.TimeSeries{},
 		},
 		{
+			desc:     "disable target info metric",
+			resource: testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			settings: Settings{DisableTargetInfo: true},
+			expected: map[string]*prompb.TimeSeries{},
+		},
+		{
 			desc:      "with resource",
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,

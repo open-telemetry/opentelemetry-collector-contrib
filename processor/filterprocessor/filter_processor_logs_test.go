@@ -196,19 +196,19 @@ var (
 	inLogForSeverityNumber = []logWithResource{
 		{
 			logNames:       []string{"log1"},
-			severityNumber: plog.SeverityNumberDEBUG,
+			severityNumber: plog.SeverityNumberDebug,
 		},
 		{
 			logNames:       []string{"log2"},
-			severityNumber: plog.SeverityNumberINFO,
+			severityNumber: plog.SeverityNumberInfo,
 		},
 		{
 			logNames:       []string{"log3"},
-			severityNumber: plog.SeverityNumberERROR,
+			severityNumber: plog.SeverityNumberError,
 		},
 		{
 			logNames:       []string{"log4"},
-			severityNumber: plog.SeverityNumberUNDEFINED,
+			severityNumber: plog.SeverityNumberUndefined,
 		},
 	}
 
