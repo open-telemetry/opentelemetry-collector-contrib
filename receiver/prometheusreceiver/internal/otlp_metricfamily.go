@@ -39,7 +39,7 @@ type metricFamily struct {
 	labelKeys         map[string]bool
 	labelKeysOrdered  []string
 	metadata          *scrape.MetricMetadata
-	groupOrders       map[string]int
+	groupOrders       []*metricGroup
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -74,7 +74,6 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *m
 		labelKeys:         make(map[string]bool),
 		labelKeysOrdered:  make([]string, 0),
 		metadata:          metadata,
-		groupOrders:       make(map[string]int),
 	}
 }
 
@@ -91,7 +90,6 @@ func (mf *metricFamily) updateLabelKeys(ls labels.Labels) {
 				mf.labelKeysOrdered = append(mf.labelKeysOrdered, "")
 				copy(mf.labelKeysOrdered[i+1:], mf.labelKeysOrdered[i:])
 				mf.labelKeysOrdered[i] = l.Name
-
 			}
 		}
 	}
@@ -120,7 +118,7 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest *pmetric.HistogramDataPointSlice) bool {
+func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetric.HistogramDataPointSlice) bool {
 	if !mg.hasCount || len(mg.complexValue) == 0 {
 		return false
 	}
@@ -179,7 +177,7 @@ func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, ns))
 }
 
-func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest *pmetric.SummaryDataPointSlice) bool {
+func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.SummaryDataPointSlice) bool {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
@@ -225,7 +223,7 @@ func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest *pmetric.S
 	return true
 }
 
-func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest *pmetric.NumberDataPointSlice) bool {
+func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric.NumberDataPointSlice) bool {
 	var startTsNanos pcommon.Timestamp
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
@@ -247,18 +245,16 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest *pmetri
 }
 
 func populateAttributes(orderedKeys []string, ls labels.Labels, dest pcommon.Map) {
-	src := ls.Map()
+	dest.EnsureCapacity(len(orderedKeys))
 	for _, key := range orderedKeys {
-		if src[key] == "" {
+		val := ls.Get(key)
+		if val == "" {
 			// empty label values should be omitted
 			continue
 		}
-		dest.InsertString(key, src[key])
+		dest.InsertString(key, val)
 	}
 }
-
-// Purposefully being referenced to avoid lint warnings about being "unused".
-var _ = (*metricFamily)(nil).updateLabelKeys
 
 func (mf *metricFamily) isCumulativeType() bool {
 	return mf.mtype == pmetric.MetricDataTypeSum ||
@@ -277,7 +273,7 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey string, ls labels.Label
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
-		mf.groupOrders[groupKey] = len(mf.groupOrders)
+		mf.groupOrders = append(mf.groupOrders, mg)
 	}
 	return mg
 }
@@ -316,16 +312,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	return nil
 }
 
-// getGroups to return groups in insertion order
-func (mf *metricFamily) getGroups() []*metricGroup {
-	groups := make([]*metricGroup, len(mf.groupOrders))
-	for k, v := range mf.groupOrders {
-		groups[v] = mf.groups[k]
-	}
-	return groups
-}
-
-func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
+func (mf *metricFamily) toMetric(metrics pmetric.MetricSlice) (int, int) {
 	metric := pmetric.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
@@ -339,8 +326,8 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 		histogram := metric.Histogram()
 		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
-		for _, mg := range mf.getGroups() {
-			if !mg.toDistributionPoint(mf.labelKeysOrdered, &hdpL) {
+		for _, mg := range mf.groupOrders {
+			if !mg.toDistributionPoint(mf.labelKeysOrdered, hdpL) {
 				mf.droppedTimeseries++
 			}
 		}
@@ -349,8 +336,8 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 	case pmetric.MetricDataTypeSummary:
 		summary := metric.Summary()
 		sdpL := summary.DataPoints()
-		for _, mg := range mf.getGroups() {
-			if !mg.toSummaryPoint(mf.labelKeysOrdered, &sdpL) {
+		for _, mg := range mf.groupOrders {
+			if !mg.toSummaryPoint(mf.labelKeysOrdered, sdpL) {
 				mf.droppedTimeseries++
 			}
 		}
@@ -361,8 +348,8 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
-		for _, mg := range mf.getGroups() {
-			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &sdpL) {
+		for _, mg := range mf.groupOrders {
+			if !mg.toNumberDataPoint(mf.labelKeysOrdered, sdpL) {
 				mf.droppedTimeseries++
 			}
 		}
@@ -372,8 +359,8 @@ func (mf *metricFamily) ToMetric(metrics *pmetric.MetricSlice) (int, int) {
 		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
-		for _, mg := range mf.getGroups() {
-			if !mg.toNumberDataPoint(mf.labelKeysOrdered, &gdpL) {
+		for _, mg := range mf.groupOrders {
+			if !mg.toNumberDataPoint(mf.labelKeysOrdered, gdpL) {
 				mf.droppedTimeseries++
 			}
 		}
