@@ -23,7 +23,6 @@ import (
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -35,12 +34,12 @@ import (
 func TestMetricsToOC(t *testing.T) {
 	sampleMetricData := testdata.GeneratMetricsAllTypesWithSampleDatapoints()
 	attrs := sampleMetricData.ResourceMetrics().At(0).Resource().Attributes()
-	attrs.Upsert(conventions.AttributeHostName, pcommon.NewValueString("host1"))
-	attrs.Upsert(conventions.AttributeProcessPID, pcommon.NewValueInt(123))
-	attrs.Upsert(occonventions.AttributeProcessStartTime, pcommon.NewValueString("2020-02-11T20:26:00Z"))
-	attrs.Upsert(conventions.AttributeTelemetrySDKLanguage, pcommon.NewValueString("cpp"))
-	attrs.Upsert(conventions.AttributeTelemetrySDKVersion, pcommon.NewValueString("v2.0.1"))
-	attrs.Upsert(occonventions.AttributeExporterVersion, pcommon.NewValueString("v1.2.0"))
+	attrs.UpsertString(conventions.AttributeHostName, "host1")
+	attrs.UpsertInt(conventions.AttributeProcessPID, 123)
+	attrs.UpsertString(occonventions.AttributeProcessStartTime, "2020-02-11T20:26:00Z")
+	attrs.UpsertString(conventions.AttributeTelemetrySDKLanguage, "cpp")
+	attrs.UpsertString(conventions.AttributeTelemetrySDKVersion, "v2.0.1")
+	attrs.UpsertString(occonventions.AttributeExporterVersion, "v1.2.0")
 
 	tests := []struct {
 		name     string
