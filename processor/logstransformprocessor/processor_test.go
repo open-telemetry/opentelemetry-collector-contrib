@@ -113,7 +113,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 			parsedMessages: []testLogMessage{
 				{
 					body:         baseMessage,
-					severity:     plog.SeverityNumberINFO,
+					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
 						"msg":  pcommon.NewValueString("this is a test message"),
@@ -128,7 +128,7 @@ func TestLogsTransformProcessor(t *testing.T) {
 				},
 				{
 					body:         baseMessage,
-					severity:     plog.SeverityNumberINFO,
+					severity:     plog.SeverityNumberInfo,
 					severityText: &infoSeverityText,
 					attributes: &map[string]pcommon.Value{
 						"msg":  pcommon.NewValueString("this is a test message"),
@@ -200,7 +200,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		log.SetTraceID(content.traceID)
 
 		if content.flags != uint32(0x00) {
-			log.SetFlags(content.flags)
+			log.FlagsStruct().SetIsSampled(content.flags&1 != 0)
 		}
 	}
 
