@@ -81,7 +81,7 @@ func createLogsProcessor(
 		logger: set.Logger,
 		config: pCfg,
 	}
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,

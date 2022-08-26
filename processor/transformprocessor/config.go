@@ -18,26 +18,20 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
-
-type SignalConfig struct {
-	Queries []string `mapstructure:"queries"`
-}
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs    SignalConfig `mapstructure:"logs"`
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
+	tqlconfig.Config `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)

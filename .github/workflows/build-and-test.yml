@@ -32,6 +32,10 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+          # Cache downloads for this workflow consistently run in under 1 minute
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -141,7 +145,7 @@ jobs:
         run: make checkdoc
       - name: Porto
         run: |
-          make goporto
+          make -j2 goporto
           git diff --exit-code || (echo 'Porto links are out of date, please run "make goporto" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
@@ -151,6 +155,9 @@ jobs:
         run: |
           make generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+      - name: Impi
+        run: |
+          make -j2 goimpi
       - name: MultimodVerify
         run: make multimod-verify
   unittest-matrix:

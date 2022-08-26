@@ -42,6 +42,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter
@@ -207,6 +208,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/tracegen

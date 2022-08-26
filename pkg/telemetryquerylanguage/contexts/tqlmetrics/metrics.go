@@ -198,7 +198,6 @@ func accessResource() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newRes, ok := val.(pcommon.Resource); ok {
-				ctx.GetResource().Attributes().Clear()
 				newRes.CopyTo(ctx.GetResource())
 			}
 		},
@@ -212,7 +211,6 @@ func accessResourceAttributes() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetResource().Attributes().Clear()
 				attrs.CopyTo(ctx.GetResource().Attributes())
 			}
 		},
@@ -404,22 +402,18 @@ func accessAttributes() tql.StandardGetSetter {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.NumberDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.NumberDataPoint).Attributes())
 				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.HistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes())
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
-					ctx.GetItem().(pmetric.SummaryDataPoint).Attributes().Clear()
 					attrs.CopyTo(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes())
 				}
 			}
@@ -594,13 +588,13 @@ func accessFlags() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags().AsRaw())
 			case pmetric.HistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags().AsRaw())
 			case pmetric.ExponentialHistogramDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags().AsRaw())
 			case pmetric.SummaryDataPoint:
-				return flagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags().AsRaw())
 			}
 			return nil
 		},
@@ -621,14 +615,7 @@ func accessFlags() tql.StandardGetSetter {
 	}
 }
 
-func flagsValue(flags pmetric.MetricDataPointFlagsStruct) int64 {
-	if flags.NoRecordedValue() {
-		return 1
-	}
-	return 0
-}
-
-func setFlagsValue(flags pmetric.MetricDataPointFlagsStruct, value int64) {
+func setFlagsValue(flags pmetric.MetricDataPointFlags, value int64) {
 	if value&1 != 0 {
 		flags.SetNoRecordedValue(true)
 	} else {

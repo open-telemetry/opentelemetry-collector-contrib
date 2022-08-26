@@ -151,7 +151,7 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 	input := "/aws/ecs/containerinsights/{ClusterName}/performance"
 
 	attrMap := pcommon.NewMap()
-	attrMap.InsertNull("ClusterName")
+	attrMap.Insert("ClusterName", pcommon.NewValueEmpty())
 
 	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
 

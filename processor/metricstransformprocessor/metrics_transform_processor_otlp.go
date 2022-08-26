@@ -15,6 +15,7 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -237,8 +238,7 @@ func matchAttrs(attrMatchers map[string]StringMatcher, attrs pcommon.Map) bool {
 	return true
 }
 
-// processOTLPMetrics process metrics using OTLP data model.
-func (mtp *metricsTransformProcessor) processOTLPMetrics(md pmetric.Metrics) (pmetric.Metrics, error) {
+func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedRMs := pmetric.NewResourceMetricsSlice()
 

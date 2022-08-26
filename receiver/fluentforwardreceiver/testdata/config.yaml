@@ -1,15 +1,1 @@
-receivers:
-  fluentforward:
-
-processors:
-  nop:
-
-exporters:
-  nop:
-
-service:
-  pipelines:
-    logs:
-      receivers: [fluentforward]
-      processors: [nop]
-      exporters: [nop]
+fluentforward:

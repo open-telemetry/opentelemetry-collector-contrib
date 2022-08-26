@@ -21,10 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/multierr"
 )
 
@@ -130,21 +129,20 @@ func TestValidate(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	require.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	cfg := factory.CreateDefaultConfig()
 
-	require.Equal(t, len(cfg.Receivers), 1)
+	sub, err := cm.Sub(config.NewComponentIDWithName(typeStr, "").String())
+	require.NoError(t, err)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.Username = "otelu"
 	expected.Password = "$BIGIP_PASSWORD"
 	expected.TLSSetting.InsecureSkipVerify = true
 
-	require.Equal(t, expected, cfg.Receivers[config.NewComponentID("bigip")])
+	require.Equal(t, expected, cfg)
 }
