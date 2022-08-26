@@ -304,9 +304,9 @@ func severityFromAlert(a model.Alert) plog.SeverityNumber {
 	// It may also be "INFORMATIONAL" for single-fire alerts (events)
 	switch a.Status {
 	case "OPEN":
-		return plog.SeverityNumberWARN
+		return plog.SeverityNumberWarn
 	default:
-		return plog.SeverityNumberINFO
+		return plog.SeverityNumberInfo
 	}
 }
 

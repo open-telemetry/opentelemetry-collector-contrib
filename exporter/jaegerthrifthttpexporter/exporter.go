@@ -39,7 +39,7 @@ func newTracesExporter(config *Config, params component.ExporterCreateSettings) 
 		settings: params.TelemetrySettings,
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		params,
 		config,

@@ -436,7 +436,7 @@ func CreateSentryExporter(config *Config, set component.ExporterCreateSettings) 
 		transport: transport,
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(),
 		set,
 		config,

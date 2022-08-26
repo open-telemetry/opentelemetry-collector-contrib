@@ -95,10 +95,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "severity_number",
 				},
 			},
-			orig:   int64(plog.SeverityNumberFATAL),
+			orig:   int64(plog.SeverityNumberFatal),
 			newVal: int64(3),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSeverityNumber(plog.SeverityNumberTRACE3)
+				log.SetSeverityNumber(plog.SeverityNumberTrace3)
 			},
 		},
 		{
@@ -134,10 +134,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(3),
-			newVal: int64(4),
+			orig:   int64(1),
+			newVal: int64(0),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetFlags(uint32(4))
+				log.FlagsStruct().SetIsSampled(false)
 			},
 		},
 		{
@@ -649,7 +649,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
-	log.SetSeverityNumber(plog.SeverityNumberFATAL)
+	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
 	log.Body().SetStringVal("body")
 	log.Attributes().UpsertString("str", "val")
@@ -685,7 +685,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 
 	log.SetDroppedAttributesCount(10)
 
-	log.SetFlags(uint32(3))
+	log.FlagsStruct().SetIsSampled(true)
 
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))
@@ -707,103 +707,103 @@ func Test_ParseEnum(t *testing.T) {
 	}{
 		{
 			name: "SEVERITY_NUMBER_UNSPECIFIED",
-			want: tql.Enum(plog.SeverityNumberUNDEFINED),
+			want: tql.Enum(plog.SeverityNumberUndefined),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE",
-			want: tql.Enum(plog.SeverityNumberTRACE),
+			want: tql.Enum(plog.SeverityNumberTrace),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE2",
-			want: tql.Enum(plog.SeverityNumberTRACE2),
+			want: tql.Enum(plog.SeverityNumberTrace2),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE3",
-			want: tql.Enum(plog.SeverityNumberTRACE3),
+			want: tql.Enum(plog.SeverityNumberTrace3),
 		},
 		{
 			name: "SEVERITY_NUMBER_TRACE4",
-			want: tql.Enum(plog.SeverityNumberTRACE4),
+			want: tql.Enum(plog.SeverityNumberTrace4),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG",
-			want: tql.Enum(plog.SeverityNumberDEBUG),
+			want: tql.Enum(plog.SeverityNumberDebug),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG2",
-			want: tql.Enum(plog.SeverityNumberDEBUG2),
+			want: tql.Enum(plog.SeverityNumberDebug2),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG3",
-			want: tql.Enum(plog.SeverityNumberDEBUG3),
+			want: tql.Enum(plog.SeverityNumberDebug3),
 		},
 		{
 			name: "SEVERITY_NUMBER_DEBUG4",
-			want: tql.Enum(plog.SeverityNumberDEBUG4),
+			want: tql.Enum(plog.SeverityNumberDebug4),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO",
-			want: tql.Enum(plog.SeverityNumberINFO),
+			want: tql.Enum(plog.SeverityNumberInfo),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO2",
-			want: tql.Enum(plog.SeverityNumberINFO2),
+			want: tql.Enum(plog.SeverityNumberInfo2),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO3",
-			want: tql.Enum(plog.SeverityNumberINFO3),
+			want: tql.Enum(plog.SeverityNumberInfo3),
 		},
 		{
 			name: "SEVERITY_NUMBER_INFO4",
-			want: tql.Enum(plog.SeverityNumberINFO4),
+			want: tql.Enum(plog.SeverityNumberInfo4),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN",
-			want: tql.Enum(plog.SeverityNumberWARN),
+			want: tql.Enum(plog.SeverityNumberWarn),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN2",
-			want: tql.Enum(plog.SeverityNumberWARN2),
+			want: tql.Enum(plog.SeverityNumberWarn2),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN3",
-			want: tql.Enum(plog.SeverityNumberWARN3),
+			want: tql.Enum(plog.SeverityNumberWarn3),
 		},
 		{
 			name: "SEVERITY_NUMBER_WARN4",
-			want: tql.Enum(plog.SeverityNumberWARN4),
+			want: tql.Enum(plog.SeverityNumberWarn4),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR",
-			want: tql.Enum(plog.SeverityNumberERROR),
+			want: tql.Enum(plog.SeverityNumberError),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR2",
-			want: tql.Enum(plog.SeverityNumberERROR2),
+			want: tql.Enum(plog.SeverityNumberError2),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR3",
-			want: tql.Enum(plog.SeverityNumberERROR3),
+			want: tql.Enum(plog.SeverityNumberError3),
 		},
 		{
 			name: "SEVERITY_NUMBER_ERROR4",
-			want: tql.Enum(plog.SeverityNumberERROR4),
+			want: tql.Enum(plog.SeverityNumberError4),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL",
-			want: tql.Enum(plog.SeverityNumberFATAL),
+			want: tql.Enum(plog.SeverityNumberFatal),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL2",
-			want: tql.Enum(plog.SeverityNumberFATAL2),
+			want: tql.Enum(plog.SeverityNumberFatal2),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL3",
-			want: tql.Enum(plog.SeverityNumberFATAL3),
+			want: tql.Enum(plog.SeverityNumberFatal3),
 		},
 		{
 			name: "SEVERITY_NUMBER_FATAL4",
-			want: tql.Enum(plog.SeverityNumberFATAL4),
+			want: tql.Enum(plog.SeverityNumberFatal4),
 		},
 	}
 	for _, tt := range tests {

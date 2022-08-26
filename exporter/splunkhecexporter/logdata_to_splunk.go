@@ -53,7 +53,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	if lr.SeverityText() != "" {
 		fields[severityTextKey] = lr.SeverityText()
 	}
-	if lr.SeverityNumber() != plog.SeverityNumberUNDEFINED {
+	if lr.SeverityNumber() != plog.SeverityNumberUndefined {
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 

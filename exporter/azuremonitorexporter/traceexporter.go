@@ -78,5 +78,5 @@ func newTracesExporter(config *Config, transportChannel transportChannel, set co
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(context.TODO(), set, config, exporter.onTraceData)
+	return exporterhelper.NewTracesExporter(context.TODO(), set, config, exporter.onTraceData)
 }
