@@ -158,10 +158,10 @@ func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon
 	// Record summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pcommon.NewValueString(strings.Join(toDelete, ",")))
+		attributes.InsertString(redactedKeys, strings.Join(toDelete, ","))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pcommon.NewValueInt(redactedSpanCount))
+		attributes.InsertInt(redactedKeyCount, redactedSpanCount)
 	}
 }
 
@@ -174,10 +174,10 @@ func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Ma
 	// Records summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pcommon.NewValueString(strings.Join(toBlock, ",")))
+		attributes.InsertString(maskedValues, strings.Join(toBlock, ","))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pcommon.NewValueInt(maskedSpanCount))
+		attributes.InsertInt(maskedValueCount, maskedSpanCount)
 	}
 }
 
