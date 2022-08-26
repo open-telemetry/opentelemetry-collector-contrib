@@ -28,29 +28,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type TransformContext struct {
+type transformContext struct {
 	span                 ptrace.Span
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 }
 
-func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
-	return TransformContext{
+func NewTransformContext(span ptrace.Span, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) tql.TransformContext {
+	return transformContext{
 		span:                 span,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 	}
 }
 
-func (ctx TransformContext) GetItem() interface{} {
+func (ctx transformContext) GetItem() interface{} {
 	return ctx.span
 }
 
-func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+func (ctx transformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return ctx.instrumentationScope
 }
 
-func (ctx TransformContext) GetResource() pcommon.Resource {
+func (ctx transformContext) GetResource() pcommon.Resource {
 	return ctx.resource
 }
 
