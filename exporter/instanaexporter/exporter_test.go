@@ -47,7 +47,11 @@ func TestPushConvertedDefaultTraces(t *testing.T) {
 		componenttest.NewNopExporterCreateSettings())
 	assert.NoError(t, err)
 
-	err = instanaExporter.pushConvertedTraces(context.Background(), testutils.TestTraces.Clone())
+	ctx := context.Background()
+	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = instanaExporter.pushConvertedTraces(ctx, testutils.TestTraces.Clone())
 	assert.NoError(t, err)
 }
 
@@ -71,7 +75,11 @@ func TestPushConvertedSimpleTraces(t *testing.T) {
 		componenttest.NewNopExporterCreateSettings())
 	assert.NoError(t, err)
 
-	err = instanaExporter.pushConvertedTraces(context.Background(), simpleTraces())
+	ctx := context.Background()
+	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+	assert.NoError(t, err)
+
+	err = instanaExporter.pushConvertedTraces(ctx, simpleTraces())
 	assert.NoError(t, err)
 }
 

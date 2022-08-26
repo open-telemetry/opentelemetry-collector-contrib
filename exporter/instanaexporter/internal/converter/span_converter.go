@@ -72,7 +72,7 @@ func (c *SpanConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.Sp
 
 		instanaSpan, err := model.ConvertPDataSpanToInstanaSpan(fromS, otelSpan, serviceName, attributes)
 		if err != nil {
-			c.logger.Debug(fmt.Sprintf("Error converting Open Telemetry span to Instana span: %s", err.Error()))
+			c.logger.Warn(fmt.Sprintf("Error converting Open Telemetry span to Instana span: %s", err.Error()))
 			continue
 		}
 

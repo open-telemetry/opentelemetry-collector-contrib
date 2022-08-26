@@ -29,20 +29,17 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/backend"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/otlptext"
 )
 
 type instanaExporter struct {
-	config          *Config
-	client          *http.Client
-	tracesMarshaler ptrace.Marshaler
-	settings        component.TelemetrySettings
-	userAgent       string
+	config    *Config
+	client    *http.Client
+	settings  component.TelemetrySettings
+	userAgent string
 }
 
 func (e *instanaExporter) start(_ context.Context, host component.Host) error {
@@ -55,17 +52,6 @@ func (e *instanaExporter) start(_ context.Context, host component.Host) error {
 }
 
 func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Traces) error {
-	e.settings.Logger.Info("TracesExporter", zap.Int("#spans", td.SpanCount()))
-	if !e.settings.Logger.Core().Enabled(zapcore.DebugLevel) {
-		return nil
-	}
-
-	buf, err := e.tracesMarshaler.MarshalTraces(td)
-	if err != nil {
-		return err
-	}
-	e.settings.Logger.Debug(string(buf))
-
 	converter := converter.NewConvertAllConverter(e.settings.Logger)
 	spans := make([]model.Span, 0)
 
@@ -97,9 +83,6 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	req, err := bundle.Marshal()
-
-	e.settings.Logger.Debug(string(req))
-
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -126,18 +109,15 @@ func newInstanaExporter(cfg config.Exporter, set component.ExporterCreateSetting
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
 	return &instanaExporter{
-		config:          iCfg,
-		settings:        set.TelemetrySettings,
-		tracesMarshaler: otlptext.NewTextTracesMarshaler(),
-		userAgent:       userAgent,
+		config:    iCfg,
+		settings:  set.TelemetrySettings,
+		userAgent: userAgent,
 	}, nil
 }
 
 func (e *instanaExporter) export(ctx context.Context, url string, header map[string]string, request []byte) error {
 	url = strings.TrimSuffix(url, "/") + "/bundle"
-
 	e.settings.Logger.Debug("Preparing to make HTTP request", zap.String("url", url))
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(request))
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -152,7 +132,7 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make an HTTP request: %w", err)
+		return fmt.Errorf("failed to make a HTTP request: %w", err)
 	}
 
 	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
