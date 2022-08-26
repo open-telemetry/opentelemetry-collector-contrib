@@ -25,32 +25,42 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type MetricTransformContext struct {
-	DataPoint            interface{}
-	Metric               pmetric.Metric
-	Metrics              pmetric.MetricSlice
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+type TransformContext struct {
+	dataPoint            interface{}
+	metric               pmetric.Metric
+	metrics              pmetric.MetricSlice
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
 }
 
-func (ctx MetricTransformContext) GetItem() interface{} {
-	return ctx.DataPoint
+func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		dataPoint:            dataPoint,
+		metric:               metric,
+		metrics:              metrics,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
-func (ctx MetricTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+func (ctx TransformContext) GetItem() interface{} {
+	return ctx.dataPoint
 }
 
-func (ctx MetricTransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.instrumentationScope
 }
 
-func (ctx MetricTransformContext) GetMetric() pmetric.Metric {
-	return ctx.Metric
+func (ctx TransformContext) GetResource() pcommon.Resource {
+	return ctx.resource
 }
 
-func (ctx MetricTransformContext) GetMetrics() pmetric.MetricSlice {
-	return ctx.Metrics
+func (ctx TransformContext) GetMetric() pmetric.Metric {
+	return ctx.metric
+}
+
+func (ctx TransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.metrics
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
@@ -167,11 +177,11 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 func accessMetric() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric()
+			return ctx.(TransformContext).GetMetric()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.(MetricTransformContext).GetMetric())
+				newMetric.CopyTo(ctx.(TransformContext).GetMetric())
 			}
 		},
 	}
@@ -180,11 +190,11 @@ func accessMetric() tql.StandardGetSetter {
 func accessMetricName() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Name()
+			return ctx.(TransformContext).GetMetric().Name()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetName(str)
+				ctx.(TransformContext).GetMetric().SetName(str)
 			}
 		},
 	}
@@ -193,11 +203,11 @@ func accessMetricName() tql.StandardGetSetter {
 func accessMetricDescription() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Description()
+			return ctx.(TransformContext).GetMetric().Description()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetDescription(str)
+				ctx.(TransformContext).GetMetric().SetDescription(str)
 			}
 		},
 	}
@@ -206,11 +216,11 @@ func accessMetricDescription() tql.StandardGetSetter {
 func accessMetricUnit() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Unit()
+			return ctx.(TransformContext).GetMetric().Unit()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetUnit(str)
+				ctx.(TransformContext).GetMetric().SetUnit(str)
 			}
 		},
 	}
@@ -219,7 +229,7 @@ func accessMetricUnit() tql.StandardGetSetter {
 func accessMetricType() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.(MetricTransformContext).GetMetric().DataType())
+			return int64(ctx.(TransformContext).GetMetric().DataType())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
@@ -231,7 +241,7 @@ func accessMetricType() tql.StandardGetSetter {
 func accessMetricAggTemporality() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(MetricTransformContext).GetMetric()
+			metric := ctx.(TransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return int64(metric.Sum().AggregationTemporality())
@@ -244,7 +254,7 @@ func accessMetricAggTemporality() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
-				metric := ctx.(MetricTransformContext).GetMetric()
+				metric := ctx.(TransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
@@ -261,7 +271,7 @@ func accessMetricAggTemporality() tql.StandardGetSetter {
 func accessMetricIsMonotonic() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(MetricTransformContext).GetMetric()
+			metric := ctx.(TransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return metric.Sum().IsMonotonic()
@@ -270,7 +280,7 @@ func accessMetricIsMonotonic() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.(MetricTransformContext).GetMetric()
+				metric := ctx.(TransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)

@@ -27,22 +27,30 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type LogTransformContext struct {
-	Log                  plog.LogRecord
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+type TransformContext struct {
+	logRecord            plog.LogRecord
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
 }
 
-func (ctx LogTransformContext) GetItem() interface{} {
-	return ctx.Log
+func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		logRecord:            logRecord,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
-func (ctx LogTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+func (ctx TransformContext) GetItem() interface{} {
+	return ctx.logRecord
 }
 
-func (ctx LogTransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.instrumentationScope
+}
+
+func (ctx TransformContext) GetResource() pcommon.Resource {
+	return ctx.resource
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
