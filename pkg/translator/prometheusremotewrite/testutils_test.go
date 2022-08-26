@@ -412,16 +412,6 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	return metric
 }
 
-func getResource(resources map[string]pcommon.Value) pcommon.Resource {
-	resource := pcommon.NewResource()
-
-	for k, v := range resources {
-		resource.Attributes().Upsert(k, v)
-	}
-
-	return resource
-}
-
 func getBucketBoundsData(values []float64) []bucketBoundsData {
 	var b []bucketBoundsData
 
