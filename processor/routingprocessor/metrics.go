@@ -133,10 +133,10 @@ func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metric
 	for _, e := range exporters {
 		errs = multierr.Append(errs, e.ConsumeMetrics(ctx, m))
 	}
-	return nil
+	return errs
 }
 
-func (_ *metricsProcessor) Capabilities() consumer.Capabilities {
+func (p *metricsProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

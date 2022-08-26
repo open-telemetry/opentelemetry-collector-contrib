@@ -133,10 +133,10 @@ func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) 
 	for _, e := range exporters {
 		errs = multierr.Append(errs, e.ConsumeTraces(ctx, t))
 	}
-	return nil
+	return errs
 }
 
-func (_ *tracesProcessor) Capabilities() consumer.Capabilities {
+func (p *tracesProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 

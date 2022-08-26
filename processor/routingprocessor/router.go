@@ -24,9 +24,8 @@ import (
 )
 
 var (
-	errDefaultExporterNotFound      = errors.New("default exporter not found")
-	errExporterNotFound             = errors.New("exporter not found")
-	errNoExportersAfterRegistration = errors.New("provided configuration resulted in no exporter available to accept data")
+	errDefaultExporterNotFound = errors.New("default exporter not found")
+	errExporterNotFound        = errors.New("exporter not found")
 )
 
 // router registers exporters and default exporters for an exporter. router can

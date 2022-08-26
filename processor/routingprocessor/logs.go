@@ -133,13 +133,13 @@ func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	for _, e := range exporters {
 		errs = multierr.Append(errs, e.ConsumeLogs(ctx, l))
 	}
+	return errs
+}
+
+func (p *logProcessor) Shutdown(context.Context) error {
 	return nil
 }
 
-func (_ *logProcessor) Shutdown(context.Context) error {
-	return nil
-}
-
-func (_ *logProcessor) Capabilities() consumer.Capabilities {
+func (p *logProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
