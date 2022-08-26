@@ -19,10 +19,10 @@ import (
 	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 
 var defaultExporterLabels = model.LabelSet{"exporter": "OTLP"}
 
-func convertAttributesAndMerge(logger *zap.Logger, logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
+func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
 	out := defaultExporterLabels
 
 	// get the hint from the log attributes, not from the resource

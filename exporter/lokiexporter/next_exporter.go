@@ -24,13 +24,13 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
 )
 
 type nextLokiExporter struct {
@@ -122,7 +122,7 @@ func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) 
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				mergedLabels := convertAttributesAndMerge(logger, log.Attributes(), resource.Attributes())
+				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				// remove the attributes that were promoted to labels
 				removeAttributes(log.Attributes(), mergedLabels)
 				removeAttributes(resource.Attributes(), mergedLabels)

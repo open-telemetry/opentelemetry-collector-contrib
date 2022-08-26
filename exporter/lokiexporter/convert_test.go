@@ -20,7 +20,6 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.uber.org/zap"
 )
 
 func TestConvertAttributesAndMerge(t *testing.T) {
@@ -105,7 +104,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			out := convertAttributesAndMerge(zap.NewNop(), tC.logAttrs, tC.resAttrs)
+			out := convertAttributesAndMerge(tC.logAttrs, tC.resAttrs)
 			assert.Equal(t, tC.expected, out)
 		})
 	}
