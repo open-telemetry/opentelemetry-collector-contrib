@@ -17,6 +17,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/config"
 )
@@ -64,21 +65,25 @@ type Config struct {
 
 // Validate checks if the processor configuration is valid.
 func (c *Config) Validate() error {
+	// validate that there's at least one item in the table
+	if len(c.Table) == 0 {
+		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
+	}
+
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
-		if len(item.Value) == 0 {
+		if len(item.Value) == 0 && len(item.Expression) == 0 {
 			return fmt.Errorf("invalid (empty) route : %w", errEmptyRoute)
+		}
+
+		if len(item.Value) != 0 && len(item.Expression) != 0 {
+			return fmt.Errorf("both expression and value provided")
 		}
 
 		if len(item.Exporters) == 0 {
 			return fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
 		}
-	}
-
-	// validate that there's at least one item in the table
-	if len(c.Table) == 0 {
-		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
 	}
 
 	// we also need a "FromAttribute" value
@@ -107,12 +112,56 @@ const (
 
 // RoutingTableItem specifies how data should be routed to the different exporters
 type RoutingTableItem struct {
-	// Value represents a possible value for the field specified under FromAttribute. Required.
+	// Value represents a possible value for the field specified under FromAttribute.
 	Value string `mapstructure:"value"`
+
+	// Expression is a TQL condition / query on which signals routing is based.
+	Expression string `mapstructure:"expression"`
 
 	// Exporters contains the list of exporters to use when the value from the FromAttribute field matches this table item.
 	// When no exporters are specified, the ones specified under DefaultExporters are used, if any.
 	// The routing processor will fail upon the first failure from these exporters.
 	// Optional.
 	Exporters []string `mapstructure:"exporters"`
+}
+
+// rewriteRoutingItemsToTQL rewrites routing table entries based on resource
+// attributes routing to TQL.
+func rewriteRoutingEntriesToTQL(cfg *Config) Config {
+	if cfg.AttributeSource != resourceAttributeSource {
+		return *cfg
+	}
+	table := make([]RoutingTableItem, 0)
+	for _, e := range cfg.Table {
+		if e.Expression != "" {
+			table = append(table, e)
+			continue
+		}
+		var s strings.Builder
+		if cfg.DropRoutingResourceAttribute {
+			s.WriteString(
+				fmt.Sprintf(
+					"delete_key(resource.attributes, \"%s\")",
+					cfg.FromAttribute,
+				),
+			)
+		} else {
+			s.WriteString("route()")
+		}
+		s.WriteString(
+			fmt.Sprintf(
+				" where resource.attributes[\"%s\"] == \"%s\"",
+				cfg.FromAttribute,
+				e.Value,
+			),
+		)
+		table = append(table, RoutingTableItem{
+			Expression: s.String(),
+			Exporters:  e.Exporters,
+		})
+	}
+	return Config{
+		DefaultExporters: cfg.DefaultExporters,
+		Table:            table,
+	}
 }

@@ -69,7 +69,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	// verify
-	assert.Contains(t, exp.router.exporters["acme"], otlpExp)
+	assert.Contains(t, exp.router.getExporters("acme"), otlpExp)
 }
 
 func TestTraces_InvalidExporter(t *testing.T) {
@@ -332,6 +332,69 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 	v, ok := attrs.Get("attr")
 	assert.True(t, ok, "non-routing attributes shouldn't have been dropped")
 	assert.Equal(t, "acme", v.StringVal())
+}
+
+func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
+	defaultExp := &mockTracesExporter{}
+	tExp := &mockTracesExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.TracesDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
+				},
+			}
+		},
+	}
+
+	exp := newTracesProcessor(zap.NewNop(), &Config{
+		FromAttribute:    "X-Tenant",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 3`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+
+	tr := ptrace.NewTraces()
+
+	rl := tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().UpsertInt("value", 1)
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span")
+
+	rl = tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().UpsertInt("value", 2)
+	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span1")
+
+	rl = tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().UpsertInt("value", 4)
+	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span2")
+
+	ctx := context.Background()
+	require.NoError(t, exp.Start(ctx, host))
+	require.NoError(t, exp.ConsumeTraces(ctx, tr))
+
+	// The numbers below stem from the fact that data is routed and grouped
+	// per resource attribute which is used for routing.
+	// Hence the first 2 traces are grouped together under one ptrace.Traces.
+	assert.Len(t, defaultExp.AllTraces(), 1,
+		"one trace should be routed to default exporter",
+	)
+	assert.Equal(t, defaultExp.AllTraces()[0].SpanCount(), 1)
+
+	assert.Len(t, tExp.AllTraces(), 1,
+		"one trace should be routed to non default exporter",
+	)
+	assert.Equal(t, tExp.AllTraces()[0].SpanCount(), 2)
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {

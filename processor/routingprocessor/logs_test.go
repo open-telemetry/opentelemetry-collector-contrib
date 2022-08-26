@@ -273,6 +273,65 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	)
 }
 
+func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
+	defaultExp := &mockLogsExporter{}
+	lExp := &mockLogsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.LogsDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
+				},
+			}
+		},
+	}
+
+	exp := newLogProcessor(zap.NewNop(), &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], ".*cme") == true`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+
+	l := plog.NewLogs()
+
+	rl := l.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	rl = l.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	rl = l.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
+	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+
+	ctx := context.Background()
+	require.NoError(t, exp.Start(ctx, host))
+	require.NoError(t, exp.ConsumeLogs(ctx, l))
+
+	// The numbers below stem from the fact that data is routed and grouped
+	// per resource attribute which is used for routing.
+	// Hence the first 2 metrics are grouped together under one plog.Logs.
+	assert.Len(t, defaultExp.AllLogs(), 1,
+		"one log should be routed to default exporter",
+	)
+	assert.Equal(t, defaultExp.AllLogs()[0].LogRecordCount(), 1)
+
+	assert.Len(t, lExp.AllLogs(), 1,
+		"one log should be routed to non default exporter",
+	)
+	assert.Equal(t, lExp.AllLogs()[0].LogRecordCount(), 2)
+
+}
+
 type mockLogsExporter struct {
 	mockComponent
 	consumertest.LogsSink

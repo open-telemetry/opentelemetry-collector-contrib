@@ -331,3 +331,70 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 
 	runBenchmark(b, cfg)
 }
+
+func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T) {
+	defaultExp := &mockMetricsExporter{}
+	mExp := &mockMetricsExporter{}
+
+	host := &mockHost{
+		Host: componenttest.NewNopHost(),
+		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
+			return map[config.DataType]map[config.ComponentID]component.Exporter{
+				config.MetricsDataType: {
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): mExp,
+				},
+			}
+		},
+	}
+
+	exp := newMetricProcessor(zap.NewNop(), &Config{
+		FromAttribute:    "X-Tenant",
+		AttributeSource:  resourceAttributeSource,
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Expression: `route() where resource.attributes["value"] == true`,
+				Exporters:  []string{"otlp/2"},
+			},
+		},
+	})
+
+	m := pmetric.NewMetrics()
+
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().UpsertBool("value", false)
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("cpu")
+
+	rm = m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().UpsertBool("value", true)
+	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("cpu_system")
+
+	rm = m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().UpsertBool("value", false)
+	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("cpu_idle")
+
+	ctx := context.Background()
+	require.NoError(t, exp.Start(ctx, host))
+	require.NoError(t, exp.ConsumeMetrics(ctx, m))
+
+	// The numbers below stem from the fact that data is routed and grouped
+	// per resource attribute which is used for routing.
+	// Hence the first 2 metrics are grouped together under one pmetric.Metrics.
+	assert.Len(t, defaultExp.AllMetrics(), 1,
+		"one metric should be routed to default exporter",
+	)
+	assert.Equal(t, defaultExp.AllMetrics()[0].MetricCount(), 2)
+
+	assert.Len(t, mExp.AllMetrics(), 1,
+		"one metric should be routed to non default exporter",
+	)
+	assert.Equal(t, mExp.AllMetrics()[0].MetricCount(), 1)
+
+}

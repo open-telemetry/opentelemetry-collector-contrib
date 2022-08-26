@@ -20,30 +20,36 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 )
 
 var _ component.TracesProcessor = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
 	logger *zap.Logger
-	config *Config
+	config Config
 
 	extractor extractor
 	router    router[component.TracesExporter]
 }
 
-func newTracesProcessor(logger *zap.Logger, cfg config.Processor) *tracesProcessor {
-	oCfg := cfg.(*Config)
+func newTracesProcessor(logger *zap.Logger, config config.Processor) *tracesProcessor {
+	cfg := rewriteRoutingEntriesToTQL(config.(*Config))
 
 	return &tracesProcessor{
 		logger: logger,
-		config: oCfg,
-
-		extractor: newExtractor(oCfg.FromAttribute, logger),
-		router:    newRouter[component.TracesExporter](*oCfg, logger),
+		config: cfg,
+		router: newRouter[component.TracesExporter](
+			cfg.Table,
+			cfg.DefaultExporters,
+			logger,
+		),
+		extractor: newExtractor(cfg.FromAttribute, logger),
 	}
 }
 
@@ -56,56 +62,62 @@ func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
 }
 
 func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) error {
-	var errs error
-	switch p.config.AttributeSource {
-	case resourceAttributeSource:
-		errs = multierr.Append(errs, p.route(ctx, t))
-	case contextAttributeSource:
-		fallthrough
-	default:
-		errs = multierr.Append(errs, p.routeForContext(ctx, t))
-	}
 	// TODO: determine the proper action when errors happen
-	return errs
+	if p.config.FromAttribute == "" {
+		err := p.route(ctx, t)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	err := p.routeForContext(ctx, t)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
-	// routingEntry is used to group ptrace.ResourceSpans that are routed to
-	// the same set of exporters.
-	// This way we're not ending up with all the logs split up which would cause
-	// higher CPU usage.
+	// groups is used to group ptrace.ResourceSpans that are routed to
+	// the same set of exporters. This way we're not ending up with all the
+	// logs split up which would cause higher CPU usage.
 	groups := map[string]struct {
 		exporters []component.TracesExporter
 		resSpans  ptrace.ResourceSpansSlice
 	}{}
 
 	var errs error
-	resSpansSlice := t.ResourceSpans()
-	for i := 0; i < resSpansSlice.Len(); i++ {
-		resSpans := resSpansSlice.At(i)
 
-		attrValue := p.extractor.extractAttrFromResource(resSpans.Resource())
-		exp := p.router.defaultExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := p.router.exporters[attrValue]; ok {
-			exp = e
-			if p.config.DropRoutingResourceAttribute {
-				resSpans.Resource().Attributes().Remove(p.config.FromAttribute)
+	for i := 0; i < t.ResourceSpans().Len(); i++ {
+		rspans := t.ResourceSpans().At(i)
+		stx := tqltraces.NewTransformContext(
+			ptrace.Span{},
+			pcommon.InstrumentationScope{},
+			rspans.Resource(),
+		)
+
+		for key, route := range p.router.routes {
+			exporters := p.router.defaultExporters
+			var gKey string
+			if route.expression.Condition(stx) {
+				route.expression.Function(stx)
+				exporters = route.exporters
+				gKey = key
 			}
-		}
 
-		if rEntry, ok := groups[attrValue]; ok {
-			resSpans.MoveTo(rEntry.resSpans.AppendEmpty())
-		} else {
-			newResSpans := ptrace.NewResourceSpansSlice()
-			resSpans.MoveTo(newResSpans.AppendEmpty())
+			if g, ok := groups[gKey]; ok {
+				rspans.MoveTo(g.resSpans.AppendEmpty())
+			} else {
+				newResSpans := ptrace.NewResourceSpansSlice()
+				rspans.MoveTo(newResSpans.AppendEmpty())
 
-			groups[attrValue] = struct {
-				exporters []component.TracesExporter
-				resSpans  ptrace.ResourceSpansSlice
-			}{
-				exporters: exp,
-				resSpans:  newResSpans,
+				groups[gKey] = struct {
+					exporters []component.TracesExporter
+					resSpans  ptrace.ResourceSpansSlice
+				}{
+					exporters: exporters,
+					resSpans:  newResSpans,
+				}
 			}
 		}
 	}
@@ -124,10 +136,7 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {
 	value := p.extractor.extractFromContext(ctx)
-	exporters, ok := p.router.exporters[value]
-	if !ok {
-		exporters = p.router.defaultExporters
-	}
+	exporters := p.router.getExporters(value)
 
 	var errs error
 	for _, e := range exporters {

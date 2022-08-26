@@ -20,30 +20,36 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqllogs"
 )
 
 var _ component.LogsProcessor = (*logProcessor)(nil)
 
 type logProcessor struct {
 	logger *zap.Logger
-	config *Config
+	config Config
 
 	extractor extractor
 	router    router[component.LogsExporter]
 }
 
-func newLogProcessor(logger *zap.Logger, cfg config.Processor) *logProcessor {
-	oCfg := cfg.(*Config)
+func newLogProcessor(logger *zap.Logger, config config.Processor) *logProcessor {
+	cfg := rewriteRoutingEntriesToTQL(config.(*Config))
 
 	return &logProcessor{
 		logger: logger,
-		config: oCfg,
-
-		extractor: newExtractor(oCfg.FromAttribute, logger),
-		router:    newRouter[component.LogsExporter](*oCfg, logger),
+		config: cfg,
+		router: newRouter[component.LogsExporter](
+			cfg.Table,
+			cfg.DefaultExporters,
+			logger,
+		),
+		extractor: newExtractor(cfg.FromAttribute, logger),
 	}
 }
 
@@ -55,18 +61,19 @@ func (p *logProcessor) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (p *logProcessor) ConsumeLogs(ctx context.Context, tl plog.Logs) error {
-	var errs error
-	switch p.config.AttributeSource {
-	case resourceAttributeSource:
-		errs = multierr.Append(errs, p.route(ctx, tl))
-	case contextAttributeSource:
-		fallthrough
-	default:
-		errs = multierr.Append(errs, p.routeForContext(ctx, tl))
+func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
+	if p.config.FromAttribute == "" {
+		err := p.route(ctx, l)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
-	// TODO: determine the proper action when errors happen
-	return errs
+	err := p.routeForContext(ctx, l)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
@@ -80,32 +87,32 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	}{}
 	var errs error
 
-	resLogsSlice := l.ResourceLogs()
-	for i := 0; i < resLogsSlice.Len(); i++ {
-		resLogs := resLogsSlice.At(i)
+	for i := 0; i < l.ResourceLogs().Len(); i++ {
+		rlogs := l.ResourceLogs().At(i)
+		ltx := tqllogs.NewTransformContext(plog.LogRecord{}, pcommon.InstrumentationScope{}, rlogs.Resource())
 
-		attrValue := p.extractor.extractAttrFromResource(resLogs.Resource())
-		exp := p.router.defaultExporters
-		// If we have an exporter list defined for that attribute value then use it.
-		if e, ok := p.router.exporters[attrValue]; ok {
-			exp = e
-			if p.config.DropRoutingResourceAttribute {
-				resLogs.Resource().Attributes().Remove(p.config.FromAttribute)
+		for key, route := range p.router.routes {
+			exp := p.router.defaultExporters
+			var gKey string
+			if route.expression.Condition(ltx) {
+				route.expression.Function(ltx)
+				exp = route.exporters
+				gKey = key
 			}
-		}
 
-		if rEntry, ok := groups[attrValue]; ok {
-			resLogs.MoveTo(rEntry.resLogs.AppendEmpty())
-		} else {
-			newResLogs := plog.NewResourceLogsSlice()
-			resLogs.MoveTo(newResLogs.AppendEmpty())
+			if g, ok := groups[gKey]; ok {
+				rlogs.MoveTo(g.resLogs.AppendEmpty())
+			} else {
+				newResLogs := plog.NewResourceLogsSlice()
+				rlogs.MoveTo(newResLogs.AppendEmpty())
 
-			groups[attrValue] = struct {
-				exporters []component.LogsExporter
-				resLogs   plog.ResourceLogsSlice
-			}{
-				exporters: exp,
-				resLogs:   newResLogs,
+				groups[gKey] = struct {
+					exporters []component.LogsExporter
+					resLogs   plog.ResourceLogsSlice
+				}{
+					exporters: exp,
+					resLogs:   newResLogs,
+				}
 			}
 		}
 	}
@@ -124,10 +131,7 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {
 	value := p.extractor.extractFromContext(ctx)
-	exporters, ok := p.router.exporters[value]
-	if !ok {
-		exporters = p.router.defaultExporters
-	}
+	exporters := p.router.getExporters(value)
 
 	var errs error
 	for _, e := range exporters {
