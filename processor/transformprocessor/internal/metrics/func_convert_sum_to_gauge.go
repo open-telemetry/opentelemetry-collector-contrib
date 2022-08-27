@@ -18,13 +18,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 func convertSumToGauge() (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}

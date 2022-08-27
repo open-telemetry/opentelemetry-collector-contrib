@@ -106,3 +106,12 @@ metrics:
       value_type: int
       aggregation: cumulative
       monotonic: true
+
+  process.threads:
+    enabled: false
+    description: Process threads count.
+    unit: "{threads}"
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false

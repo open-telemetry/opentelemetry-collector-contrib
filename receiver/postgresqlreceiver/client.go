@@ -17,9 +17,11 @@ package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
+	"time"
 
 	"github.com/lib/pq"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -38,13 +40,21 @@ type tableIdentifier string
 // indexIdentifier is a unique string that identifies a particular index and is separated by the "|" character
 type indexIdentifer string
 
+// errNoLastArchive is an error that occurs when there is no previous wal archive, so there is no way to compute the
+// last archived point
+var errNoLastArchive = errors.New("no last archive found, not able to calculate oldest WAL age")
+
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseTableMetrics(ctx context.Context, db string) (map[tableIdentifier]tableStats, error)
 	getBlocksReadByTable(ctx context.Context, db string) (map[tableIdentifier]tableIOStats, error)
+	getReplicationStats(ctx context.Context) ([]replicationStats, error)
+	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
+	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
@@ -359,6 +369,144 @@ func (c *postgreSQLClient) getIndexStats(ctx context.Context, database string) (
 		}
 	}
 	return stats, multierr.Combine(errs...)
+}
+
+type bgStat struct {
+	checkpointsReq       int64
+	checkpointsScheduled int64
+	checkpointWriteTime  int64
+	checkpointSyncTime   int64
+	bgWrites             int64
+	backendWrites        int64
+	bufferBackendWrites  int64
+	bufferFsyncWrites    int64
+	bufferCheckpoints    int64
+	buffersAllocated     int64
+	maxWritten           int64
+}
+
+func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	query := `SELECT 
+	checkpoints_req AS checkpoint_req,
+	checkpoints_timed AS checkpoint_scheduled,
+	checkpoint_write_time AS checkpoint_duration_write,
+	checkpoint_sync_time AS checkpoint_duration_sync,
+	buffers_clean AS bg_writes,
+	buffers_backend AS backend_writes,
+	buffers_backend_fsync AS buffers_written_fsync,
+	buffers_checkpoint AS buffers_checkpoints,
+	buffers_alloc AS buffers_allocated,
+	maxwritten_clean AS maxwritten_count
+	FROM pg_stat_bgwriter;`
+
+	row := c.client.QueryRowContext(ctx, query)
+	var (
+		checkpointsReq, checkpointsScheduled               int64
+		checkpointSyncTime, checkpointWriteTime            int64
+		bgWrites, bufferCheckpoints, bufferAllocated       int64
+		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
+	)
+	err := row.Scan(
+		&checkpointsReq,
+		&checkpointsScheduled,
+		&checkpointWriteTime,
+		&checkpointSyncTime,
+		&bgWrites,
+		&bufferBackendWrites,
+		&bufferFsyncWrites,
+		&bufferCheckpoints,
+		&bufferAllocated,
+		&maxWritten,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &bgStat{
+		checkpointsReq:       checkpointsReq,
+		checkpointsScheduled: checkpointsScheduled,
+		checkpointWriteTime:  checkpointWriteTime,
+		checkpointSyncTime:   checkpointSyncTime,
+		bgWrites:             bgWrites,
+		backendWrites:        bufferBackendWrites,
+		bufferBackendWrites:  bufferBackendWrites,
+		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferCheckpoints:    bufferCheckpoints,
+		buffersAllocated:     bufferAllocated,
+		maxWritten:           maxWritten,
+	}, nil
+}
+
+func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error) {
+	query := `SHOW max_connections;`
+	row := c.client.QueryRowContext(ctx, query)
+	var maxConns int64
+	err := row.Scan(&maxConns)
+	return maxConns, err
+}
+
+type replicationStats struct {
+	clientAddr   string
+	pendingBytes int64
+	flushLag     int64
+	replayLag    int64
+	writeLag     int64
+}
+
+func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	query := `SELECT 
+	client_addr,
+	coalesce(pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn), 0) AS replication_bytes_pending,
+	write_lag,
+	flush_lag,
+	replay_lag
+	FROM pg_stat_replication;
+	`
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
+	}
+	defer rows.Close()
+	rs := []replicationStats{}
+	var errors error
+	for rows.Next() {
+		var client string
+		var replicationBytes, writeLag, flushLag, replayLag int64
+		err = rows.Scan(&client, &replicationBytes, &writeLag, &flushLag, &replayLag)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		rs = append(rs, replicationStats{
+			clientAddr:   client,
+			pendingBytes: replicationBytes,
+			replayLag:    replayLag,
+			writeLag:     writeLag,
+			flushLag:     flushLag,
+		})
+	}
+
+	return rs, errors
+}
+
+func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	query := `SELECT
+	coalesce(last_archived_time, CURRENT_TIMESTAMP) AS last_archived_wal,
+	CURRENT_TIMESTAMP
+	FROM pg_stat_archiver;
+	`
+	row := c.client.QueryRowContext(ctx, query)
+	var lastArchivedWal, currentInstanceTime time.Time
+	err := row.Scan(&lastArchivedWal, &currentInstanceTime)
+	if err != nil {
+		return 0, err
+	}
+
+	if lastArchivedWal.Equal(currentInstanceTime) {
+		return 0, errNoLastArchive
+	}
+
+	age := int64(currentInstanceTime.Sub(lastArchivedWal).Seconds())
+	return age, nil
 }
 
 func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) {

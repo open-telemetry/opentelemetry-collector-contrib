@@ -102,6 +102,10 @@ gofmt:
 golint:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="lint"
 
+.PHONY: goimpi
+goimpi:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="impi"
+
 .PHONY: goporto
 goporto:
 	porto -w --include-internal --skip-dirs "^cmd$$" ./
@@ -385,6 +389,10 @@ clean:
 	find . -type f -name 'coverage.html' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
+
+.PHONY: genconfigdocs
+genconfigdocs:
+	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
 .PHONY: generate-all-labels
 generate-all-labels:

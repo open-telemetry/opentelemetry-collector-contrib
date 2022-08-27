@@ -171,6 +171,26 @@ func (m *mockClient) getIndexStats(ctx context.Context, database string) (map[in
 	return args.Get(0).(map[indexIdentifer]indexStat), args.Error(1)
 }
 
+func (m *mockClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(*bgStat), args.Error(1)
+}
+
+func (m *mockClient) getMaxConnections(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(int64), args.Error(1)
+}
+
+func (m *mockClient) getReplicationStats(ctx context.Context) ([]replicationStats, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]replicationStats), args.Error(1)
+}
+
 func (m *mockClient) listDatabases(_ context.Context) ([]string, error) {
 	args := m.Called()
 	return args.Get(0).([]string), args.Error(1)
@@ -215,6 +235,30 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
+		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
+			checkpointsReq:       1,
+			checkpointsScheduled: 2,
+			checkpointWriteTime:  3,
+			checkpointSyncTime:   4,
+			bgWrites:             5,
+			backendWrites:        6,
+			bufferBackendWrites:  7,
+			bufferFsyncWrites:    8,
+			bufferCheckpoints:    9,
+			buffersAllocated:     10,
+			maxWritten:           11,
+		}, nil)
+		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
+		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
+		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
+			{
+				clientAddr:   "unix",
+				pendingBytes: 1024,
+				flushLag:     600,
+				replayLag:    700,
+				writeLag:     800,
+			},
+		}, nil)
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"

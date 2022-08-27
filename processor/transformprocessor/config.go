@@ -22,36 +22,31 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqlmetrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
-
-type SignalConfig struct {
-	Queries []string `mapstructure:"queries"`
-
-	// The functions that have been registered in the extension for processing.
-	functions map[string]interface{} `mapstructure:"-"`
-}
 
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"`
 
-	Logs    SignalConfig `mapstructure:"logs"`
-	Traces  SignalConfig `mapstructure:"traces"`
-	Metrics SignalConfig `mapstructure:"metrics"`
+	tqlconfig.Config `mapstructure:",squash"`
 }
 
 var _ config.Processor = (*Config)(nil)
 
 func (c *Config) Validate() error {
 	var errors error
-	_, err := tql.ParseQueries(c.Traces.Queries, c.Traces.functions, tqltraces.ParsePath, tqltraces.ParseEnum)
+	_, err := tql.ParseQueries(c.Traces.Queries, traces.Functions(), tqltraces.ParsePath, tqltraces.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Metrics.Queries, c.Metrics.functions, tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
+	_, err = tql.ParseQueries(c.Metrics.Queries, metrics.Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}
-	_, err = tql.ParseQueries(c.Logs.Queries, c.Logs.functions, tqllogs.ParsePath, tqllogs.ParseEnum)
+	_, err = tql.ParseQueries(c.Logs.Queries, logs.Functions(), tqllogs.ParsePath, tqllogs.ParseEnum)
 	if err != nil {
 		errors = multierr.Append(errors, err)
 	}

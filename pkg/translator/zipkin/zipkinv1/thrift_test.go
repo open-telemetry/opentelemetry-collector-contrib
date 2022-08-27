@@ -105,7 +105,8 @@ func BenchmarkV1ThriftToOCProto(b *testing.B) {
 	require.NoError(b, err, "Failed to unmarshal json into zipkin v1 thrift")
 
 	for n := 0; n < b.N; n++ {
-		v1ThriftBatchToOCProto(ztSpans) // nolint:errcheck
+		_, err = v1ThriftBatchToOCProto(ztSpans)
+		require.NoError(b, err)
 	}
 }
 

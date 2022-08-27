@@ -286,7 +286,7 @@ func TestPeriodicallyResolveFailure(t *testing.T) {
 	wg.Wait()
 
 	// verify
-	assert.GreaterOrEqual(t, int64(2), counter.Load())
+	assert.GreaterOrEqual(t, counter.Load(), int64(2))
 	assert.Len(t, res.endpoints, 1) // no change to the list of endpoints
 }
 

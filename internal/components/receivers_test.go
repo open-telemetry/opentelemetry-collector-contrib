@@ -23,7 +23,9 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"testing"
+	"time"
 
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
@@ -33,11 +35,11 @@ import (
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	tcpop "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
@@ -198,6 +200,13 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "mongodbatlas",
+			// MongoDB Atlas needs unique config IDs
+			getConfigFn: func() config.Receiver {
+				cfg := rcvrFactories["mongodbatlas"].CreateDefaultConfig().(*mongodbatlasreceiver.Config)
+				cfg.SetIDName(strconv.Itoa(int(time.Now().UnixNano())))
+				cfg.Logs.Enabled = true
+				return cfg
+			},
 		},
 		{
 			receiver: "mysql",
@@ -245,6 +254,10 @@ func TestDefaultReceivers(t *testing.T) {
 		{
 			receiver:     "prometheus_exec",
 			skipLifecyle: true, // Requires running a subproccess that can not be easily set across platforms
+		},
+		{
+			receiver:     "pulsar",
+			skipLifecyle: true, // TODO It requires a running pulsar instance to start successfully.
 		},
 		{
 			receiver: "rabbitmq",
@@ -308,7 +321,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.TCP = &tcpop.NewConfig("tcp_input").BaseConfig
+				cfg.TCP = &tcpop.NewConfig().BaseConfig
 				cfg.TCP.ListenAddress = "0.0.0.0:0"
 				cfg.Protocol = "rfc5424"
 				return cfg
@@ -318,9 +331,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "tcplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"listen_address": "0.0.0.0:0",
-				}
+				cfg.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},
@@ -328,9 +339,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "udplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
-				cfg.Input = adapter.InputConfig{
-					"listen_address": "0.0.0.0:0",
-				}
+				cfg.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},

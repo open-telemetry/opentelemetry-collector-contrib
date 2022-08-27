@@ -91,7 +91,7 @@ func createTracesProcessor(
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewTracesProcessorWithCreateSettings(
+	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
@@ -110,7 +110,7 @@ func createLogsProcessor(
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewLogsProcessorWithCreateSettings(
+	return processorhelper.NewLogsProcessor(
 		ctx,
 		set,
 		cfg,
@@ -129,7 +129,7 @@ func createMetricsProcessor(
 	oCfg := cfg.(*Config)
 	gap := createGroupByAttrsProcessor(set.Logger, oCfg.GroupByKeys)
 
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,
