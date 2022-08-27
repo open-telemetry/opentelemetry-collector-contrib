@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -575,9 +574,9 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pmetric.ResourceMe
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.Update("service.name", pcommon.NewValueString("honor_labels_test"))
-	expectedAttributes.Update("service.instance.id", pcommon.NewValueString("hostname:8080"))
-	expectedAttributes.Update("net.host.port", pcommon.NewValueString("8080"))
+	expectedAttributes.UpdateString("service.name", "honor_labels_test")
+	expectedAttributes.UpdateString("service.instance.id", "hostname:8080")
+	expectedAttributes.UpdateString("net.host.port", "8080")
 	expectedAttributes.InsertString("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -662,9 +661,9 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pmetric.Resourc
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.Update("service.name", pcommon.NewValueString("not-target1"))
-	wantAttributes.Update("service.instance.id", pcommon.NewValueString("relabeled-instance"))
-	wantAttributes.Update("net.host.port", pcommon.NewValueString(""))
+	wantAttributes.UpdateString("service.name", "not-target1")
+	wantAttributes.UpdateString("service.instance.id", "relabeled-instance")
+	wantAttributes.UpdateString("net.host.port", "")
 	wantAttributes.InsertString("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
