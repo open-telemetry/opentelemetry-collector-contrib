@@ -387,18 +387,35 @@ class TestAioHttpClientInstrumentor(TestBase):
         self.assertEqual(200, span.attributes[SpanAttributes.HTTP_STATUS_CODE])
 
     def test_instrument_with_custom_trace_config(self):
+        trace_config = aiohttp.TraceConfig()
+
         AioHttpClientInstrumentor().uninstrument()
-        AioHttpClientInstrumentor().instrument(
-            trace_configs=[aiohttp_client.create_trace_config()]
-        )
+        AioHttpClientInstrumentor().instrument(trace_configs=[trace_config])
 
-        self.assert_spans(0)
+        async def make_request(server: aiohttp.test_utils.TestServer):
+            async with aiohttp.test_utils.TestClient(server) as client:
+                trace_configs = client.session._trace_configs
+                self.assertEqual(2, len(trace_configs))
+                self.assertTrue(trace_config in trace_configs)
+                async with client as session:
+                    await session.get(TestAioHttpClientInstrumentor.URL)
 
-        run_with_test_server(
-            self.get_default_request(), self.URL, self.default_handler
-        )
+        run_with_test_server(make_request, self.URL, self.default_handler)
+        self.assert_spans(1)
 
-        self.assert_spans(2)
+    def test_every_request_by_new_session_creates_one_span(self):
+        async def make_request(server: aiohttp.test_utils.TestServer):
+            async with aiohttp.test_utils.TestClient(server) as client:
+                async with client as session:
+                    await session.get(TestAioHttpClientInstrumentor.URL)
+
+        for request_no in range(3):
+            self.memory_exporter.clear()
+            with self.subTest(request_no=request_no):
+                run_with_test_server(
+                    make_request, self.URL, self.default_handler
+                )
+                self.assert_spans(1)
 
     def test_instrument_with_existing_trace_config(self):
         trace_config = aiohttp.TraceConfig()
@@ -446,7 +463,7 @@ class TestAioHttpClientInstrumentor(TestBase):
         run_with_test_server(
             self.get_default_request(), self.URL, self.default_handler
         )
-        self.assert_spans(2)
+        self.assert_spans(1)
 
     def test_suppress_instrumentation(self):
         token = context.attach(

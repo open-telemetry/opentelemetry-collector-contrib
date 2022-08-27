@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `opentelemetry-instrumentation-boto3sqs` Make propagation compatible with other SQS instrumentations, add 'messaging.url' span attribute, and fix missing package dependencies.
   ([#1234](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1234))
-
 - restoring metrics in django framework
   ([#1208](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1208))
+- `opentelemetry-instrumentation-aiohttp-client` Fix producing additional spans with each newly created ClientSession
+- ([#1246](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1246))
 
 ## [1.12.0-0.33b0](https://github.com/open-telemetry/opentelemetry-python/releases/tag/v1.12.0-0.33b0) - 2022-08-08
 
