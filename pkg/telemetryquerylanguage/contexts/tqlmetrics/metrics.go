@@ -21,35 +21,46 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/internal/tqlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type MetricTransformContext struct {
-	DataPoint            interface{}
-	Metric               pmetric.Metric
-	Metrics              pmetric.MetricSlice
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+type TransformContext struct {
+	dataPoint            interface{}
+	metric               pmetric.Metric
+	metrics              pmetric.MetricSlice
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
 }
 
-func (ctx MetricTransformContext) GetItem() interface{} {
-	return ctx.DataPoint
+func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+	return TransformContext{
+		dataPoint:            dataPoint,
+		metric:               metric,
+		metrics:              metrics,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
-func (ctx MetricTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+func (ctx TransformContext) GetItem() interface{} {
+	return ctx.dataPoint
 }
 
-func (ctx MetricTransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+func (ctx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.instrumentationScope
 }
 
-func (ctx MetricTransformContext) GetMetric() pmetric.Metric {
-	return ctx.Metric
+func (ctx TransformContext) GetResource() pcommon.Resource {
+	return ctx.resource
 }
 
-func (ctx MetricTransformContext) GetMetrics() pmetric.MetricSlice {
-	return ctx.Metrics
+func (ctx TransformContext) GetMetric() pmetric.Metric {
+	return ctx.metric
+}
+
+func (ctx TransformContext) GetMetrics() pmetric.MetricSlice {
+	return ctx.metrics
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
@@ -86,27 +97,9 @@ func ParsePath(val *tql.Path) (tql.GetSetter, error) {
 func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
-		if len(path) == 1 {
-			return accessResource(), nil
-		}
-		switch path[1].Name {
-		case "attributes":
-			mapKey := path[1].MapKey
-			if mapKey == nil {
-				return accessResourceAttributes(), nil
-			}
-			return accessResourceAttributesKey(mapKey), nil
-		}
+		return tqlcommon.ResourcePathGetSetter(path[1:])
 	case "instrumentation_scope":
-		if len(path) == 1 {
-			return accessInstrumentationScope(), nil
-		}
-		switch path[1].Name {
-		case "name":
-			return accessInstrumentationScopeName(), nil
-		case "version":
-			return accessInstrumentationScopeVersion(), nil
-		}
+		return tqlcommon.ScopePathGetSetter(path[1:])
 	case "metric":
 		if len(path) == 1 {
 			return accessMetric(), nil
@@ -181,90 +174,14 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	return nil, fmt.Errorf("invalid path expression %v", path)
 }
 
-func accessResource() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newRes, ok := val.(pcommon.Resource); ok {
-				newRes.CopyTo(ctx.GetResource())
-			}
-		},
-	}
-}
-
-func accessResourceAttributes() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource().Attributes()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(ctx.GetResource().Attributes())
-			}
-		},
-	}
-}
-
-func accessResourceAttributesKey(mapKey *string) tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetResource().Attributes(), *mapKey)
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
-		},
-	}
-}
-
-func accessInstrumentationScope() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeName() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Name()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetName(str)
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeVersion() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Version()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetVersion(str)
-			}
-		},
-	}
-}
-
 func accessMetric() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric()
+			return ctx.(TransformContext).GetMetric()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newMetric, ok := val.(pmetric.Metric); ok {
-				newMetric.CopyTo(ctx.(MetricTransformContext).GetMetric())
+				newMetric.CopyTo(ctx.(TransformContext).GetMetric())
 			}
 		},
 	}
@@ -273,11 +190,11 @@ func accessMetric() tql.StandardGetSetter {
 func accessMetricName() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Name()
+			return ctx.(TransformContext).GetMetric().Name()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetName(str)
+				ctx.(TransformContext).GetMetric().SetName(str)
 			}
 		},
 	}
@@ -286,11 +203,11 @@ func accessMetricName() tql.StandardGetSetter {
 func accessMetricDescription() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Description()
+			return ctx.(TransformContext).GetMetric().Description()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetDescription(str)
+				ctx.(TransformContext).GetMetric().SetDescription(str)
 			}
 		},
 	}
@@ -299,11 +216,11 @@ func accessMetricDescription() tql.StandardGetSetter {
 func accessMetricUnit() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.(MetricTransformContext).GetMetric().Unit()
+			return ctx.(TransformContext).GetMetric().Unit()
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if str, ok := val.(string); ok {
-				ctx.(MetricTransformContext).GetMetric().SetUnit(str)
+				ctx.(TransformContext).GetMetric().SetUnit(str)
 			}
 		},
 	}
@@ -312,7 +229,7 @@ func accessMetricUnit() tql.StandardGetSetter {
 func accessMetricType() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.(MetricTransformContext).GetMetric().DataType())
+			return int64(ctx.(TransformContext).GetMetric().DataType())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			// TODO Implement methods so correctly convert data types.
@@ -324,7 +241,7 @@ func accessMetricType() tql.StandardGetSetter {
 func accessMetricAggTemporality() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(MetricTransformContext).GetMetric()
+			metric := ctx.(TransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return int64(metric.Sum().AggregationTemporality())
@@ -337,7 +254,7 @@ func accessMetricAggTemporality() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newAggTemporality, ok := val.(int64); ok {
-				metric := ctx.(MetricTransformContext).GetMetric()
+				metric := ctx.(TransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporality(newAggTemporality))
@@ -354,7 +271,7 @@ func accessMetricAggTemporality() tql.StandardGetSetter {
 func accessMetricIsMonotonic() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			metric := ctx.(MetricTransformContext).GetMetric()
+			metric := ctx.(TransformContext).GetMetric()
 			switch metric.DataType() {
 			case pmetric.MetricDataTypeSum:
 				return metric.Sum().IsMonotonic()
@@ -363,7 +280,7 @@ func accessMetricIsMonotonic() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if newIsMonotonic, ok := val.(bool); ok {
-				metric := ctx.(MetricTransformContext).GetMetric()
+				metric := ctx.(TransformContext).GetMetric()
 				switch metric.DataType() {
 				case pmetric.MetricDataTypeSum:
 					metric.Sum().SetIsMonotonic(newIsMonotonic)
@@ -416,26 +333,26 @@ func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return getAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey)
+				return tqlcommon.GetMapValue(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey)
 			case pmetric.HistogramDataPoint:
-				return getAttr(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey)
+				return tqlcommon.GetMapValue(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey)
 			case pmetric.ExponentialHistogramDataPoint:
-				return getAttr(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey)
+				return tqlcommon.GetMapValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey)
 			case pmetric.SummaryDataPoint:
-				return getAttr(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey)
+				return tqlcommon.GetMapValue(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey)
 			}
 			return nil
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				setAttr(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
+				tqlcommon.SetMapValue(ctx.GetItem().(pmetric.NumberDataPoint).Attributes(), *mapKey, val)
 			case pmetric.HistogramDataPoint:
-				setAttr(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey, val)
+				tqlcommon.SetMapValue(ctx.GetItem().(pmetric.HistogramDataPoint).Attributes(), *mapKey, val)
 			case pmetric.ExponentialHistogramDataPoint:
-				setAttr(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey, val)
+				tqlcommon.SetMapValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Attributes(), *mapKey, val)
 			case pmetric.SummaryDataPoint:
-				setAttr(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey, val)
+				tqlcommon.SetMapValue(ctx.GetItem().(pmetric.SummaryDataPoint).Attributes(), *mapKey, val)
 			}
 		},
 	}
@@ -886,80 +803,5 @@ func accessQuantileValues() tql.StandardGetSetter {
 				}
 			}
 		},
-	}
-}
-
-func getAttr(attrs pcommon.Map, mapKey string) interface{} {
-	val, ok := attrs.Get(mapKey)
-	if !ok {
-		return nil
-	}
-	return getValue(val)
-}
-
-func getValue(val pcommon.Value) interface{} {
-	switch val.Type() {
-	case pcommon.ValueTypeString:
-		return val.StringVal()
-	case pcommon.ValueTypeBool:
-		return val.BoolVal()
-	case pcommon.ValueTypeInt:
-		return val.IntVal()
-	case pcommon.ValueTypeDouble:
-		return val.DoubleVal()
-	case pcommon.ValueTypeMap:
-		return val.MapVal()
-	case pcommon.ValueTypeSlice:
-		return val.SliceVal()
-	case pcommon.ValueTypeBytes:
-		return val.BytesVal().AsRaw()
-	}
-	return nil
-}
-
-func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		attrs.UpsertString(mapKey, v)
-	case bool:
-		attrs.UpsertBool(mapKey, v)
-	case int64:
-		attrs.UpsertInt(mapKey, v)
-	case float64:
-		attrs.UpsertDouble(mapKey, v)
-	case []byte:
-		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
-	case []string:
-		arr := pcommon.NewValueSlice()
-		for _, str := range v {
-			arr.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []bool:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []int64:
-		arr := pcommon.NewValueSlice()
-		for _, i := range v {
-			arr.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []float64:
-		arr := pcommon.NewValueSlice()
-		for _, f := range v {
-			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-		attrs.Upsert(mapKey, arr)
-	case [][]byte:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-		attrs.Upsert(mapKey, arr)
-	default:
-		// TODO(anuraaga): Support set of map type.
 	}
 }

@@ -11,18 +11,17 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package trace
+package severity
 
 import (
 	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper/operatortest"
 )
 
-func TestConfig(t *testing.T) {
+func TestUnmarshal(t *testing.T) {
 	operatortest.ConfigUnmarshalTests{
 		DefaultConfig: NewConfig(),
 		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
@@ -40,40 +39,27 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
-				Name: "spanid",
+				Name: "parse_from_simple",
 				Expect: func() *Config {
-					parseFrom := entry.NewBodyField("app_span_id")
-					cfg := helper.SpanIDConfig{}
-					cfg.ParseFrom = &parseFrom
-
-					c := NewConfig()
-					c.SpanID = &cfg
-					return c
+					cfg := NewConfig()
+					from := entry.NewBodyField("from")
+					cfg.ParseFrom = &from
+					return cfg
 				}(),
 			},
 			{
-				Name: "traceid",
+				Name: "parse_with_preset",
 				Expect: func() *Config {
-					parseFrom := entry.NewBodyField("app_trace_id")
-					cfg := helper.TraceIDConfig{}
-					cfg.ParseFrom = &parseFrom
-
-					c := NewConfig()
-					c.TraceID = &cfg
-					return c
+					cfg := NewConfig()
+					from := entry.NewBodyField("from")
+					cfg.ParseFrom = &from
+					cfg.Preset = "http"
+					return cfg
 				}(),
 			},
 			{
-				Name: "trace_flags",
-				Expect: func() *Config {
-					parseFrom := entry.NewBodyField("app_trace_flags_id")
-					cfg := helper.TraceFlagsConfig{}
-					cfg.ParseFrom = &parseFrom
-
-					c := NewConfig()
-					c.TraceFlags = &cfg
-					return c
-				}(),
+				Name:      "no_nested",
+				ExpectErr: true,
 			},
 		},
 	}.Run(t)
