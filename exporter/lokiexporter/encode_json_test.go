@@ -27,13 +27,13 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 	buffer := plog.NewLogRecord()
 	buffer.Body().SetStringVal("Example log")
 	buffer.SetSeverityText("error")
-	buffer.Attributes().Insert("attr1", pcommon.NewValueString("1"))
-	buffer.Attributes().Insert("attr2", pcommon.NewValueString("2"))
+	buffer.Attributes().UpsertString("attr1", "1")
+	buffer.Attributes().UpsertString("attr2", "2")
 	buffer.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 	buffer.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
 
 	resource := pcommon.NewResource()
-	resource.Attributes().Insert("host.name", pcommon.NewValueString("something"))
+	resource.Attributes().UpsertString("host.name", "something")
 
 	return buffer, resource
 }
@@ -51,8 +51,8 @@ func TestConvertWithMapBody(t *testing.T) {
 
 	log, resource := exampleLog()
 	mapVal := pcommon.NewValueMap()
-	mapVal.MapVal().Insert("key1", pcommon.NewValueString("value"))
-	mapVal.MapVal().Insert("key2", pcommon.NewValueString("value"))
+	mapVal.MapVal().UpsertString("key1", "value")
+	mapVal.MapVal().UpsertString("key2", "value")
 	mapVal.CopyTo(log.Body())
 
 	out, err := encodeJSON(log, resource)

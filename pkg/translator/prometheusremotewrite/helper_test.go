@@ -193,7 +193,7 @@ func Test_createLabelSet(t *testing.T) {
 	}{
 		{
 			"labels_clean",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -201,10 +201,12 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_resource",
-			getResource(map[string]pcommon.Value{
-				"service.name":        pcommon.NewValueString("prometheus"),
-				"service.instance.id": pcommon.NewValueString("127.0.0.1:8080"),
-			}),
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().UpsertString("service.name", "prometheus")
+				res.Attributes().UpsertString("service.instance.id", "127.0.0.1:8080")
+				return res
+			}(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -212,10 +214,12 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_with_nonstring_resource",
-			getResource(map[string]pcommon.Value{
-				"service.name":        pcommon.NewValueInt(12345),
-				"service.instance.id": pcommon.NewValueBool(true),
-			}),
+			func() pcommon.Resource {
+				res := pcommon.NewResource()
+				res.Attributes().UpsertInt("service.name", 12345)
+				res.Attributes().UpsertBool("service.instance.id", true)
+				return res
+			}(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32, value32},
@@ -223,7 +227,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_duplicate_in_extras",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label11, value31},
@@ -231,7 +235,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"labels_dirty",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1Dirty,
 			map[string]string{},
 			[]string{label31 + dirty1, value31, label32, value32},
@@ -239,7 +243,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"no_original_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			pcommon.NewMap(),
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -247,7 +251,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"empty_extra_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{"", ""},
@@ -255,7 +259,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"single_left_over_case",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			map[string]string{},
 			[]string{label31, value31, label32},
@@ -263,7 +267,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"valid_external_labels",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs1,
 			[]string{label31, value31, label32, value32},
@@ -271,7 +275,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"overwritten_external_labels",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs1,
 			exlbs2,
 			[]string{label31, value31, label32, value32},
@@ -279,7 +283,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"colliding attributes",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbsColliding,
 			nil,
 			[]string{label31, value31, label32, value32},
@@ -287,7 +291,7 @@ func Test_createLabelSet(t *testing.T) {
 		},
 		{
 			"sanitize_labels_starts_with_underscore",
-			getResource(map[string]pcommon.Value{}),
+			pcommon.NewResource(),
 			lbs3,
 			exlbs1,
 			[]string{label31, value31, label32, value32},

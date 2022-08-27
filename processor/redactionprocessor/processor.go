@@ -116,14 +116,14 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 		}
 
 		// Mask any blocked values for the other attributes
+		strVal := value.StringVal()
 		for _, compiledRE := range s.blockRegexList {
-			match := compiledRE.MatchString(value.StringVal())
+			match := compiledRE.MatchString(strVal)
 			if match {
 				toBlock = append(toBlock, k)
 
-				valueCopy := value.StringVal()
-				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-				attributes.Update(k, pcommon.NewValueString(maskedValue))
+				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				value.SetStringVal(maskedValue)
 			}
 		}
 		return true
@@ -158,10 +158,10 @@ func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon
 	// Record summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pcommon.NewValueString(strings.Join(toDelete, ",")))
+		attributes.InsertString(redactedKeys, strings.Join(toDelete, ","))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pcommon.NewValueInt(redactedSpanCount))
+		attributes.InsertInt(redactedKeyCount, redactedSpanCount)
 	}
 }
 
@@ -174,10 +174,10 @@ func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Ma
 	// Records summary as span attributes
 	if s.config.Summary == debug {
 		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pcommon.NewValueString(strings.Join(toBlock, ",")))
+		attributes.InsertString(maskedValues, strings.Join(toBlock, ","))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pcommon.NewValueInt(maskedSpanCount))
+		attributes.InsertInt(maskedValueCount, maskedSpanCount)
 	}
 }
 

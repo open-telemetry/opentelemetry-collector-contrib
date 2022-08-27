@@ -68,7 +68,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 		propMap.Insert("nullProp", pcommon.NewValueEmpty())
 		propMap.Sort()
 		attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-		attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
+		attrs.InsertInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
 
 		l.Attributes().Sort()
 		return logSlice
