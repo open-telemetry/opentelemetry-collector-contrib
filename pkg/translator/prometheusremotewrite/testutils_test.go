@@ -220,7 +220,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleVal(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().Insert(attributeKey, pcommon.NewValueString(attributeValue))
+	e.FilteredAttributes().UpsertString(attributeKey, attributeValue)
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
@@ -410,16 +410,6 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	quantiles.At(0).Quantile()
 
 	return metric
-}
-
-func getResource(resources map[string]pcommon.Value) pcommon.Resource {
-	resource := pcommon.NewResource()
-
-	for k, v := range resources {
-		resource.Attributes().Upsert(k, v)
-	}
-
-	return resource
 }
 
 func getBucketBoundsData(values []float64) []bucketBoundsData {
