@@ -175,37 +175,75 @@ func TestList(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.Nil(t, err)
 
-	expectedContainer := container{
-
-		AutoRemove: false,
-		Command:    []string{"nginx", "-g", "daemon off;"},
-		Created:    "2022-05-28T11:25:35.999277074+02:00",
-		CreatedAt:  "",
-		Exited:     false,
-		ExitedAt:   -62135596800,
-		ExitCode:   0,
-		ID:         "aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379",
-		Image:      "library/nginxy:latest",
-		ImageID:    "12766a6745eea133de9fdcd03ff720fa971fdaf21113d4bc72b417c123b15619",
-		IsInfra:    false,
-		Labels:     map[string]string{"maintainer": "someone"},
-		Mounts:     []string{},
-		Names:      []string{"sharp_curran"},
-		Namespaces: map[string]string{},
-		Networks:   []string{},
-		Pid:        7892,
-		Pod:        "",
-		PodName:    "",
-		Ports:      nil,
-		Size:       nil,
-		StartedAt:  1653729936,
-		State:      "running",
-		Status:     "",
+	expectedContainer := containerList{
+		{
+			ID: "aa3e2040dee22a369d2c8f0b712a5ff045e8f1ce47f5e943426ce6664e3ef379",
+		},
 	}
 
 	containers, err := cli.list(context.Background(), nil)
 	assert.NoError(t, err)
-	assert.Equal(t, expectedContainer, containers[0])
+	assert.Equal(t, expectedContainer, containers)
+}
+
+func TestInspect(t *testing.T) {
+	// list sample
+	listExample := `{"Id":"d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e","Created":"2022-08-27T20:45:14.476846069+03:00","Path":"httpd-foreground","Args":["httpd-foreground"],"State":{"OciVersion":"1.0.2-dev","Status":"running","Running":true,"Paused":false,"Restarting":false,"OOMKilled":false,"Dead":false,"Pid":1147,"ConmonPid":1144,"ExitCode":0,"Error":"","StartedAt":"2022-08-27T20:45:14.545966481+03:00","FinishedAt":"0001-01-01T00:00:00Z","Health":{"Status":"","FailingStreak":0,"Log":null},"CgroupPath":"/user.slice/user-1000.slice/user@1000.service/user.slice/libpod-d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e.scope","CheckpointedAt":"0001-01-01T00:00:00Z","RestoredAt":"0001-01-01T00:00:00Z"},"Image":"a981c8992512d65c9b450a9ecabb1cb9d35bb6b03f3640f86471032d5800d825","ImageName":"docker.io/library/httpd:latest","Rootfs":"","Pod":"","ResolvConfPath":"/run/user/1000/containers/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/resolv.conf","HostnamePath":"/run/user/1000/containers/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/hostname","HostsPath":"/run/user/1000/containers/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/hosts","StaticDir":"/home/test/.local/share/containers/storage/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata","OCIConfigPath":"/home/test/.local/share/containers/storage/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/config.json","OCIRuntime":"crun","ConmonPidFile":"/run/user/1000/containers/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/conmon.pid","PidFile":"/run/user/1000/containers/overlay-containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/userdata/pidfile","Name":"pedantic_albattani","RestartCount":0,"Driver":"overlay","MountLabel":"system_u:object_r:container_file_t:s0:c186,c799","ProcessLabel":"system_u:system_r:container_t:s0:c186,c799","AppArmorProfile":"","EffectiveCaps":["CAP_CHOWN","CAP_DAC_OVERRIDE","CAP_FOWNER","CAP_FSETID","CAP_KILL","CAP_NET_BIND_SERVICE","CAP_SETFCAP","CAP_SETGID","CAP_SETPCAP","CAP_SETUID","CAP_SYS_CHROOT"],"BoundingCaps":["CAP_CHOWN","CAP_DAC_OVERRIDE","CAP_FOWNER","CAP_FSETID","CAP_KILL","CAP_NET_BIND_SERVICE","CAP_SETFCAP","CAP_SETGID","CAP_SETPCAP","CAP_SETUID","CAP_SYS_CHROOT"],"ExecIDs":[],"GraphDriver":{"Name":"overlay","Data":{"LowerDir":"/home/test/.local/share/containers/storage/overlay/7eee2c97dd0632f3796ea2900ce78ea3f753f4452920b90c583b2154dec981ef/diff:/home/test/.local/share/containers/storage/overlay/d1718bbc0d2e38153e0600e62744e8891159d12b3886dff93231aa508d16aa3d/diff:/home/test/.local/share/containers/storage/overlay/618087d4fdfee2c5bcb985aa520fef400c5bd02e538b2fd60a70583cb00f1d82/diff:/home/test/.local/share/containers/storage/overlay/6f32ad5bfd7e339cd6f0460664fb95655c8d0c00a784128c1c743ba81537144c/diff:/home/test/.local/share/containers/storage/overlay/6485bed636274e42b47028c43ad5f9c036dd7cf2b40194bd556ddad2a98eea63/diff","MergedDir":"/home/test/.local/share/containers/storage/overlay/4dd4e40606d88c144e27ef1c2363b8f5ab6081b4e4f32201a0599d41c6a5d3bd/merged","UpperDir":"/home/test/.local/share/containers/storage/overlay/4dd4e40606d88c144e27ef1c2363b8f5ab6081b4e4f32201a0599d41c6a5d3bd/diff","WorkDir":"/home/test/.local/share/containers/storage/overlay/4dd4e40606d88c144e27ef1c2363b8f5ab6081b4e4f32201a0599d41c6a5d3bd/work"}},"Mounts":[],"Dependencies":[],"NetworkSettings":{"EndpointID":"","Gateway":"","IPAddress":"","IPPrefixLen":0,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"MacAddress":"","Bridge":"","SandboxID":"","HairpinMode":false,"LinkLocalIPv6Address":"","LinkLocalIPv6PrefixLen":0,"Ports":{"80/tcp":[{"HostIp":"","HostPort":"8080"}]},"SandboxKey":"/run/user/1000/netns/netns-d7fc8056-726c-b01c-3fab-a2a3bdbae7b4"},"Namespace":"","IsInfra":false,"Config":{"Hostname":"d1e70d0b660b","Domainname":"","User":"","AttachStdin":false,"AttachStdout":false,"AttachStderr":false,"Tty":true,"OpenStdin":false,"StdinOnce":false,"Env":["PATH=/usr/local/apache2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","container=podman","MY_ENV_1=env_metric_value_1","TERM=xterm","HTTPD_VERSION=2.4.54","HTTPD_SHA256=eb397feeefccaf254f8d45de3768d9d68e8e73851c49afd5b7176d1ecf80c340","HTTPD_PATCHES=","HTTPD_PREFIX=/usr/local/apache2","MY_ENV_2=env_metric_value_2","HOME=/root","HOSTNAME=d1e70d0b660b"],"Cmd":["httpd-foreground"],"Image":"docker.io/library/httpd:latest","Volumes":null,"WorkingDir":"/usr/local/apache2","Entrypoint":"","OnBuild":null,"Labels":{"label_1":"label_metric_value_1","label_2":"label_metric_value_2"},"Annotations":{"io.container.manager":"libpod","io.kubernetes.cri-o.Created":"2022-08-27T20:45:14.476846069+03:00","io.kubernetes.cri-o.TTY":"true","io.podman.annotations.autoremove":"FALSE","io.podman.annotations.init":"FALSE","io.podman.annotations.privileged":"FALSE","io.podman.annotations.publish-all":"FALSE","org.opencontainers.image.stopSignal":"28"},"StopSignal":28,"CreateCommand":["podman","run","-dt","-p","8080:80/tcp","-l","label_1=label_metric_value_1","-l","label_2=label_metric_value_2","--env","MY_ENV_1=env_metric_value_1","--env","MY_ENV_2=env_metric_value_2","docker.io/library/httpd"],"Umask":"0022","Timeout":0,"StopTimeout":10,"Passwd":true},"HostConfig":{"Binds":[],"CgroupManager":"systemd","CgroupMode":"private","ContainerIDFile":"","LogConfig":{"Type":"journald","Config":null,"Path":"","Tag":"","Size":"0B"},"NetworkMode":"slirp4netns","PortBindings":{"80/tcp":[{"HostIp":"","HostPort":"8080"}]},"RestartPolicy":{"Name":"","MaximumRetryCount":0},"AutoRemove":false,"VolumeDriver":"","VolumesFrom":null,"CapAdd":[],"CapDrop":["CAP_AUDIT_WRITE","CAP_MKNOD","CAP_NET_RAW"],"Dns":[],"DnsOptions":[],"DnsSearch":[],"ExtraHosts":[],"GroupAdd":[],"IpcMode":"private","Cgroup":"","Cgroups":"default","Links":null,"OomScoreAdj":0,"PidMode":"private","Privileged":false,"PublishAllPorts":false,"ReadonlyRootfs":false,"SecurityOpt":[],"Tmpfs":{},"UTSMode":"private","UsernsMode":"","ShmSize":65536000,"Runtime":"oci","ConsoleSize":[0,0],"Isolation":"","CpuShares":0,"Memory":0,"NanoCpus":0,"CgroupParent":"user.slice","BlkioWeight":0,"BlkioWeightDevice":null,"BlkioDeviceReadBps":null,"BlkioDeviceWriteBps":null,"BlkioDeviceReadIOps":null,"BlkioDeviceWriteIOps":null,"CpuPeriod":0,"CpuQuota":0,"CpuRealtimePeriod":0,"CpuRealtimeRuntime":0,"CpusetCpus":"","CpusetMems":"","Devices":[],"DiskQuota":0,"KernelMemory":0,"MemoryReservation":0,"MemorySwap":0,"MemorySwappiness":0,"OomKillDisable":false,"PidsLimit":2048,"Ulimits":[],"CpuCount":0,"CpuPercent":0,"IOMaximumIOps":0,"IOMaximumBandwidth":0,"CgroupConf":null}}`
+
+	listener, addr := tmpSock(t)
+	defer listener.Close()
+	defer os.Remove(addr)
+
+	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/containers/d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e/json") {
+			_, err := w.Write([]byte(listExample))
+			assert.NoError(t, err)
+		} else {
+			_, err := w.Write([]byte{})
+			assert.NoError(t, err)
+		}
+	}))
+	srv.Listener = listener
+	srv.Start()
+	defer srv.Close()
+
+	config := &Config{
+		Endpoint: fmt.Sprintf("unix://%s", addr),
+		// default timeout
+		Timeout: 5 * time.Second,
+	}
+
+	cli, err := newLibpodClient(zap.NewNop(), config)
+	assert.NotNil(t, cli)
+	assert.Nil(t, err)
+
+	expectedContainer := container{
+		ID: "d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e",
+		Config: containerConfig{
+			Env: map[string]string{
+				"HOME":          "/root",
+				"HOSTNAME":      "d1e70d0b660b",
+				"HTTPD_PATCHES": "",
+				"HTTPD_PREFIX":  "/usr/local/apache2",
+				"HTTPD_SHA256":  "eb397feeefccaf254f8d45de3768d9d68e8e73851c49afd5b7176d1ecf80c340",
+				"HTTPD_VERSION": "2.4.54",
+				"MY_ENV_1":      "env_metric_value_1",
+				"MY_ENV_2":      "env_metric_value_2",
+				"PATH":          "/usr/local/apache2/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+				"TERM":          "xterm",
+				"container":     "podman",
+			},
+			Image: "docker.io/library/httpd:latest",
+			Labels: map[string]string{
+				"label_1": "label_metric_value_1",
+				"label_2": "label_metric_value_2",
+			},
+		},
+	}
+
+	containerDto, err := cli.inspect(context.Background(), "d1e70d0b660b122f40f4cf8876f0f0212d6619efbb1d7f1e7b8b1b1922edf51e")
+	assert.NoError(t, err)
+	assert.Equal(t, expectedContainer, containerDto)
 }
 
 func TestEvents(t *testing.T) {

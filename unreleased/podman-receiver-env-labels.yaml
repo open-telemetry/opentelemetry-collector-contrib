@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: podmanreceiver
+
+note: Allow to add container envs and labels to the corresponding DataPoint as label.
+
+issues: [9013]
+
+subtext:

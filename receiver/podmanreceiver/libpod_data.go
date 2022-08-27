@@ -17,33 +17,54 @@
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+	"time"
+)
+
+var (
+	_ json.Unmarshaler = (*containerEnv)(nil)
+)
+
+type containerList []struct {
+	ID string
+}
 
 type container struct {
-	AutoRemove bool
-	Command    []string
-	Created    string
-	CreatedAt  string
-	ExitCode   int
-	Exited     bool
-	ExitedAt   int
-	ID         string
-	Image      string
-	ImageID    string
-	IsInfra    bool
-	Labels     map[string]string
-	Mounts     []string
-	Names      []string
-	Namespaces map[string]string
-	Networks   []string
-	Pid        int
-	Pod        string
-	PodName    string
-	Ports      []map[string]interface{}
-	Size       map[string]string
-	StartedAt  int
-	State      string
-	Status     string
+	ID     string
+	Config containerConfig
+}
+
+type containerConfig struct {
+	Env    containerEnv
+	Image  string
+	Labels map[string]string
+}
+
+type containerEnv map[string]string
+
+func (c *containerEnv) UnmarshalJSON(bytes []byte) error {
+	var envs []string
+	if err := json.Unmarshal(bytes, &envs); err != nil {
+		return fmt.Errorf("failed to unmarshall envs: %s, %w", string(bytes), err)
+	}
+
+	parsedEnvs := make(map[string]string, len(envs))
+
+	for _, v := range envs {
+		parsedEnvParts := strings.SplitN(v, "=", 2)
+		if len(parsedEnvParts) < 2 {
+			continue
+		}
+
+		parsedEnvs[parsedEnvParts[0]] = parsedEnvParts[1]
+	}
+
+	*c = parsedEnvs
+
+	return nil
 }
 
 type event struct {

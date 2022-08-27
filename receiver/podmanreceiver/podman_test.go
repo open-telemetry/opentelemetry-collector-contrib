@@ -36,11 +36,16 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
+var (
+	_ PodmanClient = (*MockClient)(nil)
+)
+
 type MockClient struct {
-	PingF   func(context.Context) error
-	StatsF  func(context.Context, url.Values) ([]containerStats, error)
-	ListF   func(context.Context, url.Values) ([]container, error)
-	EventsF func(context.Context, url.Values) (<-chan event, <-chan error)
+	PingF    func(context.Context) error
+	StatsF   func(context.Context, url.Values) ([]containerStats, error)
+	ListF    func(context.Context, url.Values) (containerList, error)
+	InspectF func(context.Context, string) (container, error)
+	EventsF  func(context.Context, url.Values) (<-chan event, <-chan error)
 }
 
 func (c *MockClient) ping(ctx context.Context) error {
@@ -51,12 +56,16 @@ func (c *MockClient) stats(ctx context.Context, options url.Values) ([]container
 	return c.StatsF(ctx, options)
 }
 
-func (c *MockClient) list(ctx context.Context, options url.Values) ([]container, error) {
+func (c *MockClient) list(ctx context.Context, options url.Values) (containerList, error) {
 	return c.ListF(ctx, options)
 }
 
 func (c *MockClient) events(ctx context.Context, options url.Values) (<-chan event, <-chan error) {
 	return c.EventsF(ctx, options)
+}
+
+func (c *MockClient) inspect(ctx context.Context, containerID string) (container, error) {
+	return c.InspectF(ctx, containerID)
 }
 
 var baseClient = MockClient{
@@ -66,8 +75,11 @@ var baseClient = MockClient{
 	StatsF: func(context.Context, url.Values) ([]containerStats, error) {
 		return nil, nil
 	},
-	ListF: func(context.Context, url.Values) ([]container, error) {
+	ListF: func(context.Context, url.Values) (containerList, error) {
 		return nil, nil
+	},
+	InspectF: func(context.Context, string) (container, error) {
+		return container{}, nil
 	},
 	EventsF: func(context.Context, url.Values) (<-chan event, <-chan error) {
 		return nil, nil
@@ -169,10 +181,15 @@ func TestEventLoopHandles(t *testing.T) {
 	eventClient.EventsF = func(context.Context, url.Values) (<-chan event, <-chan error) {
 		return eventChan, errChan
 	}
-	eventClient.ListF = func(context.Context, url.Values) ([]container, error) {
-		return []container{{
+	eventClient.ListF = func(context.Context, url.Values) (containerList, error) {
+		return containerList{{
 			ID: "c1",
 		}}, nil
+	}
+	eventClient.InspectF = func(_ context.Context, id string) (container, error) {
+		return container{
+			ID: id,
+		}, nil
 	}
 
 	cli := newContainerScraper(&eventClient, zap.NewNop(), &Config{})
@@ -200,10 +217,8 @@ func TestEventLoopHandles(t *testing.T) {
 
 func TestInspectAndPersistContainer(t *testing.T) {
 	inspectClient := baseClient
-	inspectClient.ListF = func(context.Context, url.Values) ([]container, error) {
-		return []container{{
-			ID: "c1",
-		}}, nil
+	inspectClient.InspectF = func(context.Context, string) (container, error) {
+		return container{ID: "c1"}, nil
 	}
 
 	cli := newContainerScraper(&inspectClient, zap.NewNop(), &Config{})

@@ -32,7 +32,12 @@ type point struct {
 	attributes map[string]string
 }
 
-func containerStatsToMetrics(ts time.Time, container container, stats *containerStats) pmetric.Metrics {
+func containerStatsToMetrics(
+	ts time.Time,
+	container container,
+	stats *containerStats,
+	config *Config,
+) pmetric.Metrics {
 	pbts := pcommon.NewTimestampFromTime(ts)
 
 	md := pmetric.NewMetrics()
@@ -42,7 +47,8 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	resourceAttr.InsertString(conventions.AttributeContainerRuntime, "podman")
 	resourceAttr.InsertString(conventions.AttributeContainerName, stats.Name)
 	resourceAttr.InsertString(conventions.AttributeContainerID, stats.ContainerID)
-	resourceAttr.InsertString(conventions.AttributeContainerImageName, container.Image)
+	resourceAttr.InsertString(conventions.AttributeContainerImageName, container.Config.Image)
+	updateConfiguredResourceAttributes(resourceAttr, container, config)
 
 	ms := rs.ScopeMetrics().AppendEmpty().Metrics()
 	appendIOMetrics(ms, stats, pbts)
@@ -51,6 +57,20 @@ func containerStatsToMetrics(ts time.Time, container container, stats *container
 	appendMemoryMetrics(ms, stats, pbts)
 
 	return md
+}
+
+func updateConfiguredResourceAttributes(resourceAttr pcommon.Map, container container, config *Config) {
+	for envName, label := range config.EnvVarsToMetricLabels {
+		if envValue := container.Config.Env[envName]; envValue != "" {
+			resourceAttr.UpsertString(label, envValue)
+		}
+	}
+
+	for labelKey, label := range config.ContainerLabelsToMetricLabels {
+		if labelValue := container.Config.Labels[labelKey]; labelValue != "" {
+			resourceAttr.UpsertString(label, labelValue)
+		}
+	}
 }
 
 func appendMemoryMetrics(ms pmetric.MetricSlice, stats *containerStats, ts pcommon.Timestamp) {

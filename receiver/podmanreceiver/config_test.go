@@ -46,10 +46,18 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, "unix:///run/podman/podman.sock", dcfg.Endpoint)
 	assert.Equal(t, 10*time.Second, dcfg.CollectionInterval)
 	assert.Equal(t, 5*time.Second, dcfg.Timeout)
+	assert.Nil(t, dcfg.EnvVarsToMetricLabels)
+	assert.Nil(t, dcfg.ContainerLabelsToMetricLabels)
 
 	ascfg := cfg.Receivers[config.NewComponentIDWithName(typeStr, "all")].(*Config)
 	assert.Equal(t, "podman_stats/all", ascfg.ID().String())
 	assert.Equal(t, "http://example.com/", ascfg.Endpoint)
-	assert.Equal(t, 2*time.Second, ascfg.CollectionInterval)
-	assert.Equal(t, 20*time.Second, ascfg.Timeout)
+	assert.Equal(t, map[string]string{
+		"MY_ENVIRONMENT_VARIABLE":       "my-metric-label",
+		"MY_OTHER_ENVIRONMENT_VARIABLE": "my-other-metric-label",
+	}, ascfg.EnvVarsToMetricLabels)
+	assert.Equal(t, map[string]string{
+		"my.container.label":       "my-metric-label",
+		"my.other.container.label": "my-other-metric-label",
+	}, ascfg.ContainerLabelsToMetricLabels)
 }

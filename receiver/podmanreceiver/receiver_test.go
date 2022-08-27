@@ -108,8 +108,12 @@ func (c mockClient) ping(context.Context) error {
 
 type mockConsumer chan pmetric.Metrics
 
-func (c mockClient) list(context.Context, url.Values) ([]container, error) {
-	return []container{{ID: "c1"}}, nil
+func (c mockClient) list(context.Context, url.Values) (containerList, error) {
+	return containerList{{ID: "c1"}}, nil
+}
+
+func (c mockClient) inspect(context.Context, string) (container, error) {
+	return container{ID: "c1"}, nil
 }
 
 func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {

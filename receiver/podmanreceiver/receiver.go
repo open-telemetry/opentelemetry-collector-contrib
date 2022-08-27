@@ -101,7 +101,7 @@ func (r *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				results <- result{md: pmetric.Metrics{}, err: err}
 				return
 			}
-			results <- result{md: containerStatsToMetrics(time.Now(), c, &stats), err: nil}
+			results <- result{md: containerStatsToMetrics(time.Now(), c, &stats, r.config), err: nil}
 		}(c)
 	}
 

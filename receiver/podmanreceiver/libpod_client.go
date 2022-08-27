@@ -88,7 +88,7 @@ func (c *libpodClient) stats(ctx context.Context, options url.Values) ([]contain
 	return report.Stats, nil
 }
 
-func (c *libpodClient) list(ctx context.Context, options url.Values) ([]container, error) {
+func (c *libpodClient) list(ctx context.Context, options url.Values) (containerList, error) {
 	resp, err := c.request(ctx, "/containers/json", options)
 	if err != nil {
 		return nil, err
@@ -100,10 +100,30 @@ func (c *libpodClient) list(ctx context.Context, options url.Values) ([]containe
 		return nil, err
 	}
 
-	var report []container
+	var report containerList
 	err = json.Unmarshal(bytes, &report)
 	if err != nil {
 		return nil, err
+	}
+	return report, nil
+}
+
+func (c *libpodClient) inspect(ctx context.Context, containerID string) (container, error) {
+	resp, err := c.request(ctx, "/containers/"+containerID+"/json", url.Values{})
+	if err != nil {
+		return container{}, err
+	}
+	defer resp.Body.Close()
+
+	bytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return container{}, err
+	}
+
+	var report container
+	err = json.Unmarshal(bytes, &report)
+	if err != nil {
+		return container{}, err
 	}
 	return report, nil
 }

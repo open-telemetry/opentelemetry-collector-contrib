@@ -24,12 +24,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestTranslateStatsToMetrics(t *testing.T) {
 	ts := time.Now()
 	stats := genContainerStats()
-	md := containerStatsToMetrics(ts, container{Image: "localimage"}, stats)
+	config := genConfig()
+	containerDto := genContainer()
+	md := containerStatsToMetrics(ts, containerDto, stats, config)
 	assertStatsEqualToMetrics(t, stats, md)
 }
 
@@ -41,7 +44,9 @@ func assertStatsEqualToMetrics(t *testing.T, podmanStats *containerStats, md pme
 		"container.runtime":    "podman",
 		"container.id":         "abcd1234",
 		"container.name":       "cntrA",
-		"container.image.name": "localimage",
+		"container.image.name": "docker.io/library/httpd:latest",
+		"label_value1":         "container_label_value_1",
+		"env_value2":           "container_env_value_2",
 	}
 	for k, v := range resourceAttrs {
 		attr, exists := rsm.Resource().Attributes().Get(k)
@@ -135,5 +140,41 @@ func genContainerStats() *containerStats {
 		BlockInput:    943894,
 		BlockOutput:   324234,
 		PIDs:          3,
+	}
+}
+
+func genConfig() *Config {
+	return &Config{
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Millisecond,
+		},
+		Endpoint: "/run/user/1000/podman/podman.sock",
+		Timeout:  5 * time.Second,
+		ContainerLabelsToMetricLabels: map[string]string{
+			"container_label_1": "label_value1",
+		},
+		EnvVarsToMetricLabels: map[string]string{
+			"container_env_2": "env_value2",
+		},
+		APIVersion:    "3.2.0",
+		SSHKey:        "/path/to/ssh/private/key",
+		SSHPassphrase: "pass",
+	}
+}
+
+func genContainer() container {
+	return container{
+		ID: "49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681",
+		Config: containerConfig{
+			Env: map[string]string{
+				"container_env_1": "container_env_value_1",
+				"container_env_2": "container_env_value_2",
+			},
+			Image: "docker.io/library/httpd:latest",
+			Labels: map[string]string{
+				"container_label_1": "container_label_value_1",
+				"container_label_2": "container_label_value_2",
+			},
+		},
 	}
 }

@@ -32,7 +32,8 @@ type clientFactory func(logger *zap.Logger, cfg *Config) (PodmanClient, error)
 type PodmanClient interface {
 	ping(context.Context) error
 	stats(context.Context, url.Values) ([]containerStats, error)
-	list(context.Context, url.Values) ([]container, error)
+	list(context.Context, url.Values) (containerList, error)
+	inspect(ctx context.Context, containerID string) (container, error)
 	events(context.Context, url.Values) (<-chan event, <-chan error)
 }
 
@@ -80,14 +81,28 @@ func (pc *ContainerScraper) loadContainerList(ctx context.Context) error {
 
 	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	containerList, err := pc.client.list(listCtx, params)
+	containers, err := pc.client.list(listCtx, params)
 	if err != nil {
 		return err
 	}
 
-	for _, c := range containerList {
-		pc.persistContainer(c)
+	wg := sync.WaitGroup{}
+	wg.Add(len(containers))
+
+	for _, container := range containers {
+		container := container
+
+		inspectCtx, inspectCancel := context.WithTimeout(ctx, pc.config.Timeout)
+		go func() {
+			defer wg.Done()
+			defer inspectCancel()
+
+			pc.inspectAndPersistContainer(inspectCtx, container.ID)
+		}()
 	}
+
+	wg.Wait()
+
 	return nil
 }
 
@@ -153,21 +168,12 @@ EVENT_LOOP:
 // nil and false otherwise. Persists the container in the cache if container is
 // running and not excluded.
 func (pc *ContainerScraper) inspectAndPersistContainer(ctx context.Context, cid string) (*container, bool) {
-	params := url.Values{}
-	cidFilter := map[string][]string{
-		"id": {cid},
-	}
-	jsonFilter, err := json.Marshal(cidFilter)
-	if err != nil {
-		return nil, false
-	}
-	params.Add("filters", string(jsonFilter))
 	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	container, err := pc.client.list(listCtx, params)
-	if len(container) == 1 && err == nil {
-		pc.persistContainer(container[0])
-		return &container[0], true
+	containerDto, err := pc.client.inspect(listCtx, cid)
+	if err == nil {
+		pc.persistContainer(containerDto)
+		return &containerDto, true
 	}
 	pc.logger.Error(
 		"Could not inspect updated container",

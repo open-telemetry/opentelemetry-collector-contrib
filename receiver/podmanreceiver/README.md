@@ -23,6 +23,10 @@ The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which to gather container stats.
 - `timeout` (default = `5s`): The maximum amount of time to wait for Podman API responses.
+- `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
+  as the specified metric label key.
+- `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
+  as the specified metric label key.
 
 Example:
 
@@ -32,6 +36,12 @@ receivers:
     endpoint: unix://run/podman/podman.sock
     timeout: 10s
     collection_interval: 10s
+    container_labels_to_metric_labels:
+      my.container.label: my-metric-label
+      my.other.container.label: my-other-metric-label
+    env_vars_to_metric_labels:
+      MY_ENVIRONMENT_VARIABLE: my-metric-label
+      MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
