@@ -42,17 +42,13 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	ctx := tqltraces.SpanTransformContext{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		ctx.Resource = rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspan := rspans.ScopeSpans().At(j)
-			ctx.InstrumentationScope = sspan.Scope()
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx.Span = spans.At(k)
-
+				ctx := tqltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)

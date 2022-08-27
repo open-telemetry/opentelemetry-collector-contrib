@@ -79,12 +79,8 @@ func summaryTest(tests []summaryTestCase, t *testing.T) {
 
 			evaluate, err := tql.NewFunctionCall(tt.inv, Functions(), tqlmetrics.ParsePath, tqlmetrics.ParseEnum)
 			assert.NoError(t, err)
-			evaluate(tqlmetrics.MetricTransformContext{
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-				Metric:               tt.input,
-				Metrics:              actualMetrics,
-			})
+
+			evaluate(tqlmetrics.NewTransformContext(pmetric.NewNumberDataPoint(), tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
 
 			expected := pmetric.NewMetricSlice()
 			tt.want(expected)
