@@ -207,15 +207,15 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, 40.0, *dps[0].Value.DoubleValue)
 
-	// system.network.operations.total new metric calculation
+	// system.disk.operations.total new metric calculation
 	dps, ok = metrics["system.disk.operations.total"]
-	require.True(t, ok, "system.network.operations.total metrics not found")
+	require.True(t, ok, "system.disk.operations.total metrics not found")
 	require.Len(t, dps, 4)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 
-	// system.network.io.total new metric calculation
+	// system.disk.io.total new metric calculation
 	dps, ok = metrics["system.disk.io.total"]
-	require.True(t, ok, "system.network.io.total metrics not found")
+	require.True(t, ok, "system.disk.io.total metrics not found")
 	require.Len(t, dps, 2)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 	for _, dp := range dps {
@@ -315,9 +315,8 @@ func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
 
 func testMetricsData() pmetric.Metrics {
 	md := pmetric.NewMetrics()
-	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 
-	m1 := ms.AppendEmpty()
+	m1 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m1.SetName("system.memory.usage")
 	m1.SetDescription("Bytes of memory in use")
 	m1.SetUnit("bytes")
@@ -339,7 +338,8 @@ func testMetricsData() pmetric.Metrics {
 	dp12.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp12.SetIntVal(6e9)
 
-	m2 := ms.AppendEmpty()
+	sm2 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
+	m2 := sm2.AppendEmpty()
 	m2.SetName("system.disk.io")
 	m2.SetDescription("Disk I/O.")
 	m2.SetDataType(pmetric.MetricDataTypeSum)
@@ -374,7 +374,7 @@ func testMetricsData() pmetric.Metrics {
 	dp24.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp24.SetIntVal(8e9)
 
-	m3 := ms.AppendEmpty()
+	m3 := sm2.AppendEmpty()
 	m3.SetName("system.disk.operations")
 	m3.SetDescription("Disk operations count.")
 	m3.SetUnit("bytes")
@@ -410,7 +410,7 @@ func testMetricsData() pmetric.Metrics {
 	dp34.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp34.SetIntVal(5e3)
 
-	m4 := ms.AppendEmpty()
+	m4 := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	m4.SetName("system.disk.operations")
 	m4.SetDescription("Disk operations count.")
 	m4.SetUnit("bytes")
@@ -446,7 +446,8 @@ func testMetricsData() pmetric.Metrics {
 	dp44.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp44.SetIntVal(7e3)
 
-	m5 := ms.AppendEmpty()
+	sm5 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
+	m5 := sm5.AppendEmpty()
 	m5.SetName("system.network.io")
 	m5.SetDescription("The number of bytes transmitted and received")
 	m5.SetUnit("bytes")
@@ -470,7 +471,7 @@ func testMetricsData() pmetric.Metrics {
 	dp52.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp52.SetIntVal(6e9)
 
-	m6 := ms.AppendEmpty()
+	m6 := sm5.AppendEmpty()
 	m6.SetName("system.network.packets")
 	m6.SetDescription("The number of packets transferred")
 	m6.SetDataType(pmetric.MetricDataTypeGauge)
@@ -493,7 +494,8 @@ func testMetricsData() pmetric.Metrics {
 	dp62.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp62.SetIntVal(150)
 
-	m7 := ms.AppendEmpty()
+	sm7 := md.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty().Metrics()
+	m7 := sm7.AppendEmpty()
 	m7.SetName("container.memory.working_set")
 	m7.SetUnit("bytes")
 	m7.SetDataType(pmetric.MetricDataTypeGauge)
@@ -505,7 +507,7 @@ func testMetricsData() pmetric.Metrics {
 	dp71.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp71.SetIntVal(1000)
 
-	m8 := ms.AppendEmpty()
+	m8 := sm7.AppendEmpty()
 	m8.SetName("container.memory.page_faults")
 	m8.SetDataType(pmetric.MetricDataTypeGauge)
 	dp81 := m8.Gauge().DataPoints().AppendEmpty()
@@ -516,7 +518,7 @@ func testMetricsData() pmetric.Metrics {
 	dp81.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp81.SetIntVal(1000)
 
-	m9 := ms.AppendEmpty()
+	m9 := sm7.AppendEmpty()
 	m9.SetName("container.memory.major_page_faults")
 	m9.SetDataType(pmetric.MetricDataTypeGauge)
 	dp91 := m9.Gauge().DataPoints().AppendEmpty()
@@ -660,6 +662,33 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	require.Equal(t, 71, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	dps := converter.MetricsToSignalFxV2(md)
 	require.Equal(t, 0, len(dps))
+}
+
+// Benchmark test for default translation rules on an example hostmetrics dataset.
+func BenchmarkMetricConversion(b *testing.B) {
+	rules, err := loadDefaultTranslationRules()
+	require.NoError(b, err)
+	require.NotNil(b, rules, "rules are nil")
+	tr, err := translation.NewMetricTranslator(rules, 1)
+	require.NoError(b, err)
+
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	require.NoError(b, err)
+
+	file, err := os.Open("testdata/json/hostmetrics.json")
+	defer func() { _ = file.Close() }()
+	require.NoError(b, err)
+	bytes, err := io.ReadAll(file)
+	require.NoError(b, err)
+
+	unmarshaller := pmetric.NewJSONUnmarshaler()
+	metrics, err := unmarshaller.UnmarshalMetrics(bytes)
+	require.NoError(b, err)
+
+	for n := 0; n < b.N; n++ {
+		translated := c.MetricsToSignalFxV2(metrics)
+		require.NotNil(b, translated)
+	}
 }
 
 func getMetrics(metrics []map[string]string) pmetric.Metrics {

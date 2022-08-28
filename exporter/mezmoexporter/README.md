@@ -3,6 +3,16 @@
 This exporter supports sending OpenTelemetry log data to
 [Mezmo](https://mezmo.com).
 
+Note: Mezmo logs ingestion [requires a `hostname`](https://docs.mezmo.com/docs/log-parsing#hostname)
+field to be present. When logs are sent via this exporter, and `hostname`
+metadata is not added, the Mezmo ingestion API will set `hostname=otel`. To
+provide the `hostname` information, we recommend adding a
+[Resource Detection Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor)
+to the collector configuration. Doing so will cause this exporter to
+automatically add the `hostname` metadata to the outgoing log data whenever
+it is available. See the below example configuration for a basic configuration
+that adds `hostname` detection support.
+
 # Configuration options:
 
 - `ingest_url` (optional): Specifies the URL to send ingested logs to.  If not 

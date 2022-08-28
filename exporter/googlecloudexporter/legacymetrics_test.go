@@ -35,7 +35,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
@@ -126,41 +126,41 @@ func TestGoogleCloudMetricExport(t *testing.T) {
 			},
 		},
 		Metrics: []*metricspb.Metric{
-			metricstestutil.Gauge(
+			ocmetricstestutil.Gauge(
 				"test_gauge1",
 				[]string{"k0"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0"},
-					metricstestutil.Double(time.Now(), 1))),
-			metricstestutil.Gauge(
+					ocmetricstestutil.Double(time.Now(), 1))),
+			ocmetricstestutil.Gauge(
 				"test_gauge2",
 				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
-					metricstestutil.Double(time.Now(), 12))),
-			metricstestutil.Gauge(
+					ocmetricstestutil.Double(time.Now(), 12))),
+			ocmetricstestutil.Gauge(
 				"test_gauge3",
 				[]string{"k0", "k1", "k2"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1", "v2"},
-					metricstestutil.Double(time.Now(), 123))),
-			metricstestutil.Gauge(
+					ocmetricstestutil.Double(time.Now(), 123))),
+			ocmetricstestutil.Gauge(
 				"test_gauge4",
 				[]string{"k0", "k1", "k2", "k3"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1", "v2", "v3"},
-					metricstestutil.Double(time.Now(), 1234))),
-			metricstestutil.Gauge(
+					ocmetricstestutil.Double(time.Now(), 1234))),
+			ocmetricstestutil.Gauge(
 				"test_gauge5",
 				[]string{"k4", "k5"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v4", "v5"},
-					metricstestutil.Double(time.Now(), 34))),
+					ocmetricstestutil.Double(time.Now(), 34))),
 		},
 	}
 	md.Metrics[2].Resource = &resourcepb.Resource{

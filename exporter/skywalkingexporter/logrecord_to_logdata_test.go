@@ -32,7 +32,7 @@ func getComplexAttributeValueMap() pcommon.Value {
 	mapValReal.InsertString("status", "ok")
 	mapValReal.InsertDouble("value", 1.3)
 	mapValReal.InsertInt("code", 200)
-	mapValReal.InsertNull("null")
+	mapValReal.Insert("null", pcommon.NewValueEmpty())
 	arrayVal := pcommon.NewValueSlice()
 	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
 	mapValReal.Insert("array", arrayVal)
@@ -62,9 +62,9 @@ func createLogData(numberOfLogs int) plog.Logs {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 		logRecord.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-		logRecord.SetFlags(uint32(0x01))
+		logRecord.FlagsStruct().SetIsSampled(true)
 		logRecord.SetSeverityText("INFO")
-		logRecord.SetSeverityNumber(plog.SeverityNumberINFO)
+		logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 		logRecord.SetTimestamp(ts)
 		switch i {
 		case 0:
