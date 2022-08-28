@@ -17,9 +17,10 @@ package tqlotel
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_split(t *testing.T) {
