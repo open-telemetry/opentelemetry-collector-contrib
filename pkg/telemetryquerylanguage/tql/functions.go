@@ -49,21 +49,26 @@ func (p *Parser) buildArgs(inv Invocation, fType reflect.Type) ([]reflect.Value,
 	// Some function arguments may be intended to take values from the calling processor
 	// instead of being passed by the caller of the TQL function, so we have to keep
 	// track of the index of the argument passed within the DSL.
-	// e.g. zap.Logger, which is provided by the processor to the TQL Parser struct.
+	// e.g. Logger, which is provided by the processor to the TQL Parser struct.
 	DSLArgumentIndex := 0
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
-		if argType.Kind() == reflect.Slice {
+		switch argType.Kind() {
+		case reflect.Slice:
 			err := p.buildSliceArg(inv, argType, i, &args)
 			if err != nil {
 				return nil, err
 			}
 			// Slice arguments must be the final argument in an invocation.
 			return args, nil
-		} else if argType.Kind() == reflect.Interface && argType.Name() == "Logger" {
-			args = append(args, reflect.ValueOf(p.logger))
-		} else {
+		default:
+			isInternalArg := p.buildInternalArg(argType, &args)
+
+			if isInternalArg {
+				continue
+			}
+
 			if DSLArgumentIndex >= len(inv.Arguments) {
 				return nil, fmt.Errorf("not enough arguments for function %v", inv.Function)
 			}
@@ -134,6 +139,7 @@ func (p *Parser) buildSliceArg(inv Invocation, argType reflect.Type, startingInd
 	return nil
 }
 
+// Handle interfaces that can be passed as arguments to TQL function invocations.
 func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value) error {
 	switch argType.Name() {
 	case "Setter":
@@ -178,4 +184,17 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 		*args = append(*args, reflect.ValueOf(bool(*argDef.Bool)))
 	}
 	return nil
+}
+
+// Handle interfaces that can be declared as paramters to a TQL function, but will
+// never be called in an invocation. Returns whether the arg is an internal arg.
+func (p *Parser) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
+	switch argType.Name() {
+	case "Logger":
+		*args = append(*args, reflect.ValueOf(p.logger))
+	default:
+		return false
+	}
+
+	return true
 }
