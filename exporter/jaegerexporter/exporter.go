@@ -42,7 +42,7 @@ import (
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),

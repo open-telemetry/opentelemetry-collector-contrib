@@ -157,10 +157,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: false},
 		{
 			name: "get fails",
@@ -169,10 +167,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 		{
 			name: "hostname fails",
@@ -182,10 +178,8 @@ func TestDetector_Detect(t *testing.T) {
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
 			}},
-			args: args{ctx: context.Background()},
-			want: func() pcommon.Resource {
-				return pcommon.NewResource()
-			}(),
+			args:    args{ctx: context.Background()},
+			want:    pcommon.NewResource(),
 			wantErr: true},
 	}
 	for _, tt := range tests {

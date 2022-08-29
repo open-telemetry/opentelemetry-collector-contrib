@@ -564,7 +564,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertNull("severity")
+		am.Insert("severity", pcommon.NewValueEmpty())
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -573,16 +573,16 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 func TestExporter_convertLogBodyToEntry(t *testing.T) {
 	res := pcommon.NewResource()
-	res.Attributes().Insert("host.name", pcommon.NewValueString("something"))
-	res.Attributes().Insert("pod.name", pcommon.NewValueString("something123"))
+	res.Attributes().UpsertString("host.name", "something")
+	res.Attributes().UpsertString("pod.name", "something123")
 
 	lr := plog.NewLogRecord()
 	lr.Body().SetStringVal("Payment succeeded")
 	lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
 	lr.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
 	lr.SetSeverityText("DEBUG")
-	lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
-	lr.Attributes().Insert("payment_method", pcommon.NewValueString("credit_card"))
+	lr.SetSeverityNumber(plog.SeverityNumberDebug)
+	lr.Attributes().UpsertString("payment_method", "credit_card")
 
 	ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 	lr.SetTimestamp(ts)
@@ -698,7 +698,7 @@ func TestExporter_convertLogtoJSONEntry(t *testing.T) {
 	lr.Body().SetStringVal("log message")
 	lr.SetTimestamp(ts)
 	res := pcommon.NewResource()
-	res.Attributes().Insert("host.name", pcommon.NewValueString("something"))
+	res.Attributes().UpsertString("host.name", "something")
 
 	exp := newExporter(&Config{}, componenttest.NewNopTelemetrySettings())
 	entry, err := exp.convertLogToJSONEntry(lr, res)
@@ -760,12 +760,12 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "severityN",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetSeverityNumber(plog.SeverityNumberDEBUG)
+				lr.SetSeverityNumber(plog.SeverityNumberDebug)
 				return lr
 			}(),
 			expected: func() model.LabelSet {
 				ls := model.LabelSet{}
-				ls[model.LabelName("severityN")] = model.LabelValue(plog.SeverityNumberDEBUG.String())
+				ls[model.LabelName("severityN")] = model.LabelValue(plog.SeverityNumberDebug.String())
 				return ls
 			}(),
 		},
