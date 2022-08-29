@@ -72,10 +72,17 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 					}
 
 					// masking body
-					log.Body().SetStringVal(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
+					switch log.Body().Type() {
+					case pcommon.ValueTypeMap:
+						log.Body().MapVal().Range(func(k string, v pcommon.Value) bool {
+							v.SetStringVal(regexp.ReplaceAllString(v.AsString(), setting.Placeholder))
+							return true
+						})
+					case pcommon.ValueTypeString:
+						log.Body().SetStringVal(regexp.ReplaceAllString(log.Body().AsString(), setting.Placeholder))
+					}
 				}
 			}
 		}
 	}
-
 }
