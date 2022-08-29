@@ -19,37 +19,54 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	factories, err := componenttest.NopFactories()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	defaultMetricsSettings := metadata.DefaultMetricsSettings()
+	defaultMetricsSettings.ActiveDirectoryDsReplicationObjectRate.Enabled = false
+	tests := []struct {
+		id       config.ComponentID
+		expected config.Receiver
+	}{
+		{
+			id:       config.NewComponentIDWithName(typeStr, "defaults"),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: config.NewComponentIDWithName(typeStr, ""),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ReceiverSettings:   config.NewReceiverSettings(config.NewComponentIDWithName(typeStr, "")),
+					CollectionInterval: 2 * time.Minute,
+				},
+				Metrics: defaultMetricsSettings,
+			},
+		},
+	}
 
-	require.Equal(t, len(cfg.Receivers), 2)
-	defaultRecvID := config.NewComponentIDWithName(typeStr, "defaults")
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
 
-	defaultCfg := factory.CreateDefaultConfig().(*Config)
-	defaultCfg.ReceiverSettings.SetIDName(defaultRecvID.Name())
-	defaultReceiver := cfg.Receivers[defaultRecvID]
-	require.Equal(t, defaultCfg, defaultReceiver)
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	advancedRecv := cfg.Receivers[config.NewComponentID(typeStr)]
-	expectedAdvancedRecv := factory.CreateDefaultConfig().(*Config)
-
-	expectedAdvancedRecv.Metrics.ActiveDirectoryDsReplicationObjectRate.Enabled = false
-	expectedAdvancedRecv.ScraperControllerSettings.CollectionInterval = 2 * time.Minute
-
-	require.Equal(t, expectedAdvancedRecv, advancedRecv)
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }

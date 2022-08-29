@@ -270,7 +270,7 @@ func TestValue_FromAttribute(t *testing.T) {
 			in: func() pcommon.Value {
 				v := pcommon.NewValueMap()
 				m := v.MapVal()
-				m.Insert("a", pcommon.NewValueInt(1))
+				m.InsertInt("a", 1)
 				return v
 			}(),
 			want: Value{kind: KindObject, doc: Document{[]field{{"a", IntValue(1)}}}},

@@ -202,7 +202,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetric(&sl)
+			mp.toMetric(sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -445,7 +445,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetric(&sl)
+			mp.toMetric(sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
@@ -528,7 +528,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
 
 			sl := pmetric.NewMetricSlice()
-			mp.ToMetric(&sl)
+			mp.toMetric(sl)
 
 			require.Equal(t, 1, sl.Len(), "Exactly one metric expected")
 			metric := sl.At(0)
