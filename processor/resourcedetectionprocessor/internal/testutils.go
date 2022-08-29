@@ -35,13 +35,13 @@ func fillAttributeMap(mp map[string]interface{}, attr pcommon.Map) {
 	for k, v := range mp {
 		switch t := v.(type) {
 		case bool:
-			attr.Insert(k, pcommon.NewValueBool(t))
+			attr.UpsertBool(k, t)
 		case int64:
-			attr.Insert(k, pcommon.NewValueInt(t))
+			attr.UpsertInt(k, t)
 		case float64:
-			attr.Insert(k, pcommon.NewValueDouble(t))
+			attr.InsertDouble(k, t)
 		case string:
-			attr.Insert(k, pcommon.NewValueString(t))
+			attr.InsertString(k, t)
 		}
 	}
 }

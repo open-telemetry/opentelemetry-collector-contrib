@@ -28,7 +28,6 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 	testcases := []struct {
 		name          string
 		ctxFunc       func() context.Context
-		tracesFunc    func() ptrace.Traces
 		fromAttr      string
 		expectedValue string
 	}{
@@ -39,18 +38,12 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 					metadata.Pairs("X-Tenant", "acme"),
 				)
 			},
-			tracesFunc: func() ptrace.Traces {
-				return ptrace.NewTraces()
-			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "acme",
 		},
 		{
-			name:    "no values from empty context",
-			ctxFunc: context.Background,
-			tracesFunc: func() ptrace.Traces {
-				return ptrace.NewTraces()
-			},
+			name:          "no values from empty context",
+			ctxFunc:       context.Background,
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
 		},
@@ -61,9 +54,6 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 					metadata.Pairs("X-Tenant", ""),
 				)
 			},
-			tracesFunc: func() ptrace.Traces {
-				return ptrace.NewTraces()
-			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "",
 		},
@@ -73,13 +63,6 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 				return metadata.NewIncomingContext(context.Background(),
 					metadata.Pairs("X-Tenant", "globex", "X-Tenant", "acme"),
 				)
-			},
-			tracesFunc: func() ptrace.Traces {
-				traces := ptrace.NewTraces()
-				traces.ResourceSpans().AppendEmpty()
-				traces.ResourceSpans().At(0).Resource().
-					Attributes().InsertString("k8s.namespace.name", "namespace-1")
-				return traces
 			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "globex",
@@ -101,14 +84,12 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 	testcases := []struct {
 		name          string
-		ctxFunc       func() context.Context
 		tracesFunc    func() ptrace.Traces
 		fromAttr      string
 		expectedValue string
 	}{
 		{
-			name:    "value from resource attribute",
-			ctxFunc: context.Background,
+			name: "value from resource attribute",
 			tracesFunc: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()
@@ -121,11 +102,6 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 		},
 		{
 			name: "value from resource attribute even when the same context attribute exists",
-			ctxFunc: func() context.Context {
-				return metadata.NewIncomingContext(context.Background(),
-					metadata.Pairs("k8s.namespace.name", "namespace-1-from-context"),
-				)
-			},
 			tracesFunc: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()

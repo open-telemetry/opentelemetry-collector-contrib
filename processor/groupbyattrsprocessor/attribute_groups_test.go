@@ -28,12 +28,12 @@ import (
 
 func simpleResource() pcommon.Resource {
 	rs := pcommon.NewResource()
-	rs.Attributes().Insert("somekey1", pcommon.NewValueString("some-string-value"))
-	rs.Attributes().Insert("somekey2", pcommon.NewValueInt(123))
+	rs.Attributes().UpsertString("somekey1", "some-string-value")
+	rs.Attributes().UpsertInt("somekey2", 123)
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("random-", i)
 		v := fmt.Sprint("value-", rand.Intn(100))
-		rs.Attributes().Insert(k, pcommon.NewValueString(v))
+		rs.Attributes().UpsertString(k, v)
 	}
 	return rs
 }
