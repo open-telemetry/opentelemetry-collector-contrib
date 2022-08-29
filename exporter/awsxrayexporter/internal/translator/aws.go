@@ -272,9 +272,9 @@ func getLogGroupMetadata(logGroups pcommon.Slice, isArn bool) []awsxray.LogGroup
 // Log group name will always be in the 7th position of the ARN
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/iam-access-control-overview-cwl.html#CWL_ARN_Format
 func parseLogGroup(arn string) string {
-	parts := strings.SplitAfter(arn, ":")
+	parts := strings.Split(arn, ":")
 	if len(parts) >= 7 {
-		return strings.Trim(parts[6], ":")
+		return parts[6]
 	}
 
 	return arn
