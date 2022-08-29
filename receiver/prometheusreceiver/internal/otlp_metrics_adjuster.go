@@ -59,8 +59,7 @@ import (
 //    approach requires adding 'lastGC' Time and (potentially) a gcInterval duration to
 //    timeseriesMap so the current approach is used instead.
 
-// timeseriesinfo contains the information necessary to adjust from the initial point and to detect
-// resets.
+// timeseriesinfo contains the information necessary to adjust from the initial point and to detect resets.
 type timeseriesinfo struct {
 	mark bool
 
@@ -242,23 +241,19 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 // AdjustMetricSlice takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 // Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjuster) AdjustMetricSlice(metricL pmetric.MetricSlice) int {
-	resets := 0
+func (ma *MetricsAdjuster) AdjustMetricSlice(metricL pmetric.MetricSlice) {
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
 	ma.tsm.Lock()
 	defer ma.tsm.Unlock()
 	for i := 0; i < metricL.Len(); i++ {
-		resets += ma.adjustMetric(metricL.At(i))
+		ma.adjustMetric(metricL.At(i))
 	}
-	return resets
 }
 
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
-// Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjuster) AdjustMetrics(metrics pmetric.Metrics) int {
-	resets := 0
+func (ma *MetricsAdjuster) AdjustMetrics(metrics pmetric.Metrics) {
 	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 	// nothing else can modify the data used for adjustment.
 	ma.tsm.Lock()
@@ -268,50 +263,40 @@ func (ma *MetricsAdjuster) AdjustMetrics(metrics pmetric.Metrics) int {
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				resets += ma.adjustMetric(ilm.Metrics().At(k))
+				ma.adjustMetric(ilm.Metrics().At(k))
 			}
 		}
 	}
-	return resets
 }
 
-// Returns the number of timeseries with reset start times.
-func (ma *MetricsAdjuster) adjustMetric(metric pmetric.Metric) int {
+func (ma *MetricsAdjuster) adjustMetric(metric pmetric.Metric) {
 	switch dataType := metric.DataType(); dataType {
 	case pmetric.MetricDataTypeGauge:
 		// gauges don't need to be adjusted so no additional processing is necessary
-		return 0
 
 	case pmetric.MetricDataTypeHistogram:
-		return ma.adjustMetricHistogram(metric)
+		ma.adjustMetricHistogram(metric)
 
 	case pmetric.MetricDataTypeSummary:
-		return ma.adjustMetricSummary(metric)
+		ma.adjustMetricSummary(metric)
 
 	case pmetric.MetricDataTypeSum:
-		return ma.adjustMetricSum(metric)
+		ma.adjustMetricSum(metric)
 
 	default:
 		// this shouldn't happen
 		ma.logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
-		return 0
 	}
 }
 
-func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.MetricAggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
-		return 0
+		return
 	}
 
-	// Note: Sum of Squared Deviation not currently supported.
 	currentPoints := histogram.DataPoints()
-
-	if currentPoints.Len() == 0 {
-		return 0
-	}
-
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentDist.Attributes())
@@ -330,7 +315,6 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) (resets
 		if tsi.histogram.initial == nil {
 			// initial || reset timeseries.
 			tsi.histogram.initial = &currentDist
-			resets++
 			continue
 		}
 
@@ -342,18 +326,15 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) (resets
 		if currentDist.Count() < previousDist.Count() || currentDist.Sum() < previousDist.Sum() {
 			// reset detected
 			tsi.histogram.initial = &currentDist
-			resets++
 			continue
 		}
 
 		currentDist.SetStartTimestamp(tsi.histogram.initial.StartTimestamp())
 	}
-	return
 }
 
-func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
-
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
 		tsi := ma.tsm.get(current, currentSum.Attributes())
@@ -372,7 +353,6 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) (resets int) 
 		if tsi.number.initial == nil {
 			// initial || reset timeseries.
 			tsi.number.initial = &currentSum
-			resets++
 			continue
 		}
 
@@ -384,16 +364,13 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) (resets int) 
 		if currentSum.DoubleVal() < previousSum.DoubleVal() {
 			// reset detected
 			tsi.number.initial = &currentSum
-			resets++
 			continue
 		}
 		currentSum.SetStartTimestamp(tsi.number.initial.StartTimestamp())
 	}
-
-	return
 }
 
-func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) (resets int) {
+func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
@@ -414,7 +391,6 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) (resets i
 		if tsi.summary.initial == nil {
 			// initial || reset timeseries.
 			tsi.summary.initial = &currentSummary
-			resets++
 			continue
 		}
 
@@ -431,12 +407,9 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) (resets i
 				currentSummary.Sum() < previousSummary.Sum()) {
 			// reset detected
 			tsi.summary.initial = &currentSummary
-			resets++
 			continue
 		}
 
 		currentSummary.SetStartTimestamp(tsi.summary.initial.StartTimestamp())
 	}
-
-	return
 }
