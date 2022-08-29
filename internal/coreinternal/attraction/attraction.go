@@ -316,7 +316,11 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if !found {
 				continue
 			}
-			attrs.Update(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if !found {
+				continue
+			}
+			av.CopyTo(val)
 		case UPSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
