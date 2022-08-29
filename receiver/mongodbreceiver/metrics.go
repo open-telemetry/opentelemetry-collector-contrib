@@ -42,6 +42,17 @@ var documentMap = map[string]metadata.AttributeOperation{
 	"deleted":  metadata.AttributeOperationDelete,
 }
 
+var lockTypeMap = map[string]metadata.AttributeLockType{
+	"ParallelBatchWriterMode":    metadata.AttributeLockTypeParallelBatchWriteMode,
+	"ReplicationStateTransition": metadata.AttributeLockTypeReplicationStateTransition,
+	"Global":                     metadata.AttributeLockTypeGlobal,
+	"Database":                   metadata.AttributeLockTypeDatabase,
+	"Collection":                 metadata.AttributeLockTypeCollection,
+	"Mutex":                      metadata.AttributeLockTypeMutex,
+	"Metadata":                   metadata.AttributeLockTypeMetadata,
+	"oplog":                      metadata.AttributeLockTypeOplog,
+}
+
 var lockModeMap = map[string]metadata.AttributeLockMode{
 	"R": metadata.AttributeLockModeShared,
 	"W": metadata.AttributeLockModeExclusive,
@@ -322,11 +333,11 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 }
 
 func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	for lockTypeKey, lockTypeAttribute := range metadata.MapAttributeLockType {
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			metricPath := []string{"locks", lockTypeKey, "acquireCount", lockModeKey}
 			metricName := "mongodb.locks.acquire_count"
-			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeKey, lockModeKey)
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
@@ -338,11 +349,11 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 }
 
 func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	for lockTypeKey, lockTypeAttribute := range metadata.MapAttributeLockType {
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			metricPath := []string{"locks", lockTypeKey, "acquireWaitCount", lockModeKey}
 			metricName := "mongodb.locks.acquire_wait_count"
-			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeKey, lockModeKey)
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
@@ -354,11 +365,11 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 }
 
 func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	for lockTypeKey, lockTypeAttribute := range metadata.MapAttributeLockType {
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			metricPath := []string{"locks", lockTypeKey, "timeAcquiringMicros", lockModeKey}
 			metricName := "mongodb.locks.time_acquiring_micros"
-			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeKey, lockModeKey)
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
@@ -370,11 +381,11 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 }
 
 func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
-	for lockTypeKey, lockTypeAttribute := range metadata.MapAttributeLockType {
+	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			metricPath := []string{"locks", lockTypeKey, "deadlockCount", lockModeKey}
 			metricName := "mongodb.locks.deadlock_count"
-			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeKey, lockModeKey)
+			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
