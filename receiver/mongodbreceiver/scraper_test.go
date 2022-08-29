@@ -57,65 +57,6 @@ func TestScraperLifecycle(t *testing.T) {
 	require.Less(t, time.Since(now), 100*time.Millisecond, "component start and stop should be very fast")
 }
 
-var (
-	errAllPartialMetrics = errors.New(
-		strings.Join(
-			[]string{
-				"failed to collect metric mongodb.cache.operations with attribute(s) miss, hit: could not find key for metric",
-				"failed to collect metric mongodb.cursor.count: could not find key for metric",
-				"failed to collect metric mongodb.cursor.timeout.count: could not find key for metric",
-				"failed to collect metric mongodb.global_lock.time: could not find key for metric",
-				"failed to collect metric bytesIn: could not find key for metric",
-				"failed to collect metric bytesOut: could not find key for metric",
-				"failed to collect metric numRequests: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) delete: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) getmore: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) command: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) insert: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) query: could not find key for metric",
-				"failed to collect metric mongodb.operation.count with attribute(s) update: could not find key for metric",
-				"failed to collect metric mongodb.session.count: could not find key for metric",
-				"failed to collect metric mongodb.operation.time: could not find key for metric",
-				"failed to collect metric mongodb.collection.count with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.data.size with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.extent.count with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.index.size with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.index.count with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.object.count with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.storage.size with attribute(s) fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.connection.count with attribute(s) available, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.connection.count with attribute(s) current, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.connection.count with attribute(s) active, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.document.operation.count with attribute(s) inserted, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.document.operation.count with attribute(s) updated, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.document.operation.count with attribute(s) deleted, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.memory.usage with attribute(s) resident, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.memory.usage with attribute(s) virtual, fakedatabase: could not find key for metric",
-				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, orders: could not find key for index access metric",
-				"failed to collect metric mongodb.index.access.count with attribute(s) fakedatabase, products: could not find key for index access metric",
-			}, "; "))
-	errAllClientFailedFetch = errors.New(
-		strings.Join(
-			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
-				"failed to fetch top stats metrics: some top stats error",
-				"failed to fetch database stats metrics: some database stats error",
-				"failed to fetch server status metrics: some server status error",
-				"failed to fetch index stats metrics: some index stats error",
-				"failed to fetch index stats metrics: some index stats error",
-			}, "; "))
-
-	errCollectionNames = errors.New(
-		strings.Join(
-			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
-				"failed to fetch top stats metrics: some top stats error",
-				"failed to fetch database stats metrics: some database stats error",
-				"failed to fetch server status metrics: some server status error",
-				"failed to fetch collection names: some collection names error",
-			}, "; "))
-)
-
 func TestScraperScrape(t *testing.T) {
 	testCases := []struct {
 		desc              string
@@ -253,7 +194,7 @@ func TestScraperScrape(t *testing.T) {
 		},
 		{
 			desc:       "Successful scrape",
-			partialErr: false,
+			partialErr: true,
 			setupMockClient: func(t *testing.T) client {
 				fc := &fakeClient{}
 				adminStatus, err := loadAdminStatusAsMap()
@@ -288,7 +229,7 @@ func TestScraperScrape(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			expectedErr: nil,
+			expectedErr: errLocksPartialMetrics,
 		},
 	}
 
@@ -297,7 +238,6 @@ func TestScraperScrape(t *testing.T) {
 			scraper := newMongodbScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
-
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
 			} else {

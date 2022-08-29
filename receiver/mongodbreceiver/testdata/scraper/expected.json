@@ -155,6 +155,19 @@
                         "aggregationTemporality": 2,
                         "dataPoints": [
                            {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
                               "asInt": "2",
                               "attributes": [
                                  {
@@ -218,19 +231,6 @@
                               ],
                               "startTimeUnixNano": "1659372940162070000",
                               "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
                            }
                         ],
                         "isMonotonic": true
@@ -271,32 +271,6 @@
                      "sum": {
                         "aggregationTemporality": 2,
                         "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "getmore"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "49340",
-                              "attributes": [
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "command"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
                            {
                               "asInt": "12465",
                               "attributes": [
@@ -343,6 +317,32 @@
                                     "key": "operation",
                                     "value": {
                                        "stringValue": "delete"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "getmore"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "49340",
+                              "attributes": [
+                                 {
+                                    "key": "operation",
+                                    "value": {
+                                       "stringValue": "command"
                                     }
                                  }
                               ],
@@ -406,25 +406,6 @@
                         "aggregationTemporality": 2,
                         "dataPoints": [
                            {
-                              "asInt": "3",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "fakedatabase"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "current"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
                               "asInt": "1",
                               "attributes": [
                                  {
@@ -456,6 +437,25 @@
                                     "key": "type",
                                     "value": {
                                        "stringValue": "available"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "current"
                                     }
                                  }
                               ],
@@ -507,6 +507,25 @@
                                  {
                                     "key": "operation",
                                     "value": {
+                                       "stringValue": "insert"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "operation",
+                                    "value": {
                                        "stringValue": "update"
                                     }
                                  }
@@ -527,25 +546,6 @@
                                     "key": "operation",
                                     "value": {
                                        "stringValue": "delete"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1659372940162070000",
-                              "timeUnixNano": "1659372940162165000"
-                           },
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "database",
-                                    "value": {
-                                       "stringValue": "fakedatabase"
-                                    }
-                                 },
-                                 {
-                                    "key": "operation",
-                                    "value": {
-                                       "stringValue": "insert"
                                     }
                                  }
                               ],
@@ -624,6 +624,316 @@
                         ]
                      },
                      "unit": "By"
+                  },
+                  {
+                     "description": "Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.",
+                     "name": "mongodb.locks.acquire_wait_count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "5",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "global"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "exclusive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "307",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "global"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "global"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_exclusive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "3",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "7",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "exclusive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "149",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "89",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "collection"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "61",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "oplog"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "exclusive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "2",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "274",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "exclusive"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           },
+                           {
+                              "asInt": "250",
+                              "attributes": [
+                                 {
+                                    "key": "database",
+                                    "value": {
+                                       "stringValue": "fakedatabase"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_type",
+                                    "value": {
+                                       "stringValue": "database"
+                                    }
+                                 },
+                                 {
+                                    "key": "lock_mode",
+                                    "value": {
+                                       "stringValue": "intent_shared"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1659372940162070000",
+                              "timeUnixNano": "1659372940162165000"
+                           }
+                        ]
+                     },
+                     "unit": "{count}"
                   },
                   {
                      "description": "The amount of memory used.",
