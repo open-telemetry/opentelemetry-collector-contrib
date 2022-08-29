@@ -24,7 +24,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -54,15 +53,15 @@ func TestRunningMetrics(t *testing.T) {
 
 	rm := rms.AppendEmpty()
 	resAttrs := rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
+	resAttrs.UpsertString(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-1"))
+	resAttrs.UpsertString(attributes.AttributeDatadogHostname, "resource-hostname-1")
 
 	rm = rms.AppendEmpty()
 	resAttrs = rm.Resource().Attributes()
-	resAttrs.Insert(attributes.AttributeDatadogHostname, pcommon.NewValueString("resource-hostname-2"))
+	resAttrs.UpsertString(attributes.AttributeDatadogHostname, "resource-hostname-2")
 
 	rms.AppendEmpty()
 
