@@ -39,7 +39,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil/ocmetricstestutil"
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
@@ -88,13 +88,13 @@ func TestNew(t *testing.T) {
 func TestConsumeMetricsData(t *testing.T) {
 	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/396")
 	smallBatch := internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{
-		metricstestutil.Gauge(
+		ocmetricstestutil.Gauge(
 			"test_gauge",
 			[]string{"k0", "k1"},
-			metricstestutil.Timeseries(
+			ocmetricstestutil.Timeseries(
 				time.Now(),
 				[]string{"v0", "v1"},
-				metricstestutil.Double(time.Now(), 123))),
+				ocmetricstestutil.Double(time.Now(), 123))),
 	})
 
 	largeBatch := generateLargeBatch()
@@ -288,10 +288,10 @@ func generateLargeBatch() pmetric.Metrics {
 	ts := time.Now()
 	for i := 0; i < 65000; i++ {
 		metrics = append(metrics,
-			metricstestutil.Gauge(
+			ocmetricstestutil.Gauge(
 				"test_"+strconv.Itoa(i),
 				[]string{"k0", "k1"},
-				metricstestutil.Timeseries(
+				ocmetricstestutil.Timeseries(
 					time.Now(),
 					[]string{"v0", "v1"},
 					&metricspb.Point{

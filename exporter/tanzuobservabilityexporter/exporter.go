@@ -84,6 +84,7 @@ func newTracesExporter(settings component.ExporterCreateSettings, c config.Expor
 
 	// we specify a MetricsPort so the SDK can report its internal metrics
 	// but don't currently export any metrics from the pipeline
+	// nolint:staticcheck
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
 		Host:                 tracingHost,
 		MetricsPort:          metricsPort,

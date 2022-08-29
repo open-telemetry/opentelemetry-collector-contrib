@@ -43,6 +43,10 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 - Operators will output to the next operator in the pipeline. The last operator in the pipeline will emit from the receiver. Optionally, the `output` parameter can be used to specify the `id` of another operator to which logs will be passed directly.
 - Only parsers and general purpose operators should be used.
 
+### Parsers with Embedded Operations
+
+Many parsers operators can be configured to embed certain followup operations such as timestamp and severity parsing. For more information, see [complex parsers](../../pkg/stanza/docs/types/parsers.md#complex-parsers).
+
 #### `multiline` configuration
 
 If set, the `multiline` configuration block instructs the `tcplog` receiver to split log entries on a pattern other than newlines.

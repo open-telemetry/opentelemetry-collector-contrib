@@ -391,7 +391,7 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Nil element",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				attrMap.InsertNull("key")
+				attrMap.Insert("key", pcommon.NewValueEmpty())
 				return attrMap
 			},
 			expected: map[string]interface{}{

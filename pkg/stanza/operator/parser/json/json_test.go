@@ -29,21 +29,21 @@ import (
 )
 
 func newTestParser(t *testing.T) *Parser {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	return op.(*Parser)
 }
 
 func TestConfigBuild(t *testing.T) {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	op, err := config.Build(testutil.Logger(t))
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
 }
 
 func TestConfigBuildFailure(t *testing.T) {
-	config := NewConfig("test")
+	config := NewConfigWithID("test")
 	config.OnError = "invalid_on_error"
 	_, err := config.Build(testutil.Logger(t))
 	require.Error(t, err)
@@ -151,7 +151,7 @@ func TestParser(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			cfg := NewConfig("test")
+			cfg := NewConfigWithID("test")
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
@@ -173,7 +173,7 @@ func TestParser(t *testing.T) {
 }
 
 func TestJsonParserConfig(t *testing.T) {
-	expect := NewConfig("test")
+	expect := NewConfigWithID("test")
 	expect.ParseFrom = entry.NewBodyField("from")
 	expect.ParseTo = entry.NewBodyField("to")
 

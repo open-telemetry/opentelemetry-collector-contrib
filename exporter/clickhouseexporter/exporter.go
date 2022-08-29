@@ -90,7 +90,7 @@ func (e *clickhouseExporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 						r.Timestamp().AsTime(),
 						r.TraceID().HexString(),
 						r.SpanID().HexString(),
-						r.Flags(),
+						r.FlagsStruct().AsRaw(),
 						r.SeverityText(),
 						int32(r.SeverityNumber()),
 						serviceName,

@@ -17,12 +17,10 @@ package adapter
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -120,7 +118,7 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 
 	// Allow tests to run without implementing input config
 	if testConfig.Input["type"] == nil {
-		return &operator.Config{Builder: noop.NewConfig("nop")}, nil
+		return &operator.Config{Builder: noop.NewConfig()}, nil
 	}
 
 	// Allow tests to explicitly prompt a failure
@@ -128,68 +126,4 @@ func (f TestReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Conf
 		return nil, errors.New("unknown input type")
 	}
 	return &operator.Config{Builder: NewUnstartableConfig()}, nil
-}
-
-func newMockPersister() *persister {
-	return &persister{
-		client: newMockClient(),
-	}
-}
-
-type mockClient struct {
-	cache    map[string][]byte
-	cacheMux sync.Mutex
-}
-
-func newMockClient() *mockClient {
-	return &mockClient{
-		cache: make(map[string][]byte),
-	}
-}
-
-func (p *mockClient) Get(_ context.Context, key string) ([]byte, error) {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	return p.cache[key], nil
-}
-
-func (p *mockClient) Set(_ context.Context, key string, value []byte) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	p.cache[key] = value
-	return nil
-}
-
-func (p *mockClient) Delete(_ context.Context, key string) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	delete(p.cache, key)
-	return nil
-}
-
-func (p *mockClient) Batch(_ context.Context, ops ...storage.Operation) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-
-	for _, op := range ops {
-		switch op.Type {
-		case storage.Get:
-			op.Value = p.cache[op.Key]
-		case storage.Set:
-			p.cache[op.Key] = op.Value
-		case storage.Delete:
-			delete(p.cache, op.Key)
-		default:
-			return errors.New("wrong operation type")
-		}
-	}
-
-	return nil
-}
-
-func (p *mockClient) Close(_ context.Context) error {
-	p.cacheMux.Lock()
-	defer p.cacheMux.Unlock()
-	p.cache = nil
-	return nil
 }

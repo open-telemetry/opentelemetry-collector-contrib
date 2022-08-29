@@ -57,7 +57,7 @@ func (r *receiver) Start(ctx context.Context, host component.Host) error {
 		return fmt.Errorf("storage client: %w", err)
 	}
 
-	if err := r.pipe.Start(r.getPersister()); err != nil {
+	if err := r.pipe.Start(r.storageClient); err != nil {
 		return fmt.Errorf("start stanza: %w", err)
 	}
 

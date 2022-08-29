@@ -38,8 +38,9 @@ const (
 var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo}
 	errNoDataToBuild      = errors.New("there's no data to build")
-	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
-	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
+	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
+	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
+	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")

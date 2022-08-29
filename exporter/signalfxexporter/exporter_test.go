@@ -499,8 +499,8 @@ func makeSampleResourceLogs() plog.Logs {
 	propMap.InsertDouble("temp", 40.5)
 	propMap.Sort()
 	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-	attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
-	attrs.Insert("com.splunk.signalfx.event_type", pcommon.NewValueString("shutdown"))
+	attrs.UpsertInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
+	attrs.UpsertString("com.splunk.signalfx.event_type", "shutdown")
 
 	l.Attributes().Sort()
 
@@ -729,7 +729,7 @@ func generateLargeEventBatch() plog.Logs {
 	for i := 0; i < batchSize; i++ {
 		lr := logs.AppendEmpty()
 		lr.Attributes().InsertString("k0", "k1")
-		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
+		lr.Attributes().Insert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 	}
 

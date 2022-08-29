@@ -21,11 +21,8 @@ import (
 	"testing"
 
 	dtypes "github.com/docker/docker/api/types"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -107,19 +104,8 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extAllSettings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "all_settings")]
-
-	ext, err := newObserver(zap.NewNop(), extAllSettings.(*Config))
+	extAllSettings := loadConfig(t, config.NewComponentIDWithName(typeStr, "all_settings"))
+	ext, err := newObserver(zap.NewNop(), extAllSettings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -155,19 +141,8 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extUseHostname := cfg.Extensions[config.NewComponentIDWithName(typeStr, "use_hostname_if_present")]
-
-	ext, err := newObserver(zap.NewNop(), extUseHostname.(*Config))
+	extUseHostname := loadConfig(t, config.NewComponentIDWithName(typeStr, "use_hostname_if_present"))
+	ext, err := newObserver(zap.NewNop(), extUseHostname)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -203,19 +178,8 @@ func TestCollectEndpointsUseHostnameIfPresent(t *testing.T) {
 }
 
 func TestCollectEndpointsUseHostBindings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extHostBindings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "use_host_bindings")]
-
-	ext, err := newObserver(zap.NewNop(), extHostBindings.(*Config))
+	extHostBindings := loadConfig(t, config.NewComponentIDWithName(typeStr, "use_host_bindings"))
+	ext, err := newObserver(zap.NewNop(), extHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -251,19 +215,8 @@ func TestCollectEndpointsUseHostBindings(t *testing.T) {
 }
 
 func TestCollectEndpointsIgnoreNonHostBindings(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-
-	require.Nil(t, err)
-	require.NotNil(t, cfg)
-
-	extIgnoreHostBindings := cfg.Extensions[config.NewComponentIDWithName(typeStr, "ignore_non_host_bindings")]
-
-	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings.(*Config))
+	extIgnoreHostBindings := loadConfig(t, config.NewComponentIDWithName(typeStr, "ignore_non_host_bindings"))
+	ext, err := newObserver(zap.NewNop(), extIgnoreHostBindings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
