@@ -44,6 +44,7 @@ You can run:
 - `tox -e py37-test-flask` to e.g. run the Flask tests under a specific
   Python version
 - `tox -e lint` to run lint checks on all code
+- `tox -e spellcheck` to run spell check on the code
 
 See
 [`tox.ini`](https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/tox.ini)
@@ -172,7 +173,7 @@ The continuation integration overrides that environment variable with as per the
 
 * docstrings should adhere to the [Google Python Style
   Guide](http://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-  as specified with the [napolean
+  as specified with the [napoleon
   extension](http://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#google-vs-numpy)
   extension in [Sphinx](http://www.sphinx-doc.org/en/master/index.html).
 
@@ -194,7 +195,7 @@ Below is a checklist of things to be mindful of when implementing a new instrume
   - https://github.com/open-telemetry/opentelemetry-python-contrib/issues/344 for more context
 - `exclude_urls` functionality
   - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/0fcb60d2ad139f78a52edd85b1cc4e32f2e962d0/instrumentation/opentelemetry-instrumentation-flask/src/opentelemetry/instrumentation/flask/__init__.py#L91
-- `url_filter` functonality
+- `url_filter` functionality
   - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/0fcb60d2ad139f78a52edd85b1cc4e32f2e962d0/instrumentation/opentelemetry-instrumentation-aiohttp-client/src/opentelemetry/instrumentation/aiohttp_client/__init__.py#L235
 - `is_recording()` optimization on non-sampled spans
   - ex. https://github.com/open-telemetry/opentelemetry-python-contrib/blob/main/instrumentation/opentelemetry-instrumentation-requests/src/opentelemetry/instrumentation/requests/__init__.py#L133
@@ -204,5 +205,5 @@ Below is a checklist of things to be mindful of when implementing a new instrume
 
 ## Expectations from contributors
 
-OpenTelemetry is an open source community, and as such, greatly encourages contributions from anyone interested in the project. With that being said, there is a certain level of expectation from contributors even after a pull request is merged, specifically pertaining to instrumentations. The OpenTelemetry Python community expects contributors to maintain a level of support and interest in the instrumentations they contribute. This is to ensure that the instrumentation does not become stale and still functions the way the original contributor intended. Some instrumentations also pertain to libraries that the current memebers of the community are not so familiar with, so it is necessary to rely on the expertise of the original contributing parties.
+OpenTelemetry is an open source community, and as such, greatly encourages contributions from anyone interested in the project. With that being said, there is a certain level of expectation from contributors even after a pull request is merged, specifically pertaining to instrumentations. The OpenTelemetry Python community expects contributors to maintain a level of support and interest in the instrumentations they contribute. This is to ensure that the instrumentation does not become stale and still functions the way the original contributor intended. Some instrumentations also pertain to libraries that the current members of the community are not so familiar with, so it is necessary to rely on the expertise of the original contributing parties.
 

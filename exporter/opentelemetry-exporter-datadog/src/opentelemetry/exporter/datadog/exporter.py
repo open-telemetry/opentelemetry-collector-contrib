@@ -127,7 +127,7 @@ class DatadogSpanExporter(SpanExporter):
 
             # datadog Span is initialized with a reference to the tracer which is
             # used to record the span when it is finished. We can skip ignore this
-            # because we are not calling the finish method and explictly set the
+            # because we are not calling the finish method and explicitly set the
             # duration.
             tracer = None
 

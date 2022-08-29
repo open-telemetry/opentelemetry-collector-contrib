@@ -490,7 +490,7 @@ class TestHTTPAppWithCustomHeaders(TestBase):
 
     def test_http_custom_response_headers_not_in_span_attributes(self):
         not_expected = {
-            "http.reponse.header.custom_test_header_3": (
+            "http.response.header.custom_test_header_3": (
                 "test-header-value-3",
             ),
         }
@@ -633,7 +633,7 @@ class TestWebSocketAppWithCustomHeaders(TestBase):
 
     def test_web_socket_custom_response_headers_not_in_span_attributes(self):
         not_expected = {
-            "http.reponse.header.custom_test_header_3": (
+            "http.response.header.custom_test_header_3": (
                 "test-header-value-3",
             ),
         }

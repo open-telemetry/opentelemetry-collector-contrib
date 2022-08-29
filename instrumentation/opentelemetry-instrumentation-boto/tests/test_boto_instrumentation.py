@@ -147,7 +147,7 @@ class TestBotoInstrumentor(TestBase):
         self.assertEqual(span.attributes["aws.operation"], "head_bucket")
         self.assertEqual(span.name, "s3.command")
 
-        # Checking for resource incase of error
+        # Checking for resource in case of error
         try:
             s3.get_bucket("big_bucket")
         except Exception:  # pylint: disable=broad-except

@@ -85,7 +85,7 @@ Configuration
 Request/Response hooks
 **********************
 
-Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request. Environ is an instance of WSGIEnvironment.
+Utilize request/response hooks to execute custom logic to be performed before/after performing a request. Environ is an instance of WSGIEnvironment.
 Response_headers is a list of key-value (tuples) representing the response headers returned from the response.
 
 .. code-block:: python

@@ -86,7 +86,7 @@ class BotoInstrumentor(BaseInstrumentor):
     def _instrument(self, **kwargs):
         # AWSQueryConnection and AWSAuthConnection are two different classes
         # called by different services for connection.
-        # For exemple EC2 uses AWSQueryConnection and S3 uses
+        # For example EC2 uses AWSQueryConnection and S3 uses
         # AWSAuthConnection
 
         # pylint: disable=attribute-defined-outside-init

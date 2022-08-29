@@ -124,7 +124,7 @@ def remove_url_credentials(url: str) -> str:
                     parsed_url.fragment,
                 )
             )
-    except ValueError:  # an unparseable url was passed
+    except ValueError:  # an unparsable url was passed
         pass
     return url
 

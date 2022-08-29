@@ -14,7 +14,7 @@
 
 """
 The opentelemetry-instrumentation-aws-lambda package provides an `Instrumentor`
-to traces calls whithin a Python AWS Lambda function.
+to traces calls within a Python AWS Lambda function.
 
 Usage
 -----

@@ -59,7 +59,7 @@ Configuration
 Request/Response hooks
 **********************
 
-Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request.
+Utilize request/response hooks to execute custom logic to be performed before/after performing a request.
 
 .. code-block:: python
 

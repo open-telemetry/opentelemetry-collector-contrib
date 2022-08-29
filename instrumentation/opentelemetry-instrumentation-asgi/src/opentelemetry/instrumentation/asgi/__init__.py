@@ -71,8 +71,8 @@ Configuration
 Request/Response hooks
 **********************
 
-Utilize request/reponse hooks to execute custom logic to be performed before/after performing a request. The server request hook takes in a server span and ASGI
-scope object for every incoming request. The client request hook is called with the internal span and an ASGI scope which is sent as a dictionary for when the method recieve is called.
+Utilize request/response hooks to execute custom logic to be performed before/after performing a request. The server request hook takes in a server span and ASGI
+scope object for every incoming request. The client request hook is called with the internal span and an ASGI scope which is sent as a dictionary for when the method receive is called.
 The client response hook is called with the internal span and an ASGI event which is sent as a dictionary for when the method send is called.
 
 .. code-block:: python
@@ -379,7 +379,7 @@ class OpenTelemetryMiddleware:
         server_request_hook: Optional callback which is called with the server span and ASGI
                       scope object for every incoming request.
         client_request_hook: Optional callback which is called with the internal span and an ASGI
-                      scope which is sent as a dictionary for when the method recieve is called.
+                      scope which is sent as a dictionary for when the method receive is called.
         client_response_hook: Optional callback which is called with the internal span and an ASGI
                       event which is sent as a dictionary for when the method send is called.
         tracer_provider: The optional tracer provider to use. If omitted

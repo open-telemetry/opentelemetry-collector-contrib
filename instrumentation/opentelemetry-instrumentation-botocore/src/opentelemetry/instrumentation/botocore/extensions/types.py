@@ -35,7 +35,7 @@ class _AwsSdkCallContext:
 
     Args:
         service: the AWS service (e.g. s3, lambda, ...) which is called
-        service_id: the name of the service in propper casing
+        service_id: the name of the service in proper casing
         operation: the called operation (e.g. ListBuckets, Invoke, ...) of the
             AWS service.
         params: a dict of input parameters passed to the service operation.

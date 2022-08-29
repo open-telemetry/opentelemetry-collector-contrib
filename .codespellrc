@@ -1,0 +1,4 @@
+[codespell]
+# skipping auto generated folders
+skip = ./.tox,./.mypy_cache,./docs/_build,./target,*/LICENSE,./venv
+ignore-words-list = ot

@@ -95,7 +95,7 @@ class TestStarletteManualInstrumentation(TestBase):
         )
 
     def test_starlette_excluded_urls(self):
-        """Ensure that givem starlette routes are excluded."""
+        """Ensure that given starlette routes are excluded."""
         self._client.get("/healthzz")
         spans = self.memory_exporter.get_finished_spans()
         self.assertEqual(len(spans), 0)

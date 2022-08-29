@@ -51,7 +51,7 @@ and when possible, apply automatic tracing instrumentation on them. This means y
 will get automatic distributed tracing for free without having to make any code changes
 at all. This will also configure a global tracer and tracing exporter without you having to
 make any code changes. By default, the instrument command will use the OTLP exporter but
-this can be overriden when needed.
+this can be overridden when needed.
 
 The command supports the following configuration options as CLI arguments and environment vars:
 

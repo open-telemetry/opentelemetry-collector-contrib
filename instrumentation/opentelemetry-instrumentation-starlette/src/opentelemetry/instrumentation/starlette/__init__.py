@@ -51,7 +51,7 @@ Request/Response hooks
 **********************
 
 Utilize request/response hooks to execute custom logic to be performed before/after performing a request. The server request hook takes in a server span and ASGI
-scope object for every incoming request. The client request hook is called with the internal span and an ASGI scope which is sent as a dictionary for when the method recieve is called.
+scope object for every incoming request. The client request hook is called with the internal span and an ASGI scope which is sent as a dictionary for when the method receive is called.
 The client response hook is called with the internal span and an ASGI event which is sent as a dictionary for when the method send is called.
 
 .. code-block:: python

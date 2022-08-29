@@ -440,7 +440,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#567](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/567))
 - `opentelemetry-instrumentation-grpc` Respect the suppress instrumentation in gRPC client instrumentor
   ([#559](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/559))
-- `opentelemetry-instrumentation-grpc` Fixed asynchonous unary call traces
+- `opentelemetry-instrumentation-grpc` Fixed asynchronous unary call traces
   ([#536](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/536))
 - `opentelemetry-sdk-extension-aws` Update AWS entry points to match spec
   ([#566](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/566))
@@ -736,7 +736,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([#182](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/182))
 - `opentelemetry-instrumentation-botocore` Botocore SpanKind as CLIENT and modify existing traced attributes
   ([#150](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/150))
-- `opentelemetry-instrumentation-dbapi` Update dbapi and its dependant instrumentations to follow semantic conventions
+- `opentelemetry-instrumentation-dbapi` Update dbapi and its dependent instrumentations to follow semantic conventions
   ([#195](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/195))
 - `opentelemetry-instrumentation-dbapi` Stop capturing query parameters by default
   ([#156](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/156))

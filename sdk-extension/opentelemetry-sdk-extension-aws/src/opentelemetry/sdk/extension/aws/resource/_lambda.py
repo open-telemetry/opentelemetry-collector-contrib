@@ -29,7 +29,7 @@ class AwsLambdaResourceDetector(ResourceDetector):
     """Detects attribute values only available when the app is running on AWS
     Lambda and returns them in a Resource.
 
-    Uses Lambda defined runtime enivronment variables. See more: https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
+    Uses Lambda defined runtime environment variables. See more: https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html#configuration-envvars-runtime
     """
 
     def detect(self) -> "Resource":

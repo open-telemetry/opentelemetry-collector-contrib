@@ -15,3 +15,4 @@ grpcio-tools==1.29.0
 mypy-protobuf>=1.23
 protobuf~=3.13
 markupsafe==2.0.1
+codespell==2.1.0

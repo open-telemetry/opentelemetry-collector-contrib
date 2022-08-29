@@ -221,7 +221,7 @@ class TornadoInstrumentor(BaseInstrumentor):
         perfectly on the other hand as it executes in the same context as on_finish and log_exection which
         are patched to finish a span after a request is served.
 
-        However, we cannot just patch RequestHandler's prepare method because it is supposed to be overwridden
+        However, we cannot just patch RequestHandler's prepare method because it is supposed to be overridden
         by sub-classes and since the parent prepare method does not do anything special, sub-classes don't
         have to call super() when overriding the method.
 

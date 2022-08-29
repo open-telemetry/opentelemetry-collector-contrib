@@ -550,7 +550,7 @@ def update_changelog(path, version, new_entry):
             text = changelog.read()
             if f"## [{version}]" in text:
                 raise AttributeError(
-                    f"{path} already contans version {version}"
+                    f"{path} already contains version {version}"
                 )
         with open(path, encoding="utf-8") as changelog:
             for line in changelog:

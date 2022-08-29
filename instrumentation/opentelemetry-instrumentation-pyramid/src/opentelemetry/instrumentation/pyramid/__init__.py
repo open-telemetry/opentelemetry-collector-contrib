@@ -55,7 +55,7 @@ Using ``pyramid.tweens`` setting:
 ---------------------------------
 
 If you use Method 2 and then set tweens for your application with the ``pyramid.tweens`` setting,
-you need to add ``opentelemetry.instrumentation.pyramid.trace_tween_factory`` explicity to the list,
+you need to add ``opentelemetry.instrumentation.pyramid.trace_tween_factory`` explicitly to the list,
 *as well as* instrumenting the config as shown above.
 
 For example:

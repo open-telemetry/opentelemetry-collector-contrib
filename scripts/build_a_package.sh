@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script builds wheels for a single package when trigged from a push to
+# This script builds wheels for a single package when triggered from a push to
 # a tag as part of a GitHub workflow (See .github/publish-a-package.yml). The
 # wheel is then published to PyPI.
 
