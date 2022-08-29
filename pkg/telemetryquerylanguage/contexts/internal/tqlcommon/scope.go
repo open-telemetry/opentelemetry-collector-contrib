@@ -32,6 +32,12 @@ func ScopePathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 		return accessInstrumentationScopeName(), nil
 	case "version":
 		return accessInstrumentationScopeVersion(), nil
+	case "attributes":
+		mapKey := path[0].MapKey
+		if mapKey == nil {
+			return accessInstrumentationScopeAttributes(), nil
+		}
+		return accessInstrumentationScopeAttributesKey(mapKey), nil
 	}
 
 	return nil, fmt.Errorf("invalid scope path expression %v", path)
@@ -46,6 +52,30 @@ func accessInstrumentationScope() tql.StandardGetSetter {
 			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
 				newIl.CopyTo(ctx.GetInstrumentationScope())
 			}
+		},
+	}
+}
+
+func accessInstrumentationScopeAttributes() tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return ctx.GetInstrumentationScope().Attributes()
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			if attrs, ok := val.(pcommon.Map); ok {
+				attrs.CopyTo(ctx.GetInstrumentationScope().Attributes())
+			}
+		},
+	}
+}
+
+func accessInstrumentationScopeAttributesKey(mapKey *string) tql.StandardGetSetter {
+	return tql.StandardGetSetter{
+		Getter: func(ctx tql.TransformContext) interface{} {
+			return GetMapValue(ctx.GetInstrumentationScope().Attributes(), *mapKey)
+		},
+		Setter: func(ctx tql.TransformContext, val interface{}) {
+			SetMapValue(ctx.GetInstrumentationScope().Attributes(), *mapKey, val)
 		},
 	}
 }
