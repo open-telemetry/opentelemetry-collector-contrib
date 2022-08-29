@@ -78,8 +78,8 @@ github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb0
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
-github.com/SAP/go-hdb v0.108.0 h1:xZm5pEi6zysNArlpUydB6b2gjmHuF1gFMyXzeESCYss=
-github.com/SAP/go-hdb v0.108.0/go.mod h1:7uX6xWAbTJUg2qI+skGqF0UevHJ77VBdI5H5r9JQFws=
+github.com/SAP/go-hdb v0.108.1 h1:KcIU0Sjwbr01EgdpA2L1ytEJE6bOzSG1mUaDXMuOxgU=
+github.com/SAP/go-hdb v0.108.1/go.mod h1:7uX6xWAbTJUg2qI+skGqF0UevHJ77VBdI5H5r9JQFws=
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/ajstarks/svgo v0.0.0-20180226025133-644b8db467af/go.mod h1:K08gAheRH3/J6wwsYMMT4xOr94bZjxIelGM0+d/wbFw=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
