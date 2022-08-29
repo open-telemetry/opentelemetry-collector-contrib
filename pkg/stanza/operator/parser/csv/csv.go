@@ -68,6 +68,10 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		c.FieldDelimiter = ","
 	}
 
+	if c.IgnoreQuotes && c.LazyQuotes {
+		return nil, errors.New("only one of 'ignore_quotes' or 'lazy_quotes' can be true")
+	}
+
 	fieldDelimiter := []rune(c.FieldDelimiter)[0]
 
 	if len([]rune(c.FieldDelimiter)) != 1 {

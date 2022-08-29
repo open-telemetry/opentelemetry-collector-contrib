@@ -52,6 +52,16 @@ func TestParserBuildFailure(t *testing.T) {
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
 
+func TestParserBuildFailureLazyIgnoreQuotes(t *testing.T) {
+	cfg := NewConfigWithID("test")
+	cfg.Header = testHeader
+	cfg.LazyQuotes = true
+	cfg.IgnoreQuotes = true
+	_, err := cfg.Build(testutil.Logger(t))
+	require.Error(t, err)
+	require.ErrorContains(t, err, "only one of 'ignore_quotes' or 'lazy_quotes' can be true")
+}
+
 func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
