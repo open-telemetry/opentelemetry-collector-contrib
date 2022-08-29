@@ -23,14 +23,14 @@ type kv struct {
 	Key, Value string
 }
 
-func metricSlice(metrics ...*pmetric.Metric) *pmetric.MetricSlice {
+func metricSlice(metrics ...pmetric.Metric) pmetric.MetricSlice {
 	ms := pmetric.NewMetricSlice()
 	for _, metric := range metrics {
 		destMetric := ms.AppendEmpty()
 		metric.CopyTo(destMetric)
 	}
 
-	return &ms
+	return ms
 }
 
 func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
@@ -46,7 +46,7 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 	return hdp
 }
 
-func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) *pmetric.HistogramDataPoint {
+func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
 	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
@@ -62,17 +62,17 @@ func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	hdp.SetCount(count)
 	hdp.SetSum(sum)
 
-	return &hdp
+	return hdp
 }
 
-func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) *pmetric.HistogramDataPoint {
+func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.Flags().SetNoRecordedValue(true)
 
-	return &hdp
+	return hdp
 }
 
-func histogramMetric(name string, points ...*pmetric.HistogramDataPoint) *pmetric.Metric {
+func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeHistogram)
@@ -86,7 +86,7 @@ func histogramMetric(name string, points ...*pmetric.HistogramDataPoint) *pmetri
 		point.CopyTo(destPoint)
 	}
 
-	return &metric
+	return metric
 }
 
 func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
@@ -101,21 +101,19 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	return ndp
 }
 
-func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, value float64) *pmetric.NumberDataPoint {
+func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetDoubleVal(value)
-
-	return &ndp
+	return ndp
 }
 
-func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) *pmetric.NumberDataPoint {
+func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
 	ndp.Flags().SetNoRecordedValue(true)
-
-	return &ndp
+	return ndp
 }
 
-func gaugeMetric(name string, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeGauge)
@@ -126,10 +124,10 @@ func gaugeMetric(name string, points ...*pmetric.NumberDataPoint) *pmetric.Metri
 		point.CopyTo(destPoint)
 	}
 
-	return &metric
+	return metric
 }
 
-func sumMetric(name string, points ...*pmetric.NumberDataPoint) *pmetric.Metric {
+func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeSum)
@@ -143,7 +141,7 @@ func sumMetric(name string, points ...*pmetric.NumberDataPoint) *pmetric.Metric 
 		point.CopyTo(destPoint)
 	}
 
-	return &metric
+	return metric
 }
 
 func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
@@ -158,7 +156,7 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	return sdp
 }
 
-func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) *pmetric.SummaryDataPoint {
+func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) pmetric.SummaryDataPoint {
 	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
 	sdp.SetCount(count)
 	sdp.SetSum(sum)
@@ -170,17 +168,17 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 		qvi.SetValue(values[i])
 	}
 
-	return &sdp
+	return sdp
 }
 
-func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) *pmetric.SummaryDataPoint {
+func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
 	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
 	sdp.Flags().SetNoRecordedValue(true)
 
-	return &sdp
+	return sdp
 }
 
-func summaryMetric(name string, points ...*pmetric.SummaryDataPoint) *pmetric.Metric {
+func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetDataType(pmetric.MetricDataTypeSummary)
@@ -191,5 +189,5 @@ func summaryMetric(name string, points ...*pmetric.SummaryDataPoint) *pmetric.Me
 		point.CopyTo(destPoint)
 	}
 
-	return &metric
+	return metric
 }
