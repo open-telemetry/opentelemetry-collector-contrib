@@ -1,3 +1,0 @@
-type: move
-from: body.nested.nested2
-to: body.nested2
