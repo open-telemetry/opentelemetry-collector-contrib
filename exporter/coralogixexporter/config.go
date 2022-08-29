@@ -36,8 +36,8 @@ type Config struct {
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 
-	// The Coralogix trace ingress endpoint
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	// Coralogix traces ingress endpoint
+	Traces configgrpc.GRPCClientSettings `mapstructure:"traces"`
 
 	// The Coralogix metrics ingress endpoint
 	Metrics configgrpc.GRPCClientSettings `mapstructure:"metrics"`
@@ -65,11 +65,11 @@ func isEmpty(endpoint string) bool {
 	return false
 }
 func (c *Config) Validate() error {
-	// validate that atleast one endpoint is set up correctly
-	if isEmpty(c.GRPCClientSettings.Endpoint) &&
+	// validate that at least one endpoint is set up correctly
+	if isEmpty(c.Traces.Endpoint) &&
 		isEmpty(c.Metrics.Endpoint) &&
 		isEmpty(c.Logs.Endpoint) {
-		return fmt.Errorf("`endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
+		return fmt.Errorf("`traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration file")
 	}
 	if c.PrivateKey == "" {
 		return fmt.Errorf("`privateKey` not specified, please fix the configuration file")
@@ -77,13 +77,6 @@ func (c *Config) Validate() error {
 	if c.AppName == "" {
 		return fmt.Errorf("`appName` not specified, please fix the configuration file")
 	}
-
-	// check if headers exists
-	if len(c.GRPCClientSettings.Headers) == 0 {
-		c.GRPCClientSettings.Headers = map[string]string{}
-	}
-	c.GRPCClientSettings.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.GRPCClientSettings.Headers["appName"] = c.AppName
 
 	return nil
 }

@@ -26,7 +26,6 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/service/servicetest"
 )
 
@@ -61,7 +60,7 @@ func TestLoadConfig(t *testing.T) {
 			Endpoint: "https://",
 			Headers:  map[string]string{},
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
 			TLSSetting: configtls.TLSClientSetting{
@@ -73,7 +72,7 @@ func TestLoadConfig(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
+			Headers:         map[string]string{},
 			BalancerName:    "",
 		},
 	})
@@ -110,7 +109,7 @@ func TestLoadConfigAll(t *testing.T) {
 			Endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Headers:  map[string]string{},
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 			Compression: "",
 			TLSSetting: configtls.TLSClientSetting{
@@ -122,7 +121,7 @@ func TestLoadConfigAll(t *testing.T) {
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
 			WaitForReady:    false,
-			Headers:         map[string]string{"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "appName": "APP_NAME"},
+			Headers:         map[string]string{},
 			BalancerName:    "",
 		},
 	})
@@ -135,10 +134,8 @@ func TestTraceExporter(t *testing.T) {
 	cfg, _ := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 	apiConfig := cfg.Exporters[config.NewComponentID(typeStr)].(*Config)
 	params := componenttest.NewNopExporterCreateSettings()
-	te, err := newCoralogixExporter(apiConfig, params)
+	te, err := newTracesExporter(apiConfig, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
-	assert.NoError(t, te.client.startConnection(context.Background(), componenttest.NewNopHost()))
-	td := ptrace.NewTraces()
-	assert.NoError(t, te.tracesPusher(context.Background(), td))
+	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
 }
