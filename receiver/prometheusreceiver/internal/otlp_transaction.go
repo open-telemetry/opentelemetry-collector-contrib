@@ -42,7 +42,7 @@ type transaction struct {
 	startTimeMetricRegex string
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
-	nodeResource         *pcommon.Resource
+	nodeResource         pcommon.Resource
 	logger               *zap.Logger
 	metricBuilder        *metricBuilder
 	job, instance        string
@@ -119,7 +119,7 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateNodeAndResource(job, instance, metadataCache.SharedLabels())
+	t.nodeResource = CreateResource(job, instance, metadataCache.SharedLabels())
 	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
 	t.isNew = false
 	return nil
@@ -133,7 +133,8 @@ func (t *transaction) Commit() error {
 	t.startTimeMs = -1
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-	metricsL, numPoints, _, err := t.metricBuilder.Build()
+	metricsL := pmetric.NewMetricSlice()
+	numPoints, _, err := t.metricBuilder.Build(metricsL)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
@@ -153,8 +154,7 @@ func (t *transaction) Commit() error {
 	}
 
 	if metricsL.Len() > 0 {
-		metrics := t.metricSliceToMetrics(metricsL)
-		if err = t.sink.ConsumeMetrics(ctx, *metrics); err != nil {
+		if err = t.sink.ConsumeMetrics(ctx, t.metricSliceToMetrics(metricsL)); err != nil {
 			return err
 		}
 	}
@@ -188,7 +188,7 @@ func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func (t transaction) adjustStartTimestamp(metricsL *pmetric.MetricSlice) {
+func (t *transaction) adjustStartTimestamp(metricsL pmetric.MetricSlice) {
 	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
 	for i := 0; i < metricsL.Len(); i++ {
 		metric := metricsL.At(i)
@@ -223,11 +223,11 @@ func (t transaction) adjustStartTimestamp(metricsL *pmetric.MetricSlice) {
 	}
 }
 
-func (t *transaction) metricSliceToMetrics(metricsL *pmetric.MetricSlice) *pmetric.Metrics {
+func (t *transaction) metricSliceToMetrics(metricsL pmetric.MetricSlice) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	ilm := rms.ScopeMetrics().AppendEmpty()
 	metricsL.CopyTo(ilm.Metrics())
 	t.nodeResource.CopyTo(rms.Resource())
-	return &metrics
+	return metrics
 }

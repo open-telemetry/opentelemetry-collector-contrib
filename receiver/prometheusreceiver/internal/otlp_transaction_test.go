@@ -109,13 +109,13 @@ func Test_transaction_pdata(t *testing.T) {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
 		l := []labels.Label{{Name: "__scheme__", Value: "http"}}
-		expectedNodeResource := CreateNodeAndResource("test", "localhost:8080", l)
+		expectedNodeResource := CreateResource("test", "localhost:8080", l)
 		mds := sink.AllMetrics()
 		if len(mds) != 1 {
 			t.Fatalf("wanted one batch, got %v\n", sink.AllMetrics())
 		}
 		gotNodeResource := mds[0].ResourceMetrics().At(0).Resource()
-		require.Equal(t, *expectedNodeResource, gotNodeResource, "Resources do not match")
+		require.Equal(t, expectedNodeResource, gotNodeResource, "Resources do not match")
 		// TODO: re-enable this when handle unspecified OC type
 		// assert.Len(t, ocmds[0].Metrics, 1)
 	})

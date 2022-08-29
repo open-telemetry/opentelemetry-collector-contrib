@@ -42,8 +42,8 @@ func isDiscernibleHost(host string) bool {
 	return true
 }
 
-// CreateNodeAndResource creates the resource data added to OTLP payloads.
-func CreateNodeAndResource(job, instance string, serviceDiscoveryLabels labels.Labels) *pcommon.Resource {
+// CreateResource creates the resource data added to OTLP payloads.
+func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) pcommon.Resource {
 	host, port, err := net.SplitHostPort(instance)
 	if err != nil {
 		host = instance
@@ -60,7 +60,7 @@ func CreateNodeAndResource(job, instance string, serviceDiscoveryLabels labels.L
 
 	addKubernetesResource(attrs, serviceDiscoveryLabels)
 
-	return &resource
+	return resource
 }
 
 // kubernetesDiscoveryToResourceAttributes maps from metadata labels discovered

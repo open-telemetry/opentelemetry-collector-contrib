@@ -643,12 +643,11 @@ func Test_jobGC_pdata(t *testing.T) {
 		},
 	}
 
-	emptyMetricSlice := func() *pmetric.MetricSlice { ms := pmetric.NewMetricSlice(); return &ms }
 	job2Script1 := []*metricsAdjusterTest{
 		{
 			"JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
-			emptyMetricSlice(),
-			emptyMetricSlice(),
+			pmetric.NewMetricSlice(),
+			pmetric.NewMetricSlice(),
 			0,
 		},
 	}
@@ -693,8 +692,8 @@ func Test_jobGC_pdata(t *testing.T) {
 
 type metricsAdjusterTest struct {
 	description string
-	metrics     *pmetric.MetricSlice
-	adjusted    *pmetric.MetricSlice
+	metrics     pmetric.MetricSlice
+	adjusted    pmetric.MetricSlice
 	resets      int
 }
 

@@ -312,7 +312,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	return nil
 }
 
-func (mf *metricFamily) toMetric(metrics pmetric.MetricSlice) (int, int) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
 	metric := pmetric.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)

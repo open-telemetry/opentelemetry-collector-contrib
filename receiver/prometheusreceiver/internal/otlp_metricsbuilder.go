@@ -194,20 +194,19 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 
 // Build an pmetric.MetricSlice based on all added data complexValue.
 // The only error returned by this function is errNoDataToBuild.
-func (b *metricBuilder) Build() (*pmetric.MetricSlice, int, int, error) {
+func (b *metricBuilder) Build(metrics pmetric.MetricSlice) (int, int, error) {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			metricsL := pmetric.NewMetricSlice()
-			return &metricsL, 0, 0, nil
+			return 0, 0, nil
 		}
-		return nil, 0, 0, errNoDataToBuild
+		return 0, 0, errNoDataToBuild
 	}
 
 	for _, mf := range b.families {
-		ts, dts := mf.toMetric(b.metrics)
+		ts, dts := mf.appendMetric(metrics)
 		b.numTimeseries += ts
 		b.droppedTimeseries += dts
 	}
 
-	return &b.metrics, b.numTimeseries, b.droppedTimeseries, nil
+	return b.numTimeseries, b.droppedTimeseries, nil
 }
