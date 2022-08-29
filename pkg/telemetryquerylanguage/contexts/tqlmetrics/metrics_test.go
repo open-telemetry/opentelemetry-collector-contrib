@@ -298,12 +298,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
 			tt.modified(exNumberDataPoint)
 
-			ctx := MetricTransformContext{
-				DataPoint:            numberDataPoint,
-				Metric:               pmetric.NewMetric(),
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-			}
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
@@ -624,24 +619,19 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint := createHistogramDataPointTelemetry()
+			histogramDataPoint := createHistogramDataPointTelemetry()
 
-			exNumberDataPoint := createHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
+			exHistogramDataPoint := createHistogramDataPointTelemetry()
+			tt.modified(exHistogramDataPoint)
 
-			ctx := MetricTransformContext{
-				DataPoint:            numberDataPoint,
-				Metric:               pmetric.NewMetric(),
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-			}
+			ctx := NewTransformContext(histogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
 
-			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+			assert.Equal(t, exHistogramDataPoint, histogramDataPoint)
 		})
 	}
 }
@@ -1051,24 +1041,19 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint := createExpoHistogramDataPointTelemetry()
+			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
 
-			exNumberDataPoint := createExpoHistogramDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
+			exExpoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
+			tt.modified(exExpoHistogramDataPoint)
 
-			ctx := MetricTransformContext{
-				DataPoint:            numberDataPoint,
-				Metric:               pmetric.NewMetric(),
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-			}
+			ctx := NewTransformContext(expoHistogramDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
 
-			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+			assert.Equal(t, exExpoHistogramDataPoint, expoHistogramDataPoint)
 		})
 	}
 }
@@ -1363,24 +1348,19 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			numberDataPoint := createSummaryDataPointTelemetry()
+			summaryDataPoint := createSummaryDataPointTelemetry()
 
-			exNumberDataPoint := createSummaryDataPointTelemetry()
-			tt.modified(exNumberDataPoint)
+			exSummaryDataPoint := createSummaryDataPointTelemetry()
+			tt.modified(exSummaryDataPoint)
 
-			ctx := MetricTransformContext{
-				DataPoint:            numberDataPoint,
-				Metric:               pmetric.NewMetric(),
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-			}
+			ctx := NewTransformContext(summaryDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)
 
 			accessor.Set(ctx, tt.newVal)
 
-			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+			assert.Equal(t, exSummaryDataPoint, summaryDataPoint)
 		})
 	}
 }
@@ -1563,12 +1543,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 			exMetric := createMetricTelemetry()
 			tt.modified(exMetric)
 
-			ctx := MetricTransformContext{
-				DataPoint:            pmetric.NewNumberDataPoint(),
-				Metric:               metric,
-				InstrumentationScope: pcommon.NewInstrumentationScope(),
-				Resource:             pcommon.NewResource(),
-			}
+			ctx := NewTransformContext(pmetric.NewNumberDataPoint(), metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got := accessor.Get(ctx)
 			assert.Equal(t, tt.orig, got)

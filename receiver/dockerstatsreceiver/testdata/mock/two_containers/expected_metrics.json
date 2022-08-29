@@ -542,7 +542,9 @@
             },
             {
               "description": "Memory limit of the container.",
-              "gauge": {
+              "name": "container.memory.usage.limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2074079232",
@@ -550,12 +552,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.limit",
               "unit": "By"
             },
             {
               "description": "Memory usage of the container. This excludes the total cache.",
-              "gauge": {
+              "name": "container.memory.usage.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "352256",
@@ -563,7 +566,6 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.total",
               "unit": "By"
             },
             {
@@ -581,7 +583,9 @@
             },
             {
               "description": "Maximum memory usage.",
-              "gauge": {
+              "name": "container.memory.usage.max",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "6172672",
@@ -589,12 +593,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.max",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
-              "gauge": {
+              "name": "container.memory.active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -602,12 +607,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as active by the kernel.",
-              "gauge": {
+              "name": "container.memory.active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -615,12 +621,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_file",
               "unit": "By"
             },
             {
               "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
-              "gauge": {
+              "name": "container.memory.cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -628,12 +635,13 @@
                   }
                 ]
               },
-              "name": "container.memory.cache",
               "unit": "By"
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
-              "gauge": {
+              "name": "container.memory.dirty",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -641,12 +649,13 @@
                   }
                 ]
               },
-              "name": "container.memory.dirty",
               "unit": "By"
             },
             {
               "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
-              "gauge": {
+              "name": "container.memory.hierarchical_memory_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -654,12 +663,13 @@
                   }
                 ]
               },
-              "name": "container.memory.hierarchical_memory_limit",
               "unit": "By"
             },
             {
               "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
-              "gauge": {
+              "name": "container.memory.hierarchical_memsw_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -667,12 +677,13 @@
                   }
                 ]
               },
-              "name": "container.memory.hierarchical_memsw_limit",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "name": "container.memory.inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "106496",
@@ -680,12 +691,13 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "name": "container.memory.inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -693,12 +705,13 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_file",
               "unit": "By"
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group.",
-              "gauge": {
+              "name": "container.memory.mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -706,7 +719,6 @@
                   }
                 ]
               },
-              "name": "container.memory.mapped_file",
               "unit": "By"
             },
             {
@@ -771,7 +783,9 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
-              "gauge": {
+              "name": "container.memory.rss",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "110592",
@@ -779,12 +793,13 @@
                   }
                 ]
               },
-              "name": "container.memory.rss",
               "unit": "By"
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
-              "gauge": {
+              "name": "container.memory.rss_huge",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -792,12 +807,13 @@
                   }
                 ]
               },
-              "name": "container.memory.rss_huge",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -805,12 +821,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -818,12 +835,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_file",
               "unit": "By"
             },
             {
               "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
-              "gauge": {
+              "name": "container.memory.total_cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "73728",
@@ -831,12 +849,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_cache",
               "unit": "By"
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
-              "gauge": {
+              "name": "container.memory.total_dirty",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -844,12 +863,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_dirty",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "106496",
@@ -857,12 +877,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -870,12 +891,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_file",
               "unit": "By"
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
-              "gauge": {
+              "name": "container.memory.total_mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -883,7 +905,6 @@
                   }
                 ]
               },
-              "name": "container.memory.total_mapped_file",
               "unit": "By"
             },
             {
@@ -948,7 +969,9 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_rss",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "110592",
@@ -956,12 +979,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_rss",
               "unit": "By"
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_rss_huge",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -969,12 +993,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_rss_huge",
               "unit": "By"
             },
             {
               "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_unevictable",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -982,12 +1007,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_unevictable",
               "unit": "By"
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
-              "gauge": {
+              "name": "container.memory.total_writeback",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -995,12 +1021,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_writeback",
               "unit": "By"
             },
             {
               "description": "The amount of memory that cannot be reclaimed.",
-              "gauge": {
+              "name": "container.memory.unevictable",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1008,12 +1035,13 @@
                   }
                 ]
               },
-              "name": "container.memory.unevictable",
               "unit": "By"
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
-              "gauge": {
+              "name": "container.memory.writeback",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1021,7 +1049,6 @@
                   }
                 ]
               },
-              "name": "container.memory.writeback",
               "unit": "By"
             },
             {
@@ -1758,7 +1785,9 @@
             },
             {
               "description": "Memory limit of the container.",
-              "gauge": {
+              "name": "container.memory.usage.limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2074079232",
@@ -1766,12 +1795,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.limit",
               "unit": "By"
             },
             {
               "description": "Memory usage of the container. This excludes the total cache.",
-              "gauge": {
+              "name": "container.memory.usage.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "380928",
@@ -1779,7 +1809,6 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.total",
               "unit": "By"
             },
             {
@@ -1797,7 +1826,9 @@
             },
             {
               "description": "Maximum memory usage.",
-              "gauge": {
+              "name": "container.memory.usage.max",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "6201344",
@@ -1805,12 +1836,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.max",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
-              "gauge": {
+              "name": "container.memory.active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -1818,12 +1850,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as active by the kernel.",
-              "gauge": {
+              "name": "container.memory.active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "393216",
@@ -1831,12 +1864,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_file",
               "unit": "By"
             },
             {
               "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
-              "gauge": {
+              "name": "container.memory.cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "921600",
@@ -1844,12 +1878,13 @@
                   }
                 ]
               },
-              "name": "container.memory.cache",
               "unit": "By"
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
-              "gauge": {
+              "name": "container.memory.dirty",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1857,12 +1892,13 @@
                   }
                 ]
               },
-              "name": "container.memory.dirty",
               "unit": "By"
             },
             {
               "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
-              "gauge": {
+              "name": "container.memory.hierarchical_memory_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -1870,12 +1906,13 @@
                   }
                 ]
               },
-              "name": "container.memory.hierarchical_memory_limit",
               "unit": "By"
             },
             {
               "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
-              "gauge": {
+              "name": "container.memory.hierarchical_memsw_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -1883,12 +1920,13 @@
                   }
                 ]
               },
-              "name": "container.memory.hierarchical_memsw_limit",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "name": "container.memory.inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "147456",
@@ -1896,12 +1934,13 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "name": "container.memory.inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "528384",
@@ -1909,12 +1948,13 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_file",
               "unit": "By"
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group.",
-              "gauge": {
+              "name": "container.memory.mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "843776",
@@ -1922,7 +1962,6 @@
                   }
                 ]
               },
-              "name": "container.memory.mapped_file",
               "unit": "By"
             },
             {
@@ -1987,7 +2026,9 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
-              "gauge": {
+              "name": "container.memory.rss",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "151552",
@@ -1995,12 +2036,13 @@
                   }
                 ]
               },
-              "name": "container.memory.rss",
               "unit": "By"
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
-              "gauge": {
+              "name": "container.memory.rss_huge",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2008,12 +2050,13 @@
                   }
                 ]
               },
-              "name": "container.memory.rss_huge",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "4096",
@@ -2021,12 +2064,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "393216",
@@ -2034,12 +2078,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_file",
               "unit": "By"
             },
             {
               "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
-              "gauge": {
+              "name": "container.memory.total_cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "921600",
@@ -2047,12 +2092,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_cache",
               "unit": "By"
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
-              "gauge": {
+              "name": "container.memory.total_dirty",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2060,12 +2106,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_dirty",
               "unit": "By"
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "147456",
@@ -2073,12 +2120,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_anon",
               "unit": "By"
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "528384",
@@ -2086,12 +2134,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_file",
               "unit": "By"
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
-              "gauge": {
+              "name": "container.memory.total_mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "843776",
@@ -2099,7 +2148,6 @@
                   }
                 ]
               },
-              "name": "container.memory.total_mapped_file",
               "unit": "By"
             },
             {
@@ -2164,7 +2212,9 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_rss",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "151552",
@@ -2172,12 +2222,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_rss",
               "unit": "By"
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_rss_huge",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2185,12 +2236,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_rss_huge",
               "unit": "By"
             },
             {
               "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
-              "gauge": {
+              "name": "container.memory.total_unevictable",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2198,12 +2250,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_unevictable",
               "unit": "By"
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
-              "gauge": {
+              "name": "container.memory.total_writeback",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2211,12 +2264,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_writeback",
               "unit": "By"
             },
             {
               "description": "The amount of memory that cannot be reclaimed.",
-              "gauge": {
+              "name": "container.memory.unevictable",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2224,12 +2278,13 @@
                   }
                 ]
               },
-              "name": "container.memory.unevictable",
               "unit": "By"
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
-              "gauge": {
+              "name": "container.memory.writeback",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -2237,7 +2292,6 @@
                   }
                 ]
               },
-              "name": "container.memory.writeback",
               "unit": "By"
             },
             {

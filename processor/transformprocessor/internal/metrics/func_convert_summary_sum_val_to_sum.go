@@ -34,7 +34,7 @@ func convertSummarySumValToSum(stringAggTemp string, monotonic bool) (tql.ExprFu
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)
 	}
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}
