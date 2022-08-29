@@ -110,16 +110,16 @@ Booleans can be either:
 - A literal boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
-Operators determine how the two Values are compared. 
+Operators determine how the two Values are compared.
 
 The valid operators are:
 
 - Equal (`==`). Tests if the left and right Values are equal (see the Comparison Rules below).
 - Not Equal (`!=`).  Tests if the left and right Values are not equal.
-- Less Than (`<`). Tests if left is less than right. 
+- Less Than (`<`). Tests if left is less than right.
 - Greater Than (`>`). Tests if left is greater than right.
-- Less Than or Equal To (`<=`). Tests if left is less than or equal to right. 
-- Greater Than (`>`). Tests if left is greater than right.
+- Less Than or Equal To (`<=`). Tests if left is less than or equal to right.
+- Greater Than or Equal to (`>=`). Tests if left is greater than or equal to right.
 
 ### Comparison Rules
 
@@ -127,11 +127,11 @@ The table below describes what happens when two Values are compared. Value types
 
 If numeric values are of different types, they are compared as `float64`.
 
-For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`. 
+For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`.
 
 For values that are not one of the basic primitive types, the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
 
-A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false.
+A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false. Note that a nil byte array is considered equivalent to nil.
 
 
 | base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
@@ -140,8 +140,8 @@ A `not equal` notation in the table below means that the "!=" operator returns t
 | int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
 | float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |
 | string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
-| Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | not equal              |
-| nil       | not equal   | not equal           | not equal           | not equal                       | not equal                | true for equality only |
+| Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     |
+| nil       | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only |
 
 ## Accessing signal telemetry
 
