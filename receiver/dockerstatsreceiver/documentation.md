@@ -65,44 +65,44 @@ These are the metrics available for this scraper.
 | **container.cpu.usage.system** | System CPU usage. | ns | Sum(Int) | <ul> </ul> |
 | **container.cpu.usage.total** | Total CPU time consumed. | ns | Sum(Int) | <ul> </ul> |
 | **container.cpu.usage.usermode** | Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows). | ns | Sum(Int) | <ul> </ul> |
-| **container.memory.active_anon** | The amount of anonymous memory that has been identified as active by the kernel. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.active_file** | Cache memory that has been identified as active by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.cache** | The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.dirty** | Bytes that are waiting to get written back to the disk, from this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.hierarchical_memory_limit** | The maximum amount of physical memory that can be used by the processes of this control group. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.hierarchical_memsw_limit** | The maximum amount of RAM + swap that can be used by the processes of this control group. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.inactive_file** | Cache memory that has been identified as inactive by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.mapped_file** | Indicates the amount of memory mapped by the processes in the control group. | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.active_anon** | The amount of anonymous memory that has been identified as active by the kernel. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.active_file** | Cache memory that has been identified as active by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Sum(Int) | <ul> </ul> |
+| **container.memory.cache** | The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.dirty** | Bytes that are waiting to get written back to the disk, from this cgroup. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.hierarchical_memory_limit** | The maximum amount of physical memory that can be used by the processes of this control group. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.hierarchical_memsw_limit** | The maximum amount of RAM + swap that can be used by the processes of this control group. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.inactive_file** | Cache memory that has been identified as inactive by the kernel. [More docs](https://docs.docker.com/config/containers/runmetrics/) | By | Sum(Int) | <ul> </ul> |
+| **container.memory.mapped_file** | Indicates the amount of memory mapped by the processes in the control group. | By | Sum(Int) | <ul> </ul> |
 | **container.memory.percent** | Percentage of memory used. | 1 | Gauge(Double) | <ul> </ul> |
 | **container.memory.pgfault** | Indicate the number of times that a process of the cgroup triggered a page fault. | {faults} | Sum(Int) | <ul> </ul> |
 | **container.memory.pgmajfault** | Indicate the number of times that a process of the cgroup triggered a major fault. | {faults} | Sum(Int) | <ul> </ul> |
 | **container.memory.pgpgin** | Number of pages read from disk by the cgroup. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt). | {operations} | Sum(Int) | <ul> </ul> |
 | **container.memory.pgpgout** | Number of pages written to disk by the cgroup. [More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/memory.txt). | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.swap** | The amount of swap currently used by the processes in this cgroup. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_active_anon** | The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_active_file** | Cache memory that has been identified as active by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_cache** | Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_dirty** | Bytes that are waiting to get written back to the disk, from this cgroup and descendants. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_inactive_file** | Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_mapped_file** | Indicates the amount of memory mapped by the processes in the control group and descendant groups. | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.swap** | The amount of swap currently used by the processes in this cgroup. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_active_anon** | The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_active_file** | Cache memory that has been identified as active by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_cache** | Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_dirty** | Bytes that are waiting to get written back to the disk, from this cgroup and descendants. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_inactive_anon** | The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_inactive_file** | Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups. [More docs](https://docs.docker.com/config/containers/runmetrics/). | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_mapped_file** | Indicates the amount of memory mapped by the processes in the control group and descendant groups. | By | Sum(Int) | <ul> </ul> |
 | **container.memory.total_pgfault** | Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault. | {faults} | Sum(Int) | <ul> </ul> |
 | **container.memory.total_pgmajfault** | Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault. | {faults} | Sum(Int) | <ul> </ul> |
 | **container.memory.total_pgpgin** | Number of pages read from disk by the cgroup and descendant groups. | {operations} | Sum(Int) | <ul> </ul> |
 | **container.memory.total_pgpgout** | Number of pages written to disk by the cgroup and descendant groups. | {operations} | Sum(Int) | <ul> </ul> |
-| **container.memory.total_rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_swap** | The amount of swap currently used by the processes in this cgroup and descendant groups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_unevictable** | The amount of memory that cannot be reclaimed. Includes descendant cgroups. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.total_writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.unevictable** | The amount of memory that cannot be reclaimed. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.limit** | Memory limit of the container. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.max** | Maximum memory usage. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.usage.total** | Memory usage of the container. This excludes the total cache. | By | Gauge(Int) | <ul> </ul> |
-| **container.memory.writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup. | By | Gauge(Int) | <ul> </ul> |
+| **container.memory.total_rss** | The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_rss_huge** | Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_swap** | The amount of swap currently used by the processes in this cgroup and descendant groups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_unevictable** | The amount of memory that cannot be reclaimed. Includes descendant cgroups. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.total_writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.unevictable** | The amount of memory that cannot be reclaimed. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.usage.limit** | Memory limit of the container. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.usage.max** | Maximum memory usage. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.usage.total** | Memory usage of the container. This excludes the total cache. | By | Sum(Int) | <ul> </ul> |
+| **container.memory.writeback** | Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup. | By | Sum(Int) | <ul> </ul> |
 | **container.network.io.usage.rx_bytes** | Bytes received by the container. | By | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **container.network.io.usage.rx_dropped** | Incoming packets dropped. | {packets} | Sum(Int) | <ul> <li>interface</li> </ul> |
 | **container.network.io.usage.rx_errors** | Received errors. | {errors} | Sum(Int) | <ul> <li>interface</li> </ul> |
