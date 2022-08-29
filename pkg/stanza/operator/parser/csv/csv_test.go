@@ -35,6 +35,15 @@ func newTestParser(t *testing.T) *Parser {
 	return op.(*Parser)
 }
 
+func newTestParserIgnoreQuotes(t *testing.T) *Parser {
+	cfg := NewConfigWithID("test")
+	cfg.Header = testHeader
+	cfg.IgnoreQuotes = true
+	op, err := cfg.Build(testutil.Logger(t))
+	require.NoError(t, err)
+	return op.(*Parser)
+}
+
 func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
@@ -77,6 +86,13 @@ func TestParserStringFailure(t *testing.T) {
 
 func TestParserInvalidType(t *testing.T) {
 	parser := newTestParser(t)
+	_, err := parser.parse([]int{})
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
+}
+
+func TestParserInvalidTypeIgnoreQuotes(t *testing.T) {
+	parser := newTestParserIgnoreQuotes(t)
 	_, err := parser.parse([]int{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "type '[]int' cannot be parsed as csv")
@@ -606,6 +622,84 @@ func TestParserCSV(t *testing.T) {
 						"number": "5",
 					},
 					Body: "stanza \"log parser\",1,6ft,5",
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-with-ignore-quotes",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza log parser,1,6ft,5",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "1",
+						"height": "6ft",
+						"number": "5",
+					},
+					Body: "stanza log parser,1,6ft,5",
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-with-ignore-quotes-bytes",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: []byte("stanza log parser,1,6ft,5"),
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "1",
+						"height": "6ft",
+						"number": "5",
+					},
+					Body: []byte("stanza log parser,1,6ft,5"),
+				},
+			},
+			false,
+			false,
+		},
+		{
+			"parse-with-ignore-quotes-invalid-csv",
+			func(p *Config) {
+				p.Header = "name,age,height,number"
+				p.FieldDelimiter = ","
+				p.IgnoreQuotes = true
+			},
+			[]entry.Entry{
+				{
+					Body: "stanza log parser,\"1,\"6ft,5\"",
+				},
+			},
+			[]entry.Entry{
+				{
+					Attributes: map[string]interface{}{
+						"name":   "stanza log parser",
+						"age":    "\"1",
+						"height": "\"6ft",
+						"number": "5\"",
+					},
+					Body: "stanza log parser,\"1,\"6ft,5\"",
 				},
 			},
 			false,
