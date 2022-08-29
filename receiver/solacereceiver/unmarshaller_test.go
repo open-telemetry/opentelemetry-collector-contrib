@@ -932,6 +932,7 @@ func TestUnmarshallerRGMID(t *testing.T) {
 }
 
 func TestUnmarshallerInsertUserProperty(t *testing.T) {
+	emojiVal := 0xf09f92a9
 	testCases := []struct {
 		data         interface{}
 		expectedType pcommon.ValueType
@@ -1041,10 +1042,24 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 			},
 		},
 		{
-			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 19924},
-			pcommon.ValueTypeInt,
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0x61},
+			pcommon.ValueTypeString,
 			func(val pcommon.Value) {
-				assert.Equal(t, int64(19924), val.IntVal())
+				assert.Equal(t, "a", val.StringVal())
+			},
+		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xe68080},
+			pcommon.ValueTypeString,
+			func(val pcommon.Value) {
+				assert.Equal(t, string(rune(0xe68080)), val.StringVal())
+			},
+		},
+		{
+			&model_v1.SpanData_UserPropertyValue_CharacterValue{CharacterValue: 0xf09f92a9},
+			pcommon.ValueTypeString,
+			func(val pcommon.Value) {
+				assert.Equal(t, string(rune(emojiVal)), val.StringVal())
 			},
 		},
 	}
