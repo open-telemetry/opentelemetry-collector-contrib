@@ -332,9 +332,19 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 	}
 }
 
+// Lock Metrics are only supported by MongoDB v3.2+
 func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo30, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
 			metricPath := []string{"locks", lockTypeKey, "acquireCount", lockModeKey}
 			metricName := "mongodb.locks.acquire_count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
@@ -349,8 +359,17 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 }
 
 func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo30, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
 			metricPath := []string{"locks", lockTypeKey, "acquireWaitCount", lockModeKey}
 			metricName := "mongodb.locks.acquire_wait_count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
@@ -365,8 +384,17 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 }
 
 func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo30, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
 			metricPath := []string{"locks", lockTypeKey, "timeAcquiringMicros", lockModeKey}
 			metricName := "mongodb.locks.time_acquiring_micros"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
@@ -381,8 +409,17 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 }
 
 func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+	mongo30, _ := version.NewVersion("3.2")
+	if s.mongoVersion.LessThan(mongo30) {
+		return
+	}
+	mongo42, _ := version.NewVersion("4.2")
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
+			// Continue if the lock type is not supported by current server's MongoDB version
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+				continue
+			}
 			metricPath := []string{"locks", lockTypeKey, "deadlockCount", lockModeKey}
 			metricName := "mongodb.locks.deadlock_count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
