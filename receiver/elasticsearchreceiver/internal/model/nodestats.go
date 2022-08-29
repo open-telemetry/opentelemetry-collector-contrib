@@ -13,9 +13,6 @@
 // limitations under the License.
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
-import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
-)
 
 // NodeStats represents a response from elasticsearch's /_nodes/stats endpoint.
 // The struct is not exhaustive; It does not provide all values returned by elasticsearch,
@@ -66,10 +63,10 @@ type IngestPipelineTotalStats struct {
 }
 
 type Discovery struct {
-	ClusterStateQueue       DiscoveryClusterStateQueue                                                       `json:"cluster_state_queue"`
-	SerializedClusterStates map[string]DiscoverySerializedClusterStatesStats                                 `json:"serialized_cluster_states"`
-	PublishedClusterStates  DiscoveryPublishedClusterStates                                                  `json:"published_cluster_states"`
-	ClusterStateUpdate      map[metadata.AttributeClusterStateUpdateType]DiscoveryClusterStateUpdateStatsAll `json:"cluster_state_update"`
+	ClusterStateQueue       DiscoveryClusterStateQueue                       `json:"cluster_state_queue"`
+	SerializedClusterStates map[string]DiscoverySerializedClusterStatesStats `json:"serialized_cluster_states"`
+	PublishedClusterStates  DiscoveryPublishedClusterStates                  `json:"published_cluster_states"`
+	ClusterStateUpdate      map[string]DiscoveryClusterStateUpdateStatsAll   `json:"cluster_state_update"`
 }
 
 type DiscoveryClusterStateQueue struct {

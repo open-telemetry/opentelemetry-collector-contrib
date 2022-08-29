@@ -18,13 +18,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.cluster.published_states.full** | Number of published cluster states. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.shards** | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |
 | **elasticsearch.cluster.state_queue** | Number of cluster states in queue. | 1 | Sum(Int) | <ul> <li>cluster_state_queue_state</li> </ul> |
-| **elasticsearch.cluster.state_update.commit_time** | The cumulative amount of time spent waiting for a cluster state update to commit. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.completion_time** | The cumulative amount of time spent waiting for a cluster state update to complete. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.computation_time** | The cumulative amount of time spent computing cluster state updates since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.context_construction_time** | The cumulative amount of time spent constructing a publication context since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.master_apply_time** | The cumulative amount of time spent applying cluster state updates on the elected master since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
-| **elasticsearch.cluster.state_update.notification_time** | The cumulative amount of time spent notifying listeners of a cluster state update since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_type</li> </ul> |
+| **elasticsearch.cluster.state_update.count** | The number of cluster state update attempts that changed the cluster state since the node started. | 1 | Sum(Int) | <ul> <li>cluster_state_update_state</li> </ul> |
+| **elasticsearch.cluster.state_update.time** | The cumulative amount of time updating the cluster state since the node started. | ms | Sum(Int) | <ul> <li>cluster_state_update_state</li> <li>cluster_state_update_type</li> </ul> |
 | **elasticsearch.indexing_pressure.memory.limit** | Configured memory limit, in bytes, for the indexing requests. | By | Gauge(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
@@ -102,7 +97,8 @@ metrics:
 | circuit_breaker_name (name) | The name of circuit breaker. |  |
 | cluster_published_difference_state (state) | State of the published differences | incompatible, compatible |
 | cluster_state_queue_state (state) | State of the published differences | pending, committed |
-| cluster_state_update_type (status) | Type of cluster state update | unchanged, success, failure |
+| cluster_state_update_state (state) | State of cluster state update |  |
+| cluster_state_update_type (type) | Type of cluster state update | computation, context_construction, commit, completion, master_apply, notification |
 | collector_name (name) | The name of the garbage collector. |  |
 | direction | The direction of network data. | received, sent |
 | document_state (state) | The state of the document. | active, deleted |

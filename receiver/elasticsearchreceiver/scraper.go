@@ -239,17 +239,14 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.CompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateCompatible)
 		r.mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(now, info.Discovery.PublishedClusterStates.IncompatibleDiffs, metadata.AttributeClusterPublishedDifferenceStateIncompatible)
 
-		for csuName, csuInfo := range info.Discovery.ClusterStateUpdate {
-			r.mb.RecordElasticsearchClusterStateUpdateCountDataPoint(now, csuInfo.Count, csuName)
-			r.mb.RecordElasticsearchClusterStateUpdateComputationTimeDataPoint(now, csuInfo.ComputationTimeMillis, csuName)
-			r.mb.RecordElasticsearchClusterStateUpdateNotificationTimeDataPoint(now, csuInfo.NotificationTimeMillis, csuName)
-
-			if csuName != metadata.AttributeClusterStateUpdateTypeUnchanged {
-				r.mb.RecordElasticsearchClusterStateUpdateContextConstructionTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, csuName)
-				r.mb.RecordElasticsearchClusterStateUpdateCommitTimeDataPoint(now, csuInfo.CommitTimeMillis, csuName)
-				r.mb.RecordElasticsearchClusterStateUpdateCompletionTimeDataPoint(now, csuInfo.CompletionTimeMillis, csuName)
-				r.mb.RecordElasticsearchClusterStateUpdateMasterApplyTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, csuName)
-			}
+		for cusState, csuInfo := range info.Discovery.ClusterStateUpdate {
+			r.mb.RecordElasticsearchClusterStateUpdateCountDataPoint(now, csuInfo.Count, cusState)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ComputationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeComputation)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.NotificationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeNotification)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeContextConstruction)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CommitTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCommit)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CompletionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCompletion)
+			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.MasterApplyTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeMasterApply)
 		}
 
 		r.mb.RecordElasticsearchNodeIngestDocumentsDataPoint(now, info.Ingest.Total.Count)

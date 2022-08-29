@@ -27,13 +27,8 @@ type MetricsSettings struct {
 	ElasticsearchClusterPublishedStatesFull                   MetricSettings `mapstructure:"elasticsearch.cluster.published_states.full"`
 	ElasticsearchClusterShards                                MetricSettings `mapstructure:"elasticsearch.cluster.shards"`
 	ElasticsearchClusterStateQueue                            MetricSettings `mapstructure:"elasticsearch.cluster.state_queue"`
-	ElasticsearchClusterStateUpdateCommitTime                 MetricSettings `mapstructure:"elasticsearch.cluster.state_update.commit_time"`
-	ElasticsearchClusterStateUpdateCompletionTime             MetricSettings `mapstructure:"elasticsearch.cluster.state_update.completion_time"`
-	ElasticsearchClusterStateUpdateComputationTime            MetricSettings `mapstructure:"elasticsearch.cluster.state_update.computation_time"`
-	ElasticsearchClusterStateUpdateContextConstructionTime    MetricSettings `mapstructure:"elasticsearch.cluster.state_update.context_construction_time"`
 	ElasticsearchClusterStateUpdateCount                      MetricSettings `mapstructure:"elasticsearch.cluster.state_update.count"`
-	ElasticsearchClusterStateUpdateMasterApplyTime            MetricSettings `mapstructure:"elasticsearch.cluster.state_update.master_apply_time"`
-	ElasticsearchClusterStateUpdateNotificationTime           MetricSettings `mapstructure:"elasticsearch.cluster.state_update.notification_time"`
+	ElasticsearchClusterStateUpdateTime                       MetricSettings `mapstructure:"elasticsearch.cluster.state_update.time"`
 	ElasticsearchIndexingPressureMemoryLimit                  MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.limit"`
 	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
 	ElasticsearchIndexingPressureMemoryTotalReplicaRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
@@ -120,25 +115,10 @@ func DefaultMetricsSettings() MetricsSettings {
 		ElasticsearchClusterStateQueue: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchClusterStateUpdateCommitTime: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchClusterStateUpdateCompletionTime: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchClusterStateUpdateComputationTime: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchClusterStateUpdateContextConstructionTime: MetricSettings{
-			Enabled: true,
-		},
 		ElasticsearchClusterStateUpdateCount: MetricSettings{
 			Enabled: true,
 		},
-		ElasticsearchClusterStateUpdateMasterApplyTime: MetricSettings{
-			Enabled: true,
-		},
-		ElasticsearchClusterStateUpdateNotificationTime: MetricSettings{
+		ElasticsearchClusterStateUpdateTime: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchIndexingPressureMemoryLimit: MetricSettings{
@@ -383,29 +363,41 @@ type AttributeClusterStateUpdateType int
 
 const (
 	_ AttributeClusterStateUpdateType = iota
-	AttributeClusterStateUpdateTypeUnchanged
-	AttributeClusterStateUpdateTypeSuccess
-	AttributeClusterStateUpdateTypeFailure
+	AttributeClusterStateUpdateTypeComputation
+	AttributeClusterStateUpdateTypeContextConstruction
+	AttributeClusterStateUpdateTypeCommit
+	AttributeClusterStateUpdateTypeCompletion
+	AttributeClusterStateUpdateTypeMasterApply
+	AttributeClusterStateUpdateTypeNotification
 )
 
 // String returns the string representation of the AttributeClusterStateUpdateType.
 func (av AttributeClusterStateUpdateType) String() string {
 	switch av {
-	case AttributeClusterStateUpdateTypeUnchanged:
-		return "unchanged"
-	case AttributeClusterStateUpdateTypeSuccess:
-		return "success"
-	case AttributeClusterStateUpdateTypeFailure:
-		return "failure"
+	case AttributeClusterStateUpdateTypeComputation:
+		return "computation"
+	case AttributeClusterStateUpdateTypeContextConstruction:
+		return "context_construction"
+	case AttributeClusterStateUpdateTypeCommit:
+		return "commit"
+	case AttributeClusterStateUpdateTypeCompletion:
+		return "completion"
+	case AttributeClusterStateUpdateTypeMasterApply:
+		return "master_apply"
+	case AttributeClusterStateUpdateTypeNotification:
+		return "notification"
 	}
 	return ""
 }
 
 // MapAttributeClusterStateUpdateType is a helper map of string to AttributeClusterStateUpdateType attribute value.
 var MapAttributeClusterStateUpdateType = map[string]AttributeClusterStateUpdateType{
-	"unchanged": AttributeClusterStateUpdateTypeUnchanged,
-	"success":   AttributeClusterStateUpdateTypeSuccess,
-	"failure":   AttributeClusterStateUpdateTypeFailure,
+	"computation":          AttributeClusterStateUpdateTypeComputation,
+	"context_construction": AttributeClusterStateUpdateTypeContextConstruction,
+	"commit":               AttributeClusterStateUpdateTypeCommit,
+	"completion":           AttributeClusterStateUpdateTypeCompletion,
+	"master_apply":         AttributeClusterStateUpdateTypeMasterApply,
+	"notification":         AttributeClusterStateUpdateTypeNotification,
 }
 
 // AttributeDirection specifies the a value direction attribute.
@@ -1268,218 +1260,6 @@ func newMetricElasticsearchClusterStateQueue(settings MetricSettings) metricElas
 	return m
 }
 
-type metricElasticsearchClusterStateUpdateCommitTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.cluster.state_update.commit_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateCommitTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.commit_time")
-	m.data.SetDescription("The cumulative amount of time spent waiting for a cluster state update to commit.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchClusterStateUpdateCommitTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateCommitTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateCommitTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchClusterStateUpdateCommitTime(settings MetricSettings) metricElasticsearchClusterStateUpdateCommitTime {
-	m := metricElasticsearchClusterStateUpdateCommitTime{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchClusterStateUpdateCompletionTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.cluster.state_update.completion_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateCompletionTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.completion_time")
-	m.data.SetDescription("The cumulative amount of time spent waiting for a cluster state update to complete.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchClusterStateUpdateCompletionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateCompletionTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateCompletionTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchClusterStateUpdateCompletionTime(settings MetricSettings) metricElasticsearchClusterStateUpdateCompletionTime {
-	m := metricElasticsearchClusterStateUpdateCompletionTime{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchClusterStateUpdateComputationTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.cluster.state_update.computation_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateComputationTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.computation_time")
-	m.data.SetDescription("The cumulative amount of time spent computing cluster state updates since the node started.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchClusterStateUpdateComputationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateComputationTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateComputationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchClusterStateUpdateComputationTime(settings MetricSettings) metricElasticsearchClusterStateUpdateComputationTime {
-	m := metricElasticsearchClusterStateUpdateComputationTime{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchClusterStateUpdateContextConstructionTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.cluster.state_update.context_construction_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateContextConstructionTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.context_construction_time")
-	m.data.SetDescription("The cumulative amount of time spent constructing a publication context since the node started.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchClusterStateUpdateContextConstructionTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateContextConstructionTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateContextConstructionTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchClusterStateUpdateContextConstructionTime(settings MetricSettings) metricElasticsearchClusterStateUpdateContextConstructionTime {
-	m := metricElasticsearchClusterStateUpdateContextConstructionTime{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricElasticsearchClusterStateUpdateCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
@@ -1497,7 +1277,7 @@ func (m *metricElasticsearchClusterStateUpdateCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchClusterStateUpdateCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
+func (m *metricElasticsearchClusterStateUpdateCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1505,7 +1285,7 @@ func (m *metricElasticsearchClusterStateUpdateCount) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
+	dp.Attributes().InsertString("state", clusterStateUpdateStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1533,24 +1313,24 @@ func newMetricElasticsearchClusterStateUpdateCount(settings MetricSettings) metr
 	return m
 }
 
-type metricElasticsearchClusterStateUpdateMasterApplyTime struct {
+type metricElasticsearchClusterStateUpdateTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	settings MetricSettings // metric settings provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills elasticsearch.cluster.state_update.master_apply_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.master_apply_time")
-	m.data.SetDescription("The cumulative amount of time spent applying cluster state updates on the elected master since the node started.")
-	m.data.SetUnit("1")
+// init fills elasticsearch.cluster.state_update.time metric with initial data.
+func (m *metricElasticsearchClusterStateUpdateTime) init() {
+	m.data.SetName("elasticsearch.cluster.state_update.time")
+	m.data.SetDescription("The cumulative amount of time updating the cluster state since the node started.")
+	m.data.SetUnit("ms")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
+func (m *metricElasticsearchClusterStateUpdateTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue string) {
 	if !m.settings.Enabled {
 		return
 	}
@@ -1558,18 +1338,19 @@ func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) recordDataPoint(s
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
+	dp.Attributes().InsertString("state", clusterStateUpdateStateAttributeValue)
+	dp.Attributes().InsertString("type", clusterStateUpdateTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) updateCapacity() {
+func (m *metricElasticsearchClusterStateUpdateTime) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) emit(metrics pmetric.MetricSlice) {
+func (m *metricElasticsearchClusterStateUpdateTime) emit(metrics pmetric.MetricSlice) {
 	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1577,61 +1358,8 @@ func (m *metricElasticsearchClusterStateUpdateMasterApplyTime) emit(metrics pmet
 	}
 }
 
-func newMetricElasticsearchClusterStateUpdateMasterApplyTime(settings MetricSettings) metricElasticsearchClusterStateUpdateMasterApplyTime {
-	m := metricElasticsearchClusterStateUpdateMasterApplyTime{settings: settings}
-	if settings.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricElasticsearchClusterStateUpdateNotificationTime struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills elasticsearch.cluster.state_update.notification_time metric with initial data.
-func (m *metricElasticsearchClusterStateUpdateNotificationTime) init() {
-	m.data.SetName("elasticsearch.cluster.state_update.notification_time")
-	m.data.SetDescription("The cumulative amount of time spent notifying listeners of a cluster state update since the node started.")
-	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricElasticsearchClusterStateUpdateNotificationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue string) {
-	if !m.settings.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", clusterStateUpdateTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricElasticsearchClusterStateUpdateNotificationTime) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricElasticsearchClusterStateUpdateNotificationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricElasticsearchClusterStateUpdateNotificationTime(settings MetricSettings) metricElasticsearchClusterStateUpdateNotificationTime {
-	m := metricElasticsearchClusterStateUpdateNotificationTime{settings: settings}
+func newMetricElasticsearchClusterStateUpdateTime(settings MetricSettings) metricElasticsearchClusterStateUpdateTime {
+	m := metricElasticsearchClusterStateUpdateTime{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4317,13 +4045,8 @@ type MetricsBuilder struct {
 	metricElasticsearchClusterPublishedStatesFull                   metricElasticsearchClusterPublishedStatesFull
 	metricElasticsearchClusterShards                                metricElasticsearchClusterShards
 	metricElasticsearchClusterStateQueue                            metricElasticsearchClusterStateQueue
-	metricElasticsearchClusterStateUpdateCommitTime                 metricElasticsearchClusterStateUpdateCommitTime
-	metricElasticsearchClusterStateUpdateCompletionTime             metricElasticsearchClusterStateUpdateCompletionTime
-	metricElasticsearchClusterStateUpdateComputationTime            metricElasticsearchClusterStateUpdateComputationTime
-	metricElasticsearchClusterStateUpdateContextConstructionTime    metricElasticsearchClusterStateUpdateContextConstructionTime
 	metricElasticsearchClusterStateUpdateCount                      metricElasticsearchClusterStateUpdateCount
-	metricElasticsearchClusterStateUpdateMasterApplyTime            metricElasticsearchClusterStateUpdateMasterApplyTime
-	metricElasticsearchClusterStateUpdateNotificationTime           metricElasticsearchClusterStateUpdateNotificationTime
+	metricElasticsearchClusterStateUpdateTime                       metricElasticsearchClusterStateUpdateTime
 	metricElasticsearchIndexingPressureMemoryLimit                  metricElasticsearchIndexingPressureMemoryLimit
 	metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections
 	metricElasticsearchIndexingPressureMemoryTotalReplicaRejections metricElasticsearchIndexingPressureMemoryTotalReplicaRejections
@@ -4403,13 +4126,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchClusterPublishedStatesFull:                   newMetricElasticsearchClusterPublishedStatesFull(settings.ElasticsearchClusterPublishedStatesFull),
 		metricElasticsearchClusterShards:                                newMetricElasticsearchClusterShards(settings.ElasticsearchClusterShards),
 		metricElasticsearchClusterStateQueue:                            newMetricElasticsearchClusterStateQueue(settings.ElasticsearchClusterStateQueue),
-		metricElasticsearchClusterStateUpdateCommitTime:                 newMetricElasticsearchClusterStateUpdateCommitTime(settings.ElasticsearchClusterStateUpdateCommitTime),
-		metricElasticsearchClusterStateUpdateCompletionTime:             newMetricElasticsearchClusterStateUpdateCompletionTime(settings.ElasticsearchClusterStateUpdateCompletionTime),
-		metricElasticsearchClusterStateUpdateComputationTime:            newMetricElasticsearchClusterStateUpdateComputationTime(settings.ElasticsearchClusterStateUpdateComputationTime),
-		metricElasticsearchClusterStateUpdateContextConstructionTime:    newMetricElasticsearchClusterStateUpdateContextConstructionTime(settings.ElasticsearchClusterStateUpdateContextConstructionTime),
 		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(settings.ElasticsearchClusterStateUpdateCount),
-		metricElasticsearchClusterStateUpdateMasterApplyTime:            newMetricElasticsearchClusterStateUpdateMasterApplyTime(settings.ElasticsearchClusterStateUpdateMasterApplyTime),
-		metricElasticsearchClusterStateUpdateNotificationTime:           newMetricElasticsearchClusterStateUpdateNotificationTime(settings.ElasticsearchClusterStateUpdateNotificationTime),
+		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(settings.ElasticsearchClusterStateUpdateTime),
 		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(settings.ElasticsearchIndexingPressureMemoryLimit),
 		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(settings.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
 		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(settings.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
@@ -4538,13 +4256,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchClusterPublishedStatesFull.emit(ils.Metrics())
 	mb.metricElasticsearchClusterShards.emit(ils.Metrics())
 	mb.metricElasticsearchClusterStateQueue.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateCommitTime.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateCompletionTime.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateComputationTime.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateContextConstructionTime.emit(ils.Metrics())
 	mb.metricElasticsearchClusterStateUpdateCount.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateMasterApplyTime.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateNotificationTime.emit(ils.Metrics())
+	mb.metricElasticsearchClusterStateUpdateTime.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryLimit.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.emit(ils.Metrics())
@@ -4666,39 +4379,14 @@ func (mb *MetricsBuilder) RecordElasticsearchClusterStateQueueDataPoint(ts pcomm
 	mb.metricElasticsearchClusterStateQueue.recordDataPoint(mb.startTime, ts, val, clusterStateQueueStateAttributeValue.String())
 }
 
-// RecordElasticsearchClusterStateUpdateCommitTimeDataPoint adds a data point to elasticsearch.cluster.state_update.commit_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCommitTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateCommitTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
-}
-
-// RecordElasticsearchClusterStateUpdateCompletionTimeDataPoint adds a data point to elasticsearch.cluster.state_update.completion_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCompletionTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateCompletionTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
-}
-
-// RecordElasticsearchClusterStateUpdateComputationTimeDataPoint adds a data point to elasticsearch.cluster.state_update.computation_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateComputationTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateComputationTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
-}
-
-// RecordElasticsearchClusterStateUpdateContextConstructionTimeDataPoint adds a data point to elasticsearch.cluster.state_update.context_construction_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateContextConstructionTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateContextConstructionTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
-}
-
 // RecordElasticsearchClusterStateUpdateCountDataPoint adds a data point to elasticsearch.cluster.state_update.count metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCountDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateCount.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
+func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCountDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string) {
+	mb.metricElasticsearchClusterStateUpdateCount.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateStateAttributeValue)
 }
 
-// RecordElasticsearchClusterStateUpdateMasterApplyTimeDataPoint adds a data point to elasticsearch.cluster.state_update.master_apply_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateMasterApplyTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateMasterApplyTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
-}
-
-// RecordElasticsearchClusterStateUpdateNotificationTimeDataPoint adds a data point to elasticsearch.cluster.state_update.notification_time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateNotificationTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateNotificationTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateTypeAttributeValue.String())
+// RecordElasticsearchClusterStateUpdateTimeDataPoint adds a data point to elasticsearch.cluster.state_update.time metric.
+func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
+	mb.metricElasticsearchClusterStateUpdateTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateStateAttributeValue, clusterStateUpdateTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexingPressureMemoryLimitDataPoint adds a data point to elasticsearch.indexing_pressure.memory.limit metric.
