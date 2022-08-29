@@ -43,8 +43,7 @@ func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
 					pt.t = st
 					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
 				}
-				_, _, err := b.Build(pmetric.NewMetricSlice())
-				assert.NoError(t, err)
+				assert.NoError(t, b.appendMetrics(pmetric.NewMetricSlice()))
 				assert.EqualValues(t, b.startTime, expectedBuilderStartTime)
 				st += interval
 			}
@@ -499,8 +498,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 					assert.NoError(t, b.AddDataPoint(pt.lb, pt.t, pt.v))
 				}
 				metrics := pmetric.NewMetricSlice()
-				_, _, err := b.Build(metrics)
-				assert.NoError(t, err)
+				assert.NoError(t, b.appendMetrics(metrics))
 				assertEquivalentMetrics(t, wants[i], metrics)
 				st += interval
 			}
@@ -1222,7 +1220,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 			return
 		}
 
-		if _, _, err := b.Build(pmetric.NewMetricSlice()); !errors.Is(err, errNoDataToBuild) {
+		if err := b.appendMetrics(pmetric.NewMetricSlice()); !errors.Is(err, errNoDataToBuild) {
 			t.Error("expecting errNoDataToBuild error, but get nil")
 		}
 	})
