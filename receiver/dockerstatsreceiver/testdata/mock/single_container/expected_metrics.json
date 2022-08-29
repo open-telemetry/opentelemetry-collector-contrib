@@ -626,7 +626,8 @@
             },
             {
               "description": "Memory limit of the container.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "10449559552",
@@ -639,7 +640,8 @@
             },
             {
               "description": "Memory usage of the container. This excludes the total cache.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "454656",
@@ -665,7 +667,8 @@
             },
             {
               "description": "Maximum memory usage.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "3932160",
@@ -678,7 +681,8 @@
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -691,7 +695,8 @@
             },
             {
               "description": "Cache memory that has been identified as active by the kernel.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "270336",
@@ -704,7 +709,8 @@
             },
             {
               "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2433024",
@@ -717,7 +723,8 @@
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -730,7 +737,8 @@
             },
             {
               "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -743,7 +751,8 @@
             },
             {
               "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "9223372036854772000",
@@ -756,7 +765,8 @@
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -769,7 +779,8 @@
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2162688",
@@ -782,7 +793,8 @@
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "1486848",
@@ -855,7 +867,8 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -868,7 +881,8 @@
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -881,7 +895,8 @@
             },
             {
               "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -894,7 +909,8 @@
             },
             {
               "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "270336",
@@ -907,7 +923,8 @@
             },
             {
               "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2433024",
@@ -920,7 +937,8 @@
             },
             {
               "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -933,7 +951,8 @@
             },
             {
               "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -946,7 +965,8 @@
             },
             {
               "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2162688",
@@ -959,7 +979,8 @@
             },
             {
               "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "1486848",
@@ -1032,7 +1053,8 @@
             },
             {
               "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1045,7 +1067,8 @@
             },
             {
               "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1058,7 +1081,8 @@
             },
             {
               "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1071,7 +1095,8 @@
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1084,7 +1109,8 @@
             },
             {
               "description": "The amount of memory that cannot be reclaimed.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1097,7 +1123,8 @@
             },
             {
               "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
