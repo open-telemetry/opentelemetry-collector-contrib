@@ -186,7 +186,7 @@ func (p *Parser) buildArg(argDef Value, argType reflect.Type, index int, args *[
 	return nil
 }
 
-// Handle interfaces that can be declared as paramters to a TQL function, but will
+// Handle interfaces that can be declared as parameters to a TQL function, but will
 // never be called in an invocation. Returns whether the arg is an internal arg.
 func (p *Parser) buildInternalArg(argType reflect.Type, args *[]reflect.Value) bool {
 	switch argType.Name() {

@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )

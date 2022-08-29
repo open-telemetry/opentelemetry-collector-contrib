@@ -17,9 +17,9 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
-
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
 type TQLLogger struct {
