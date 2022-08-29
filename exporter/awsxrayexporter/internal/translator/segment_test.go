@@ -187,7 +187,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := pcommon.InvalidSpanID()
+	parentSpanID := pcommon.EmptySpanID
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", nil)
 
@@ -201,7 +201,7 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetName("my-topic send")
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
-	span.SetParentSpanID(pcommon.InvalidSpanID())
+	span.SetParentSpanID(pcommon.EmptySpanID)
 	span.SetKind(ptrace.SpanKindProducer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
@@ -336,7 +336,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[conventions.AttributeNetPeerPort] = "9443"
 	attributes[conventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(pcommon.InvalidSpanID(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(pcommon.EmptySpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
 	traceID := span.TraceID().Bytes()

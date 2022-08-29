@@ -93,7 +93,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			}(),
 			expected: func() plog.LogRecordSlice {
 				lrs := buildDefaultLogs()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
+				lrs.At(0).Attributes().UpsertEmpty("com.splunk.signalfx.event_category")
 				return lrs
 			}(),
 		},
