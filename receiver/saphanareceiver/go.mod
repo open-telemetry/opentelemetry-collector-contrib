@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphan
 go 1.18
 
 require (
-	github.com/SAP/go-hdb v0.108.0
+	github.com/SAP/go-hdb v0.108.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.58.1-0.20220825025657-e092fc728b72
