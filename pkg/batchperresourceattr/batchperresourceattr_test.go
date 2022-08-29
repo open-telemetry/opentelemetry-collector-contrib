@@ -33,7 +33,7 @@ import (
 
 func TestSplitTracesOneResourceSpans(t *testing.T) {
 	inBatch := ptrace.NewTraces()
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
 
 	sink := new(consumertest.TracesSink)
 	bpr := NewBatchPerResourceTraces("attr_key", sink)
@@ -45,8 +45,8 @@ func TestSplitTracesOneResourceSpans(t *testing.T) {
 
 func TestSplitTracesReturnError(t *testing.T) {
 	inBatch := ptrace.NewTraces()
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
 
 	err := errors.New("test_error")
 	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewErr(err))
@@ -55,10 +55,10 @@ func TestSplitTracesReturnError(t *testing.T) {
 
 func TestSplitTracesSameResource(t *testing.T) {
 	inBatch := ptrace.NewTraces()
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "same_attr_val", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.TracesSink)
@@ -71,15 +71,15 @@ func TestSplitTracesSameResource(t *testing.T) {
 
 func TestSplitTracesIntoDifferentBatches(t *testing.T) {
 	inBatch := ptrace.NewTraces()
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "2")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "3")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "4")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "2")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "3")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "4")
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "diff_attr_key", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.TracesSink)
@@ -97,7 +97,7 @@ func TestSplitTracesIntoDifferentBatches(t *testing.T) {
 
 func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
@@ -110,8 +110,8 @@ func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 
 func TestSplitMetricsReturnError(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
 
 	err := errors.New("test_error")
 	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewErr(err))
@@ -120,10 +120,10 @@ func TestSplitMetricsReturnError(t *testing.T) {
 
 func TestSplitMetricsSameResource(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "same_attr_val", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
@@ -136,15 +136,15 @@ func TestSplitMetricsSameResource(t *testing.T) {
 
 func TestSplitMetricsIntoDifferentBatches(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "2")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "3")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "4")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "2")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "3")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "4")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "diff_attr_key", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.MetricsSink)
@@ -162,7 +162,7 @@ func TestSplitMetricsIntoDifferentBatches(t *testing.T) {
 
 func TestSplitLogsOneResourceLogs(t *testing.T) {
 	inBatch := plog.NewLogs()
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
@@ -175,8 +175,8 @@ func TestSplitLogsOneResourceLogs(t *testing.T) {
 
 func TestSplitLogsReturnError(t *testing.T) {
 	inBatch := plog.NewLogs()
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
 
 	err := errors.New("test_error")
 	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewErr(err))
@@ -185,10 +185,10 @@ func TestSplitLogsReturnError(t *testing.T) {
 
 func TestSplitLogsSameResource(t *testing.T) {
 	inBatch := plog.NewLogs()
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", pcommon.NewValueString("1"))
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "same_attr_val", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
@@ -201,15 +201,15 @@ func TestSplitLogsSameResource(t *testing.T) {
 
 func TestSplitLogsIntoDifferentBatches(t *testing.T) {
 	inBatch := plog.NewLogs()
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("1"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("2"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("3"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString("4"))
-	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "diff_attr_key", pcommon.NewValueString("1"))
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "2")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "3")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "4")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "2")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "3")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "4")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "diff_attr_key", "1")
 	expected := inBatch.Clone()
 
 	sink := new(consumertest.LogsSink)
@@ -247,9 +247,9 @@ func sortTraces(tds []ptrace.Traces, attrKey string) {
 	})
 }
 
-func fillResourceSpans(rs ptrace.ResourceSpans, key string, val pcommon.Value) {
-	rs.Resource().Attributes().Upsert(key, val)
-	rs.Resource().Attributes().Upsert("__other_key__", pcommon.NewValueInt(123))
+func fillResourceSpans(rs ptrace.ResourceSpans, key string, val string) {
+	rs.Resource().Attributes().UpsertString(key, val)
+	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
 	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-span")
@@ -281,9 +281,9 @@ func sortMetrics(tds []pmetric.Metrics, attrKey string) {
 	})
 }
 
-func fillResourceMetrics(rs pmetric.ResourceMetrics, key string, val pcommon.Value) {
-	rs.Resource().Attributes().Upsert(key, val)
-	rs.Resource().Attributes().Upsert("__other_key__", pcommon.NewValueInt(123))
+func fillResourceMetrics(rs pmetric.ResourceMetrics, key string, val string) {
+	rs.Resource().Attributes().UpsertString(key, val)
+	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
 	ils := rs.ScopeMetrics().AppendEmpty()
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("first-metric")
@@ -315,9 +315,9 @@ func sortLogs(tds []plog.Logs, attrKey string) {
 	})
 }
 
-func fillResourceLogs(rs plog.ResourceLogs, key string, val pcommon.Value) {
-	rs.Resource().Attributes().Upsert(key, val)
-	rs.Resource().Attributes().Upsert("__other_key__", pcommon.NewValueInt(123))
+func fillResourceLogs(rs plog.ResourceLogs, key string, val string) {
+	rs.Resource().Attributes().UpsertString(key, val)
+	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
 	firstLogRecord.FlagsStruct().SetIsSampled(rand.Int31()%2 == 1)
@@ -330,7 +330,7 @@ func BenchmarkBatchPerResourceTraces(b *testing.B) {
 	rss := inBatch.ResourceSpans()
 	rss.EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceSpans(rss.AppendEmpty(), "attr_key", pcommon.NewValueString(strconv.Itoa(i%8)))
+		fillResourceSpans(rss.AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceTraces("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
@@ -346,7 +346,7 @@ func BenchmarkBatchPerResourceMetrics(b *testing.B) {
 	inBatch := pmetric.NewMetrics()
 	inBatch.ResourceMetrics().EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", pcommon.NewValueString(strconv.Itoa(i%8)))
+		fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceMetrics("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
@@ -362,7 +362,7 @@ func BenchmarkBatchPerResourceLogs(b *testing.B) {
 	inBatch := plog.NewLogs()
 	inBatch.ResourceLogs().EnsureCapacity(64)
 	for i := 0; i < 64; i++ {
-		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", pcommon.NewValueString(strconv.Itoa(i%8)))
+		fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", strconv.Itoa(i%8))
 	}
 	bpr := NewBatchPerResourceLogs("attr_key", consumertest.NewNop())
 	b.ReportAllocs()
