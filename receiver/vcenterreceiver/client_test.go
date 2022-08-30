@@ -96,5 +96,9 @@ func TestSessionReestablish(t *testing.T) {
 
 		err = client.EnsureConnection(ctx)
 		require.NoError(t, err)
+
+		connected, err := client.moClient.SessionManager.SessionIsActive(ctx)
+		require.NoError(t, err)
+		require.True(t, connected)
 	})
 }
