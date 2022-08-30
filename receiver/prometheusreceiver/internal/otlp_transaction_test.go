@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 func Test_transaction_pdata(t *testing.T) {
@@ -56,11 +57,9 @@ func Test_transaction_pdata(t *testing.T) {
 	scrapeCtx := scrape.ContextWithTarget(context.Background(), target)
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(scrapeCtx, noopMetricMetadataStore{})
 
-	rID := config.NewComponentID("prometheus")
-
 	t.Run("Commit Without Adding", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if got := tr.Commit(); got != nil {
 			t.Errorf("expecting nil from Commit() but got err %v", got)
 		}
@@ -68,7 +67,7 @@ func Test_transaction_pdata(t *testing.T) {
 
 	t.Run("Rollback does nothing", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if got := tr.Rollback(); got != nil {
 			t.Errorf("expecting nil from Rollback() but got err %v", got)
 		}
@@ -77,7 +76,7 @@ func Test_transaction_pdata(t *testing.T) {
 	badLabels := labels.Labels([]labels.Label{{Name: "foo", Value: "bar"}})
 	t.Run("Add One No Target", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if _, got := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -89,7 +88,7 @@ func Test_transaction_pdata(t *testing.T) {
 		{Name: "foo", Value: "bar"}})
 	t.Run("Add One Job not found", func(t *testing.T) {
 		nomc := consumertest.NewNop()
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, nomc, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if _, got := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0); got == nil {
 			t.Errorf("expecting error from Add() but got nil")
 		}
@@ -100,7 +99,7 @@ func Test_transaction_pdata(t *testing.T) {
 		{Name: "__name__", Value: "foo"}})
 	t.Run("Add One Good", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, sink, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -122,7 +121,7 @@ func Test_transaction_pdata(t *testing.T) {
 
 	t.Run("Error when start time is zero", func(t *testing.T) {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, nil, true, "", rID, sink, nil, componenttest.NewNopReceiverCreateSettings())
+		tr := newTransaction(scrapeCtx, nil, true, "", sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 		if _, got := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0); got != nil {
 			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
 		}
@@ -133,6 +132,14 @@ func Test_transaction_pdata(t *testing.T) {
 		} else if got.Error() != errNoStartTimeMetrics.Error() {
 			t.Errorf("expected error %q but got %q", errNoStartTimeMetrics, got)
 		}
+	})
+}
+
+func nopObsRecv() *obsreport.Receiver {
+	return obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             config.NewComponentID("prometheus"),
+		Transport:              transport,
+		ReceiverCreateSettings: componenttest.NewNopReceiverCreateSettings(),
 	})
 }
 
