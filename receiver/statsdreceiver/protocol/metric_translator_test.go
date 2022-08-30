@@ -50,7 +50,7 @@ func TestBuildCounterMetric(t *testing.T) {
 	dp.SetIntVal(32)
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastUpdateInterval))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
-	dp.Attributes().InsertString("mykey", "myvalue")
+	dp.Attributes().UpsertString("mykey", "myvalue")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -77,8 +77,8 @@ func TestBuildGaugeMetric(t *testing.T) {
 	dp := expectedMetric.Gauge().DataPoints().AppendEmpty()
 	dp.SetDoubleVal(32.3)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
-	dp.Attributes().InsertString("mykey", "myvalue")
-	dp.Attributes().InsertString("mykey2", "myvalue2")
+	dp.Attributes().UpsertString("mykey", "myvalue")
+	dp.Attributes().UpsertString("mykey2", "myvalue2")
 	assert.Equal(t, metric, expectedMetrics)
 }
 
@@ -114,7 +114,7 @@ func TestBuildSummaryMetricUnsampled(t *testing.T) {
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for _, kv := range desc.attrs.ToSlice() {
-		dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
+		dp.Attributes().UpsertString(string(kv.Key), kv.Value.AsString())
 	}
 	quantile := []float64{0, 10, 50, 90, 95, 100}
 	value := []float64{1, 1, 3, 6, 6, 6}
@@ -197,7 +197,7 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 		dp.SetStartTimestamp(pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute)))
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 		for _, kv := range desc.attrs.ToSlice() {
-			dp.Attributes().InsertString(string(kv.Key), kv.Value.AsString())
+			dp.Attributes().UpsertString(string(kv.Key), kv.Value.AsString())
 		}
 		for i := range test.percentiles {
 			eachQuantile := dp.QuantileValues().AppendEmpty()

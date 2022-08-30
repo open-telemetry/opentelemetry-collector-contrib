@@ -99,15 +99,15 @@ func TestTagsMetrics(t *testing.T) {
 		conventions.AttributeAWSECSLaunchtype:   conventions.AttributeAWSECSLaunchtypeFargate,
 	})
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
+	rm.Resource().Attributes().UpsertString(conventions.AttributeAWSECSTaskARN, "task-arn-1")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
+	rm.Resource().Attributes().UpsertString(conventions.AttributeAWSECSTaskARN, "task-arn-2")
 
 	rm = rms.AppendEmpty()
 	baseAttrs.CopyTo(rm.Resource().Attributes())
-	rm.Resource().Attributes().InsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
+	rm.Resource().Attributes().UpsertString(conventions.AttributeAWSECSTaskARN, "task-arn-3")
 
 	logger, _ := zap.NewProduction()
 	tr := newTranslator(t, logger)

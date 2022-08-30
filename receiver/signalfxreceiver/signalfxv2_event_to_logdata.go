@@ -35,55 +35,51 @@ func signalFxV2EventsToLogRecords(events []*sfxpb.Event, lrs plog.LogRecordSlice
 		attrs.Clear()
 		attrs.EnsureCapacity(2 + len(event.Dimensions) + len(event.Properties))
 
+		for _, dim := range event.Dimensions {
+			attrs.UpsertString(dim.Key, dim.Value)
+		}
+
 		// The EventType field is stored as an attribute.
 		eventType := event.EventType
 		if eventType == "" {
 			eventType = "unknown"
 		}
-		attrs.InsertString(splunk.SFxEventType, eventType)
+		attrs.UpsertString(splunk.SFxEventType, eventType)
 
 		// SignalFx timestamps are in millis so convert to nanos by multiplying
 		// by 1 million.
 		lr.SetTimestamp(pcommon.Timestamp(event.Timestamp * 1e6))
 
 		if event.Category != nil {
-			attrs.InsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
+			attrs.UpsertInt(splunk.SFxEventCategoryKey, int64(*event.Category))
 		} else {
 			// This gives us an unambiguous way of determining that a log record
 			// represents a SignalFx event, even if category is missing from the
 			// event.
-			attrs.Insert(splunk.SFxEventCategoryKey, pcommon.NewValueEmpty())
-		}
-
-		for _, dim := range event.Dimensions {
-			attrs.InsertString(dim.Key, dim.Value)
+			attrs.UpsertEmpty(splunk.SFxEventCategoryKey)
 		}
 
 		if len(event.Properties) > 0 {
-			propMapVal := pcommon.NewValueMap()
-			propMap := propMapVal.MapVal()
+			propMap := attrs.UpsertEmptyMap(splunk.SFxEventPropertiesKey)
 			propMap.EnsureCapacity(len(event.Properties))
-
 			for _, prop := range event.Properties {
 				// No way to tell what value type is without testing each
 				// individually.
 				switch {
 				case prop.Value.StrValue != nil:
-					propMap.InsertString(prop.Key, prop.Value.GetStrValue())
+					propMap.UpsertString(prop.Key, prop.Value.GetStrValue())
 				case prop.Value.IntValue != nil:
-					propMap.InsertInt(prop.Key, prop.Value.GetIntValue())
+					propMap.UpsertInt(prop.Key, prop.Value.GetIntValue())
 				case prop.Value.DoubleValue != nil:
-					propMap.InsertDouble(prop.Key, prop.Value.GetDoubleValue())
+					propMap.UpsertDouble(prop.Key, prop.Value.GetDoubleValue())
 				case prop.Value.BoolValue != nil:
-					propMap.InsertBool(prop.Key, prop.Value.GetBoolValue())
+					propMap.UpsertBool(prop.Key, prop.Value.GetBoolValue())
 				default:
 					// If there is no property value, just insert a null to
 					// record that the key was present.
-					propMap.Insert(prop.Key, pcommon.NewValueEmpty())
+					propMap.UpsertEmpty(prop.Key)
 				}
 			}
-
-			attrs.Insert(splunk.SFxEventPropertiesKey, propMapVal)
 		}
 	}
 }
