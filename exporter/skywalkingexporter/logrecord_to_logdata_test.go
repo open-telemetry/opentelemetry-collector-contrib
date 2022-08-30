@@ -53,7 +53,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1}))
 		logRecord.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-		logRecord.FlagsStruct().SetIsSampled(true)
+		logRecord.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		logRecord.SetSeverityText("INFO")
 		logRecord.SetSeverityNumber(plog.SeverityNumberInfo)
 		logRecord.SetTimestamp(ts)

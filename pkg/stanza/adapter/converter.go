@@ -361,7 +361,7 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		// The 8 least significant bits are the trace flags as defined in W3C Trace
 		// Context specification. Don't override the 24 reserved bits.
 		flags := uint32(ent.TraceFlags[0])
-		dest.FlagsStruct().SetIsSampled(flags&1 != 0)
+		dest.SetFlagsStruct(plog.LogRecordFlags(flags))
 	}
 }
 
