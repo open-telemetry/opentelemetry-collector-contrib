@@ -246,13 +246,10 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric
 
 func populateAttributes(orderedKeys []string, ls labels.Labels, dest pcommon.Map) {
 	dest.EnsureCapacity(len(orderedKeys))
-	for _, key := range orderedKeys {
-		val := ls.Get(key)
-		if val == "" {
-			// empty label values should be omitted
-			continue
+	for i := 0; i < len(orderedKeys); i++ {
+		if val := ls.Get(orderedKeys[i]); val != "" {
+			dest.InsertString(orderedKeys[i], val)
 		}
-		dest.InsertString(key, val)
 	}
 }
 
