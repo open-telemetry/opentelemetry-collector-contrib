@@ -31,15 +31,14 @@ import (
 type metricFamily struct {
 	mtype pmetric.MetricDataType
 	// isMonotonic only applies to sums
-	isMonotonic       bool
-	groups            map[string]*metricGroup
-	name              string
-	mc                MetadataCache
-	droppedTimeseries int
-	labelKeys         map[string]bool
-	labelKeysOrdered  []string
-	metadata          *scrape.MetricMetadata
-	groupOrders       []*metricGroup
+	isMonotonic      bool
+	groups           map[string]*metricGroup
+	name             string
+	mc               MetadataCache
+	labelKeys        map[string]bool
+	labelKeysOrdered []string
+	metadata         *scrape.MetricMetadata
+	groupOrders      []*metricGroup
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -65,15 +64,14 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *m
 	}
 
 	return &metricFamily{
-		mtype:             mtype,
-		isMonotonic:       isMonotonic,
-		groups:            make(map[string]*metricGroup),
-		name:              familyName,
-		mc:                mc,
-		droppedTimeseries: 0,
-		labelKeys:         make(map[string]bool),
-		labelKeysOrdered:  make([]string, 0),
-		metadata:          metadata,
+		mtype:            mtype,
+		isMonotonic:      isMonotonic,
+		groups:           make(map[string]*metricGroup),
+		name:             familyName,
+		mc:               mc,
+		labelKeys:        make(map[string]bool),
+		labelKeysOrdered: make([]string, 0),
+		metadata:         metadata,
 	}
 }
 
@@ -118,9 +116,9 @@ func (mg *metricGroup) sortPoints() {
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetric.HistogramDataPointSlice) bool {
+func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetric.HistogramDataPointSlice) {
 	if !mg.hasCount || len(mg.complexValue) == 0 {
-		return false
+		return
 	}
 
 	mg.sortPoints()
@@ -168,8 +166,6 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetr
 	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
-
-	return true
 }
 
 func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -177,12 +173,12 @@ func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, ns))
 }
 
-func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.SummaryDataPointSlice) bool {
+func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.SummaryDataPointSlice) {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
 	if !mg.hasCount {
-		return false
+		return
 	}
 
 	mg.sortPoints()
@@ -219,11 +215,9 @@ func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.Su
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
-
-	return true
 }
 
-func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric.NumberDataPointSlice) bool {
+func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric.NumberDataPointSlice) {
 	var startTsNanos pcommon.Timestamp
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
@@ -240,8 +234,6 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric
 		point.SetDoubleVal(mg.value)
 	}
 	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
-
-	return true
 }
 
 func populateAttributes(orderedKeys []string, ls labels.Labels, dest pcommon.Map) {
@@ -282,7 +274,6 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	groupKey := mf.getGroupKey(ls)
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
 	if mg.ts != t {
-		mf.droppedTimeseries++
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
 	}
 	switch mf.mtype {
@@ -300,7 +291,6 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
-				mf.droppedTimeseries++
 				return err
 			}
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
@@ -312,7 +302,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	return nil
 }
 
-func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	metric := pmetric.NewMetric()
 	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
@@ -327,9 +317,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
 		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			if !mg.toDistributionPoint(mf.labelKeysOrdered, hdpL) {
-				mf.droppedTimeseries++
-			}
+			mg.toDistributionPoint(mf.labelKeysOrdered, hdpL)
 		}
 		pointCount = hdpL.Len()
 
@@ -337,9 +325,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
 		summary := metric.Summary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.groupOrders {
-			if !mg.toSummaryPoint(mf.labelKeysOrdered, sdpL) {
-				mf.droppedTimeseries++
-			}
+			mg.toSummaryPoint(mf.labelKeysOrdered, sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -349,9 +335,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {
-			if !mg.toNumberDataPoint(mf.labelKeysOrdered, sdpL) {
-				mf.droppedTimeseries++
-			}
+			mg.toNumberDataPoint(mf.labelKeysOrdered, sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -360,19 +344,14 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) (int, int) {
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.groupOrders {
-			if !mg.toNumberDataPoint(mf.labelKeysOrdered, gdpL) {
-				mf.droppedTimeseries++
-			}
+			mg.toNumberDataPoint(mf.labelKeysOrdered, gdpL)
 		}
 		pointCount = gdpL.Len()
 	}
 
 	if pointCount == 0 {
-		return mf.droppedTimeseries, mf.droppedTimeseries
+		return
 	}
 
 	metric.MoveTo(metrics.AppendEmpty())
-
-	// note: the total number of points is the number of points+droppedTimeseries.
-	return pointCount + mf.droppedTimeseries, mf.droppedTimeseries
 }

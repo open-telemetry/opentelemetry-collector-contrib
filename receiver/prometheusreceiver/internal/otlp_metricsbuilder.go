@@ -86,13 +86,10 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, 
 }
 
 type metricBuilder struct {
-	metrics              pmetric.MetricSlice
 	families             map[string]*metricFamily
 	hasData              bool
 	hasInternalMetric    bool
 	mc                   MetadataCache
-	numTimeseries        int
-	droppedTimeseries    int
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
 	startTime            float64
@@ -109,12 +106,9 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 		regex, _ = regexp.Compile(startTimeMetricRegex)
 	}
 	return &metricBuilder{
-		metrics:              pmetric.NewMetricSlice(),
 		families:             map[string]*metricFamily{},
 		mc:                   mc,
 		logger:               logger,
-		numTimeseries:        0,
-		droppedTimeseries:    0,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: regex,
 		intervalStartTimeMs:  intervalStartTimeMs,
@@ -129,7 +123,7 @@ func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 	return metricName == startTimeMetricName
 }
 
-// AddDataPoint is for feeding prometheus data complexValue in its processing order
+// AddDataPoint is for feeding prometheus data values in its processing order
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
 	// Any datapoint with duplicate labels MUST be rejected per:
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
@@ -151,8 +145,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {
 	case metricName == "":
-		b.numTimeseries++
-		b.droppedTimeseries++
 		return errMetricNameNotFound
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
@@ -191,21 +183,19 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	return curMF.Add(metricName, ls, t, v)
 }
 
-// Build an pmetric.MetricSlice based on all added data complexValue.
+// appendMetrics appends all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
-func (b *metricBuilder) Build(metrics pmetric.MetricSlice) (int, int, error) {
+func (b *metricBuilder) appendMetrics(metrics pmetric.MetricSlice) error {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			return 0, 0, nil
+			return nil
 		}
-		return 0, 0, errNoDataToBuild
+		return errNoDataToBuild
 	}
 
 	for _, mf := range b.families {
-		ts, dts := mf.appendMetric(metrics)
-		b.numTimeseries += ts
-		b.droppedTimeseries += dts
+		mf.appendMetric(metrics)
 	}
 
-	return b.numTimeseries, b.droppedTimeseries, nil
+	return nil
 }

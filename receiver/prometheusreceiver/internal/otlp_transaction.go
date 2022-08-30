@@ -133,7 +133,7 @@ func (t *transaction) Commit() error {
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
 	metricsL := pmetric.NewMetricSlice()
-	numPoints, _, err := t.metricBuilder.Build(metricsL)
+	err := t.metricBuilder.appendMetrics(metricsL)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
@@ -148,12 +148,14 @@ func (t *transaction) Commit() error {
 		// Otherwise adjust the startTimestamp for all the metrics.
 		t.adjustStartTimestamp(metricsL)
 	} else {
-		// TODO: Derive numPoints in this case.
 		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
 	}
 
+	numPoints := 0
 	if metricsL.Len() > 0 {
-		if err = t.sink.ConsumeMetrics(ctx, t.metricSliceToMetrics(metricsL)); err != nil {
+		md := t.metricSliceToMetrics(metricsL)
+		numPoints = md.DataPointCount()
+		if err = t.sink.ConsumeMetrics(ctx, md); err != nil {
 			return err
 		}
 	}
