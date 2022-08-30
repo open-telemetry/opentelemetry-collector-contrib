@@ -169,7 +169,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		},
 		{
 			Key:   proto.String(clsLogFlags),
-			Value: proto.String(strconv.FormatUint(uint64(lr.FlagsStruct().AsRaw()), 16)),
+			Value: proto.String(strconv.FormatUint(uint64(lr.FlagsStruct()), 16)),
 		},
 		{
 			Key:   proto.String(traceIDField),

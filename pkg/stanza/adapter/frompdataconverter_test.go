@@ -76,7 +76,7 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 
 		lr.SetSpanID(pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
 		lr.SetTraceID(pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
-		lr.FlagsStruct().SetIsSampled(true)
+		lr.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
 
 		lr.SetSeverityNumber(plog.SeverityNumberError)
 		lr.SetSeverityText("Error")

@@ -11,7 +11,7 @@ require (
 	github.com/observiq/ctimefmt v1.0.0
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector v0.58.1-0.20220830152521-5772e58c2007
 	go.uber.org/zap v1.23.0
 	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5 // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664
@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.58.0
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830152521-5772e58c2007
 	go.uber.org/atomic v1.10.0
 	go.uber.org/multierr v1.8.0
 )

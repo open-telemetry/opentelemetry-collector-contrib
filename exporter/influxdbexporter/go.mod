@@ -7,8 +7,8 @@ require (
 	github.com/influxdata/influxdb-observability/otel2influx v0.2.26
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector v0.58.1-0.20220830152521-5772e58c2007
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830152521-5772e58c2007
 	go.uber.org/zap v1.23.0
 
 )

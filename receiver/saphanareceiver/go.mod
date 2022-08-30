@@ -6,8 +6,8 @@ require (
 	github.com/SAP/go-hdb v0.108.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46
+	go.opentelemetry.io/collector v0.58.1-0.20220830152521-5772e58c2007
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830152521-5772e58c2007
 	go.uber.org/multierr v1.8.0
 )
 

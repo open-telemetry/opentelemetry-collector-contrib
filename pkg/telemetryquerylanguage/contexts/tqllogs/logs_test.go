@@ -119,10 +119,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "flags",
 				},
 			},
-			orig:   int64(1),
-			newVal: int64(0),
+			orig:   int64(4),
+			newVal: int64(5),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.FlagsStruct().SetIsSampled(false)
+				log.SetFlagsStruct(plog.LogRecordFlags(5))
 			},
 		},
 		{
@@ -449,7 +449,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 
 	log.SetDroppedAttributesCount(10)
 
-	log.FlagsStruct().SetIsSampled(true)
+	log.SetFlagsStruct(plog.LogRecordFlags(4))
 
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))
