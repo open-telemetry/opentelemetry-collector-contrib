@@ -40,7 +40,7 @@ func (c *ConvertAllConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptr
 
 	for i := 0; i < len(c.converters); i++ {
 		if !c.converters[i].AcceptsSpans(attributes, spanSlice) {
-			c.logger.Warn(fmt.Sprintf("Converter %s didnt Accept", c.converters[i].Name()))
+			c.logger.Warn(fmt.Sprintf("Converter %q didn't accept spans", c.converters[i].Name()))
 
 			continue
 		}

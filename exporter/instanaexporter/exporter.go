@@ -17,10 +17,8 @@ package instanaexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"runtime"
 	"strings"
 
@@ -62,8 +60,8 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 
 		resource := resSpan.Resource()
 
-		hostIDAttr, ex := resource.Attributes().Get(backend.AttributeInstanaHostID)
-		if ex {
+		hostIDAttr, ok := resource.Attributes().Get(backend.AttributeInstanaHostID)
+		if ok {
 			hostID = hostIDAttr.StringVal()
 		}
 
@@ -76,7 +74,6 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	bundle := model.Bundle{Spans: spans}
-
 	if len(bundle.Spans) == 0 {
 		// skip exporting, nothing to do
 		return nil
@@ -90,29 +87,21 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	headers := map[string]string{
 		backend.HeaderKey:  e.config.AgentKey,
 		backend.HeaderHost: hostID,
+		// Used only by the Instana agent and can be set to "0" for the exporter
 		backend.HeaderTime: "0",
 	}
 
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func newInstanaExporter(cfg config.Exporter, set component.ExporterCreateSettings) (*instanaExporter, error) {
+func newInstanaExporter(cfg config.Exporter, set component.ExporterCreateSettings) *instanaExporter {
 	iCfg := cfg.(*Config)
-
-	if iCfg.Endpoint != "" {
-		_, err := url.Parse(iCfg.Endpoint)
-		if err != nil {
-			return nil, errors.New("endpoint must be a valid URL")
-		}
-	}
-
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
-
 	return &instanaExporter{
 		config:    iCfg,
 		settings:  set.TelemetrySettings,
 		userAgent: userAgent,
-	}, nil
+	}
 }
 
 func (e *instanaExporter) export(ctx context.Context, url string, header map[string]string, request []byte) error {
@@ -132,12 +121,16 @@ func (e *instanaExporter) export(ctx context.Context, url string, header map[str
 
 	resp, err := e.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make a HTTP request: %w", err)
+		return fmt.Errorf("failed to send a request: %w", err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode >= 200 && resp.StatusCode <= 299 {
-		// Request is successful.
-		return nil
+	if resp.StatusCode >= 400 && resp.StatusCode <= 499 {
+		return consumererror.NewPermanent(fmt.Errorf("error when sending payload to %s: %s",
+			url, resp.Status))
+	}
+	if resp.StatusCode >= 500 && resp.StatusCode <= 599 {
+		return fmt.Errorf("error when sending payload to %s: %s", url, resp.Status)
 	}
 
 	return nil

@@ -43,12 +43,9 @@ func TestPushConvertedDefaultTraces(t *testing.T) {
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 	}
 
-	instanaExporter, err := newInstanaExporter(&cfg,
-		componenttest.NewNopExporterCreateSettings())
-	assert.NoError(t, err)
-
+	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
 	ctx := context.Background()
-	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	err = instanaExporter.pushConvertedTraces(ctx, testutils.TestTraces.Clone())
@@ -56,10 +53,7 @@ func TestPushConvertedDefaultTraces(t *testing.T) {
 }
 
 func TestPushConvertedSimpleTraces(t *testing.T) {
-	got := make(chan string, 1)
 	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		assert.Equal(t, "key11", req.Header.Get("x-instana-key"))
-		got <- req.Header.Get("Content-Type")
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer traceServer.Close()
@@ -71,12 +65,9 @@ func TestPushConvertedSimpleTraces(t *testing.T) {
 		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
 	}
 
-	instanaExporter, err := newInstanaExporter(&cfg,
-		componenttest.NewNopExporterCreateSettings())
-	assert.NoError(t, err)
-
+	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
 	ctx := context.Background()
-	err = instanaExporter.start(ctx, componenttest.NewNopHost())
+	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	err = instanaExporter.pushConvertedTraces(ctx, simpleTraces())

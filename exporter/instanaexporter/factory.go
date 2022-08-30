@@ -60,11 +60,7 @@ func createTracesExporter(ctx context.Context, set component.ExporterCreateSetti
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	instanaExporter, err := newInstanaExporter(cfg, set)
-	if err != nil {
-		cancel()
-		return nil, err
-	}
+	instanaExporter := newInstanaExporter(cfg, set)
 
 	return exporterhelper.NewTracesExporter(
 		ctx,

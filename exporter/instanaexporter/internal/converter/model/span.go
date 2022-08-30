@@ -111,7 +111,7 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 
 	instanaSpan.SpanID = convertSpanID(otelSpan.SpanID())
 
-	kind, isEntry := oTelKindToInstanaKind(otelSpan.Kind())
+	kind, isEntry := otelKindToInstanaKind(otelSpan.Kind())
 	instanaSpan.Data.Kind = kind
 
 	if !otelSpan.ParentSpanID().IsEmpty() && isEntry {

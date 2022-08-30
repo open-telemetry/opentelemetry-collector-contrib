@@ -55,7 +55,7 @@ func convertSpanID(spanID pcommon.SpanID) string {
 	return hex.EncodeToString(spanBytes)
 }
 
-func oTelKindToInstanaKind(otelKind ptrace.SpanKind) (string, bool) {
+func otelKindToInstanaKind(otelKind ptrace.SpanKind) (string, bool) {
 	switch otelKind {
 	case ptrace.SpanKindServer:
 		return InstanaSpanKindServer, true

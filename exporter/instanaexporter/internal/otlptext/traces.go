@@ -30,12 +30,12 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 	for i := 0; i < rss.Len(); i++ {
 		buf.logEntry("ResourceSpans #%d", i)
 		rs := rss.At(i)
-		buf.logAttributeMap("Resource labels", rs.Resource().Attributes())
+		buf.logAttributes("Resource labels", rs.Resource().Attributes())
 		ilss := rs.ScopeSpans()
 		for j := 0; j < ilss.Len(); j++ {
 			buf.logEntry("InstrumentationLibrarySpans #%d", j)
 			ils := ilss.At(j)
-			buf.logInstrumentationLibrary(ils.Scope())
+			buf.logInstrumentationScope(ils.Scope())
 
 			spans := ils.Spans()
 			for k := 0; k < spans.Len(); k++ {
@@ -52,7 +52,7 @@ func (textTracesMarshaler) MarshalTraces(td ptrace.Traces) ([]byte, error) {
 				buf.logAttr("Status code", span.Status().Code().String())
 				buf.logAttr("Status message", span.Status().Message())
 
-				buf.logAttributeMap("Attributes", span.Attributes())
+				buf.logAttributes("Attributes", span.Attributes())
 				buf.logEvents("Events", span.Events())
 				buf.logLinks("Links", span.Links())
 			}
