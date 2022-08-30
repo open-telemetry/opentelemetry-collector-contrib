@@ -418,10 +418,8 @@ func TestToHumioAttributes(t *testing.T) {
 			desc: "Nested map",
 			attr: func() pcommon.Map {
 				attrMap := pcommon.NewMap()
-				nested := pcommon.NewValueMap()
-				nested.MapVal().UpsertString("key", "val")
-				attrMap.Insert("nested", nested)
-				attrMap.InsertBool("active", true)
+				attrMap.UpsertEmptyMap("nested").UpsertString("key", "val")
+				attrMap.UpsertBool("active", true)
 				return attrMap
 			},
 			expected: map[string]interface{}{
@@ -447,10 +445,10 @@ func TestToHumioAttributesShaded(t *testing.T) {
 	// Arrange
 	attrMapA := pcommon.NewMap()
 	attrMapA.UpsertString("string", "val")
-	attrMapA.InsertInt("integer", 42)
+	attrMapA.UpsertInt("integer", 42)
 
 	attrMapB := pcommon.NewMap()
-	attrMapB.InsertInt("integer", 0)
+	attrMapB.UpsertInt("integer", 0)
 	attrMapB.UpsertString("key", "val")
 
 	expected := map[string]interface{}{

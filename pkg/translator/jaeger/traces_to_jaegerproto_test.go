@@ -177,11 +177,11 @@ func TestGetTagFromSpanKind(t *testing.T) {
 func TestAttributesToJaegerProtoTags(t *testing.T) {
 
 	attributes := pcommon.NewMap()
-	attributes.InsertBool("bool-val", true)
-	attributes.InsertInt("int-val", 123)
-	attributes.InsertString("string-val", "abc")
-	attributes.InsertDouble("double-val", 1.23)
-	attributes.InsertString(conventions.AttributeServiceName, "service-name")
+	attributes.UpsertBool("bool-val", true)
+	attributes.UpsertInt("int-val", 123)
+	attributes.UpsertString("string-val", "abc")
+	attributes.UpsertDouble("double-val", 1.23)
+	attributes.UpsertString(conventions.AttributeServiceName, "service-name")
 
 	expected := []model.KeyValue{
 		{

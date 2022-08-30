@@ -255,9 +255,9 @@ func TestFilterAttributes_Match(t *testing.T) {
 		"host.id":   {},
 	}
 	attr := pcommon.NewMap()
-	attr.InsertString("host.name", "test")
-	attr.InsertString("host.id", "test")
-	attr.InsertString("drop.this", "test")
+	attr.UpsertString("host.name", "test")
+	attr.UpsertString("host.id", "test")
+	attr.UpsertString("drop.this", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -278,8 +278,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 		"cloud.region": {},
 	}
 	attr := pcommon.NewMap()
-	attr.InsertString("host.name", "test")
-	attr.InsertString("host.id", "test")
+	attr.UpsertString("host.name", "test")
+	attr.UpsertString("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -295,8 +295,8 @@ func TestFilterAttributes_NoMatch(t *testing.T) {
 func TestFilterAttributes_NilAttributes(t *testing.T) {
 	var m map[string]struct{}
 	attr := pcommon.NewMap()
-	attr.InsertString("host.name", "test")
-	attr.InsertString("host.id", "test")
+	attr.UpsertString("host.name", "test")
+	attr.UpsertString("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -312,8 +312,8 @@ func TestFilterAttributes_NilAttributes(t *testing.T) {
 func TestFilterAttributes_NoAttributes(t *testing.T) {
 	m := make(map[string]struct{})
 	attr := pcommon.NewMap()
-	attr.InsertString("host.name", "test")
-	attr.InsertString("host.id", "test")
+	attr.UpsertString("host.name", "test")
+	attr.UpsertString("host.id", "test")
 
 	droppedAttributes := filterAttributes(attr, m)
 
@@ -341,21 +341,16 @@ func TestAttributesToMap(t *testing.T) {
 		},
 	}
 	attr := pcommon.NewMap()
-	attr.InsertString("str", "a")
-	attr.InsertInt("int", 5)
-	attr.InsertDouble("double", 5.0)
-	attr.InsertBool("bool", true)
-	avm := pcommon.NewValueMap()
-	innerAttr := avm.MapVal()
-	innerAttr.InsertString("inner", "val")
-	attr.Insert("map", avm)
+	attr.UpsertString("str", "a")
+	attr.UpsertInt("int", 5)
+	attr.UpsertDouble("double", 5.0)
+	attr.UpsertBool("bool", true)
+	attr.UpsertEmptyMap("map").UpsertString("inner", "val")
 
-	ava := pcommon.NewValueSlice()
-	arrayAttr := ava.SliceVal()
+	arrayAttr := attr.UpsertEmptySlice("array")
 	arrayAttr.EnsureCapacity(2)
 	arrayAttr.AppendEmpty().SetStringVal("inner")
 	arrayAttr.AppendEmpty().SetIntVal(42)
-	attr.Insert("array", ava)
 
 	assert.Equal(t, m, AttributesToMap(attr))
 }

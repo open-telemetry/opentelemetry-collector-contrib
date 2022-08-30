@@ -95,7 +95,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	ndp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		ndp.Attributes().InsertString(kv.Key, kv.Value)
+		ndp.Attributes().UpsertString(kv.Key, kv.Value)
 	}
 
 	return ndp

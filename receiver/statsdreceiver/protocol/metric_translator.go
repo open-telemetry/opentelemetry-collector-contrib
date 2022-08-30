@@ -90,7 +90,7 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := desc.attrs.Iter(); i.Next(); {
-		dp.Attributes().InsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
+		dp.Attributes().UpsertString(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	sort.Sort(dualSorter{summary.points, summary.weights})
