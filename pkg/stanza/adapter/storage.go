@@ -19,30 +19,34 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
-func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
-	if r.storageID == nil {
-		r.storageClient = storage.NewNopClient()
-		return nil
+func GetStorageClient(ctx context.Context, host component.Host, storageID *config.ComponentID, componentID config.ComponentID) (storage.Client, error) {
+	if storageID == nil {
+		return storage.NewNopClient(), nil
 	}
 
-	extension, ok := host.GetExtensions()[*r.storageID]
+	extension, ok := host.GetExtensions()[*storageID]
 	if !ok {
-		return fmt.Errorf("storage extension '%s' not found", r.storageID)
+		return nil, fmt.Errorf("storage extension '%s' not found", storageID)
 	}
 
 	storageExtension, ok := extension.(storage.Extension)
 	if !ok {
-		return fmt.Errorf("non-storage extension '%s' found", r.storageID)
+		return nil, fmt.Errorf("non-storage extension '%s' found", storageID)
 	}
 
-	client, err := storageExtension.GetClient(ctx, component.KindReceiver, r.id, "")
+	return storageExtension.GetClient(ctx, component.KindReceiver, componentID, "")
+
+}
+
+func (r *receiver) setStorageClient(ctx context.Context, host component.Host) error {
+	client, err := GetStorageClient(ctx, host, r.storageID, r.id)
 	if err != nil {
 		return err
 	}
-
 	r.storageClient = client
 	return nil
 }
