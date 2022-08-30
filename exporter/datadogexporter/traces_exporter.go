@@ -54,8 +54,10 @@ type traceExporter struct {
 func newTracesExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*traceExporter, error) {
 	// client to send running metric to the backend & perform API key validation
 	client := utils.CreateClient(cfg.API.Key, cfg.Metrics.TCPAddr.Endpoint)
-	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
-		return nil, err
+	if cfg.API.FailOnInvalidKey {
+		if err := utils.ValidateAPIKey(params.Logger, client); err != nil {
+			return nil, err
+		}
 	}
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)

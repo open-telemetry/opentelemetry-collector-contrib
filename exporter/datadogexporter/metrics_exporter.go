@@ -101,8 +101,10 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	client.ExtraHeader["User-Agent"] = utils.UserAgent(params.BuildInfo)
 	client.HttpClient = utils.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify)
 
-	if err := utils.ValidateAPIKey(params.Logger, client); err != nil && cfg.API.FailOnInvalidKey {
-		return nil, err
+	if cfg.API.FailOnInvalidKey {
+		if err := utils.ValidateAPIKey(params.Logger, client); err != nil {
+			return nil, err
+		}
 	}
 
 	tr, err := translatorFromConfig(params.Logger, cfg, sourceProvider)
