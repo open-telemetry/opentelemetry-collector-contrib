@@ -159,7 +159,7 @@ It is possible to update the Value in a telemetry field using a Setter. For read
 
 ## Logging inside a TQL function
 
-To emit logs inside a TQL function, declare an argument with a type of `Logger` anywhere in the parameter list within the function signature. The TQL will then inject a logger instance provided by the component that can be used to emit logs.
+To emit logs inside a TQL function, declare an argument with a type of `Logger` as a parameter to the function. The TQL will then inject a logger instance provided by the component that can be used to emit logs.
 
 ## Examples
 
