@@ -134,7 +134,7 @@ func testLogRecord() plog.LogRecord {
 	record.Attributes().UpsertString("key2", "attr2")
 	record.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	record.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	record.FlagsStruct().SetIsSampled(true)
+	record.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
 	record.SetTimestamp(1609719139000000)
 	return record
 }

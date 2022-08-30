@@ -871,7 +871,7 @@ func TestConvertTrace(t *testing.T) {
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())
-	require.Equal(t, uint32(0x01), record.FlagsStruct().AsRaw())
+	require.Equal(t, uint32(0x01), uint32(record.FlagsStruct()))
 }
 
 func BenchmarkConverter(b *testing.B) {
