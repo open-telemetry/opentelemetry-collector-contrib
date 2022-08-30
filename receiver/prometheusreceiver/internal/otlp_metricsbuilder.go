@@ -135,8 +135,8 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	seen := make(map[string]bool)
-	dupLabels := make([]string, 0, len(ls))
+	seen := make(map[string]bool, len(ls))
+	var dupLabels []string
 	for _, label := range ls {
 		if _, ok := seen[label.Name]; ok {
 			dupLabels = append(dupLabels, label.Name)
@@ -156,7 +156,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		return errMetricNameNotFound
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
-		lm := ls.Map()
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -164,12 +163,12 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 			if v == 0.0 {
 				b.logger.Warn("Failed to scrape Prometheus endpoint",
 					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
+					zap.Stringer("target_labels", ls))
 			} else {
 				b.logger.Warn("The 'up' metric contains invalid value",
 					zap.Float64("value", v),
 					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
+					zap.Stringer("target_labels", ls))
 			}
 		}
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
