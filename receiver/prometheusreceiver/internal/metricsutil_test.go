@@ -67,7 +67,7 @@ func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 
 func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.Flags().SetNoRecordedValue(true)
+	hdp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 
 	return hdp
 }
@@ -109,7 +109,7 @@ func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, 
 
 func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
-	ndp.Flags().SetNoRecordedValue(true)
+	ndp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }
 
@@ -173,7 +173,7 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 
 func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
 	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
-	sdp.Flags().SetNoRecordedValue(true)
+	sdp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 
 	return sdp
 }

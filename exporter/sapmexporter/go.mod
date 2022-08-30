@@ -9,8 +9,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.58.0
 	github.com/signalfx/sapm-proto v0.11.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220830152521-5772e58c2007
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830152521-5772e58c2007
+	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
 	go.uber.org/zap v1.23.0
 )
 
@@ -36,7 +36,7 @@ require (
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.58.1-0.20220830152521-5772e58c2007 // indirect
+	go.opentelemetry.io/collector/semconv v0.58.1-0.20220830230326-72011ca22dff // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.34.0 // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
