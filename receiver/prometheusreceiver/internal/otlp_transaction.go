@@ -23,7 +23,6 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -56,10 +55,10 @@ func newTransaction(
 	jobsMap *JobsMap,
 	useStartTimeMetric bool,
 	startTimeMetricRegex string,
-	receiverID config.ComponentID,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	settings component.ReceiverCreateSettings) *transaction {
+	settings component.ReceiverCreateSettings,
+	obsrecv *obsreport.Receiver) *transaction {
 	return &transaction{
 		ctx:                  ctx,
 		isNew:                true,
@@ -69,7 +68,7 @@ func newTransaction(
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
 		logger:               settings.Logger,
-		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: settings}),
+		obsrecv:              obsrecv,
 	}
 }
 
