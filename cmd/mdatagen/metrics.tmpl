@@ -107,15 +107,15 @@ func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.Set{{ $metric.Data.MetricValueType }}Val(val)
 	{{- range $metric.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "bool" }}
-	dp.Attributes().InsertBool("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().UpsertBool("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "int64" }}
-	dp.Attributes().InsertInt("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().UpsertInt("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "float64" }}
-	dp.Attributes().InsertDouble("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().UpsertDouble("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- else if eq (attributeInfo .).Type.Primitive "[]byte" }}
-	dp.Attributes().InsertBytes("{{ attributeKey .}}", pcommon.NewImmutableByteSlice({{ .RenderUnexported }}AttributeValue))
+	dp.Attributes().UpsertBytes("{{ attributeKey .}}", pcommon.NewImmutableByteSlice({{ .RenderUnexported }}AttributeValue))
 	{{- else }}
-	dp.Attributes().InsertString("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
+	dp.Attributes().UpsertString("{{ attributeKey .}}", {{ .RenderUnexported }}AttributeValue)
 	{{- end }}
 	{{- end }}
 }

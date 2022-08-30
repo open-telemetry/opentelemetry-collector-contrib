@@ -761,7 +761,7 @@ func (m *metricElasticsearchBreakerMemoryEstimated) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", circuitBreakerNameAttributeValue)
+	dp.Attributes().UpsertString("name", circuitBreakerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -814,7 +814,7 @@ func (m *metricElasticsearchBreakerMemoryLimit) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", circuitBreakerNameAttributeValue)
+	dp.Attributes().UpsertString("name", circuitBreakerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -867,7 +867,7 @@ func (m *metricElasticsearchBreakerTripped) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", circuitBreakerNameAttributeValue)
+	dp.Attributes().UpsertString("name", circuitBreakerNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -971,7 +971,7 @@ func (m *metricElasticsearchClusterHealth) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("status", healthStatusAttributeValue)
+	dp.Attributes().UpsertString("status", healthStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1075,7 +1075,7 @@ func (m *metricElasticsearchClusterPublishedStatesDifferences) recordDataPoint(s
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", clusterPublishedDifferenceStateAttributeValue)
+	dp.Attributes().UpsertString("state", clusterPublishedDifferenceStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1179,7 +1179,7 @@ func (m *metricElasticsearchClusterShards) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", shardStateAttributeValue)
+	dp.Attributes().UpsertString("state", shardStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1232,7 +1232,7 @@ func (m *metricElasticsearchClusterStateQueue) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", clusterStateQueueStateAttributeValue)
+	dp.Attributes().UpsertString("state", clusterStateQueueStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1285,7 +1285,7 @@ func (m *metricElasticsearchClusterStateUpdateCount) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", clusterStateUpdateStateAttributeValue)
+	dp.Attributes().UpsertString("state", clusterStateUpdateStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1338,8 +1338,8 @@ func (m *metricElasticsearchClusterStateUpdateTime) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", clusterStateUpdateStateAttributeValue)
-	dp.Attributes().InsertString("type", clusterStateUpdateTypeAttributeValue)
+	dp.Attributes().UpsertString("state", clusterStateUpdateStateAttributeValue)
+	dp.Attributes().UpsertString("type", clusterStateUpdateTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1543,7 +1543,7 @@ func (m *metricElasticsearchMemoryIndexingPressure) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("stage", indexingPressureStageAttributeValue)
+	dp.Attributes().UpsertString("stage", indexingPressureStageAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1596,7 +1596,7 @@ func (m *metricElasticsearchNodeCacheEvictions) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("cache_name", cacheNameAttributeValue)
+	dp.Attributes().UpsertString("cache_name", cacheNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1649,7 +1649,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("cache_name", cacheNameAttributeValue)
+	dp.Attributes().UpsertString("cache_name", cacheNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1753,7 +1753,7 @@ func (m *metricElasticsearchNodeClusterIo) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.Attributes().UpsertString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2010,7 +2010,7 @@ func (m *metricElasticsearchNodeDocuments) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", documentStateAttributeValue)
+	dp.Attributes().UpsertString("state", documentStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2369,7 +2369,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.Attributes().UpsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2422,7 +2422,7 @@ func (m *metricElasticsearchNodeOperationsTime) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.Attributes().UpsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2475,7 +2475,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+	dp.Attributes().UpsertString("name", ingestPipelineNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2528,7 +2528,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) recordDataP
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+	dp.Attributes().UpsertString("name", ingestPipelineNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2581,7 +2581,7 @@ func (m *metricElasticsearchNodePipelineIngestOperationsFailed) recordDataPoint(
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", ingestPipelineNameAttributeValue)
+	dp.Attributes().UpsertString("name", ingestPipelineNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2940,8 +2940,8 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("thread_pool_name", threadPoolNameAttributeValue)
-	dp.Attributes().InsertString("state", taskStateAttributeValue)
+	dp.Attributes().UpsertString("thread_pool_name", threadPoolNameAttributeValue)
+	dp.Attributes().UpsertString("state", taskStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2994,7 +2994,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("thread_pool_name", threadPoolNameAttributeValue)
+	dp.Attributes().UpsertString("thread_pool_name", threadPoolNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3047,8 +3047,8 @@ func (m *metricElasticsearchNodeThreadPoolThreads) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("thread_pool_name", threadPoolNameAttributeValue)
-	dp.Attributes().InsertString("state", threadStateAttributeValue)
+	dp.Attributes().UpsertString("thread_pool_name", threadPoolNameAttributeValue)
+	dp.Attributes().UpsertString("state", threadStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3448,7 +3448,7 @@ func (m *metricElasticsearchOsMemory) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("state", memoryStateAttributeValue)
+	dp.Attributes().UpsertString("state", memoryStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3550,7 +3550,7 @@ func (m *metricJvmGcCollectionsCount) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", collectorNameAttributeValue)
+	dp.Attributes().UpsertString("name", collectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3603,7 +3603,7 @@ func (m *metricJvmGcCollectionsElapsed) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", collectorNameAttributeValue)
+	dp.Attributes().UpsertString("name", collectorNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3899,7 +3899,7 @@ func (m *metricJvmMemoryPoolMax) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", memoryPoolNameAttributeValue)
+	dp.Attributes().UpsertString("name", memoryPoolNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3950,7 +3950,7 @@ func (m *metricJvmMemoryPoolUsed) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("name", memoryPoolNameAttributeValue)
+	dp.Attributes().UpsertString("name", memoryPoolNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

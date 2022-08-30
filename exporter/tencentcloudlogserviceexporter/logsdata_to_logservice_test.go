@@ -39,33 +39,24 @@ func (kv logKeyValuePairs) Len() int           { return len(kv) }
 func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
-func getComplexAttributeValueMap() pcommon.Value {
-	mapVal := pcommon.NewValueMap()
-	mapValReal := mapVal.MapVal()
-	mapValReal.InsertBool("result", true)
-	mapValReal.InsertString("status", "ok")
-	mapValReal.InsertDouble("value", 1.3)
-	mapValReal.InsertInt("code", 200)
-	mapValReal.Insert("null", pcommon.NewValueEmpty())
-	arrayVal := pcommon.NewValueSlice()
-	arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-	mapValReal.Insert("array", arrayVal)
-
-	subMapVal := pcommon.NewValueMap()
-	subMapVal.MapVal().InsertString("data", "hello world")
-	mapValReal.Insert("map", subMapVal)
-
-	mapValReal.InsertString("status", "ok")
-	return mapVal
+func fillComplexAttributeValueMap(m pcommon.Map) {
+	m.UpsertBool("result", true)
+	m.UpsertString("status", "ok")
+	m.UpsertDouble("value", 1.3)
+	m.UpsertInt("code", 200)
+	m.UpsertEmpty("null")
+	m.UpsertEmptySlice("array").AppendEmpty().SetStringVal("array")
+	m.UpsertEmptyMap("map").UpsertString("data", "hello world")
+	m.UpsertString("status", "ok")
 }
 
 func createLogData(numberOfLogs int) plog.Logs {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // Add an empty ResourceLogs
 	rl := logs.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("resouceKey", "resourceValue")
-	rl.Resource().Attributes().InsertString(conventions.AttributeServiceName, "test-log-service-exporter")
-	rl.Resource().Attributes().InsertString(conventions.AttributeHostName, "test-host")
+	rl.Resource().Attributes().UpsertString("resouceKey", "resourceValue")
+	rl.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "test-log-service-exporter")
+	rl.Resource().Attributes().UpsertString(conventions.AttributeHostName, "test-host")
 	sl := rl.ScopeLogs().AppendEmpty()
 	sl.Scope().SetName("collector")
 	sl.Scope().SetVersion("v0.1.0")
@@ -85,22 +76,19 @@ func createLogData(numberOfLogs int) plog.Logs {
 		case 4:
 			logRecord.Body().SetStringVal("4")
 		case 5:
-
-			logRecord.Attributes().Insert("map-value", getComplexAttributeValueMap())
+			fillComplexAttributeValueMap(logRecord.Attributes().UpsertEmptyMap("map-value"))
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pcommon.NewValueSlice()
-			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-			logRecord.Attributes().Insert("array-value", arrayVal)
+			logRecord.Attributes().UpsertEmptySlice("array-value").AppendEmpty().SetStringVal("array")
 			logRecord.Body().SetStringVal("log contents")
 		default:
 			logRecord.Body().SetStringVal("log contents")
 		}
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.Attributes().Insert("null-value", pcommon.NewValueEmpty())
+		logRecord.Attributes().UpsertString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().UpsertString("my-label", "myapp-type")
+		logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().UpsertString("custom", "custom")
+		logRecord.Attributes().UpsertEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)
 	}

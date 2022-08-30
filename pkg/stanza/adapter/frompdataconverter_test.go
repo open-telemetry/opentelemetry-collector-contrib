@@ -47,25 +47,15 @@ func BenchmarkConvertFromPdataComplex(b *testing.B) {
 	}
 }
 
-func baseMap() pcommon.Map {
-	obj := pcommon.NewMap()
-	arr := pcommon.NewValueSlice()
-	arr.SliceVal().AppendEmpty().SetStringVal("666")
-	arr.SliceVal().AppendEmpty().SetStringVal("777")
-	obj.Insert("slice", arr)
-	obj.InsertBool("bool", true)
-	obj.InsertInt("int", 123)
-	obj.InsertDouble("double", 12.34)
-	obj.InsertString("string", "hello")
-	obj.InsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{0xa1, 0xf0, 0x02, 0xff}))
-	return obj
-}
-
-func baseMapValue() pcommon.Value {
-	v := pcommon.NewValueMap()
-	baseMap := baseMap()
-	baseMap.CopyTo(v.MapVal())
-	return v
+func fillBaseMap(m pcommon.Map) {
+	arr := m.UpsertEmptySlice("slice")
+	arr.AppendEmpty().SetStringVal("666")
+	arr.AppendEmpty().SetStringVal("777")
+	m.UpsertBool("bool", true)
+	m.UpsertInt("int", 123)
+	m.UpsertDouble("double", 12.34)
+	m.UpsertString("string", "hello")
+	m.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{0xa1, 0xf0, 0x02, 0xff}))
 }
 
 func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
@@ -76,10 +66,9 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		rls := logs.AppendEmpty()
 
 		resource := rls.Resource()
-		attr := baseMap()
-		attr.Insert("object", baseMapValue())
-		attr.InsertString("host", fmt.Sprintf("host-%d", i%n))
-		attr.CopyTo(resource.Attributes())
+		fillBaseMap(resource.Attributes())
+		fillBaseMap(resource.Attributes().UpsertEmptyMap("object"))
+		resource.Attributes().UpsertString("host", fmt.Sprintf("host-%d", i%n))
 
 		scopeLog := rls.ScopeLogs().AppendEmpty()
 		scopeLog.Scope().SetName("myScope")
@@ -96,17 +85,16 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(t))
 
-		attr.Remove("double")
-		attr.Remove("host")
-		attr.CopyTo(lr.Attributes())
+		resource.Attributes().CopyTo(lr.Attributes())
+		lr.Attributes().Remove("double")
+		lr.Attributes().Remove("host")
 
-		body := baseMapValue()
-		level2 := baseMapValue()
-		level2.MapVal().Remove("bytes")
-		level1 := baseMapValue()
-		level1.MapVal().Insert("object", level2)
-		body.MapVal().Insert("object", level1)
-		body.CopyTo(lr.Body())
+		fillBaseMap(lr.Body().SetEmptyMapVal())
+		level1 := lr.Body().MapVal().UpsertEmptyMap("object")
+		fillBaseMap(level1)
+		level2 := level1.UpsertEmptyMap("object")
+		fillBaseMap(level2)
+		level2.Remove("bytes")
 	}
 	return pLogs
 }

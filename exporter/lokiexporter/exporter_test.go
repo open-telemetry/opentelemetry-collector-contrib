@@ -65,10 +65,7 @@ func createLogData(numberOfLogs int, attributes pcommon.Map) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		attributes.Range(func(k string, v pcommon.Value) bool {
-			logRecord.Attributes().Insert(k, v)
-			return true
-		})
+		attributes.CopyTo(logRecord.Attributes())
 		logRecord.SetTimestamp(ts)
 	}
 

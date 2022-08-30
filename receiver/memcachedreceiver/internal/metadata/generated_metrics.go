@@ -292,7 +292,7 @@ func (m *metricMemcachedCommands) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("command", commandAttributeValue)
+	dp.Attributes().UpsertString("command", commandAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -447,7 +447,7 @@ func (m *metricMemcachedCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("state", stateAttributeValue)
+	dp.Attributes().UpsertString("state", stateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -602,7 +602,7 @@ func (m *metricMemcachedNetwork) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("direction", directionAttributeValue)
+	dp.Attributes().UpsertString("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -755,7 +755,7 @@ func (m *metricMemcachedOperationHitRatio) recordDataPoint(start pcommon.Timesta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.Attributes().UpsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -808,8 +808,8 @@ func (m *metricMemcachedOperations) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", typeAttributeValue)
-	dp.Attributes().InsertString("operation", operationAttributeValue)
+	dp.Attributes().UpsertString("type", typeAttributeValue)
+	dp.Attributes().UpsertString("operation", operationAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
