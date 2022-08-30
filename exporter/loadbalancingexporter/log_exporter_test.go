@@ -297,7 +297,7 @@ func TestNoLogsInBatch(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pcommon.InvalidTraceID(), res)
+			assert.Equal(t, pcommon.EmptyTraceID, res)
 		})
 	}
 }

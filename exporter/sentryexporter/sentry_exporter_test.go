@@ -286,7 +286,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
-		testSpan.SetParentSpanID(pcommon.InvalidSpanID())
+		testSpan.SetParentSpanID(pcommon.EmptySpanID)
 
 		sentrySpan := convertToSentrySpan(testSpan, pcommon.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
