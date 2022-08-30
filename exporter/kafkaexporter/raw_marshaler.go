@@ -33,9 +33,7 @@ func newRawMarshaler() rawMarshaler {
 }
 
 func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-	messages := make([]*sarama.ProducerMessage, logs.LogRecordCount())
-
-	index := 0
+	var messages []*sarama.ProducerMessage
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
@@ -46,12 +44,14 @@ func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerM
 				if err != nil {
 					return nil, err
 				}
+				if len(b) == 0 {
+					continue
+				}
 
-				messages[index] = &sarama.ProducerMessage{
+				messages = append(messages, &sarama.ProducerMessage{
 					Topic: topic,
 					Value: sarama.ByteEncoder(b),
-				}
-				index++
+				})
 			}
 		}
 	}
