@@ -5,7 +5,7 @@ change_type: breaking
 component: pkg/telemetryquerylanguage
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Unexport `BoolExpressionEvaluator`, `Literal`, `NewGetter`, `PathExpressionParser`, `EnumParser`, and `NewFunctionCall`.
+note: Unexport `BoolExpressionEvaluator`, `Literal`, `NewGetter`, and `NewFunctionCall`.
 
 # One or more tracking issues related to the change
 issues: [13737]
