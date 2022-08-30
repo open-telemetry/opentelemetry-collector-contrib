@@ -277,7 +277,7 @@ func swTraceIDToTraceID(traceID string) pcommon.TraceID {
 	if len(traceID) <= 36 { // 36: uuid length (rfc4122)
 		uid, err := uuid.Parse(traceID)
 		if err != nil {
-			return pcommon.InvalidTraceID()
+			return pcommon.EmptyTraceID
 		}
 		return pcommon.NewTraceID(uid)
 	}
@@ -290,7 +290,7 @@ func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
 	// 56a5e1c519ae4c76a2b8b11d92cead7f: from ParentTraceSegmentId
 
 	if len(segmentID) < 32 {
-		return pcommon.InvalidSpanID()
+		return pcommon.EmptySpanID
 	}
 	return pcommon.NewSpanID(uuidTo8Bytes(swStringToUUID(segmentID, spanID)))
 }

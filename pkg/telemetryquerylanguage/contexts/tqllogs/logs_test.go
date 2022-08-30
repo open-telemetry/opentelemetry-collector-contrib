@@ -40,21 +40,6 @@ func Test_newPathGetSetter(t *testing.T) {
 	newAttrs := pcommon.NewMap()
 	newAttrs.UpsertString("hello", "world")
 
-	newArrStr := pcommon.NewValueSlice()
-	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
-
-	newArrBool := pcommon.NewValueSlice()
-	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-
-	newArrInt := pcommon.NewValueSlice()
-	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
-
-	newArrFloat := pcommon.NewValueSlice()
-	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-
-	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
-
 	tests := []struct {
 		name     string
 		path     []tql.Field
@@ -296,7 +281,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_str", newArrStr)
+				log.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -313,7 +298,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_bool", newArrBool)
+				log.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -330,7 +315,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_int", newArrInt)
+				log.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -347,7 +332,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_float", newArrFloat)
+				log.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -364,7 +349,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().Upsert("arr_bytes", newArrBytes)
+				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 			},
 		},
 		{
@@ -442,30 +427,25 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertDouble("double", 1.2)
 	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
-	arrStr := pcommon.NewValueSlice()
-	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
-	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
-	log.Attributes().Upsert("arr_str", arrStr)
+	arrStr := log.Attributes().UpsertEmptySlice("arr_str")
+	arrStr.AppendEmpty().SetStringVal("one")
+	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := pcommon.NewValueSlice()
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-	log.Attributes().Upsert("arr_bool", arrBool)
+	arrBool := log.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool.AppendEmpty().SetBoolVal(true)
+	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := pcommon.NewValueSlice()
-	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
-	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
-	log.Attributes().Upsert("arr_int", arrInt)
+	arrInt := log.Attributes().UpsertEmptySlice("arr_int")
+	arrInt.AppendEmpty().SetIntVal(2)
+	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := pcommon.NewValueSlice()
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-	log.Attributes().Upsert("arr_float", arrFloat)
+	arrFloat := log.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat.AppendEmpty().SetDoubleVal(1.0)
+	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-	log.Attributes().Upsert("arr_bytes", arrBytes)
+	arrBytes := log.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 
 	log.SetDroppedAttributesCount(10)
 

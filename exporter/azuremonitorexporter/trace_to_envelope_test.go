@@ -864,7 +864,7 @@ func getScope() pcommon.InstrumentationScope {
 func appendToAttributeMap(attributeMap pcommon.Map, maps ...pcommon.Map) {
 	for _, m := range maps {
 		m.Range(func(k string, v pcommon.Value) bool {
-			attributeMap.Upsert(k, v)
+			v.CopyTo(attributeMap.UpsertEmpty(k))
 			return true
 		})
 	}

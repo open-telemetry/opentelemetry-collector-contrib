@@ -326,7 +326,12 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if !found {
 				continue
 			}
-			attrs.Upsert(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if found {
+				av.CopyTo(val)
+			} else {
+				av.CopyTo(attrs.UpsertEmpty(action.Key))
+			}
 		case HASH:
 			hashAttribute(action.Key, attrs)
 

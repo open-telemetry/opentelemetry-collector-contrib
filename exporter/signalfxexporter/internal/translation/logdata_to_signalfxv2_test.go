@@ -108,7 +108,7 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 			logData: func() plog.Logs {
 				logs := buildDefaultLogs()
 				lrs := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-				lrs.At(0).Attributes().Upsert("com.splunk.signalfx.event_category", pcommon.NewValueEmpty())
+				lrs.At(0).Attributes().UpsertEmpty("com.splunk.signalfx.event_category")
 				return logs
 			}(),
 		},

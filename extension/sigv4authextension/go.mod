@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.12.14
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220825025657-e092fc728b72
+	go.opentelemetry.io/collector v0.58.1-0.20220829231818-9ba35cd40b46
 	go.uber.org/zap v1.23.0
 	google.golang.org/grpc v1.49.0
 )
@@ -32,7 +32,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220825025657-e092fc728b72 // indirect
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220829231818-9ba35cd40b46 // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect
