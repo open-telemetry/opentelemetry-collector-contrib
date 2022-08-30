@@ -197,9 +197,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
+			require.Len(t, mp.groups, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl)
@@ -436,7 +434,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				return
 			}
 
-			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
+			require.Len(t, mp.groups, 1)
 			// Get the lone group key.
 			groupKey := ""
 			for key := range mp.groups {
@@ -523,9 +521,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				require.NoError(t, mp.Add(tv.metric, tt.labels.Copy(), tv.at, tv.value))
 			}
 
-			require.Equal(t, 1, len(mp.groups), "Expecting exactly 1 groupKey")
-			groupKey := mp.getGroupKey(tt.labels.Copy())
-			require.NotNil(t, mp.groups[groupKey], "Expecting the groupKey to have a value given key:: "+groupKey)
+			require.Len(t, mp.groups, 1)
 
 			sl := pmetric.NewMetricSlice()
 			mp.appendMetric(sl)

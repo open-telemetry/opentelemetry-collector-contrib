@@ -17,8 +17,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 	"regexp"
-	"sort"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
@@ -40,24 +38,15 @@ func isUsefulLabel(mType pmetric.MetricDataType, labelKey string) bool {
 	return true
 }
 
-func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
-	val := ""
+func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) string {
 	switch metricType {
 	case pmetric.MetricDataTypeHistogram:
-		val = labels.Get(model.BucketLabel)
-		if val == "" {
-			return 0, errEmptyLeLabel
-		}
+		return labels.Get(model.BucketLabel)
 	case pmetric.MetricDataTypeSummary:
-		val = labels.Get(model.QuantileLabel)
-		if val == "" {
-			return 0, errEmptyQuantileLabel
-		}
+		return labels.Get(model.QuantileLabel)
 	default:
-		return 0, errNoBoundaryLabel
+		return ""
 	}
-
-	return strconv.ParseFloat(val, 64)
 }
 
 // convToMetricType returns the data type and if it is monotonic
@@ -129,16 +118,13 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	seen := make(map[string]bool, len(ls))
 	var dupLabels []string
-	for _, label := range ls {
-		if _, ok := seen[label.Name]; ok {
-			dupLabels = append(dupLabels, label.Name)
+	for i := 0; i < len(ls)-1; i++ {
+		if ls[i].Name == ls[i+1].Name {
+			dupLabels = append(dupLabels, ls[i].Name)
 		}
-		seen[label.Name] = true
 	}
 	if len(dupLabels) != 0 {
-		sort.Strings(dupLabels)
 		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
 	}
 

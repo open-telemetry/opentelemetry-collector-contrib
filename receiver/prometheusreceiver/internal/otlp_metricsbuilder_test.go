@@ -15,7 +15,6 @@
 package internal
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -111,8 +110,7 @@ func TestGetBoundary(t *testing.T) {
 		name      string
 		mtype     pmetric.MetricDataType
 		labels    labels.Labels
-		wantValue float64
-		wantErr   string
+		wantValue string
 	}{
 		{
 			name:  "cumulative histogram with bucket label",
@@ -120,7 +118,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "0.256"},
 			},
-			wantValue: 0.256,
+			wantValue: "0.256",
 		},
 		{
 			name:  "gauge histogram with bucket label",
@@ -128,7 +126,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantValue: 11.71,
+			wantValue: "11.71",
 		},
 		{
 			name:  "summary with bucket label",
@@ -136,7 +134,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: errEmptyQuantileLabel.Error(),
+			wantValue: "",
 		},
 		{
 			name:  "summary with quantile label",
@@ -144,7 +142,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.QuantileLabel, Value: "92.88"},
 			},
-			wantValue: 92.88,
+			wantValue: "92.88",
 		},
 		{
 			name:  "gauge histogram mismatched with bucket label",
@@ -152,7 +150,7 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: errEmptyQuantileLabel.Error(),
+			wantValue: "",
 		},
 		{
 			name:  "other data types without matches",
@@ -160,22 +158,15 @@ func TestGetBoundary(t *testing.T) {
 			labels: labels.Labels{
 				{Name: model.BucketLabel, Value: "11.71"},
 			},
-			wantErr: errNoBoundaryLabel.Error(),
+			wantValue: "",
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			value, err := getBoundary(tt.mtype, tt.labels)
-			if tt.wantErr != "" {
-				require.NotNil(t, err)
-				require.Contains(t, err.Error(), tt.wantErr)
-				return
-			}
-
-			require.Nil(t, err)
-			require.Equal(t, value, tt.wantValue)
+			value := getBoundary(tt.mtype, tt.labels)
+			assert.Equal(t, value, tt.wantValue)
 		})
 	}
 }
@@ -1215,30 +1206,20 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
-			t.Error("expecting errMetricNameNotFound error, but get nil")
-			return
-		}
-
-		if err := b.appendMetrics(pmetric.NewMetricSlice()); !errors.Is(err, errNoDataToBuild) {
-			t.Error("expecting errNoDataToBuild error, but get nil")
-		}
+		assert.ErrorIs(t, b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123), errMetricNameNotFound)
+		assert.ErrorIs(t, b.appendMetrics(pmetric.NewMetricSlice()), errNoDataToBuild)
 	})
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyLeLabel) {
-			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
-		}
+		assert.ErrorIs(t, b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123), errNoBoundaryLabel)
 	})
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
 		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop(), 0)
 		b.startTime = 1.0 // set to a non-zero value
-		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyQuantileLabel) {
-			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
-		}
+		assert.ErrorIs(t, b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123), errNoBoundaryLabel)
 	})
 }
 

@@ -39,8 +39,6 @@ var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo}
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
-	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
-	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
@@ -48,26 +46,24 @@ var (
 )
 
 // dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
-func dpgSignature(orderedKnownLabelKeys []string, ls labels.Labels) string {
+func dpgSignature(ls labels.Labels) string {
 	size := 0
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
+	for i := range ls {
+		if ls[i].Value == "" {
 			continue
 		}
 		// 2 enclosing quotes + 1 equality sign = 3 extra chars.
 		// Note: if any character in the label value requires escaping,
 		// we'll need more space than that, which will lead to some
 		// extra allocation.
-		size += 3 + len(k) + len(v)
+		size += 3 + len(ls[i].Name) + len(ls[i].Value)
 	}
 	sign := make([]byte, 0, size)
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
+	for i := range ls {
+		if ls[i].Value == "" {
 			continue
 		}
-		sign = strconv.AppendQuote(sign, k+"="+v)
+		sign = strconv.AppendQuote(sign, ls[i].Name+"="+ls[i].Value)
 	}
 	return string(sign)
 }

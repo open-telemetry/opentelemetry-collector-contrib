@@ -17,6 +17,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,14 +32,12 @@ import (
 type metricFamily struct {
 	mtype pmetric.MetricDataType
 	// isMonotonic only applies to sums
-	isMonotonic      bool
-	groups           map[string]*metricGroup
-	name             string
-	mc               MetadataCache
-	labelKeys        map[string]bool
-	labelKeysOrdered []string
-	metadata         *scrape.MetricMetadata
-	groupOrders      []*metricGroup
+	isMonotonic bool
+	groups      map[string]*metricGroup
+	name        string
+	mc          MetadataCache
+	metadata    *scrape.MetricMetadata
+	groupOrders []*metricGroup
 }
 
 // metricGroup, represents a single metric of a metric family. for example a histogram metric is usually represent by
@@ -64,33 +63,26 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *m
 	}
 
 	return &metricFamily{
-		mtype:            mtype,
-		isMonotonic:      isMonotonic,
-		groups:           make(map[string]*metricGroup),
-		name:             familyName,
-		mc:               mc,
-		labelKeys:        make(map[string]bool),
-		labelKeysOrdered: make([]string, 0),
-		metadata:         metadata,
+		mtype:       mtype,
+		isMonotonic: isMonotonic,
+		groups:      make(map[string]*metricGroup),
+		name:        familyName,
+		mc:          mc,
+		metadata:    metadata,
 	}
 }
 
-// updateLabelKeys is used to store all the label keys of a same metric family in observed order. since prometheus
-// receiver removes any label with empty value before feeding it to an appender, in order to figure out all the labels
-// from the same metric family we will need to keep track of what labels have ever been observed.
-func (mf *metricFamily) updateLabelKeys(ls labels.Labels) {
-	for _, l := range ls {
-		if isUsefulLabel(mf.mtype, l.Name) {
-			if _, ok := mf.labelKeys[l.Name]; !ok {
-				mf.labelKeys[l.Name] = true
-				// use insertion sort to maintain order
-				i := sort.SearchStrings(mf.labelKeysOrdered, l.Name)
-				mf.labelKeysOrdered = append(mf.labelKeysOrdered, "")
-				copy(mf.labelKeysOrdered[i+1:], mf.labelKeysOrdered[i:])
-				mf.labelKeysOrdered[i] = l.Name
-			}
+// updateLabelKeys removes any not useful label.
+func (mf *metricFamily) updateLabelKeys(ls labels.Labels) labels.Labels {
+	pos := 0
+	for i := range ls {
+		if !isUsefulLabel(mf.mtype, ls[i].Name) {
+			continue
 		}
+		ls[pos] = ls[i]
+		pos++
 	}
+	return ls[:pos]
 }
 
 // includesMetric returns true if the metric is part of the family
@@ -105,18 +97,13 @@ func (mf *metricFamily) includesMetric(metricName string) bool {
 	return metricName == mf.name
 }
 
-func (mf *metricFamily) getGroupKey(ls labels.Labels) string {
-	mf.updateLabelKeys(ls)
-	return dpgSignature(mf.labelKeysOrdered, ls)
-}
-
 func (mg *metricGroup) sortPoints() {
 	sort.Slice(mg.complexValue, func(i, j int) bool {
 		return mg.complexValue[i].boundary < mg.complexValue[j].boundary
 	})
 }
 
-func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetric.HistogramDataPointSlice) {
+func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
 	if !mg.hasCount || len(mg.complexValue) == 0 {
 		return
 	}
@@ -165,7 +152,7 @@ func (mg *metricGroup) toDistributionPoint(orderedLabelKeys []string, dest pmetr
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
 	point.SetTimestamp(tsNanos)
-	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
+	populateAttributes(mg.ls, point.Attributes())
 }
 
 func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -173,7 +160,7 @@ func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, ns))
 }
 
-func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.SummaryDataPointSlice) {
+func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// expecting count to be provided, however, in the following two cases, they can be missed.
 	// 1. data is corrupted
 	// 2. ignored by startValue evaluation
@@ -214,10 +201,10 @@ func (mg *metricGroup) toSummaryPoint(orderedLabelKeys []string, dest pmetric.Su
 	if mg.family.isCumulativeType() {
 		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	}
-	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
+	populateAttributes(mg.ls, point.Attributes())
 }
 
-func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric.NumberDataPointSlice) {
+func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	var startTsNanos pcommon.Timestamp
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	// gauge/undefined types have no start time.
@@ -233,18 +220,17 @@ func (mg *metricGroup) toNumberDataPoint(orderedLabelKeys []string, dest pmetric
 	} else {
 		point.SetDoubleVal(mg.value)
 	}
-	populateAttributes(orderedLabelKeys, mg.ls, point.Attributes())
+	populateAttributes(mg.ls, point.Attributes())
 }
 
-func populateAttributes(orderedKeys []string, ls labels.Labels, dest pcommon.Map) {
-	dest.EnsureCapacity(len(orderedKeys))
-	for _, key := range orderedKeys {
-		val := ls.Get(key)
-		if val == "" {
+func populateAttributes(ls labels.Labels, dest pcommon.Map) {
+	dest.EnsureCapacity(len(ls))
+	for i := range ls {
+		if ls[i].Value == "" {
 			// empty label values should be omitted
 			continue
 		}
-		dest.InsertString(key, val)
+		dest.InsertString(ls[i].Name, ls[i].Value)
 	}
 }
 
@@ -271,7 +257,12 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey string, ls labels.Label
 }
 
 func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v float64) error {
-	groupKey := mf.getGroupKey(ls)
+	// Save the boundary before dropping it in updateLabelKeys
+	boundaryStr := getBoundary(mf.mtype, ls)
+
+	ls = mf.updateLabelKeys(ls)
+	groupKey := dpgSignature(ls)
+
 	mg := mf.loadMetricGroupOrCreate(groupKey, ls, t)
 	if mg.ts != t {
 		return fmt.Errorf("inconsistent timestamps on metric points for metric %v", metricName)
@@ -289,7 +280,10 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 			mg.count = v
 			mg.hasCount = true
 		default:
-			boundary, err := getBoundary(mf.mtype, ls)
+			if boundaryStr == "" {
+				return errNoBoundaryLabel
+			}
+			boundary, err := strconv.ParseFloat(boundaryStr, 64)
 			if err != nil {
 				return err
 			}
@@ -317,7 +311,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toDistributionPoint(mf.labelKeysOrdered, hdpL)
+			mg.toDistributionPoint(hdpL)
 		}
 		pointCount = hdpL.Len()
 
@@ -325,7 +319,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		summary := metric.Summary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toSummaryPoint(mf.labelKeysOrdered, sdpL)
+			mg.toSummaryPoint(sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -335,7 +329,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(mf.labelKeysOrdered, sdpL)
+			mg.toNumberDataPoint(sdpL)
 		}
 		pointCount = sdpL.Len()
 
@@ -344,7 +338,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		gauge := metric.Gauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.groupOrders {
-			mg.toNumberDataPoint(mf.labelKeysOrdered, gdpL)
+			mg.toNumberDataPoint(gdpL)
 		}
 		pointCount = gdpL.Len()
 	}

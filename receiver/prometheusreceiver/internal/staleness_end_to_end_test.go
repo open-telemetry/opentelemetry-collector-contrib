@@ -245,7 +245,7 @@ service:
 	}
 
 	require.True(t, totalSamples > 0, "Expected at least 1 sample")
-	// On every alternative scrape the prior scrape will be reported as sale.
+	// On every alternative scrape the prior scrape will be reported as stale.
 	// Expect at least:
 	//    * The first scrape will NOT return stale markers
 	//    * (N-1 / alternatives) = ((10-1) / 2) = ~40% chance of stale markers being emitted.
