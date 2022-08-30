@@ -55,7 +55,7 @@ func orFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	}
 }
 
-func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
+func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (boolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
@@ -87,7 +87,7 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
-func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (boolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
@@ -107,7 +107,7 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	return orFuncs(funcs), nil
 }
 
-func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (boolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
@@ -127,7 +127,7 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	return andFuncs(funcs), nil
 }
 
-func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (boolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}

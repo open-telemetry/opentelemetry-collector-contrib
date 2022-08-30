@@ -70,7 +70,7 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func newGetter(val Value, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (Getter, error) {
+func newGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &literal{value: nil}, nil
 	}

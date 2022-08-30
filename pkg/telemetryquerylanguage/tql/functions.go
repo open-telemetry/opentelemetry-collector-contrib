@@ -19,13 +19,13 @@ import (
 	"reflect"
 )
 
-type pathExpressionParser func(*Path) (GetSetter, error)
+type PathExpressionParser func(*Path) (GetSetter, error)
 
-type enumParser func(*EnumSymbol) (*Enum, error)
+type EnumParser func(*EnumSymbol) (*Enum, error)
 
 type Enum int64
 
-func newFunctionCall(inv Invocation, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (ExprFunc, error) {
+func newFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser, enumParser)
 		if err != nil {
@@ -45,7 +45,7 @@ func newFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 	return nil, fmt.Errorf("undefined function %v", inv.Function)
 }
 
-func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) ([]reflect.Value, error) {
+func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]reflect.Value, error) {
 	args := make([]reflect.Value, 0)
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
@@ -71,7 +71,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 }
 
 func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) error {
+	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
 	switch argType.Elem().Name() {
 	case reflect.String.String():
 		arg := make([]string, 0)
@@ -122,7 +122,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 }
 
 func buildArg(argDef Value, argType reflect.Type, index int, args *[]reflect.Value,
-	functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) error {
+	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
 	switch argType.Name() {
 	case "Setter":
 		fallthrough

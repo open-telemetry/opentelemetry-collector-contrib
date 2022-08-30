@@ -149,7 +149,7 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) ([]Query, error) {
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 
