@@ -74,7 +74,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			name:         "When the same key is present at Resource and Record level, the latter value should be used",
 			baseResource: simpleResource(),
 			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
-				attributeMap.InsertString("somekey1", "replaced-value")
+				attributeMap.UpsertString("somekey1", "replaced-value")
 			},
 			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
@@ -91,10 +91,10 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			name:         "Empty Resource",
 			baseResource: pcommon.NewResource(),
 			fillRecordAttributesFun: func(attributeMap pcommon.Map) {
-				attributeMap.InsertString("somekey1", "some-value")
+				attributeMap.UpsertString("somekey1", "some-value")
 			},
 			fillExpectedResourceFun: func(_ pcommon.Resource, expectedResource pcommon.Resource) {
-				expectedResource.Attributes().InsertString("somekey1", "some-value")
+				expectedResource.Attributes().UpsertString("somekey1", "some-value")
 			},
 		},
 		{

@@ -115,8 +115,8 @@ func TestMatchIntGaugeDataPointByMetricAndSecondPointLabelValue(t *testing.T) {
 	m.SetDataType(pmetric.MetricDataTypeGauge)
 	dps := m.Gauge().DataPoints()
 
-	dps.AppendEmpty().Attributes().InsertString("foo", "bar")
-	dps.AppendEmpty().Attributes().InsertString("baz", "glarch")
+	dps.AppendEmpty().Attributes().UpsertString("foo", "bar")
+	dps.AppendEmpty().Attributes().UpsertString("baz", "glarch")
 
 	matched, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)

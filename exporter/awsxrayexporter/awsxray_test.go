@@ -152,16 +152,15 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	attrs := pcommon.NewMap()
-	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.InsertString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
-	attrs.CopyTo(resource.Attributes())
+	attrs := resource.Attributes()
+	attrs.UpsertString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.UpsertString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.UpsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.UpsertString(conventions.AttributeContainerImageTag, "v1")
+	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.UpsertString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.UpsertString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 

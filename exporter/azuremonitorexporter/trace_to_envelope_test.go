@@ -409,7 +409,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	// test RPC error using the new rpc.grpc.status_code attribute
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Resource exhausted")
-	spanAttributes.InsertInt(attributeRPCGRPCStatusCode, 8)
+	spanAttributes.UpsertInt(attributeRPCGRPCStatusCode, 8)
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)

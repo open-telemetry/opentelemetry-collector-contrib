@@ -462,8 +462,8 @@ func (m *metricContainerBlockioIoMergedRecursiveAsync) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -516,8 +516,8 @@ func (m *metricContainerBlockioIoMergedRecursiveDiscard) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -570,8 +570,8 @@ func (m *metricContainerBlockioIoMergedRecursiveRead) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -624,8 +624,8 @@ func (m *metricContainerBlockioIoMergedRecursiveSync) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -678,8 +678,8 @@ func (m *metricContainerBlockioIoMergedRecursiveTotal) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -732,8 +732,8 @@ func (m *metricContainerBlockioIoMergedRecursiveWrite) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -786,8 +786,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveAsync) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -840,8 +840,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveDiscard) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -894,8 +894,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveRead) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -948,8 +948,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveSync) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1002,8 +1002,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveTotal) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1056,8 +1056,8 @@ func (m *metricContainerBlockioIoQueuedRecursiveWrite) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1110,8 +1110,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveAsync) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1164,8 +1164,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveDiscard) recordDataPoint(s
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1218,8 +1218,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveRead) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1272,8 +1272,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveSync) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1326,8 +1326,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveTotal) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1380,8 +1380,8 @@ func (m *metricContainerBlockioIoServiceBytesRecursiveWrite) recordDataPoint(sta
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1434,8 +1434,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveAsync) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1488,8 +1488,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveDiscard) recordDataPoint(st
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1542,8 +1542,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveRead) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1596,8 +1596,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveSync) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1650,8 +1650,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveTotal) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1704,8 +1704,8 @@ func (m *metricContainerBlockioIoServiceTimeRecursiveWrite) recordDataPoint(star
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1758,8 +1758,8 @@ func (m *metricContainerBlockioIoServicedRecursiveAsync) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1812,8 +1812,8 @@ func (m *metricContainerBlockioIoServicedRecursiveDiscard) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1866,8 +1866,8 @@ func (m *metricContainerBlockioIoServicedRecursiveRead) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1920,8 +1920,8 @@ func (m *metricContainerBlockioIoServicedRecursiveSync) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1974,8 +1974,8 @@ func (m *metricContainerBlockioIoServicedRecursiveTotal) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2028,8 +2028,8 @@ func (m *metricContainerBlockioIoServicedRecursiveWrite) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2082,8 +2082,8 @@ func (m *metricContainerBlockioIoTimeRecursiveAsync) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2136,8 +2136,8 @@ func (m *metricContainerBlockioIoTimeRecursiveDiscard) recordDataPoint(start pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2190,8 +2190,8 @@ func (m *metricContainerBlockioIoTimeRecursiveRead) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2244,8 +2244,8 @@ func (m *metricContainerBlockioIoTimeRecursiveSync) recordDataPoint(start pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2298,8 +2298,8 @@ func (m *metricContainerBlockioIoTimeRecursiveTotal) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2352,8 +2352,8 @@ func (m *metricContainerBlockioIoTimeRecursiveWrite) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2406,8 +2406,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveAsync) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2460,8 +2460,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveDiscard) recordDataPoint(start
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2514,8 +2514,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveRead) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2568,8 +2568,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveSync) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2622,8 +2622,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveTotal) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2676,8 +2676,8 @@ func (m *metricContainerBlockioIoWaitTimeRecursiveWrite) recordDataPoint(start p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2730,8 +2730,8 @@ func (m *metricContainerBlockioSectorsRecursiveAsync) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2784,8 +2784,8 @@ func (m *metricContainerBlockioSectorsRecursiveDiscard) recordDataPoint(start pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2838,8 +2838,8 @@ func (m *metricContainerBlockioSectorsRecursiveRead) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2892,8 +2892,8 @@ func (m *metricContainerBlockioSectorsRecursiveSync) recordDataPoint(start pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2946,8 +2946,8 @@ func (m *metricContainerBlockioSectorsRecursiveTotal) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3000,8 +3000,8 @@ func (m *metricContainerBlockioSectorsRecursiveWrite) recordDataPoint(start pcom
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("device_major", deviceMajorAttributeValue)
-	dp.Attributes().InsertString("device_minor", deviceMinorAttributeValue)
+	dp.Attributes().UpsertString("device_major", deviceMajorAttributeValue)
+	dp.Attributes().UpsertString("device_minor", deviceMinorAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3307,7 +3307,7 @@ func (m *metricContainerCPUUsagePercpu) recordDataPoint(start pcommon.Timestamp,
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("core", coreAttributeValue)
+	dp.Attributes().UpsertString("core", coreAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5449,7 +5449,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5502,7 +5502,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5555,7 +5555,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5608,7 +5608,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5661,7 +5661,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5714,7 +5714,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5767,7 +5767,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -5820,7 +5820,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("interface", interfaceAttributeValue)
+	dp.Attributes().UpsertString("interface", interfaceAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
