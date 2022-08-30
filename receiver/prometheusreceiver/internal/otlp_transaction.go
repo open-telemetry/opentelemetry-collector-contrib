@@ -149,7 +149,7 @@ func (t *transaction) Commit() error {
 		t.adjustStartTimestamp(metricsL)
 	} else {
 		// TODO: Derive numPoints in this case.
-		_ = NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
+		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
 	}
 
 	if metricsL.Len() > 0 {
