@@ -18,8 +18,8 @@ import (
 	"fmt"
 )
 
-// BoolExpressionEvaluator is a function that returns the result.
-type BoolExpressionEvaluator = func(ctx TransformContext) bool
+// boolExpressionEvaluator is a function that returns the result.
+type boolExpressionEvaluator = func(ctx TransformContext) bool
 
 var alwaysTrue = func(ctx TransformContext) bool {
 	return true
@@ -30,8 +30,8 @@ var alwaysFalse = func(ctx TransformContext) bool {
 }
 
 // builds a function that returns a short-circuited result of ANDing
-// BoolExpressionEvaluator funcs
-func andFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
+// boolExpressionEvaluator funcs
+func andFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if !f(ctx) {
@@ -43,8 +43,8 @@ func andFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 }
 
 // builds a function that returns a short-circuited result of ORing
-// BoolExpressionEvaluator funcs
-func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
+// boolExpressionEvaluator funcs
+func orFuncs(funcs []boolExpressionEvaluator) boolExpressionEvaluator {
 	return func(ctx TransformContext) bool {
 		for _, f := range funcs {
 			if f(ctx) {
@@ -55,15 +55,15 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
-	left, err := NewGetter(comparison.Left, functions, pathParser, enumParser)
+	left, err := newGetter(comparison.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
-	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
+	right, err := newGetter(comparison.Right, functions, pathParser, enumParser)
 	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
-func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
@@ -95,7 +95,7 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpressionEvaluator{f}
+	funcs := []boolExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
 		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser, enumParser)
 		if err != nil {
@@ -107,7 +107,7 @@ func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string
 	return orFuncs(funcs), nil
 }
 
-func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
@@ -115,7 +115,7 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	if err != nil {
 		return nil, err
 	}
-	funcs := []BoolExpressionEvaluator{f}
+	funcs := []boolExpressionEvaluator{f}
 	for _, rhs := range term.Right {
 		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser, enumParser)
 		if err != nil {
@@ -127,7 +127,7 @@ func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathP
 	return andFuncs(funcs), nil
 }
 
-func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) (boolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}

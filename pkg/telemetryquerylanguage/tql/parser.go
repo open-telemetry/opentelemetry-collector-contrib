@@ -115,7 +115,7 @@ type Field struct {
 // invocation and the expression to match telemetry for invoking the function.
 type Query struct {
 	Function  ExprFunc
-	Condition BoolExpressionEvaluator
+	Condition boolExpressionEvaluator
 }
 
 // Bytes type for capturing byte arrays
@@ -149,7 +149,7 @@ func (n *IsNil) Capture(_ []string) error {
 
 type EnumSymbol string
 
-func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
+func ParseQueries(statements []string, functions map[string]interface{}, pathParser pathExpressionParser, enumParser enumParser) ([]Query, error) {
 	queries := make([]Query, 0)
 	var errors error
 

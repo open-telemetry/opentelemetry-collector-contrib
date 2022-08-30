@@ -143,7 +143,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	functions := DefaultFunctionsForTests()
+	functions := defaultFunctionsForTests()
 
 	tests := []struct {
 		name string
@@ -508,7 +508,7 @@ func functionWithEnum(_ Enum) (ExprFunc, error) {
 	}, nil
 }
 
-func DefaultFunctionsForTests() map[string]interface{} {
+func defaultFunctionsForTests() map[string]interface{} {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
 	functions["testing_float_slice"] = functionWithFloatSlice

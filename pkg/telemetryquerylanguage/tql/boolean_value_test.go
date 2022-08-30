@@ -122,7 +122,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			evaluate, err := newComparisonEvaluator(tt.comparison, defaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.True(t, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
@@ -163,7 +163,7 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			_, err := newComparisonEvaluator(tt.comparison, defaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.Error(t, err)
 		})
 	}
@@ -352,7 +352,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newBooleanExpressionEvaluator(tt.expr, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			evaluate, err := newBooleanExpressionEvaluator(tt.expr, defaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: nil,
