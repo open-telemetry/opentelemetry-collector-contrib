@@ -109,7 +109,7 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the Telemetry Query Language")
 	}
-	call, err := NewFunctionCall(*val.Invocation, functions, pathParser, enumParser)
+	call, err := newFunctionCall(*val.Invocation, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}

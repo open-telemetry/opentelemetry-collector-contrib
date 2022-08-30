@@ -159,7 +159,7 @@ func ParseQueries(statements []string, functions map[string]interface{}, pathPar
 			errors = multierr.Append(errors, err)
 			continue
 		}
-		function, err := NewFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
+		function, err := newFunctionCall(parsed.Invocation, functions, pathParser, enumParser)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue

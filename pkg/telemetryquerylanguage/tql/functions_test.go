@@ -136,7 +136,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
+			_, err := newFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.Error(t, err)
 		})
 	}
@@ -411,7 +411,7 @@ func Test_NewFunctionCall(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
+			_, err := newFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 		})
 	}

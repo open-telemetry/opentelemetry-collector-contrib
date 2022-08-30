@@ -23,8 +23,8 @@ type PathExpressionParser func(*Path) (GetSetter, error)
 
 type EnumParser func(*EnumSymbol) (*Enum, error)
 
-// NewFunctionCall Visible for testing
-func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
+// newFunctionCall Visible for testing
+func newFunctionCall(inv Invocation, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (ExprFunc, error) {
 	if f, ok := functions[inv.Function]; ok {
 		args, err := buildArgs(inv, reflect.TypeOf(f), functions, pathParser, enumParser)
 		if err != nil {
