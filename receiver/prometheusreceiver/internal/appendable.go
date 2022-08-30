@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
@@ -31,10 +32,10 @@ type appendable struct {
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
 	startTimeMetricRegex string
-	receiverID           config.ComponentID
 	externalLabels       labels.Labels
 
 	settings component.ReceiverCreateSettings
+	obsrecv  *obsreport.Receiver
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -56,11 +57,11 @@ func NewAppendable(
 		jobsMap:              jobsMap,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
-		receiverID:           receiverID,
 		externalLabels:       externalLabels,
+		obsrecv:              obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: receiverID, Transport: transport, ReceiverCreateSettings: set}),
 	}
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.receiverID, o.sink, o.externalLabels, o.settings)
+	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.sink, o.externalLabels, o.settings, o.obsrecv)
 }
