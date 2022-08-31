@@ -436,7 +436,7 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 }
 
 func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
-	keys := []string{}
+	var keys []string
 
 	if regexp == nil {
 		return keys

@@ -65,7 +65,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
 	targetsMap := getOpenMetricsTestData(false)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -98,7 +98,7 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetr
 func TestOpenMetricsNegative(t *testing.T) {
 
 	targetsMap := getOpenMetricsTestData(true)
-	targets := make([]*testData, 0)
+	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,

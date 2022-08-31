@@ -66,7 +66,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 			// get and check results
 			got := next.AllMetrics()
 			require.Equal(t, 1, len(got))
-			actualOutMetrics := []*metricspb.Metric{}
+			var actualOutMetrics []*metricspb.Metric
 			if got[0].ResourceMetrics().Len() > 0 {
 				_, _, actualOutMetrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
 			}

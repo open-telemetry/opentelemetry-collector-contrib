@@ -393,7 +393,7 @@ func digForCollectionPathNames(document bson.M) ([]string, error) {
 	if !ok {
 		return nil, errors.New("could not find key for metric")
 	}
-	collectionPathNames := []string{}
+	var collectionPathNames []string
 	for collectionPathName := range docTotals {
 		if collectionPathName != "note" {
 			collectionPathNames = append(collectionPathNames, collectionPathName)

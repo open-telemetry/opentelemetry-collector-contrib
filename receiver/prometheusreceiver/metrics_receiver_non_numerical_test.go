@@ -59,7 +59,7 @@ var (
 
 // TestStaleNaNs validates that staleness marker gets generated when the timeseries is no longer present
 func TestStaleNaNs(t *testing.T) {
-	mockResponses := make([]mockPrometheusResponse, 0)
+	var mockResponses []mockPrometheusResponse
 	for i := 0; i < totalScrapes; i++ {
 		if i%2 == 0 {
 			mockResponses = append(mockResponses, mockPrometheusResponse{

@@ -382,7 +382,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
-		expectedPr := &logproto.PushRequest{Streams: make([]logproto.Stream, 0)}
+		expectedPr := &logproto.PushRequest{Streams: []logproto.Stream{}}
 		require.Equal(t, 1, numDroppedLogs)
 		require.Equal(t, expectedPr, pr)
 	})
@@ -468,7 +468,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		lri.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
-		expectedPr := &logproto.PushRequest{Streams: make([]logproto.Stream, 0)}
+		expectedPr := &logproto.PushRequest{Streams: []logproto.Stream{}}
 		require.Equal(t, 1, numDroppedLogs)
 		require.Equal(t, expectedPr, pr)
 	})

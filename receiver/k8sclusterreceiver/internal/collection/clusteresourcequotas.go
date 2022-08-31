@@ -73,7 +73,7 @@ var appliedClusterResourceQuotaUsedMetric = &metricspb.MetricDescriptor{
 }
 
 func getMetricsForClusterResourceQuota(rq *quotav1.ClusterResourceQuota) []*resourceMetrics {
-	metrics := make([]*metricspb.Metric, 0)
+	var metrics []*metricspb.Metric
 
 	metrics = appendClusterQuotaMetrics(metrics, clusterResourceQuotaLimitMetric, rq.Status.Total.Hard, "")
 	metrics = appendClusterQuotaMetrics(metrics, clusterResourceQuotaUsedMetric, rq.Status.Total.Used, "")

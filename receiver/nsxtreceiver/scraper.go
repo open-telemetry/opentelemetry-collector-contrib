@@ -87,7 +87,7 @@ type interfaceInformation struct {
 }
 
 func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
-	r := []*nodeInfo{}
+	var r []*nodeInfo
 	errs := &scrapererror.ScrapeErrors{}
 
 	tNodes, err := s.client.TransportNodes(ctx)

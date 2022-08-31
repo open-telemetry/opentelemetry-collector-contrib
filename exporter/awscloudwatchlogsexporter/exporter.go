@@ -144,7 +144,7 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs) ([]*cloudwatchlogs.InputLogE
 	}
 
 	var dropped int
-	out := make([]*cloudwatchlogs.InputLogEvent, 0) // TODO(jbd): set a better capacity
+	var out []*cloudwatchlogs.InputLogEvent
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {

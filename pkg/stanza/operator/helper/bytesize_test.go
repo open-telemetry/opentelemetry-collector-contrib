@@ -88,7 +88,7 @@ func TestByteSizeUnmarshalYAML(t *testing.T) {
 		{`test: val`, 0, true},
 	}
 
-	cases := []testCase{}
+	var cases []testCase
 	cases = append(cases, sharedTestCases...)
 	cases = append(cases, additionalCases...)
 

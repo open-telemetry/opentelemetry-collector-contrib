@@ -150,7 +150,7 @@ func (n *IsNil) Capture(_ []string) error {
 type EnumSymbol string
 
 func ParseQueries(statements []string, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]Query, error) {
-	queries := make([]Query, 0)
+	var queries []Query
 	var errors error
 
 	for _, statement := range statements {

@@ -54,7 +54,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	preEmitOptions := []preEmitOption{}
+	var preEmitOptions []preEmitOption
 	if c.IncludeFileName {
 		preEmitOptions = append(preEmitOptions, setFileName)
 	}

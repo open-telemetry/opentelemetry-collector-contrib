@@ -39,5 +39,6 @@ func processMeasurements(
 	if errs != nil {
 		return fmt.Errorf("errors occurred while processing measurements: %w", errs)
 	}
+
 	return nil
 }
