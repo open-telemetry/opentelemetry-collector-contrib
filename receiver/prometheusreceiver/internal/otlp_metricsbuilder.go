@@ -28,16 +28,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func isUsefulLabel(mType pmetric.MetricDataType, labelKey string) bool {
-	switch labelKey {
-	case model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel:
-		return false
-	case model.BucketLabel:
-		return mType != pmetric.MetricDataTypeHistogram
-	case model.QuantileLabel:
-		return mType != pmetric.MetricDataTypeSummary
+var (
+	notUsefulLabelsHistogram = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.BucketLabel})
+	notUsefulLabelsSummary   = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.QuantileLabel})
+	notUsefulLabelsOther     = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel})
+)
+
+func sortString(strs []string) []string {
+	sort.Strings(strs)
+	return strs
+}
+
+func getSortedNotUsefulLabels(mType pmetric.MetricDataType) []string {
+	switch mType {
+	case pmetric.MetricDataTypeHistogram:
+		return notUsefulLabelsHistogram
+	case pmetric.MetricDataTypeSummary:
+		return notUsefulLabelsSummary
+	default:
+		return notUsefulLabelsOther
 	}
-	return true
 }
 
 func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
@@ -129,13 +139,11 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	seen := make(map[string]bool, len(ls))
 	var dupLabels []string
-	for _, label := range ls {
-		if _, ok := seen[label.Name]; ok {
-			dupLabels = append(dupLabels, label.Name)
+	for i := 0; i < len(ls)-1; i++ {
+		if ls[i].Name == ls[i+1].Name {
+			dupLabels = append(dupLabels, ls[i].Name)
 		}
-		seen[label.Name] = true
 	}
 	if len(dupLabels) != 0 {
 		sort.Strings(dupLabels)
