@@ -38,7 +38,7 @@ attributes:
       - hit
       - miss
   lock_type:
-    description: The Type of Lock
+    description: The Resource over which the Lock controls access
     enum:
       - parallel_batch_write_mode
       - replication_state_transition
@@ -49,7 +49,7 @@ attributes:
       - metadata
       - oplog
   lock_mode:
-    description: The mode of Lock
+    description: The mode of Lock which denotes the degree of access
     enum:
       - shared
       - exclusive
@@ -275,8 +275,8 @@ metrics:
       monotonic: true
     attributes: [database, lock_type, lock_mode]
   mongodb.locks.time_acquiring_micros:
-    description: Cumulative wait time in microseconds for the lock acquisitions.
-    unit: "ms"
+    description: Cumulative wait time for the lock acquisitions.
+    unit: "microseconds"
     enabled: true
     sum:
       value_type: int
