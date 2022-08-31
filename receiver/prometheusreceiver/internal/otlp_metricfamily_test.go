@@ -128,8 +128,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{33, 22, 11}))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},
@@ -153,8 +153,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0}))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},
@@ -311,8 +311,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},
@@ -392,8 +392,8 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(14 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(14 * time.Millisecond)) // the time in milliseconds -> nanoseconds
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},
@@ -489,8 +489,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(13 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(13 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},
@@ -508,8 +508,8 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 				point.SetTimestamp(pcommon.Timestamp(28 * time.Millisecond))      // the time in milliseconds -> nanoseconds.
 				point.SetStartTimestamp(pcommon.Timestamp(28 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
 				attributes := point.Attributes()
-				attributes.InsertString("a", "A")
-				attributes.InsertString("b", "B")
+				attributes.UpsertString("a", "A")
+				attributes.UpsertString("b", "B")
 				return point
 			},
 		},

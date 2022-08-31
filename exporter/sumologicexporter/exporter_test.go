@@ -99,9 +99,9 @@ func TestResourceMerge(t *testing.T) {
 	test.exp.filter = f
 
 	logs := LogRecordsToLogs(exampleLog())
-	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("key1", "original_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key1", "overwrite_value")
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("key2", "additional_value")
+	logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("key1", "original_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("key1", "overwrite_value")
+	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("key2", "additional_value")
 
 	err = test.exp.pushLogsData(context.Background(), logs)
 	assert.NoError(t, err)

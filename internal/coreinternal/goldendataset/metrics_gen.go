@@ -212,7 +212,7 @@ func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
 	for i := 0; i < cfg.NumPtLabels; i++ {
 		k := fmt.Sprintf("pt-label-key-%d", i)
 		v := fmt.Sprintf("pt-label-val-%d", i)
-		lm.InsertString(k, v)
+		lm.UpsertString(k, v)
 	}
 }
 
