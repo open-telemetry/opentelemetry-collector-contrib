@@ -43,6 +43,8 @@ type MetricsSettings struct {
 	ElasticsearchNodeDiskIoWrite                              MetricSettings `mapstructure:"elasticsearch.node.disk.io.write"`
 	ElasticsearchNodeDocuments                                MetricSettings `mapstructure:"elasticsearch.node.documents"`
 	ElasticsearchNodeFsDiskAvailable                          MetricSettings `mapstructure:"elasticsearch.node.fs.disk.available"`
+	ElasticsearchNodeFsDiskFree                               MetricSettings `mapstructure:"elasticsearch.node.fs.disk.free"`
+	ElasticsearchNodeFsDiskTotal                              MetricSettings `mapstructure:"elasticsearch.node.fs.disk.total"`
 	ElasticsearchNodeHTTPConnections                          MetricSettings `mapstructure:"elasticsearch.node.http.connections"`
 	ElasticsearchNodeIngestDocuments                          MetricSettings `mapstructure:"elasticsearch.node.ingest.documents"`
 	ElasticsearchNodeIngestDocumentsCurrent                   MetricSettings `mapstructure:"elasticsearch.node.ingest.documents.current"`
@@ -161,6 +163,12 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchNodeFsDiskAvailable: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeFsDiskFree: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeFsDiskTotal: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeHTTPConnections: MetricSettings{
@@ -2047,7 +2055,7 @@ type metricElasticsearchNodeFsDiskAvailable struct {
 // init fills elasticsearch.node.fs.disk.available metric with initial data.
 func (m *metricElasticsearchNodeFsDiskAvailable) init() {
 	m.data.SetName("elasticsearch.node.fs.disk.available")
-	m.data.SetDescription("The amount of disk space available across all file stores for this node.")
+	m.data.SetDescription("The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.")
 	m.data.SetUnit("By")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
@@ -2082,6 +2090,108 @@ func (m *metricElasticsearchNodeFsDiskAvailable) emit(metrics pmetric.MetricSlic
 
 func newMetricElasticsearchNodeFsDiskAvailable(settings MetricSettings) metricElasticsearchNodeFsDiskAvailable {
 	m := metricElasticsearchNodeFsDiskAvailable{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeFsDiskFree struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.fs.disk.free metric with initial data.
+func (m *metricElasticsearchNodeFsDiskFree) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.free")
+	m.data.SetDescription("The amount of unallocated disk space across all file stores for this node.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeFsDiskFree) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeFsDiskFree) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeFsDiskFree) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeFsDiskFree(settings MetricSettings) metricElasticsearchNodeFsDiskFree {
+	m := metricElasticsearchNodeFsDiskFree{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeFsDiskTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.fs.disk.total metric with initial data.
+func (m *metricElasticsearchNodeFsDiskTotal) init() {
+	m.data.SetName("elasticsearch.node.fs.disk.total")
+	m.data.SetDescription("The amount of disk space across all file stores for this node.")
+	m.data.SetUnit("By")
+	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+}
+
+func (m *metricElasticsearchNodeFsDiskTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeFsDiskTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeFsDiskTotal) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeFsDiskTotal(settings MetricSettings) metricElasticsearchNodeFsDiskTotal {
+	m := metricElasticsearchNodeFsDiskTotal{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4061,6 +4171,8 @@ type MetricsBuilder struct {
 	metricElasticsearchNodeDiskIoWrite                              metricElasticsearchNodeDiskIoWrite
 	metricElasticsearchNodeDocuments                                metricElasticsearchNodeDocuments
 	metricElasticsearchNodeFsDiskAvailable                          metricElasticsearchNodeFsDiskAvailable
+	metricElasticsearchNodeFsDiskFree                               metricElasticsearchNodeFsDiskFree
+	metricElasticsearchNodeFsDiskTotal                              metricElasticsearchNodeFsDiskTotal
 	metricElasticsearchNodeHTTPConnections                          metricElasticsearchNodeHTTPConnections
 	metricElasticsearchNodeIngestDocuments                          metricElasticsearchNodeIngestDocuments
 	metricElasticsearchNodeIngestDocumentsCurrent                   metricElasticsearchNodeIngestDocumentsCurrent
@@ -4142,6 +4254,8 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchNodeDiskIoWrite:                              newMetricElasticsearchNodeDiskIoWrite(settings.ElasticsearchNodeDiskIoWrite),
 		metricElasticsearchNodeDocuments:                                newMetricElasticsearchNodeDocuments(settings.ElasticsearchNodeDocuments),
 		metricElasticsearchNodeFsDiskAvailable:                          newMetricElasticsearchNodeFsDiskAvailable(settings.ElasticsearchNodeFsDiskAvailable),
+		metricElasticsearchNodeFsDiskFree:                               newMetricElasticsearchNodeFsDiskFree(settings.ElasticsearchNodeFsDiskFree),
+		metricElasticsearchNodeFsDiskTotal:                              newMetricElasticsearchNodeFsDiskTotal(settings.ElasticsearchNodeFsDiskTotal),
 		metricElasticsearchNodeHTTPConnections:                          newMetricElasticsearchNodeHTTPConnections(settings.ElasticsearchNodeHTTPConnections),
 		metricElasticsearchNodeIngestDocuments:                          newMetricElasticsearchNodeIngestDocuments(settings.ElasticsearchNodeIngestDocuments),
 		metricElasticsearchNodeIngestDocumentsCurrent:                   newMetricElasticsearchNodeIngestDocumentsCurrent(settings.ElasticsearchNodeIngestDocumentsCurrent),
@@ -4272,6 +4386,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchNodeDiskIoWrite.emit(ils.Metrics())
 	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
 	mb.metricElasticsearchNodeFsDiskAvailable.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskFree.emit(ils.Metrics())
+	mb.metricElasticsearchNodeFsDiskTotal.emit(ils.Metrics())
 	mb.metricElasticsearchNodeHTTPConnections.emit(ils.Metrics())
 	mb.metricElasticsearchNodeIngestDocuments.emit(ils.Metrics())
 	mb.metricElasticsearchNodeIngestDocumentsCurrent.emit(ils.Metrics())
@@ -4457,6 +4573,16 @@ func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.T
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
 func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeFsDiskFreeDataPoint adds a data point to elasticsearch.node.fs.disk.free metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskFree.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordElasticsearchNodeFsDiskTotalDataPoint adds a data point to elasticsearch.node.fs.disk.total metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricElasticsearchNodeFsDiskTotal.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.

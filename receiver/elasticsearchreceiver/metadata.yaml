@@ -177,7 +177,25 @@ metrics:
     attributes: [cache_name]
     enabled: true
   elasticsearch.node.fs.disk.available:
-    description: The amount of disk space available across all file stores for this node.
+    description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.fs.disk.free:
+    description: The amount of unallocated disk space across all file stores for this node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: []
+    enabled: true
+  elasticsearch.node.fs.disk.total:
+    description: The amount of disk space across all file stores for this node.
     unit: By
     sum:
       monotonic: false
