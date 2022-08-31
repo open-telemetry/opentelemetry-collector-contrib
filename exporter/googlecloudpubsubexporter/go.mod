@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go/pubsub v1.25.1
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220830152521-5772e58c2007
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830152521-5772e58c2007
+	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.94.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
