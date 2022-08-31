@@ -247,96 +247,6 @@ func TestConvToMetricType(t *testing.T) {
 	}
 }
 
-func TestIsUsefulLabel(t *testing.T) {
-	tests := []struct {
-		name      string
-		mtypes    []pmetric.MetricDataType
-		labelKeys []string
-		want      bool
-	}{
-		{
-			name: `unuseful "metric","instance","scheme","path","job" with any kind`,
-			labelKeys: []string{
-				model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel,
-			},
-			mtypes: []pmetric.MetricDataType{
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeHistogram,
-				pmetric.MetricDataTypeSummary,
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeNone,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeSum,
-			},
-			want: false,
-		},
-		{
-			name: `bucket label with non "int_histogram", "histogram":: useful`,
-			mtypes: []pmetric.MetricDataType{
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeSummary,
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeNone,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeSum,
-			},
-			labelKeys: []string{model.BucketLabel},
-			want:      true,
-		},
-		{
-			name: `quantile label with "summary": non-useful`,
-			mtypes: []pmetric.MetricDataType{
-				pmetric.MetricDataTypeSummary,
-			},
-			labelKeys: []string{model.QuantileLabel},
-			want:      false,
-		},
-		{
-			name:      `quantile label with non-"summary": useful`,
-			labelKeys: []string{model.QuantileLabel},
-			mtypes: []pmetric.MetricDataType{
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeHistogram,
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeNone,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeSum,
-			},
-			want: true,
-		},
-		{
-			name:      `any other label with any type:: useful`,
-			labelKeys: []string{"any_label", "foo.bar"},
-			mtypes: []pmetric.MetricDataType{
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeHistogram,
-				pmetric.MetricDataTypeSummary,
-				pmetric.MetricDataTypeSum,
-				pmetric.MetricDataTypeNone,
-				pmetric.MetricDataTypeGauge,
-				pmetric.MetricDataTypeSum,
-			},
-			want: true,
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			for _, mtype := range tt.mtypes {
-				for _, labelKey := range tt.labelKeys {
-					got := isUsefulLabel(mtype, labelKey)
-					assert.Equal(t, got, tt.want)
-				}
-			}
-		})
-	}
-}
-
 type buildTestData struct {
 	name   string
 	inputs []*testScrapedPage
@@ -843,11 +753,11 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 						createDataPoint("hist_test", 3, "key2", "v2", "le", "+inf"),
 						createDataPoint("hist_test_sum", 50, "key2", "v2"),
 						createDataPoint("hist_test_count", 3, "key2", "v2"),
-						createDataPoint("hist_test2", 1, "le", "10"),
-						createDataPoint("hist_test2", 2, "le", "20"),
-						createDataPoint("hist_test2", 3, "le", "+inf"),
-						createDataPoint("hist_test2_sum", 50),
-						createDataPoint("hist_test2_count", 3),
+						createDataPoint("hist_test2", 1, "foo", "bar", "le", "10"),
+						createDataPoint("hist_test2", 2, "foo", "bar", "le", "20"),
+						createDataPoint("hist_test2", 3, "foo", "bar", "le", "+inf"),
+						createDataPoint("hist_test2_sum", 50, "foo", "bar"),
+						createDataPoint("hist_test2_count", 3, "foo", "bar"),
 					},
 				},
 			},
@@ -888,6 +798,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt2.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt2.SetTimestamp(startTsNanos)
 				pt2.SetStartTimestamp(startTsNanos)
+				pt2.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -930,9 +841,9 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
-						createDataPoint("hist_test", 3, "le", "+inf"),
-						createDataPoint("hist_test_count", 3),
-						createDataPoint("hist_test_sum", 100),
+						createDataPoint("hist_test", 3, "foo", "bar", "le", "+inf"),
+						createDataPoint("hist_test_count", 3, "foo", "bar"),
+						createDataPoint("hist_test_sum", 100, "foo", "bar"),
 					},
 				},
 			},
@@ -949,6 +860,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -959,9 +871,9 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
-						createDataPoint("hist_test", 3, "le", "20"),
-						createDataPoint("hist_test_count", 3),
-						createDataPoint("hist_test_sum", 100),
+						createDataPoint("hist_test", 3, "foo", "bar", "le", "20"),
+						createDataPoint("hist_test_count", 3, "foo", "bar"),
+						createDataPoint("hist_test_sum", 100, "foo", "bar"),
 					},
 				},
 			},
@@ -978,6 +890,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
