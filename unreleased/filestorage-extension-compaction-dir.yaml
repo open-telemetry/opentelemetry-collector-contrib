@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: extension/filestorage
+note: "Allow putting the compaction temp folder on a different filesystem."
+issues: [13449]
