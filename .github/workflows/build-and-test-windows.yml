@@ -13,7 +13,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  setup-environment:
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.17
+      - name: Cache Go Mod
+        id: go-mod-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+          # Cache downloads for this workflow consistently run in under 10 minutes
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
+      - name: Install dependencies
+        if: steps.go-mod-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
   windows-unittest-matrix:
+    needs: [setup-environment]
     strategy:
       matrix:
         group:
@@ -40,12 +65,22 @@ jobs:
         with:
           go-version: 1.19
       - name: Cache Go
+        id: go-mod-cache
         uses: actions/cache@v3
         with:
           path: |
             ~\go\pkg\mod
+          key: go-mod-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+        env:
+          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+          # Cache downloads for this workflow consistently run in under 10 minutes
+          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 15
+      - name: Cache Go Build
+        uses: actions/cache@v3
+        with:
+          path: |
             ~\AppData\Local\go-build
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
         env:
           # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
           # Cache downloads for this workflow consistently run in under 10 minutes
