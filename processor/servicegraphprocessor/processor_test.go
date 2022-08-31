@@ -177,7 +177,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric) {
 	dp := dps.At(0)
 	assert.Equal(t, float64(1000), dp.Sum()) // Duration: 1sec
 	assert.Equal(t, uint64(1), dp.Count())
-	assert.Equal(t, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}, dp.MBucketCounts())
+	assert.Equal(t, []uint64{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0}, dp.BucketCounts())
 
 	attributes := dp.Attributes()
 	assert.Equal(t, 4, attributes.Len())

@@ -421,8 +421,8 @@ func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
 		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpDuration.SetTimestamp(timestamp)
-		dpDuration.SetMExplicitBounds(p.reqDurationBounds)
-		dpDuration.SetMBucketCounts(p.reqDurationSecondsBucketCounts[key])
+		dpDuration.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(p.reqDurationBounds))
+		dpDuration.SetBucketCounts(pcommon.NewImmutableUInt64Slice(p.reqDurationSecondsBucketCounts[key]))
 		dpDuration.SetCount(p.reqDurationSecondsCount[key])
 		dpDuration.SetSum(p.reqDurationSecondsSum[key])
 

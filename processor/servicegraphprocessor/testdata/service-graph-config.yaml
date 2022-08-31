@@ -5,7 +5,7 @@ exporters:
   nop:
 
 processors:
-  service_graph:
+  servicegraph:
     metrics_exporter: metrics
     latency_histogram_buckets: [1,2,3,4,5]
     dimensions:
@@ -19,5 +19,5 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [service_graph]
+      processors: [servicegraph]
       exporters: [nop]
