@@ -47,7 +47,7 @@ type metricGroup struct {
 	ls           labels.Labels
 	count        float64
 	hasCount     bool
-	sum          *float64
+	sum          float64
 	hasSum       bool
 	value        float64
 	complexValue []*dataPoint
@@ -105,7 +105,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	bounds := make([]float64, len(mg.complexValue)-1)
 	bucketCounts := make([]uint64, len(mg.complexValue))
 
-	pointIsStale := (mg.sum != nil && value.IsStaleNaN(*mg.sum)) || value.IsStaleNaN(mg.count)
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 
 	for i := 0; i < len(mg.complexValue); i++ {
 		if i != len(mg.complexValue)-1 {
@@ -130,8 +130,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetCount(uint64(mg.count))
-		if mg.sum != nil {
-			point.SetSum(*mg.sum)
+		if mg.hasSum {
+			point.SetSum(mg.sum)
 		}
 	}
 
@@ -169,12 +169,12 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	mg.sortPoints()
 
 	point := dest.AppendEmpty()
-	pointIsStale := (mg.sum != nil && value.IsStaleNaN(*mg.sum)) || value.IsStaleNaN(mg.count)
+	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
 		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
-		if mg.sum != nil {
-			point.SetSum(*mg.sum)
+		if mg.hasSum {
+			point.SetSum(mg.sum)
 		}
 		point.SetCount(uint64(mg.count))
 	}
@@ -264,7 +264,7 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
 		switch {
 		case strings.HasSuffix(metricName, metricsSuffixSum):
-			mg.sum = &v
+			mg.sum = v
 			mg.hasSum = true
 		case strings.HasSuffix(metricName, metricsSuffixCount):
 			// always use the timestamp from count, because is the only required field for histograms and summaries.
