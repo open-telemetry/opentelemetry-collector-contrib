@@ -5,16 +5,16 @@ go 1.18
 require (
 	github.com/aws/aws-sdk-go v1.44.87
 	github.com/google/cadvisor v0.45.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.59.0
 	github.com/shirou/gopsutil/v3 v3.22.7
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector/pdata v0.59.0
 	go.uber.org/zap v1.23.0
 	k8s.io/api v0.25.0
 	k8s.io/apimachinery v0.25.0
@@ -78,7 +78,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.3 // indirect

@@ -5,11 +5,11 @@ go 1.18
 require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.37
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
-	go.opentelemetry.io/collector/semconv v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector/pdata v0.59.0
+	go.opentelemetry.io/collector/semconv v0.59.0
 	go.uber.org/zap v1.23.0
 )
 

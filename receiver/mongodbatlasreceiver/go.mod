@@ -7,7 +7,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/mongodb-forks/digest v1.0.4
 	go.mongodb.org/atlas v0.16.0
-	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector v0.59.0
 	go.uber.org/zap v1.23.0
 )
 
@@ -45,9 +45,9 @@ require (
 )
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector/pdata v0.59.0
 	go.uber.org/multierr v1.8.0
 )
 

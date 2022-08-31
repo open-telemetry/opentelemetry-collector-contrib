@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakre
 go 1.18
 
 require (
-	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector v0.59.0
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )
@@ -11,9 +11,9 @@ require (
 require github.com/stretchr/testify v1.8.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220830230326-72011ca22dff
+	go.opentelemetry.io/collector/pdata v0.59.0
 )
 
 require (
