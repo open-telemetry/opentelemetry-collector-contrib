@@ -280,12 +280,11 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 	case pmetric.MetricDataTypeHistogram, pmetric.MetricDataTypeSummary:
 		switch {
 		case strings.HasSuffix(metricName, metricsSuffixSum):
-			// always use the timestamp from sum (count is ok too), because the startTs from quantiles won't be reliable
-			// in cases like remote server restart
-			mg.ts = t
 			mg.sum = v
 			mg.hasSum = true
 		case strings.HasSuffix(metricName, metricsSuffixCount):
+			// always use the timestamp from count, because is the only required field for histograms and summaries.
+			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
 		default:
