@@ -346,14 +346,14 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "acquireCount", lockModeKey}
-			metricName := "mongodb.locks.acquire_count"
+			metricName := "mongodb.lock.acquire.count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLocksAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			s.mb.RecordMongodbLockAcquireCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
@@ -371,14 +371,14 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "acquireWaitCount", lockModeKey}
-			metricName := "mongodb.locks.acquire_wait_count"
+			metricName := "mongodb.lock.acquire.wait_count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLocksAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			s.mb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
@@ -396,14 +396,14 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "timeAcquiringMicros", lockModeKey}
-			metricName := "mongodb.locks.time_acquiring_micros"
+			metricName := "mongodb.lock.acquire.time"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLocksAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			s.mb.RecordMongodbLockAcquireTimeDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
@@ -421,14 +421,14 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "deadlockCount", lockModeKey}
-			metricName := "mongodb.locks.deadlock_count"
+			metricName := "mongodb.lock.deadlock.count"
 			metricAttributes := fmt.Sprintf("%s, %s, %s", dBName, lockTypeAttribute.String(), lockModeAttribute.String())
 			val, err := collectMetric(doc, metricPath)
 			if err != nil {
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLocksAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			s.mb.RecordMongodbLockDeadlockCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
