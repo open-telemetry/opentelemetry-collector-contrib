@@ -101,6 +101,8 @@ in outgoing logs data.
 - `spanmetricsprocessor`: The unit of the `latency` metric is now explicitly defined. (#13423)
 - `extension/storage/storagetest`: Add in-memory and file-backed test extensions and clients (#13086)
 - `telemetryquerylanguage`: Avoid copying attributes when filtering on keys in the `keep_keys` TQL function (#4756)
+- `prometheusreceiver`: Remove temporary maps to dedup and remove unuseful labels (#13705)
+
 
 ### 🧰 Bug fixes 🧰
 - `processor/metricstransform`: Aggregate cumulative data points with different start time. (#12611)
