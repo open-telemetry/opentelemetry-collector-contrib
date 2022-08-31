@@ -308,7 +308,7 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) {
 			previousDist = tsi.histogram.initial
 		}
 
-		if !currentDist.Flags().NoRecordedValue() {
+		if !currentDist.FlagsImmutable().NoRecordedValue() {
 			tsi.histogram.previous = &currentDist
 		}
 
@@ -318,7 +318,7 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) {
 			continue
 		}
 
-		if currentDist.Flags().NoRecordedValue() {
+		if currentDist.FlagsImmutable().NoRecordedValue() {
 			currentDist.SetStartTimestamp(tsi.histogram.initial.StartTimestamp())
 			continue
 		}
@@ -346,7 +346,7 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) {
 			previousSum = tsi.number.initial
 		}
 
-		if !currentSum.Flags().NoRecordedValue() {
+		if !currentSum.FlagsImmutable().NoRecordedValue() {
 			tsi.number.previous = &currentSum
 		}
 
@@ -356,7 +356,7 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) {
 			continue
 		}
 
-		if currentSum.Flags().NoRecordedValue() {
+		if currentSum.FlagsImmutable().NoRecordedValue() {
 			currentSum.SetStartTimestamp(tsi.number.initial.StartTimestamp())
 			continue
 		}
@@ -384,7 +384,7 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) {
 			previousSummary = tsi.summary.initial
 		}
 
-		if !currentSummary.Flags().NoRecordedValue() {
+		if !currentSummary.FlagsImmutable().NoRecordedValue() {
 			tsi.summary.previous = &currentSummary
 		}
 
@@ -394,7 +394,7 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) {
 			continue
 		}
 
-		if currentSummary.Flags().NoRecordedValue() {
+		if currentSummary.FlagsImmutable().NoRecordedValue() {
 			currentSummary.SetStartTimestamp(tsi.summary.initial.StartTimestamp())
 			continue
 		}
