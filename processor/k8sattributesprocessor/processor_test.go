@@ -285,31 +285,31 @@ func generateLogs(resourceFunc ...generateResourceFunc) plog.Logs {
 
 func withPassthroughIP(passthroughIP string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(k8sIPLabelName, passthroughIP)
+		res.Attributes().UpsertString(k8sIPLabelName, passthroughIP)
 	}
 }
 
 func withHostname(hostname string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeHostName, hostname)
+		res.Attributes().UpsertString(conventions.AttributeHostName, hostname)
 	}
 }
 
 func withPodUID(uid string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString("k8s.pod.uid", uid)
+		res.Attributes().UpsertString("k8s.pod.uid", uid)
 	}
 }
 
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeK8SContainerName, containerName)
+		res.Attributes().UpsertString(conventions.AttributeK8SContainerName, containerName)
 	}
 }
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().InsertString(conventions.AttributeK8SContainerRestartCount, containerRunID)
+		res.Attributes().UpsertString(conventions.AttributeK8SContainerRestartCount, containerRunID)
 	}
 }
 
@@ -530,10 +530,10 @@ func TestIPSourceWithoutPodAssociation(t *testing.T) {
 
 			for _, res := range resources {
 				if tc.resourceK8SIP != "" {
-					res.Attributes().InsertString(k8sIPLabelName, tc.resourceK8SIP)
+					res.Attributes().UpsertString(k8sIPLabelName, tc.resourceK8SIP)
 				}
 				if tc.resourceIP != "" {
-					res.Attributes().InsertString(clientIPLabelName, tc.resourceIP)
+					res.Attributes().UpsertString(clientIPLabelName, tc.resourceIP)
 				}
 			}
 
@@ -620,7 +620,7 @@ func TestIPSourceWithPodAssociation(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				res.Attributes().InsertString(tc.labelName, tc.labelValue)
+				res.Attributes().UpsertString(tc.labelName, tc.labelValue)
 			}
 
 			m.testConsume(ctx, traces, metrics, logs, nil)

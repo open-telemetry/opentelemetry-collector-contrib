@@ -71,9 +71,7 @@ func createLogData(numberOfLogs int) plog.Logs {
 			fillComplexAttributeValueMap(logRecord.Attributes().UpsertEmptyMap("map-value"))
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pcommon.NewValueSlice()
-			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-			logRecord.Attributes().Insert("array-value", arrayVal)
+			logRecord.Attributes().UpsertEmptySlice("array-value").AppendEmpty().SetStringVal("array")
 			logRecord.Body().SetStringVal("log contents")
 		default:
 			logRecord.Body().SetStringVal("log contents")

@@ -366,7 +366,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL}
 			},
@@ -393,13 +393,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := sum.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.SetTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("foo", "other")
+				pt1.Attributes().UpsertString("foo", "other")
 
 				return []pmetric.MetricSlice{mL}
 			},
@@ -427,13 +427,13 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetDoubleVal(150.0)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := sum0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
 				pt1.SetStartTimestamp(startTsNanos)
 				pt1.SetTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("foo", "other")
+				pt1.Attributes().UpsertString("foo", "other")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("counter_test2")
@@ -445,7 +445,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt2.SetDoubleVal(100.0)
 				pt2.SetStartTimestamp(startTsNanos)
 				pt2.SetTimestamp(startTsNanos)
-				pt2.Attributes().InsertString("foo", "bar")
+				pt2.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -471,7 +471,7 @@ func Test_OTLPMetricBuilder_counters(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL}
 			},
@@ -554,7 +554,7 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				mL1 := pmetric.NewMetricSlice()
 				m1 := mL1.AppendEmpty()
@@ -565,7 +565,7 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt1.SetDoubleVal(90.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(startTsPlusIntervalNanos)
-				pt1.Attributes().InsertString("foo", "bar")
+				pt1.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0, mL1}
 			},
@@ -590,13 +590,13 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("bar", "foo")
+				pt1.Attributes().UpsertString("bar", "foo")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -628,13 +628,13 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := gauge0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetStartTimestamp(0)
 				pt1.SetTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("bar", "foo")
+				pt1.Attributes().UpsertString("bar", "foo")
 
 				mL1 := pmetric.NewMetricSlice()
 				m1 := mL1.AppendEmpty()
@@ -645,7 +645,7 @@ func Test_OTLPMetricBuilder_gauges(t *testing.T) {
 				pt2.SetDoubleVal(20.0)
 				pt2.SetStartTimestamp(0)
 				pt2.SetTimestamp(startTsPlusIntervalNanos)
-				pt2.Attributes().InsertString("foo", "bar")
+				pt2.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0, mL1}
 			},
@@ -676,7 +676,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt0.SetDoubleVal(100.0)
 				pt0.SetStartTimestamp(0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -701,7 +701,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("theother_not_exists")
@@ -710,12 +710,12 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt1 := gauge1.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(200.0)
 				pt1.SetTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("foo", "bar")
+				pt1.Attributes().UpsertString("foo", "bar")
 
 				pt2 := gauge1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(300.0)
 				pt2.SetTimestamp(startTsNanos)
-				pt2.Attributes().InsertString("bar", "foo")
+				pt2.Attributes().UpsertString("bar", "foo")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -738,7 +738,7 @@ func Test_OTLPMetricBuilder_untype(t *testing.T) {
 				pt0 := gauge0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
 				pt0.SetTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -777,7 +777,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -814,7 +814,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
@@ -823,7 +823,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("key2", "v2")
+				pt1.Attributes().UpsertString("key2", "v2")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -865,7 +865,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
 				pt1.SetCount(3)
@@ -874,7 +874,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt1.SetTimestamp(startTsNanos)
 				pt1.SetStartTimestamp(startTsNanos)
-				pt1.Attributes().InsertString("key2", "v2")
+				pt1.Attributes().UpsertString("key2", "v2")
 
 				m1 := mL0.AppendEmpty()
 				m1.SetName("hist_test2")
@@ -919,7 +919,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 8}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -1008,7 +1008,7 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetStartTimestamp(startTsNanos)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -1106,7 +1106,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(0.0)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
 				q50.SetQuantile(.50)
@@ -1142,7 +1142,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.MetricSlice{mL0}
 			},
@@ -1171,7 +1171,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 				pt0.SetTimestamp(startTsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
-				pt0.Attributes().InsertString("foo", "bar")
+				pt0.Attributes().UpsertString("foo", "bar")
 				qvL := pt0.QuantileValues()
 				q50 := qvL.AppendEmpty()
 				q50.SetQuantile(.50)

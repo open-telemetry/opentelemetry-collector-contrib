@@ -84,15 +84,15 @@ func (rmb *resourceMetricsBuilder) Build(rm pmetric.ResourceMetrics) {
 // setAttributes creates a pcommon.Resource from the fields in the resourceMetricsBuilder.
 func (rmb *resourceMetricsBuilder) setAttributes(resource pcommon.Resource) {
 	attributes := resource.Attributes()
-	attributes.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attributes.InsertString(conventions.AttributeCloudAccountID, rmb.accountID)
-	attributes.InsertString(conventions.AttributeCloudRegion, rmb.region)
+	attributes.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attributes.UpsertString(conventions.AttributeCloudAccountID, rmb.accountID)
+	attributes.UpsertString(conventions.AttributeCloudRegion, rmb.region)
 	serviceNamespace, serviceName := rmb.toServiceAttributes(rmb.namespace)
 	if serviceNamespace != "" {
-		attributes.InsertString(conventions.AttributeServiceNamespace, serviceNamespace)
+		attributes.UpsertString(conventions.AttributeServiceNamespace, serviceNamespace)
 	}
-	attributes.InsertString(conventions.AttributeServiceName, serviceName)
-	attributes.InsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
+	attributes.UpsertString(conventions.AttributeServiceName, serviceName)
+	attributes.UpsertString(attributeAWSCloudWatchMetricStreamName, rmb.metricStreamName)
 }
 
 // toServiceAttributes splits the CloudWatch namespace into service namespace/name
@@ -176,7 +176,7 @@ func (mb *metricBuilder) toDataPoint(dp pmetric.SummaryDataPoint, metric cWMetri
 	max.SetValue(metric.Value.Max)
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(metric.Timestamp)))
 	for k, v := range metric.Dimensions {
-		dp.Attributes().InsertString(ToSemConvAttributeKey(k), v)
+		dp.Attributes().UpsertString(ToSemConvAttributeKey(k), v)
 	}
 }
 

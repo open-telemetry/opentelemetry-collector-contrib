@@ -39,9 +39,9 @@ func fillAttributeMap(mp map[string]interface{}, attr pcommon.Map) {
 		case int64:
 			attr.UpsertInt(k, t)
 		case float64:
-			attr.InsertDouble(k, t)
+			attr.UpsertDouble(k, t)
 		case string:
-			attr.InsertString(k, t)
+			attr.UpsertString(k, t)
 		}
 	}
 }

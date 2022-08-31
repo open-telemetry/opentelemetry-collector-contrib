@@ -77,19 +77,13 @@ func fillLogOne(log plog.LogRecord) {
 	attrs.UpsertDouble("instance_num", 1)
 
 	// nested body map
-	attVal := pcommon.NewValueMap()
-	attNestedVal := pcommon.NewValueMap()
-
-	attMap := attVal.MapVal()
+	attMap := log.Body().SetEmptyMapVal()
 	attMap.UpsertDouble("23", 45)
 	attMap.UpsertString("foo", "bar")
 	attMap.UpsertString("message", "hello there")
-	attNestedMap := attNestedVal.MapVal()
+	attNestedMap := attMap.UpsertEmptyMap("nested")
 	attNestedMap.UpsertString("string", "v1")
 	attNestedMap.UpsertDouble("number", 499)
-	attMap.Insert("nested", attNestedVal)
-	attVal.CopyTo(log.Body())
-
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -99,10 +93,10 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -111,10 +105,10 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 

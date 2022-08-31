@@ -337,7 +337,7 @@ func TestTenantSource(t *testing.T) {
 
 			ld := plog.NewLogs()
 			ld.ResourceLogs().AppendEmpty()
-			ld.ResourceLogs().At(0).Resource().Attributes().InsertString("tenant.name", "acme")
+			ld.ResourceLogs().At(0).Resource().Attributes().UpsertString("tenant.name", "acme")
 
 			tenant, err := exp.tenantSource.GetTenant(ctx, ld)
 			assert.NoError(t, err)
@@ -377,7 +377,7 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
-		lr.Attributes().InsertString("not.in.config", "not allowed")
+		lr.Attributes().UpsertString("not.in.config", "not allowed")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -391,9 +391,9 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lr.Body().SetStringVal("log message")
-		lr.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lr.Attributes().InsertString("severity", "info")
-		lr.Attributes().InsertString("random.attribute", "random attribute")
+		lr.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
+		lr.Attributes().UpsertString("severity", "info")
+		lr.Attributes().UpsertString("random.attribute", "random attribute")
 		lr.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -409,16 +409,16 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
-		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
-		lr1.Attributes().InsertString("severity", "info")
+		lr1.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
+		lr1.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster")
+		lr1.Attributes().UpsertString("severity", "info")
 		lr1.SetTimestamp(ts)
 
 		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
-		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster")
-		lr2.Attributes().InsertString("severity", "info")
+		lr2.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
+		lr2.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster")
+		lr2.Attributes().UpsertString("severity", "info")
 		lr2.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -435,16 +435,16 @@ func TestExporter_logDataToLoki(t *testing.T) {
 
 		lr1 := sl.LogRecords().AppendEmpty()
 		lr1.Body().SetStringVal("log message 1")
-		lr1.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer1")
-		lr1.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster1")
-		lr1.Attributes().InsertString("severity", "debug")
+		lr1.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer1")
+		lr1.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster1")
+		lr1.Attributes().UpsertString("severity", "debug")
 		lr1.SetTimestamp(ts)
 
 		lr2 := sl.LogRecords().AppendEmpty()
 		lr2.Body().SetStringVal("log message 2")
-		lr2.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer2")
-		lr2.Attributes().InsertString(conventions.AttributeK8SClusterName, "mycluster2")
-		lr2.Attributes().InsertString("severity", "error")
+		lr2.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer2")
+		lr2.Attributes().UpsertString(conventions.AttributeK8SClusterName, "mycluster2")
+		lr2.Attributes().UpsertString("severity", "error")
 		lr2.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -459,11 +459,11 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		logs := plog.NewLogs()
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty()
-		lr.Resource().Attributes().InsertString("not.in.config", "not allowed")
+		lr.Resource().Attributes().UpsertString("not.in.config", "not allowed")
 
 		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
-		lri.Attributes().InsertString("not.in.config", "not allowed")
+		lri.Attributes().UpsertString("not.in.config", "not allowed")
 		lri.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -476,13 +476,13 @@ func TestExporter_logDataToLoki(t *testing.T) {
 		logs := plog.NewLogs()
 		ts := pcommon.Timestamp(int64(1) * time.Millisecond.Nanoseconds())
 		lr := logs.ResourceLogs().AppendEmpty()
-		lr.Resource().Attributes().InsertString("resource.name", "myresource")
+		lr.Resource().Attributes().UpsertString("resource.name", "myresource")
 
 		lri := lr.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		lri.Body().SetStringVal("log message")
-		lri.Attributes().InsertString(conventions.AttributeContainerName, "mycontainer")
-		lri.Attributes().InsertString("severity", "info")
-		lri.Attributes().InsertString("random.attribute", "random")
+		lri.Attributes().UpsertString(conventions.AttributeContainerName, "mycontainer")
+		lri.Attributes().UpsertString("severity", "info")
+		lri.Attributes().UpsertString("random.attribute", "random")
 		lri.SetTimestamp(ts)
 
 		pr, numDroppedLogs := exp.logDataToLoki(logs)
@@ -517,13 +517,13 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attributes that match", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertString(conventions.AttributeContainerName, "mycontainer")
-		am.InsertString(conventions.AttributeK8SClusterName, "mycluster")
-		am.InsertString("severity", "debug")
+		am.UpsertString(conventions.AttributeContainerName, "mycontainer")
+		am.UpsertString(conventions.AttributeK8SClusterName, "mycluster")
+		am.UpsertString("severity", "debug")
 		ram := pcommon.NewMap()
-		ram.InsertString("resource.name", "myresource")
+		ram.UpsertString("resource.name", "myresource")
 		// this should overwrite log attribute of the same name
-		ram.InsertString("severity", "info")
+		ram.UpsertString("severity", "info")
 
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		expLs := model.LabelSet{
@@ -537,7 +537,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute matches and the value is a boolean", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertBool("severity", false)
+		am.UpsertBool("severity", false)
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -545,7 +545,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is a double", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertDouble("severity", float64(0))
+		am.UpsertDouble("severity", float64(0))
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -553,7 +553,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is an int", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.InsertInt("severity", 0)
+		am.UpsertInt("severity", 0)
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
@@ -561,7 +561,7 @@ func TestExporter_convertAttributesToLabels(t *testing.T) {
 
 	t.Run("with attribute that matches and the value is null", func(t *testing.T) {
 		am := pcommon.NewMap()
-		am.Insert("severity", pcommon.NewValueEmpty())
+		am.UpsertEmpty("severity")
 		ram := pcommon.NewMap()
 		ls, _ := exp.convertAttributesAndMerge(am, ram)
 		require.Nil(t, ls)
