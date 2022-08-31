@@ -15,10 +15,10 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
 
 import (
-	"errors"
+	"fmt"
 
-	"github.com/hashicorp/go-multierror"
 	"go.mongodb.org/atlas/mongodbatlas"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
@@ -27,17 +27,17 @@ func processMeasurements(
 	mb *metadata.MetricsBuilder,
 	measurements []*mongodbatlas.Measurements,
 ) error {
-	allErrors := make([]error, 0)
+	var errs error
 
 	for _, meas := range measurements {
 		err := metadata.MeasurementsToMetric(mb, meas, false)
 		if err != nil {
-			allErrors = append(allErrors, err)
+			errs = multierr.Append(errs, err)
 		}
 	}
 
-	if len(allErrors) > 0 {
-		return multierror.Append(errors.New("errors occurred while processing measurements"), allErrors...)
+	if errs != nil {
+		return fmt.Errorf("errors occurred while processing measurements: %w", errs)
 	}
 	return nil
 }
