@@ -1085,7 +1085,7 @@ foo 0
 foo_total 1
 `
 
-func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 	// m1 has 3 metrics + 5 internal scraper metrics
