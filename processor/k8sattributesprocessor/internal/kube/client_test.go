@@ -229,6 +229,48 @@ func TestPodHostNetwork(t *testing.T) {
 	assert.False(t, got.Ignore)
 }
 
+// TestPodCreate tests that a new pod, created after otel-collector starts, has its attributes set
+// correctly
+func TestPodCreate(t *testing.T) {
+	c, _ := newTestClient(t)
+	assert.Equal(t, 0, len(c.Pods))
+
+	// pod is created in Pending phase. At this point it has a UID but no start time or pod IP address
+	pod := &api_v1.Pod{}
+	pod.Name = "podD"
+	pod.UID = "11111111-2222-3333-4444-555555555555"
+	c.handlePodAdd(pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is scheduled onto to a node (no changes relevant to this test happen in that event)
+	// pod is started, and given a startTime but not an IP address - it's still Pending at this point
+	startTime := meta_v1.NewTime(time.Now())
+	pod.Status.StartTime = &startTime
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is Running and has an IP address
+	pod.Status.PodIP = "3.3.3.3"
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 2)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "3.3.3.3")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+}
+
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Equal(t, len(c.Pods), 0)
