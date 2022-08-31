@@ -183,7 +183,7 @@ func TestAttrValue(t *testing.T) {
 				mAttr := pcommon.NewValueMap()
 				m := mAttr.MapVal()
 				m.UpsertString("key1", "value1")
-				m.Upsert("key2", pcommon.NewValueEmpty())
+				m.UpsertEmpty("key2")
 				m.UpsertBool("key3", true)
 				m.UpsertInt("key4", 4)
 				m.UpsertDouble("key5", 5.6)
