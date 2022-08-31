@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureb
 go 1.18
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.58.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.59.0
 	go.opentelemetry.io/collector v0.58.1-0.20220830230326-72011ca22dff
 )
 
