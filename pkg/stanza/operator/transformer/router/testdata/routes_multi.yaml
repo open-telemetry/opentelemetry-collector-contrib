@@ -1,8 +1,0 @@
-type: router
-routes:
-  - output: my_json_parser
-    expr: 'body.format == "json"'
-  - output: my_json_parser2
-    expr: 'body.format == "json"2'
-  - output: my_json_parser3
-    expr: 'body.format == "json"3'
