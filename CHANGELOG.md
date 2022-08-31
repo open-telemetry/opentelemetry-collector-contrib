@@ -31,7 +31,6 @@
   Add a new component `azureblobreceiver` that reads logs and traces from Azure Blob Storage
 - `azureeventhubreceiver`: New component to receive logs from Azure Event Hubs (#12786)
 - `headers_setter`: Add support for setting exporter headers from the upstream requests context (#5733, #7945, #4814)
-- `servicegraphprocessor`: Add traces processor that builds a map representing the interrelationships between various services in a system (#9232)
 
 ### 💡 Enhancements 💡
 - `filterprocessor`: Add ability to filter based on logs SeverityText and Body. (#9235)
