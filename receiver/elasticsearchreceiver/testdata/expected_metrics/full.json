@@ -114,6 +114,19 @@
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                         "dataPoints": [
                            {
+                              "asInt": "510027366",
+                              "attributes": [
+                                 {
+                                    "key": "name",
+                                    "value": {
+                                       "stringValue": "parent"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662950372948795000",
+                              "timeUnixNano": "1662950372950468000"
+                           },
+                           {
                               "asInt": "322122547",
                               "attributes": [
                                  {
@@ -172,19 +185,6 @@
                                     "key": "name",
                                     "value": {
                                        "stringValue": "accounting"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811689941624000",
-                              "timeUnixNano": "1661811689943245000"
-                           },
-                           {
-                              "asInt": "510027366",
-                              "attributes": [
-                                 {
-                                    "key": "name",
-                                    "value": {
-                                       "stringValue": "parent"
                                     }
                                  }
                               ],
@@ -2227,6 +2227,21 @@
                      "unit": "{status}"
                   },
                   {
+                     "description": "The number of unfinished fetches.",
+                     "name": "elasticsearch.cluster.in_flight_fetch",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662457988667492000",
+                              "timeUnixNano": "1662457988669427000"
+                           }
+                        ]
+                     },
+                     "unit": "{fetches}"
+                  },
+                  {
                      "description": "The total number of nodes in the cluster.",
                      "name": "elasticsearch.cluster.nodes",
                      "sum": {
@@ -2240,6 +2255,21 @@
                         ]
                      },
                      "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of cluster-level changes that have not yet been executed.",
+                     "name": "elasticsearch.cluster.pending_tasks",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662457988667492000",
+                              "timeUnixNano": "1662457988669427000"
+                           }
+                        ]
+                     },
+                     "unit": "{tasks}"
                   },
                   {
                      "description": "The number of shards in the cluster.",

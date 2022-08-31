@@ -13,7 +13,9 @@ These are the metrics available for this scraper.
 | **elasticsearch.breaker.tripped** | Total number of times the circuit breaker has been triggered and prevented an out of memory error. | 1 | Sum(Int) | <ul> <li>circuit_breaker_name</li> </ul> |
 | **elasticsearch.cluster.data_nodes** | The number of data nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.health** | The health status of the cluster. Health status is based on the state of its primary and replica shards. Green indicates all shards are assigned. Yellow indicates that one or more replica shards are unassigned. Red indicates that one or more primary shards are unassigned, making some data unavailable. | {status} | Sum(Int) | <ul> <li>health_status</li> </ul> |
+| **elasticsearch.cluster.in_flight_fetch** | The number of unfinished fetches. | {fetches} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.nodes** | The total number of nodes in the cluster. | {nodes} | Sum(Int) | <ul> </ul> |
+| **elasticsearch.cluster.pending_tasks** | The number of cluster-level changes that have not yet been executed. | {tasks} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.published_states.differences** | Number of differences between published cluster states. | 1 | Sum(Int) | <ul> <li>cluster_published_difference_state</li> </ul> |
 | **elasticsearch.cluster.published_states.full** | Number of published cluster states. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.cluster.shards** | The number of shards in the cluster. | {shards} | Sum(Int) | <ul> <li>shard_state</li> </ul> |

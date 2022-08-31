@@ -999,7 +999,7 @@
                      },
                      "unit": "By"
                   },
-		                    {
+                  {
                      "description": "The amount of unallocated disk space across all file stores for this node.",
                      "name": "elasticsearch.node.fs.disk.free",
                      "sum": {
