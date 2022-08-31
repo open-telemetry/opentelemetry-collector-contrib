@@ -26,8 +26,9 @@ import (
 // BaseConfig is the common configuration of a stanza-based receiver
 type BaseConfig struct {
 	config.ReceiverSettings `mapstructure:",squash"`
-	Operators               OperatorConfigs `mapstructure:"operators"`
-	Converter               ConverterConfig `mapstructure:"converter"`
+	Operators               OperatorConfigs     `mapstructure:"operators"`
+	Converter               ConverterConfig     `mapstructure:"converter"`
+	StorageID               *config.ComponentID `mapstructure:"storage"`
 }
 
 // OperatorConfigs is an alias that allows for unmarshaling outside of mapstructure
