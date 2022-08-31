@@ -263,7 +263,7 @@ metrics:
     sum:
       value_type: int
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
     attributes: [database, lock_type, lock_mode]
   mongodb.locks.acquire_wait_count:
     description: Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.
@@ -272,7 +272,7 @@ metrics:
     sum:
       value_type: int
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
     attributes: [database, lock_type, lock_mode]
   mongodb.locks.time_acquiring_micros:
     description: Cumulative wait time in microseconds for the lock acquisitions.
@@ -281,7 +281,7 @@ metrics:
     sum:
       value_type: int
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
     attributes: [database, lock_type, lock_mode]
   mongodb.locks.deadlock_count:
     description: Number of times the lock acquisitions encountered deadlocks.
@@ -290,5 +290,5 @@ metrics:
     sum:
       value_type: int
       aggregation: cumulative
-      monotonic: false
+      monotonic: true
     attributes: [database, lock_type, lock_mode]

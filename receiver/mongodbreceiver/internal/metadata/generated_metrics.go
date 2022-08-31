@@ -1051,9 +1051,8 @@ func (m *metricMongodbLocksAcquireCount) init() {
 	m.data.SetName("mongodb.locks.acquire_count")
 	m.data.SetDescription("Number of times the lock was acquired in the specified mode.")
 	m.data.SetUnit("{count}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1064,10 +1063,10 @@ func (m *metricMongodbLocksAcquireCount) recordDataPoint(start pcommon.Timestamp
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("lock_type", lockTypeAttributeValue)
-	dp.Attributes().InsertString("lock_mode", lockModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1106,9 +1105,8 @@ func (m *metricMongodbLocksAcquireWaitCount) init() {
 	m.data.SetName("mongodb.locks.acquire_wait_count")
 	m.data.SetDescription("Number of times the lock acquisitions encountered waits because the locks were held in a conflicting mode.")
 	m.data.SetUnit("{count}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1119,10 +1117,10 @@ func (m *metricMongodbLocksAcquireWaitCount) recordDataPoint(start pcommon.Times
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("lock_type", lockTypeAttributeValue)
-	dp.Attributes().InsertString("lock_mode", lockModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1161,9 +1159,8 @@ func (m *metricMongodbLocksDeadlockCount) init() {
 	m.data.SetName("mongodb.locks.deadlock_count")
 	m.data.SetDescription("Number of times the lock acquisitions encountered deadlocks.")
 	m.data.SetUnit("{count}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1174,10 +1171,10 @@ func (m *metricMongodbLocksDeadlockCount) recordDataPoint(start pcommon.Timestam
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("lock_type", lockTypeAttributeValue)
-	dp.Attributes().InsertString("lock_mode", lockModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1216,9 +1213,8 @@ func (m *metricMongodbLocksTimeAcquiringMicros) init() {
 	m.data.SetName("mongodb.locks.time_acquiring_micros")
 	m.data.SetDescription("Cumulative wait time in microseconds for the lock acquisitions.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1229,10 +1225,10 @@ func (m *metricMongodbLocksTimeAcquiringMicros) recordDataPoint(start pcommon.Ti
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetIntVal(val)
-	dp.Attributes().InsertString("database", databaseAttributeValue)
-	dp.Attributes().InsertString("lock_type", lockTypeAttributeValue)
-	dp.Attributes().InsertString("lock_mode", lockModeAttributeValue)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database", databaseAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+	dp.Attributes().PutStr("lock_mode", lockModeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
