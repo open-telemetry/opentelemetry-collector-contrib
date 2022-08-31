@@ -1,4 +1,0 @@
-change_type: enhancement
-component: dockerstatsreceiver
-note: Change relevant memory metrics from gauges to sums, so they are aligned with spec recommendations and can be aggregated.
-issues: [9794]
