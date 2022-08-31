@@ -26,14 +26,14 @@ func serializeSummaryPoint(name, prefix string, dims dimensions.NormalizedDimens
 		return "", nil
 	}
 
-	min, max, sum := summaryDataPointToSummary(dp)
+	min, max := summaryDataPointToStats(dp)
 
 	dm, err := dtMetric.NewMetric(
 		name,
 		dtMetric.WithPrefix(prefix),
 		dtMetric.WithDimensions(dims),
 		dtMetric.WithTimestamp(dp.Timestamp().AsTime()),
-		dtMetric.WithFloatSummaryValue(min, max, sum, int64(dp.Count())),
+		dtMetric.WithFloatSummaryValue(min, max, dp.Sum(), int64(dp.Count())),
 	)
 
 	if err != nil {
@@ -70,9 +70,9 @@ func serializeSummary(logger *zap.Logger, prefix string, metric pmetric.Metric, 
 	return metricLines
 }
 
-func summaryDataPointToSummary(dp pmetric.SummaryDataPoint) (float64, float64, float64) {
+func summaryDataPointToStats(dp pmetric.SummaryDataPoint) (float64, float64) {
 	if dp.QuantileValues().Len() == 0 {
-		return 0, 0, dp.Sum()
+		return 0, 0
 	}
 
 	min, max := dp.QuantileValues().At(0).Value(), dp.QuantileValues().At(0).Value()
@@ -94,5 +94,5 @@ func summaryDataPointToSummary(dp pmetric.SummaryDataPoint) (float64, float64, f
 			max = mean
 		}
 	}
-	return min, max, dp.Sum()
+	return min, max
 }
