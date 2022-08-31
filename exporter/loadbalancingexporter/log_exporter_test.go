@@ -297,7 +297,7 @@ func TestNoLogsInBatch(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pcommon.InvalidTraceID(), res)
+			assert.Equal(t, pcommon.EmptyTraceID, res)
 		})
 	}
 }
@@ -342,7 +342,7 @@ func TestRollingUpdatesWhenConsumeLogs(t *testing.T) {
 
 	// simulate rolling updates, the dns resolver should resolve in the following order
 	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	mu := sync.Mutex{}

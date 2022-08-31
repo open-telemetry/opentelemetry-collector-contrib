@@ -40,7 +40,7 @@ func (acc *metricDataAccumulator) getMetricsData(containerStatsMap map[string]*C
 
 		containerResource := containerResource(containerMetadata, logger)
 		taskResource.Attributes().Range(func(k string, av pcommon.Value) bool {
-			containerResource.Attributes().Upsert(k, av)
+			av.CopyTo(containerResource.Attributes().UpsertEmpty(k))
 			return true
 		})
 

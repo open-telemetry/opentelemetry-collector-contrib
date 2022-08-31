@@ -173,7 +173,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.FlagsStruct().SetIsSampled(true)
+	log.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
 	log.SetSeverityNumber(1)
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))

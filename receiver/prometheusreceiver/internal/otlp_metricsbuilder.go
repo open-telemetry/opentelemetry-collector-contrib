@@ -86,13 +86,10 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, 
 }
 
 type metricBuilder struct {
-	metrics              pmetric.MetricSlice
 	families             map[string]*metricFamily
 	hasData              bool
 	hasInternalMetric    bool
 	mc                   MetadataCache
-	numTimeseries        int
-	droppedTimeseries    int
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
 	startTime            float64
@@ -109,12 +106,9 @@ func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetric
 		regex, _ = regexp.Compile(startTimeMetricRegex)
 	}
 	return &metricBuilder{
-		metrics:              pmetric.NewMetricSlice(),
 		families:             map[string]*metricFamily{},
 		mc:                   mc,
 		logger:               logger,
-		numTimeseries:        0,
-		droppedTimeseries:    0,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: regex,
 		intervalStartTimeMs:  intervalStartTimeMs,
@@ -129,14 +123,14 @@ func (b *metricBuilder) matchStartTimeMetric(metricName string) bool {
 	return metricName == startTimeMetricName
 }
 
-// AddDataPoint is for feeding prometheus data complexValue in its processing order
+// AddDataPoint is for feeding prometheus data values in its processing order
 func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error {
 	// Any datapoint with duplicate labels MUST be rejected per:
 	// * https://github.com/open-telemetry/wg-prometheus/issues/44
 	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
 	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	seen := make(map[string]bool)
-	dupLabels := make([]string, 0, len(ls))
+	seen := make(map[string]bool, len(ls))
+	var dupLabels []string
 	for _, label := range ls {
 		if _, ok := seen[label.Name]; ok {
 			dupLabels = append(dupLabels, label.Name)
@@ -151,12 +145,9 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	metricName := ls.Get(model.MetricNameLabel)
 	switch {
 	case metricName == "":
-		b.numTimeseries++
-		b.droppedTimeseries++
 		return errMetricNameNotFound
 	case isInternalMetric(metricName):
 		b.hasInternalMetric = true
-		lm := ls.Map()
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -164,12 +155,12 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 			if v == 0.0 {
 				b.logger.Warn("Failed to scrape Prometheus endpoint",
 					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
+					zap.Stringer("target_labels", ls))
 			} else {
 				b.logger.Warn("The 'up' metric contains invalid value",
 					zap.Float64("value", v),
 					zap.Int64("scrape_timestamp", t),
-					zap.String("target_labels", fmt.Sprintf("%v", lm)))
+					zap.Stringer("target_labels", ls))
 			}
 		}
 	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
@@ -195,22 +186,19 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	return curMF.Add(metricName, ls, t, v)
 }
 
-// Build an pmetric.MetricSlice based on all added data complexValue.
+// appendMetrics appends all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
-func (b *metricBuilder) Build() (*pmetric.MetricSlice, int, int, error) {
+func (b *metricBuilder) appendMetrics(metrics pmetric.MetricSlice) error {
 	if !b.hasData {
 		if b.hasInternalMetric {
-			metricsL := pmetric.NewMetricSlice()
-			return &metricsL, 0, 0, nil
+			return nil
 		}
-		return nil, 0, 0, errNoDataToBuild
+		return errNoDataToBuild
 	}
 
 	for _, mf := range b.families {
-		ts, dts := mf.toMetric(b.metrics)
-		b.numTimeseries += ts
-		b.droppedTimeseries += dts
+		mf.appendMetric(metrics)
 	}
 
-	return &b.metrics, b.numTimeseries, b.droppedTimeseries, nil
+	return nil
 }

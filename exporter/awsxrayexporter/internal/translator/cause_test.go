@@ -34,26 +34,22 @@ func TestCauseWithExceptions(t *testing.T) {
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
+	event1.Attributes().UpsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().UpsertString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().UpsertString(conventions.AttributeExceptionStacktrace, `java.lang.IllegalStateException: state is not legal
 	at io.opentelemetry.sdk.trace.RecordEventsReadableSpanTest.recordException(RecordEventsReadableSpanTest.java:626)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 Caused by: java.lang.IllegalArgumentException: bad argument`)
-	attributes.CopyTo(event1.Attributes())
 
 	event2 := span.Events().AppendEmpty()
 	event2.SetName(ExceptionEventName)
-	attributes = pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "EmptyError")
-	attributes.CopyTo(event2.Attributes())
+	event2.Attributes().UpsertString(conventions.AttributeExceptionType, "EmptyError")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.True(t, isFault)
@@ -97,16 +93,14 @@ Caused by: java.lang.IllegalArgumentException: bad argument`
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName(ExceptionEventName)
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
-	attributes.InsertString(conventions.AttributeExceptionMessage, "bad state")
-	attributes.InsertString(conventions.AttributeExceptionStacktrace, exceptionStack)
-	attributes.CopyTo(event1.Attributes())
+	event1.Attributes().UpsertString(conventions.AttributeExceptionType, "java.lang.IllegalStateException")
+	event1.Attributes().UpsertString(conventions.AttributeExceptionMessage, "bad state")
+	event1.Attributes().UpsertString(conventions.AttributeExceptionStacktrace, exceptionStack)
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)

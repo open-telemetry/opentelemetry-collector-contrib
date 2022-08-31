@@ -521,10 +521,10 @@ func compareScopeLogs(expected, actual plog.ScopeLogs) error {
 }
 
 func compareLogRecord(expected, actual plog.LogRecord) error {
-	if expected.FlagsStruct().AsRaw() != actual.FlagsStruct().AsRaw() {
+	if expected.FlagsStruct() != actual.FlagsStruct() {
 		return fmt.Errorf("log record Flags doesn't match (expected: %d, actual: %d)",
-			expected.FlagsStruct().AsRaw(),
-			actual.FlagsStruct().AsRaw())
+			expected.FlagsStruct(),
+			actual.FlagsStruct())
 	}
 
 	if expected.DroppedAttributesCount() != actual.DroppedAttributesCount() {

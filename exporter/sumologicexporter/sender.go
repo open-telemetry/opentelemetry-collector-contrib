@@ -176,7 +176,7 @@ func (s *sender) logToText(record plog.LogRecord) string {
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
 	data := s.filter.filterOut(record.Attributes())
-	data.orig.Upsert(logKey, record.Body())
+	record.Body().CopyTo(data.orig.UpsertEmpty(logKey))
 
 	nextLine, err := json.Marshal(data.orig.AsRaw())
 	if err != nil {

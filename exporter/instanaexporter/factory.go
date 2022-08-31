@@ -56,28 +56,19 @@ func createDefaultConfig() config.Exporter {
 
 // createTracesExporter creates a trace exporter based on this configuration
 func createTracesExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.TracesExporter, error) {
-	// TODO: Lines commented out until implementation is available
-	// cfg := config.(*Config)
+	cfg := config.(*Config)
 
 	ctx, cancel := context.WithCancel(ctx)
 
-	// TODO: Lines commented out until implementation is available
-	var pushConvertedTraces consumer.ConsumeTracesFunc
-	/*instanaExporter, err := newInstanaExporter(cfg, set)
-	if err != nil {
-		cancel()
-		return nil, err
-	}*/
+	instanaExporter := newInstanaExporter(cfg, set)
 
-	//TODO: Lines commented out until implementation is available
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		config,
-		// instanaExporter.pushConvertedTraces,
-		pushConvertedTraces,
+		instanaExporter.pushConvertedTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		// exporterhelper.WithStart(instanaExporter.start),
+		exporterhelper.WithStart(instanaExporter.start),
 		// Disable Timeout/RetryOnFailure and SendingQueue
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),

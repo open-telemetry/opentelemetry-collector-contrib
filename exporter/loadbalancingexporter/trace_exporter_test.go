@@ -444,7 +444,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 	// simulate rolling updates, the dns resolver should resolve in the following order
 	// ["127.0.0.1"] -> ["127.0.0.1", "127.0.0.2"] -> ["127.0.0.2"]
-	res, err := newDNSResolver(zap.NewNop(), "service-1", "")
+	res, err := newDNSResolver(zap.NewNop(), "service-1", "", 5*time.Second, 1*time.Second)
 	require.NoError(t, err)
 
 	mu := sync.Mutex{}
@@ -627,7 +627,7 @@ func simpleTraceWithServiceName(id pcommon.TraceID) ptrace.Traces {
 
 func fillResource(resource pcommon.Resource, svc string) {
 	attrs := resource.Attributes()
-	attrs.InsertString("service.name", svc)
+	attrs.UpsertString("service.name", svc)
 }
 
 func simpleConfig() *Config {
