@@ -29,7 +29,7 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "instana"
 	// The stability level of the exporter.
-	stability = component.StabilityLevelInDevelopment
+	stability = component.StabilityLevelAlpha
 )
 
 // NewFactory creates an Instana exporter factory

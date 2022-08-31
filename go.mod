@@ -22,6 +22,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.59.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.59.0
@@ -662,6 +663,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter => ./exporter/humioexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ./exporter/influxdbexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ./exporter/instanaexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ./exporter/jaegerexporter
 
