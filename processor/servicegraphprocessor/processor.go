@@ -294,6 +294,9 @@ func (p *processor) aggregateMetricsForEdge(e *store.Edge) {
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
 	p.updateCountMetrics(metricKey)
+	if e.Failed {
+		p.updateErrorMetrics(metricKey)
+	}
 	p.updateDurationMetrics(metricKey, duration)
 }
 
@@ -313,9 +316,9 @@ func (p *processor) dimensionsForSeries(key string) (pcommon.Map, bool) {
 	return pcommon.Map{}, false
 }
 
-func (p *processor) updateCountMetrics(key string) {
-	p.reqTotal[key]++
-}
+func (p *processor) updateCountMetrics(key string) { p.reqTotal[key]++ }
+
+func (p *processor) updateErrorMetrics(key string) { p.reqFailedTotal[key]++ }
 
 func (p *processor) updateDurationMetrics(key string, duration float64) {
 	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
@@ -364,6 +367,27 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("request_total")
+		mCount.Sum().SetIsMonotonic(true)
+		// TODO: Support other aggregation temporalities
+		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+
+		dpCalls := mCount.Sum().DataPoints().AppendEmpty()
+		dpCalls.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+		dpCalls.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		dpCalls.SetIntVal(c)
+
+		dimensions, ok := p.dimensionsForSeries(key)
+		if !ok {
+			return fmt.Errorf("failed to find dimensions for key %s", key)
+		}
+
+		dimensions.CopyTo(dpCalls.Attributes())
+	}
+
+	for key, c := range p.reqFailedTotal {
+		mCount := ilm.Metrics().AppendEmpty()
+		mCount.SetDataType(pmetric.MetricDataTypeSum)
+		mCount.SetName("request_failed_total")
 		mCount.Sum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
