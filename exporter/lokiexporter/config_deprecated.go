@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/common/model"
 )
 
+// Deprecated: [v0.57.0] will be removed without replacement by v0.61.0. See the Config#Tenant for alternatives.
 type Tenant struct {
 	// Source defines where to obtain the tenant ID. Possible values: static, context, attribute.
 	Source string `mapstruct:"source"`
@@ -31,6 +32,7 @@ type Tenant struct {
 }
 
 // LabelsConfig defines the labels-related configuration
+// Deprecated: [v0.57.0] will be removed without replacement by v0.61.0. See the Config#Labels for alternatives.
 type LabelsConfig struct {
 	// Attributes are the log record attributes that are allowed to be added as labels on a log stream.
 	Attributes map[string]string `mapstructure:"attributes"`

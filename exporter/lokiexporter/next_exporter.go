@@ -26,6 +26,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -116,11 +117,18 @@ func logDataToLoki(logger *zap.Logger, ld plog.Logs) (pr *logproto.PushRequest) 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		ills := rls.At(i).ScopeLogs()
-		resource := rls.At(i).Resource()
+
+		// we may remove attributes, so we make a copy and change our version
+		resource := pcommon.NewResource()
+		rls.At(i).Resource().CopyTo(resource)
+
 		for j := 0; j < ills.Len(); j++ {
 			logs := ills.At(j).LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
+
+				// similarly, we may remove attributes, so change only our version
+				log := plog.NewLogRecord()
+				logs.At(k).CopyTo(log)
 
 				mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
 				// remove the attributes that were promoted to labels

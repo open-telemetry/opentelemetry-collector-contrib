@@ -86,13 +86,14 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 }
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
-	// we remove the hints by default
-	attrs.Remove(hintAttributes)
-	attrs.Remove(hintResources)
+	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
+		if s == hintAttributes || s == hintResources {
+			return true
+		}
 
-	for k := range labels {
-		attrs.Remove(string(k))
-	}
+		_, exists := labels[model.LabelName(s)]
+		return exists
+	})
 }
 
 func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource) (*logproto.Entry, error) {
