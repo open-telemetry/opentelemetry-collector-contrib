@@ -14,7 +14,11 @@
 
 package store // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 
-import "time"
+import (
+	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+)
 
 type ConnectionType string
 
@@ -28,6 +32,7 @@ const (
 type Edge struct {
 	key string
 
+	TraceID                            pcommon.TraceID
 	ConnectionType                     ConnectionType
 	ServerService, ClientService       string
 	ServerLatencySec, ClientLatencySec float64

@@ -27,9 +27,9 @@ Service graphs work by inspecting traces and looking for spans with parent-child
 The processor uses the OpenTelemetry semantic conventions to detect a myriad of requests.
 It currently supports the following requests:
 
-* A direct request between two services where the outgoing and the incoming span must have span.kind client and server respectively.
-* A request across a messaging system where the outgoing and the incoming span must have span.kind producer and consumer respectively.
-* A database request; in this case the processor looks for spans containing attributes span.kind=client as well as db.name.
+* A direct request between two services where the outgoing and the incoming span must have `span.kind` client and server respectively.
+* A request across a messaging system where the outgoing and the incoming span must have `span.kind` producer and consumer respectively.
+* A database request; in this case the processor looks for spans containing attributes `span.kind`=client as well as db.name.
 
 Every span that can be paired up to form a request is kept in an in-memory store,
 until its corresponding pair span is received or the maximum waiting time has passed.

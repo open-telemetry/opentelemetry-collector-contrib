@@ -30,6 +30,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
@@ -76,8 +77,6 @@ type processor struct {
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) *processor {
-	logger.Info("Building servicegraphprocessor")
-
 	pConfig := config.(*Config)
 
 	bounds := defaultLatencyHistogramBucketsMs
@@ -104,8 +103,6 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 }
 
 func (p *processor) Start(_ context.Context, host component.Host) error {
-	p.logger.Info("Starting servicegraphprocessor")
-
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	exporters := host.GetExporters()
@@ -146,7 +143,7 @@ func (p *processor) Capabilities() consumer.Capabilities {
 
 func (p *processor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	if err := p.aggregateMetrics(ctx, td); err != nil {
-		return fmt.Errorf("failed to aggregate md: %w", err)
+		return fmt.Errorf("failed to aggregate metrics: %w", err)
 	}
 
 	md, err := p.buildMetrics()
@@ -199,18 +196,19 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					connectionType = store.MessagingSystem
 					fallthrough
 				case ptrace.SpanKindClient:
-					traceID := span.TraceID().HexString()
-					key := buildEdgeKey(traceID, span.SpanID().HexString())
+					traceID := span.TraceID()
+					key := buildEdgeKey(traceID.HexString(), span.SpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
+						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ClientService = serviceName
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-						e.Failed = e.Failed || span.Status().Code() == 2
+						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
 
 						// A database request will only have one span, we don't wait for the server
 						// span but just copy details from the client span
-						if dbName, ok := findAttributeValue("db.name", rAttributes, span.Attributes()); ok {
+						if dbName, ok := findAttributeValue(semconv.AttributeDBName, rAttributes, span.Attributes()); ok {
 							e.ConnectionType = store.Database
 							e.ServerService = dbName
 							e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
@@ -221,13 +219,14 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					connectionType = store.MessagingSystem
 					fallthrough
 				case ptrace.SpanKindServer:
-					traceID := span.TraceID().HexString()
-					key := buildEdgeKey(traceID, span.ParentSpanID().HexString())
+					traceID := span.TraceID()
+					key := buildEdgeKey(traceID.HexString(), span.ParentSpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
+						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ServerService = serviceName
 						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
-						e.Failed = e.Failed || span.Status().Code() == 2
+						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(e.Dimensions, rAttributes, span.Attributes())
 					})
 				default:
@@ -264,12 +263,24 @@ func (p *processor) upsertDimensions(m map[string]string, resourceAttr pcommon.M
 }
 
 func (p *processor) onComplete(e *store.Edge) {
-	p.logger.Debug("edge completed")
+	p.logger.Debug(
+		"edge completed",
+		zap.String("client_service", e.ClientService),
+		zap.String("server_service", e.ServerService),
+		zap.String("connection_type", string(e.ConnectionType)),
+		zap.String("trace_id", e.TraceID.HexString()),
+	)
 	p.aggregateMetricsForEdge(e)
 }
 
-func (p *processor) onExpire(*store.Edge) {
-	p.logger.Debug("edge expired")
+func (p *processor) onExpire(e *store.Edge) {
+	p.logger.Debug(
+		"edge expired",
+		zap.String("client_service", e.ClientService),
+		zap.String("server_service", e.ServerService),
+		zap.String("connection_type", string(e.ConnectionType)),
+		zap.String("trace_id", e.TraceID.HexString()),
+	)
 	stats.Record(context.Background(), statExpiredEdges.M(1))
 }
 

@@ -66,7 +66,7 @@ func TestStoreUpsertEdge(t *testing.T) {
 	// Insert an edge that will immediately expire
 	isNew, err = s.UpsertEdge(keyStr, func(e *Edge) {
 		e.ClientService = clientService
-		e.expiration = 0
+		e.expiration = time.UnixMicro(0)
 	})
 	require.NoError(t, err)
 	require.Equal(t, true, isNew)
