@@ -80,7 +80,7 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.89 // indirect
+	github.com/aws/aws-sdk-go v1.44.90 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.16.13 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.17.4 // indirect
