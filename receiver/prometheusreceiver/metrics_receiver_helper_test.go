@@ -126,7 +126,7 @@ type testData struct {
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
-	metricPaths := make([]string, 0)
+	var metricPaths []string
 	for _, t := range tds {
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
@@ -233,7 +233,7 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 }
 
 func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.ResourceMetrics {
-	out := make([]pmetric.ResourceMetrics, 0)
+	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
@@ -656,11 +656,7 @@ func splitMetricsByTarget(metrics []pmetric.Metrics) map[string][]pmetric.Resour
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
-			pResult, ok := pResults[name.AsString()]
-			if !ok {
-				pResult = make([]pmetric.ResourceMetrics, 0)
-			}
-			pResults[name.AsString()] = append(pResult, rms.At(i))
+			pResults[name.AsString()] = append(pResults[name.AsString()], rms.At(i))
 		}
 	}
 	return pResults

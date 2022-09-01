@@ -109,7 +109,7 @@ func (tc tokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T
 	reader := newReader(tc.Raw)
 
 	return func(t *testing.T) {
-		tokenized := make([]string, 0)
+		var tokenized []string
 		for i := 0; i < 1+tc.AdditionalIterations; i++ {
 			// sleep before next iterations
 			if i > 0 {
@@ -161,10 +161,9 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:              "NoMatches",
-			Pattern:           `LOGSTART \d+ `,
-			Raw:               []byte(`file that has no matches in it`),
-			ExpectedTokenized: []string{},
+			Name:    "NoMatches",
+			Pattern: `LOGSTART \d+ `,
+			Raw:     []byte(`file that has no matches in it`),
 		},
 		{
 			Name:    "PrecedingNonMatches",
@@ -210,8 +209,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 				return newRaw
 			}(),
-			ExpectedError:     errors.New("bufio.Scanner: token too long"),
-			ExpectedTokenized: []string{},
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
 			Name:    "MultipleMultilineLogs",
@@ -223,10 +221,9 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:              "LogsWithoutFlusher",
-			Pattern:           `^LOGSTART \d+`,
-			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			ExpectedTokenized: []string{},
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGSTART \d+`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -343,10 +340,9 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:              "NoMatches",
-			Pattern:           `LOGEND \d+`,
-			Raw:               []byte(`file that has no matches in it`),
-			ExpectedTokenized: []string{},
+			Name:    "NoMatches",
+			Pattern: `LOGEND \d+`,
+			Raw:     []byte(`file that has no matches in it`),
 		},
 		{
 			Name:    "NonMatchesAfter",
@@ -388,8 +384,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 				return newRaw
 			}(),
-			ExpectedTokenized: []string{},
-			ExpectedError:     errors.New("bufio.Scanner: token too long"),
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
 			Name:    "MultipleMultilineLogs",
@@ -401,11 +396,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:              "LogsWithoutFlusher",
-			Pattern:           `^LOGEND.*$`,
-			Raw:               []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			ExpectedTokenized: []string{},
-			Flusher:           &Flusher{},
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGEND.*$`,
+			Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			Flusher: &Flusher{},
 		},
 		{
 			Name:    "LogsWithFlusher",
@@ -506,9 +500,8 @@ func TestNewlineSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:              "NoTailingNewline",
-			Raw:               []byte(`foo`),
-			ExpectedTokenized: []string{},
+			Name: "NoTailingNewline",
+			Raw:  []byte(`foo`),
 		},
 		{
 			Name: "HugeLog100",
@@ -539,14 +532,12 @@ func TestNewlineSplitFunc(t *testing.T) {
 				newRaw = append(newRaw, '\n')
 				return newRaw
 			}(),
-			ExpectedTokenized: []string{},
-			ExpectedError:     errors.New("bufio.Scanner: token too long"),
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:              "LogsWithoutFlusher",
-			Raw:               []byte("LOGPART log1"),
-			ExpectedTokenized: []string{},
-			Flusher:           &Flusher{},
+			Name:    "LogsWithoutFlusher",
+			Raw:     []byte("LOGPART log1"),
+			Flusher: &Flusher{},
 		},
 		{
 			Name: "LogsWithFlusher",
@@ -598,7 +589,7 @@ func (tc noSplitTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) 
 	return func(t *testing.T) {
 		scanner := bufio.NewScanner(bytes.NewReader(tc.Raw))
 		scanner.Split(splitFunc)
-		tokenized := make([][]byte, 0)
+		var tokenized [][]byte
 		for {
 			ok := scanner.Scan()
 			if !ok {
@@ -758,7 +749,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
 
-			tokens := [][]byte{}
+			var tokens [][]byte
 			for {
 				ok := scanner.Scan()
 				if !ok {

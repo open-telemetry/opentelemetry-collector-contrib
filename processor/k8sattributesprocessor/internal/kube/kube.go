@@ -244,7 +244,7 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, ta
 			if r.KeyRegex.MatchString(k) && v != "" {
 				var name string
 				if r.HasKeyRegexReference {
-					result := []byte{}
+					var result []byte
 					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
 				} else {
 					name = fmt.Sprintf(formatter, k)

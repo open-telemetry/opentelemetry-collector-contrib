@@ -22,37 +22,13 @@ import (
 )
 
 func convertTraceID(traceID pcommon.TraceID) string {
-	const byteLength = 16
-
 	bytes := traceID.Bytes()
-	traceBytes := make([]byte, 0)
-
-	for (len(traceBytes) + len(bytes)) < byteLength {
-		traceBytes = append(traceBytes, 0)
-	}
-
-	for _, byte := range bytes {
-		traceBytes = append(traceBytes, byte)
-	}
-
-	return hex.EncodeToString(traceBytes)
+	return hex.EncodeToString(bytes[:])
 }
 
 func convertSpanID(spanID pcommon.SpanID) string {
-	const byteLength = 8
-
 	bytes := spanID.Bytes()
-	spanBytes := make([]byte, 0)
-
-	for (len(spanBytes) + len(bytes)) < byteLength {
-		spanBytes = append(spanBytes, 0)
-	}
-
-	for _, byte := range bytes {
-		spanBytes = append(spanBytes, byte)
-	}
-
-	return hex.EncodeToString(spanBytes)
+	return hex.EncodeToString(bytes[:])
 }
 
 func otelKindToInstanaKind(otelKind ptrace.SpanKind) (string, bool) {

@@ -119,7 +119,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics: *jobmanagerMetricsResponse,
 	}
 
-	taskmanagerMetricsInstances := []*models.TaskmanagerMetrics{}
+	var taskmanagerMetricsInstances []*models.TaskmanagerMetrics
 	taskmanagerMetricsInstances = append(taskmanagerMetricsInstances, &models.TaskmanagerMetrics{
 		Host:          "mock-host",
 		TaskmanagerID: "mock-taskmanager-id",
@@ -131,7 +131,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics:       *taskmanagerMetricsResponse,
 	})
 
-	jobsMetricsInstances := []*models.JobMetrics{}
+	var jobsMetricsInstances []*models.JobMetrics
 	jobsMetricsInstances = append(jobsMetricsInstances, &models.JobMetrics{
 		Host:    "mock-host",
 		JobName: "mock-job-name",
@@ -143,7 +143,7 @@ func TestScraperScrape(t *testing.T) {
 		Metrics: *jobsMetricsResponse,
 	})
 
-	subtaskMetricsInstances := []*models.SubtaskMetrics{}
+	var subtaskMetricsInstances []*models.SubtaskMetrics
 	subtaskMetricsInstances = append(subtaskMetricsInstances, &models.SubtaskMetrics{
 		Host:          "mock-host",
 		TaskmanagerID: "mock-taskmanager-id",
@@ -223,8 +223,8 @@ func TestScraperScrape(t *testing.T) {
 			desc: "Successful Collection no jobs running",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
-				jobsEmptyInstances := []*models.JobMetrics{}
-				subtaskEmptyInstances := []*models.SubtaskMetrics{}
+				var jobsEmptyInstances []*models.JobMetrics
+				var subtaskEmptyInstances []*models.SubtaskMetrics
 				require.NoError(t, err)
 				mockClient.On("GetJobmanagerMetrics", mock.Anything).Return(&jobmanagerMetrics, nil)
 				mockClient.On("GetTaskmanagersMetrics", mock.Anything).Return(taskmanagerMetricsInstances, nil)

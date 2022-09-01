@@ -191,7 +191,7 @@ func createKubernetesProcessor(
 
 func createProcessorOpts(cfg config.Processor) []option {
 	oCfg := cfg.(*Config)
-	opts := []option{}
+	var opts []option
 	if oCfg.Passthrough {
 		opts = append(opts, withPassthrough())
 	}

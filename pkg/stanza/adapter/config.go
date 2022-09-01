@@ -63,7 +63,7 @@ func (cfg BaseConfig) DecodeOperatorConfigs() ([]operator.Config, error) {
 	}
 
 	yamlBytes, _ := yaml.Marshal(cfg.Operators)
-	operatorCfgs := []operator.Config{}
+	var operatorCfgs []operator.Config
 	if err := yaml.Unmarshal(yamlBytes, &operatorCfgs); err != nil {
 		return nil, err
 	}

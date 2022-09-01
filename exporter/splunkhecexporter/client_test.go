@@ -60,7 +60,7 @@ func newTestClient(respCode int, respBody string) (*http.Client, *[]http.Header)
 
 func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Client, *[]http.Header) {
 	index := 0
-	headers := make([]http.Header, 0)
+	var headers []http.Header
 
 	return &http.Client{
 		Transport: testRoundTripper(func(req *http.Request) *http.Response {

@@ -263,7 +263,7 @@ func Test_export(t *testing.T) {
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
-		unzipped := []byte{}
+		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
 		require.NoError(t, err)

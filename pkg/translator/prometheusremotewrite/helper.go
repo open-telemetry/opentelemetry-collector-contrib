@@ -123,10 +123,6 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 		_, ok := tsMap[sig]
 		if ok {
 			if tsMap[sig].Samples != nil {
-				if tsMap[sig].Exemplars == nil {
-					tsMap[sig].Exemplars = make([]prompb.Exemplar, 0)
-				}
-
 				if exemplar.Value <= bound {
 					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
 					return
@@ -317,7 +313,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	promExemplars := getPromExemplars(pt)
 
-	bucketBounds := make([]bucketBoundsData, 0)
+	var bucketBounds []bucketBoundsData
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 	for index, bound := range pt.ExplicitBounds().AsRaw() {

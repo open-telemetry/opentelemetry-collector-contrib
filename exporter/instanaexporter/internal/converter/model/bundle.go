@@ -24,7 +24,7 @@ type Bundle struct {
 
 func NewBundle() Bundle {
 	return Bundle{
-		Spans: make([]Span, 0),
+		Spans: []Span{},
 	}
 }
 

@@ -84,7 +84,7 @@ func regroup(batches []*model.Batch) []*model.Batch {
 		}
 	}
 
-	result := []*model.Batch{}
+	var result []*model.Batch
 	for _, v := range registry {
 		result = append(result, v)
 	}

@@ -78,7 +78,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("invalid 'delimiter': '%s'", c.FieldDelimiter)
 	}
 
-	headers := make([]string, 0)
+	var headers []string
 	switch {
 	case c.Header == "" && c.HeaderAttribute == "":
 		return nil, errors.New("missing required field 'header' or 'header_attribute'")

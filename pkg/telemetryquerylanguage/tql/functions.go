@@ -45,7 +45,7 @@ func NewFunctionCall(inv Invocation, functions map[string]interface{}, pathParse
 }
 
 func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) ([]reflect.Value, error) {
-	args := make([]reflect.Value, 0)
+	var args []reflect.Value
 	for i := 0; i < fType.NumIn(); i++ {
 		argType := fType.In(i)
 
@@ -73,7 +73,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
 	switch argType.Elem().Name() {
 	case reflect.String.String():
-		arg := make([]string, 0)
+		var arg []string
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].String == nil {
 				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a string", j)
@@ -82,7 +82,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case reflect.Float64.String():
-		arg := make([]float64, 0)
+		var arg []float64
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Float == nil {
 				return fmt.Errorf("invalid argument for slice parameter at position %v, must be a float", j)
@@ -91,7 +91,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 		}
 		*args = append(*args, reflect.ValueOf(arg))
 	case reflect.Int64.String():
-		arg := make([]int64, 0)
+		var arg []int64
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Int == nil {
 				return fmt.Errorf("invalid argument for slice parameter at position %v, must be an int", j)
@@ -105,7 +105,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 		}
 		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
 	case "Getter":
-		arg := make([]Getter, 0)
+		var arg []Getter
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			val, err := NewGetter(inv.Arguments[j], functions, pathParser, enumParser)
 			if err != nil {
