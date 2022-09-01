@@ -48,7 +48,6 @@ type transaction struct {
 	job, instance        string
 	jobsMap              *JobsMap
 	obsrecv              *obsreport.Receiver
-	startTimeMs          int64
 }
 
 func newTransaction(
@@ -87,7 +86,6 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 	}
 
 	if t.isNew {
-		t.startTimeMs = atMs
 		if err := t.initTransaction(labels); err != nil {
 			return 0, err
 		}
@@ -121,7 +119,7 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		t.instance = instance
 	}
 	t.nodeResource = CreateResource(job, instance, metadataCache.SharedLabels())
-	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger, t.startTimeMs)
+	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger)
 	t.isNew = false
 	return nil
 }
@@ -130,8 +128,6 @@ func (t *transaction) Commit() error {
 	if t.isNew {
 		return nil
 	}
-
-	t.startTimeMs = -1
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
 	metricsL := pmetric.NewMetricSlice()
@@ -167,7 +163,6 @@ func (t *transaction) Commit() error {
 }
 
 func (t *transaction) Rollback() error {
-	t.startTimeMs = -1
 	return nil
 }
 
