@@ -62,29 +62,6 @@ func (s *store) len() int {
 	return s.l.Len()
 }
 
-// tryEvictHead checks if the oldest item (head of list) can be evicted and will delete it if so.
-// Returns true if the head was evicted.
-//
-// Must be called holding lock.
-func (s *store) tryEvictHead() bool {
-	head := s.l.Front()
-	if head == nil {
-		// list is empty
-		return false
-	}
-
-	headEdge := head.Value.(*Edge)
-	if !headEdge.isExpired() {
-		return false
-	}
-
-	s.onExpire(headEdge)
-	delete(s.m, headEdge.key)
-	s.l.Remove(head)
-
-	return true
-}
-
 // UpsertEdge fetches an Edge from the store and updates it using the given callback. If the Edge
 // doesn't exist yet, it creates a new one with the default TTL.
 // If the Edge is complete after applying the callback, it's completed and removed.
@@ -123,4 +100,35 @@ func (s *store) UpsertEdge(key string, update Callback) (isNew bool, err error) 
 	s.m[key] = ele
 
 	return true, nil
+}
+
+// Expire evicts all expired items in the store.
+func (s *store) Expire() {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	for s.tryEvictHead() {
+	}
+}
+
+// tryEvictHead checks if the oldest item (head of list) can be evicted and will delete it if so.
+// Returns true if the head was evicted.
+//
+// Must be called holding lock.
+func (s *store) tryEvictHead() bool {
+	head := s.l.Front()
+	if head == nil {
+		return false // list is empty
+	}
+
+	headEdge := head.Value.(*Edge)
+	if !headEdge.isExpired() {
+		return false
+	}
+
+	s.onExpire(headEdge)
+	delete(s.m, headEdge.key)
+	s.l.Remove(head)
+
+	return true
 }

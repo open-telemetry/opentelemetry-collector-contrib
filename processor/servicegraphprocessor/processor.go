@@ -76,7 +76,7 @@ type processor struct {
 }
 
 func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer consumer.Traces) *processor {
-	logger.Info("Building servicegraphsprocessor")
+	logger.Info("Building servicegraphprocessor")
 
 	pConfig := config.(*Config)
 
@@ -104,7 +104,7 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 }
 
 func (p *processor) Start(_ context.Context, host component.Host) error {
-	p.logger.Info("Starting servicegraphsprocessor")
+	p.logger.Info("Starting servicegraphprocessor")
 
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
@@ -127,12 +127,15 @@ func (p *processor) Start(_ context.Context, host component.Host) error {
 	// TODO: Consider making this configurable.
 	go p.cacheLoop(time.Minute)
 
-	p.logger.Info("Started servicegraphsprocessor")
+	// TODO: Consider making this configurable.
+	go p.storeExpirationLoop(2 * time.Second)
+
+	p.logger.Info("Started servicegraphprocessor")
 	return nil
 }
 
 func (p *processor) Shutdown(_ context.Context) error {
-	p.logger.Info("Shutting down servicegraphsprocessor")
+	p.logger.Info("Shutting down servicegraphprocessor")
 	close(p.shutdownCh)
 	return nil
 }
@@ -440,7 +443,20 @@ func (p *processor) buildMetricKey(clientName, serverName, connectionType string
 	return metricKey.String()
 }
 
-// cacheLoop runs in a separate goroutine and periodically cleans the cache
+// storeExpirationLoop periodically expires old entries from the store.
+func (p *processor) storeExpirationLoop(d time.Duration) {
+	t := time.NewTicker(d)
+	for {
+		select {
+		case <-t.C:
+			p.store.Expire()
+		case <-p.shutdownCh:
+			return
+		}
+	}
+}
+
+// cacheLoop periodically cleans the cache
 func (p *processor) cacheLoop(d time.Duration) {
 	t := time.NewTicker(d)
 	for {
