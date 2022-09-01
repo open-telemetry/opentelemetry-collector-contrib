@@ -71,13 +71,12 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *m
 
 // includesMetric returns true if the metric is part of the family
 func (mf *metricFamily) includesMetric(metricName string) bool {
-	if mf.isCumulativeType() {
+	if mf.mtype != pmetric.MetricDataTypeGauge {
 		// If it is a merged family type, then it should match the
 		// family name when suffixes are trimmed.
 		return normalizeMetricName(metricName) == mf.name
 	}
-	// If it isn't a merged type, the metricName and family name
-	// should match
+	// If it isn't a merged type, the metricName and family name should match
 	return metricName == mf.name
 }
 
@@ -138,9 +137,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
-	if mg.family.isCumulativeType() {
-		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	}
+	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricDataTypeHistogram, mg.ls, point.Attributes())
 }
@@ -188,22 +185,17 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := pdataTimestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
-	if mg.family.isCumulativeType() {
-		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	}
+	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	populateAttributes(pmetric.MetricDataTypeSummary, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
-	var startTsNanos pcommon.Timestamp
 	tsNanos := pdataTimestampFromMs(mg.ts)
-	// gauge/undefined types have no start time.
-	if mg.family.isCumulativeType() {
-		startTsNanos = tsNanos // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
-	}
-
 	point := dest.AppendEmpty()
-	point.SetStartTimestamp(startTsNanos)
+	// gauge/undefined types have no start time.
+	if mg.family.mtype == pmetric.MetricDataTypeSum {
+		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
 		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
@@ -230,12 +222,6 @@ func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pco
 		}
 		dest.InsertString(ls[i].Name, ls[i].Value)
 	}
-}
-
-func (mf *metricFamily) isCumulativeType() bool {
-	return mf.mtype == pmetric.MetricDataTypeSum ||
-		mf.mtype == pmetric.MetricDataTypeHistogram ||
-		mf.mtype == pmetric.MetricDataTypeSummary
 }
 
 func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Labels, ts int64) *metricGroup {
