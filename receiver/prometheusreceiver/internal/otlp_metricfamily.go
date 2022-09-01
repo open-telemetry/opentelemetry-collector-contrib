@@ -34,7 +34,6 @@ type metricFamily struct {
 	isMonotonic bool
 	groups      map[uint64]*metricGroup
 	name        string
-	mc          MetadataCache
 	metadata    *scrape.MetricMetadata
 	groupOrders []*metricGroup
 }
@@ -66,7 +65,6 @@ func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *m
 		isMonotonic: isMonotonic,
 		groups:      make(map[uint64]*metricGroup),
 		name:        familyName,
-		mc:          mc,
 		metadata:    metadata,
 	}
 }
