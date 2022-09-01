@@ -57,10 +57,8 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) St
 	return s
 }
 
+// len is only used for testing.
 func (s *store) len() int {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-
 	return s.l.Len()
 }
 
@@ -125,13 +123,4 @@ func (s *store) UpsertEdge(key string, update Callback) (isNew bool, err error) 
 	s.m[key] = ele
 
 	return true, nil
-}
-
-// Expire evicts all expired items in the store.
-func (s *store) Expire() {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-
-	for s.tryEvictHead() {
-	}
 }

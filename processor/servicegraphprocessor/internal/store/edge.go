@@ -28,7 +28,6 @@ const (
 type Edge struct {
 	key string
 
-	TraceID                            string
 	ConnectionType                     ConnectionType
 	ServerService, ClientService       string
 	ServerLatencySec, ClientLatencySec float64

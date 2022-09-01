@@ -100,6 +100,7 @@ func TestProcessorShutdown(t *testing.T) {
 }
 
 func TestProcessorConsume(t *testing.T) {
+	// Prepare
 	cfg := &Config{
 		MetricsExporter: "mock",
 		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
@@ -123,8 +124,13 @@ func TestProcessorConsume(t *testing.T) {
 
 	assert.NoError(t, processor.Start(context.Background(), mHost))
 
+	// Test & verify
 	td := sampleTraces()
+	// The assertion is part of verifyMetrics func.
 	assert.NoError(t, processor.ConsumeTraces(context.Background(), td))
+
+	// Shutdown the processor
+	assert.NoError(t, processor.Shutdown(context.Background()))
 }
 
 func verifyMetrics(t *testing.T, md pmetric.Metrics) error {

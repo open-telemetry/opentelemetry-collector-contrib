@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -41,11 +40,8 @@ const (
 )
 
 var (
-	maxDuration   = time.Duration(math.MaxInt64)
-	maxDurationMs = durationToMillis(maxDuration)
-
 	defaultLatencyHistogramBucketsMs = []float64{
-		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000, maxDurationMs,
+		2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 	}
 )
 
@@ -87,13 +83,6 @@ func newProcessor(logger *zap.Logger, config config.Processor, nextConsumer cons
 	bounds := defaultLatencyHistogramBucketsMs
 	if pConfig.LatencyHistogramBuckets != nil {
 		bounds = mapDurationsToMillis(pConfig.LatencyHistogramBuckets)
-
-		// "Catch-all" bucket.
-		// TODO: Revisit catch-all bucket, it's very problematic for Prometheus
-		//  See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/2838
-		if bounds[len(bounds)-1] != maxDurationMs {
-			bounds = append(bounds, maxDurationMs)
-		}
 	}
 
 	p := &processor{
@@ -210,7 +199,6 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.SpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
-						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ClientService = serviceName
 						e.ClientLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())
@@ -233,7 +221,6 @@ func (p *processor) aggregateMetrics(ctx context.Context, td ptrace.Traces) (err
 					traceID := span.TraceID().HexString()
 					key := buildEdgeKey(traceID, span.ParentSpanID().HexString())
 					isNew, err = p.store.UpsertEdge(key, func(e *store.Edge) {
-						e.TraceID = traceID
 						e.ConnectionType = connectionType
 						e.ServerService = serviceName
 						e.ServerLatencySec = float64(span.EndTimestamp()-span.StartTimestamp()) / float64(time.Millisecond.Nanoseconds())

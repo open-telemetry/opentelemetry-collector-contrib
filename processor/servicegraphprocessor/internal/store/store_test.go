@@ -15,7 +15,6 @@
 package store // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor/internal/store"
 
 import (
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -111,37 +110,6 @@ func TestStoreUpsertEdge_errTooManyItems(t *testing.T) {
 	assert.Equal(t, 0, onCallbackCounter)
 }
 
-func TestStoreExpire(t *testing.T) {
-	const testSize = 100
-
-	keys := map[string]bool{}
-	for i := 0; i < testSize; i++ {
-		keys[fmt.Sprintf("key-%d", i)] = true
-	}
-
-	var onCompletedCount int
-	var onExpireCount int
-
-	onComplete := func(e *Edge) {
-		onCompletedCount++
-		assert.True(t, keys[e.key])
-	}
-	// New edges are immediately expired
-	storeInterface := NewStore(-time.Second, testSize, onComplete, countingCallback(&onExpireCount))
-	s := storeInterface.(*store)
-
-	for key := range keys {
-		isNew, err := s.UpsertEdge(key, noopCallback)
-		require.NoError(t, err)
-		require.Equal(t, true, isNew)
-	}
-
-	s.Expire()
-	assert.Equal(t, 0, s.len())
-	assert.Equal(t, 0, onCompletedCount)
-	assert.Equal(t, testSize, onExpireCount)
-}
-
 func TestStore_concurrency(t *testing.T) {
 	s := NewStore(10*time.Millisecond, 100000, noopCallback, noopCallback)
 
@@ -173,7 +141,11 @@ func TestStore_concurrency(t *testing.T) {
 	})
 
 	go accessor(func() {
-		s.Expire()
+		s.(*store).mtx.Lock()
+		defer s.(*store).mtx.Unlock()
+
+		for s.(*store).tryEvictHead() {
+		}
 	})
 
 	time.Sleep(100 * time.Millisecond)

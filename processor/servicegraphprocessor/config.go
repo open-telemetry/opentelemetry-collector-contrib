@@ -35,6 +35,7 @@ type Config struct {
 	// - client
 	// - server
 	// - failed
+	// - connection_type
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []string `mapstructure:"dimensions"`

@@ -65,6 +65,8 @@ Additional labels can be included using the `dimensions` configuration option.
 Since the service graph processor has to process both sides of an edge,
 it needs to process all spans of a trace to function properly.
 If spans of a trace are spread out over multiple instances, spans are not paired up reliably.
+A possible solution to this problem is using the [load balancing exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/loadbalancingexporter)
+in a layer on front of collector instances running this processor.
 
 ## Visualization
 
@@ -96,15 +98,40 @@ datasources:
 ## Example configuration
 
 ```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+  otlp/servicegraph: # Dummy receiver for the metrics pipeline
+    protocols:
+      grpc:
+        endpoint: localhost:12345
+
 processors:
-  servicegraphs:
-    wait: 2s # Value to wait for an edge to be completed
-    max_items: 200 # Amount of edges that will be stored in the storeMap
-    workers: 10 # Amount of workers that will be used to process the edges
-    histogram_buckets: [1, 2, 4, 8, 16, 32, 64] # Buckets for latency histogram in seconds
-    dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metric along with the default ones.
-    success_codes: # Status codes that are considered successful
-      http: [404]
-      grpc: [1, 3, 6]
+  servicegraph:
+    metrics_exporter: prometheus/servicegraph # Exporter to send metrics to
+    latency_histogram_buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms] # Buckets for latency histogram
+    dimensions: [cluster, namespace] # Additional dimensions (labels) to be added to the metrics extracted from the resource and span attributes
+    store: # Configuration for the in-memory store
+      wait: 2s # Value to wait for an edge to be completed
+      max_items: 200 # Amount of edges that will be stored in the storeMap      
+
+exporters:
+  prometheus/servicegraph:
+    endpoint: localhost:9090
+    namespace: servicegraph
+  otlp:
+    endpoint: localhost:4317
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [servicegraph]
+      exporters: [otlp]
+    metrics/servicegraph:
+      receivers: [otlp/servicegraph]
+      processors: []
+      exporters: [prometheus/servicegraph]
 ```
 

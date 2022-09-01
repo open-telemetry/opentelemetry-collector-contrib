@@ -37,13 +37,13 @@ func TestNewProcessor(t *testing.T) {
 		},
 		{
 			name:                            "latency histogram configured with catch-all bucket to check no additional catch-all bucket inserted",
-			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond, maxDuration},
-			expectedLatencyHistogramBuckets: []float64{2, maxDurationMs},
+			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
+			expectedLatencyHistogramBuckets: []float64{2},
 		},
 		{
 			name:                            "full config with no catch-all bucket and check the catch-all bucket is inserted",
 			latencyHistogramBuckets:         []time.Duration{2 * time.Millisecond},
-			expectedLatencyHistogramBuckets: []float64{2, maxDurationMs},
+			expectedLatencyHistogramBuckets: []float64{2},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -59,7 +59,7 @@ func TestNewProcessor(t *testing.T) {
 			smp := traceProcessor.(*processor)
 
 			// Verify
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, smp)
 
 			assert.Equal(t, tc.expectedLatencyHistogramBuckets, smp.reqDurationBounds)
