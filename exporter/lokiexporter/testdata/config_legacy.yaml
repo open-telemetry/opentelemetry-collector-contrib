@@ -7,8 +7,22 @@ processors:
 exporters:
   loki:
     endpoint: "https://loki:3100/loki/api/v1/push"
+    tenant_id: "example"
+    labels:
+      attributes:
+        container.name: "container_name"
+        k8s.cluster.name: "k8s_cluster_name"
+        severity: "severity"
+  loki/json:
+    endpoint: "https://loki:3100/loki/api/v1/push"
+    tenant_id: "example"
+    format: "json"
+    labels:
+      record:
+        traceID: traceid
   loki/allsettings:
     endpoint: "https://loki:3100/loki/api/v1/push"
+    tenant_id: "example"
     tls:
       insecure: true
       ca_file: /var/lib/mycert.pem
@@ -28,9 +42,19 @@ exporters:
       max_elapsed_time: 10m
     headers:
       "X-Custom-Header": "loki_rocks"
+    labels:
+      record:
+        traceID: traceid
+      attributes:
+        container.name: "container_name"
+        k8s.cluster.name: "k8s_cluster_name"
+        severity: "severity"
+      resource:
+        resource.name: "resource_name"
+        severity: "severity"
 service:
   pipelines:
     logs:
       receivers: [ nop ]
       processors: [ nop ]
-      exporters: [ loki, loki/allsettings ]
+      exporters: [ loki, loki/allsettings, loki/json ]
