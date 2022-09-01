@@ -55,7 +55,7 @@ var (
 		{"k2", "v200"},
 	}
 
-	emptyLabels              = []*kv{}
+	emptyLabels              []*kv
 	k1vEmpty                 = []*kv{{"k1", ""}}
 	k1vEmptyk2vEmptyk3vEmpty = []*kv{{"k1", ""}, {"k2", ""}, {"k3", ""}}
 )

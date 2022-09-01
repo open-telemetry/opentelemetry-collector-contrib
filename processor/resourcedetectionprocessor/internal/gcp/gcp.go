@@ -166,7 +166,7 @@ func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationTyp
 // deduplicate, which would break users.
 // TODO(#10348): Remove this function after the v0.54.0 release.
 func DeduplicateDetectors(set component.ProcessorCreateSettings, detectors []string) []string {
-	out := []string{}
+	var out []string
 	var found bool
 	for _, d := range detectors {
 		switch d {

@@ -44,25 +44,25 @@ func TestInternalTracesToZipkinSpans(t *testing.T) {
 		{
 			name: "oneEmpty",
 			td:   testdata.GenerateTracesOneEmptyResourceSpans(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "noLibs",
 			td:   testdata.GenerateTracesNoLibraries(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "oneEmptyLib",
 			td:   testdata.GenerateTracesOneEmptyInstrumentationLibrary(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  nil,
 		},
 		{
 			name: "oneSpanNoResource",
 			td:   testdata.GenerateTracesOneSpanNoResource(),
-			zs:   make([]*zipkinmodel.SpanModel, 0),
+			zs:   []*zipkinmodel.SpanModel{},
 			err:  errors.New("TraceID is invalid"),
 		},
 		{

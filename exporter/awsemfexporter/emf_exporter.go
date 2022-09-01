@@ -210,7 +210,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []cwlogs.Pusher{}
+	var pushers []cwlogs.Pusher
 	for _, pusherMap := range emf.groupStreamToPusherMap {
 		for _, pusher := range pusherMap {
 			pushers = append(pushers, pusher)

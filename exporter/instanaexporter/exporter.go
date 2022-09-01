@@ -51,7 +51,7 @@ func (e *instanaExporter) start(_ context.Context, host component.Host) error {
 
 func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Traces) error {
 	converter := converter.NewConvertAllConverter(e.settings.Logger)
-	spans := make([]model.Span, 0)
+	var spans []model.Span
 
 	hostID := ""
 	resourceSpans := td.ResourceSpans()

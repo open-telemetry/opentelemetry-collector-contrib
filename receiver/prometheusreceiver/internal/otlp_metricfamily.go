@@ -228,10 +228,9 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family:       mf,
-			ts:           ts,
-			ls:           ls,
-			complexValue: make([]*dataPoint, 0),
+			family: mf,
+			ts:     ts,
+			ls:     ls,
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output

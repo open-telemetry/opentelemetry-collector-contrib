@@ -251,7 +251,7 @@ func BenchmarkHundredSpans(b *testing.B) {
 		{
 			name: "hundred queries",
 			queries: func() []string {
-				queries := make([]string, 0)
+				var queries []string
 				queries = append(queries, `set(status.code, 1) where name == "operationA"`)
 				for i := 0; i < 99; i++ {
 					queries = append(queries, `keep_keys(attributes, "http.method") where name == "unknownOperation"`)

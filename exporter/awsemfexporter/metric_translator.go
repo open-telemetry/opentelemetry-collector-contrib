@@ -250,7 +250,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	// If the whole batch of metrics don't match any metric declarations, drop them
 	if len(metricDeclarations) == 0 {
 		labelsStr, _ := json.Marshal(labels)
-		metricNames := make([]string, 0)
+		var metricNames []string
 		for metricName := range groupedMetric.metrics {
 			metricNames = append(metricNames, metricName)
 		}

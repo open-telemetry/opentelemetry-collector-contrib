@@ -111,7 +111,7 @@ func (l *hclog2ZapLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log
 }
 
 func argsToFields(args ...interface{}) []zapcore.Field {
-	fields := []zapcore.Field{}
+	var fields []zapcore.Field
 	for i := 0; i < len(args); i += 2 {
 		fields = append(fields, zap.String(args[i].(string), fmt.Sprintf("%v", args[i+1])))
 	}
