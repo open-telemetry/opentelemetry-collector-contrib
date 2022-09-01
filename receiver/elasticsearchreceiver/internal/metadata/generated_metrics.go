@@ -1901,7 +1901,7 @@ type metricElasticsearchNodeDiskIoRead struct {
 func (m *metricElasticsearchNodeDiskIoRead) init() {
 	m.data.SetName("elasticsearch.node.disk.io.read")
 	m.data.SetDescription("The total number of kilobytes read across all file stores for this node.")
-	m.data.SetUnit("By")
+	m.data.SetUnit("KiBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1952,7 +1952,7 @@ type metricElasticsearchNodeDiskIoWrite struct {
 func (m *metricElasticsearchNodeDiskIoWrite) init() {
 	m.data.SetName("elasticsearch.node.disk.io.write")
 	m.data.SetDescription("The total number of kilobytes written across all file stores for this node.")
-	m.data.SetUnit("By")
+	m.data.SetUnit("KiBy")
 	m.data.SetDataType(pmetric.MetricDataTypeSum)
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
