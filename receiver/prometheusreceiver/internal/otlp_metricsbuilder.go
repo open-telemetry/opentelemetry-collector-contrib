@@ -98,7 +98,6 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, 
 type metricBuilder struct {
 	families             map[string]*metricFamily
 	hasData              bool
-	hasInternalMetric    bool
 	mc                   MetadataCache
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
@@ -153,7 +152,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	case metricName == "":
 		return errMetricNameNotFound
 	case isInternalMetric(metricName):
-		b.hasInternalMetric = true
 		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
 		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
 		// But it can also be a staleNaN, which is inserted when the target goes away.
@@ -193,9 +191,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 // The only error returned by this function is errNoDataToBuild.
 func (b *metricBuilder) appendMetrics(metrics pmetric.MetricSlice) error {
 	if !b.hasData {
-		if b.hasInternalMetric {
-			return nil
-		}
 		return errNoDataToBuild
 	}
 
