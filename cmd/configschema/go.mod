@@ -44,7 +44,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/ch-go v0.47.3 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.3.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.27 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.28 // indirect
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-agent/pkg/otlp/model v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
 	github.com/DataDog/datadog-agent/pkg/quantile v0.38.0-rc.3.0.20220804102556-2fec6abdb5f7 // indirect
@@ -80,23 +80,24 @@ require (
 	github.com/apache/thrift v0.16.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/aws/aws-sdk-go v1.44.87 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.16.11 // indirect
+	github.com/aws/aws-sdk-go v1.44.89 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.16.13 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.17.1 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.12.14 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.12 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.17.4 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.12.17 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.12.14 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.7.1 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.18 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.12 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.19 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.20 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.14 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/ini v1.3.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.5.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.12 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.9.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.19.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.11.17 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.16.13 // indirect
-	github.com/aws/smithy-go v1.12.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.11.20 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.13.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.16.16 // indirect
+	github.com/aws/smithy-go v1.13.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible // indirect
 	github.com/bmatcuk/doublestar/v3 v3.0.0 // indirect
@@ -198,7 +199,7 @@ require (
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
-	github.com/hashicorp/go-hclog v1.2.2 // indirect
+	github.com/hashicorp/go-hclog v1.3.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.1 // indirect
@@ -214,9 +215,9 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.2.26 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.2.26 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.2.26 // indirect
+	github.com/influxdata/influxdb-observability/common v0.2.27 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.2.27 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.2.27 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -484,7 +485,7 @@ require (
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.3.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.22.7 // indirect
+	github.com/shirou/gopsutil/v3 v3.22.8 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
@@ -505,7 +506,7 @@ require (
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/subosito/gotenv v1.3.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.479 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.489 // indirect
 	github.com/tg123/go-htpasswd v1.2.0 // indirect
 	github.com/theupdateframework/go-tuf v0.3.0 // indirect
 	github.com/tidwall/gjson v1.12.1 // indirect
