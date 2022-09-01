@@ -205,7 +205,7 @@ func TestRemoveExtraExporters(t *testing.T) {
 
 	// verify
 	assert.Len(t, p.exporters, 1)
-	assert.Contains(t, p.exporters, endpointWithPort("endpoint-1"))
+	assert.NotContains(t, p.exporters, endpointWithPort("endpoint-2"))
 }
 
 func TestAddMissingExporters(t *testing.T) {
