@@ -66,9 +66,9 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().InsertString(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().InsertString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
-	rs.Attributes().InsertString(AttributeSkywalkingTraceID, segment.GetTraceId())
+	rs.Attributes().UpsertString(conventions.AttributeServiceName, segment.GetService())
+	rs.Attributes().UpsertString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().UpsertString(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())

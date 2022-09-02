@@ -40,16 +40,16 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 		}
 		attrs := resourceMetrics.Resource().Attributes()
 		if event.Host != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Host, event.Host)
+			attrs.UpsertString(config.HecToOtelAttrs.Host, event.Host)
 		}
 		if event.Source != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Source, event.Source)
+			attrs.UpsertString(config.HecToOtelAttrs.Source, event.Source)
 		}
 		if event.SourceType != "" {
-			attrs.InsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
+			attrs.UpsertString(config.HecToOtelAttrs.SourceType, event.SourceType)
 		}
 		if event.Index != "" {
-			attrs.InsertString(config.HecToOtelAttrs.Index, event.Index)
+			attrs.UpsertString(config.HecToOtelAttrs.Index, event.Index)
 		}
 
 		values := event.GetMetricValues()

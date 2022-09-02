@@ -40,7 +40,7 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 	attrs := hdp.Attributes()
 	for _, kv := range attributes {
-		attrs.InsertString(kv.Key, kv.Value)
+		attrs.UpsertString(kv.Key, kv.Value)
 	}
 
 	return hdp
@@ -150,7 +150,7 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	sdp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		sdp.Attributes().InsertString(kv.Key, kv.Value)
+		sdp.Attributes().UpsertString(kv.Key, kv.Value)
 	}
 
 	return sdp

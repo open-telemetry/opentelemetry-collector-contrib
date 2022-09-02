@@ -185,11 +185,11 @@ func TestConvert(t *testing.T) {
 
 	if resAtts := rls.Resource().Attributes(); assert.Equal(t, 5, resAtts.Len()) {
 		m := pcommon.NewMap()
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.Insert("object", pcommon.NewValueMap())
+		m.UpsertBool("bool", true)
+		m.UpsertInt("int", 123)
+		m.UpsertDouble("double", 12.34)
+		m.UpsertString("string", "hello")
+		m.UpsertEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), resAtts.Sort())
 	}
 
@@ -206,11 +206,11 @@ func TestConvert(t *testing.T) {
 
 	if atts := lr.Attributes(); assert.Equal(t, 5, atts.Len()) {
 		m := pcommon.NewMap()
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.Insert("object", pcommon.NewValueMap())
+		m.UpsertBool("bool", true)
+		m.UpsertInt("int", 123)
+		m.UpsertDouble("double", 12.34)
+		m.UpsertString("string", "hello")
+		m.UpsertEmptyMap("object")
 		assert.EqualValues(t, m.Sort(), atts.Sort())
 	}
 
@@ -218,11 +218,11 @@ func TestConvert(t *testing.T) {
 		m := pcommon.NewMap()
 		// Don't include a nested object because AttributeValueMap sorting
 		// doesn't sort recursively.
-		m.InsertBool("bool", true)
-		m.InsertInt("int", 123)
-		m.InsertDouble("double", 12.34)
-		m.InsertString("string", "hello")
-		m.InsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("asdf")))
+		m.UpsertBool("bool", true)
+		m.UpsertInt("int", 123)
+		m.UpsertDouble("double", 12.34)
+		m.UpsertString("string", "hello")
+		m.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("asdf")))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }

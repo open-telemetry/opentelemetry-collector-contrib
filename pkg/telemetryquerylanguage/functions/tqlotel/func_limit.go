@@ -42,7 +42,7 @@ func Limit(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 			count := int64(0)
 			attrs.Range(func(key string, val pcommon.Value) bool {
 				if count < limit {
-					updated.Insert(key, val)
+					val.CopyTo(updated.UpsertEmpty(key))
 					count++
 					return true
 				}

@@ -392,8 +392,8 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 		exampleIntGaugeMetric(),
 	}
 
-	records[0].attributes.InsertString("key1", "value1")
-	records[1].attributes.InsertString("key2", "value2")
+	records[0].attributes.UpsertString("key1", "value1")
+	records[1].attributes.UpsertString("key2", "value2")
 
 	metrics := metricPairToMetrics(records)
 	expected := metricPairToMetrics(records[:1])

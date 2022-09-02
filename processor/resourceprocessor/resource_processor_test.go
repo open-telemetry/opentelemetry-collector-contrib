@@ -179,7 +179,7 @@ func generateTraceData(attributes map[string]string) ptrace.Traces {
 	}
 	resource := td.ResourceSpans().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().UpsertString(k, v)
 	}
 	resource.Attributes().Sort()
 	return td
@@ -192,7 +192,7 @@ func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	}
 	resource := md.ResourceMetrics().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().UpsertString(k, v)
 	}
 	resource.Attributes().Sort()
 	return md
@@ -205,7 +205,7 @@ func generateLogData(attributes map[string]string) plog.Logs {
 	}
 	resource := ld.ResourceLogs().At(0).Resource()
 	for k, v := range attributes {
-		resource.Attributes().InsertString(k, v)
+		resource.Attributes().UpsertString(k, v)
 	}
 	resource.Attributes().Sort()
 	return ld
