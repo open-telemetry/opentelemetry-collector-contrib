@@ -140,7 +140,7 @@ func TestConsumeTraces(t *testing.T) {
 	assert.Equal(t, p.routingKey, traceIDRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -176,7 +176,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	assert.Equal(t, p.routingKey, svcRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.exporters["endpoint-1"] = newNopMockTracesExporter()
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -227,40 +227,6 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 	}
 }
 
-func TestConsumeTracesExporterNotFound(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return newNopMockTracesExporter(), nil
-	}
-	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
-	require.NotNil(t, lb)
-	require.NoError(t, err)
-
-	p, err := newTracesExporter(componenttest.NewNopExporterCreateSettings(), simpleConfig())
-	require.NotNil(t, p)
-	require.NoError(t, err)
-
-	lb.res = &mockResolver{
-		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
-			return []string{"endpoint-1"}, nil
-		},
-	}
-	p.loadBalancer = lb
-
-	err = p.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, p.Shutdown(context.Background()))
-	}()
-
-	// test
-	res := p.ConsumeTraces(context.Background(), simpleTraces())
-
-	// verify
-	assert.Error(t, res)
-	assert.EqualError(t, res, fmt.Sprintf("couldn't find the exporter for the endpoint %q", "endpoint-1"))
-}
-
 func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
 		return newNopMockTracesExporter(), nil
@@ -308,7 +274,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	require.NoError(t, err)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
-	lb.exporters["endpoint-1"] = newNopMockExporter()
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
 		onResolve: func(ctx context.Context) ([]string, error) {
@@ -361,8 +327,9 @@ func TestBuildExporterConfig(t *testing.T) {
 }
 
 func TestBatchWithTwoTraces(t *testing.T) {
+	sink := new(consumertest.TracesSink)
 	componentFactory := func(ctx context.Context, endpoint string) (component.Exporter, error) {
-		return newNopMockTracesExporter(), nil
+		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
 	lb, err := newLoadBalancer(componenttest.NewNopExporterCreateSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
@@ -376,8 +343,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	sink := new(consumertest.TracesSink)
-	lb.exporters["endpoint-1"] = newMockTracesExporter(sink.ConsumeTraces)
+	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 
 	first := simpleTraces()
 	second := simpleTraceWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
@@ -510,14 +476,14 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	counter1 := atomic.NewInt64(0)
 	counter2 := atomic.NewInt64(0)
 	defaultExporters := map[string]component.Exporter{
-		"127.0.0.1": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+		"127.0.0.1:4317": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			counter1.Inc()
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		},
 		),
-		"127.0.0.2": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+		"127.0.0.2:4317": newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
 			counter2.Inc()
 			return nil
 		},
