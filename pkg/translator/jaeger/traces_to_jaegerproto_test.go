@@ -351,7 +351,7 @@ func generateTracesOneSpanNoResourceWithEventAttribute() ptrace.Traces {
 	td := generateTracesOneSpanNoResource()
 	event := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0)
 	event.SetName("must-be-ignorred")
-	event.Attributes().InsertString("event", "must-be-used-instead-of-event-name")
+	event.Attributes().UpsertString("event", "must-be-used-instead-of-event-name")
 	return td
 }
 

@@ -741,7 +741,7 @@ func (m *metricAerospikeNamespaceMemoryUsage) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("component", namespaceComponentAttributeValue)
+	dp.Attributes().UpsertString("component", namespaceComponentAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -794,9 +794,9 @@ func (m *metricAerospikeNamespaceQueryCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", queryTypeAttributeValue)
-	dp.Attributes().InsertString("index", indexTypeAttributeValue)
-	dp.Attributes().InsertString("result", queryResultAttributeValue)
+	dp.Attributes().UpsertString("type", queryTypeAttributeValue)
+	dp.Attributes().UpsertString("index", indexTypeAttributeValue)
+	dp.Attributes().UpsertString("result", queryResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -849,8 +849,8 @@ func (m *metricAerospikeNamespaceScanCount) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", scanTypeAttributeValue)
-	dp.Attributes().InsertString("result", scanResultAttributeValue)
+	dp.Attributes().UpsertString("type", scanTypeAttributeValue)
+	dp.Attributes().UpsertString("result", scanResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -903,8 +903,8 @@ func (m *metricAerospikeNamespaceTransactionCount) recordDataPoint(start pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", transactionTypeAttributeValue)
-	dp.Attributes().InsertString("result", transactionResultAttributeValue)
+	dp.Attributes().UpsertString("type", transactionTypeAttributeValue)
+	dp.Attributes().UpsertString("result", transactionResultAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -957,8 +957,8 @@ func (m *metricAerospikeNodeConnectionCount) recordDataPoint(start pcommon.Times
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", connectionTypeAttributeValue)
-	dp.Attributes().InsertString("operation", connectionOpAttributeValue)
+	dp.Attributes().UpsertString("type", connectionTypeAttributeValue)
+	dp.Attributes().UpsertString("operation", connectionOpAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1011,7 +1011,7 @@ func (m *metricAerospikeNodeConnectionOpen) recordDataPoint(start pcommon.Timest
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("type", connectionTypeAttributeValue)
+	dp.Attributes().UpsertString("type", connectionTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

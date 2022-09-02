@@ -44,21 +44,22 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where body == "operationA"`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `keep_keys(attributes, "http.method") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.method", "get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.method",
+					"get")
 			},
 		},
 		{
@@ -85,19 +86,19 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where dropped_attributes_count == 1`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where flags == 1`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where severity_number == SEVERITY_NUMBER_TRACE`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
@@ -109,34 +110,37 @@ func TestProcess(t *testing.T) {
 		{
 			query: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where span_id == SpanID(0x0102030405060708)`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]") == true`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "pass")
 			},
 		},
 		{
 			query: `delete_key(attributes, "http.url") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.method", "get")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.path", "/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.method",
+					"get")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.path",
+					"/health")
 			},
 		},
 		{
 			query: `delete_matching_keys(attributes, "http.*t.*") where body == "operationA"`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("http.url", "http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.url",
+					"http://localhost/health")
 			},
 		},
 	}
@@ -161,7 +165,7 @@ func TestProcess(t *testing.T) {
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()
-	rs0.Resource().Attributes().InsertString("host.name", "localhost")
+	rs0.Resource().Attributes().UpsertString("host.name", "localhost")
 	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
 	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())
@@ -177,16 +181,16 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetSeverityNumber(1)
 	log.SetTraceID(pcommon.NewTraceID(traceID))
 	log.SetSpanID(pcommon.NewSpanID(spanID))
-	log.Attributes().InsertString("http.method", "get")
-	log.Attributes().InsertString("http.path", "/health")
-	log.Attributes().InsertString("http.url", "http://localhost/health")
+	log.Attributes().UpsertString("http.method", "get")
+	log.Attributes().UpsertString("http.path", "/health")
+	log.Attributes().UpsertString("http.url", "http://localhost/health")
 }
 
 func fillLogTwo(log plog.LogRecord) {
 	log.Body().SetStringVal("operationB")
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetObservedTimestamp(TestObservedTimestamp)
-	log.Attributes().InsertString("http.method", "get")
-	log.Attributes().InsertString("http.path", "/health")
-	log.Attributes().InsertString("http.url", "http://localhost/health")
+	log.Attributes().UpsertString("http.method", "get")
+	log.Attributes().UpsertString("http.path", "/health")
+	log.Attributes().UpsertString("http.url", "http://localhost/health")
 }
