@@ -64,27 +64,17 @@ func newComparisonEvaluator(comparison *Comparison, functions map[string]interfa
 		return nil, err
 	}
 	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
-	// TODO(anuraaga): Check if both left and right are literals and const-evaluate
 	if err != nil {
 		return nil, err
 	}
 
-	switch comparison.Op {
-	case "==":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return a == b
-		}, nil
-	case "!=":
-		return func(ctx TransformContext) bool {
-			a := left.Get(ctx)
-			b := right.Get(ctx)
-			return a != b
-		}, nil
-	}
+	// The parser ensures that we'll never get an invalid comparison.Op, so we don't have to check that case.
+	return func(ctx TransformContext) bool {
+		a := left.Get(ctx)
+		b := right.Get(ctx)
+		return compare(a, b, comparison.Op)
+	}, nil
 
-	return nil, fmt.Errorf("unrecognized boolean operation %v", comparison.Op)
 }
 
 func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
