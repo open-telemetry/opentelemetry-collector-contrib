@@ -48,7 +48,7 @@ func (f *filter) filterIn(attributes pcommon.Map) fields {
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		for _, regex := range f.regexes {
 			if regex.MatchString(k) {
-				returnValue.Insert(k, v)
+				v.CopyTo(returnValue.UpsertEmpty(k))
 				return true
 			}
 		}
@@ -68,7 +68,7 @@ func (f *filter) filterOut(attributes pcommon.Map) fields {
 				return true
 			}
 		}
-		returnValue.Insert(k, v)
+		v.CopyTo(returnValue.UpsertEmpty(k))
 		return true
 	})
 	returnValue.Sort()

@@ -145,7 +145,7 @@ func buildAttributes(dimensions map[string]interface{}) pcommon.Map {
 			// TODO: Log or metric for this odd ball?
 			continue
 		}
-		attributes.InsertString(key, fmt.Sprintf("%v", val))
+		attributes.UpsertString(key, fmt.Sprintf("%v", val))
 	}
 	return attributes
 }
