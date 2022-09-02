@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -348,6 +349,44 @@ func TestMultipleBlockValues(t *testing.T) {
 	mysteryValue, _ := attr.Get("mystery")
 	assert.Equal(t, "placeholder ****", nameValue.StringVal())
 	assert.Equal(t, "mystery ****", mysteryValue.StringVal())
+}
+
+// TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
+// Existing attributes must be updated, not overridden or ignored.
+func TestProcessAttrsAppliedTwice(t *testing.T) {
+	config := &Config{
+		AllowedKeys:   []string{"id", "credit_card", "mystery"},
+		BlockedValues: []string{"4[0-9]{12}(?:[0-9]{3})?"},
+		Summary:       "debug",
+	}
+	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t), consumertest.NewNop())
+	require.NoError(t, err)
+
+	attrs := pcommon.NewMapFromRaw(map[string]interface{}{
+		"id":             5,
+		"redundant":      1.2,
+		"mystery":        "mystery ****",
+		"credit_card":    "4111111111111111",
+		redactedKeys:     "dropped_attr1,dropped_attr2",
+		redactedKeyCount: 2,
+		maskedValues:     "mystery",
+		maskedValueCount: 1,
+	})
+	processor.processAttrs(context.TODO(), &attrs)
+
+	assert.Equal(t, 7, attrs.Len())
+	val, found := attrs.Get(redactedKeys)
+	assert.True(t, found)
+	assert.Equal(t, "dropped_attr1,dropped_attr2,redundant", val.StringVal())
+	val, found = attrs.Get(redactedKeyCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(3), val.IntVal())
+	val, found = attrs.Get(maskedValues)
+	assert.True(t, found)
+	assert.Equal(t, "credit_card,mystery", val.StringVal())
+	val, found = attrs.Get(maskedValueCount)
+	assert.True(t, found)
+	assert.Equal(t, int64(2), val.IntVal())
 }
 
 // runTest transforms the test input data and passes it through the processor
