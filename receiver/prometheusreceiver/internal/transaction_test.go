@@ -16,17 +16,21 @@ package internal
 
 import (
 	"context"
+	"encoding/hex"
 	"testing"
 	"time"
 
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 func Test_transaction_pdata(t *testing.T) {
@@ -133,6 +137,49 @@ func Test_transaction_pdata(t *testing.T) {
 			t.Errorf("expected error %q but got %q", errNoStartTimeMetrics, got)
 		}
 	})
+
+	// Test append exemplar method with exemplars
+	var ed exemplar.Exemplar
+	ed.Ts = 1660233371385
+	ed.Value = 0.012
+	ed.Labels = []labels.Label{{Name: "instance", Value: "localhost:8080"},
+		{Name: "job", Value: "test"},
+		{Name: "trace_id", Value: "0000a5bc3defg93h"},
+		{Name: "span_id", Value: "0000a5bc3defg93h"}}
+	labels := labels.Labels([]labels.Label{{Name: "instance", Value: "localhost:8080"},
+		{Name: "job", Value: "test"},
+		{Name: "__name__", Value: "foo_request_duration"}})
+	t.Run("Test append exemplar method with exemplars", func(t *testing.T) {
+		sink := new(consumertest.MetricsSink)
+		tr := newTransaction(scrapeCtx, nil, true, "", sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+		if _, got := tr.Append(0, labels, ed.Ts, 0.012); got != nil {
+			t.Errorf("expecting error == nil from Add() but got: %v\n", got)
+		}
+		if _, got := tr.AppendExemplar(0, labels, ed); got != nil {
+			t.Errorf("expecting error == nil from AppendExemplar() but got: %v\n", got)
+		}
+		fn := normalizeMetricName(labels.Get(model.MetricNameLabel))
+		gk := tr.metricBuilder.families[fn].getGroupKey(labels)
+		expected := tr.metricBuilder.families[fn].groups[gk].exemplars[ed.Value]
+		assert.Equal(t, expected.Timestamp(), pcommon.NewTimestampFromTime(time.UnixMilli(ed.Ts)))
+		assert.Equal(t, expected.DoubleVal(), ed.Value)
+		assert.Equal(t, expected.TraceID().HexString(), getTraceID("0000a5bc3defg93h"))
+		assert.Equal(t, expected.SpanID().HexString(), getSpanID("0000a5bc3defg93h"))
+	})
+}
+
+func getTraceID(trace string) string {
+	var tid [16]byte
+	tr, _ := hex.DecodeString(trace)
+	copyToLowerBytes(tid[:], tr)
+	return pcommon.NewTraceID(tid).HexString()
+}
+
+func getSpanID(span string) string {
+	var sid [8]byte
+	sp, _ := hex.DecodeString(span)
+	copyToLowerBytes(sid[:], sp)
+	return pcommon.NewSpanID(sid).HexString()
 }
 
 func nopObsRecv() *obsreport.Receiver {
