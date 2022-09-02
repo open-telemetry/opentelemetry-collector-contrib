@@ -35,12 +35,10 @@ func ReplaceAllMatches(target tql.GetSetter, pattern string, replacement string)
 		}
 		if attrs, ok := val.(pcommon.Map); ok {
 			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, value pcommon.Value) bool {
+			attrs.CopyTo(updated)
+			updated.Range(func(key string, value pcommon.Value) bool {
 				if glob.Match(value.StringVal()) {
-					updated.UpsertString(key, replacement)
-				} else {
-					value.CopyTo(updated.UpsertEmpty(key))
+					value.SetStringVal(replacement)
 				}
 				return true
 			})
