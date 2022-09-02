@@ -35,13 +35,11 @@ func ReplaceAllPatterns(target tql.GetSetter, regexPattern string, replacement s
 		}
 		if attrs, ok := val.(pcommon.Map); ok {
 			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, originalValue pcommon.Value) bool {
-				if compiledPattern.MatchString(originalValue.StringVal()) {
-					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.StringVal(), replacement)
-					updated.UpsertString(key, updatedString)
-				} else {
-					originalValue.CopyTo(updated.UpsertEmpty(key))
+			attrs.CopyTo(updated)
+			updated.Range(func(key string, value pcommon.Value) bool {
+				stringVal := value.StringVal()
+				if compiledPattern.MatchString(stringVal) {
+					value.SetStringVal(compiledPattern.ReplaceAllLiteralString(stringVal, replacement))
 				}
 				return true
 			})
