@@ -178,7 +178,7 @@ func translateHostnameAttr(attrs pcommon.Map) {
 	hostname, hostnameFound := attrs.Get("hostname")
 	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
 	if hostnameFound && !convHostNameFound {
-		attrs.Insert(conventions.AttributeHostName, hostname)
+		hostname.CopyTo(attrs.UpsertEmpty(conventions.AttributeHostName))
 		attrs.Remove("hostname")
 	}
 }
@@ -188,7 +188,7 @@ func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
 	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.InsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
+		attrs.UpsertString(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.StringVal())
 		attrs.Remove("jaeger.version")
 	}
 }

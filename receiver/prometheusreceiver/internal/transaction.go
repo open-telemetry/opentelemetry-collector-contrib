@@ -129,7 +129,7 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 				copyToLowerBytes(sid[:], b)
 				exemplar.SetSpanID(pcommon.NewSpanID(sid))
 			default:
-				exemplar.FilteredAttributes().Insert(lb.Name, pcommon.NewValueString(lb.Value))
+				exemplar.FilteredAttributes().UpsertString(lb.Name, lb.Value)
 			}
 		}
 		t.metricBuilder.families[familyName].groups[gk].exemplars[e.Value] = exemplar
