@@ -43,7 +43,7 @@ func randomAttributeMap() pcommon.Map {
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.Intn(500000))
-		attrs.InsertString(k, v)
+		attrs.UpsertString(k, v)
 	}
 	return attrs
 }
