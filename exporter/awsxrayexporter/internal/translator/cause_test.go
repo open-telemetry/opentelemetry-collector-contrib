@@ -133,14 +133,12 @@ func EventWithoutExceptionWithoutErrorHelper(t *testing.T, statusCode ptrace.Sta
 
 	event1 := span.Events().AppendEmpty()
 	event1.SetName("NotException")
-	attributes := pcommon.NewMap()
-	attributes.InsertString(conventions.AttributeHTTPMethod, "Post")
-	attributes.CopyTo(event1.Attributes())
+	event1.Attributes().UpsertString(conventions.AttributeHTTPMethod, "Post")
 
 	filtered, _ := makeHTTP(span)
 
 	res := pcommon.NewResource()
-	res.Attributes().InsertString(conventions.AttributeTelemetrySDKLanguage, "java")
+	res.Attributes().UpsertString(conventions.AttributeTelemetrySDKLanguage, "java")
 	isError, isFault, isThrottle, filteredResult, cause := makeCause(span, filtered, res)
 
 	assert.False(t, isFault)

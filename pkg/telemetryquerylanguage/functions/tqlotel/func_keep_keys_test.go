@@ -26,9 +26,9 @@ import (
 
 func Test_keepKeys(t *testing.T) {
 	input := pcommon.NewMap()
-	input.InsertString("test", "hello world")
-	input.InsertInt("test2", 3)
-	input.InsertBool("test3", true)
+	input.UpsertString("test", "hello world")
+	input.UpsertInt("test2", 3)
+	input.UpsertBool("test3", true)
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -52,7 +52,7 @@ func Test_keepKeys(t *testing.T) {
 			keys:   []string{"test"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
+				expectedMap.UpsertString("test", "hello world")
 			},
 		},
 		{
@@ -61,8 +61,8 @@ func Test_keepKeys(t *testing.T) {
 			keys:   []string{"test", "test2"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
+				expectedMap.UpsertString("test", "hello world")
+				expectedMap.UpsertInt("test2", 3)
 			},
 		},
 		{

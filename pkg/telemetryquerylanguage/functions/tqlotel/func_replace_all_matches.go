@@ -38,9 +38,9 @@ func ReplaceAllMatches(target tql.GetSetter, pattern string, replacement string)
 			updated.EnsureCapacity(attrs.Len())
 			attrs.Range(func(key string, value pcommon.Value) bool {
 				if glob.Match(value.StringVal()) {
-					updated.InsertString(key, replacement)
+					updated.UpsertString(key, replacement)
 				} else {
-					updated.Insert(key, value)
+					value.CopyTo(updated.UpsertEmpty(key))
 				}
 				return true
 			})

@@ -49,15 +49,15 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.InsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
+	resourceAttrs.UpsertString(semconv.AttributeK8SNodeName, ev.Source.Host)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("k8s.object.kind", ev.InvolvedObject.Kind)
-	resourceAttrs.InsertString("k8s.object.name", ev.InvolvedObject.Name)
-	resourceAttrs.InsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
-	resourceAttrs.InsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
-	resourceAttrs.InsertString("k8s.object.api_version", ev.InvolvedObject.APIVersion)
-	resourceAttrs.InsertString("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
+	resourceAttrs.UpsertString("k8s.object.kind", ev.InvolvedObject.Kind)
+	resourceAttrs.UpsertString("k8s.object.name", ev.InvolvedObject.Name)
+	resourceAttrs.UpsertString("k8s.object.uid", string(ev.InvolvedObject.UID))
+	resourceAttrs.UpsertString("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
+	resourceAttrs.UpsertString("k8s.object.api_version", ev.InvolvedObject.APIVersion)
+	resourceAttrs.UpsertString("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
 
 	lr.SetTimestamp(pcommon.NewTimestampFromTime(getEventTimestamp(ev)))
 
@@ -77,17 +77,17 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	attrs := lr.Attributes()
 	attrs.EnsureCapacity(totalLogAttributes)
 
-	attrs.InsertString("k8s.event.reason", ev.Reason)
-	attrs.InsertString("k8s.event.action", ev.Action)
-	attrs.InsertString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
-	attrs.InsertString("k8s.event.name", ev.ObjectMeta.Name)
-	attrs.InsertString("k8s.event.uid", string(ev.ObjectMeta.UID))
-	attrs.InsertString(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
+	attrs.UpsertString("k8s.event.reason", ev.Reason)
+	attrs.UpsertString("k8s.event.action", ev.Action)
+	attrs.UpsertString("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
+	attrs.UpsertString("k8s.event.name", ev.ObjectMeta.Name)
+	attrs.UpsertString("k8s.event.uid", string(ev.ObjectMeta.UID))
+	attrs.UpsertString(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.
 	if ev.Count != 0 {
-		attrs.InsertInt("k8s.event.count", int64(ev.Count))
+		attrs.UpsertInt("k8s.event.count", int64(ev.Count))
 	}
 
 	return ld

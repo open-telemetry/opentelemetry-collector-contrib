@@ -62,44 +62,44 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return res, "", nil
 	}
 	b := &resourceBuilder{logger: d.logger, attrs: res.Attributes()}
-	b.attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
+	b.attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderGCP)
 	b.add(conventions.AttributeCloudAccountID, d.detector.ProjectID)
 
 	switch d.detector.CloudPlatform() {
 	case gcp.GKE:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPKubernetesEngine)
 		b.addZoneOrRegion(d.detector.GKEAvailabilityZoneOrRegion)
 		b.add(conventions.AttributeK8SClusterName, d.detector.GKEClusterName)
 		b.add(conventions.AttributeHostID, d.detector.GKEHostID)
 		// GCEHostname is fallible on GKE, since it's not available when using workload identity.
 		b.addFallible(conventions.AttributeHostName, d.detector.GCEHostName)
 	case gcp.CloudRun:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudRun)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
 		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
 	case gcp.CloudFunctions:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPCloudFunctions)
 		b.add(conventions.AttributeFaaSName, d.detector.FaaSName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.FaaSVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.FaaSID)
 		b.add(conventions.AttributeCloudRegion, d.detector.FaaSCloudRegion)
 	case gcp.AppEngineFlex:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
 		b.addZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion)
 		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
 	case gcp.AppEngineStandard:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPAppEngine)
 		b.add(conventions.AttributeFaaSName, d.detector.AppEngineServiceName)
 		b.add(conventions.AttributeFaaSVersion, d.detector.AppEngineServiceVersion)
 		b.add(conventions.AttributeFaaSID, d.detector.AppEngineServiceInstance)
 		b.add(conventions.AttributeCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone)
 		b.add(conventions.AttributeCloudRegion, d.detector.AppEngineStandardCloudRegion)
 	case gcp.GCE:
-		b.attrs.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
+		b.attrs.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformGCPComputeEngine)
 		b.addZoneAndRegion(d.detector.GCEAvailabilityZoneAndRegion)
 		b.add(conventions.AttributeHostType, d.detector.GCEHostType)
 		b.add(conventions.AttributeHostID, d.detector.GCEHostID)

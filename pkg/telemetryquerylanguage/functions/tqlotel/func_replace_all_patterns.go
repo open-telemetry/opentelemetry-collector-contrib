@@ -39,9 +39,9 @@ func ReplaceAllPatterns(target tql.GetSetter, regexPattern string, replacement s
 			attrs.Range(func(key string, originalValue pcommon.Value) bool {
 				if compiledPattern.MatchString(originalValue.StringVal()) {
 					updatedString := compiledPattern.ReplaceAllLiteralString(originalValue.StringVal(), replacement)
-					updated.InsertString(key, updatedString)
+					updated.UpsertString(key, updatedString)
 				} else {
-					updated.Insert(key, originalValue)
+					originalValue.CopyTo(updated.UpsertEmpty(key))
 				}
 				return true
 			})

@@ -570,7 +570,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleVal(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().Insert(traceIDKey, pcommon.NewValueString(traceID.HexString()))
+		exemplar.FilteredAttributes().UpsertString(traceIDKey, traceID.HexString())
 	}
 
 	es.CopyTo(exemplars)

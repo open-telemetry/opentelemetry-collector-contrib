@@ -46,8 +46,7 @@ func getTestSummaryMetric() pmetric.Metric {
 	qVal3.SetValue(3)
 	qVal3.SetQuantile(.50)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
+	fillTestAttributes(input.Attributes())
 	return metricInput
 }
 
@@ -58,17 +57,14 @@ func getTestGaugeMetric() pmetric.Metric {
 	input := metricInput.Gauge().DataPoints().AppendEmpty()
 	input.SetIntVal(12)
 
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
+	fillTestAttributes(input.Attributes())
 	return metricInput
 }
 
-func getTestAttributes() pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.InsertString("test", "hello world")
-	attrs.InsertInt("test2", 3)
-	attrs.InsertBool("test3", true)
-	return attrs
+func fillTestAttributes(attrs pcommon.Map) {
+	attrs.UpsertString("test", "hello world")
+	attrs.UpsertInt("test2", 3)
+	attrs.UpsertBool("test3", true)
 }
 
 func summaryTest(tests []summaryTestCase, t *testing.T) {
@@ -124,8 +120,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -154,8 +149,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -184,8 +178,7 @@ func Test_ConvertSummarySumValToSum(t *testing.T) {
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(12.34)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
