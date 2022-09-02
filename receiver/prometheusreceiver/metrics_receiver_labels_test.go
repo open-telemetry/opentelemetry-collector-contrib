@@ -574,9 +574,9 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.UpdateString("service.name", "honor_labels_test")
-	expectedAttributes.UpdateString("service.instance.id", "hostname:8080")
-	expectedAttributes.UpdateString("net.host.port", "8080")
+	expectedAttributes.UpsertString("service.name", "honor_labels_test")
+	expectedAttributes.UpsertString("service.instance.id", "hostname:8080")
+	expectedAttributes.UpsertString("net.host.port", "8080")
 	expectedAttributes.UpsertString("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
@@ -661,9 +661,9 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.UpdateString("service.name", "not-target1")
-	wantAttributes.UpdateString("service.instance.id", "relabeled-instance")
-	wantAttributes.UpdateString("net.host.port", "")
+	wantAttributes.UpsertString("service.name", "not-target1")
+	wantAttributes.UpsertString("service.instance.id", "relabeled-instance")
+	wantAttributes.UpsertString("net.host.port", "")
 	wantAttributes.UpsertString("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()

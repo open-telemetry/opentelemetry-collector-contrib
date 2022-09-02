@@ -114,15 +114,15 @@ func TestProcess(t *testing.T) {
 		{
 			query: `replace_pattern(attributes["http.method"], "get", "post")`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpdateString("http.method", "post")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpdateString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("http.method", "post")
 			},
 		},
 		{
 			query: `replace_all_patterns(attributes, "get", "post")`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpdateString("http.method", "post")
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpdateString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "post")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().UpsertString("http.method", "post")
 			},
 		},
 		{

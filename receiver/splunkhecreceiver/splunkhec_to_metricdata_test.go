@@ -267,7 +267,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			}(),
 			wantMetricsData: func() pmetric.Metrics {
 				md := buildDefaultMetricsData(nanos)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("k0", "")
 				return md
 			}(),
 			hecConfig: defaultTestingHecConfig,
