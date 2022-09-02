@@ -143,6 +143,12 @@ func TestProcess(t *testing.T) {
 					"http://localhost/health")
 			},
 		},
+		{
+			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where body == Concat("", "operation", "A")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().InsertString("test", "get: http://localhost/health")
+			},
+		},
 	}
 
 	for _, tt := range tests {

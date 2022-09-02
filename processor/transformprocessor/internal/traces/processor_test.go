@@ -165,6 +165,32 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).SetKind(2)
 			},
 		},
+		{
+			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"]))`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().InsertString("test", "get: http://localhost/health")
+			},
+		},
+		{
+			query: `set(attributes["test"], Concat("", attributes["http.method"], ": ", attributes["http.url"]))`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "get: http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().InsertString("test", "get: http://localhost/health")
+			},
+		},
+		{
+			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where name == Concat("", "operation", "A")`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("test", "get: http://localhost/health")
+			},
+		},
+		{
+			query: `set(attributes["kind"], Concat("", "kind", ": ", kind)) where kind == 1`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().InsertString("kind", "kind: 1")
+			},
+		},
 	}
 
 	for _, tt := range tests {
