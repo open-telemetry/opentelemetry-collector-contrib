@@ -308,7 +308,7 @@ func generateSampleMetricsData(attrs map[string]string) pmetric.Metrics {
 	rm := m.ResourceMetrics()
 	res := rm.AppendEmpty().Resource()
 	for k, v := range attrs {
-		res.Attributes().InsertString(k, v)
+		res.Attributes().UpsertString(k, v)
 	}
 	return m
 }
