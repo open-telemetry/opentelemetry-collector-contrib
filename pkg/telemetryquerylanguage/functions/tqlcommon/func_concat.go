@@ -21,7 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func Join(delimiter string, vals []tql.Getter) (tql.ExprFunc, error) {
+func Concat(delimiter string, vals []tql.Getter) (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
 		builder := strings.Builder{}
 		for i, rv := range vals {
