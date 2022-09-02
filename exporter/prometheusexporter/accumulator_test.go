@@ -51,8 +51,8 @@ func TestAccumulateDeltaAggregation(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{3.5, 10.0}))
 				dp.SetSum(42.42)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -91,8 +91,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -105,8 +105,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -121,8 +121,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -137,8 +137,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -153,8 +153,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -169,8 +169,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -187,8 +187,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{3.5, 10.0}))
 				dp.SetSum(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -203,8 +203,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetCount(10)
 				dp.SetSum(0.012)
 				dp.SetCount(10)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				fillQuantileValue := func(pN, value float64, dest pmetric.ValueAtQuantile) {
 					dest.SetQuantile(pN)
@@ -223,8 +223,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Gauge().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				dp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
@@ -240,8 +240,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				dp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
@@ -259,8 +259,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetCount(7)
 				dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{3.5, 10.0}))
 				dp.SetSum(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				dp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
@@ -276,8 +276,8 @@ func TestAccumulateMetrics(t *testing.T) {
 				dp.SetCount(10)
 				dp.SetSum(0.012)
 				dp.SetCount(10)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 				dp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 				fillQuantileValue := func(pN, value float64, dest pmetric.ValueAtQuantile) {
@@ -376,8 +376,8 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(int64(v))
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTimestamp))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
@@ -393,8 +393,8 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(v)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTimestamp))
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 			},
@@ -470,8 +470,8 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 				metric.Sum().SetIsMonotonic(false)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -484,8 +484,8 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 				metric.Sum().SetIsMonotonic(false)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -497,8 +497,8 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityUnspecified)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},
@@ -510,8 +510,8 @@ func TestAccumulateDroppedMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityUnspecified)
 				dp := metric.Sum().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
-				dp.Attributes().InsertString("label_1", "1")
-				dp.Attributes().InsertString("label_2", "2")
+				dp.Attributes().UpsertString("label_1", "1")
+				dp.Attributes().UpsertString("label_2", "2")
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			},
 		},

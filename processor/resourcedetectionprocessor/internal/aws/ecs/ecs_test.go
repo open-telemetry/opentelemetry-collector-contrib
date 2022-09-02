@@ -103,27 +103,20 @@ func Test_ecsDetectV4(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_ecs")
-	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.InsertString("aws.ecs.task.family", "family")
-	attr.InsertString("aws.ecs.task.revision", "26")
-	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.availability_zone", "us-west-2a")
-	attr.InsertString("cloud.account.id", "123456789123")
-	attr.InsertString("aws.ecs.launchtype", "ec2")
-
-	attribFields := []string{"aws.log.group.names", "aws.log.group.arns", "aws.log.stream.names", "aws.log.stream.arns"}
-	attribVals := []string{"group", "arn:aws:logs:us-east-1:123456789123:log-group:group", "stream", "arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream"}
-
-	for i, field := range attribFields {
-		ava := pcommon.NewValueSlice()
-		av := ava.SliceVal()
-		avs := av.AppendEmpty()
-		pcommon.NewValueString(attribVals[i]).CopyTo(avs)
-		attr.Insert(field, ava)
-	}
+	attr.UpsertString("cloud.provider", "aws")
+	attr.UpsertString("cloud.platform", "aws_ecs")
+	attr.UpsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.UpsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.UpsertString("aws.ecs.task.family", "family")
+	attr.UpsertString("aws.ecs.task.revision", "26")
+	attr.UpsertString("cloud.region", "us-west-2")
+	attr.UpsertString("cloud.availability_zone", "us-west-2a")
+	attr.UpsertString("cloud.account.id", "123456789123")
+	attr.UpsertString("aws.ecs.launchtype", "ec2")
+	attr.UpsertEmptySlice("aws.log.group.names").AppendEmpty().SetStringVal("group")
+	attr.UpsertEmptySlice("aws.log.group.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group")
+	attr.UpsertEmptySlice("aws.log.stream.names").AppendEmpty().SetStringVal("stream")
+	attr.UpsertEmptySlice("aws.log.stream.arns").AppendEmpty().SetStringVal("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: true}}
 	got, _, err := d.Detect(context.TODO())
@@ -138,15 +131,15 @@ func Test_ecsDetectV3(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_ecs")
-	attr.InsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
-	attr.InsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
-	attr.InsertString("aws.ecs.task.family", "family")
-	attr.InsertString("aws.ecs.task.revision", "26")
-	attr.InsertString("cloud.region", "us-west-2")
-	attr.InsertString("cloud.availability_zone", "us-west-2a")
-	attr.InsertString("cloud.account.id", "123456789123")
+	attr.UpsertString("cloud.provider", "aws")
+	attr.UpsertString("cloud.platform", "aws_ecs")
+	attr.UpsertString("aws.ecs.cluster.arn", "arn:aws:ecs:us-west-2:123456789123:cluster/my-cluster")
+	attr.UpsertString("aws.ecs.task.arn", "arn:aws:ecs:us-west-2:123456789123:task/123")
+	attr.UpsertString("aws.ecs.task.family", "family")
+	attr.UpsertString("aws.ecs.task.revision", "26")
+	attr.UpsertString("cloud.region", "us-west-2")
+	attr.UpsertString("cloud.availability_zone", "us-west-2a")
+	attr.UpsertString("cloud.account.id", "123456789123")
 
 	d := Detector{provider: &mockMetaDataProvider{isV4: false}}
 	got, _, err := d.Detect(context.TODO())

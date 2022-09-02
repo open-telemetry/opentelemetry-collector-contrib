@@ -67,17 +67,17 @@ func TestSerializeBody(t *testing.T) {
 	arrayval.SliceVal().AppendEmpty().SetStringVal("b")
 
 	simplemap := pcommon.NewValueMap()
-	simplemap.MapVal().InsertString("key", "val")
+	simplemap.MapVal().UpsertString("key", "val")
 
 	complexmap := pcommon.NewValueMap()
-	complexmap.MapVal().InsertString("keystr", "val")
-	complexmap.MapVal().InsertInt("keyint", 1)
-	complexmap.MapVal().InsertDouble("keyint", 1)
-	complexmap.MapVal().InsertBool("keybool", true)
-	complexmap.MapVal().Insert("keynull", pcommon.NewValueEmpty())
-	complexmap.MapVal().Insert("keyarr", arrayval)
-	complexmap.MapVal().Insert("keymap", simplemap)
-	complexmap.MapVal().Insert("keyempty", pcommon.NewValueEmpty())
+	complexmap.MapVal().UpsertString("keystr", "val")
+	complexmap.MapVal().UpsertInt("keyint", 1)
+	complexmap.MapVal().UpsertDouble("keyint", 1)
+	complexmap.MapVal().UpsertBool("keybool", true)
+	complexmap.MapVal().UpsertEmpty("keynull")
+	arrayval.CopyTo(complexmap.MapVal().UpsertEmpty("keyarr"))
+	simplemap.CopyTo(complexmap.MapVal().UpsertEmpty("keymap"))
+	complexmap.MapVal().UpsertEmpty("keyempty")
 
 	testcases := []struct {
 		input    pcommon.Value

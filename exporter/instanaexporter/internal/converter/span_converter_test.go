@@ -85,7 +85,7 @@ func setupSpan(span *ptrace.Span, opts SpanOptions) {
 	span.SetTraceID(pcommon.NewTraceID(traceID))
 
 	// adding attributes (tags in the instana side)
-	span.Attributes().Insert("some_key", pcommon.NewValueBool(true))
+	span.Attributes().UpsertBool("some_key", true)
 }
 
 func generateAttrs() pcommon.Map {
@@ -101,7 +101,7 @@ func generateAttrs() pcommon.Map {
 	}
 
 	attrs := pcommon.NewMapFromRaw(rawmap)
-	attrs.InsertBool("itistrue", true)
+	attrs.UpsertBool("itistrue", true)
 
 	return attrs
 }

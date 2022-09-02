@@ -827,13 +827,13 @@ func populateAttributes(t *testing.T, attrMap *pcommon.Map, attributes map[strin
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:
-			attrMap.InsertString(key, casted)
+			attrMap.UpsertString(key, casted)
 		case int64:
-			attrMap.InsertInt(key, casted)
+			attrMap.UpsertInt(key, casted)
 		case int:
-			attrMap.InsertInt(key, int64(casted))
+			attrMap.UpsertInt(key, int64(casted))
 		case bool:
-			attrMap.InsertBool(key, casted)
+			attrMap.UpsertBool(key, casted)
 		default:
 			require.Fail(t, "Test setup issue: unknown type, could not insert data")
 		}

@@ -78,19 +78,19 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	m := pmetric.NewMetrics()
 
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu")
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_system")
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "something-else")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "something-else")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_idle")
@@ -141,7 +141,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(
@@ -206,7 +206,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().InsertString("X-Tenant", "acme")
+		rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 		assert.Len(t, defaultExp.AllMetrics(), 0,
@@ -220,7 +220,7 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		m := pmetric.NewMetrics()
 		rm := m.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
+		rm.Resource().Attributes().UpsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 		assert.Len(t, defaultExp.AllMetrics(), 1,
@@ -264,8 +264,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 
 	m := pmetric.NewMetrics()
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
-	rm.Resource().Attributes().InsertString("attr", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), m))
 	metrics := mExp.AllMetrics()
@@ -321,9 +321,9 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			rm := m.ResourceMetrics().AppendEmpty()
 
 			attrs := rm.Resource().Attributes()
-			attrs.InsertString("X-Tenant", "acme")
-			attrs.InsertString("X-Tenant1", "acme")
-			attrs.InsertString("X-Tenant2", "acme")
+			attrs.UpsertString("X-Tenant", "acme")
+			attrs.UpsertString("X-Tenant1", "acme")
+			attrs.UpsertString("X-Tenant2", "acme")
 
 			assert.NoError(b, exp.ConsumeMetrics(context.Background(), m))
 		}
