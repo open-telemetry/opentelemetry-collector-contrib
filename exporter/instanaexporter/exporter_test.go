@@ -26,11 +26,9 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/testutils"
 )
 
-func TestPushConvertedDefaultTraces(t *testing.T) {
+func TestPushConvertedTraces(t *testing.T) {
 	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
@@ -48,45 +46,16 @@ func TestPushConvertedDefaultTraces(t *testing.T) {
 	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
 
-	err = instanaExporter.pushConvertedTraces(ctx, testutils.TestTraces.Clone())
+	err = instanaExporter.pushConvertedTraces(ctx, newTestTraces())
 	assert.NoError(t, err)
 }
 
-func TestPushConvertedSimpleTraces(t *testing.T) {
-	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.WriteHeader(http.StatusAccepted)
-	}))
-	defer traceServer.Close()
-
-	cfg := Config{
-		AgentKey:           "key11",
-		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: traceServer.URL},
-		Endpoint:           traceServer.URL,
-		ExporterSettings:   config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "valid")),
-	}
-
-	instanaExporter := newInstanaExporter(&cfg, componenttest.NewNopExporterCreateSettings())
-	ctx := context.Background()
-	err := instanaExporter.start(ctx, componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	err = instanaExporter.pushConvertedTraces(ctx, simpleTraces())
-	assert.NoError(t, err)
-}
-
-func simpleTraces() ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
-}
-
-func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
+func newTestTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rspans := traces.ResourceSpans().AppendEmpty()
+	rspans.Resource().Attributes().UpsertString("instana.agent", "agent1")
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	span.SetTraceID(traceID)
+	span.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
-	if attrs == nil {
-		return traces
-	}
-	pcommon.NewMapFromRaw(attrs).CopyTo(rspans.Resource().Attributes())
 	return traces
 }
