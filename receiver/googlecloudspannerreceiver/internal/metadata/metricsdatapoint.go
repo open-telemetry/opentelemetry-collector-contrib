@@ -64,14 +64,13 @@ func (mdp *MetricsDataPoint) CopyTo(dataPoint pmetric.NumberDataPoint) {
 	mdp.metricValue.SetValueTo(dataPoint)
 
 	attributes := dataPoint.Attributes()
-
-	for _, labelValue := range mdp.labelValues {
-		labelValue.SetValueTo(attributes)
+	attributes.EnsureCapacity(3 + len(mdp.labelValues))
+	attributes.UpsertString(projectIDLabelName, mdp.databaseID.ProjectID())
+	attributes.UpsertString(instanceIDLabelName, mdp.databaseID.InstanceID())
+	attributes.UpsertString(databaseLabelName, mdp.databaseID.DatabaseName())
+	for i := range mdp.labelValues {
+		mdp.labelValues[i].SetValueTo(attributes)
 	}
-
-	dataPoint.Attributes().InsertString(projectIDLabelName, mdp.databaseID.ProjectID())
-	dataPoint.Attributes().InsertString(instanceIDLabelName, mdp.databaseID.InstanceID())
-	dataPoint.Attributes().InsertString(databaseLabelName, mdp.databaseID.DatabaseName())
 }
 
 func (mdp *MetricsDataPoint) GroupingKey() MetricsDataPointKey {
