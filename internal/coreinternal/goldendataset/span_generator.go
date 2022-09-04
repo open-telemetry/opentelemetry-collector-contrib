@@ -431,7 +431,7 @@ func appendSpanEvent(index int, spanEvents ptrace.SpanEventSlice) {
 	case 1:
 		spanEvent.SetName("custom")
 		attrMap := spanEvent.Attributes()
-		attrMap.UpdateBool("app.inretry", true)
+		attrMap.UpsertBool("app.inretry", true)
 		attrMap.UpsertDouble("app.progress", 0.6)
 		attrMap.UpsertString("app.statemap", "14|5|202")
 	default:
@@ -450,7 +450,7 @@ func appendSpanLink(random io.Reader, index int, spanLinks ptrace.SpanLinkSlice)
 		attrMap := spanLink.Attributes()
 		appendMessagingConsumerAttributes(attrMap)
 		if index%4 == 1 {
-			attrMap.UpdateBool("app.inretry", true)
+			attrMap.UpsertBool("app.inretry", true)
 			attrMap.UpsertDouble("app.progress", 0.6)
 			attrMap.UpsertString("app.statemap", "14|5|202")
 		}

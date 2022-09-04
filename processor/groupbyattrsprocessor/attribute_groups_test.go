@@ -78,7 +78,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			},
 			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
-				expectedResource.Attributes().UpdateString("somekey1", "replaced-value")
+				expectedResource.Attributes().UpsertString("somekey1", "replaced-value")
 			},
 		},
 		{
