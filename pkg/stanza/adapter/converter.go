@@ -238,7 +238,7 @@ func (c *Converter) aggregationLoop() {
 				rls := logs.AppendEmpty()
 
 				resource := rls.Resource()
-				insertToAttributeMap(wi.Resource, resource.Attributes())
+				upsertToMap(wi.Resource, resource.Attributes())
 
 				ills := rls.ScopeLogs()
 				lr := ills.AppendEmpty().LogRecords().AppendEmpty()
@@ -323,7 +323,7 @@ func Convert(ent *entry.Entry) plog.Logs {
 	rls := logs.AppendEmpty()
 
 	resource := rls.Resource()
-	insertToAttributeMap(ent.Resource, resource.Attributes())
+	upsertToMap(ent.Resource, resource.Attributes())
 
 	ills := rls.ScopeLogs().AppendEmpty()
 	lr := ills.LogRecords().AppendEmpty()
@@ -344,8 +344,8 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 		dest.SetSeverityText(ent.SeverityText)
 	}
 
-	insertToAttributeMap(ent.Attributes, dest.Attributes())
-	insertToAttributeVal(ent.Body, dest.Body())
+	upsertToMap(ent.Attributes, dest.Attributes())
+	upsertToAttributeVal(ent.Body, dest.Body())
 
 	if ent.TraceID != nil {
 		var buffer [16]byte
@@ -365,14 +365,14 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 }
 
-func insertToAttributeVal(value interface{}, dest pcommon.Value) {
+func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 	switch t := value.(type) {
 	case bool:
 		dest.SetBoolVal(t)
 	case string:
 		dest.SetStringVal(t)
 	case []string:
-		toStringArray(t).CopyTo(dest)
+		upsertStringsToSlice(t, dest.SetEmptySliceVal())
 	case []byte:
 		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
 	case int64:
@@ -400,88 +400,33 @@ func insertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case float32:
 		dest.SetDoubleVal(float64(t))
 	case map[string]interface{}:
-		toAttributeMap(t).CopyTo(dest)
+		upsertToMap(t, dest.SetEmptyMapVal())
 	case []interface{}:
-		toAttributeArray(t).CopyTo(dest)
+		upsertToSlice(t, dest.SetEmptySliceVal())
 	default:
 		dest.SetStringVal(fmt.Sprintf("%v", t))
 	}
 }
 
-func toAttributeMap(obsMap map[string]interface{}) pcommon.Value {
-	attVal := pcommon.NewValueMap()
-	attMap := attVal.MapVal()
-	insertToAttributeMap(obsMap, attMap)
-	return attVal
-}
-
-func insertToAttributeMap(obsMap map[string]interface{}, dest pcommon.Map) {
+func upsertToMap(obsMap map[string]interface{}, dest pcommon.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
-		switch t := v.(type) {
-		case bool:
-			dest.InsertBool(k, t)
-		case string:
-			dest.InsertString(k, t)
-		case []string:
-			arr := toStringArray(t)
-			dest.Insert(k, arr)
-		case []byte:
-			dest.InsertBytes(k, pcommon.NewImmutableByteSlice(t))
-		case int64:
-			dest.InsertInt(k, t)
-		case int32:
-			dest.InsertInt(k, int64(t))
-		case int16:
-			dest.InsertInt(k, int64(t))
-		case int8:
-			dest.InsertInt(k, int64(t))
-		case int:
-			dest.InsertInt(k, int64(t))
-		case uint64:
-			dest.InsertInt(k, int64(t))
-		case uint32:
-			dest.InsertInt(k, int64(t))
-		case uint16:
-			dest.InsertInt(k, int64(t))
-		case uint8:
-			dest.InsertInt(k, int64(t))
-		case uint:
-			dest.InsertInt(k, int64(t))
-		case float64:
-			dest.InsertDouble(k, t)
-		case float32:
-			dest.InsertDouble(k, float64(t))
-		case map[string]interface{}:
-			subMap := toAttributeMap(t)
-			dest.Insert(k, subMap)
-		case []interface{}:
-			arr := toAttributeArray(t)
-			dest.Insert(k, arr)
-		default:
-			dest.InsertString(k, fmt.Sprintf("%v", t))
-		}
+		upsertToAttributeVal(v, dest.UpsertEmpty(k))
 	}
 }
 
-func toAttributeArray(obsArr []interface{}) pcommon.Value {
-	arrVal := pcommon.NewValueSlice()
-	arr := arrVal.SliceVal()
-	arr.EnsureCapacity(len(obsArr))
+func upsertToSlice(obsArr []interface{}, dest pcommon.Slice) {
+	dest.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
-		insertToAttributeVal(v, arr.AppendEmpty())
+		upsertToAttributeVal(v, dest.AppendEmpty())
 	}
-	return arrVal
 }
 
-func toStringArray(strArr []string) pcommon.Value {
-	arrVal := pcommon.NewValueSlice()
-	arr := arrVal.SliceVal()
-	arr.EnsureCapacity(len(strArr))
-	for _, v := range strArr {
-		insertToAttributeVal(v, arr.AppendEmpty())
+func upsertStringsToSlice(obsArr []string, dest pcommon.Slice) {
+	dest.EnsureCapacity(len(obsArr))
+	for _, v := range obsArr {
+		dest.AppendEmpty().SetStringVal(v)
 	}
-	return arrVal
 }
 
 var sevMap = map[entry.Severity]plog.SeverityNumber{

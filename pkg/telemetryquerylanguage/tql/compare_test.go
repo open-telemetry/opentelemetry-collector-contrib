@@ -21,18 +21,18 @@ import (
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.
 var (
-	ta          = false
-	tb          = true
-	sa          = "1"
-	sb          = "2"
-	sn          = ""
-	ba          = []byte("1")
-	bb          = []byte("2")
-	bn   []byte = nil
-	i64a        = int64(1)
-	i64b        = int64(2)
-	f64a        = float64(1)
-	f64b        = float64(2)
+	ta   = false
+	tb   = true
+	sa   = "1"
+	sb   = "2"
+	sn   = ""
+	ba   = []byte("1")
+	bb   = []byte("2")
+	bn   []byte
+	i64a = int64(1)
+	i64b = int64(2)
+	f64a = float64(1)
+	f64b = float64(2)
 )
 
 type testA struct {
