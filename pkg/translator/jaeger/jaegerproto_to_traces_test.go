@@ -458,21 +458,28 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 
 	got, err := ProtoToTraces(batches)
 
-	for i := 0; i < 2; i++ {
+	assert.NoError(t, err)
+
+	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
+	assert.Equal(t, expected.SpanCount(), got.SpanCount())
+
+	lenbatches := 2 //len(batches)
+	found := 0
+
+	for i := 0; i < lenbatches; i++ {
 		rsExpected := expected.ResourceSpans().At(i)
-		for j := 0; j < 2; j++ {
+		for j := 0; j < lenbatches; j++ {
 			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
 				if nameExpected == nameGot {
-					assert.Equal(t, nameGot, 0)
+					assert.Equal(t, nameGot, found)
+					assert.Equal(t, got.SpanCount(), found)
 				}
 				return nameExpected == nameGot
 			})
 		}
 	}
-
-	assert.NoError(t, err)
 }
 
 func TestJSpanKindToInternal(t *testing.T) {
