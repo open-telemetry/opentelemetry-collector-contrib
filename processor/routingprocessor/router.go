@@ -49,6 +49,25 @@ func newRouter[E component.Exporter](config Config, logger *zap.Logger) router[E
 
 func (r *router[E]) registerExporters(available map[config.ComponentID]component.Exporter) error {
 	// register default exporters
+	err := r.registerDefaultExporters(available)
+	if err != nil {
+		return err
+	}
+
+	// register exporters for each route
+	for _, entry := range r.config.Table {
+		err := r.registerRouteExporters(entry.Value, entry.Exporters, available)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// registerDefaultExporters registers the configured default exporters
+// using the provided available exporters map.
+func (r *router[E]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
 	for _, name := range r.config.DefaultExporters {
 		e, err := r.extractExporter(name, available)
 		if errors.Is(err, errExporterNotFound) {
@@ -60,20 +79,25 @@ func (r *router[E]) registerExporters(available map[config.ComponentID]component
 		r.defaultExporters = append(r.defaultExporters, e)
 	}
 
-	// register exporters for each route
-	for _, entry := range r.config.Table {
-		route := entry.Value
-		exporters := entry.Exporters
-		for _, name := range exporters {
-			e, err := r.extractExporter(name, available)
-			if errors.Is(err, errExporterNotFound) {
-				continue
-			}
-			if err != nil {
-				return err
-			}
-			r.exporters[route] = append(r.exporters[route], e)
+	return nil
+}
+
+// registerRouteExporters registers route exporters using the provided
+// available exporters map to check if they were available.
+func (r *router[E]) registerRouteExporters(
+	route string,
+	exporters []string,
+	available map[config.ComponentID]component.Exporter,
+) error {
+	for _, name := range exporters {
+		e, err := r.extractExporter(name, available)
+		if errors.Is(err, errExporterNotFound) {
+			continue
 		}
+		if err != nil {
+			return err
+		}
+		r.exporters[route] = append(r.exporters[route], e)
 	}
 
 	return nil
