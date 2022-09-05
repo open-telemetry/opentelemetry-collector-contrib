@@ -246,6 +246,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+
 			if tt.want != nil {
 				require.NotNil(t, traces)
 				require.Equal(t, 1, traces.ResourceSpans().Len())
@@ -261,7 +262,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span := instrumentation.Spans().At(0)
 				compareSpans(t, &expectedSpan, &span)
 			} else {
-				assert.Nil(t, traces)
+				assert.Equal(t, ptrace.Traces{}, traces)
 			}
 		})
 	}
@@ -304,7 +305,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapResourceSpanAttributes(tt.spanData, &actual)
+			u.mapResourceSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -371,7 +372,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapClientSpanData(tt.data, &actual)
+			u.mapClientSpanData(tt.data, actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.want(&expected)
 			assert.Equal(t, expected, actual)
@@ -500,7 +501,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapClientSpanAttributes(tt.spanData, &actual)
+			u.mapClientSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -792,7 +793,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(&expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapEvents(tt.spanData, &actual)
+			u.mapEvents(tt.spanData, actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, &expected, &actual)
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
@@ -998,7 +999,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		t.Run(fmt.Sprintf("%T", testCase.data), func(t *testing.T) {
 			const key = "some-property"
 			attributeMap := pcommon.NewMap()
-			unmarshaller.insertUserProperty(&attributeMap, key, testCase.data)
+			unmarshaller.insertUserProperty(attributeMap, key, testCase.data)
 			actual, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 			require.True(t, ok)
 			assert.Equal(t, testCase.expectedType, actual.Type())
@@ -1015,7 +1016,7 @@ func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing
 	}
 	const key = "some-property"
 	attributeMap := pcommon.NewMap()
-	unmarshaller.insertUserProperty(&attributeMap, key, "invalid data type")
+	unmarshaller.insertUserProperty(attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
 	validateMetric(t, viewRecoverableUnmarshallingErrors, 1)
