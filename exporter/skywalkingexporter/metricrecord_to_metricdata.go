@@ -221,7 +221,6 @@ func metricsRecordToMetricData(
 		service, serviceInstance := resourceToServiceInfo(resMetricSlice.Resource())
 		insMetricSlice := resMetricSlice.ScopeMetrics()
 		metrics = &metricpb.MeterDataCollection{}
-		metrics.MeterData = make([]*metricpb.MeterData, 0)
 		for j := 0; j < insMetricSlice.Len(); j++ {
 			insMetrics := insMetricSlice.At(j)
 			// ignore insMetrics.Scope()

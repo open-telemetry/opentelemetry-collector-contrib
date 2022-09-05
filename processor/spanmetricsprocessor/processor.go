@@ -282,6 +282,7 @@ func (p *processorImp) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 		mLatency := ilm.Metrics().AppendEmpty()
 		mLatency.SetDataType(pmetric.MetricDataTypeHistogram)
 		mLatency.SetName("latency")
+		mLatency.SetUnit("ms")
 		mLatency.Histogram().SetAggregationTemporality(p.config.GetAggregationTemporality())
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
@@ -447,7 +448,7 @@ func (p *processorImp) buildDimensionKVs(serviceName string, span ptrace.Span, o
 	dims.UpsertString(statusCodeKey, span.Status().Code().String())
 	for _, d := range optionalDims {
 		if v, ok := getDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			dims.Upsert(d.Name, v)
+			v.CopyTo(dims.UpsertEmpty(d.Name))
 		}
 	}
 	return dims
@@ -569,7 +570,7 @@ func setLatencyExemplars(exemplarsData []exemplarData, timestamp pcommon.Timesta
 
 		exemplar.SetDoubleVal(value)
 		exemplar.SetTimestamp(timestamp)
-		exemplar.FilteredAttributes().Insert(traceIDKey, pcommon.NewValueString(traceID.HexString()))
+		exemplar.FilteredAttributes().UpsertString(traceIDKey, traceID.HexString())
 	}
 
 	es.CopyTo(exemplars)

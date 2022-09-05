@@ -189,7 +189,7 @@ func (p *Transformer) SetOutputIDs(opIDs []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (p *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
-	result := make([]operator.Operator, 0)
+	var result []operator.Operator
 	for _, operatorID := range operatorIDs {
 		operator, err := p.findOperator(operators, operatorID)
 		if err != nil {

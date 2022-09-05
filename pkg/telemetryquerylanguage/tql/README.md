@@ -12,7 +12,7 @@ The TQL grammar includes Invocations, Values and Expressions.
 
 ### Invocations
 
-Invocations represent a function call. Invocations are made up of 2 parts
+Invocations represent a function call. Invocations are made up of 2 parts:
 
 - a string identifier. The string identifier must start with a letter or an underscore (`_`).
 - zero or more Values (comma separated) surrounded by parentheses (`()`).
@@ -110,10 +110,38 @@ Booleans can be either:
 - A literal boolean value (`true` or `false`).
 - A Comparison, made up of a left Value, an operator, and a right Value. See [Values](#values) for details on what a Value can be.
 
-Operators determine how the two Values are compared.  The valid operators are:
+Operators determine how the two Values are compared.
 
-- Equal (`==`). Equal (`==`) checks if the left and right Values are equal, using Go's `==` operator.
-- Not Equal (`!=`).  Not Equal (`!=`) checks if the left and right Values are not equal, using Go's `!=` operator.
+The valid operators are:
+
+- Equal (`==`). Tests if the left and right Values are equal (see the Comparison Rules below).
+- Not Equal (`!=`).  Tests if the left and right Values are not equal.
+- Less Than (`<`). Tests if left is less than right.
+- Greater Than (`>`). Tests if left is greater than right.
+- Less Than or Equal To (`<=`). Tests if left is less than or equal to right.
+- Greater Than or Equal to (`>=`). Tests if left is greater than or equal to right.
+
+### Comparison Rules
+
+The table below describes what happens when two Values are compared. Value types are provided by the user of TQL. All of the value types supported by TQL are listed in this table.
+
+If numeric values are of different types, they are compared as `float64`.
+
+For numeric values and strings, the comparison rules are those implemented by Go. Numeric values are done with signed comparisons. For binary values, `false` is considered to be less than `true`.
+
+For values that are not one of the basic primitive types, the only valid comparisons are Equal and Not Equal, which are implemented using Go's standard `==` and `!=` operators.
+
+A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false. Note that a nil byte array is considered equivalent to nil.
+
+
+| base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
+| --------- | ----------- | ------------------- | ------------------- | ------------------------------- | ------------------------ | ---------------------- |
+| bool      | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              |
+| int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
+| float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |
+| string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
+| Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     |
+| nil       | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only |
 
 ## Accessing signal telemetry
 
@@ -121,7 +149,7 @@ Access to signal telemetry is provided to TQL functions through a `TransformCont
 
 ### Getters and Setters
 
-Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted. 
+Getters allow for reading the following types of data. See the respective section of each Value type for how they are interpreted.
 - [Paths](#paths).
 - [Enums](#enums).
 - [Literals](#literals).

@@ -1,0 +1,23 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  instana/bad_endpoint:
+    endpoint: never a url
+    agent_key: key1
+  instana/missing_agent_key:
+    endpoint: http://example.com/api/
+  instana/valid:
+    endpoint: http://example.com/api/
+    agent_key: key1
+
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [instana/bad_endpoint, instana/valid, instana/missing_agent_key]

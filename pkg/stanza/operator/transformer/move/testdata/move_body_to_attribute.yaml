@@ -1,3 +1,0 @@
-type: move
-from: body.key
-to: attributes.new

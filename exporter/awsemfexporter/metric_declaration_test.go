@@ -579,7 +579,7 @@ func TestExtractDimensions(t *testing.T) {
 			map[string]string{
 				"a": "foo",
 			},
-			nil,
+			[][]string{{}},
 		},
 	}
 	logger := zap.NewNop()

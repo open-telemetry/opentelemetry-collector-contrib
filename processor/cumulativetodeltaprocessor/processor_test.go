@@ -453,7 +453,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	metrics := pmetric.NewMetrics()
 	rms := metrics.ResourceMetrics().AppendEmpty()
 	r := rms.Resource()
-	r.Attributes().Insert("resource", pcommon.NewValueBool(true))
+	r.Attributes().UpsertBool("resource", true)
 	ilms := rms.ScopeMetrics().AppendEmpty()
 	ilms.Scope().SetName("test")
 	ilms.Scope().SetVersion("0.1")
@@ -461,7 +461,7 @@ func BenchmarkConsumeMetrics(b *testing.B) {
 	m.SetDataType(pmetric.MetricDataTypeSum)
 	m.Sum().SetIsMonotonic(true)
 	dp := m.Sum().DataPoints().AppendEmpty()
-	dp.Attributes().Insert("tag", pcommon.NewValueString("value"))
+	dp.Attributes().UpsertString("tag", "value")
 
 	reset := func() {
 		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)

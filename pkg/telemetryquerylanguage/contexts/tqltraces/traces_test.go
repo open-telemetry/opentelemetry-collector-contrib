@@ -35,7 +35,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refSpan, _, _ := createTelemetry()
+	refSpan, refIS, refResource := createTelemetry()
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.UpsertString("hello", "world")
@@ -48,21 +48,6 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	newStatus := ptrace.NewSpanStatus()
 	newStatus.SetMessage("new status")
-
-	newArrStr := pcommon.NewValueSlice()
-	newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
-
-	newArrBool := pcommon.NewValueSlice()
-	newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-
-	newArrInt := pcommon.NewValueSlice()
-	newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
-
-	newArrFloat := pcommon.NewValueSlice()
-	newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-
-	newArrBytes := pcommon.NewValueSlice()
-	newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 
 	tests := []struct {
 		name     string
@@ -319,7 +304,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Upsert("arr_str", newArrStr)
+				span.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -336,7 +321,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Upsert("arr_bool", newArrBool)
+				span.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -353,7 +338,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Upsert("arr_int", newArrInt)
+				span.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -370,7 +355,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Upsert("arr_float", newArrFloat)
+				span.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -387,7 +372,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.Attributes().Upsert("arr_bytes", newArrBytes)
+				span.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 			},
 		},
 		{
@@ -507,205 +492,29 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
-			name: "resource attributes",
+			name: "instrumentation_scope",
 			path: []tql.Field{
 				{
-					Name: "resource",
-				},
-				{
-					Name: "attributes",
+					Name: "instrumentation_library",
 				},
 			},
-			orig:   refSpan.Attributes(),
-			newVal: newAttrs,
+			orig:   refIS,
+			newVal: pcommon.NewInstrumentationScope(),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Clear()
-				newAttrs.CopyTo(resource.Attributes())
+				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
 		},
 		{
-			name: "resource attributes string",
+			name: "resource",
 			path: []tql.Field{
 				{
 					Name: "resource",
 				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("str"),
-				},
 			},
-			orig:   "val",
-			newVal: "newVal",
+			orig:   refResource,
+			newVal: pcommon.NewResource(),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertString("str", "newVal")
-			},
-		},
-		{
-			name: "resource attributes bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bool"),
-				},
-			},
-			orig:   true,
-			newVal: false,
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBool("bool", false)
-			},
-		},
-		{
-			name: "resource attributes int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("int"),
-				},
-			},
-			orig:   int64(10),
-			newVal: int64(20),
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertInt("int", 20)
-			},
-		},
-		{
-			name: "resource attributes float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("double"),
-				},
-			},
-			orig:   float64(1.2),
-			newVal: float64(2.4),
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertDouble("double", 2.4)
-			},
-		},
-		{
-			name: "resource attributes bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("bytes"),
-				},
-			},
-			orig:   []byte{1, 3, 2},
-			newVal: []byte{2, 3, 4},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-			},
-		},
-		{
-			name: "resource attributes array string",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_str"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refSpan.Attributes().Get("arr_str")
-				return val.SliceVal()
-			}(),
-			newVal: []string{"new"},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_str", newArrStr)
-			},
-		},
-		{
-			name: "resource attributes array bool",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bool"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refSpan.Attributes().Get("arr_bool")
-				return val.SliceVal()
-			}(),
-			newVal: []bool{false},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bool", newArrBool)
-			},
-		},
-		{
-			name: "resource attributes array int",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_int"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refSpan.Attributes().Get("arr_int")
-				return val.SliceVal()
-			}(),
-			newVal: []int64{20},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_int", newArrInt)
-			},
-		},
-		{
-			name: "resource attributes array float",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_float"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refSpan.Attributes().Get("arr_float")
-				return val.SliceVal()
-			}(),
-			newVal: []float64{2.0},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_float", newArrFloat)
-			},
-		},
-		{
-			name: "resource attributes array bytes",
-			path: []tql.Field{
-				{
-					Name: "resource",
-				},
-				{
-					Name:   "attributes",
-					MapKey: tqltest.Strp("arr_bytes"),
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refSpan.Attributes().Get("arr_bytes")
-				return val.SliceVal()
-			}(),
-			newVal: [][]byte{{9, 6, 4}},
-			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				resource.Attributes().Upsert("arr_bytes", newArrBytes)
+				pcommon.NewResource().CopyTo(resource)
 			},
 		},
 	}
@@ -716,18 +525,10 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			span, il, resource := createTelemetry()
 
-			got := accessor.Get(SpanTransformContext{
-				Span:                 span,
-				InstrumentationScope: il,
-				Resource:             resource,
-			})
+			got := accessor.Get(NewTransformContext(span, il, resource))
 			assert.Equal(t, tt.orig, got)
 
-			accessor.Set(SpanTransformContext{
-				Span:                 span,
-				InstrumentationScope: il,
-				Resource:             resource,
-			}, tt.newVal)
+			accessor.Set(NewTransformContext(span, il, resource), tt.newVal)
 
 			exSpan, exIl, exRes := createTelemetry()
 			tt.modified(exSpan, exIl, exRes)
@@ -755,30 +556,25 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Attributes().UpsertDouble("double", 1.2)
 	span.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
-	arrStr := pcommon.NewValueSlice()
-	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
-	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
-	span.Attributes().Upsert("arr_str", arrStr)
+	arrStr := span.Attributes().UpsertEmptySlice("arr_str")
+	arrStr.AppendEmpty().SetStringVal("one")
+	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := pcommon.NewValueSlice()
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-	span.Attributes().Upsert("arr_bool", arrBool)
+	arrBool := span.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool.AppendEmpty().SetBoolVal(true)
+	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := pcommon.NewValueSlice()
-	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
-	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
-	span.Attributes().Upsert("arr_int", arrInt)
+	arrInt := span.Attributes().UpsertEmptySlice("arr_int")
+	arrInt.AppendEmpty().SetIntVal(2)
+	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := pcommon.NewValueSlice()
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-	span.Attributes().Upsert("arr_float", arrFloat)
+	arrFloat := span.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat.AppendEmpty().SetDoubleVal(1.0)
+	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-	span.Attributes().Upsert("arr_bytes", arrBytes)
+	arrBytes := span.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 
 	span.SetDroppedAttributesCount(10)
 

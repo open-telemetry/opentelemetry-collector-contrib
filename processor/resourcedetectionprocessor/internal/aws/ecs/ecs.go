@@ -71,36 +71,36 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 	}
 
 	attr := res.Attributes()
-	attr.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attr.InsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
-	attr.InsertString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
-	attr.InsertString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
-	attr.InsertString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
+	attr.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attr.UpsertString(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSECS)
+	attr.UpsertString(conventions.AttributeAWSECSTaskARN, tmdeResp.TaskARN)
+	attr.UpsertString(conventions.AttributeAWSECSTaskFamily, tmdeResp.Family)
+	attr.UpsertString(conventions.AttributeAWSECSTaskRevision, tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		attr.InsertString(conventions.AttributeCloudAccountID, account)
+		attr.UpsertString(conventions.AttributeCloudAccountID, account)
 	}
 
 	if region != "" {
-		attr.InsertString(conventions.AttributeCloudRegion, region)
+		attr.UpsertString(conventions.AttributeCloudRegion, region)
 	}
 
 	// TMDE returns the the cluster short name or ARN, so we need to construct the ARN if necessary
-	attr.InsertString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
+	attr.UpsertString(conventions.AttributeAWSECSClusterARN, constructClusterArn(tmdeResp.Cluster, region, account))
 
 	// The Availability Zone is not available in all Fargate runtimes
 	if tmdeResp.AvailabilityZone != "" {
-		attr.InsertString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
+		attr.UpsertString(conventions.AttributeCloudAvailabilityZone, tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "ec2")
+		attr.UpsertString(conventions.AttributeAWSECSLaunchtype, "ec2")
 
 	case "fargate":
-		attr.InsertString(conventions.AttributeAWSECSLaunchtype, "fargate")
+		attr.UpsertString(conventions.AttributeAWSECSLaunchtype, "fargate")
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()

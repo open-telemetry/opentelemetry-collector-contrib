@@ -131,8 +131,8 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetIntVal(int64(value))
-			dataPoint.Attributes().InsertString("item_index", "item_"+strconv.Itoa(j))
-			dataPoint.Attributes().InsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+			dataPoint.Attributes().UpsertString("item_index", "item_"+strconv.Itoa(j))
+			dataPoint.Attributes().UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
 	}
 	return md, false
@@ -158,10 +158,10 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
 		record := logRecords.AppendEmpty()
-		record.SetSeverityNumber(plog.SeverityNumberINFO3)
+		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
 		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
-		record.SetFlags(uint32(2))
+		record.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 
 		attrs := record.Attributes()

@@ -571,7 +571,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 }
 
 func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
-	spanIDs := make([]pcommon.SpanID, 0)
+	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
 		ilss := trace.ResourceSpans().At(i).ScopeSpans()

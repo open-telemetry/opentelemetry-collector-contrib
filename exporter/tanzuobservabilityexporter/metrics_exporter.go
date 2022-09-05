@@ -29,6 +29,7 @@ type metricsExporter struct {
 }
 
 func createMetricsConsumer(hostName string, port int, settings component.TelemetrySettings, otelVersion string) (*metricsConsumer, error) {
+	// nolint:staticcheck
 	s, err := senders.NewProxySender(&senders.ProxyConfiguration{
 		Host:                 hostName,
 		MetricsPort:          port,

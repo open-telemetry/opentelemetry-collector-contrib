@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/config"
+	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -116,7 +116,7 @@ rpc_duration_seconds_sum 4900
 rpc_duration_seconds_count 900
 `
 
-func verifyTarget1(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -503,7 +503,7 @@ rpc_duration_seconds_sum{code="5"} 209
 rpc_duration_seconds_count{code="5"} 429
 `
 
-func verifyTarget2(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 	// m1 has 4 metrics + 5 internal scraper metrics
@@ -1076,7 +1076,7 @@ rpc_duration_seconds_sum{foo="no_quantile"} 101
 rpc_duration_seconds_count{foo="no_quantile"} 55
 `
 
-func verifyTarget3(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 	// m1 has 3 metrics + 5 internal scraper metrics
@@ -1258,7 +1258,7 @@ var startTimeMetricPageStartTimestamp = &timestamppb.Timestamp{Seconds: 400, Nan
 // 6 metrics + 5 internal metrics
 const numStartTimeMetricPageTimeseries = 11
 
-func verifyStartTimeMetricPage(t *testing.T, td *testData, result []*pmetric.ResourceMetrics) {
+func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, result)
 	numTimeseries := 0
 	for _, rm := range result {
@@ -1390,7 +1390,7 @@ func TestUntypedMetrics(t *testing.T) {
 
 }
 
-func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -1445,18 +1445,18 @@ func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []*pmetric
 func TestGCInterval(t *testing.T) {
 	for _, tc := range []struct {
 		desc  string
-		input *config.Config
+		input *promConfig.Config
 		want  time.Duration
 	}{
 		{
 			desc:  "default",
-			input: &config.Config{},
+			input: &promConfig.Config{},
 			want:  defaultGCInterval,
 		},
 		{
 			desc: "global override",
-			input: &config.Config{
-				GlobalConfig: config.GlobalConfig{
+			input: &promConfig.Config{
+				GlobalConfig: promConfig.GlobalConfig{
 					ScrapeInterval: model.Duration(10 * time.Minute),
 				},
 			},
@@ -1464,8 +1464,8 @@ func TestGCInterval(t *testing.T) {
 		},
 		{
 			desc: "scrape config override",
-			input: &config.Config{
-				ScrapeConfigs: []*config.ScrapeConfig{
+			input: &promConfig.Config{
+				ScrapeConfigs: []*promConfig.ScrapeConfig{
 					{
 						ScrapeInterval: model.Duration(10 * time.Minute),
 					},

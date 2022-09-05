@@ -63,7 +63,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	cfg := &WindowsLogConfig{
 		BaseConfig: adapter.BaseConfig{},
-		Config: func() windows.Config {
+		InputConfig: func() windows.Config {
 			c := windows.NewConfig()
 			c.StartAt = "middle"
 			return *c
@@ -141,7 +141,7 @@ func createTestConfig() *WindowsLogConfig {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() windows.Config {
+		InputConfig: func() windows.Config {
 			c := windows.NewConfig()
 			c.Channel = "application"
 			c.StartAt = "end"

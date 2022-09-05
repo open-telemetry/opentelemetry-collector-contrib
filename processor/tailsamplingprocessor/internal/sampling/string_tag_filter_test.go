@@ -249,7 +249,7 @@ func newTraceStringAttrs(nodeAttrs pcommon.Map, spanAttrKey string, spanAttrValu
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
-	span.Attributes().InsertString(spanAttrKey, spanAttrValue)
+	span.Attributes().UpsertString(spanAttrKey, spanAttrValue)
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{
 		ReceivedBatches: traceBatches,

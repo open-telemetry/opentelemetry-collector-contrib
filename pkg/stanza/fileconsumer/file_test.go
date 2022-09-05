@@ -492,7 +492,7 @@ func TestNoNewline(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.Splitter = helper.NewSplitterConfig()
-	cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
+	cfg.Splitter.Flusher.Period = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
@@ -992,7 +992,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 			defer reader.Close()
 
 			// keep track of what has been written to the file
-			fileContent := []byte{}
+			var fileContent []byte
 
 			// keep track of expected fingerprint size
 			expectedFP := 0
@@ -1055,7 +1055,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 			defer reader.Close()
 
 			// keep track of what has been written to the file
-			fileContent := []byte{}
+			var fileContent []byte
 
 			// keep track of expected fingerprint size
 			expectedFP := 0

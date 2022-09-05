@@ -30,13 +30,12 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/service/servicetest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 )
 
@@ -48,25 +47,25 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.Nil(t, err)
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(config.NewComponentID("filelog").String())
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.NoError(t, config.UnmarshalReceiver(sub, cfg))
 
-	assert.Equal(t, len(cfg.Receivers), 1)
-
-	assert.Equal(t, testdataConfigYaml(), cfg.Receivers[config.NewComponentID("filelog")])
+	assert.NoError(t, cfg.Validate())
+	assert.Equal(t, testdataConfigYaml(), cfg)
 }
 
 func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := testdataConfigYaml()
-	cfg.StartAt = "middle"
+	cfg.InputConfig.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -276,7 +275,7 @@ func testdataConfigYaml() *FileLogConfig {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{"testdata/simple.log"}
 			c.StartAt = "beginning"
@@ -301,11 +300,11 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			},
 			Converter: adapter.ConverterConfig{},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"
-			c.PollInterval = helper.Duration{Duration: 10 * time.Millisecond}
+			c.PollInterval = 10 * time.Millisecond
 			c.IncludeFileName = false
 			return *c
 		}(),

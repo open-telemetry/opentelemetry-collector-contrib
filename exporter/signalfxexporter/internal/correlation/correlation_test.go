@@ -40,7 +40,7 @@ func TestTrackerAddSpans(t *testing.T) {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 	attr := rs.Resource().Attributes()
-	attr.InsertString("host.name", "localhost")
+	attr.UpsertString("host.name", "localhost")
 
 	// Add empty first, should ignore.
 	assert.NoError(t, tracker.AddSpans(context.Background(), ptrace.NewTraces()))

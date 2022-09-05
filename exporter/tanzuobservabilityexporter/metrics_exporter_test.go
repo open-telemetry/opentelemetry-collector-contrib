@@ -77,7 +77,7 @@ func createMockMetricsExporter(
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporterWithContext(
+	return exporterhelper.NewMetricsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		cfg,

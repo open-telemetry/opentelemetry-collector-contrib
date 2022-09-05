@@ -210,7 +210,7 @@ func MergeSchemaURL(currentSchemaURL string, newSchemaURL string) string {
 
 func filterAttributes(am pcommon.Map, attributesToKeep map[string]struct{}) []string {
 	if len(attributesToKeep) > 0 {
-		droppedAttributes := make([]string, 0)
+		var droppedAttributes []string
 		am.RemoveIf(func(k string, v pcommon.Value) bool {
 			_, keep := attributesToKeep[k]
 			if !keep {
@@ -231,7 +231,7 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 	toAttr := to.Attributes()
 	from.Attributes().Range(func(k string, v pcommon.Value) bool {
 		if overrideTo {
-			toAttr.Upsert(k, v)
+			v.CopyTo(toAttr.UpsertEmpty(k))
 		} else {
 			toAttr.Insert(k, v)
 		}

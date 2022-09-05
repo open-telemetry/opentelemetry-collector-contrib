@@ -33,16 +33,13 @@ func KeepKeys(target tql.GetSetter, keys []string) (tql.ExprFunc, error) {
 		}
 
 		if attrs, ok := val.(pcommon.Map); ok {
-			// TODO(anuraaga): Avoid copying when filtering keys https://github.com/open-telemetry/opentelemetry-collector/issues/4756
-			filtered := pcommon.NewMap()
-			filtered.EnsureCapacity(attrs.Len())
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				if _, ok := keySet[key]; ok {
-					filtered.Insert(key, val)
-				}
-				return true
+			attrs.RemoveIf(func(key string, value pcommon.Value) bool {
+				_, ok := keySet[key]
+				return !ok
 			})
-			target.Set(ctx, filtered)
+			if attrs.Len() == 0 {
+				attrs.Clear()
+			}
 		}
 		return nil
 	}, nil

@@ -23,7 +23,7 @@ import (
 
 func convertSumToGauge() (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}

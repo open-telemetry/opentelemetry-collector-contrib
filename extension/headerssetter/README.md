@@ -1,9 +1,9 @@
 # Headers Setter extension
 
-| Status        |                  |
-|---------------|------------------|
-| Stability     | [in development] |
-| Distributions | [contrib]        |
+| Status        |           |
+|---------------|-----------|
+| Stability     | [alpha]   |
+| Distributions | [contrib] |
 
 The `headers_setter` extension implements `ClientAuthenticator` and is used to
 set requests headers in `gRPC` / `HTTP` exporters with values provided via
