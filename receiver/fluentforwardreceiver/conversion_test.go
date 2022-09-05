@@ -165,17 +165,6 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 			require.NotNil(t, err)
 		})
 	}
-
-	t.Run("Invalid timestamp type uint", func(t *testing.T) {
-		in := make([]byte, len(b))
-		copy(in, b)
-		in[8] = 0xcd
-		reader := msgp.NewReader(bytes.NewReader(in))
-
-		var event MessageEventLogRecord
-		err := event.DecodeMsg(reader)
-		require.NotNil(t, err)
-	})
 }
 
 func TestForwardEventConversionWithErrors(t *testing.T) {
