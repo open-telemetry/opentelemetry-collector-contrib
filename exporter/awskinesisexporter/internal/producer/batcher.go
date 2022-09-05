@@ -16,6 +16,7 @@ package producer // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/kinesis"
@@ -33,7 +34,9 @@ type batcher struct {
 	log    *zap.Logger
 }
 
-var _ Batcher = (*batcher)(nil)
+var (
+	_ Batcher = (*batcher)(nil)
+)
 
 func NewBatcher(kinesisAPI Kinesis, stream string, opts ...BatcherOptions) (Batcher, error) {
 	be := &batcher{
@@ -57,8 +60,8 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 		})
 
 		if err != nil {
-			switch err.(type) {
-			case *types.ResourceNotFoundException, *types.InvalidArgumentException:
+			if errors.As(err, &types.ResourceNotFoundException{}) || //nolint:govet // Causing a false positive
+				errors.As(err, &types.InvalidArgumentException{}) { //nolint:govet // Causing a false positive
 				err = consumererror.NewPermanent(err)
 			}
 			fields := []zap.Field{
