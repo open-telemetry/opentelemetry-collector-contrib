@@ -173,11 +173,7 @@ func TestStore_concurrency(t *testing.T) {
 	})
 
 	go accessor(func() {
-		s.(*store).mtx.Lock()
-		defer s.(*store).mtx.Unlock()
-
-		for s.(*store).tryEvictHead() {
-		}
+		s.Expire()
 	})
 
 	time.Sleep(100 * time.Millisecond)
