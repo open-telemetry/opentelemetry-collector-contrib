@@ -49,6 +49,13 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 			Sampled,
 		},
 		{
+			"Bigger amount of spans than the threshold, with different span count per batch",
+			[]int32{
+				1, 2, 1,
+			},
+			Sampled,
+		},
+		{
 			"Same number of spans as the threshold, in one single batch",
 			[]int32{
 				2,
@@ -59,6 +66,13 @@ func TestEvaluate_NumberSpans(t *testing.T) {
 			"Bigger amount of spans than the threshold, across multiple batches",
 			[]int32{
 				1, 1, 1,
+			},
+			Sampled,
+		},
+		{
+			"Bigger amount of spans than the threshold, with a different number",
+			[]int32{
+				1, 3, 1,
 			},
 			Sampled,
 		},
