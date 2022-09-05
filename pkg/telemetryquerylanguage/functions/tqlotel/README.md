@@ -111,6 +111,8 @@ The `limit` function reduces the number of elements in a `pdata.Map` to be no gr
 The number of priority keys must be less than the supplied `limit`.
 
 The map will be mutated such that the number of items does not exceed the limit.
+The map is not copied or reallocated.
+
 Which items are dropped is random, provide `priority_keys` to preserve required keys.
 
 Examples:
