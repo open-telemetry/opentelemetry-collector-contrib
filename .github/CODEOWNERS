@@ -122,6 +122,7 @@ processor/resourceprocessor/                         @open-telemetry/collector-c
 processor/resourcedetectionprocessor/internal/azure/ @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 processor/schemaprocessor/                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+processor/servicegraphprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling
