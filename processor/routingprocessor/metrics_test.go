@@ -56,8 +56,8 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): mExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): mExp,
 				},
 			}
 		},
@@ -119,8 +119,8 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): mExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): mExp,
 				},
 			}
 		},
@@ -183,8 +183,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): mExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): mExp,
 				},
 			}
 		},
@@ -241,8 +241,8 @@ func TestMetrics_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): mExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): mExp,
 				},
 			}
 		},
@@ -306,8 +306,8 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 			GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 				return map[config.DataType]map[config.ComponentID]component.Exporter{
 					config.MetricsDataType: {
-						config.NewComponentID("otlp"):   defaultExp,
-						config.NewComponentID("otlp/2"): mExp,
+						config.NewComponentID("otlp"):              defaultExp,
+						config.NewComponentIDWithName("otlp", "2"): mExp,
 					},
 				}
 			},
