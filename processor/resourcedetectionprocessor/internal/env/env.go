@@ -78,7 +78,6 @@ var labelRegex = regexp.MustCompile(`\s*([[:ascii:]]{1,256}?)\s*=\s*([[:ascii:]]
 
 func initializeAttributeMap(am pcommon.Map, s string) error {
 	matches := labelRegex.FindAllStringSubmatchIndex(s, -1)
-
 	for len(matches) == 0 {
 		return fmt.Errorf("invalid resource format: %q", s)
 	}
@@ -97,7 +96,7 @@ func initializeAttributeMap(am pcommon.Map, s string) error {
 		if value, err = url.QueryUnescape(value); err != nil {
 			return fmt.Errorf("invalid resource format in attribute: %q, err: %w", s[match[0]:match[1]], err)
 		}
-		am.InsertString(key, value)
+		am.UpsertString(key, value)
 
 		prevIndex = match[1]
 	}
