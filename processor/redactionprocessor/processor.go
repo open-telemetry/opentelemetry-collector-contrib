@@ -28,6 +28,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const attrValuesSeparator = ","
+
 var _ component.TracesProcessor = (*redaction)(nil)
 
 type redaction struct {
@@ -150,34 +152,48 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) erro
 }
 
 // summarizeRedactedSpan adds diagnostic information about redacted attribute keys
-func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon.Map) {
-	redactedSpanCount := int64(len(toDelete))
-	if redactedSpanCount == 0 {
+func (s *redaction) summarizeRedactedSpan(deletedAttrs []string, attributes *pcommon.Map) {
+	redactedCount := int64(len(deletedAttrs))
+	if redactedCount == 0 {
 		return
 	}
+
 	// Record summary as span attributes
 	if s.config.Summary == debug {
-		sort.Strings(toDelete)
-		attributes.InsertString(redactedKeys, strings.Join(toDelete, ","))
+		if existingVal, found := attributes.Get(redactedKeys); found && existingVal.StringVal() != "" {
+			deletedAttrs = append(deletedAttrs, strings.Split(existingVal.StringVal(), attrValuesSeparator)...)
+		}
+		sort.Strings(deletedAttrs)
+		attributes.UpsertString(redactedKeys, strings.Join(deletedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.InsertInt(redactedKeyCount, redactedSpanCount)
+		if existingVal, found := attributes.Get(redactedKeyCount); found {
+			redactedCount += existingVal.IntVal()
+		}
+		attributes.UpsertInt(redactedKeyCount, redactedCount)
 	}
 }
 
 // summarizeMaskedSpan adds diagnostic information about masked attribute values
-func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Map) {
-	maskedSpanCount := int64(len(toBlock))
-	if maskedSpanCount == 0 {
+func (s *redaction) summarizeMaskedSpan(maskedAttrs []string, attributes *pcommon.Map) {
+	maskedCount := int64(len(maskedAttrs))
+	if maskedCount == 0 {
 		return
 	}
+
 	// Records summary as span attributes
 	if s.config.Summary == debug {
-		sort.Strings(toBlock)
-		attributes.InsertString(maskedValues, strings.Join(toBlock, ","))
+		if existingVal, found := attributes.Get(maskedValues); found && existingVal.StringVal() != "" {
+			maskedAttrs = append(maskedAttrs, strings.Split(existingVal.StringVal(), attrValuesSeparator)...)
+		}
+		sort.Strings(maskedAttrs)
+		attributes.UpsertString(maskedValues, strings.Join(maskedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.InsertInt(maskedValueCount, maskedSpanCount)
+		if existingVal, found := attributes.Get(maskedValueCount); found {
+			maskedCount += existingVal.IntVal()
+		}
+		attributes.UpsertInt(maskedValueCount, maskedCount)
 	}
 }
 
