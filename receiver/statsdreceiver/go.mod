@@ -6,18 +6,22 @@ require (
 	// Note that this Lightstep metrics SDK dependency is temporary.  The same
 	// code is under review upstream, see
 	// https://github.com/open-telemetry/opentelemetry-go/pull/3022
-	github.com/lightstep/otel-launcher-go/lightstep/sdk/metric v1.9.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.58.0
+	github.com/lightstep/otel-launcher-go/lightstep/sdk/metric v1.10.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.58.1-0.20220825025657-e092fc728b72
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220825025657-e092fc728b72
+	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector/pdata v0.59.0
 	go.opentelemetry.io/otel v1.9.0
-	go.opentelemetry.io/otel/sdk/metric v0.31.0
+
+	// Note! This unreleased otel-go dependency (would-be v0.32)
+	// changes histogram inclusivity.
+	// https://github.com/open-telemetry/opentelemetry-go/pull/2982.
+	go.opentelemetry.io/otel/sdk/metric v0.31.1-0.20220826135333-55b49c407e07
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
-	gonum.org/v1/gonum v0.11.0
+	gonum.org/v1/gonum v0.12.0
 )
 
 require (

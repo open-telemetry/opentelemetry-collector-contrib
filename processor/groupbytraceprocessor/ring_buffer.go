@@ -64,6 +64,6 @@ func (r *ringBuffer) delete(traceID pcommon.TraceID) bool {
 	}
 
 	delete(r.idToIndex, traceID)
-	r.ids[index] = pcommon.InvalidTraceID()
+	r.ids[index] = pcommon.EmptyTraceID
 	return true
 }

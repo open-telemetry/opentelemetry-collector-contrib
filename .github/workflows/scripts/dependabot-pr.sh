@@ -7,7 +7,7 @@ PR_NAME=dependabot-prs/`date +'%Y-%m-%dT%H%M%S'`
 git checkout -b $PR_NAME
 
 IFS=$'\n'
-requests=$(gh pr list --limit 200 --search "author:app/dependabot" --json number,title --template '{{range .}}{{tablerow .title}}{{end}}' | sort)
+requests=$( gh pr list --search "author:app/dependabot" --json title --jq '.[].title' | sort )
 message=""
 
 last_updated=""

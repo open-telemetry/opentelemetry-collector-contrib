@@ -36,7 +36,7 @@ const (
 )
 
 func logRecordToLogData(ld plog.Logs) []*logpb.LogData {
-	lds := make([]*logpb.LogData, 0)
+	var lds []*logpb.LogData
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -134,7 +134,7 @@ func mapLogRecordToLogData(lr plog.LogRecord, logData *logpb.LogData) {
 			}},
 	}
 
-	if flag := strconv.FormatUint(uint64(lr.FlagsStruct().AsRaw()), 16); flag != "" {
+	if flag := strconv.FormatUint(uint64(lr.FlagsStruct()), 16); flag != "" {
 		logData.Tags.Data = append(logData.Tags.Data, &common.KeyStringValuePair{
 			Key:   flags,
 			Value: flag,

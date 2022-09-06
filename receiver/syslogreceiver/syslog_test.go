@@ -54,7 +54,7 @@ func testSyslog(t *testing.T, cfg *SysLogConfig) {
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
 	var conn net.Conn
-	if cfg.Config.TCP != nil {
+	if cfg.InputConfig.TCP != nil {
 		conn, err = net.Dial("tcp", "0.0.0.0:29018")
 		require.NoError(t, err)
 	} else {
@@ -110,7 +110,7 @@ func testdataConfigYaml() *SysLogConfig {
 				WorkerCount:   1,
 			},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
 			c.TCP.ListenAddress = "0.0.0.0:29018"
@@ -130,7 +130,7 @@ func testdataUDPConfig() *SysLogConfig {
 				WorkerCount:   1,
 			},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.UDP = &udp.NewConfig().BaseConfig
 			c.UDP.ListenAddress = "0.0.0.0:29018"
@@ -148,7 +148,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() syslog.Config {
+		InputConfig: func() syslog.Config {
 			c := syslog.NewConfig()
 			c.TCP = &tcp.NewConfig().BaseConfig
 			c.Protocol = "fake"

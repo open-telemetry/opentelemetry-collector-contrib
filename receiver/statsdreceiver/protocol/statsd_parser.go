@@ -143,7 +143,7 @@ func (p *StatsDParser) resetState(when time.Time) {
 	p.lastIntervalTime = when
 	p.gauges = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
 	p.counters = make(map[statsDMetricDescription]pmetric.ScopeMetrics)
-	p.timersAndDistributions = []pmetric.ScopeMetrics{}
+	p.timersAndDistributions = nil
 	p.summaries = make(map[statsDMetricDescription]summaryMetric)
 	p.histograms = make(map[statsDMetricDescription]histogramMetric)
 }

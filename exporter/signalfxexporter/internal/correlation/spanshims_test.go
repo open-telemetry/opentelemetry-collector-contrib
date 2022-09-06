@@ -43,7 +43,7 @@ func TestSpanShim_Service(t *testing.T) {
 	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("service.name", "shopping-cart")
+	attr.UpsertString("service.name", "shopping-cart")
 
 	wrapped := spanWrap{span}
 
@@ -57,7 +57,7 @@ func TestSpanShim_Environment(t *testing.T) {
 	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("deployment.environment", "prod")
+	attr.UpsertString("deployment.environment", "prod")
 
 	wrapped := spanWrap{span}
 
@@ -71,7 +71,7 @@ func TestSpanShim_SignalfxEnvironment(t *testing.T) {
 	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("environment", "prod")
+	attr.UpsertString("environment", "prod")
 
 	wrapped := spanWrap{span}
 
@@ -110,7 +110,7 @@ func TestSpanShim_Tags(t *testing.T) {
 	span := ptrace.NewResourceSpans()
 	res := span.Resource()
 	attr := res.Attributes()
-	attr.InsertString("tag1", "tag1val")
+	attr.UpsertString("tag1", "tag1val")
 
 	wrapped := spanWrap{span}
 

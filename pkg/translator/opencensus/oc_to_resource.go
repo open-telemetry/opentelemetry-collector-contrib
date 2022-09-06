@@ -81,16 +81,23 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 
 	attrs := dest.Attributes()
-	attrs.Clear()
 	attrs.EnsureCapacity(maxTotalAttrCount)
 
-	if ocNode != nil {
-		// Copy all Attributes.
-		for k, v := range ocNode.Attributes {
-			attrs.InsertString(k, v)
+	// Copy all resource Labels and Node attributes.
+	for k, v := range ocResource.GetLabels() {
+		switch k {
+		case resourcekeys.CloudKeyZone:
+			attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, v)
+		default:
+			attrs.UpsertString(k, v)
 		}
+	}
+	for k, v := range ocNode.GetAttributes() {
+		attrs.UpsertString(k, v)
+	}
 
-		// Add all special fields.
+	// Add all special fields that should overwrite any resource label or node attribute.
+	if ocNode != nil {
 		if ocNode.ServiceInfo != nil {
 			if ocNode.ServiceInfo.Name != "" {
 				attrs.UpsertString(conventions.AttributeServiceName, ocNode.ServiceInfo.Name)
@@ -121,18 +128,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 			}
 		}
 	}
-
 	if ocResource != nil {
-		// Copy resource Labels.
-		for k, v := range ocResource.Labels {
-			switch k {
-			case resourcekeys.CloudKeyZone:
-				attrs.InsertString(conventions.AttributeCloudAvailabilityZone, v)
-			default:
-				attrs.InsertString(k, v)
-			}
-		}
-		// Add special fields.
 		if ocResource.Type != "" {
 			attrs.UpsertString(occonventions.AttributeResourceType, ocResource.Type)
 		}

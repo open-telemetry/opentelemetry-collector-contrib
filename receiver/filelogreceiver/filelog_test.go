@@ -65,7 +65,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 	t.Parallel()
 
 	cfg := testdataConfigYaml()
-	cfg.StartAt = "middle"
+	cfg.InputConfig.StartAt = "middle"
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
@@ -275,7 +275,7 @@ func testdataConfigYaml() *FileLogConfig {
 				FlushInterval: 100 * time.Millisecond,
 			},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{"testdata/simple.log"}
 			c.StartAt = "beginning"
@@ -300,7 +300,7 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			},
 			Converter: adapter.ConverterConfig{},
 		},
-		Config: func() file.Config {
+		InputConfig: func() file.Config {
 			c := file.NewConfig()
 			c.Include = []string{fmt.Sprintf("%s/*", tempDir)}
 			c.StartAt = "beginning"

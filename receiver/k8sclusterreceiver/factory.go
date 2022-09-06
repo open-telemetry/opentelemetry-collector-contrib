@@ -15,14 +15,10 @@
 package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
 import (
-	"context"
-	"fmt"
 	"time"
 
-	quotaclientset "github.com/openshift/client-go/quota/clientset/versioned"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
@@ -56,36 +52,10 @@ func createDefaultConfig() config.Receiver {
 	}
 }
 
-func createMetricsReceiver(
-	_ context.Context, params component.ReceiverCreateSettings, cfg config.Receiver,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
-	rCfg := cfg.(*Config)
-
-	k8sClient, err := rCfg.getK8sClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var osQuotaClient quotaclientset.Interface
-	switch rCfg.Distribution {
-	case distributionOpenShift:
-		osQuotaClient, err = rCfg.getOpenShiftQuotaClient()
-		if err != nil {
-			return nil, err
-		}
-	case distributionKubernetes:
-		// default case, nothing to initialize
-	default:
-		return nil, fmt.Errorf("\"%s\" is not a supported distribution. Must be one of: \"openshift\", \"kubernetes\"", rCfg.Distribution)
-	}
-
-	return newReceiver(params, rCfg, consumer, k8sClient, osQuotaClient)
-}
-
 // NewFactory creates a factory for k8s_cluster receiver.
 func NewFactory() component.ReceiverFactory {
 	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
+		component.WithMetricsReceiver(newReceiver, stability))
 }

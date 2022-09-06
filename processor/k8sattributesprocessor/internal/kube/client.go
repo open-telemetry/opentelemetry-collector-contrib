@@ -444,7 +444,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 
 // getIdentifiersFromAssoc returns list of PodIdentifiers for given pod
 func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
-	ids := []PodIdentifier{}
+	var ids []PodIdentifier
 	for _, assoc := range c.Associations {
 		ret := PodIdentifier{}
 		skip := false

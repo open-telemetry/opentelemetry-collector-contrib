@@ -141,13 +141,13 @@ func TestReceiveMessage(t *testing.T) {
 				}
 				return nil
 			}
-			unmarshaller.unmarshalFunc = func(msg *inboundMessage) (*ptrace.Traces, error) {
+			unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
 				assert.False(t, unmarshalCalled)
 				unmarshalCalled = true
 				if testCase.unmarshalErr != nil {
-					return nil, testCase.unmarshalErr
+					return ptrace.Traces{}, testCase.unmarshalErr
 				}
-				return &trace, nil
+				return trace, nil
 			}
 
 			err := receiver.receiveMessage(context.Background(), messagingService)
@@ -189,10 +189,10 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 		return nil
 	}
 	unmarshalCalled := false
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (*ptrace.Traces, error) {
+	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
 		assert.False(t, unmarshalCalled)
 		unmarshalCalled = true
-		return &trace, nil
+		return trace, nil
 	}
 	err := receiver.receiveMessages(ctx, messagingService)
 	assert.NoError(t, err)
@@ -293,8 +293,8 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	dialDone := make(chan struct{})
 	nackCalled := make(chan struct{})
 	closeDone := make(chan struct{})
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (*ptrace.Traces, error) {
-		return nil, errUnknownTraceMessgeVersion
+	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+		return ptrace.Traces{}, errUnknownTraceMessgeVersion
 	}
 	msgService.dialFunc = func() error {
 		// after we receive an unmarshalling version error, we should not call dial again
@@ -412,10 +412,10 @@ func (m *mockMessagingService) nack(ctx context.Context, msg *inboundMessage) er
 }
 
 type mockUnmarshaller struct {
-	unmarshalFunc func(msg *inboundMessage) (*ptrace.Traces, error)
+	unmarshalFunc func(msg *inboundMessage) (ptrace.Traces, error)
 }
 
-func (m *mockUnmarshaller) unmarshal(message *inboundMessage) (*ptrace.Traces, error) {
+func (m *mockUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	if m.unmarshalFunc != nil {
 		return m.unmarshalFunc(message)
 	}

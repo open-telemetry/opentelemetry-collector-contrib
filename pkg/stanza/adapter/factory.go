@@ -104,6 +104,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
 		}, nil
 	}
 }

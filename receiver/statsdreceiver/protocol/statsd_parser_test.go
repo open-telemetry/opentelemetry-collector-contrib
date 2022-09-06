@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/metricstestutil"
+	"github.com/stretchr/testify/assert"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -531,7 +531,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", 507, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
-			expectedTimer:    []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "gauge minus",
@@ -554,7 +553,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", 5, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
-			expectedTimer:    []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "gauge plus and minus",
@@ -577,7 +575,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 					[]string{"mykey"}, []string{"myvalue"}): buildGaugeMetric(testStatsDMetric("statsdTestMetric2", 200, false, "g", 0, []string{"mykey"}, []string{"myvalue"}), time.Unix(711, 0)),
 			},
 			expectedCounters: map[statsDMetricDescription]pmetric.ScopeMetrics{},
-			expectedTimer:    []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "counter with increment and sample rate",
@@ -594,7 +591,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
-			expectedTimer: []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "counter and gauge: one gauge and two counters",
@@ -619,7 +615,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 50, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
-			expectedTimer: []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "counter and gauge: 2 gauges and 2 counters",
@@ -647,7 +642,6 @@ func TestStatsDParser_Aggregate(t *testing.T) {
 				testDescription("statsdTestMetric2", "c",
 					[]string{"mykey"}, []string{"myvalue"}): buildCounterMetric(testStatsDMetric("statsdTestMetric2", 75, false, "c", 0, []string{"mykey"}, []string{"myvalue"}), false, time.Unix(711, 0), time.Unix(711, 0)),
 			},
-			expectedTimer: []pmetric.ScopeMetrics{},
 		},
 		{
 			name: "counter and gauge: 2 timings and 2 histograms",
@@ -1164,8 +1158,8 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetSum(0)
 				dp.SetZeroCount(1)
 				dp.SetScale(logarithm.MaxScale)
-				dp.Positive().SetOffset(0)
-				dp.Negative().SetOffset(0)
+				dp.Positive().SetOffset(-1)
+				dp.Negative().SetOffset(-1)
 				dp.Positive().SetBucketCounts(
 					pcommon.NewImmutableUInt64Slice([]uint64{
 						1,
@@ -1209,8 +1203,8 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 				dp.SetSum(6)
 				dp.SetZeroCount(4)
 				dp.SetScale(logarithm.MaxScale)
-				dp.Positive().SetOffset(0)
-				dp.Negative().SetOffset(0)
+				dp.Positive().SetOffset(-1)
+				dp.Negative().SetOffset(-1)
 				dp.Positive().SetBucketCounts(
 					pcommon.NewImmutableUInt64Slice([]uint64{
 						8, // 1 / 0.125

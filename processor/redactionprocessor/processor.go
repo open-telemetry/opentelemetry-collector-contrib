@@ -28,6 +28,8 @@ import (
 	"go.uber.org/zap"
 )
 
+const attrValuesSeparator = ","
+
 var _ component.TracesProcessor = (*redaction)(nil)
 
 type redaction struct {
@@ -116,14 +118,14 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 		}
 
 		// Mask any blocked values for the other attributes
+		strVal := value.StringVal()
 		for _, compiledRE := range s.blockRegexList {
-			match := compiledRE.MatchString(value.StringVal())
+			match := compiledRE.MatchString(strVal)
 			if match {
 				toBlock = append(toBlock, k)
 
-				valueCopy := value.StringVal()
-				maskedValue := compiledRE.ReplaceAllString(valueCopy, "****")
-				attributes.Update(k, pcommon.NewValueString(maskedValue))
+				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				value.SetStringVal(maskedValue)
 			}
 		}
 		return true
@@ -134,8 +136,8 @@ func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
 		attributes.Remove(k)
 	}
 	// Add diagnostic information to the span
-	s.summarizeRedactedSpan(toDelete, attributes)
-	s.summarizeMaskedSpan(toBlock, attributes)
+	s.addMetaAttrs(toDelete, attributes, redactedKeys, redactedKeyCount)
+	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
 }
 
 // ConsumeTraces implements the SpanProcessor interface
@@ -149,35 +151,26 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) erro
 	return err
 }
 
-// summarizeRedactedSpan adds diagnostic information about redacted attribute keys
-func (s *redaction) summarizeRedactedSpan(toDelete []string, attributes *pcommon.Map) {
-	redactedSpanCount := int64(len(toDelete))
-	if redactedSpanCount == 0 {
+// addMetaAttrs adds diagnostic information about redacted or masked attribute keys
+func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes *pcommon.Map, valuesAttr, countAttr string) {
+	redactedCount := int64(len(redactedAttrs))
+	if redactedCount == 0 {
 		return
 	}
+
 	// Record summary as span attributes
 	if s.config.Summary == debug {
-		sort.Strings(toDelete)
-		attributes.Insert(redactedKeys, pcommon.NewValueString(strings.Join(toDelete, ",")))
+		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.StringVal() != "" {
+			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.StringVal(), attrValuesSeparator)...)
+		}
+		sort.Strings(redactedAttrs)
+		attributes.UpsertString(valuesAttr, strings.Join(redactedAttrs, attrValuesSeparator))
 	}
 	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(redactedKeyCount, pcommon.NewValueInt(redactedSpanCount))
-	}
-}
-
-// summarizeMaskedSpan adds diagnostic information about masked attribute values
-func (s *redaction) summarizeMaskedSpan(toBlock []string, attributes *pcommon.Map) {
-	maskedSpanCount := int64(len(toBlock))
-	if maskedSpanCount == 0 {
-		return
-	}
-	// Records summary as span attributes
-	if s.config.Summary == debug {
-		sort.Strings(toBlock)
-		attributes.Insert(maskedValues, pcommon.NewValueString(strings.Join(toBlock, ",")))
-	}
-	if s.config.Summary == info || s.config.Summary == debug {
-		attributes.Insert(maskedValueCount, pcommon.NewValueInt(maskedSpanCount))
+		if existingVal, found := attributes.Get(countAttr); found {
+			redactedCount += existingVal.IntVal()
+		}
+		attributes.UpsertInt(countAttr, redactedCount)
 	}
 }
 

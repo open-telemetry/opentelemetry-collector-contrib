@@ -34,7 +34,7 @@ func updateLabelOp(metric pmetric.Metric, mtpOp internalOperation, f internalFil
 		}
 
 		if op.NewLabel != "" {
-			attrs.Upsert(op.NewLabel, attrVal)
+			attrVal.CopyTo(attrs.UpsertEmpty(op.NewLabel))
 			attrs.Remove(attrKey)
 			attrKey = op.NewLabel
 		}

@@ -191,7 +191,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		}
 		if content.attributes != nil {
 			for k, v := range *content.attributes {
-				log.Attributes().Insert(k, v)
+				v.CopyTo(log.Attributes().UpsertEmpty(k))
 			}
 			log.Attributes().Sort()
 		}
@@ -200,7 +200,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		log.SetTraceID(content.traceID)
 
 		if content.flags != uint32(0x00) {
-			log.FlagsStruct().SetIsSampled(content.flags&1 != 0)
+			log.SetFlagsStruct(plog.LogRecordFlags(content.flags))
 		}
 	}
 

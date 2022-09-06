@@ -72,7 +72,7 @@ func validMappingKeyCases() []severityTestCase {
 		"fatal4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range aliasedMapping {
 		cases = append(cases,
 			severityTestCase{
@@ -116,7 +116,7 @@ func otlpSevCases() []severityTestCase {
 		"fAtAl4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range mustParse {
 		cases = append(cases,
 			severityTestCase{
