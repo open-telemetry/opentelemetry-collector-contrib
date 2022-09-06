@@ -35,7 +35,9 @@ func NewFactory() component.ExtensionFactory {
 	return component.NewExtensionFactory(
 		typeStr,
 		createDefaultConfig,
-		createExtension)
+		createExtension,
+		component.StabilityLevelUndefined,
+	)
 }
 
 func createDefaultConfig() config.Extension {
@@ -75,10 +77,7 @@ func createExtension(
 	e.Extension = extension{
 		ShutdownFunc: e.Shutdown,
 	}
-	e.EndpointsWatcher = &observer.EndpointsWatcher{
-		Endpointslister: e,
-		RefreshInterval: obsCfg.RefreshInterval,
-	}
+	e.EndpointsWatcher = observer.NewEndpointsWatcher(e, obsCfg.RefreshInterval, params.TelemetrySettings.Logger)
 
 	return e, nil
 }

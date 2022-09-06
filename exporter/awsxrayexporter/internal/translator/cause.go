@@ -36,9 +36,7 @@ const ExceptionEventName = "exception"
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
 	status := span.Status()
-	if status.Code() != ptrace.StatusCodeError {
-		return false, false, false, attributes, nil
-	}
+
 	filtered = attributes
 
 	var (
@@ -55,13 +53,14 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if hasExceptions {
+	switch {
+	case hasExceptions:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.StringVal()
 		}
 
-		exceptions := make([]awsxray.Exception, 0)
+		var exceptions []awsxray.Exception
 		for i := 0; i < span.Events().Len(); i++ {
 			event := span.Events().At(i)
 			if event.Name() == ExceptionEventName {
@@ -89,7 +88,11 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			Type: awsxray.CauseTypeObject,
 			CauseObject: awsxray.CauseObject{
 				Exceptions: exceptions}}
-	} else {
+
+	case status.Code() != ptrace.StatusCodeError:
+		cause = nil
+
+	default:
 		// Use OpenCensus behavior if we didn't find any exception events to ease migration.
 		message = status.Message()
 		filtered = make(map[string]pcommon.Value)
@@ -123,7 +126,14 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	if val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode); ok {
+	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+
+	switch {
+	case status.Code() != ptrace.StatusCodeError:
+		isError = false
+		isThrottle = false
+		isFault = false
+	case ok:
 		code := val.IntVal()
 		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
 		if code >= 400 && code <= 499 {
@@ -137,11 +147,12 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			isThrottle = false
 			isFault = true
 		}
-	} else {
+	default:
 		isError = false
 		isThrottle = false
 		isFault = true
 	}
+
 	return isError, isFault, isThrottle, filtered, cause
 }
 
@@ -191,7 +202,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -249,7 +260,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 				ID:      aws.String(newSegmentID().HexString()),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
+				Stack:   nil,
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -288,7 +299,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	line := lines[lineIdx]
 	exception := &exceptions[0]
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "  File ") {
 			parts := strings.Split(line, ",")
@@ -344,7 +355,6 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 				ID:      aws.String(newSegmentID().HexString()),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -385,7 +395,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "    at ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -444,7 +454,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			index := strings.Index(line, " in ")
@@ -521,7 +531,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		match := re.Match([]byte(line))
 		if match {

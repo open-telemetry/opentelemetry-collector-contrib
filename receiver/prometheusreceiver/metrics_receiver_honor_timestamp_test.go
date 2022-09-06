@@ -148,7 +148,6 @@ rpc_duration_seconds_count 1000 %v
 // - Start_timestamp should get reset if current scrape has lower value than previous scrape
 
 func TestHonorTimeStampsWithTrue(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10356")
 	setMetricsTimestamp()
 	targets := []*testData{
 		{
@@ -165,15 +164,9 @@ func TestHonorTimeStampsWithTrue(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-// This abstraction prevents skipped function from causing "unused" lint errors
-var skip = func(t *testing.T, why string) {
-	t.Skip(why)
-}
-
 // TestHonorTimeStampsWithFalse validates that with honor_timestamp config set to false,
 // valid testdata provided with explicit timestamps does not get honored.
 func TestHonorTimeStampsWithFalse(t *testing.T) {
-	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10356")
 	setMetricsTimestamp()
 	targets := []*testData{
 		{
@@ -216,7 +209,7 @@ func setMetricsTimestamp() {
 	})
 }
 
-func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 	// m1 has 4 metrics + 5 internal scraper metrics
@@ -400,7 +393,7 @@ func verifyHonorTimeStampsTrue(t *testing.T, td *testData, resourceMetrics []*pm
 	doCompare(t, "scrape-honorTimestamp-3", wantAttributes, m3, e3)
 }
 
-func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyHonorTimeStampsFalse(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 

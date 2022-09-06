@@ -17,7 +17,7 @@ package splunkhecexporter
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math"
 	"testing"
 	"time"
@@ -192,12 +192,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "int_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().InsertString("com.splunk.source", "mysource")
-				res.Attributes().InsertString("host.name", "myhost")
-				res.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().InsertString("com.splunk.index", "myindex")
-				res.Attributes().InsertString("k0", "v0")
-				res.Attributes().InsertString("k1", "v1")
+				res.Attributes().UpsertString("com.splunk.source", "mysource")
+				res.Attributes().UpsertString("host.name", "myhost")
+				res.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().UpsertString("com.splunk.index", "myindex")
+				res.Attributes().UpsertString("k0", "v0")
+				res.Attributes().UpsertString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -223,12 +223,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "double_gauge",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().InsertString("com.splunk.source", "mysource")
-				res.Attributes().InsertString("host.name", "myhost")
-				res.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-				res.Attributes().InsertString("com.splunk.index", "myindex")
-				res.Attributes().InsertString("k0", "v0")
-				res.Attributes().InsertString("k1", "v1")
+				res.Attributes().UpsertString("com.splunk.source", "mysource")
+				res.Attributes().UpsertString("host.name", "myhost")
+				res.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
+				res.Attributes().UpsertString("com.splunk.index", "myindex")
+				res.Attributes().UpsertString("k0", "v0")
+				res.Attributes().UpsertString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -534,12 +534,12 @@ func Test_metricDataToSplunk(t *testing.T) {
 			name: "custom_config_mapping",
 			resourceFn: func() pcommon.Resource {
 				res := pcommon.NewResource()
-				res.Attributes().InsertString("mysource", "mysource2")
-				res.Attributes().InsertString("myhost", "myhost2")
-				res.Attributes().InsertString("mysourcetype", "mysourcetype2")
-				res.Attributes().InsertString("myindex", "myindex2")
-				res.Attributes().InsertString("k0", "v0")
-				res.Attributes().InsertString("k1", "v1")
+				res.Attributes().UpsertString("mysource", "mysource2")
+				res.Attributes().UpsertString("myhost", "myhost2")
+				res.Attributes().UpsertString("mysourcetype", "mysourcetype2")
+				res.Attributes().UpsertString("myindex", "myindex2")
+				res.Attributes().UpsertString("k0", "v0")
+				res.Attributes().UpsertString("k1", "v1")
 				return res
 			},
 			metricsDataFn: func() pmetric.Metric {
@@ -571,7 +571,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			md := tt.metricsDataFn()
 			cfg := tt.configFn()
 			gotMetrics := mapMetricToSplunkEvent(res, md, cfg, zap.NewNop())
-			encoder := json.NewEncoder(ioutil.Discard)
+			encoder := json.NewEncoder(io.Discard)
 			for i, want := range tt.wantSplunkMetrics {
 				assert.Equal(t, want, gotMetrics[i])
 				err := encoder.Encode(gotMetrics[i])
@@ -631,7 +631,7 @@ func TestNilTimeWhenTimestampIsZero(t *testing.T) {
 
 func newMetricsWithResources() pcommon.Resource {
 	res := pcommon.NewResource()
-	res.Attributes().InsertString("k0", "v0")
-	res.Attributes().InsertString("k1", "v1")
+	res.Attributes().UpsertString("k0", "v0")
+	res.Attributes().UpsertString("k1", "v1")
 	return res
 }

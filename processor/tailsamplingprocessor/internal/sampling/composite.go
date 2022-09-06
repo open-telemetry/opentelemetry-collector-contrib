@@ -63,7 +63,7 @@ func NewComposite(
 	timeProvider TimeProvider,
 ) PolicyEvaluator {
 
-	subpolicies := []*subpolicy{}
+	var subpolicies []*subpolicy
 
 	for i := 0; i < len(subPolicyParams); i++ {
 		sub := &subpolicy{}

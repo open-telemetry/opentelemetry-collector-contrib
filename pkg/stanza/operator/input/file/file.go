@@ -29,7 +29,7 @@ type toBodyFunc func([]byte) interface{}
 type Input struct {
 	helper.InputOperator
 
-	fileConsumer *fileconsumer.Input
+	fileConsumer *fileconsumer.Manager
 
 	toBody         toBodyFunc
 	preEmitOptions []preEmitOption

@@ -100,6 +100,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						routerName           = "someRouterName"
 						vpnName              = "someVpnName"
 						replyToTopic         = "someReplyToTopic"
+						topic                = "someTopic"
 					)
 					validData, err := proto.Marshal(&model_v1.SpanData{
 						TraceId:                     []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
@@ -118,6 +119,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 						MetadataSize:                34,
 						ClientUsername:              "someClientUsername",
 						ClientName:                  "someClient1234",
+						Topic:                       topic,
 						ReplyToTopic:                &replyToTopic,
 						ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
 						Priority:                    &priority,
@@ -196,6 +198,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"messaging.message_id":                            "someMessageID",
 					"messaging.conversation_id":                       "someConversationID",
 					"messaging.message_payload_size_bytes":            int64(1234),
+					"messaging.destination":                           "someTopic",
 					"messaging.solace.client_username":                "someClientUsername",
 					"messaging.solace.client_name":                    "someClient1234",
 					"messaging.solace.replication_group_message_id":   "rmid1:00010-40910192431-40516479-90a9c4e1",
@@ -243,6 +246,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+
 			if tt.want != nil {
 				require.NotNil(t, traces)
 				require.Equal(t, 1, traces.ResourceSpans().Len())
@@ -258,7 +262,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span := instrumentation.Spans().At(0)
 				compareSpans(t, &expectedSpan, &span)
 			} else {
-				assert.Nil(t, traces)
+				assert.Equal(t, ptrace.Traces{}, traces)
 			}
 		})
 	}
@@ -301,7 +305,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapResourceSpanAttributes(tt.spanData, &actual)
+			u.mapResourceSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -368,7 +372,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapClientSpanData(tt.data, &actual)
+			u.mapClientSpanData(tt.data, actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.want(&expected)
 			assert.Equal(t, expected, actual)
@@ -405,6 +409,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				ClientUsername:              "someClientUsername",
 				ClientName:                  "someClient1234",
 				ReplyToTopic:                &replyToTopic,
+				Topic:                       "someTopic",
 				ReplicationGroupMessageId:   []byte{0x01, 0x00, 0x01, 0x04, 0x09, 0x10, 0x19, 0x24, 0x31, 0x40, 0x51, 0x64, 0x79, 0x90, 0xa9, 0xc4, 0xe1},
 				Priority:                    &priority,
 				Ttl:                         &ttl,
@@ -433,6 +438,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.message_id":                            "someMessageID",
 				"messaging.conversation_id":                       "someConversationID",
 				"messaging.message_payload_size_bytes":            int64(1234),
+				"messaging.destination":                           "someTopic",
 				"messaging.solace.client_username":                "someClientUsername",
 				"messaging.solace.client_name":                    "someClient1234",
 				"messaging.solace.replication_group_message_id":   "rmid1:00010-40910192431-40516479-90a9c4e1",
@@ -460,6 +466,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				MetadataSize:                34,
 				ClientUsername:              "someClientUsername",
 				ClientName:                  "someClient1234",
+				Topic:                       "someTopic",
 				DmqEligible:                 true,
 				DroppedEnqueueEventsSuccess: 42,
 				DroppedEnqueueEventsFailed:  24,
@@ -476,6 +483,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.operation":                             "receive",
 				"messaging.protocol":                              "MQTT",
 				"messaging.message_payload_size_bytes":            int64(1234),
+				"messaging.destination":                           "someTopic",
 				"messaging.solace.client_username":                "someClientUsername",
 				"messaging.solace.client_name":                    "someClient1234",
 				"messaging.solace.dmq_eligible":                   true,
@@ -493,7 +501,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapClientSpanAttributes(tt.spanData, &actual)
+			u.mapClientSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -785,7 +793,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(&expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapEvents(tt.spanData, &actual)
+			u.mapEvents(tt.spanData, actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, &expected, &actual)
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
@@ -820,13 +828,13 @@ func populateAttributes(t *testing.T, attrMap *pcommon.Map, attributes map[strin
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:
-			attrMap.InsertString(key, casted)
+			attrMap.UpsertString(key, casted)
 		case int64:
-			attrMap.InsertInt(key, casted)
+			attrMap.UpsertInt(key, casted)
 		case int:
-			attrMap.InsertInt(key, int64(casted))
+			attrMap.UpsertInt(key, int64(casted))
 		case bool:
-			attrMap.InsertBool(key, casted)
+			attrMap.UpsertBool(key, casted)
 		default:
 			require.Fail(t, "Test setup issue: unknown type, could not insert data")
 		}
@@ -902,7 +910,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 			&model_v1.SpanData_UserPropertyValue_ByteArrayValue{ByteArrayValue: []byte{1, 2, 3, 4}},
 			pcommon.ValueTypeBytes,
 			func(val pcommon.Value) {
-				assert.Equal(t, []byte{1, 2, 3, 4}, val.MBytesVal())
+				assert.Equal(t, []byte{1, 2, 3, 4}, val.BytesVal().AsRaw())
 			},
 		},
 		{
@@ -991,7 +999,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		t.Run(fmt.Sprintf("%T", testCase.data), func(t *testing.T) {
 			const key = "some-property"
 			attributeMap := pcommon.NewMap()
-			unmarshaller.insertUserProperty(&attributeMap, key, testCase.data)
+			unmarshaller.insertUserProperty(attributeMap, key, testCase.data)
 			actual, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 			require.True(t, ok)
 			assert.Equal(t, testCase.expectedType, actual.Type())
@@ -1008,7 +1016,7 @@ func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing
 	}
 	const key = "some-property"
 	attributeMap := pcommon.NewMap()
-	unmarshaller.insertUserProperty(&attributeMap, key, "invalid data type")
+	unmarshaller.insertUserProperty(attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
 	validateMetric(t, viewRecoverableUnmarshallingErrors, 1)

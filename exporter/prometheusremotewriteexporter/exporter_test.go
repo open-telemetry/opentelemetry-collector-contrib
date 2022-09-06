@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package prometheusremotewriteexporter
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -51,6 +50,9 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -142,6 +144,9 @@ func Test_Start(t *testing.T) {
 		RetrySettings:    exporterhelper.RetrySettings{},
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -248,7 +253,7 @@ func Test_export(t *testing.T) {
 	handleFunc := func(w http.ResponseWriter, r *http.Request, code int) {
 		// The following is a handler function that reads the sent httpRequest, unmarshal, and checks if the WriteRequest
 		// preserves the TimeSeries data correctly
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -258,7 +263,7 @@ func Test_export(t *testing.T) {
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
-		unzipped := []byte{}
+		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
 		require.NoError(t, err)
@@ -325,10 +330,22 @@ func Test_export(t *testing.T) {
 	}
 }
 
+func TestNoMetricsNoError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+	serverURL, uErr := url.Parse(server.URL)
+	assert.NoError(t, uErr)
+	assert.NoError(t, runExportPipeline(nil, serverURL))
+}
+
 func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	// First we will construct a TimeSeries array from the testutils package
 	testmap := make(map[string]*prompb.TimeSeries)
-	testmap["test"] = ts
+	if ts != nil {
+		testmap["test"] = ts
+	}
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = endpoint.String()
@@ -370,6 +387,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	histogramBatch := getMetricsFromMetricList(validMetrics1[validHistogram], validMetrics2[validHistogram])
 
+	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
+
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
@@ -399,7 +418,7 @@ func Test_PushMetrics(t *testing.T) {
 	staleNaNSumBatch := getMetricsFromMetricList(staleNaNMetrics[staleNaNSum])
 
 	checkFunc := func(t *testing.T, r *http.Request, expected int, isStaleMarker bool) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -469,6 +488,13 @@ func Test_PushMetrics(t *testing.T) {
 			metrics:            &histogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 12,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "valid_empty_histogram_case",
+			metrics:            &emptyDataPointHistogramBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 6,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -616,6 +642,9 @@ func Test_PushMetrics(t *testing.T) {
 							WriteBufferSize: 512 * 1024,
 						},
 						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+						TargetInfo: &TargetInfo{
+							Enabled: true,
+						},
 					}
 
 					if useWAL {
@@ -743,7 +772,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 
 	for _, tt := range testsWithoutSanitizelabel {
 		cfg := createDefaultConfig().(*Config)
-		//disable sanitizeLabel flag
+		// disable sanitizeLabel flag
 		cfg.ExternalLabels = tt.inputLabels
 		t.Run(tt.name, func(t *testing.T) {
 			newLabels, err := validateAndSanitizeExternalLabels(cfg)
@@ -774,7 +803,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	uploadedBytesCh := make(chan []byte, 1)
 	exiting := make(chan bool)
 	prweServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		uploaded, err2 := ioutil.ReadAll(req.Body)
+		uploaded, err2 := io.ReadAll(req.Body)
 		assert.NoError(t, err2, "Error while reading from HTTP upload")
 		select {
 		case uploadedBytesCh <- uploaded:
@@ -797,6 +826,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		WAL: &WALConfig{
 			Directory:  tempDir,
 			BufferSize: 1,
+		},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
 		},
 	}
 

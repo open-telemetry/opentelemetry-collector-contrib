@@ -33,7 +33,7 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability))
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 // CreateDefaultConfig creates the default configuration for exporter.

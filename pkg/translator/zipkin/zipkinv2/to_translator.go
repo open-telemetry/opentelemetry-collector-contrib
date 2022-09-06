@@ -293,15 +293,15 @@ func populateSpanEvents(zspan *zipkinmodel.SpanModel, events ptrace.SpanEventSli
 func jsonMapToAttributeMap(attrs map[string]interface{}, dest pcommon.Map) error {
 	for key, val := range attrs {
 		if s, ok := val.(string); ok {
-			dest.InsertString(key, s)
+			dest.UpsertString(key, s)
 		} else if d, ok := val.(float64); ok {
 			if math.Mod(d, 1.0) == 0.0 {
-				dest.InsertInt(key, int64(d))
+				dest.UpsertInt(key, int64(d))
 			} else {
-				dest.InsertDouble(key, d)
+				dest.UpsertDouble(key, d)
 			}
 		} else if b, ok := val.(bool); ok {
-			dest.InsertBool(key, b)
+			dest.UpsertBool(key, b)
 		}
 	}
 	return nil
@@ -311,10 +311,10 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+			dest.UpsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			dest.InsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+			dest.UpsertString(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
 			dest.UpsertInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
@@ -322,13 +322,13 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.InsertString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+			dest.UpsertString(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+			dest.UpsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			dest.InsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+			dest.UpsertString(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
 			dest.UpsertInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
@@ -371,15 +371,15 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 
 	if len(tags) == 0 {
-		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().UpsertString(conventions.AttributeServiceName, localServiceName)
 		return
 	}
 
 	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
-		resource.Attributes().InsertString(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().UpsertString(conventions.AttributeServiceName, localServiceName)
 	} else {
-		resource.Attributes().InsertString(snSource, localServiceName)
+		resource.Attributes().UpsertString(snSource, localServiceName)
 	}
 	delete(tags, zipkin.TagServiceNameSource)
 
@@ -442,7 +442,7 @@ func setTimestampsV2(zspan *zipkinmodel.SpanModel, dest ptrace.Span, destAttrs p
 		dest.SetStartTimestamp(unixTimeZero)
 		dest.SetEndTimestamp(zeroPlusDuration)
 
-		destAttrs.InsertBool(zipkin.StartTimeAbsent, true)
+		destAttrs.UpsertBool(zipkin.StartTimeAbsent, true)
 	} else {
 		dest.SetStartTimestamp(pcommon.NewTimestampFromTime(zspan.Timestamp))
 		dest.SetEndTimestamp(pcommon.NewTimestampFromTime(zspan.Timestamp.Add(zspan.Duration)))

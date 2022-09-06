@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -43,7 +42,7 @@ func (mfs *mockFileSystem) Open(path string) (io.ReadCloser, error) {
 		return nil, errors.New("file not found")
 	}
 	mfs.path = path
-	f := ioutil.NopCloser(strings.NewReader(mfs.contents))
+	f := io.NopCloser(strings.NewReader(mfs.contents))
 	return f, nil
 }
 
@@ -97,11 +96,11 @@ func Test_AttributesDetectedSuccessfully(t *testing.T) {
 
 	want := pcommon.NewResource()
 	attr := want.Attributes()
-	attr.InsertString("cloud.provider", "aws")
-	attr.InsertString("cloud.platform", "aws_elastic_beanstalk")
-	attr.InsertString("deployment.environment", "BETA")
-	attr.InsertString("service.instance.id", "23")
-	attr.InsertString("service.version", "env-version-1234")
+	attr.UpsertString("cloud.provider", "aws")
+	attr.UpsertString("cloud.platform", "aws_elastic_beanstalk")
+	attr.UpsertString("deployment.environment", "BETA")
+	attr.UpsertString("service.instance.id", "23")
+	attr.UpsertString("service.version", "env-version-1234")
 
 	r, _, err := d.Detect(context.TODO())
 

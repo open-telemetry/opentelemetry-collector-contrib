@@ -39,9 +39,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(NewTracesExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(NewMetricsExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(NewLogsExporter, stability),
+		component.WithTracesExporter(NewTracesExporter, stability),
+		component.WithMetricsExporter(NewMetricsExporter, stability),
+		component.WithLogsExporter(NewLogsExporter, stability),
 	)
 }
 
@@ -70,8 +70,9 @@ func NewTracesExporter(ctx context.Context, params component.ExporterCreateSetti
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewTracesExporter(
-		conf,
+		ctx,
 		params,
+		conf,
 		exp.ConsumeTraces,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -86,8 +87,9 @@ func NewMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewMetricsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeMetrics,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),
@@ -102,8 +104,9 @@ func NewLogsExporter(ctx context.Context, params component.ExporterCreateSetting
 	}
 	c := conf.(*Config)
 	return exporterhelper.NewLogsExporter(
-		c,
+		ctx,
 		params,
+		c,
 		exp.ConsumeLogs,
 		exporterhelper.WithTimeout(c.TimeoutSettings),
 		exporterhelper.WithRetry(c.RetrySettings),

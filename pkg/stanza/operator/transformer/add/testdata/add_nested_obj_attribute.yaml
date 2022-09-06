@@ -1,5 +1,0 @@
-type: add 
-field: attributes.one.two
-value: 
-  nest:
-    key: val

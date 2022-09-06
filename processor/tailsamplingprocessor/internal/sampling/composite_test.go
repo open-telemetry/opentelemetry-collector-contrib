@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -59,7 +59,7 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 16, 0, time.UTC),
 	))
-	span.Attributes().InsertInt(key, val)
+	span.Attributes().UpsertInt(key, val)
 
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{

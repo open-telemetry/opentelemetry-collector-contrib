@@ -16,10 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"errors"
-	"strconv"
 	"strings"
-
-	"github.com/prometheus/prometheus/model/labels"
 )
 
 const (
@@ -38,38 +35,14 @@ const (
 var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo}
 	errNoDataToBuild      = errors.New("there's no data to build")
-	errNoBoundaryLabel    = errors.New("given metricType has no BucketLabel or QuantileLabel")
-	errEmptyBoundaryLabel = errors.New("BucketLabel or QuantileLabel is empty")
+	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
+	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
+	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
 	errNoStartTimeMetrics = errors.New("process_start_time_seconds metric is missing")
 )
-
-// dpgSignature is used to create a key for data complexValue belong to a same group of a metric family
-func dpgSignature(orderedKnownLabelKeys []string, ls labels.Labels) string {
-	size := 0
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
-		}
-		// 2 enclosing quotes + 1 equality sign = 3 extra chars.
-		// Note: if any character in the label value requires escaping,
-		// we'll need more space than that, which will lead to some
-		// extra allocation.
-		size += 3 + len(k) + len(v)
-	}
-	sign := make([]byte, 0, size)
-	for _, k := range orderedKnownLabelKeys {
-		v := ls.Get(k)
-		if v == "" {
-			continue
-		}
-		sign = strconv.AppendQuote(sign, k+"="+v)
-	}
-	return string(sign)
-}
 
 func normalizeMetricName(name string) string {
 	for _, s := range trimmableSuffixes {

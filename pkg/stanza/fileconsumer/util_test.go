@@ -17,7 +17,6 @@ package fileconsumer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -28,16 +27,13 @@ import (
 	"github.com/observiq/nanojack"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func newDefaultConfig(tempDir string) *Config {
-	cfg := NewConfig()
-	cfg.PollInterval = helper.Duration{Duration: 200 * time.Millisecond}
-	cfg.StartAt = "beginning"
-	cfg.Include = []string{fmt.Sprintf("%s/*", tempDir)}
-	return cfg
+// includeDir is a builder-like helper for quickly setting up a test config
+func (c *Config) includeDir(dir string) *Config {
+	c.Include = append(c.Include, fmt.Sprintf("%s/*", dir))
+	return c
 }
 
 func emitOnChan(received chan []byte) EmitFunc {
@@ -51,25 +47,17 @@ type emitParams struct {
 	token []byte
 }
 
-func newTestScenario(t *testing.T, cfgMod func(*Config)) (*Input, chan *emitParams, string) {
+func buildTestManager(t *testing.T, cfg *Config) (*Manager, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	input, tempDir := newTestScenarioWithChan(t, cfgMod, emitChan)
-	return input, emitChan, tempDir
+	return buildTestManagerWithEmit(t, cfg, emitChan), emitChan
 }
 
-func newTestScenarioWithChan(t *testing.T, cfgMod func(*Config), emitChan chan *emitParams) (*Input, string) {
-	tempDir := t.TempDir()
-	cfg := newDefaultConfig(tempDir)
-	if cfgMod != nil {
-		cfgMod(cfg)
-	}
-
+func buildTestManagerWithEmit(t *testing.T, cfg *Config, emitChan chan *emitParams) *Manager {
 	input, err := cfg.Build(testutil.Logger(t), func(_ context.Context, attrs *FileAttributes, token []byte) {
 		emitChan <- &emitParams{attrs, token}
 	})
 	require.NoError(t, err)
-
-	return input, tempDir
+	return input
 }
 
 func openFile(tb testing.TB, path string) *os.File {
@@ -88,14 +76,14 @@ func reopenTemp(t testing.TB, name string) *os.File {
 }
 
 func openTempWithPattern(t testing.TB, tempDir, pattern string) *os.File {
-	file, err := ioutil.TempFile(tempDir, pattern)
+	file, err := os.CreateTemp(tempDir, pattern)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = file.Close() })
 	return file
 }
 
 func getRotatingLogger(t testing.TB, tempDir string, maxLines, maxBackups int, copyTruncate, sequential bool) *log.Logger {
-	file, err := ioutil.TempFile(tempDir, "")
+	file, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	require.NoError(t, file.Close()) // will be managed by rotator
 
@@ -155,7 +143,7 @@ func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	case call := <-c:
 		require.Equal(t, expected, call.token)
 	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for token", expected)
+		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}
 }
 

@@ -128,19 +128,16 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			hecConfig: defaultTestingHecConfig,
 			output: func() plog.ResourceLogsSlice {
 				logsSlice := createLogsSlice(nanoseconds)
-				foosArr := pcommon.NewValueSlice()
-				foos := foosArr.SliceVal()
+
+				attMap := logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetEmptyMapVal()
+				attMap.UpsertBool("bool", false)
+				foos := attMap.UpsertEmptySlice("foos")
 				foos.EnsureCapacity(3)
 				foos.AppendEmpty().SetStringVal("foo")
 				foos.AppendEmpty().SetStringVal("bar")
 				foos.AppendEmpty().SetStringVal("foobar")
+				attMap.UpsertInt("someInt", 12)
 
-				attVal := pcommon.NewValueMap()
-				attMap := attVal.MapVal()
-				attMap.InsertBool("bool", false)
-				attMap.Insert("foos", foosArr)
-				attMap.InsertInt("someInt", 12)
-				attVal.CopyTo(logsSlice.At(0).ScopeLogs().At(0).LogRecords().At(0).Body())
 				return logsSlice
 			}(),
 			wantErr: nil,
@@ -192,11 +189,11 @@ func Test_SplunkHecToLogData(t *testing.T) {
 				logRecord := sl.LogRecords().AppendEmpty()
 				logRecord.Body().SetStringVal("value")
 				logRecord.SetTimestamp(pcommon.Timestamp(0))
-				logRecord.Attributes().InsertString("myhost", "localhost")
-				logRecord.Attributes().InsertString("mysource", "mysource")
-				logRecord.Attributes().InsertString("mysourcetype", "mysourcetype")
-				logRecord.Attributes().InsertString("myindex", "myindex")
-				logRecord.Attributes().InsertString("foo", "bar")
+				logRecord.Attributes().UpsertString("myhost", "localhost")
+				logRecord.Attributes().UpsertString("mysource", "mysource")
+				logRecord.Attributes().UpsertString("mysourcetype", "mysourcetype")
+				logRecord.Attributes().UpsertString("myindex", "myindex")
+				logRecord.Attributes().UpsertString("foo", "bar")
 				return lrs
 			}(),
 			wantErr: nil,
@@ -219,11 +216,11 @@ func createLogsSlice(nanoseconds int) plog.ResourceLogsSlice {
 	logRecord := sl.LogRecords().AppendEmpty()
 	logRecord.Body().SetStringVal("value")
 	logRecord.SetTimestamp(pcommon.Timestamp(nanoseconds))
-	logRecord.Attributes().InsertString("host.name", "localhost")
-	logRecord.Attributes().InsertString("com.splunk.source", "mysource")
-	logRecord.Attributes().InsertString("com.splunk.sourcetype", "mysourcetype")
-	logRecord.Attributes().InsertString("com.splunk.index", "myindex")
-	logRecord.Attributes().InsertString("foo", "bar")
+	logRecord.Attributes().UpsertString("host.name", "localhost")
+	logRecord.Attributes().UpsertString("com.splunk.source", "mysource")
+	logRecord.Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
+	logRecord.Attributes().UpsertString("com.splunk.index", "myindex")
+	logRecord.Attributes().UpsertString("foo", "bar")
 
 	return lrs
 }
@@ -257,7 +254,7 @@ func Test_ConvertAttributeValueMap(t *testing.T) {
 	assert.NoError(t, err)
 	atts := pcommon.NewValueMap()
 	attMap := atts.MapVal()
-	attMap.InsertString("foo", "bar")
+	attMap.UpsertString("foo", "bar")
 	assert.Equal(t, atts, value)
 }
 

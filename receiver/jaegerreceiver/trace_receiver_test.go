@@ -20,7 +20,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -263,10 +262,10 @@ func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString(conventions.AttributeServiceName, "issaTest")
-	rs.Resource().Attributes().InsertBool("bool", true)
-	rs.Resource().Attributes().InsertString("string", "yes")
-	rs.Resource().Attributes().InsertInt("int64", 10000000)
+	rs.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "issaTest")
+	rs.Resource().Attributes().UpsertBool("bool", true)
+	rs.Resource().Attributes().UpsertString("string", "yes")
+	rs.Resource().Attributes().UpsertInt("int64", 10000000)
 	spans := rs.ScopeSpans().AppendEmpty().Spans()
 
 	span0 := spans.AppendEmpty()
@@ -502,7 +501,7 @@ func TestSamplingStrategiesMutualTLS(t *testing.T) {
 
 	resp, err := http.Get(fmt.Sprintf("http://%s?service=bar", hostEndpoint))
 	require.NoError(t, err)
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.Contains(t, "{\"strategyType\":1,\"rateLimitingSampling\":{\"maxTracesPerSecond\":5}}", string(bodyBytes))
 }
@@ -543,7 +542,7 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 		return err
 	}
 
-	_, err = io.Copy(ioutil.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
 	if err != nil {
 		return err
 	}

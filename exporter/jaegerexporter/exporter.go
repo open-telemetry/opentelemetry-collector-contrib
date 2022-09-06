@@ -43,7 +43,7 @@ import (
 func newTracesExporter(cfg *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
 	s := newProtoGRPCSender(cfg, set.TelemetrySettings)
 	return exporterhelper.NewTracesExporter(
-		cfg, set, s.pushTraces,
+		context.TODO(), set, cfg, s.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(s.start),
 		exporterhelper.WithShutdown(s.shutdown),

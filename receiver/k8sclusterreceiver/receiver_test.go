@@ -25,17 +25,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.uber.org/atomic"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestReceiver(t *testing.T) {
@@ -49,8 +48,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r, err := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
-	require.NoError(t, err)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -98,8 +96,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r, err := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
-	require.NoError(t, err)
+	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -122,8 +119,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r, err := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
-	require.NoError(t, err)
+	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
 
 	numPods := 1000
 	numQuotas := 2
@@ -161,8 +157,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
 	numCalls = atomic.NewInt32(0)
 
-	r, err := setupReceiver(client, nil, next, 10*time.Second, tt)
-	require.NoError(t, err)
+	r := setupReceiver(client, nil, next, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -210,14 +205,13 @@ func setupReceiver(
 	osQuotaClient quotaclientset.Interface,
 	consumer consumer.Metrics,
 	initialSyncTimeout time.Duration,
-	tt obsreporttest.TestTelemetry) (*kubernetesReceiver, error) {
+	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
 
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift
 	}
 
-	logger := zap.NewNop()
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
@@ -225,24 +219,16 @@ func setupReceiver(
 		Distribution:               distribution,
 	}
 
-	rw, err := newResourceWatcher(logger, client, osQuotaClient, config.NodeConditionTypesToReport,
-		config.AllocatableTypesToReport, initialSyncTimeout)
-	if err != nil {
-		return nil, err
+	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config, consumer)
+	kr := r.(*kubernetesReceiver)
+	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
+		return client, nil
 	}
-	rw.dataCollector.SetupMetadataStore(gvk.Service, &testutils.MockStore{})
-
-	return &kubernetesReceiver{
-		resourceWatcher: rw,
-		settings:        tt.ToReceiverCreateSettings(),
-		config:          config,
-		consumer:        consumer,
-		obsrecv: obsreport.NewReceiver(obsreport.ReceiverSettings{
-			ReceiverID:             config.ID(),
-			Transport:              "http",
-			ReceiverCreateSettings: tt.ToReceiverCreateSettings(),
-		}),
-	}, nil
+	kr.resourceWatcher.makeOpenShiftQuotaClient = func(_ k8sconfig.APIConfig) (quotaclientset.Interface, error) {
+		return osQuotaClient, nil
+	}
+	kr.resourceWatcher.initialTimeout = initialSyncTimeout
+	return kr
 }
 
 func newFakeClientWithAllResources() *fake.Clientset {

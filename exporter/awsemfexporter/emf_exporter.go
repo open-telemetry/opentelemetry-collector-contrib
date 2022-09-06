@@ -105,8 +105,9 @@ func newEmfExporter(
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		config,
+		context.TODO(),
 		set,
+		config,
 		exp.(*emfExporter).pushMetricsData,
 		exporterhelper.WithShutdown(exp.(*emfExporter).Shutdown),
 	)
@@ -209,7 +210,7 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	pushers := []cwlogs.Pusher{}
+	var pushers []cwlogs.Pusher
 	for _, pusherMap := range emf.groupStreamToPusherMap {
 		for _, pusher := range pusherMap {
 			pushers = append(pushers, pusher)

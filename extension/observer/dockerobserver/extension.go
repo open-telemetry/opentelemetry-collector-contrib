@@ -56,7 +56,7 @@ func newObserver(logger *zap.Logger, config *Config) (component.Extension, error
 		logger: logger, config: config,
 		once: &sync.Once{},
 	}
-	d.EndpointsWatcher = &observer.EndpointsWatcher{Endpointslister: d, RefreshInterval: time.Second}
+	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
 	return d, nil
 }
 

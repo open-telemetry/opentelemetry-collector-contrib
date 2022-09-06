@@ -15,7 +15,7 @@
 package awsemfexporter
 
 import (
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -39,7 +39,7 @@ import (
 )
 
 func readFromFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
@@ -1438,6 +1438,30 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			nil,
 		},
 		{
+			"empty dimension set matches",
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}},
+					MetricNameSelectors: []string{"metric(1|3)"},
+				},
+			}, []cWMeasurement{
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{}},
+					Metrics: []map[string]string{
+						{
+							"Name": "metric1",
+							"Unit": "Count",
+						},
+						{
+							"Name": "metric3",
+							"Unit": "Seconds",
+						},
+					},
+				},
+			},
+		},
+		{
 			"label matchers",
 			[]*MetricDeclaration{
 				{
@@ -1996,6 +2020,18 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			},
 			zeroAndSingleDimensionRollup,
 			nil,
+		},
+		{
+			"no labels with empty dimension",
+			map[string]string{},
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}, {"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			zeroAndSingleDimensionRollup,
+			[][]string{{}},
 		},
 	}
 

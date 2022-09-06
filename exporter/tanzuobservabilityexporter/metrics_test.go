@@ -1208,8 +1208,8 @@ func newHistogramMetricWithDataPoints(
 	aHistogram.DataPoints().EnsureCapacity(len(numBucketCountsForEachDataPoint))
 	for _, count := range numBucketCountsForEachDataPoint {
 		point := aHistogram.DataPoints().AppendEmpty()
-		point.SetMBucketCounts(make([]uint64, count))
-		point.SetMExplicitBounds(make([]float64, count-1))
+		point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
+		point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(make([]float64, count-1)))
 	}
 	return result
 }
@@ -1226,8 +1226,8 @@ func newExponentialHistogramMetricWithDataPoints(
 	aHistogram.DataPoints().EnsureCapacity(len(positiveAndNegativeBucketCountsForEachDataPoint))
 	for _, count := range positiveAndNegativeBucketCountsForEachDataPoint {
 		point := aHistogram.DataPoints().AppendEmpty()
-		point.Negative().SetMBucketCounts(make([]uint64, count))
-		point.Positive().SetMBucketCounts(make([]uint64, count))
+		point.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
+		point.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(make([]uint64, count)))
 	}
 	return result
 }
@@ -1297,7 +1297,7 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metr
 	result.ResourceMetrics().EnsureCapacity(1)
 	rm := result.ResourceMetrics().AppendEmpty()
 	for key, val := range tags {
-		rm.Resource().Attributes().InsertString(key, val)
+		rm.Resource().Attributes().UpsertString(key, val)
 	}
 	rm.ScopeMetrics().EnsureCapacity(1)
 	ilm := rm.ScopeMetrics().AppendEmpty()

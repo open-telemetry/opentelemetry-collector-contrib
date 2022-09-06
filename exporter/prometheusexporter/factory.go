@@ -38,20 +38,21 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability))
+		component.WithMetricsExporter(createMetricsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		ConstLabels:      map[string]string{},
-		SendTimestamps:   false,
-		MetricExpiration: time.Minute * 5,
+		ExporterSettings:  config.NewExporterSettings(config.NewComponentID(typeStr)),
+		ConstLabels:       map[string]string{},
+		SendTimestamps:    false,
+		MetricExpiration:  time.Minute * 5,
+		EnableOpenMetrics: false,
 	}
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -63,8 +64,9 @@ func createMetricsExporter(
 	}
 
 	exporter, err := exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithStart(prometheus.Start),

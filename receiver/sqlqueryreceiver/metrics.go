@@ -46,6 +46,9 @@ func rowToMetric(row metricRow, cfg MetricCfg, dest pmetric.Metric, startTime pc
 			return fmt.Errorf("rowToMetric: attribute_column not found: '%s'", columnName)
 		}
 	}
+	for k, v := range cfg.StaticAttributes {
+		attrs.InsertString(k, v)
+	}
 	return nil
 }
 

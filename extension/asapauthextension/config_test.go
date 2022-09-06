@@ -21,9 +21,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
 // Test keys. Not for use anywhere but these tests.
@@ -36,59 +35,56 @@ f9IYHQL5srVgTF0CWHcJCtnRScMGXFiVYSRnDiQQ3wf/LXG3SXd+CmUCAwEAAQ==
 )
 
 func TestLoadConfig(t *testing.T) {
-	factories, err := componenttest.NopFactories()
-	assert.NoError(t, err)
-	factory := NewFactory()
-	factories.Extensions[typeStr] = factory
-
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
-	assert.NotNil(t, cfg)
-	assert.NoError(t, err)
-	assert.NoError(t, cfg.Validate())
-
-	expected := factory.CreateDefaultConfig().(*Config)
-	expected.TTL = 60 * time.Second
-	expected.Audience = []string{"test_service1", "test_service2"}
-	expected.Issuer = "test_issuer"
-	expected.KeyID = "test_issuer/test_kid"
-	expected.PrivateKey = privateKey
-	ext := cfg.Extensions[config.NewComponentID(typeStr)]
-	assert.Equal(t, expected, ext)
-}
-
-func TestLoadBadConfig(t *testing.T) {
 	t.Parallel()
-	factories, err := componenttest.NopFactories()
-	require.NoError(t, err)
 
 	tests := []struct {
-		configName  string
+		id          config.ComponentID
+		expected    config.Extension
 		expectedErr error
 	}{
 		{
-			"missingkeyid",
-			errNoKeyIDProvided,
+			id: config.NewComponentID(typeStr),
+			expected: &Config{
+				ExtensionSettings: config.NewExtensionSettings(config.NewComponentID(typeStr)),
+				TTL:               60 * time.Second,
+				Audience:          []string{"test_service1", "test_service2"},
+				Issuer:            "test_issuer",
+				KeyID:             "test_issuer/test_kid",
+				PrivateKey:        privateKey,
+			},
 		},
 		{
-			"missingissuer",
-			errNoIssuerProvided,
+			id:          config.NewComponentIDWithName(typeStr, "missingkeyid"),
+			expectedErr: errNoKeyIDProvided,
 		},
 		{
-			"missingaudience",
-			errNoAudienceProvided,
+			id:          config.NewComponentIDWithName(typeStr, "missingissuer"),
+			expectedErr: errNoIssuerProvided,
 		},
 		{
-			"missingpk",
-			errNoPrivateKeyProvided,
+			id:          config.NewComponentIDWithName(typeStr, "missingaudience"),
+			expectedErr: errNoAudienceProvided,
+		},
+		{
+			id:          config.NewComponentIDWithName(typeStr, "missingpk"),
+			expectedErr: errNoPrivateKeyProvided,
 		},
 	}
 	for _, tt := range tests {
-		factory := NewFactory()
-		factories.Extensions[typeStr] = factory
-		cfg, err := servicetest.LoadConfig(filepath.Join("testdata", "config_bad.yaml"), factories)
-		assert.NoError(t, err)
-		extension := cfg.Extensions[config.NewComponentIDWithName(typeStr, tt.configName)]
-		verr := extension.Validate()
-		require.ErrorIs(t, verr, tt.expectedErr)
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, config.UnmarshalExtension(sub, cfg))
+			if tt.expectedErr != nil {
+				assert.ErrorIs(t, cfg.Validate(), tt.expectedErr)
+				return
+			}
+			assert.NoError(t, cfg.Validate())
+			assert.Equal(t, tt.expected, cfg)
+		})
 	}
 }

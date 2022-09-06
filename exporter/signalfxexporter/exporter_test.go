@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package signalfxexporter
 
 import (
@@ -20,7 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -127,8 +126,8 @@ func TestConsumeMetrics(t *testing.T) {
 	m.SetName("test_gauge")
 	m.SetDataType(pmetric.MetricDataTypeGauge)
 	dp := m.Gauge().DataPoints().AppendEmpty()
-	dp.Attributes().InsertString("k0", "v0")
-	dp.Attributes().InsertString("k1", "v1")
+	dp.Attributes().UpsertString("k0", "v0")
+	dp.Attributes().UpsertString("k1", "v1")
 	dp.SetDoubleVal(123)
 
 	tests := []struct {
@@ -193,7 +192,7 @@ func TestConsumeMetrics(t *testing.T) {
 					w.Header().Add(splunk.HeaderRetryAfter, strconv.Itoa(tt.retryAfter))
 				}
 				w.WriteHeader(tt.httpResponseCode)
-				w.Write([]byte("response content"))
+				_, _ = w.Write([]byte("response content"))
 			}))
 			defer server.Close()
 
@@ -256,7 +255,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		rm := out.ResourceMetrics().AppendEmpty()
 
 		if includeToken {
-			rm.Resource().Attributes().InsertString("com.splunk.signalfx.access_token", token)
+			rm.Resource().Attributes().UpsertString("com.splunk.signalfx.access_token", token)
 		}
 
 		ilm := rm.ScopeMetrics().AppendEmpty()
@@ -266,8 +265,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m.SetDataType(pmetric.MetricDataTypeGauge)
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
-		dp.Attributes().InsertString("k0", "v0")
-		dp.Attributes().InsertString("k1", "v1")
+		dp.Attributes().UpsertString("k0", "v0")
+		dp.Attributes().UpsertString("k1", "v1")
 		dp.SetDoubleVal(123)
 		return out
 	}
@@ -329,8 +328,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m.SetName("test_gauge")
 				m.SetDataType(pmetric.MetricDataTypeGauge)
 				dp := m.Gauge().DataPoints().AppendEmpty()
-				dp.Attributes().InsertString("k0", "v0")
-				dp.Attributes().InsertString("k1", "v1")
+				dp.Attributes().UpsertString("k0", "v0")
+				dp.Attributes().UpsertString("k1", "v1")
 				dp.SetDoubleVal(123)
 
 				return out
@@ -428,7 +427,9 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			sfxExp, err := NewFactory().CreateMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
-			defer sfxExp.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
 
 			err = sfxExp.ConsumeMetrics(context.Background(), tt.metrics)
 
@@ -486,20 +487,18 @@ func makeSampleResourceLogs() plog.Logs {
 	l.SetTimestamp(pcommon.Timestamp(1000))
 	attrs := l.Attributes()
 
-	attrs.InsertString("k0", "v0")
-	attrs.InsertString("k1", "v1")
-	attrs.InsertString("k2", "v2")
+	attrs.UpsertString("k0", "v0")
+	attrs.UpsertString("k1", "v1")
+	attrs.UpsertString("k2", "v2")
 
-	propMapVal := pcommon.NewValueMap()
-	propMap := propMapVal.MapVal()
-	propMap.InsertString("env", "prod")
-	propMap.InsertBool("isActive", true)
-	propMap.InsertInt("rack", 5)
-	propMap.InsertDouble("temp", 40.5)
+	propMap := attrs.UpsertEmptyMap("com.splunk.signalfx.event_properties")
+	propMap.UpsertString("env", "prod")
+	propMap.UpsertBool("isActive", true)
+	propMap.UpsertInt("rack", 5)
+	propMap.UpsertDouble("temp", 40.5)
 	propMap.Sort()
-	attrs.Insert("com.splunk.signalfx.event_properties", propMapVal)
-	attrs.Insert("com.splunk.signalfx.event_category", pcommon.NewValueInt(int64(sfxpb.EventCategory_USER_DEFINED)))
-	attrs.Insert("com.splunk.signalfx.event_type", pcommon.NewValueString("shutdown"))
+	attrs.UpsertInt("com.splunk.signalfx.event_category", int64(sfxpb.EventCategory_USER_DEFINED))
+	attrs.UpsertString("com.splunk.signalfx.event_type", "shutdown")
 
 	l.Attributes().Sort()
 
@@ -540,11 +539,10 @@ func TestConsumeEventData(t *testing.T) {
 				out := makeSampleResourceLogs()
 
 				attrs := out.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes()
-				mapAttr := pcommon.NewValueMap()
-				attrs.Insert("map", mapAttr)
+				attrs.UpsertEmptyMap("map")
 
 				propsAttrs, _ := attrs.Get("com.splunk.signalfx.event_properties")
-				propsAttrs.MapVal().Insert("map", mapAttr)
+				propsAttrs.MapVal().UpsertEmptyMap("map")
 
 				return out
 			}(),
@@ -616,8 +614,8 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 		makeSampleResourceLogs().ResourceLogs().At(0).CopyTo(out.ResourceLogs().AppendEmpty())
 
 		if includeToken {
-			out.ResourceLogs().At(0).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
-			out.ResourceLogs().At(1).Resource().Attributes().InsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(0).Resource().Attributes().UpsertString("com.splunk.signalfx.access_token", fromLabels)
+			out.ResourceLogs().At(1).Resource().Attributes().UpsertString("com.splunk.signalfx.access_token", fromLabels)
 		}
 		return out
 	}
@@ -679,7 +677,9 @@ func TestConsumeLogsDataWithAccessTokenPassthrough(t *testing.T) {
 			sfxExp, err := NewFactory().CreateLogsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, sfxExp.Start(context.Background(), componenttest.NewNopHost()))
-			defer sfxExp.Shutdown(context.Background())
+			defer func() {
+				require.NoError(t, sfxExp.Shutdown(context.Background()))
+			}()
 
 			assert.NoError(t, sfxExp.ConsumeLogs(context.Background(), newLogData(tt.includedInLogData)))
 
@@ -708,8 +708,8 @@ func generateLargeDPBatch() pmetric.Metrics {
 
 		dp := m.Gauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
-		dp.Attributes().InsertString("k0", "v0")
-		dp.Attributes().InsertString("k1", "v1")
+		dp.Attributes().UpsertString("k0", "v0")
+		dp.Attributes().UpsertString("k1", "v1")
 		dp.SetIntVal(int64(i))
 	}
 
@@ -725,8 +725,8 @@ func generateLargeEventBatch() plog.Logs {
 	ts := time.Now()
 	for i := 0; i < batchSize; i++ {
 		lr := logs.AppendEmpty()
-		lr.Attributes().InsertString("k0", "k1")
-		lr.Attributes().InsertNull("com.splunk.signalfx.event_category")
+		lr.Attributes().UpsertString("k0", "k1")
+		lr.Attributes().UpsertEmpty("com.splunk.signalfx.event_category")
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 	}
 
@@ -941,7 +941,7 @@ func TestConsumeMetadata(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				b, err := ioutil.ReadAll(r.Body)
+				b, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
 				// Test metadata updates are sent onto the right dimensions.

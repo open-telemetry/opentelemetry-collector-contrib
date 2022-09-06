@@ -24,6 +24,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processorhelper"
@@ -34,68 +35,55 @@ import (
 )
 
 func TestMetricsTransformProcessor(t *testing.T) {
-	for _, useOTLP := range []bool{false, true} {
-		for _, test := range standardTests {
-			t.Run(test.name, func(t *testing.T) {
-				if !useOTLP && test.spipOCTest {
-					return
+	for _, test := range standardTests {
+		t.Run(test.name, func(t *testing.T) {
+			next := new(consumertest.MetricsSink)
+
+			p := &metricsTransformProcessor{
+				transforms: test.transforms,
+				logger:     zap.NewExample(),
+			}
+
+			mtp, err := processorhelper.NewMetricsProcessor(
+				context.Background(),
+				componenttest.NewNopProcessorCreateSettings(),
+				&Config{
+					ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+				},
+				next,
+				p.processMetrics,
+				processorhelper.WithCapabilities(consumerCapabilities))
+			require.NoError(t, err)
+
+			caps := mtp.Capabilities()
+			assert.Equal(t, true, caps.MutatesData)
+			ctx := context.Background()
+
+			// process
+			cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, test.in))
+			assert.NoError(t, cErr)
+
+			// get and check results
+			got := next.AllMetrics()
+			require.Equal(t, 1, len(got))
+			var actualOutMetrics []*metricspb.Metric
+			if got[0].ResourceMetrics().Len() > 0 {
+				_, _, actualOutMetrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
+			}
+			require.Equal(t, len(test.out), len(actualOutMetrics))
+
+			for idx, out := range test.out {
+				actualOut := actualOutMetrics[idx]
+				sortTimeseries(actualOut.Timeseries)
+				sortTimeseries(out.Timeseries)
+				if diff := cmp.Diff(actualOut, out, protocmp.Transform()); diff != "" {
+					t.Errorf("Unexpected difference:\n%v", diff)
 				}
+			}
 
-				next := new(consumertest.MetricsSink)
-
-				p := &metricsTransformProcessor{
-					transforms:               test.transforms,
-					logger:                   zap.NewExample(),
-					otlpDataModelGateEnabled: useOTLP,
-				}
-
-				mtp, err := processorhelper.NewMetricsProcessor(
-					&Config{
-						ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-					},
-					next,
-					p.processMetrics,
-					processorhelper.WithCapabilities(consumerCapabilities))
-				require.NoError(t, err)
-
-				caps := mtp.Capabilities()
-				assert.Equal(t, true, caps.MutatesData)
-				ctx := context.Background()
-
-				// process
-				cErr := mtp.ConsumeMetrics(context.Background(), internaldata.OCToMetrics(nil, nil, test.in))
-				assert.NoError(t, cErr)
-
-				// get and check results
-				got := next.AllMetrics()
-				require.Equal(t, 1, len(got))
-				actualOutMetrics := []*metricspb.Metric{}
-				if got[0].ResourceMetrics().Len() > 0 {
-					_, _, actualOutMetrics = internaldata.ResourceMetricsToOC(got[0].ResourceMetrics().At(0))
-				}
-				require.Equal(t, len(test.out), len(actualOutMetrics))
-
-				for idx, out := range test.out {
-					actualOut := actualOutMetrics[idx]
-					sortTimeseries(actualOut.Timeseries)
-					sortTimeseries(out.Timeseries)
-					if diff := cmp.Diff(actualOut, out, protocmp.Transform()); diff != "" {
-						t.Errorf("Unexpected difference:\n%v", diff)
-					}
-				}
-
-				assert.NoError(t, mtp.Shutdown(ctx))
-			})
-		}
+			assert.NoError(t, mtp.Shutdown(ctx))
+		})
 	}
-}
-
-func TestExemplars(t *testing.T) {
-	p := newMetricsTransformProcessor(nil, nil)
-	exe1 := &metricspb.DistributionValue_Exemplar{Value: 1}
-	exe2 := &metricspb.DistributionValue_Exemplar{Value: 2}
-	picked := p.pickExemplar(exe1, exe2)
-	assert.True(t, picked == exe1 || picked == exe2)
 }
 
 func sortTimeseries(ts []*metricspb.TimeSeries) {
@@ -120,7 +108,7 @@ func BenchmarkMetricsTransformProcessorRenameMetrics(b *testing.B) {
 		in[i] = metricBuilder().setName("metric1").build()
 	}
 	p := newMetricsTransformProcessor(nil, transforms)
-	mtp, _ := processorhelper.NewMetricsProcessor(&Config{}, consumertest.NewNop(), p.processMetrics)
+	mtp, _ := processorhelper.NewMetricsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), &Config{}, consumertest.NewNop(), p.processMetrics)
 
 	b.ResetTimer()
 
