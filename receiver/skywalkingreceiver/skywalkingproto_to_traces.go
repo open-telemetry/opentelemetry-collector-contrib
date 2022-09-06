@@ -134,7 +134,7 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 		attrs.Clear()
 	}
 
-	attrs.InsertString(AttributeSkywalkingSegmentID, segmentID)
+	attrs.UpsertString(AttributeSkywalkingSegmentID, segmentID)
 	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
@@ -221,9 +221,9 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 }
 
 func setSwSpanIDToAttributes(span *agentV3.SpanObject, dest pcommon.Map) {
-	dest.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	dest.UpsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
 	if span.ParentSpanId != -1 {
-		dest.InsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
+		dest.UpsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
 	}
 }
 
