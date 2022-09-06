@@ -25,8 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-const (
-	cannotConvertValue = "cannot convert field value to attribute"
+var (
+	errCannotConvertValue = errors.New("cannot convert field value to attribute")
 )
 
 // splunkHecToLogData transforms splunk events into logs
@@ -35,19 +35,30 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	for _, event := range events {
-		attrValue, err := convertInterfaceToAttributeValue(logger, event.Event)
-		if err != nil {
-			logger.Debug("Unsupported value conversion", zap.Any("value", event.Event))
-			return ld, errors.New(cannotConvertValue)
-		}
-		logRecord := sl.LogRecords().AppendEmpty()
 		// The SourceType field is the most logical "name" of the event.
-		attrValue.CopyTo(logRecord.Body())
+		logRecord := sl.LogRecords().AppendEmpty()
+		if err := convertToValue(logger, event.Event, logRecord.Body()); err != nil {
+			return ld, err
+		}
 
 		// Splunk timestamps are in seconds so convert to nanos by multiplying
 		// by 1 billion.
 		if event.Time != nil {
 			logRecord.SetTimestamp(pcommon.Timestamp(*event.Time * 1e9))
+		}
+
+		// Set event fields first, so the specialized attributes overwrite them if needed.
+		keys := make([]string, 0, len(event.Fields))
+		for k := range event.Fields {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			val := event.Fields[key]
+			err := convertToValue(logger, val, logRecord.Attributes().UpsertEmpty(key))
+			if err != nil {
+				return ld, err
+			}
 		}
 
 		if event.Host != "" {
@@ -65,70 +76,47 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 		if resourceCustomizer != nil {
 			resourceCustomizer(rl.Resource())
 		}
-		keys := make([]string, 0, len(event.Fields))
-		for k := range event.Fields {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			val := event.Fields[key]
-			attrValue, err := convertInterfaceToAttributeValue(logger, val)
-			if err != nil {
-				return ld, err
-			}
-			logRecord.Attributes().Insert(key, attrValue)
-		}
 	}
 
 	return ld, nil
 }
 
-func convertInterfaceToAttributeValue(logger *zap.Logger, originalValue interface{}) (pcommon.Value, error) {
-	if originalValue == nil {
-		return pcommon.NewValueEmpty(), nil
-	} else if value, ok := originalValue.(string); ok {
-		return pcommon.NewValueString(value), nil
-	} else if value, ok := originalValue.(int64); ok {
-		return pcommon.NewValueInt(value), nil
-	} else if value, ok := originalValue.(float64); ok {
-		return pcommon.NewValueDouble(value), nil
-	} else if value, ok := originalValue.(bool); ok {
-		return pcommon.NewValueBool(value), nil
-	} else if value, ok := originalValue.(map[string]interface{}); ok {
-		mapValue, err := convertToAttributeMap(logger, value)
-		if err != nil {
-			return pcommon.NewValueEmpty(), err
-		}
-		return mapValue, nil
-	} else if value, ok := originalValue.([]interface{}); ok {
-		arrValue, err := convertToSliceVal(logger, value)
-		if err != nil {
-			return pcommon.NewValueEmpty(), err
-		}
-		return arrValue, nil
-	} else {
-		logger.Debug("Unsupported value conversion", zap.Any("value", originalValue))
-		return pcommon.NewValueEmpty(), errors.New(cannotConvertValue)
+func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) error {
+	switch value := src.(type) {
+	case nil:
+	case string:
+		dest.SetStringVal(value)
+	case int64:
+		dest.SetIntVal(value)
+	case float64:
+		dest.SetDoubleVal(value)
+	case bool:
+		dest.SetBoolVal(value)
+	case map[string]interface{}:
+		return convertToAttributeMap(logger, value, dest)
+	case []interface{}:
+		return convertToSliceVal(logger, value, dest)
+	default:
+		logger.Debug("Unsupported value conversion", zap.Any("value", src))
+		return errCannotConvertValue
+
 	}
+	return nil
 }
 
-func convertToSliceVal(logger *zap.Logger, value []interface{}) (pcommon.Value, error) {
-	attrVal := pcommon.NewValueSlice()
-	arr := attrVal.SliceVal()
+func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Value) error {
+	arr := dest.SetEmptySliceVal()
 	for _, elt := range value {
-		translatedElt, err := convertInterfaceToAttributeValue(logger, elt)
+		err := convertToValue(logger, elt, arr.AppendEmpty())
 		if err != nil {
-			return attrVal, err
+			return err
 		}
-		tgt := arr.AppendEmpty()
-		translatedElt.CopyTo(tgt)
 	}
-	return attrVal, nil
+	return nil
 }
 
-func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pcommon.Value, error) {
-	attrVal := pcommon.NewValueMap()
-	attrMap := attrVal.MapVal()
+func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, dest pcommon.Value) error {
+	attrMap := dest.SetEmptyMapVal()
 	keys := make([]string, 0, len(value))
 	for k := range value {
 		keys = append(keys, k)
@@ -136,11 +124,9 @@ func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}) (pc
 	sort.Strings(keys)
 	for _, k := range keys {
 		v := value[k]
-		translatedElt, err := convertInterfaceToAttributeValue(logger, v)
-		if err != nil {
-			return attrVal, err
+		if err := convertToValue(logger, v, attrMap.UpsertEmpty(k)); err != nil {
+			return err
 		}
-		attrMap.Insert(k, translatedElt)
 	}
-	return attrVal, nil
+	return nil
 }
