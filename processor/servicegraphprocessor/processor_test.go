@@ -206,7 +206,7 @@ func sampleTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().InsertString(semconv.AttributeServiceName, "some-service")
+	resourceSpans.Resource().Attributes().UpsertString(semconv.AttributeServiceName, "some-service")
 
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 
