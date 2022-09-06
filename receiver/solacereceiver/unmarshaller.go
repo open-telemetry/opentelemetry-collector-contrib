@@ -33,7 +33,7 @@ import (
 type tracesUnmarshaller interface {
 	// unmarshal the amqp-message into traces.
 	// Only valid traces are produced or error is returned
-	unmarshal(message *inboundMessage) (*ptrace.Traces, error)
+	unmarshal(message *inboundMessage) (ptrace.Traces, error)
 }
 
 // newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
@@ -58,10 +58,10 @@ var (
 	errUnknownTraceMessgeType    = errors.New("bad trace message")
 )
 
-// unmarshal will unmarshal an *solaceMessage into *ptrace.Traces.
+// unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
 // It will make a decision based on the version of the message which unmarshalling strategy to use.
 // For now, only v1 messages are used.
-func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (*ptrace.Traces, error) {
+func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	const (
 		topicPrefix   = "_telemetry/broker/trace/receive/v"
 		topicPrefixV1 = topicPrefix + "1"
@@ -73,15 +73,15 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (*ptrace.T
 		if strings.HasPrefix(*message.Properties.To, topicPrefix) {
 			// unknown version
 			u.logger.Error("Received message with unsupported version topic", zap.String("topic", *message.Properties.To))
-			return nil, errUnknownTraceMessgeVersion
+			return ptrace.Traces{}, errUnknownTraceMessgeVersion
 		}
 		// unknown topic
 		u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
-		return nil, errUnknownTraceMessgeType
+		return ptrace.Traces{}, errUnknownTraceMessgeType
 	}
 	// no topic
 	u.logger.Error("Received message with no topic")
-	return nil, errUnknownTraceMessgeType
+	return ptrace.Traces{}, errUnknownTraceMessgeType
 }
 
 type solaceMessageUnmarshallerV1 struct {
@@ -89,14 +89,14 @@ type solaceMessageUnmarshallerV1 struct {
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
-func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (*ptrace.Traces, error) {
+func (u *solaceMessageUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	spanData, err := u.unmarshalToSpanData(message)
 	if err != nil {
-		return nil, err
+		return ptrace.Traces{}, err
 	}
 	traces := ptrace.NewTraces()
-	u.populateTraces(spanData, &traces)
-	return &traces, nil
+	u.populateTraces(spanData, traces)
+	return traces, nil
 }
 
 // unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
@@ -112,39 +112,37 @@ func (u *solaceMessageUnmarshallerV1) unmarshalToSpanData(message *inboundMessag
 // createSpan will create a new Span from the given traces and map the given SpanData to the span.
 // This will set all required fields such as name version, trace and span ID, parent span ID (if applicable),
 // timestamps, errors and states.
-func (u *solaceMessageUnmarshallerV1) populateTraces(spanData *model_v1.SpanData, traces *ptrace.Traces) {
+func (u *solaceMessageUnmarshallerV1) populateTraces(spanData *model_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
-	resourceSpanAttributes := resourceSpan.Resource().Attributes()
-	u.mapResourceSpanAttributes(spanData, &resourceSpanAttributes)
+	u.mapResourceSpanAttributes(spanData, resourceSpan.Resource().Attributes())
 	instrLibrarySpans := resourceSpan.ScopeSpans().AppendEmpty()
 	// Create a new span
 	clientSpan := instrLibrarySpans.Spans().AppendEmpty()
 	// map the basic span data
-	u.mapClientSpanData(spanData, &clientSpan)
+	u.mapClientSpanData(spanData, clientSpan)
 	// map all span attributes
-	clientSpanAttributes := clientSpan.Attributes()
-	u.mapClientSpanAttributes(spanData, &clientSpanAttributes)
+	u.mapClientSpanAttributes(spanData, clientSpan.Attributes())
 	// map all events
-	u.mapEvents(spanData, &clientSpan)
+	u.mapEvents(spanData, clientSpan)
 }
 
-func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_v1.SpanData, attrMap *pcommon.Map) {
+func (u *solaceMessageUnmarshallerV1) mapResourceSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
 	const (
 		routerNameAttrKey     = "service.name"
 		messageVpnNameAttrKey = "service.instance.id"
 		solosVersionAttrKey   = "service.version"
 	)
 	if spanData.RouterName != nil {
-		attrMap.InsertString(routerNameAttrKey, *spanData.RouterName)
+		attrMap.UpsertString(routerNameAttrKey, *spanData.RouterName)
 	}
 	if spanData.MessageVpnName != nil {
-		attrMap.InsertString(messageVpnNameAttrKey, *spanData.MessageVpnName)
+		attrMap.UpsertString(messageVpnNameAttrKey, *spanData.MessageVpnName)
 	}
-	attrMap.InsertString(solosVersionAttrKey, spanData.SolosVersion)
+	attrMap.UpsertString(solosVersionAttrKey, spanData.SolosVersion)
 }
 
-func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan *ptrace.Span) {
+func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
 	const clientSpanName = "(topic) receive"
 
 	// client span constants
@@ -183,7 +181,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 
 // mapAttributes takes a set of attributes from SpanData and maps them to ClientSpan.Attributes().
 // Will also copy any user properties stored in the SpanData with a best effort approach.
-func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1.SpanData, attrMap *pcommon.Map) {
+func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1.SpanData, attrMap pcommon.Map) {
 	// constant attributes
 	const (
 		systemAttrKey      = "messaging.system"
@@ -191,8 +189,8 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		operationAttrKey   = "messaging.operation"
 		operationAttrValue = "receive"
 	)
-	attrMap.InsertString(systemAttrKey, systemAttrValue)
-	attrMap.InsertString(operationAttrKey, operationAttrValue)
+	attrMap.UpsertString(systemAttrKey, systemAttrValue)
+	attrMap.UpsertString(operationAttrKey, operationAttrValue)
 	// attributes from spanData
 	const (
 		protocolAttrKey                    = "messaging.protocol"
@@ -218,59 +216,59 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		peerPortAttrKey                    = "net.peer.port"
 		userPropertiesPrefixAttrKey        = "messaging.solace.user_properties."
 	)
-	attrMap.InsertString(protocolAttrKey, spanData.Protocol)
+	attrMap.UpsertString(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
-		attrMap.InsertString(protocolVersionAttrKey, *spanData.ProtocolVersion)
+		attrMap.UpsertString(protocolVersionAttrKey, *spanData.ProtocolVersion)
 	}
 	if spanData.ApplicationMessageId != nil {
-		attrMap.InsertString(messageIDAttrKey, *spanData.ApplicationMessageId)
+		attrMap.UpsertString(messageIDAttrKey, *spanData.ApplicationMessageId)
 	}
 	if spanData.CorrelationId != nil {
-		attrMap.InsertString(conversationIDAttrKey, *spanData.CorrelationId)
+		attrMap.UpsertString(conversationIDAttrKey, *spanData.CorrelationId)
 	}
-	attrMap.InsertInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
-	attrMap.InsertString(clientUsernameAttrKey, spanData.ClientUsername)
-	attrMap.InsertString(clientNameAttrKey, spanData.ClientName)
-	attrMap.InsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
-	attrMap.InsertString(destinationAttrKey, spanData.Topic)
+	attrMap.UpsertInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
+	attrMap.UpsertString(clientUsernameAttrKey, spanData.ClientUsername)
+	attrMap.UpsertString(clientNameAttrKey, spanData.ClientName)
+	attrMap.UpsertInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
+	attrMap.UpsertString(destinationAttrKey, spanData.Topic)
 
 	rgmid := u.rgmidToString(spanData.ReplicationGroupMessageId)
 	if len(rgmid) > 0 {
-		attrMap.InsertString(replicationGroupMessageIDAttrKey, rgmid)
+		attrMap.UpsertString(replicationGroupMessageIDAttrKey, rgmid)
 	}
 
 	if spanData.Priority != nil {
-		attrMap.InsertInt(priorityAttrKey, int64(*spanData.Priority))
+		attrMap.UpsertInt(priorityAttrKey, int64(*spanData.Priority))
 	}
 	if spanData.Ttl != nil {
-		attrMap.InsertInt(ttlAttrKey, *spanData.Ttl)
+		attrMap.UpsertInt(ttlAttrKey, *spanData.Ttl)
 	}
 	if spanData.ReplyToTopic != nil {
-		attrMap.InsertString(replyToAttrKey, *spanData.ReplyToTopic)
+		attrMap.UpsertString(replyToAttrKey, *spanData.ReplyToTopic)
 	}
-	attrMap.InsertBool(dmqEligibleAttrKey, spanData.DmqEligible)
-	attrMap.InsertInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
-	attrMap.InsertInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
+	attrMap.UpsertBool(dmqEligibleAttrKey, spanData.DmqEligible)
+	attrMap.UpsertInt(droppedEnqueueEventsSuccessAttrKey, int64(spanData.DroppedEnqueueEventsSuccess))
+	attrMap.UpsertInt(droppedEnqueueEventsFailedAttrKey, int64(spanData.DroppedEnqueueEventsFailed))
 
 	hostIPLen := len(spanData.HostIp)
 	if hostIPLen == 4 || hostIPLen == 16 {
-		attrMap.InsertString(hostIPAttrKey, net.IP(spanData.HostIp).String())
+		attrMap.UpsertString(hostIPAttrKey, net.IP(spanData.HostIp).String())
 	} else {
 		u.logger.Warn("Host ip attribute has an illegal length", zap.Int("length", hostIPLen))
 		recordRecoverableUnmarshallingError()
 	}
-	attrMap.InsertInt(hostPortAttrKey, int64(spanData.HostPort))
+	attrMap.UpsertInt(hostPortAttrKey, int64(spanData.HostPort))
 
 	peerIPLen := len(spanData.HostIp)
 	if peerIPLen == 4 || peerIPLen == 16 {
-		attrMap.InsertString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
+		attrMap.UpsertString(peerIPAttrKey, net.IP(spanData.PeerIp).String())
 	} else {
 		u.logger.Warn("Peer ip attribute has an illegal length", zap.Int("length", peerIPLen))
 		recordRecoverableUnmarshallingError()
 	}
-	attrMap.InsertInt(peerPortAttrKey, int64(spanData.PeerPort))
+	attrMap.UpsertInt(peerPortAttrKey, int64(spanData.PeerPort))
 
-	attrMap.InsertBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
+	attrMap.UpsertBool(droppedUserPropertiesAttrKey, spanData.DroppedUserProperties)
 	for key, value := range spanData.UserProperties {
 		if value != nil {
 			u.insertUserProperty(attrMap, key, value.Value)
@@ -279,20 +277,20 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 }
 
 // mapEvents maps all events contained in SpanData to relevant events within clientSpan.Events()
-func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan *ptrace.Span) {
+func (u *solaceMessageUnmarshallerV1) mapEvents(spanData *model_v1.SpanData, clientSpan ptrace.Span) {
 	// handle enqueue events
 	for _, enqueueEvent := range spanData.EnqueueEvents {
-		u.mapEnqueueEvent(enqueueEvent, clientSpan)
+		u.mapEnqueueEvent(enqueueEvent, clientSpan.Events())
 	}
 
 	// handle transaction events
 	if transactionEvent := spanData.TransactionEvent; transactionEvent != nil {
-		u.mapTransactionEvent(transactionEvent, clientSpan)
+		u.mapTransactionEvent(transactionEvent, clientSpan.Events())
 	}
 }
 
 // mapEnqueueEvent maps a SpanData_EnqueueEvent to a ClientSpan.Event
-func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpan *ptrace.Span) {
+func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.SpanData_EnqueueEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		enqueueEventSuffix               = " enqueue" // Final should be `<dest> enqueue`
 		messagingDestinationEventKey     = "messaging.destination"
@@ -318,7 +316,7 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 		recordRecoverableUnmarshallingError()
 		return
 	}
-	clientEvent := clientSpan.Events().AppendEmpty()
+	clientEvent := clientSpanEvents.AppendEmpty()
 	var eventName string
 	if strings.HasPrefix(destinationName, anonymousQueuePrefix) {
 		eventName = anonymousQueueEventName
@@ -327,16 +325,17 @@ func (u *solaceMessageUnmarshallerV1) mapEnqueueEvent(enqueueEvent *model_v1.Spa
 	}
 	clientEvent.SetName(eventName)
 	clientEvent.SetTimestamp(pcommon.Timestamp(enqueueEvent.TimeUnixNano))
-	clientEvent.Attributes().InsertString(messagingDestinationEventKey, destinationName)
-	clientEvent.Attributes().InsertString(messagingDestinationTypeEventKey, destinationType)
-	clientEvent.Attributes().InsertBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
+	clientEvent.Attributes().EnsureCapacity(3)
+	clientEvent.Attributes().UpsertString(messagingDestinationEventKey, destinationName)
+	clientEvent.Attributes().UpsertString(messagingDestinationTypeEventKey, destinationType)
+	clientEvent.Attributes().UpsertBool(rejectsAllEnqueuesKey, enqueueEvent.RejectsAllEnqueues)
 	if enqueueEvent.ErrorDescription != nil {
-		clientEvent.Attributes().InsertString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
+		clientEvent.Attributes().UpsertString(statusMessageEventKey, enqueueEvent.GetErrorDescription())
 	}
 }
 
 // mapTransactionEvent maps a SpanData_TransactionEvent to a ClientSpan.Event
-func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *model_v1.SpanData_TransactionEvent, clientSpan *ptrace.Span) {
+func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *model_v1.SpanData_TransactionEvent, clientSpanEvents ptrace.SpanEventSlice) {
 	const (
 		transactionInitiatorEventKey    = "messaging.solace.transaction_initiator"
 		transactionIDEventKey           = "messaging.solace.transaction_id"
@@ -361,7 +360,7 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		recordRecoverableUnmarshallingError()
 		return // exit when we don't have a valid type since we should not add a span without a name
 	}
-	clientEvent := clientSpan.Events().AppendEmpty()
+	clientEvent := clientSpanEvents.AppendEmpty()
 	clientEvent.SetName(name)
 	clientEvent.SetTimestamp(pcommon.Timestamp(transactionEvent.TimeUnixNano))
 	// map initiator enums to expected initiator strings
@@ -377,23 +376,23 @@ func (u *solaceMessageUnmarshallerV1) mapTransactionEvent(transactionEvent *mode
 		u.logger.Warn(fmt.Sprintf("Unknown transaction initiator %d", transactionEvent.GetInitiator()))
 		recordRecoverableUnmarshallingError()
 	}
-	clientEvent.Attributes().InsertString(transactionInitiatorEventKey, initiator)
+	clientEvent.Attributes().UpsertString(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
 	if transactionEvent.ErrorDescription != nil {
-		clientEvent.Attributes().InsertString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
+		clientEvent.Attributes().UpsertString(transactionErrorMessageEventKey, transactionEvent.GetErrorDescription())
 	}
 	// map the transaction type/id
 	transactionID := transactionEvent.GetTransactionId()
 	switch casted := transactionID.(type) {
 	case *model_v1.SpanData_TransactionEvent_LocalId:
-		clientEvent.Attributes().InsertInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
-		clientEvent.Attributes().InsertString(transactedSessionNameEventKey, casted.LocalId.SessionName)
-		clientEvent.Attributes().InsertInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
+		clientEvent.Attributes().UpsertInt(transactionIDEventKey, int64(casted.LocalId.TransactionId))
+		clientEvent.Attributes().UpsertString(transactedSessionNameEventKey, casted.LocalId.SessionName)
+		clientEvent.Attributes().UpsertInt(transactedSessionIDEventKey, int64(casted.LocalId.SessionId))
 	case *model_v1.SpanData_TransactionEvent_Xid_:
 		// format xxxxxxxx-yyyyyyyy-zzzzzzzz where x is FormatID (hex rep of int32), y is BranchQualifier and z is GlobalID, hex encoded.
 		xidString := fmt.Sprintf("%08x", casted.Xid.FormatId) + "-" +
 			hex.EncodeToString(casted.Xid.BranchQualifier) + "-" + hex.EncodeToString(casted.Xid.GlobalId)
-		clientEvent.Attributes().InsertString(transactionXIDEventKey, xidString)
+		clientEvent.Attributes().UpsertString(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
 		recordRecoverableUnmarshallingError()
@@ -419,7 +418,7 @@ func (u *solaceMessageUnmarshallerV1) rgmidToString(rgmid []byte) string {
 
 // insertUserProperty will instert a user property value with the given key to an attribute if possible.
 // Since AttributeMap only supports int64 integer types, uint64 data may be misrepresented.
-func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key string, value interface{}) {
+func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value interface{}) {
 	const (
 		// userPropertiesPrefixAttrKey is the key used to prefix all user properties
 		userPropertiesAttrKeyPrefix = "messaging.solace.user_properties."
@@ -427,35 +426,35 @@ func (u solaceMessageUnmarshallerV1) insertUserProperty(toMap *pcommon.Map, key 
 	k := userPropertiesAttrKeyPrefix + key
 	switch v := value.(type) {
 	case *model_v1.SpanData_UserPropertyValue_NullValue:
-		toMap.Insert(k, pcommon.NewValueEmpty())
+		toMap.UpsertEmpty(k)
 	case *model_v1.SpanData_UserPropertyValue_BoolValue:
-		toMap.InsertBool(k, v.BoolValue)
+		toMap.UpsertBool(k, v.BoolValue)
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
-		toMap.InsertDouble(k, v.DoubleValue)
+		toMap.UpsertDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.InsertBytes(k, pcommon.NewImmutableByteSlice(v.ByteArrayValue))
+		toMap.UpsertBytes(k, pcommon.NewImmutableByteSlice(v.ByteArrayValue))
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
-		toMap.InsertDouble(k, float64(v.FloatValue))
+		toMap.UpsertDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:
-		toMap.InsertInt(k, int64(v.Int8Value))
+		toMap.UpsertInt(k, int64(v.Int8Value))
 	case *model_v1.SpanData_UserPropertyValue_Int16Value:
-		toMap.InsertInt(k, int64(v.Int16Value))
+		toMap.UpsertInt(k, int64(v.Int16Value))
 	case *model_v1.SpanData_UserPropertyValue_Int32Value:
-		toMap.InsertInt(k, int64(v.Int32Value))
+		toMap.UpsertInt(k, int64(v.Int32Value))
 	case *model_v1.SpanData_UserPropertyValue_Int64Value:
-		toMap.InsertInt(k, v.Int64Value)
+		toMap.UpsertInt(k, v.Int64Value)
 	case *model_v1.SpanData_UserPropertyValue_Uint8Value:
-		toMap.InsertInt(k, int64(v.Uint8Value))
+		toMap.UpsertInt(k, int64(v.Uint8Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint16Value:
-		toMap.InsertInt(k, int64(v.Uint16Value))
+		toMap.UpsertInt(k, int64(v.Uint16Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint32Value:
-		toMap.InsertInt(k, int64(v.Uint32Value))
+		toMap.UpsertInt(k, int64(v.Uint32Value))
 	case *model_v1.SpanData_UserPropertyValue_Uint64Value:
-		toMap.InsertInt(k, int64(v.Uint64Value))
+		toMap.UpsertInt(k, int64(v.Uint64Value))
 	case *model_v1.SpanData_UserPropertyValue_StringValue:
-		toMap.InsertString(k, v.StringValue)
+		toMap.UpsertString(k, v.StringValue)
 	case *model_v1.SpanData_UserPropertyValue_DestinationValue:
-		toMap.InsertString(k, v.DestinationValue)
+		toMap.UpsertString(k, v.DestinationValue)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown user property type: %T", v))
 		recordRecoverableUnmarshallingError()

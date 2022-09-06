@@ -49,7 +49,7 @@ func (f ReceiverType) CreateDefaultConfig() config.Receiver {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: *udp.NewConfig(),
+		InputConfig: *udp.NewConfig(),
 	}
 }
 
@@ -60,12 +60,12 @@ func (f ReceiverType) BaseConfig(cfg config.Receiver) adapter.BaseConfig {
 
 // UDPLogConfig defines configuration for the udp receiver
 type UDPLogConfig struct {
-	udp.Config         `mapstructure:",squash"`
+	InputConfig        udp.Config `mapstructure:",squash"`
 	adapter.BaseConfig `mapstructure:",squash"`
 }
 
 // DecodeInputConfig unmarshals the input operator
 func (f ReceiverType) DecodeInputConfig(cfg config.Receiver) (*operator.Config, error) {
 	logConfig := cfg.(*UDPLogConfig)
-	return &operator.Config{Builder: &logConfig.Config}, nil
+	return &operator.Config{Builder: &logConfig.InputConfig}, nil
 }

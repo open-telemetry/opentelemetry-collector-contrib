@@ -109,7 +109,7 @@ func (m *metricNtpFrequencyOffset) recordDataPoint(start pcommon.Timestamp, ts p
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.Attributes().UpsertString("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -258,7 +258,7 @@ func (m *metricNtpTimeCorrection) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.Attributes().UpsertString("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -309,7 +309,7 @@ func (m *metricNtpTimeLastOffset) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.Attributes().UpsertString("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -360,7 +360,7 @@ func (m *metricNtpTimeRmsOffset) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.Attributes().UpsertString("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -411,7 +411,7 @@ func (m *metricNtpTimeRootDelay) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleVal(val)
-	dp.Attributes().InsertString("leap.status", leapStatusAttributeValue)
+	dp.Attributes().UpsertString("leap.status", leapStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

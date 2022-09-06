@@ -215,9 +215,9 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 		buffer := src.SpanID().Bytes()
 		ent.SpanID = buffer[:]
 	}
-	if src.FlagsStruct().AsRaw() != 0 {
+	if src.FlagsStruct() != 0 {
 		a := make([]byte, 4)
-		binary.LittleEndian.PutUint32(a, src.FlagsStruct().AsRaw())
+		binary.LittleEndian.PutUint32(a, uint32(src.FlagsStruct()))
 		ent.TraceFlags = []byte{a[0]}
 	}
 }

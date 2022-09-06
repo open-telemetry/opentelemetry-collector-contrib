@@ -87,7 +87,7 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	traceID := traceIDFromLogs(ld)
 	balancingKey := traceID
-	if traceID == pcommon.InvalidTraceID() {
+	if traceID == pcommon.EmptyTraceID {
 		// every log may not contain a traceID
 		// generate a random traceID as balancingKey
 		// so the log can be routed to a random backend
@@ -126,17 +126,17 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
 	rl := ld.ResourceLogs()
 	if rl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.EmptyTraceID
 	}
 
 	sl := rl.At(0).ScopeLogs()
 	if sl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.EmptyTraceID
 	}
 
 	logs := sl.At(0).LogRecords()
 	if logs.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.EmptyTraceID
 	}
 
 	return logs.At(0).TraceID()

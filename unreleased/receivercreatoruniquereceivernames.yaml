@@ -1,4 +1,0 @@
-change_type: enhancement
-component: receivercreator
-note: adds the unique EndpointID to generated receiver componentID to prevent collisions
-issues: [12670]

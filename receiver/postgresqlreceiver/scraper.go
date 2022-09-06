@@ -39,7 +39,7 @@ const (
 var (
 	emitMetricsWithoutResourceAttributes = featuregate.Gate{
 		ID:      emitMetricsWithoutResourceAttributesFeatureGateID,
-		Enabled: true,
+		Enabled: false,
 		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
 			"gate controls emitting the old metrics without resource attributes. For more details, see: " +
@@ -48,7 +48,7 @@ var (
 
 	emitMetricsWithResourceAttributes = featuregate.Gate{
 		ID:      emitMetricsWithResourceAttributesFeatureGateID,
-		Enabled: false,
+		Enabled: true,
 		Description: "Postgresql metrics are transitioning from being reported with identifying metric attributes " +
 			"to being identified via resource attributes in order to fit the OpenTelemetry specification. This feature " +
 			"gate controls emitting the new metrics with resource attributes. For more details, see: " +

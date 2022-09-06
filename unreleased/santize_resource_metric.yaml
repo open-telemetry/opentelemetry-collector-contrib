@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: exporter/AlibabaCloudLogServiceExporter
+note: Fix issue that promethus occuring error when the resource metric labels contains dot
+issues: [3429]

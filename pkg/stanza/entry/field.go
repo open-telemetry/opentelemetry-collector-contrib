@@ -63,6 +63,7 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return err
 }
 
+// UnmarshalText will unmarshal a field from text
 func (f *Field) UnmarshalText(text []byte) error {
 	field, err := NewField(string(text))
 	*f = field

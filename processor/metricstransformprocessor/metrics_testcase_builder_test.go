@@ -28,7 +28,6 @@ func metricBuilder() builder {
 	return builder{
 		metric: &metricspb.Metric{
 			MetricDescriptor: &metricspb.MetricDescriptor{},
-			Timeseries:       make([]*metricspb.TimeSeries, 0),
 		},
 	}
 }
