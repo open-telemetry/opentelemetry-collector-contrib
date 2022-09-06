@@ -278,7 +278,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Insert(tagSampledKey, "true")},
+				[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionSampled++
@@ -286,7 +286,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		case sampling.NotSampled:
 			_ = stats.RecordWithTags(
 				p.ctx,
-				[]tag.Mutator{tag.Insert(tagSampledKey, "false")},
+				[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
 				statCountTracesSampled.M(int64(1)),
 			)
 			metrics.decisionNotSampled++
