@@ -91,11 +91,9 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 
 	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
-	ld := getValidLogData(containers, &c4, "123")
-
-	for _, attrib := range ld {
-		assert.Equal(t, 0, attrib.SliceVal().Len())
-	}
+	dest := pcommon.NewMap()
+	addValidLogData(containers, &c4, "123", dest)
+	assert.Equal(t, 0, dest.Len())
 }
 
 func Test_ecsDetectV4(t *testing.T) {
