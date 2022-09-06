@@ -1,11 +1,11 @@
 # Routing processor
 
 
-| Status                   |                       |
-| ------------------------ |-----------------------|
-| Stability                | [alpha]               |
-| Supported pipeline types | traces, metrics, logs |
-| Distributions            | [contrib]             |
+| Status                   |                     |
+| ------------------------ |---------------------|
+| Stability                | [alpha]             |
+| Supported pipeline types | traces/metrics/logs |
+| Distributions            | [contrib]           |
 
 This processor will either read a header from the incoming HTTP request (gRPC or plain HTTP), or it will read a resource attribute, and direct the trace information to specific exporters based on the value read.
 
