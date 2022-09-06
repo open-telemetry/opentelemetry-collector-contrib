@@ -93,10 +93,11 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			expectedFile: filepath.Join("testdata", "integration", "expected_all_db.json"),
 		},
 		{
-			name: "with_resource_attributes",
+			name: "without_resource_attributes",
 			cfg: func(hostname string) *Config {
 				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
-					emitMetricsWithResourceAttributesFeatureGateID: true,
+					emitMetricsWithResourceAttributesFeatureGateID:    false,
+					emitMetricsWithoutResourceAttributesFeatureGateID: true,
 				}))
 				f := NewFactory()
 				cfg := f.CreateDefaultConfig().(*Config)
@@ -109,10 +110,11 @@ func TestPostgreSQLIntegration(t *testing.T) {
 			},
 			cleanup: func() {
 				require.NoError(t, featuregate.GetRegistry().Apply(map[string]bool{
-					emitMetricsWithResourceAttributesFeatureGateID: false,
+					emitMetricsWithResourceAttributesFeatureGateID:    true,
+					emitMetricsWithoutResourceAttributesFeatureGateID: false,
 				}))
 			},
-			expectedFile: filepath.Join("testdata", "integration", "expected_all_with_resource_attributes.json"),
+			expectedFile: filepath.Join("testdata", "integration", "expected_all_without_resource_attributes.json"),
 		},
 	}
 
