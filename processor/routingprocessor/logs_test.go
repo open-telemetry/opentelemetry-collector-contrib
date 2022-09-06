@@ -56,8 +56,8 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -120,8 +120,8 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -178,8 +178,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -225,8 +225,8 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},

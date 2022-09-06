@@ -112,8 +112,8 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -172,8 +172,8 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -236,8 +236,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -294,8 +294,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
