@@ -1056,7 +1056,7 @@
                      "unit": "{documents}"
                   },
                   {
-                     "description": "The amount of disk space available across all file stores for this node.",
+                     "description": "The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.",
                      "name": "elasticsearch.node.fs.disk.available",
                      "sum": {
                         "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1065,6 +1065,36 @@
                               "asInt": "12293464064",
                               "startTimeUnixNano": "1661810968939578000",
                               "timeUnixNano": "1661810968941018000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+		                    {
+                     "description": "The amount of unallocated disk space across all file stores for this node.",
+                     "name": "elasticsearch.node.fs.disk.free",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "15746158592",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "By"
+                  },
+                  {
+                     "description": "The amount of disk space across all file stores for this node.",
+                     "name": "elasticsearch.node.fs.disk.total",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "67371577344",
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            }
                         ]
                      },

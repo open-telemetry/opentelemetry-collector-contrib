@@ -33,7 +33,9 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.disk.io.read** | The total number of kilobytes read across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.disk.io.write** | The total number of kilobytes written across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
-| **elasticsearch.node.fs.disk.available** | The amount of disk space available across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.available** | The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.free** | The amount of unallocated disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.fs.disk.total** | The amount of disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.http.connections** | The number of HTTP connections to the node. | {connections} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.documents** | Total number of documents ingested during the lifetime of this node. | {documents} | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.ingest.documents.current** | Total number of documents currently being ingested. | {documents} | Sum(Int) | <ul> </ul> |
