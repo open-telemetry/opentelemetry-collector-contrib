@@ -220,7 +220,7 @@ func sampleTraces() ptrace.Traces {
 	clientSpan.SetKind(ptrace.SpanKindClient)
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	clientSpan.Attributes().Insert("some-attribute", pcommon.NewValueString("val")) // Attribute selected as dimension for metrics
+	clientSpan.Attributes().UpsertString("some-attribute", "val") // Attribute selected as dimension for metrics
 
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")
