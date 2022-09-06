@@ -32,10 +32,10 @@ func TestMetricDataToLogService(t *testing.T) {
 	md.ResourceMetrics().AppendEmpty() // Add an empty ResourceMetrics
 	rm := md.ResourceMetrics().AppendEmpty()
 
-	rm.Resource().Attributes().InsertString("labelB", "valueB")
-	rm.Resource().Attributes().InsertString("labelA", "valueA")
-	rm.Resource().Attributes().InsertString("service.name", "unknown-service")
-	rm.Resource().Attributes().InsertString("a", "b")
+	rm.Resource().Attributes().UpsertString("labelB", "valueB")
+	rm.Resource().Attributes().UpsertString("labelA", "valueA")
+	rm.Resource().Attributes().UpsertString("service.name", "unknown-service")
+	rm.Resource().Attributes().UpsertString("a", "b")
 	sms := rm.ScopeMetrics()
 	sms.AppendEmpty() // Add an empty ScopeMetrics
 	sm := sms.AppendEmpty()
