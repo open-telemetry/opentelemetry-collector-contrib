@@ -23,6 +23,7 @@ Implementation of the service-side open-telemetry interceptor.
 
 import logging
 from contextlib import contextmanager
+from urllib.parse import unquote
 
 import grpc
 
@@ -237,6 +238,7 @@ class OpenTelemetryServerInterceptor(grpc.ServerInterceptor):
             ip, port = (
                 context.peer().split(",")[0].split(":", 1)[1].rsplit(":", 1)
             )
+            ip = unquote(ip)
             attributes.update(
                 {
                     SpanAttributes.NET_PEER_IP: ip,
