@@ -203,6 +203,9 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  # The calculation for node.disk.io.read is actually in KiBy(1024 bytes), not Kby (1000 bytes)
+  # Source: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L287
+  # The calculation uses uses IoStats package where blocks are equivalent to sectors that have the size of 512 bytes https://linux.die.net/man/1/iostat
   elasticsearch.node.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
     unit: KiBy
@@ -212,6 +215,9 @@ metrics:
       value_type: int
     attributes: [ ]
     enabled: true
+  # The calculation for elasticsearch.node.disk.io.write is actually in KiBy(1024 bytes), not Kby (1000 bytes)
+  # Source: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L293
+  # The calculation uses uses IoStats package where blocks are equivalent to sectors that have the size of 512 bytes https://linux.die.net/man/1/iostat
   elasticsearch.node.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
     unit: KiBy
