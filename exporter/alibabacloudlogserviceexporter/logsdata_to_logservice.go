@@ -42,7 +42,7 @@ const (
 )
 
 func logDataToLogService(ld plog.Logs) []*sls.Log {
-	slsLogs := make([]*sls.Log, 0)
+	var slsLogs []*sls.Log
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -171,7 +171,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogFlags),
-		Value: proto.String(strconv.FormatUint(uint64(lr.FlagsStruct().AsRaw()), 16)),
+		Value: proto.String(strconv.FormatUint(uint64(lr.FlagsStruct()), 16)),
 	})
 
 	contentsBuffer = append(contentsBuffer, sls.LogContent{

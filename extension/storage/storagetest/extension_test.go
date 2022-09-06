@@ -25,6 +25,12 @@ import (
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
 
+func TestID(t *testing.T) {
+	require.Equal(t, NewStorageID("test"), NewInMemoryStorageExtension("test").ID())
+	require.Equal(t, NewStorageID("test"), NewFileBackedStorageExtension("test", t.TempDir()).ID())
+	require.Equal(t, NewNonStorageID("test"), NewNonStorageExtension("test").ID())
+}
+
 func TestInMemoryLifecycle(t *testing.T) {
 	ext := NewInMemoryStorageExtension("test")
 	require.Equal(t, config.NewComponentIDWithName(testStorageType, "test"), ext.ID())
@@ -38,12 +44,16 @@ func TestFileBackedLifecycle(t *testing.T) {
 	runExtensionLifecycle(t, ext, true)
 }
 
-func runExtensionLifecycle(t *testing.T, ext storage.Extension, expectPersistence bool) {
+func runExtensionLifecycle(t *testing.T, ext *TestStorage, expectPersistence bool) {
 	ctx := context.Background()
 	require.NoError(t, ext.Start(ctx, componenttest.NewNopHost()))
 
 	clientOne, err := ext.GetClient(ctx, component.KindProcessor, config.NewComponentID("foo"), "client_one")
 	require.NoError(t, err)
+
+	creatorID, err := CreatorID(ctx, clientOne)
+	require.NoError(t, err)
+	require.Equal(t, ext.ID(), creatorID)
 
 	// Write a value, confirm it is saved
 	require.NoError(t, clientOne.Set(ctx, "foo", []byte("bar")))
@@ -69,6 +79,10 @@ func runExtensionLifecycle(t *testing.T, ext storage.Extension, expectPersistenc
 	// Create new client to test persistence
 	clientTwo, err := ext.GetClient(ctx, component.KindProcessor, config.NewComponentID("foo"), "client_one")
 	require.NoError(t, err)
+
+	creatorID, err = CreatorID(ctx, clientTwo)
+	require.NoError(t, err)
+	require.Equal(t, ext.ID(), creatorID)
 
 	// Check if the value is accessible from another client
 	fooVal, err = clientTwo.Get(ctx, "foo2")

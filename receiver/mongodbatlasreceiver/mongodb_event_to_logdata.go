@@ -60,10 +60,10 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("mongodb_atlas.org", pc.orgName)
-	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
-	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.UpsertString("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.UpsertString("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.UpsertString("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.UpsertString("mongodb_atlas.host.name", hostname)
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
@@ -86,20 +86,20 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
 		if log.AuthType != "" {
-			attrs.InsertString("authtype", log.AuthType)
+			attrs.UpsertString("authtype", log.AuthType)
 		}
-		attrs.InsertString("local.ip", log.Local.IP)
-		attrs.InsertInt("local.port", int64(log.Local.Port))
-		attrs.InsertString("remote.ip", log.Remote.IP)
-		attrs.InsertInt("remote.port", int64(log.Remote.Port))
-		attrs.InsertString("uuid.binary", log.ID.Binary)
-		attrs.InsertString("uuid.type", log.ID.Type)
-		attrs.InsertInt("result", int64(log.Result))
-		attrs.InsertString("log_name", logName)
+		attrs.UpsertString("local.ip", log.Local.IP)
+		attrs.UpsertInt("local.port", int64(log.Local.Port))
+		attrs.UpsertString("remote.ip", log.Remote.IP)
+		attrs.UpsertInt("remote.port", int64(log.Remote.Port))
+		attrs.UpsertString("uuid.binary", log.ID.Binary)
+		attrs.UpsertString("uuid.type", log.ID.Type)
+		attrs.UpsertInt("result", int64(log.Result))
+		attrs.UpsertString("log_name", logName)
 		if log.Param.User != "" {
-			attrs.InsertString("param.user", log.Param.User)
-			attrs.InsertString("param.database", log.Param.Database)
-			attrs.InsertString("param.mechanism", log.Param.Mechanism)
+			attrs.UpsertString("param.user", log.Param.User)
+			attrs.UpsertString("param.database", log.Param.Database)
+			attrs.UpsertString("param.mechanism", log.Param.Mechanism)
 		}
 	}
 
@@ -116,10 +116,10 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
 	// Attributes related to the object causing the event.
-	resourceAttrs.InsertString("mongodb_atlas.org", pc.orgName)
-	resourceAttrs.InsertString("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.InsertString("mongodb_atlas.cluster", clusterName)
-	resourceAttrs.InsertString("mongodb_atlas.host.name", hostname)
+	resourceAttrs.UpsertString("mongodb_atlas.org", pc.orgName)
+	resourceAttrs.UpsertString("mongodb_atlas.project", pc.Project.Name)
+	resourceAttrs.UpsertString("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.UpsertString("mongodb_atlas.host.name", hostname)
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
@@ -146,12 +146,12 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
 		pcommon.NewMapFromRaw(log.Attributes).CopyTo(attrs)
-		attrs.InsertString("message", log.Message)
-		attrs.InsertString("component", log.Component)
-		attrs.InsertString("context", log.Context)
-		attrs.InsertInt("id", log.ID)
-		attrs.InsertString("log_name", logName)
-		attrs.InsertString("raw", string(data))
+		attrs.UpsertString("message", log.Message)
+		attrs.UpsertString("component", log.Component)
+		attrs.UpsertString("context", log.Context)
+		attrs.UpsertInt("id", log.ID)
+		attrs.UpsertString("log_name", logName)
+		attrs.UpsertString("raw", string(data))
 	}
 
 	return ld

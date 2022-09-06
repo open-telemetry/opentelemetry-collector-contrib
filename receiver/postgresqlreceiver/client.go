@@ -466,7 +466,7 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 		return nil, fmt.Errorf("unable to query pg_stat_replication: %w", err)
 	}
 	defer rows.Close()
-	rs := []replicationStats{}
+	var rs []replicationStats
 	var errors error
 	for rows.Next() {
 		var client string
@@ -518,7 +518,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 	}
 	defer rows.Close()
 
-	databases := []string{}
+	var databases []string
 	for rows.Next() {
 		var database string
 		if err := rows.Scan(&database); err != nil {
@@ -532,7 +532,7 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
-		queryDatabases := []string{}
+		var queryDatabases []string
 		for _, db := range databases {
 			queryDatabases = append(queryDatabases, fmt.Sprintf("'%s'", db))
 		}

@@ -135,7 +135,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "filelog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["filelog"].CreateDefaultConfig().(*filelogreceiver.FileLogConfig)
-				cfg.Include = []string{filepath.Join(t.TempDir(), "*")}
+				cfg.InputConfig.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
 		},
@@ -321,9 +321,9 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "syslog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["syslog"].CreateDefaultConfig().(*syslogreceiver.SysLogConfig)
-				cfg.TCP = &tcpop.NewConfig().BaseConfig
-				cfg.TCP.ListenAddress = "0.0.0.0:0"
-				cfg.Protocol = "rfc5424"
+				cfg.InputConfig.TCP = &tcpop.NewConfig().BaseConfig
+				cfg.InputConfig.TCP.ListenAddress = "0.0.0.0:0"
+				cfg.InputConfig.Protocol = "rfc5424"
 				return cfg
 			},
 		},
@@ -331,7 +331,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "tcplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)
-				cfg.ListenAddress = "0.0.0.0:0"
+				cfg.InputConfig.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},
@@ -339,7 +339,7 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "udplog",
 			getConfigFn: func() config.Receiver {
 				cfg := rcvrFactories["udplog"].CreateDefaultConfig().(*udplogreceiver.UDPLogConfig)
-				cfg.ListenAddress = "0.0.0.0:0"
+				cfg.InputConfig.ListenAddress = "0.0.0.0:0"
 				return cfg
 			},
 		},

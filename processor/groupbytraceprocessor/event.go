@@ -365,17 +365,17 @@ func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
 func getTraceID(td ptrace.Traces) (pcommon.TraceID, error) {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.EmptyTraceID, errNoTraceID
 	}
 
 	ilss := rss.At(0).ScopeSpans()
 	if ilss.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.EmptyTraceID, errNoTraceID
 	}
 
 	spans := ilss.At(0).Spans()
 	if spans.Len() == 0 {
-		return pcommon.InvalidTraceID(), errNoTraceID
+		return pcommon.EmptyTraceID, errNoTraceID
 	}
 
 	return spans.At(0).TraceID(), nil

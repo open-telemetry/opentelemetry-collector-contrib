@@ -367,8 +367,8 @@ func Test_Matching_True(t *testing.T) {
 	})
 
 	resource := pcommon.NewResource()
-	resource.Attributes().InsertString(conventions.AttributeServiceName, "svcA")
-	resource.Attributes().InsertString("resString", "arithmetic")
+	resource.Attributes().UpsertString(conventions.AttributeServiceName, "svcA")
+	resource.Attributes().UpsertString("resString", "arithmetic")
 
 	library := pcommon.NewInstrumentationScope()
 	library.SetName("lib")
@@ -387,6 +387,6 @@ func Test_Matching_True(t *testing.T) {
 
 func resource(service string) pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().InsertString(conventions.AttributeServiceName, service)
+	r.Attributes().UpsertString(conventions.AttributeServiceName, service)
 	return r
 }

@@ -41,7 +41,7 @@ func TestEventCallback(t *testing.T) {
 		{
 			casename: "onTraceReceived",
 			typ:      traceReceived,
-			payload:  tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
+			payload:  tracesWithID{id: pcommon.EmptyTraceID, td: ptrace.NewTraces()},
 			registerCallback: func(em *eventMachine, wg *sync.WaitGroup) {
 				em.onTraceReceived = func(received tracesWithID, worker *eventMachineWorker) error {
 					wg.Done()
@@ -377,7 +377,7 @@ func TestEventShutdown(t *testing.T) {
 	// test
 	em.workers[0].fire(event{
 		typ:     traceReceived,
-		payload: tracesWithID{id: pcommon.InvalidTraceID(), td: ptrace.NewTraces()},
+		payload: tracesWithID{id: pcommon.EmptyTraceID, td: ptrace.NewTraces()},
 	})
 	em.workers[0].fire(event{
 		typ:     traceRemoved,

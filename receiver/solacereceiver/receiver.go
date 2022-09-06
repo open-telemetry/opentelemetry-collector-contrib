@@ -222,7 +222,7 @@ func (s *solaceTracesReceiver) receiveMessage(ctx context.Context, service messa
 	}
 	// forward to next consumer. Forwarding errors are not fatal so are not propagated to the caller.
 	// Temporary consumer errors will lead to redelivered messages, permanent will be accepted
-	forwardErr := s.nextConsumer.ConsumeTraces(ctx, *traces)
+	forwardErr := s.nextConsumer.ConsumeTraces(ctx, traces)
 	if forwardErr != nil {
 		if !consumererror.IsPermanent(forwardErr) { // reject the message if the error is not permanent so we can retry, don't increment dropped span messages
 			s.settings.Logger.Warn("Encountered temporary error while forwarding traces to next receiver, will allow redelivery", zap.Error(forwardErr))

@@ -45,7 +45,7 @@ func TestExternalLabels(t *testing.T) {
 	})
 }
 
-func verifyExternalLabels(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyExternalLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
@@ -73,7 +73,7 @@ const targetLabelLimit1 = `
 test_gauge0{label1="value1",label2="value2"} 10
 `
 
-func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	// each sample in the scraped metrics is within the configured label_limit, scrape should be successful
 	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
@@ -104,7 +104,7 @@ const targetLabelLimit2 = `
 test_gauge0{label1="value1",label2="value2",label3="value3"} 10
 `
 
-func verifyFailedScrape(t *testing.T, _ *testData, rms []*pmetric.ResourceMetrics) {
+func verifyFailedScrape(t *testing.T, _ *testData, rms []pmetric.ResourceMetrics) {
 	// Scrape should be unsuccessful since limit is exceeded in target2
 	for _, rm := range rms {
 		metrics := getMetrics(rm)
@@ -165,7 +165,7 @@ test_summary0_sum{label1="value1",label2="value2"} 5000
 test_summary0_count{label1="value1",label2="value2"} 1000
 `
 
-func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
@@ -325,7 +325,7 @@ test_summary0_sum{id="1",testLabel=""} 5000
 test_summary0_count{id="1",testLabel=""} 1000
 `
 
-func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	want := td.attributes
@@ -396,7 +396,7 @@ test_counter0{id="1",testLabel=""} 100
 test_counter0{id="2",testLabel="foobar"} 110
 `
 
-func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	want := td.attributes
@@ -470,7 +470,7 @@ const honorLabelsTarget = `
 test_gauge0{instance="hostname:8080",job="honor_labels_test",testLabel="value1"} 1
 `
 
-func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	want := td.attributes
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
@@ -504,7 +504,7 @@ test_gauge0 19
 test_counter0 100
 `
 
-func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	want := td.attributes
@@ -569,15 +569,15 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	// job and instance label values should be honored from honorLabelsTarget
 	expectedAttributes := td.attributes
-	expectedAttributes.UpdateString("service.name", "honor_labels_test")
-	expectedAttributes.UpdateString("service.instance.id", "hostname:8080")
-	expectedAttributes.UpdateString("net.host.port", "8080")
-	expectedAttributes.InsertString("net.host.name", "hostname")
+	expectedAttributes.UpsertString("service.name", "honor_labels_test")
+	expectedAttributes.UpsertString("service.instance.id", "hostname:8080")
+	expectedAttributes.UpsertString("net.host.port", "8080")
+	expectedAttributes.UpsertString("net.host.name", "hostname")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -656,15 +656,15 @@ func TestRelabelJobInstance(t *testing.T) {
 	})
 }
 
-func verifyRelabelJobInstance(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.UpdateString("service.name", "not-target1")
-	wantAttributes.UpdateString("service.instance.id", "relabeled-instance")
-	wantAttributes.UpdateString("net.host.port", "")
-	wantAttributes.InsertString("net.host.name", "relabeled-instance")
+	wantAttributes.UpsertString("service.name", "not-target1")
+	wantAttributes.UpsertString("service.instance.id", "relabeled-instance")
+	wantAttributes.UpsertString("net.host.port", "")
+	wantAttributes.UpsertString("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()
@@ -706,13 +706,13 @@ func TestTargetInfoResourceAttributes(t *testing.T) {
 	testComponent(t, targets, false, "")
 }
 
-func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []*pmetric.ResourceMetrics) {
+func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, rms)
 	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
 
 	wantAttributes := td.attributes
-	wantAttributes.InsertString("foo", "bar")
-	wantAttributes.InsertString("team", "infra")
+	wantAttributes.UpsertString("foo", "bar")
+	wantAttributes.UpsertString("team", "infra")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()

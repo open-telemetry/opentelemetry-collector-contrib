@@ -1,4 +1,0 @@
-change_type: breaking
-component: cmd/mdatagen
-note: Remove old metadata generator
-issues: [13374]

@@ -60,7 +60,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 			language = val.StringVal()
 		}
 
-		exceptions := make([]awsxray.Exception, 0)
+		var exceptions []awsxray.Exception
 		for i := 0; i < span.Events().Len(); i++ {
 			event := span.Events().At(i)
 			if event.Name() == ExceptionEventName {
@@ -202,7 +202,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -260,7 +260,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 				ID:      aws.String(newSegmentID().HexString()),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
+				Stack:   nil,
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -299,7 +299,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 	line := lines[lineIdx]
 	exception := &exceptions[0]
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "  File ") {
 			parts := strings.Split(line, ",")
@@ -355,7 +355,6 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 				ID:      aws.String(newSegmentID().HexString()),
 				Type:    aws.String(causeType),
 				Message: aws.String(causeMessage),
-				Stack:   make([]awsxray.StackFrame, 0),
 			})
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
@@ -396,7 +395,7 @@ func fillJavaScriptStacktrace(stacktrace string, exceptions []awsxray.Exception)
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "    at ") {
 			parenIdx := strings.IndexByte(line, '(')
@@ -455,7 +454,7 @@ func fillDotnetStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		if strings.HasPrefix(line, "\tat ") {
 			index := strings.Index(line, " in ")
@@ -532,7 +531,7 @@ func fillGoStacktrace(stacktrace string, exceptions []awsxray.Exception) []awsxr
 		return exceptions
 	}
 
-	exception.Stack = make([]awsxray.StackFrame, 0)
+	exception.Stack = nil
 	for {
 		match := re.Match([]byte(line))
 		if match {

@@ -215,3 +215,18 @@ func (f *BodyField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 func (f BodyField) MarshalYAML() (interface{}, error) {
 	return toJSONDot(BodyPrefix, f.Keys), nil
 }
+
+// UnmarshalText will unmarshal a field from text
+func (f *BodyField) UnmarshalText(text []byte) error {
+	keys, err := fromJSONDot(string(text))
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != BodyPrefix {
+		return fmt.Errorf("must start with 'body': %s", text)
+	}
+
+	*f = BodyField{keys[1:]}
+	return nil
+}

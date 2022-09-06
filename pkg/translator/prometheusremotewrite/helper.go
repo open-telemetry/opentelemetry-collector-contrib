@@ -123,10 +123,6 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 		_, ok := tsMap[sig]
 		if ok {
 			if tsMap[sig].Samples != nil {
-				if tsMap[sig].Exemplars == nil {
-					tsMap[sig].Exemplars = make([]prompb.Exemplar, 0)
-				}
-
 				if exemplar.Value <= bound {
 					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
 					return
@@ -276,7 +272,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	addSample(tsMap, sample, labels, metric.DataType().String())
@@ -293,7 +289,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -305,7 +301,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -317,7 +313,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	promExemplars := getPromExemplars(pt)
 
-	bucketBounds := make([]bucketBoundsData, 0)
+	var bucketBounds []bucketBoundsData
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 	for index, bound := range pt.ExplicitBounds().AsRaw() {
@@ -329,7 +325,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
 		}
-		if pt.Flags().NoRecordedValue() {
+		if pt.FlagsImmutable().NoRecordedValue() {
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
@@ -342,7 +338,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	infBucket := &prompb.Sample{
 		Timestamp: time,
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
 		if pt.BucketCounts().Len() > 0 {
@@ -459,7 +455,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
@@ -470,7 +466,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().NoRecordedValue() {
+	if pt.FlagsImmutable().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
@@ -483,7 +479,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			Value:     qt.Value(),
 			Timestamp: time,
 		}
-		if pt.Flags().NoRecordedValue() {
+		if pt.FlagsImmutable().NoRecordedValue() {
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)

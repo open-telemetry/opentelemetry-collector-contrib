@@ -83,12 +83,12 @@ func TestResourceToOC(t *testing.T) {
 
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pcommon.NewResource()
-	resource.Attributes().InsertString(conventions.AttributeK8SClusterName, "cluster1")
-	resource.Attributes().InsertString(conventions.AttributeK8SPodName, "pod1")
-	resource.Attributes().InsertString(conventions.AttributeK8SNamespaceName, "namespace1")
-	resource.Attributes().InsertString(conventions.AttributeContainerName, "container-name1")
-	resource.Attributes().InsertString(conventions.AttributeCloudAccountID, "proj1")
-	resource.Attributes().InsertString(conventions.AttributeCloudAvailabilityZone, "zone1")
+	resource.Attributes().UpsertString(conventions.AttributeK8SClusterName, "cluster1")
+	resource.Attributes().UpsertString(conventions.AttributeK8SPodName, "pod1")
+	resource.Attributes().UpsertString(conventions.AttributeK8SNamespaceName, "namespace1")
+	resource.Attributes().UpsertString(conventions.AttributeContainerName, "container-name1")
+	resource.Attributes().UpsertString(conventions.AttributeCloudAccountID, "proj1")
+	resource.Attributes().UpsertString(conventions.AttributeCloudAvailabilityZone, "zone1")
 
 	want := &ocresource.Resource{
 		Type: resourcekeys.ContainerType, // Inferred type
@@ -108,7 +108,7 @@ func TestContainerResourceToOC(t *testing.T) {
 	}
 
 	// Also test that the explicit resource type is preserved if present
-	resource.Attributes().InsertString(occonventions.AttributeResourceType, "other-type")
+	resource.Attributes().UpsertString(occonventions.AttributeResourceType, "other-type")
 	want.Type = "other-type"
 
 	_, ocResource = internalResourceToOC(resource)
