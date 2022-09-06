@@ -119,44 +119,49 @@ type resourceBuilder struct {
 }
 
 func (r *resourceBuilder) add(key string, detect func() (string, error)) {
-	if v, err := detect(); err == nil {
-		r.attrs.InsertString(key, v)
-	} else {
+	v, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
 	}
+	r.attrs.UpsertString(key, v)
 }
 
 // addFallible adds a detect function whose failures should be ignored
 func (r *resourceBuilder) addFallible(key string, detect func() (string, error)) {
-	if v, err := detect(); err == nil {
-		r.attrs.InsertString(key, v)
-	} else {
+	v, err := detect()
+	if err != nil {
 		r.logger.Info("Fallible detector failed. This attribute will not be available.", zap.String("key", key), zap.Error(err))
+		return
 	}
+	r.attrs.UpsertString(key, v)
 }
 
 // zoneAndRegion functions are expected to return zone, region, err.
 func (r *resourceBuilder) addZoneAndRegion(detect func() (string, string, error)) {
-	if zone, region, err := detect(); err == nil {
-		r.attrs.InsertString(conventions.AttributeCloudAvailabilityZone, zone)
-		r.attrs.InsertString(conventions.AttributeCloudRegion, region)
-	} else {
+	zone, region, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
 	}
+	r.attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, zone)
+	r.attrs.UpsertString(conventions.AttributeCloudRegion, region)
 }
 
 func (r *resourceBuilder) addZoneOrRegion(detect func() (string, gcp.LocationType, error)) {
-	if v, locType, err := detect(); err == nil {
-		switch locType {
-		case gcp.Zone:
-			r.attrs.InsertString(conventions.AttributeCloudAvailabilityZone, v)
-		case gcp.Region:
-			r.attrs.InsertString(conventions.AttributeCloudRegion, v)
-		default:
-			r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
-		}
-	} else {
+	v, locType, err := detect()
+	if err != nil {
 		r.errs = append(r.errs, err)
+		return
+	}
+
+	switch locType {
+	case gcp.Zone:
+		r.attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, v)
+	case gcp.Region:
+		r.attrs.UpsertString(conventions.AttributeCloudRegion, v)
+	default:
+		r.errs = append(r.errs, fmt.Errorf("location must be zone or region. Got %v", locType))
 	}
 }
 
