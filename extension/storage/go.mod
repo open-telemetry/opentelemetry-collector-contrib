@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/jackc/pgx/v4 v4.17.1
+	github.com/jackc/pgx/v4 v4.17.2
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
 )
 
