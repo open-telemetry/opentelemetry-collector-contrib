@@ -230,7 +230,7 @@ func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pco
 			// empty label values should be omitted
 			continue
 		}
-		dest.InsertString(ls[i].Name, ls[i].Value)
+		dest.UpsertString(ls[i].Name, ls[i].Value)
 	}
 }
 
