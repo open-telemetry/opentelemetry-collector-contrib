@@ -6,7 +6,7 @@
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md">Getting Involved</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://gitter.im/open-telemetry/opentelemetry-service">Getting In Touch</a>
+    <a href="https://cloud-native.slack.com/archives/C01N6P7KR6W">Getting In Touch</a>
   </strong>
 </p>
 
