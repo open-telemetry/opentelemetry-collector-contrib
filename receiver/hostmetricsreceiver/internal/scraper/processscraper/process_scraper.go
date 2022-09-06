@@ -113,6 +113,10 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	for _, md := range data {
 		now := pcommon.NewTimestampFromTime(time.Now())
 
+		if err = s.scrapeAndAppendCPUPercentMetric(now, md.handle); err != nil {
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu percent for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
 		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
@@ -204,6 +208,11 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	}
 
 	return data, errs.Combine()
+}
+
+func (s *scraper) scrapeAndAppendCPUPercentMetric(now pcommon.Timestamp, handle processHandle) error {
+	s.recordCPUPercentMetric(now, 0.0)
+	return nil
 }
 
 func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle) error {

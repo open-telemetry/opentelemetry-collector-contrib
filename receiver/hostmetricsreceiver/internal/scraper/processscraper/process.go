@@ -87,6 +87,7 @@ type processHandle interface {
 	Cmdline() (string, error)
 	CmdlineSlice() ([]string, error)
 	Times() (*cpu.TimesStat, error)
+	CPU() (float64, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	IOCounters() (*process.IOCountersStat, error)
 	NumThreads() (int32, error)
