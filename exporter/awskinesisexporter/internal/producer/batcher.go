@@ -38,6 +38,11 @@ var (
 	_ Batcher = (*batcher)(nil)
 )
 
+var (
+	permanentErrResourceNotFound = new(*types.ResourceNotFoundException)
+	permanentErrInvalidArgument  = new(*types.InvalidArgumentException)
+)
+
 func NewBatcher(kinesisAPI Kinesis, stream string, opts ...BatcherOptions) (Batcher, error) {
 	be := &batcher{
 		stream: aws.String(stream),
@@ -60,11 +65,7 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 		})
 
 		if err != nil {
-			var (
-				resourceErr     *types.ResourceNotFoundException
-				InvalidArugment *types.InvalidArgumentException
-			)
-			if errors.As(err, &resourceErr) || errors.As(err, &InvalidArugment) {
+			if errors.As(err, permanentErrResourceNotFound) || errors.As(err, permanentErrInvalidArgument) {
 				err = consumererror.NewPermanent(err)
 			}
 			fields := []zap.Field{
