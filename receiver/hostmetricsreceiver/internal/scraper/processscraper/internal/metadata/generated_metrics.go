@@ -529,6 +529,13 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
+// WithProcessCreateTime sets provided value as "process.start.time" attribute for current resource.
+func WithProcessCreateTime(val int64) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertInt("process.start.time", val)
+	}
+}
+
 // WithProcessCommand sets provided value as "process.command" attribute for current resource.
 func WithProcessCommand(val string) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
