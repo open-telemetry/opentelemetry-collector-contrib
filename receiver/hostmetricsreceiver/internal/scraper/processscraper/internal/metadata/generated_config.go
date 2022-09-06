@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for hostmetricsreceiver/process metrics.
 type MetricsConfig struct {
 	ProcessContextSwitches     MetricConfig `mapstructure:"process.context_switches"`
+	ProcessCPUPercent          MetricConfig `mapstructure:"process.cpu.percent"`
 	ProcessCPUTime             MetricConfig `mapstructure:"process.cpu.time"`
 	ProcessCPUUtilization      MetricConfig `mapstructure:"process.cpu.utilization"`
 	ProcessDiskIo              MetricConfig `mapstructure:"process.disk.io"`
@@ -44,6 +45,9 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ProcessContextSwitches: MetricConfig{
 			Enabled: false,
+		},
+		ProcessCPUPercent: MetricConfig{
+			Enabled: true,
 		},
 		ProcessCPUTime: MetricConfig{
 			Enabled: true,
@@ -97,8 +101,8 @@ type ResourceAttributesConfig struct {
 	ProcessExecutablePath ResourceAttributeConfig `mapstructure:"process.executable.path"`
 	ProcessOwner          ResourceAttributeConfig `mapstructure:"process.owner"`
 	ProcessParentPid      ResourceAttributeConfig `mapstructure:"process.parent_pid"`
-	ProcessStartedOn	  ResourceAttributeConfig `mapstructure:"process.started_on"`
 	ProcessPid            ResourceAttributeConfig `mapstructure:"process.pid"`
+	ProcessStartedOn      ResourceAttributeConfig `mapstructure:"process.started_on"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -121,11 +125,11 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		ProcessParentPid: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		ProcessStartedOn: ResourceAttributeConfig{
-			Enabled: true,
-		},
 		ProcessPid: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ProcessStartedOn: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

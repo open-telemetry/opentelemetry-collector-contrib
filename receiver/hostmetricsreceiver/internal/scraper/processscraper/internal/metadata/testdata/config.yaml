@@ -3,6 +3,8 @@ all_set:
   metrics:
     process.context_switches:
       enabled: true
+    process.cpu.percent:
+      enabled: true
     process.cpu.time:
       enabled: true
     process.cpu.utilization:
@@ -41,11 +43,15 @@ all_set:
     process.parent_pid:
       enabled: true
     process.pid:
+      enabled: true
+    process.started_on:
       enabled: true
 none_set:
   metrics:
     process.context_switches:
       enabled: false
+    process.cpu.percent:
+      enabled: false
     process.cpu.time:
       enabled: false
     process.cpu.utilization:
@@ -84,4 +90,6 @@ none_set:
     process.parent_pid:
       enabled: false
     process.pid:
+      enabled: false
+    process.started_on:
       enabled: false

@@ -70,17 +70,12 @@ func (rb *ResourceBuilder) SetProcessPid(val int64) {
 	}
 }
 
+// SetProcessStartedOn sets provided value as "process.started_on" attribute.
 func (rb *ResourceBuilder) SetProcessStartedOn(val int64) {
 	if rb.config.ProcessStartedOn.Enabled {
 		rb.res.Attributes().PutInt("process.started_on", val)
 	}
 }
-
-/*func WithProcessStartedOn(val int64) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertInt("process.started_on", val)
-	}
-}*/
 
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {

@@ -410,6 +410,11 @@ func (p *processHandleMock) CmdlineSlice() ([]string, error) {
 	return args.Get(0).([]string), args.Error(1)
 }
 
+func (p *processHandleMock) CPUPercent() (float64, error) {
+	args := p.MethodCalled("CPUPercent")
+	return args.Get(0).(float64), args.Error(1)
+}
+
 func (p *processHandleMock) Times() (*cpu.TimesStat, error) {
 	args := p.MethodCalled("Times")
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)

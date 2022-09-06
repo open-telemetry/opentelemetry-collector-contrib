@@ -21,6 +21,8 @@ func getProcessName(processHandle, string) (string, error) {
 	return "", nil
 }
 
+func (s *scraper) recordCPUPercentMetric(now pcommon.Timestamp, cpuPercent float64) {}
+
 func getProcessExecutable(processHandle) (string, error) {
 	return "", nil
 }
