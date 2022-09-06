@@ -60,8 +60,11 @@ func (b *batcher) Put(ctx context.Context, bt *batch.Batch) error {
 		})
 
 		if err != nil {
-			if errors.As(err, &types.ResourceNotFoundException{}) || //nolint:govet // Causing a false positive
-				errors.As(err, &types.InvalidArgumentException{}) { //nolint:govet // Causing a false positive
+			var (
+				resourceErr     *types.ResourceNotFoundException
+				InvalidArugment *types.InvalidArgumentException
+			)
+			if errors.As(err, &resourceErr) || errors.As(err, &InvalidArugment) {
 				err = consumererror.NewPermanent(err)
 			}
 			fields := []zap.Field{
