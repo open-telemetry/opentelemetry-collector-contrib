@@ -35,3 +35,5 @@ func getProcessExecutable(context.Context, processHandle) (string, error) {
 func getProcessCommand(context.Context, processHandle) (*commandMetadata, error) {
 	return nil, nil
 }
+
+func (s *scraper) recordCPUPercentMetric(context.Context, cpuPercent float64) {}

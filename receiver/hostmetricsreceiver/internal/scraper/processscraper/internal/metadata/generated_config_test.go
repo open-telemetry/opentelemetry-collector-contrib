@@ -26,6 +26,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ProcessContextSwitches:     MetricConfig{Enabled: true},
+					ProcessCPUPercent:          MetricConfig{Enabled: true},
 					ProcessCPUTime:             MetricConfig{Enabled: true},
 					ProcessCPUUtilization:      MetricConfig{Enabled: true},
 					ProcessDiskIo:              MetricConfig{Enabled: true},
@@ -48,6 +49,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessOwner:          ResourceAttributeConfig{Enabled: true},
 					ProcessParentPid:      ResourceAttributeConfig{Enabled: true},
 					ProcessPid:            ResourceAttributeConfig{Enabled: true},
+					ProcessStartedOn:      ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -56,6 +58,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ProcessContextSwitches:     MetricConfig{Enabled: false},
+					ProcessCPUPercent:          MetricConfig{Enabled: false},
 					ProcessCPUTime:             MetricConfig{Enabled: false},
 					ProcessCPUUtilization:      MetricConfig{Enabled: false},
 					ProcessDiskIo:              MetricConfig{Enabled: false},
@@ -78,6 +81,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ProcessOwner:          ResourceAttributeConfig{Enabled: false},
 					ProcessParentPid:      ResourceAttributeConfig{Enabled: false},
 					ProcessPid:            ResourceAttributeConfig{Enabled: false},
+					ProcessStartedOn:      ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -122,6 +126,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ProcessOwner:          ResourceAttributeConfig{Enabled: true},
 				ProcessParentPid:      ResourceAttributeConfig{Enabled: true},
 				ProcessPid:            ResourceAttributeConfig{Enabled: true},
+				ProcessStartedOn:      ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -135,6 +140,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ProcessOwner:          ResourceAttributeConfig{Enabled: false},
 				ProcessParentPid:      ResourceAttributeConfig{Enabled: false},
 				ProcessPid:            ResourceAttributeConfig{Enabled: false},
+				ProcessStartedOn:      ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

@@ -140,6 +140,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
+		if err = s.scrapeAndAppendCPUPercentMetric(ctx, now, md.handle); err != nil {
+			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu percent for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
 		if err = s.scrapeAndAppendMemoryUsageMetrics(ctx, now, md.handle); err != nil {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
@@ -310,6 +314,15 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.
 
 	err = s.ucals[pid].CalculateAndRecord(now, s.logicalCores, times, s.recordCPUUtilization)
 	return err
+}
+
+func (s *scraper) scrapeAndAppendCPUPercentMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {
+	percent, err := handle.CPUPercent()
+	if err != nil {
+		return err
+	}
+	s.recordCPUPercentMetricWithContext(ctx, now, percent)
+	return nil
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(ctx context.Context, now pcommon.Timestamp, handle processHandle) error {

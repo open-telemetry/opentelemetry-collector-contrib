@@ -21,6 +21,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetProcessOwner("process.owner-val")
 			rb.SetProcessParentPid(18)
 			rb.SetProcessPid(11)
+			rb.SetProcessStartedOn(18)
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -76,6 +77,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, 11, val.Int())
+			}
+			val, ok = res.Attributes().Get("process.started_on")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, 18, val.Int())
 			}
 		})
 	}
