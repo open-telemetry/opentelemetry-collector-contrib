@@ -201,6 +201,54 @@ func Test_NewFunctionCall(t *testing.T) {
 			},
 		},
 		{
+			name: "getter slice arg",
+			inv: Invocation{
+				Function: "testing_getter_slice",
+				Arguments: []Value{
+					{
+						Path: &Path{
+							Fields: []Field{
+								{
+									Name: "name",
+								},
+							},
+						},
+					},
+					{
+						String: tqltest.Strp("test"),
+					},
+					{
+						Int: tqltest.Intp(1),
+					},
+					{
+						Float: tqltest.Floatp(1.1),
+					},
+					{
+						Bool: (*Boolean)(tqltest.Boolp(true)),
+					},
+					{
+						Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
+					},
+					{
+						Invocation: &Invocation{
+							Function: "testing_getter",
+							Arguments: []Value{
+								{
+									Path: &Path{
+										Fields: []Field{
+											{
+												Name: "name",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "setter arg",
 			inv: Invocation{
 				Function: "testing_setter",
@@ -393,6 +441,12 @@ func functionWithByteSlice(_ []byte) (ExprFunc, error) {
 	}, nil
 }
 
+func functionWithGetterSlice(_ []Getter) (ExprFunc, error) {
+	return func(ctx TransformContext) interface{} {
+		return "anything"
+	}, nil
+}
+
 func functionWithSetter(_ Setter) (ExprFunc, error) {
 	return func(ctx TransformContext) interface{} {
 		return "anything"
@@ -460,6 +514,7 @@ func DefaultFunctionsForTests() map[string]interface{} {
 	functions["testing_float_slice"] = functionWithFloatSlice
 	functions["testing_int_slice"] = functionWithIntSlice
 	functions["testing_byte_slice"] = functionWithByteSlice
+	functions["testing_getter_slice"] = functionWithGetterSlice
 	functions["testing_setter"] = functionWithSetter
 	functions["testing_getsetter"] = functionWithGetSetter
 	functions["testing_getter"] = functionWithGetter

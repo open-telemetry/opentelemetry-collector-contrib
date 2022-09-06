@@ -97,11 +97,12 @@ func Test_limit(t *testing.T) {
 
 			exprFunc, _ := Limit(tt.target, tt.limit)
 			exprFunc(ctx)
+			actual := ctx.GetItem()
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			assert.Equal(t, expected, expected)
+			assert.Equal(t, expected, actual)
 		})
 	}
 }

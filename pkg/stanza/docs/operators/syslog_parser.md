@@ -17,6 +17,10 @@ The `syslog_parser` operator parses the string-type field selected by `parse_fro
 | `severity`    | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator                                                                                                  |
 | `if`          |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 
+### Embedded Operations
+
+The `syslog_parser` can be configured to embed certain operations such as timestamp and severity parsing. For more information, see [complex parsers](../types/parsers.md#complex-parsers).
+
 ### Example Configurations
 
 

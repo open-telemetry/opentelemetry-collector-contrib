@@ -50,7 +50,7 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 		argType := fType.In(i)
 
 		if argType.Kind() == reflect.Slice {
-			err := buildSliceArg(inv, argType, i, &args)
+			err := buildSliceArg(inv, argType, i, &args, functions, pathParser, enumParser)
 			if err != nil {
 				return nil, err
 			}
@@ -69,9 +69,10 @@ func buildArgs(inv Invocation, fType reflect.Type, functions map[string]interfac
 	return args, nil
 }
 
-func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value) error {
-	switch argType.Elem().Kind() {
-	case reflect.String:
+func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args *[]reflect.Value,
+	functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) error {
+	switch argType.Elem().Name() {
+	case reflect.String.String():
 		arg := make([]string, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].String == nil {
@@ -80,7 +81,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].String)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Float64:
+	case reflect.Float64.String():
 		arg := make([]float64, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Float == nil {
@@ -89,7 +90,7 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].Float)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Int64:
+	case reflect.Int64.String():
 		arg := make([]int64, 0)
 		for j := startingIndex; j < len(inv.Arguments); j++ {
 			if inv.Arguments[j].Int == nil {
@@ -98,13 +99,23 @@ func buildSliceArg(inv Invocation, argType reflect.Type, startingIndex int, args
 			arg = append(arg, *inv.Arguments[j].Int)
 		}
 		*args = append(*args, reflect.ValueOf(arg))
-	case reflect.Uint8:
+	case reflect.Uint8.String():
 		if inv.Arguments[startingIndex].Bytes == nil {
 			return fmt.Errorf("invalid argument for slice parameter at position %v, must be a byte slice literal", startingIndex)
 		}
 		*args = append(*args, reflect.ValueOf(([]byte)(*inv.Arguments[startingIndex].Bytes)))
+	case "Getter":
+		arg := make([]Getter, 0)
+		for j := startingIndex; j < len(inv.Arguments); j++ {
+			val, err := NewGetter(inv.Arguments[j], functions, pathParser, enumParser)
+			if err != nil {
+				return err
+			}
+			arg = append(arg, val)
+		}
+		*args = append(*args, reflect.ValueOf(arg))
 	default:
-		return fmt.Errorf("unsupported slice type for function %v", inv.Function)
+		return fmt.Errorf("unsupported slice type '%s' for function '%v'", argType.Elem().Name(), inv.Function)
 	}
 	return nil
 }

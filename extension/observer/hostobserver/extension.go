@@ -29,7 +29,7 @@ import (
 )
 
 type hostObserver struct {
-	observer.EndpointsWatcher
+	*observer.EndpointsWatcher
 }
 
 type endpointsLister struct {
@@ -46,16 +46,15 @@ var _ component.Extension = (*hostObserver)(nil)
 
 func newObserver(logger *zap.Logger, config *Config) (component.Extension, error) {
 	h := &hostObserver{
-		EndpointsWatcher: observer.EndpointsWatcher{
-			RefreshInterval: config.RefreshInterval,
-			Endpointslister: endpointsLister{
+		EndpointsWatcher: observer.NewEndpointsWatcher(
+			endpointsLister{
 				logger:                logger,
 				observerName:          config.ID().String(),
 				getConnections:        getConnections,
 				getProcess:            process.NewProcess,
 				collectProcessDetails: collectProcessDetails,
-			},
-		},
+			}, config.RefreshInterval, logger,
+		),
 	}
 
 	return h, nil

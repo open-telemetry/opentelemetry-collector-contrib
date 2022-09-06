@@ -472,9 +472,12 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	seenMetricIDs = make(map[metricID]bool)
 	// The remaining metrics are for latency.
 	for ; mi < m.Len(); mi++ {
-		assert.Equal(t, "latency", m.At(mi).Name())
+		metric := m.At(mi)
 
-		data := m.At(mi).Histogram()
+		assert.Equal(t, "latency", metric.Name())
+		assert.Equal(t, "ms", metric.Unit())
+
+		data := metric.Histogram()
 		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 
 		dps := data.DataPoints()
@@ -561,9 +564,10 @@ func buildBadSampleTrace() ptrace.Traces {
 }
 
 // buildSampleTrace builds the following trace:
-//   service-a/ping (server) ->
-//     service-a/ping (client) ->
-//       service-b/ping (server)
+//
+//	service-a/ping (server) ->
+//	  service-a/ping (client) ->
+//	    service-b/ping (server)
 func buildSampleTrace() ptrace.Traces {
 	traces := ptrace.NewTraces()
 

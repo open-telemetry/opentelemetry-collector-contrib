@@ -15,7 +15,6 @@
 package network // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dotnetdiagnosticsreceiver/network"
 
 import (
-	"io/ioutil"
 	"os"
 
 	"go.uber.org/zap"
@@ -77,7 +76,7 @@ func newBlobFileWriter(dir string, maxFiles int, logger *zap.Logger) *blobFileWr
 		maxFiles:  maxFiles,
 		mkdir:     os.Mkdir,
 		remove:    os.Remove,
-		writeFile: ioutil.WriteFile,
+		writeFile: os.WriteFile,
 	}
 }
 

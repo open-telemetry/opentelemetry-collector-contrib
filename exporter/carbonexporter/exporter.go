@@ -46,9 +46,10 @@ func newCarbonExporter(cfg *Config, set component.ExporterCreateSettings) (compo
 		connPool: newTCPConnPool(cfg.Endpoint, cfg.Timeout),
 	}
 
-	return exporterhelper.NewMetricsExporter(
-		cfg,
+	return exporterhelper.NewMetricsExporterWithContext(
+		context.TODO(),
 		set,
+		cfg,
 		sender.pushMetricsData,
 		exporterhelper.WithShutdown(sender.Shutdown))
 }

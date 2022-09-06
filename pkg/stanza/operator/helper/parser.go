@@ -16,6 +16,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -38,6 +39,7 @@ type ParserConfig struct {
 
 	ParseFrom       entry.Field      `mapstructure:"parse_from"          json:"parse_from"          yaml:"parse_from"`
 	ParseTo         entry.Field      `mapstructure:"parse_to"            json:"parse_to"            yaml:"parse_to"`
+	BodyField       *entry.Field     `mapstructure:"body"                json:"body"                yaml:"body"`
 	TimeParser      *TimeParser      `mapstructure:"timestamp,omitempty" json:"timestamp,omitempty" yaml:"timestamp,omitempty"`
 	Config          *SeverityConfig  `mapstructure:"severity,omitempty"  json:"severity,omitempty"  yaml:"severity,omitempty"`
 	TraceParser     *TraceParser     `mapstructure:"trace,omitempty"     json:"trace,omitempty"     yaml:"trace,omitempty"`
@@ -51,10 +53,15 @@ func (c ParserConfig) Build(logger *zap.SugaredLogger) (ParserOperator, error) {
 		return ParserOperator{}, err
 	}
 
+	if c.BodyField != nil && c.ParseTo.String() == entry.NewBodyField().String() {
+		return ParserOperator{}, fmt.Errorf("`parse_to: body` not allowed when `body` is configured")
+	}
+
 	parserOperator := ParserOperator{
 		TransformerOperator: transformerOperator,
 		ParseFrom:           c.ParseFrom,
 		ParseTo:             c.ParseTo,
+		BodyField:           c.BodyField,
 	}
 
 	if c.TimeParser != nil {
@@ -91,6 +98,7 @@ type ParserOperator struct {
 	TransformerOperator
 	ParseFrom       entry.Field
 	ParseTo         entry.Field
+	BodyField       *entry.Field
 	TimeParser      *TimeParser
 	SeverityParser  *SeverityParser
 	TraceParser     *TraceParser
@@ -148,6 +156,12 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 		return p.HandleEntryError(ctx, entry, errors.Wrap(err, "set parse_to"))
 	}
 
+	if p.BodyField != nil {
+		if body, ok := p.BodyField.Get(entry); ok {
+			entry.Body = body
+		}
+	}
+
 	var timeParseErr error
 	if p.TimeParser != nil {
 		timeParseErr = p.TimeParser.Parse(entry)
@@ -168,7 +182,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 		scopeNameParserErr = p.ScopeNameParser.Parse(entry)
 	}
 
-	// Handle time or severity parsing errors after attempting to parse both
+	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
 		return p.HandleEntryError(ctx, entry, errors.Wrap(timeParseErr, "time parser"))
 	}

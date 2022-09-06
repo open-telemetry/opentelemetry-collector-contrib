@@ -16,7 +16,6 @@ package file
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -83,7 +82,7 @@ func TestAddFileResolvedFields(t *testing.T) {
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file, err := ioutil.TempFile(dir, "")
+	file, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file.Close())
@@ -132,13 +131,13 @@ func TestAddFileResolvedFieldsWithChangeOfSymlinkTarget(t *testing.T) {
 	// Create temp dir with log file
 	dir := t.TempDir()
 
-	file1, err := ioutil.TempFile(dir, "")
+	file1, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file1.Close())
 	})
 
-	file2, err := ioutil.TempFile(dir, "")
+	file2, err := os.CreateTemp(dir, "")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, file2.Close())
@@ -411,7 +410,7 @@ func TestStartAtEnd(t *testing.T) {
 	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-		pollInterval = cfg.PollInterval.Raw()
+		pollInterval = cfg.PollInterval
 	}, nil)
 
 	temp := openTemp(t, tempDir)
@@ -440,7 +439,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	var pollInterval time.Duration
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.StartAt = "end"
-		pollInterval = cfg.PollInterval.Raw()
+		pollInterval = cfg.PollInterval
 	}, nil)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -463,7 +462,7 @@ func TestNoNewline(t *testing.T) {
 	t.Parallel()
 	operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 		cfg.Splitter = helper.NewSplitterConfig()
-		cfg.Splitter.Flusher.Period.Duration = time.Nanosecond
+		cfg.Splitter.Flusher.Period = time.Nanosecond
 	}, nil)
 
 	temp := openTemp(t, tempDir)
