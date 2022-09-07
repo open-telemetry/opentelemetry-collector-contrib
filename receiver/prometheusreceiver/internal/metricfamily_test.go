@@ -30,14 +30,22 @@ import (
 	"go.uber.org/zap"
 )
 
-type testMetadataCache map[string]scrape.MetricMetadata
+type testMetadataStore map[string]scrape.MetricMetadata
 
-func (bmc testMetadataCache) GetMetadata(familyName string) (scrape.MetricMetadata, bool) {
-	lookup, ok := bmc[familyName]
+func (tmc testMetadataStore) GetMetadata(familyName string) (scrape.MetricMetadata, bool) {
+	lookup, ok := tmc[familyName]
 	return lookup, ok
 }
 
-var mc = testMetadataCache{
+func (tmc testMetadataStore) ListMetadata() []scrape.MetricMetadata { return nil }
+
+func (tmc testMetadataStore) SizeMetadata() int { return 0 }
+
+func (tmc testMetadataStore) LengthMetadata() int {
+	return len(tmc)
+}
+
+var mc = testMetadataStore{
 	"counter": scrape.MetricMetadata{
 		Metric: "cr",
 		Type:   textparse.MetricTypeCounter,
@@ -131,7 +139,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			name:                "histogram with startTimestamp",
 			metricName:          "histogram",
 			intervalStartTimeMs: 11,
-			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 11, value: 66, metric: "histogram_count"},
 				{at: 11, value: 1004.78, metric: "histogram_sum"},
@@ -184,7 +192,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			name:                "histogram that is stale",
 			metricName:          "histogram_stale",
 			intervalStartTimeMs: 11,
-			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			labels:              labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
@@ -209,7 +217,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			name:                "histogram with inconsistent timestamps",
 			metricName:          "histogram_inconsistent_ts",
 			intervalStartTimeMs: 11,
-			labels:              labels.Labels{{Name: "a", Value: "A"}, {Name: "le", Value: "0.75"}, {Name: "b", Value: "B"}},
+			labels:              labels.FromMap(map[string]string{"a": "A", "le": "0.75", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 11, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_count"},
 				{at: 12, value: math.Float64frombits(value.StaleNaN), metric: "histogram_stale_sum"},
@@ -286,50 +294,38 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			name: "summary",
 			labelsScrapes: []*labelsScrapes{
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 10, metric: "summary_count"},
 						{at: 14, value: 15, metric: "summary_sum"},
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.0", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 8, metric: "value"},
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.75", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 33.7, metric: "value"},
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.50", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 27, metric: "value"},
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.90", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 56, metric: "value"},
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.99", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 82, metric: "value"},
 					},
@@ -367,9 +363,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			name: "summary_stale",
 			labelsScrapes: []*labelsScrapes{
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.0"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.0", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 10, metric: "summary_stale_count"},
 						{at: 14, value: 12, metric: "summary_stale_sum"},
@@ -377,9 +371,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.75"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.75", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 10, metric: "summary_stale_count"},
 						{at: 14, value: 1004.78, metric: "summary_stale_sum"},
@@ -387,9 +379,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.50"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.50", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 10, metric: "summary_stale_count"},
 						{at: 14, value: 13, metric: "summary_stale_sum"},
@@ -397,9 +387,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.90"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.90", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: 10, metric: "summary_stale_count"},
 						{at: 14, value: 14, metric: "summary_stale_sum"},
@@ -407,9 +395,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 					},
 				},
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "quantile", Value: "0.99"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "quantile": "0.99", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_count"},
 						{at: 14, value: math.Float64frombits(value.StaleNaN), metric: "summary_stale_sum"},
@@ -448,9 +434,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 			name: "summary with inconsistent timestamps",
 			labelsScrapes: []*labelsScrapes{
 				{
-					labels: labels.Labels{
-						{Name: "a", Value: "A"}, {Name: "b", Value: "B"},
-					},
+					labels: labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 					scrapes: []*scrape{
 						{at: 11, value: 10, metric: "summary_count"},
 						{at: 14, value: 15, metric: "summary_sum"},
@@ -522,7 +506,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			metricKind:               "counter",
 			name:                     "counter:: startTimestampMs of 11",
 			intervalStartTimestampMs: 11,
-			labels:                   labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 13, value: 33.7, metric: "value"},
 			},
@@ -541,7 +525,7 @@ func TestMetricGroupData_toNumberDataUnitTest(t *testing.T) {
 			name:                     "counter:: startTimestampMs of 0",
 			metricKind:               "counter",
 			intervalStartTimestampMs: 0,
-			labels:                   labels.Labels{{Name: "a", Value: "A"}, {Name: "b", Value: "B"}},
+			labels:                   labels.FromMap(map[string]string{"a": "A", "b": "B"}),
 			scrapes: []*scrape{
 				{at: 28, value: 99.9, metric: "value"},
 			},

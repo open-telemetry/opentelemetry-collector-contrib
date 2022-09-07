@@ -31,7 +31,7 @@ import (
 func runBuilderStartTimeTests(t *testing.T, tests []buildTestData, startTimeMetricRegex *regexp.Regexp, expectedBuilderStartTime float64) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mc := testMetadataCache(testMetadata)
+			mc := testMetadataStore(testMetadata)
 			st := startTs
 			for _, page := range tt.inputs {
 				b := newMetricBuilder(mc, true, startTimeMetricRegex, zap.NewNop())
@@ -253,7 +253,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 		t.Run(tt.name, func(t *testing.T) {
 			wants := tt.wants()
 			assert.EqualValues(t, len(wants), len(tt.inputs))
-			mc := testMetadataCache(testMetadata)
+			mc := testMetadataStore(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
 				b := newMetricBuilder(mc, true, nil, zap.NewNop())
@@ -961,18 +961,18 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
-	mc := testMetadataCache(testMetadata)
+	mc := testMetadataStore(testMetadata)
 	mb := newMetricBuilder(mc, true, nil, zap.NewNop())
 
-	dupLabels := labels.Labels{
-		{Name: "__name__", Value: "test"},
-		{Name: "a", Value: "1"},
-		{Name: "a", Value: "1"},
-		{Name: "z", Value: "9"},
-		{Name: "z", Value: "1"},
-		{Name: "instance", Value: "0.0.0.0:8855"},
-		{Name: "job", Value: "test"},
-	}
+	dupLabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "foo",
+		"a", "1",
+		"a", "1",
+		"z", "9",
+		"z", "1",
+	)
 
 	err := mb.AddDataPoint(dupLabels, 1917, 1.0)
 	require.NotNil(t, err)
@@ -981,7 +981,7 @@ func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 
 func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
-		b := newMetricBuilder(testMetadataCache(testMetadata), true, nil, zap.NewNop())
+		b := newMetricBuilder(testMetadataStore(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -994,7 +994,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
-		b := newMetricBuilder(testMetadataCache(testMetadata), true, nil, zap.NewNop())
+		b := newMetricBuilder(testMetadataStore(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings(model.MetricNameLabel, "hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyLeLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1002,7 +1002,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
-		b := newMetricBuilder(testMetadataCache(testMetadata), true, nil, zap.NewNop())
+		b := newMetricBuilder(testMetadataStore(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings(model.MetricNameLabel, "summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyQuantileLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
