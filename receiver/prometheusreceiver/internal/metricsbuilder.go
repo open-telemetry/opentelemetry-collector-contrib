@@ -143,26 +143,27 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	}
 
 	metricName := ls.Get(model.MetricNameLabel)
-	switch {
-	case metricName == "":
+	if metricName == "" {
 		return errMetricNameNotFound
-	case isInternalMetric(metricName):
-		// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
-		// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-		// But it can also be a staleNaN, which is inserted when the target goes away.
-		if metricName == scrapeUpMetricName && v != 1.0 && !value.IsStaleNaN(v) {
-			if v == 0.0 {
-				b.logger.Warn("Failed to scrape Prometheus endpoint",
-					zap.Int64("scrape_timestamp", t),
-					zap.Stringer("target_labels", ls))
-			} else {
-				b.logger.Warn("The 'up' metric contains invalid value",
-					zap.Float64("value", v),
-					zap.Int64("scrape_timestamp", t),
-					zap.Stringer("target_labels", ls))
-			}
+	}
+
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	if metricName == scrapeUpMetricName && v != 1.0 && !value.IsStaleNaN(v) {
+		if v == 0.0 {
+			b.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", t),
+				zap.Stringer("target_labels", ls))
+		} else {
+			b.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", v),
+				zap.Int64("scrape_timestamp", t),
+				zap.Stringer("target_labels", ls))
 		}
-	case b.useStartTimeMetric && b.matchStartTimeMetric(metricName):
+	}
+
+	if b.useStartTimeMetric && b.matchStartTimeMetric(metricName) {
 		b.startTime = v
 	}
 
