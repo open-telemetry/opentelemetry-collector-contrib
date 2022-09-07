@@ -34,6 +34,7 @@ type processMetadata struct {
 	command    *commandMetadata
 	username   string
 	handle     processHandle
+	createTime int64
 }
 
 type executableMetadata struct {
@@ -51,6 +52,7 @@ func (m *processMetadata) resourceOptions() []metadata.ResourceMetricsOption {
 	opts := make([]metadata.ResourceMetricsOption, 0, 6)
 	opts = append(opts,
 		metadata.WithProcessPid(int64(m.pid)),
+		metadata.WithProcessCreateTime(int64(m.createTime)),
 		metadata.WithProcessParentPid(int64(m.parentPid)),
 		metadata.WithProcessExecutableName(m.executable.name),
 		metadata.WithProcessExecutablePath(m.executable.path),
