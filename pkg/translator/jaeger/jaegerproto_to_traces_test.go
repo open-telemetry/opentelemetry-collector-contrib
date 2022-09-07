@@ -463,7 +463,7 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	assert.Equal(t, expected.ResourceSpans().Len(), got.ResourceSpans().Len())
 	assert.Equal(t, expected.SpanCount(), got.SpanCount())
 
-	lenbatches := 2 //len(batches)
+	lenbatches := expected.ResourceSpans().Len()
 	found := 0
 
 	for i := 0; i < lenbatches; i++ {
