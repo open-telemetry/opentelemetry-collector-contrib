@@ -487,6 +487,10 @@ updates:
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
+    directory: "/processor/servicegraphprocessor"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
     directory: "/processor/spanmetricsprocessor"
     schedule:
       interval: "weekly"
@@ -528,6 +532,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/awsxrayreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/azureblobreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
@@ -684,6 +692,10 @@ updates:
       interval: "weekly"
   - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/pulsarreceiver"
     schedule:
       interval: "weekly"
   - package-ecosystem: "gomod"
