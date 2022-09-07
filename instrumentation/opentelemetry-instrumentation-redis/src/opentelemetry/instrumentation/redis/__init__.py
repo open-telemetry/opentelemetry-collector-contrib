@@ -123,7 +123,7 @@ if redis.VERSION >= _REDIS_ASYNCIO_VERSION:
     import redis.asyncio
 
 _REDIS_CLUSTER_VERSION = (4, 1, 0)
-_REDIS_ASYNCIO_CLUSTER_VERSION = (4, 3, 0)
+_REDIS_ASYNCIO_CLUSTER_VERSION = (4, 3, 2)
 
 
 def _set_connection_attributes(span, conn):
