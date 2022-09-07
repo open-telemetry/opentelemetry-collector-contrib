@@ -44,6 +44,15 @@ var (
 		WaitingFor: wait.ForListeningPort("9200").
 			WithStartupTimeout(2 * time.Minute),
 	}
+	containerRequest7_16_3 = testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    filepath.Join("testdata", "integration"),
+			Dockerfile: "Dockerfile.elasticsearch.7_16_3",
+		},
+		ExposedPorts: []string{"9300:9200"},
+		WaitingFor: wait.ForListeningPort("9200").
+			WithStartupTimeout(2 * time.Minute),
+	}
 )
 
 func TestElasticsearchIntegration(t *testing.T) {
@@ -80,7 +89,38 @@ func TestElasticsearchIntegration(t *testing.T) {
 
 		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
 	})
+	t.Run("Running elasticsearch 7.16.3", func(t *testing.T) {
+		t.Parallel()
+		container := getContainer(t, containerRequest7_16_3)
+		defer func() {
+			require.NoError(t, container.Terminate(context.Background()))
+		}()
+		hostname, err := container.Host(context.Background())
+		require.NoError(t, err)
 
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.Endpoint = fmt.Sprintf("http://%s:9300", hostname)
+
+		consumer := new(consumertest.MetricsSink)
+		settings := componenttest.NewNopReceiverCreateSettings()
+		rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
+		require.NoError(t, err, "failed creating metrics receiver")
+
+		require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+		require.Eventuallyf(t, func() bool {
+			return len(consumer.AllMetrics()) > 0
+		}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
+		require.NoError(t, rcvr.Shutdown(context.Background()))
+
+		actualMtrics := consumer.AllMetrics()[0]
+
+		expectedFile := filepath.Join("testdata", "integration", "expected.7_16_3.json")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+
+		scrapertest.CompareMetrics(expectedMetrics, actualMtrics, scrapertest.IgnoreMetricValues(), scrapertest.IgnoreResourceAttributeValue("elasticsearch.node.name"))
+	})
 }
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
