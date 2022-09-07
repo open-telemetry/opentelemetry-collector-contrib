@@ -41,19 +41,22 @@ func newFilter(flds []string) (filter, error) {
 	}, nil
 }
 
-// filterIn returns fields which match at least one of the filter regexes
-func (f *filter) filterIn(attributes pcommon.Map) fields {
+// mergeAndFilterIn merges provided attribute maps and returns fields which match at least one of the filter regexes.
+// Later attribute maps take precedence over former ones.
+func (f *filter) mergeAndFilterIn(attrMaps ...pcommon.Map) fields {
 	returnValue := pcommon.NewMap()
 
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		for _, regex := range f.regexes {
-			if regex.MatchString(k) {
-				v.CopyTo(returnValue.UpsertEmpty(k))
-				return true
+	for _, attributes := range attrMaps {
+		attributes.Range(func(k string, v pcommon.Value) bool {
+			for _, regex := range f.regexes {
+				if regex.MatchString(k) {
+					v.CopyTo(returnValue.UpsertEmpty(k))
+					return true
+				}
 			}
-		}
-		return true
-	})
+			return true
+		})
+	}
 	returnValue.Sort()
 	return newFields(returnValue)
 }
