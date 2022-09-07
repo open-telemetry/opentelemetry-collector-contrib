@@ -116,7 +116,7 @@ and the rest of contributors.
 
 ### Rotating sponsors
 
-The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 07-Sept-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
+The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
 * [@dmitryax](https://github.com/dmitryax)
 * [@bogdandrutu](https://github.com/bogdandrutu)
