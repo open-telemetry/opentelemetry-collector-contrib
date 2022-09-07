@@ -212,7 +212,7 @@ type FieldExtractionRule struct {
 	Name string
 	// Key is used to lookup k8s pod fields.
 	Key string
-	// KeyRegex is a regular expression used to extract a Key that matches the regex.
+	// KeyRegex is a regular expression(full length match) used to extract a Key that matches the regex.
 	KeyRegex             *regexp.Regexp
 	HasKeyRegexReference bool
 	// Regex is a regular expression used to extract a sub-part of a field value.

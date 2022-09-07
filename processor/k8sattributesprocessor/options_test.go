@@ -143,7 +143,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -161,7 +161,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -260,7 +260,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromPod,
 				},
 			},
@@ -278,7 +278,7 @@ func TestWithExtractLabels(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:     "tag1",
-					KeyRegex: regexp.MustCompile("key*"),
+					KeyRegex: regexp.MustCompile("^(?:key*)$"),
 					From:     kube.MetadataFromNamespace,
 				},
 			},
@@ -677,7 +677,7 @@ func Test_extractFieldRules(t *testing.T) {
 			[]kube.FieldExtractionRule{
 				{
 					Name:                 "$0-$1-$2",
-					KeyRegex:             regexp.MustCompile("(key)(.*)"),
+					KeyRegex:             regexp.MustCompile("^(?:(key)(.*))$"),
 					HasKeyRegexReference: true,
 					From:                 kube.MetadataFromPod,
 				},
