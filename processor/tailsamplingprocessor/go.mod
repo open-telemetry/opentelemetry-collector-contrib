@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/pdata v0.59.0
 	go.opentelemetry.io/otel/trace v1.9.0
 	go.uber.org/atomic v1.10.0
-	go.uber.org/goleak v1.1.12
+	go.uber.org/goleak v1.2.0
 	go.uber.org/zap v1.23.0
 )
 
