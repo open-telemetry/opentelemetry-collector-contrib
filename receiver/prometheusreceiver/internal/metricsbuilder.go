@@ -108,17 +108,13 @@ type metricBuilder struct {
 // newMetricBuilder creates a MetricBuilder which is allowed to feed all the datapoints from a single prometheus
 // scraped page by calling its AddDataPoint function, and turn them into a pmetric.Metrics object.
 // by calling its Build function
-func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex string, logger *zap.Logger) *metricBuilder {
-	var regex *regexp.Regexp
-	if startTimeMetricRegex != "" {
-		regex, _ = regexp.Compile(startTimeMetricRegex)
-	}
+func newMetricBuilder(mc MetadataCache, useStartTimeMetric bool, startTimeMetricRegex *regexp.Regexp, logger *zap.Logger) *metricBuilder {
 	return &metricBuilder{
 		families:             map[string]*metricFamily{},
 		mc:                   mc,
 		logger:               logger,
 		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: regex,
+		startTimeMetricRegex: startTimeMetricRegex,
 	}
 }
 

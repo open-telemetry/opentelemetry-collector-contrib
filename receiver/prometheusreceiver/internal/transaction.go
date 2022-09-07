@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"regexp"
 	"sort"
 	"time"
 
@@ -44,7 +45,7 @@ type transaction struct {
 	isNew                bool
 	ctx                  context.Context
 	useStartTimeMetric   bool
-	startTimeMetricRegex string
+	startTimeMetricRegex *regexp.Regexp
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
 	nodeResource         pcommon.Resource
@@ -59,7 +60,7 @@ func newTransaction(
 	ctx context.Context,
 	jobsMap *JobsMap,
 	useStartTimeMetric bool,
-	startTimeMetricRegex string,
+	startTimeMetricRegex *regexp.Regexp,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings component.ReceiverCreateSettings,
