@@ -169,8 +169,13 @@ func (t *transaction) Commit() error {
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-	metricsL := pmetric.NewMetricSlice()
-	err := t.metricBuilder.appendMetrics(metricsL)
+
+	md := pmetric.NewMetrics()
+	rms := md.ResourceMetrics().AppendEmpty()
+	t.nodeResource.CopyTo(rms.Resource())
+	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
+
+	err := t.metricBuilder.appendMetrics(metrics)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
@@ -183,15 +188,13 @@ func (t *transaction) Commit() error {
 			return err
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestamp(metricsL)
+		t.adjustStartTimestamp(metrics)
 	} else {
-		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetricSlice(metricsL)
+		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetrics(md)
 	}
 
-	numPoints := 0
-	if metricsL.Len() > 0 {
-		md := t.metricSliceToMetrics(metricsL)
-		numPoints = md.DataPointCount()
+	numPoints := md.DataPointCount()
+	if numPoints > 0 {
 		if err = t.sink.ConsumeMetrics(ctx, md); err != nil {
 			return err
 		}
@@ -258,13 +261,4 @@ func (t *transaction) adjustStartTimestamp(metricsL pmetric.MetricSlice) {
 			t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
 		}
 	}
-}
-
-func (t *transaction) metricSliceToMetrics(metricsL pmetric.MetricSlice) pmetric.Metrics {
-	metrics := pmetric.NewMetrics()
-	rms := metrics.ResourceMetrics().AppendEmpty()
-	ilm := rms.ScopeMetrics().AppendEmpty()
-	metricsL.CopyTo(ilm.Metrics())
-	t.nodeResource.CopyTo(rms.Resource())
-	return metrics
 }
