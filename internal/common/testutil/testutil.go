@@ -51,24 +51,27 @@ func GetAvailableLocalNetworkAddress(t testing.TB, network string) string {
 	// retry if the port returned by GetAvailableLocalAddress falls in one of those them.
 	var exclusions []portpair
 
-	portFound := false
 	if runtime.GOOS == "windows" {
 		exclusions = getExclusionsList(t)
 	}
 
+	var portFound bool
 	var endpoint string
 	for !portFound {
 		endpoint = findAvailableAddress(t, network)
 		_, port, err := net.SplitHostPort(endpoint)
 		require.NoError(t, err)
-		portFound = true
-		if runtime.GOOS == "windows" {
+
+		switch runtime.GOOS {
+		case "windows":
 			for _, pair := range exclusions {
 				if port >= pair.first && port <= pair.last {
-					portFound = false
+					portFound = true
 					break
 				}
 			}
+		default:
+			portFound = true
 		}
 	}
 
