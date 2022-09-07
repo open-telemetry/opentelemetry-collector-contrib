@@ -7,7 +7,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	go.opentelemetry.io/collector v0.59.0
 	go.uber.org/zap v1.23.0
-	google.golang.org/api v0.94.0
+	google.golang.org/api v0.95.0
 	gopkg.in/yaml.v3 v3.0.1
 
 )
