@@ -1154,7 +1154,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 }
 
-func newMockMetadataCache(data map[string]scrape.MetricMetadata) *mockMetadataCache {
+func newMockMetadataCache(data map[string]scrape.MetricMetadata) MetadataCache {
 	return &mockMetadataCache{data: data}
 }
 
@@ -1162,11 +1162,7 @@ type mockMetadataCache struct {
 	data map[string]scrape.MetricMetadata
 }
 
-func (m *mockMetadataCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
+func (m *mockMetadataCache) GetMetadata(metricName string) (scrape.MetricMetadata, bool) {
 	mm, ok := m.data[metricName]
 	return mm, ok
-}
-
-func (m *mockMetadataCache) SharedLabels() labels.Labels {
-	return labels.FromStrings("__scheme__", "http")
 }

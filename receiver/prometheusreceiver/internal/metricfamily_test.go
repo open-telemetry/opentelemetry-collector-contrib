@@ -32,13 +32,9 @@ import (
 
 type byLookupMetadataCache map[string]scrape.MetricMetadata
 
-func (bmc byLookupMetadataCache) Metadata(familyName string) (scrape.MetricMetadata, bool) {
+func (bmc byLookupMetadataCache) GetMetadata(familyName string) (scrape.MetricMetadata, bool) {
 	lookup, ok := bmc[familyName]
 	return lookup, ok
-}
-
-func (bmc byLookupMetadataCache) SharedLabels() labels.Labels {
-	return nil
 }
 
 var mc = byLookupMetadataCache{

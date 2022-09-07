@@ -15,18 +15,13 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
-	"context"
-	"errors"
-
-	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 )
 
-// MetadataCache is an adapter to prometheus' scrape.Target  and provide only the functionality which is needed
+// MetadataCache is a subset of the prometheus' scrape.MetricMetadataStore that provide only the functionality which is needed.
 type MetadataCache interface {
-	Metadata(metricName string) (scrape.MetricMetadata, bool)
-	SharedLabels() labels.Labels
+	GetMetadata(metricName string) (scrape.MetricMetadata, bool)
 }
 
 type ScrapeManager interface {
@@ -72,13 +67,13 @@ func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetad
 	if metadata, ok := internalMetricMetadata[metricName]; ok {
 		return metadata, metricName
 	}
-	if metadata, ok := mc.Metadata(metricName); ok {
+	if metadata, ok := mc.GetMetadata(metricName); ok {
 		return &metadata, metricName
 	}
 	// If we didn't find metadata with the original name,
 	// try with suffixes trimmed, in-case it is a "merged" metric type.
 	normalizedName := normalizeMetricName(metricName)
-	if metadata, ok := mc.Metadata(normalizedName); ok {
+	if metadata, ok := mc.GetMetadata(normalizedName); ok {
 		if metadata.Type == textparse.MetricTypeCounter {
 			return &metadata, metricName
 		}
@@ -89,34 +84,4 @@ func metadataForMetric(metricName string, mc MetadataCache) (*scrape.MetricMetad
 		Metric: metricName,
 		Type:   textparse.MetricTypeUnknown,
 	}, metricName
-}
-
-func getMetadataCache(ctx context.Context) (MetadataCache, error) {
-	target, ok := scrape.TargetFromContext(ctx)
-	if !ok {
-		return nil, errors.New("unable to find target in context")
-	}
-	metaStore, ok := scrape.MetricMetadataStoreFromContext(ctx)
-	if !ok {
-		return nil, errors.New("unable to find MetricMetadataStore in context")
-	}
-
-	return &mCache{
-		target:   target,
-		metadata: metaStore,
-	}, nil
-}
-
-// adapter to get metadata from scrape.Target
-type mCache struct {
-	target   *scrape.Target
-	metadata scrape.MetricMetadataStore
-}
-
-func (m *mCache) Metadata(metricName string) (scrape.MetricMetadata, bool) {
-	return m.metadata.GetMetadata(metricName)
-}
-
-func (m *mCache) SharedLabels() labels.Labels {
-	return m.target.DiscoveredLabels()
 }
