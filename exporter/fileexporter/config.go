@@ -26,6 +26,9 @@ type Config struct {
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
+
+	// PbMarshalOption defines whether encodes data using a protobuf stream in OTLP batch format
+	PbMarshalOption bool
 }
 
 var _ config.Exporter = (*Config)(nil)

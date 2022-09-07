@@ -20,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 )
@@ -53,7 +56,17 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		marshaler := func() ptrace.Marshaler {
+			if conf.PbMarshalOption {
+				return ptrace.NewProtoMarshaler()
+			}
+			return ptrace.NewProtoMarshaler()
+		}()
+		return &fileExporter{
+			path:            conf.Path,
+			tracesMarshaler: marshaler,
+		}
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -71,7 +84,17 @@ func createMetricsExporter(
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		marshaler := func() pmetric.Marshaler {
+			if conf.PbMarshalOption {
+				return pmetric.NewProtoMarshaler()
+			}
+			return pmetric.NewProtoMarshaler()
+		}()
+		return &fileExporter{
+			path:             conf.Path,
+			metricsMarshaler: marshaler,
+		}
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -89,7 +112,17 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		conf := cfg.(*Config)
+		marshaler := func() plog.Marshaler {
+			if conf.PbMarshalOption {
+				return plog.NewProtoMarshaler()
+			}
+			return plog.NewProtoMarshaler()
+		}()
+		return &fileExporter{
+			path:          cfg.(*Config).Path,
+			logsMarshaler: marshaler,
+		}
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
