@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+package internal
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,14 +23,15 @@ type kv struct {
 	Key, Value string
 }
 
-func metricSlice(metrics ...pmetric.Metric) pmetric.MetricSlice {
-	ms := pmetric.NewMetricSlice()
+func metrics(metrics ...pmetric.Metric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	for _, metric := range metrics {
 		destMetric := ms.AppendEmpty()
 		metric.CopyTo(destMetric)
 	}
 
-	return ms
+	return md
 }
 
 func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {

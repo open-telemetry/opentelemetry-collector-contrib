@@ -64,18 +64,18 @@ func Test_gauge_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Gauge: round 1 - gauge not adjusted",
-			metrics:     metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
-			adjusted:    metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44))),
 		},
 		{
 			description: "Gauge: round 2 - gauge not adjusted",
-			metrics:     metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
-			adjusted:    metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66))),
 		},
 		{
 			description: "Gauge: round 3 - value less than previous value - gauge is not adjusted",
-			metrics:     metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
-			adjusted:    metricSlice(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			metrics:     metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 	}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -85,28 +85,28 @@ func Test_sum_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Sum: round 1 - initial instance, start time is established",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
 		},
 		{
 			description: "Sum: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66))),
 		},
 		{
 			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 		{
 			description: "Sum: round 4 - instance adjusted based on round 3",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72))),
 		},
 		{
 			description: "Sum: round 5 - instance adjusted based on round 4",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 72))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 72))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
 		},
 	}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -116,23 +116,23 @@ func Test_summary_no_count_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
 		},
 		{
 			description: "Summary No Count: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 0, 70, percent0, []float64{7, 44, 9}))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 70, percent0, []float64{7, 44, 9}))),
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 0, 70, percent0, []float64{7, 44, 9}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 70, percent0, []float64{7, 44, 9}))),
 		},
 		{
 			description: "Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 0, 66, percent0, []float64{3, 22, 5}))),
 		},
 		{
 			description: "Summary No Count: round 4 - instance adjusted based on round 3",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 0, 96, percent0, []float64{9, 47, 8}))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 0, 96, percent0, []float64{9, 47, 8}))),
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 0, 96, percent0, []float64{9, 47, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 0, 96, percent0, []float64{9, 47, 8}))),
 		},
 	}
 
@@ -143,13 +143,13 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
 		},
 		{
 			description: "Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t2, t2))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t1, t2))),
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t2, t2))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
@@ -160,37 +160,37 @@ func Test_summary_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary: round 1 - initial instance, start time is established",
-			metrics: metricSlice(
+			metrics: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 		},
 		{
 			description: "Summary: round 2 - instance adjusted based on round 1",
-			metrics: metricSlice(
+			metrics: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
 			),
 		},
 		{
 			description: "Summary: round 3 - instance reset (count less than previous), start time is reset",
-			metrics: metricSlice(
+			metrics: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
 			),
 		},
 		{
 			description: "Summary: round 4 - instance adjusted based on round 3",
-			metrics: metricSlice(
+			metrics: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 14, 96, percent0, []float64{9, 47, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 14, 96, percent0, []float64{9, 47, 8})),
 			),
 		},
@@ -203,20 +203,20 @@ func Test_histogram_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
 		}, {
 			description: "Histogram: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8}))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8}))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8}))),
 		}, {
 			description: "Histogram: round 3 - instance reset (value less than previous value), start time is reset",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
 		}, {
 			description: "Histogram: round 4 - instance adjusted based on round 3",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12}))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 	}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -226,13 +226,13 @@ func Test_histogram_flag_norecordedvalue(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 		{
 			description: "Histogram: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, t1, t2))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, t1, t2))),
 		},
 	}
 
@@ -243,13 +243,13 @@ func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is unknown",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
 		},
 		{
 			description: "Histogram: round 2 - instance unchanged",
-			metrics:     metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
-			adjusted:    metricSlice(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t2))),
 		},
 	}
 
@@ -260,13 +260,13 @@ func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary: round 1 - initial instance, start time is unknown",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
 		},
 		{
 			description: "Summary: round 2 - instance unchanged",
-			metrics:     metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
-			adjusted:    metricSlice(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
+			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t2))),
 		},
 	}
 
@@ -277,13 +277,13 @@ func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Gauge: round 1 - initial instance, start time is unknown",
-			metrics:     metricSlice(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metricSlice(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			metrics:     metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t1))),
 		},
 		{
 			description: "Gauge: round 2 - instance unchanged",
-			metrics:     metricSlice(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
-			adjusted:    metricSlice(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			metrics:     metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(gaugeMetric(gauge1, doublePointNoValue(k1v1k2v2, tUnknown, t2))),
 		},
 	}
 
@@ -294,13 +294,13 @@ func Test_sum_flag_norecordedvalue_first_observation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Sum: round 1 - initial instance, start time is unknown",
-			metrics:     metricSlice(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metricSlice(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			metrics:     metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
 		},
 		{
 			description: "Sum: round 2 - instance unchanged",
-			metrics:     metricSlice(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
-			adjusted:    metricSlice(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			metrics:     metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
+			adjusted:    metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t2))),
 		},
 	}
 
@@ -311,13 +311,13 @@ func Test_multiMetrics_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "MultiMetrics: round 1 - combined round 1 of individual metrics",
-			metrics: metricSlice(
+			metrics: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
@@ -326,13 +326,13 @@ func Test_multiMetrics_pdata(t *testing.T) {
 		},
 		{
 			description: "MultiMetrics: round 2 - combined round 2 of individual metrics",
-			metrics: metricSlice(
+			metrics: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8})),
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8})),
@@ -341,13 +341,13 @@ func Test_multiMetrics_pdata(t *testing.T) {
 		},
 		{
 			description: "MultiMetrics: round 3 - combined round 3 of individual metrics",
-			metrics: metricSlice(
+			metrics: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7})),
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t3, 12, 66, percent0, []float64{3, 22, 5})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55)),
 				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 55)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7})),
@@ -356,12 +356,12 @@ func Test_multiMetrics_pdata(t *testing.T) {
 		},
 		{
 			description: "MultiMetrics: round 4 - combined round 4 of individual metrics",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 72)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{7, 4, 2, 12})),
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t4, t4, 14, 96, percent0, []float64{9, 47, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t4, 72)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12})),
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t3, t4, 14, 96, percent0, []float64{9, 47, 8})),
@@ -375,7 +375,7 @@ func Test_new_datapoints_added(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "New Datapoints: round 1 - two datapoints each",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1,
 					doublePoint(k1v1k2v2, t1, t1, 44),
 					doublePoint(k1v100k2v200, t1, t1, 44)),
@@ -386,7 +386,7 @@ func Test_new_datapoints_added(t *testing.T) {
 					summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8}),
 					summaryPoint(k1v100k2v200, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1,
 					doublePoint(k1v1k2v2, t1, t1, 44),
 					doublePoint(k1v100k2v200, t1, t1, 44)),
@@ -400,7 +400,7 @@ func Test_new_datapoints_added(t *testing.T) {
 		},
 		{
 			description: "New Datapoints: round 2 - new datapoints unchanged, old datapoints adjusted",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1,
 					doublePoint(k1v1k2v2, t2, t2, 44),
 					doublePoint(k1v10k2v20, t2, t2, 44),
@@ -414,7 +414,7 @@ func Test_new_datapoints_added(t *testing.T) {
 					summaryPoint(k1v10k2v20, t2, t2, 10, 40, percent0, []float64{1, 5, 8}),
 					summaryPoint(k1v100k2v200, t2, t2, 10, 40, percent0, []float64{1, 5, 8})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1,
 					doublePoint(k1v1k2v2, t1, t2, 44),
 					doublePoint(k1v10k2v20, t2, t2, 44),
@@ -437,39 +437,39 @@ func Test_multiTimeseries_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "MultiTimeseries: round 1 - initial first instance, start time is established",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
 		},
 		{
 			description: "MultiTimeseries: round 2 - first instance adjusted based on round 1, initial second instance",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
 			),
 		},
 		{
 			description: "MultiTimeseries: round 3 - first instance adjusted based on round 1, second based on round 2",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 88.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 49.0)),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 88.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t3, 49.0)),
 			),
 		},
 		{
 			description: "MultiTimeseries: round 4 - first instance reset, second instance adjusted based on round 2, initial third instance",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 87.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 57.0)),
 				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t4, 10.0)),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 87.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t4, 57.0)),
 				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t4, 10.0)),
@@ -477,12 +477,12 @@ func Test_multiTimeseries_pdata(t *testing.T) {
 		},
 		{
 			description: "MultiTimeseries: round 5 - first instance adjusted based on round 4, second on round 2, third on round 4",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t5, t5, 90.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t5, t5, 65.0)),
 				sumMetric(sum1, doublePoint(k1v100k2v200, t5, t5, 22.0)),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t5, 90.0)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t5, 65.0)),
 				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t5, 22.0)),
@@ -496,23 +496,23 @@ func Test_emptyLabels_pdata(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
 		},
 		{
 			description: "EmptyLabels: round 2 - instance adjusted based on round 1",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(emptyLabels, t2, t2, 66))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(emptyLabels, t1, t2, 66))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t2, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t2, 66))),
 		},
 		{
 			description: "EmptyLabels: round 3 - one explicitly empty label, instance adjusted based on round 1",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1vEmpty, t3, t3, 77))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1vEmpty, t1, t3, 77))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmpty, t3, t3, 77))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmpty, t1, t3, 77))),
 		},
 		{
 			description: "EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
-			metrics:     metricSlice(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t3, t3, 88))),
-			adjusted:    metricSlice(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
+			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t3, t3, 88))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
 		},
 	}
 	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
@@ -522,13 +522,13 @@ func Test_tsGC_pdata(t *testing.T) {
 	script1 := []*metricsAdjusterTest{
 		{
 			description: "TsGC: round 1 - initial instances, start time is established",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
@@ -540,11 +540,11 @@ func Test_tsGC_pdata(t *testing.T) {
 	script2 := []*metricsAdjusterTest{
 		{
 			description: "TsGC: round 2 - metrics first timeseries adjusted based on round 2, second timeseries not updated",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 88)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{8, 7, 9, 14})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 88)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{8, 7, 9, 14})),
 			),
@@ -554,13 +554,13 @@ func Test_tsGC_pdata(t *testing.T) {
 	script3 := []*metricsAdjusterTest{
 		{
 			description: "TsGC: round 3 - metrics first timeseries adjusted based on round 2, second timeseries empty due to timeseries gc()",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t3, t3, 99)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 80)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{9, 8, 10, 15})),
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t3, t3, bounds0, []uint64{55, 66, 33, 77})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 99)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 80)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t3, bounds0, []uint64{9, 8, 10, 15})),
@@ -587,13 +587,13 @@ func Test_jobGC_pdata(t *testing.T) {
 	job1Script1 := []*metricsAdjusterTest{
 		{
 			description: "JobGC: job 1, round 1 - initial instances, adjusted should be empty",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
@@ -605,21 +605,21 @@ func Test_jobGC_pdata(t *testing.T) {
 	job2Script1 := []*metricsAdjusterTest{
 		{
 			description: "JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
-			metrics:     pmetric.NewMetricSlice(),
-			adjusted:    pmetric.NewMetricSlice(),
+			metrics:     pmetric.NewMetrics(),
+			adjusted:    pmetric.NewMetrics(),
 		},
 	}
 
 	job1Script2 := []*metricsAdjusterTest{
 		{
 			description: "JobGC: job 1, round 2 - metrics timeseries empty due to job-level gc",
-			metrics: metricSlice(
+			metrics: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 99)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 80)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{9, 8, 10, 15})),
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t4, t4, bounds0, []uint64{55, 66, 33, 77})),
 			),
-			adjusted: metricSlice(
+			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 99)),
 				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 80)),
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{9, 8, 10, 15})),
@@ -649,8 +649,8 @@ func Test_jobGC_pdata(t *testing.T) {
 
 type metricsAdjusterTest struct {
 	description string
-	metrics     pmetric.MetricSlice
-	adjusted    pmetric.MetricSlice
+	metrics     pmetric.Metrics
+	adjusted    pmetric.Metrics
 }
 
 func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
@@ -659,8 +659,10 @@ func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) 
 	ma := NewMetricsAdjuster(tsm, l)
 
 	for _, test := range script {
-		ma.AdjustMetricSlice(test.metrics)
-		adjusted := test.metrics
-		assert.EqualValuesf(t, test.adjusted, adjusted, "Test: %v - expected: %v, actual: %v", test.description, test.adjusted, adjusted)
+		t.Run(test.description, func(t *testing.T) {
+			ma.AdjustMetrics(test.metrics)
+			adjusted := test.metrics
+			assert.EqualValues(t, test.adjusted, adjusted)
+		})
 	}
 }
