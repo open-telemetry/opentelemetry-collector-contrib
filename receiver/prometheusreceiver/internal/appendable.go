@@ -16,6 +16,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
@@ -31,7 +32,7 @@ type appendable struct {
 	sink                 consumer.Metrics
 	jobsMap              *JobsMap
 	useStartTimeMetric   bool
-	startTimeMetricRegex string
+	startTimeMetricRegex *regexp.Regexp
 	externalLabels       labels.Labels
 
 	settings component.ReceiverCreateSettings
@@ -44,13 +45,14 @@ func NewAppendable(
 	set component.ReceiverCreateSettings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
-	startTimeMetricRegex string,
+	startTimeMetricRegex *regexp.Regexp,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels) storage.Appendable {
 	var jobsMap *JobsMap
 	if !useStartTimeMetric {
 		jobsMap = NewJobsMap(gcInterval)
 	}
+
 	return &appendable{
 		sink:                 sink,
 		settings:             set,
