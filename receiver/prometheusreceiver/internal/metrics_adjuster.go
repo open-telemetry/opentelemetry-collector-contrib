@@ -69,18 +69,20 @@ type timeseriesinfo struct {
 }
 
 type numberInfo struct {
-	initial  *pmetric.NumberDataPoint
-	previous *pmetric.NumberDataPoint
+	startTime     pcommon.Timestamp
+	previousValue float64
 }
 
 type histogramInfo struct {
-	initial  *pmetric.HistogramDataPoint
-	previous *pmetric.HistogramDataPoint
+	startTime     pcommon.Timestamp
+	previousCount uint64
+	previousSum   float64
 }
 
 type summaryInfo struct {
-	initial  *pmetric.SummaryDataPoint
-	previous *pmetric.SummaryDataPoint
+	startTime     pcommon.Timestamp
+	previousCount uint64
+	previousSum   float64
 }
 
 // timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
@@ -95,7 +97,7 @@ type timeseriesMap struct {
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
-func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) *timeseriesinfo {
+func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeseriesinfo, bool) {
 	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
@@ -114,7 +116,7 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) *timeseries
 	}
 	tsm.mark = true
 	tsi.mark = true
-	return tsi
+	return tsi, ok
 }
 
 // Create a unique timeseries signature consisting of the metric name and label values.
@@ -238,19 +240,6 @@ func NewMetricsAdjuster(tsm *timeseriesMap, logger *zap.Logger) *MetricsAdjuster
 	}
 }
 
-// AdjustMetricSlice takes a sequence of metrics and adjust their start times based on the initial and
-// previous points in the timeseriesMap.
-// Returns the total number of timeseries that had reset start times.
-func (ma *MetricsAdjuster) AdjustMetricSlice(metricL pmetric.MetricSlice) {
-	// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
-	// nothing else can modify the data used for adjustment.
-	ma.tsm.Lock()
-	defer ma.tsm.Unlock()
-	for i := 0; i < metricL.Len(); i++ {
-		ma.adjustMetric(metricL.At(i))
-	}
-}
-
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (ma *MetricsAdjuster) AdjustMetrics(metrics pmetric.Metrics) {
@@ -299,37 +288,33 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) {
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
-		tsi := ma.tsm.get(current, currentDist.Attributes())
-
-		previousDist := tsi.histogram.previous
-		if previousDist == nil {
-			// no previous data point with values
-			// use the initial data point
-			previousDist = tsi.histogram.initial
-		}
-
-		if !currentDist.FlagsImmutable().NoRecordedValue() {
-			tsi.histogram.previous = &currentDist
-		}
-
-		if tsi.histogram.initial == nil {
-			// initial || reset timeseries.
-			tsi.histogram.initial = &currentDist
+		tsi, found := ma.tsm.get(current, currentDist.Attributes())
+		if !found {
+			// initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
 			continue
 		}
 
 		if currentDist.FlagsImmutable().NoRecordedValue() {
-			currentDist.SetStartTimestamp(tsi.histogram.initial.StartTimestamp())
+			// TODO: Investigate why this does not reset.
+			currentDist.SetStartTimestamp(tsi.histogram.startTime)
 			continue
 		}
 
-		if currentDist.Count() < previousDist.Count() || currentDist.Sum() < previousDist.Sum() {
-			// reset detected
-			tsi.histogram.initial = &currentDist
+		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
+			// reset re-initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
 			continue
 		}
 
-		currentDist.SetStartTimestamp(tsi.histogram.initial.StartTimestamp())
+		// Update only previous values.
+		tsi.histogram.previousCount = currentDist.Count()
+		tsi.histogram.previousSum = currentDist.Sum()
+		currentDist.SetStartTimestamp(tsi.histogram.startTime)
 	}
 }
 
@@ -337,36 +322,30 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
-		tsi := ma.tsm.get(current, currentSum.Attributes())
-
-		previousSum := tsi.number.previous
-		if previousSum == nil {
-			// no previous data point with values
-			// use the initial data point
-			previousSum = tsi.number.initial
-		}
-
-		if !currentSum.FlagsImmutable().NoRecordedValue() {
-			tsi.number.previous = &currentSum
-		}
-
-		if tsi.number.initial == nil {
-			// initial || reset timeseries.
-			tsi.number.initial = &currentSum
+		tsi, found := ma.tsm.get(current, currentSum.Attributes())
+		if !found {
+			// initialize everything.
+			tsi.number.startTime = currentSum.StartTimestamp()
+			tsi.number.previousValue = currentSum.DoubleVal()
 			continue
 		}
 
 		if currentSum.FlagsImmutable().NoRecordedValue() {
-			currentSum.SetStartTimestamp(tsi.number.initial.StartTimestamp())
+			// TODO: Investigate why this does not reset.
+			currentSum.SetStartTimestamp(tsi.number.startTime)
 			continue
 		}
 
-		if currentSum.DoubleVal() < previousSum.DoubleVal() {
-			// reset detected
-			tsi.number.initial = &currentSum
+		if currentSum.DoubleVal() < tsi.number.previousValue {
+			// reset re-initialize everything.
+			tsi.number.startTime = currentSum.StartTimestamp()
+			tsi.number.previousValue = currentSum.DoubleVal()
 			continue
 		}
-		currentSum.SetStartTimestamp(tsi.number.initial.StartTimestamp())
+
+		// Update only previous values.
+		tsi.number.previousValue = currentSum.DoubleVal()
+		currentSum.SetStartTimestamp(tsi.number.startTime)
 	}
 }
 
@@ -375,41 +354,37 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) {
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
-		tsi := ma.tsm.get(current, currentSummary.Attributes())
-
-		previousSummary := tsi.summary.previous
-		if previousSummary == nil {
-			// no previous data point with values
-			// use the initial data point
-			previousSummary = tsi.summary.initial
-		}
-
-		if !currentSummary.FlagsImmutable().NoRecordedValue() {
-			tsi.summary.previous = &currentSummary
-		}
-
-		if tsi.summary.initial == nil {
-			// initial || reset timeseries.
-			tsi.summary.initial = &currentSummary
+		tsi, found := ma.tsm.get(current, currentSummary.Attributes())
+		if !found {
+			// initialize everything.
+			tsi.summary.startTime = currentSummary.StartTimestamp()
+			tsi.summary.previousCount = currentSummary.Count()
+			tsi.summary.previousSum = currentSummary.Sum()
 			continue
 		}
 
 		if currentSummary.FlagsImmutable().NoRecordedValue() {
-			currentSummary.SetStartTimestamp(tsi.summary.initial.StartTimestamp())
+			// TODO: Investigate why this does not reset.
+			currentSummary.SetStartTimestamp(tsi.summary.startTime)
 			continue
 		}
 
 		if (currentSummary.Count() != 0 &&
-			previousSummary.Count() != 0 &&
-			currentSummary.Count() < previousSummary.Count()) ||
+			tsi.summary.previousCount != 0 &&
+			currentSummary.Count() < tsi.summary.previousCount) ||
 			(currentSummary.Sum() != 0 &&
-				previousSummary.Sum() != 0 &&
-				currentSummary.Sum() < previousSummary.Sum()) {
-			// reset detected
-			tsi.summary.initial = &currentSummary
+				tsi.summary.previousSum != 0 &&
+				currentSummary.Sum() < tsi.summary.previousSum) {
+			// reset re-initialize everything.
+			tsi.summary.startTime = currentSummary.StartTimestamp()
+			tsi.summary.previousCount = currentSummary.Count()
+			tsi.summary.previousSum = currentSummary.Sum()
 			continue
 		}
 
-		currentSummary.SetStartTimestamp(tsi.summary.initial.StartTimestamp())
+		// Update only previous values.
+		tsi.summary.previousCount = currentSummary.Count()
+		tsi.summary.previousSum = currentSummary.Sum()
+		currentSummary.SetStartTimestamp(tsi.summary.startTime)
 	}
 }
