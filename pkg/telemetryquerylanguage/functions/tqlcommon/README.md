@@ -5,6 +5,7 @@ The following functions can be used in any implementation of the Telemetry Query
 Factory Functions
 - [Join](#join)
 - [IsMatch](#ismatch)
+- [Int](#int)
 
 Functions
 - [set](#set)
@@ -45,6 +46,31 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+## Int
+
+`Int(value)`
+
+The `Int` factory function converts the `value` to int type.
+
+The returned type is int64.
+
+The input `value` types:
+* float64. Fraction is discharged (truncation towards zero).
+* string. Trying to parse an integer from string if it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function returns the `value` without changes.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Int(attributes["http.status_code"])`
+
+
+- `Int("2.0")`
 
 ## set
 
