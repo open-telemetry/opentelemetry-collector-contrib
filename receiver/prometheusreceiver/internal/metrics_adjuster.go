@@ -15,7 +15,6 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -85,6 +84,12 @@ type summaryInfo struct {
 	previousSum   float64
 }
 
+type timeserieskey struct {
+	name           string
+	attributes     string
+	aggTemporality pmetric.MetricAggregationTemporality
+}
+
 // timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
 // the instance.
 type timeseriesMap struct {
@@ -93,7 +98,7 @@ type timeseriesMap struct {
 	// AdjustMetricSlice() and also acquired by gc().
 
 	mark   bool
-	tsiMap map[string]*timeseriesinfo
+	tsiMap map[timeserieskey]*timeseriesinfo
 }
 
 // Get the timeseriesinfo for the timeseries associated with the metric and label values.
@@ -101,26 +106,29 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
-	sig := getTimeseriesSignature(name, kv)
+	key := timeserieskey{
+		name:       name,
+		attributes: getAttributesSignature(kv),
+	}
 	if metric.DataType() == pmetric.MetricDataTypeHistogram {
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
-		aggTemporality := metric.Histogram().AggregationTemporality()
-		sig += "," + aggTemporality.String()
+		key.aggTemporality = metric.Histogram().AggregationTemporality()
 	}
-	tsi, ok := tsm.tsiMap[sig]
+
+	tsm.mark = true
+	tsi, ok := tsm.tsiMap[key]
 	if !ok {
 		tsi = &timeseriesinfo{}
-		tsm.tsiMap[sig] = tsi
+		tsm.tsiMap[key] = tsi
 	}
-	tsm.mark = true
 	tsi.mark = true
 	return tsi, ok
 }
 
 // Create a unique timeseries signature consisting of the metric name and label values.
-func getTimeseriesSignature(name string, kv pcommon.Map) string {
+func getAttributesSignature(kv pcommon.Map) string {
 	labelValues := make([]string, 0, kv.Len())
 	kv.Sort().Range(func(_ string, attrValue pcommon.Value) bool {
 		value := attrValue.StringVal()
@@ -129,7 +137,7 @@ func getTimeseriesSignature(name string, kv pcommon.Map) string {
 		}
 		return true
 	})
-	return fmt.Sprintf("%s,%s", name, strings.Join(labelValues, ","))
+	return strings.Join(labelValues, ",")
 }
 
 // Remove timeseries that have aged out.
@@ -151,7 +159,7 @@ func (tsm *timeseriesMap) gc() {
 }
 
 func newTimeseriesMap() *timeseriesMap {
-	return &timeseriesMap{mark: true, tsiMap: map[string]*timeseriesinfo{}}
+	return &timeseriesMap{mark: true, tsiMap: map[timeserieskey]*timeseriesinfo{}}
 }
 
 // JobsMap maps from a job instance to a map of timeseries instances for the job.
