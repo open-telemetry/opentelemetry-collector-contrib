@@ -30,14 +30,14 @@ import (
 	"go.uber.org/zap"
 )
 
-type byLookupMetadataCache map[string]scrape.MetricMetadata
+type testMetadataCache map[string]scrape.MetricMetadata
 
-func (bmc byLookupMetadataCache) GetMetadata(familyName string) (scrape.MetricMetadata, bool) {
+func (bmc testMetadataCache) GetMetadata(familyName string) (scrape.MetricMetadata, bool) {
 	lookup, ok := bmc[familyName]
 	return lookup, ok
 }
 
-var mc = byLookupMetadataCache{
+var mc = testMetadataCache{
 	"counter": scrape.MetricMetadata{
 		Metric: "cr",
 		Type:   textparse.MetricTypeCounter,
