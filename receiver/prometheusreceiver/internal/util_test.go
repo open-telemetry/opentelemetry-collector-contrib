@@ -15,10 +15,14 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
+	"testing"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 const (
@@ -49,33 +53,143 @@ var testMetadata = map[string]scrape.MetricMetadata{
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 }
 
-type testDataPoint struct {
-	lb labels.Labels
-	t  int64
-	v  float64
-}
-
-type testScrapedPage struct {
-	pts []*testDataPoint
-}
-
-func createLabels(mFamily string, tagPairs ...string) labels.Labels {
-	lm := make(map[string]string)
-	lm[model.MetricNameLabel] = mFamily
-	if len(tagPairs)%2 != 0 {
-		panic("tag pairs is not even")
+func TestConvToMetricType(t *testing.T) {
+	tests := []struct {
+		name          string
+		mtype         textparse.MetricType
+		want          pmetric.MetricDataType
+		wantMonotonic bool
+	}{
+		{
+			name:          "textparse.counter",
+			mtype:         textparse.MetricTypeCounter,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.gauge",
+			mtype:         textparse.MetricTypeGauge,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.unknown",
+			mtype:         textparse.MetricTypeUnknown,
+			want:          pmetric.MetricDataTypeGauge,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.histogram",
+			mtype:         textparse.MetricTypeHistogram,
+			want:          pmetric.MetricDataTypeHistogram,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.summary",
+			mtype:         textparse.MetricTypeSummary,
+			want:          pmetric.MetricDataTypeSummary,
+			wantMonotonic: true,
+		},
+		{
+			name:          "textparse.metric_type_info",
+			mtype:         textparse.MetricTypeInfo,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_state_set",
+			mtype:         textparse.MetricTypeStateset,
+			want:          pmetric.MetricDataTypeSum,
+			wantMonotonic: false,
+		},
+		{
+			name:          "textparse.metric_gauge_hostogram",
+			mtype:         textparse.MetricTypeGaugeHistogram,
+			want:          pmetric.MetricDataTypeNone,
+			wantMonotonic: false,
+		},
 	}
 
-	for i := 0; i < len(tagPairs); i += 2 {
-		lm[tagPairs[i]] = tagPairs[i+1]
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			got, monotonic := convToMetricType(tt.mtype)
+			require.Equal(t, got.String(), tt.want.String())
+			require.Equal(t, monotonic, tt.wantMonotonic)
+		})
 	}
-
-	return labels.FromMap(lm)
 }
 
-func createDataPoint(mname string, value float64, tagPairs ...string) *testDataPoint {
-	return &testDataPoint{
-		lb: createLabels(mname, tagPairs...),
-		v:  value,
+func TestGetBoundary(t *testing.T) {
+	tests := []struct {
+		name      string
+		mtype     pmetric.MetricDataType
+		labels    labels.Labels
+		wantValue float64
+		wantErr   string
+	}{
+		{
+			name:  "cumulative histogram with bucket label",
+			mtype: pmetric.MetricDataTypeHistogram,
+			labels: labels.Labels{
+				{Name: model.BucketLabel, Value: "0.256"},
+			},
+			wantValue: 0.256,
+		},
+		{
+			name:  "gauge histogram with bucket label",
+			mtype: pmetric.MetricDataTypeHistogram,
+			labels: labels.Labels{
+				{Name: model.BucketLabel, Value: "11.71"},
+			},
+			wantValue: 11.71,
+		},
+		{
+			name:  "summary with bucket label",
+			mtype: pmetric.MetricDataTypeSummary,
+			labels: labels.Labels{
+				{Name: model.BucketLabel, Value: "11.71"},
+			},
+			wantErr: errEmptyQuantileLabel.Error(),
+		},
+		{
+			name:  "summary with quantile label",
+			mtype: pmetric.MetricDataTypeSummary,
+			labels: labels.Labels{
+				{Name: model.QuantileLabel, Value: "92.88"},
+			},
+			wantValue: 92.88,
+		},
+		{
+			name:  "gauge histogram mismatched with bucket label",
+			mtype: pmetric.MetricDataTypeSummary,
+			labels: labels.Labels{
+				{Name: model.BucketLabel, Value: "11.71"},
+			},
+			wantErr: errEmptyQuantileLabel.Error(),
+		},
+		{
+			name:  "other data types without matches",
+			mtype: pmetric.MetricDataTypeGauge,
+			labels: labels.Labels{
+				{Name: model.BucketLabel, Value: "11.71"},
+			},
+			wantErr: errNoBoundaryLabel.Error(),
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			value, err := getBoundary(tt.mtype, tt.labels)
+			if tt.wantErr != "" {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), tt.wantErr)
+				return
+			}
+
+			require.Nil(t, err)
+			require.Equal(t, value, tt.wantValue)
+		})
 	}
 }

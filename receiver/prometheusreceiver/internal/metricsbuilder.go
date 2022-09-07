@@ -18,82 +18,13 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/model/value"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
-
-var (
-	notUsefulLabelsHistogram = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.BucketLabel})
-	notUsefulLabelsSummary   = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel, model.QuantileLabel})
-	notUsefulLabelsOther     = sortString([]string{model.MetricNameLabel, model.InstanceLabel, model.SchemeLabel, model.MetricsPathLabel, model.JobLabel})
-)
-
-func sortString(strs []string) []string {
-	sort.Strings(strs)
-	return strs
-}
-
-func getSortedNotUsefulLabels(mType pmetric.MetricDataType) []string {
-	switch mType {
-	case pmetric.MetricDataTypeHistogram:
-		return notUsefulLabelsHistogram
-	case pmetric.MetricDataTypeSummary:
-		return notUsefulLabelsSummary
-	default:
-		return notUsefulLabelsOther
-	}
-}
-
-func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {
-	val := ""
-	switch metricType {
-	case pmetric.MetricDataTypeHistogram:
-		val = labels.Get(model.BucketLabel)
-		if val == "" {
-			return 0, errEmptyLeLabel
-		}
-	case pmetric.MetricDataTypeSummary:
-		val = labels.Get(model.QuantileLabel)
-		if val == "" {
-			return 0, errEmptyQuantileLabel
-		}
-	default:
-		return 0, errNoBoundaryLabel
-	}
-
-	return strconv.ParseFloat(val, 64)
-}
-
-// convToMetricType returns the data type and if it is monotonic
-func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, bool) {
-	switch metricType {
-	case textparse.MetricTypeCounter:
-		// always use float64, as it's the internal data type used in prometheus
-		return pmetric.MetricDataTypeSum, true
-	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
-	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
-		return pmetric.MetricDataTypeGauge, false
-	case textparse.MetricTypeHistogram:
-		return pmetric.MetricDataTypeHistogram, true
-	// dropping support for gaugehistogram for now until we have an official spec of its implementation
-	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
-	// case textparse.MetricTypeGaugeHistogram:
-	//	return <pdata gauge histogram type>
-	case textparse.MetricTypeSummary:
-		return pmetric.MetricDataTypeSummary, true
-	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
-		return pmetric.MetricDataTypeSum, false
-	default:
-		// including: textparse.MetricTypeGaugeHistogram
-		return pmetric.MetricDataTypeNone, false
-	}
-}
 
 type metricBuilder struct {
 	families             map[string]*metricFamily
