@@ -212,7 +212,11 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 }
 
 func (s *scraper) scrapeAndAppendCPUPercentMetric(now pcommon.Timestamp, handle processHandle) error {
-	s.recordCPUPercentMetric(now, 0.0)
+	percent, err := handle.CPUPercent()
+	if err != nil {
+		return err
+	}
+	s.recordCPUPercentMetric(now, percent)
 	return nil
 }
 
