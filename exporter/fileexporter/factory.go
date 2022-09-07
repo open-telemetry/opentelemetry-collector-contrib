@@ -66,6 +66,7 @@ func createTracesExporter(
 		return &fileExporter{
 			path:            conf.Path,
 			tracesMarshaler: marshaler,
+			isCompressed:    conf.ZstdOption,
 		}
 	})
 	return exporterhelper.NewTracesExporter(
@@ -94,6 +95,7 @@ func createMetricsExporter(
 		return &fileExporter{
 			path:             conf.Path,
 			metricsMarshaler: marshaler,
+			isCompressed:     conf.ZstdOption,
 		}
 	})
 	return exporterhelper.NewMetricsExporter(
@@ -122,6 +124,7 @@ func createLogsExporter(
 		return &fileExporter{
 			path:          cfg.(*Config).Path,
 			logsMarshaler: marshaler,
+			isCompressed:  conf.ZstdOption,
 		}
 	})
 	return exporterhelper.NewLogsExporter(

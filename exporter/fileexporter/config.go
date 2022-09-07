@@ -29,6 +29,9 @@ type Config struct {
 
 	// PbMarshalOption defines whether encodes data using a protobuf stream in OTLP batch format
 	PbMarshalOption bool
+
+	// ZstdOption Zstd compression option
+	ZstdOption bool
 }
 
 var _ config.Exporter = (*Config)(nil)

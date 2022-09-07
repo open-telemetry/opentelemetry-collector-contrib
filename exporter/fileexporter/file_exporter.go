@@ -25,14 +25,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/valyala/gozstd"
 )
 
 // fileExporter is the implementation of file exporter that writes telemetry data to a file
 // in Protobuf-JSON format.
 type fileExporter struct {
-	path             string
-	file             io.WriteCloser
-	mutex            sync.Mutex
+	path  string
+	file  io.WriteCloser
+	mutex sync.Mutex
+
+	isCompressed bool
+
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
@@ -47,6 +52,9 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if err != nil {
 		return err
 	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
+	}
 	return exportMessageAsLine(e, buf)
 }
 
@@ -55,6 +63,9 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if err != nil {
 		return err
 	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
+	}
 	return exportMessageAsLine(e, buf)
 }
 
@@ -62,6 +73,9 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	buf, err := e.logsMarshaler.MarshalLogs(ld)
 	if err != nil {
 		return err
+	}
+	if e.isCompressed {
+		buf = gozstd.Compress(nil, buf)
 	}
 	return exportMessageAsLine(e, buf)
 }
