@@ -21,6 +21,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -126,55 +127,43 @@ func TestGetBoundary(t *testing.T) {
 		mtype     pmetric.MetricDataType
 		labels    labels.Labels
 		wantValue float64
-		wantErr   string
+		wantErr   error
 	}{
 		{
-			name:  "cumulative histogram with bucket label",
-			mtype: pmetric.MetricDataTypeHistogram,
-			labels: labels.Labels{
-				{Name: model.BucketLabel, Value: "0.256"},
-			},
+			name:      "cumulative histogram with bucket label",
+			mtype:     pmetric.MetricDataTypeHistogram,
+			labels:    labels.FromStrings(model.BucketLabel, "0.256"),
 			wantValue: 0.256,
 		},
 		{
-			name:  "gauge histogram with bucket label",
-			mtype: pmetric.MetricDataTypeHistogram,
-			labels: labels.Labels{
-				{Name: model.BucketLabel, Value: "11.71"},
-			},
+			name:      "gauge histogram with bucket label",
+			mtype:     pmetric.MetricDataTypeHistogram,
+			labels:    labels.FromStrings(model.BucketLabel, "11.71"),
 			wantValue: 11.71,
 		},
 		{
-			name:  "summary with bucket label",
-			mtype: pmetric.MetricDataTypeSummary,
-			labels: labels.Labels{
-				{Name: model.BucketLabel, Value: "11.71"},
-			},
-			wantErr: errEmptyQuantileLabel.Error(),
+			name:    "summary with bucket label",
+			mtype:   pmetric.MetricDataTypeSummary,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errEmptyQuantileLabel,
 		},
 		{
-			name:  "summary with quantile label",
-			mtype: pmetric.MetricDataTypeSummary,
-			labels: labels.Labels{
-				{Name: model.QuantileLabel, Value: "92.88"},
-			},
+			name:      "summary with quantile label",
+			mtype:     pmetric.MetricDataTypeSummary,
+			labels:    labels.FromStrings(model.QuantileLabel, "92.88"),
 			wantValue: 92.88,
 		},
 		{
-			name:  "gauge histogram mismatched with bucket label",
-			mtype: pmetric.MetricDataTypeSummary,
-			labels: labels.Labels{
-				{Name: model.BucketLabel, Value: "11.71"},
-			},
-			wantErr: errEmptyQuantileLabel.Error(),
+			name:    "gauge histogram mismatched with bucket label",
+			mtype:   pmetric.MetricDataTypeSummary,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errEmptyQuantileLabel,
 		},
 		{
-			name:  "other data types without matches",
-			mtype: pmetric.MetricDataTypeGauge,
-			labels: labels.Labels{
-				{Name: model.BucketLabel, Value: "11.71"},
-			},
-			wantErr: errNoBoundaryLabel.Error(),
+			name:    "other data types without matches",
+			mtype:   pmetric.MetricDataTypeGauge,
+			labels:  labels.FromStrings(model.BucketLabel, "11.71"),
+			wantErr: errNoBoundaryLabel,
 		},
 	}
 
@@ -182,14 +171,13 @@ func TestGetBoundary(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			value, err := getBoundary(tt.mtype, tt.labels)
-			if tt.wantErr != "" {
-				require.NotNil(t, err)
-				require.Contains(t, err.Error(), tt.wantErr)
+			if tt.wantErr != nil {
+				assert.ErrorIs(t, err, tt.wantErr)
 				return
 			}
 
-			require.Nil(t, err)
-			require.Equal(t, value, tt.wantValue)
+			assert.NoError(t, err)
+			assert.Equal(t, value, tt.wantValue)
 		})
 	}
 }
