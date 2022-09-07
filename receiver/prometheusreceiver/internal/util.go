@@ -52,10 +52,3 @@ func normalizeMetricName(name string) string {
 	}
 	return name
 }
-
-func isInternalMetric(metricName string) bool {
-	if metricName == scrapeUpMetricName || strings.HasPrefix(metricName, "scrape_") {
-		return true
-	}
-	return false
-}
