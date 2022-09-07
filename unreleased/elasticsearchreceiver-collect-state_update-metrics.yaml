@@ -5,7 +5,7 @@ change_type: bug_fix
 component: elasticsearchreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add "discovery" path in client request to collect elasticsearch.cluster_state.* metrics
+note: "Fix issue where `elasticsearch.cluster_state.*` metrics were not being collected
 
 # One or more tracking issues related to the change
 issues: [13930]
