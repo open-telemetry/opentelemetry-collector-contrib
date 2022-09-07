@@ -58,7 +58,7 @@ func TestSplitNetworkEndpoint(t *testing.T) {
 		{
 			scenario: "A valid UNIX network",
 			in:       fmt.Sprintf("unix://%s", path),
-			network:  "unix",
+			network:  "unixgram",
 			endpoint: path,
 			err:      nil,
 		},
