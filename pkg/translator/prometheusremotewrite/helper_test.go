@@ -40,7 +40,7 @@ func Test_validateMetrics(t *testing.T) {
 		want   bool
 	}
 
-	tests := []combTest{}
+	var tests []combTest
 
 	// append true cases
 	for k, validMetric := range validMetrics1 {

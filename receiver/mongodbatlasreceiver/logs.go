@@ -216,7 +216,7 @@ func (s *logsReceiver) getHostLogs(groupID, hostname, logName string) ([]model.L
 	// Logs are in JSON format so create a JSON decoder to process them
 	dec := json.NewDecoder(reader)
 
-	entries := make([]model.LogEntry, 0)
+	var entries []model.LogEntry
 	for {
 		var entry model.LogEntry
 		err := dec.Decode(&entry)
@@ -244,7 +244,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 
 	dec := json.NewDecoder(reader)
 
-	entries := make([]model.AuditLog, 0)
+	var entries []model.AuditLog
 	for {
 		var entry model.AuditLog
 		err := dec.Decode(&entry)

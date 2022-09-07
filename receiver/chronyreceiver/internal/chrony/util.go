@@ -46,10 +46,13 @@ func SplitNetworkEndpoint(addr string) (network, endpoint string, err error) {
 		if host == "" {
 			return "", "", fmt.Errorf("missing hostname: %w", ErrInvalidNetwork)
 		}
-	case "unix":
+	case "unix", "unixgram":
 		if _, err := os.Stat(endpoint); err != nil {
 			return "", "", err
 		}
+		// Chrony uses socket type DGRAM which converts to `unixgram`,
+		// in order to preserve configuration of existing clients, this will overwrite the network type
+		network = "unixgram"
 	default:
 		return "", "", fmt.Errorf("unknown network %s: %w", network, ErrInvalidNetwork)
 	}

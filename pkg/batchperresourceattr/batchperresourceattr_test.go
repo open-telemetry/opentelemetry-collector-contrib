@@ -320,9 +320,9 @@ func fillResourceLogs(rs plog.ResourceLogs, key string, val string) {
 	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
-	firstLogRecord.FlagsStruct().SetIsSampled(rand.Int31()%2 == 1)
+	firstLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
 	secondLogRecord := ils.LogRecords().AppendEmpty()
-	secondLogRecord.FlagsStruct().SetIsSampled(rand.Int31()%2 == 1)
+	secondLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
 }
 
 func BenchmarkBatchPerResourceTraces(b *testing.B) {

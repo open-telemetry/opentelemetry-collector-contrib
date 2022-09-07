@@ -93,8 +93,7 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 			tracesFunc: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()
-				rSpans.Resource().Attributes().
-					InsertString("k8s.namespace.name", "namespace-1")
+				rSpans.Resource().Attributes().UpsertString("k8s.namespace.name", "namespace-1")
 				return traces
 			},
 			fromAttr:      "k8s.namespace.name",
@@ -105,8 +104,7 @@ func TestExtractorForTraces_FromResourceAttribute(t *testing.T) {
 			tracesFunc: func() ptrace.Traces {
 				traces := ptrace.NewTraces()
 				rSpans := traces.ResourceSpans().AppendEmpty()
-				rSpans.Resource().Attributes().
-					InsertString("k8s.namespace.name", "namespace-1")
+				rSpans.Resource().Attributes().UpsertString("k8s.namespace.name", "namespace-1")
 				return traces
 			},
 			fromAttr:      "k8s.namespace.name",

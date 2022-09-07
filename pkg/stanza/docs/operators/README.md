@@ -9,7 +9,6 @@ For instance, a user may read lines from a file using the `file_input` operator.
 Inputs:
 - [file_input](./file_input.md)
 - [journald_input](./journald_input.md)
-- [k8s_event_input](./k8s_event_input.md)
 - [stdin](./stdin.md)
 - [syslog_input](./syslog_input.md)
 - [tcp_input](./tcp_input.md)

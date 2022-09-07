@@ -316,13 +316,22 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if !found {
 				continue
 			}
-			attrs.Update(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if !found {
+				continue
+			}
+			av.CopyTo(val)
 		case UPSERT:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {
 				continue
 			}
-			attrs.Upsert(action.Key, av)
+			val, found := attrs.Get(action.Key)
+			if found {
+				av.CopyTo(val)
+			} else {
+				av.CopyTo(attrs.UpsertEmpty(action.Key))
+			}
 		case HASH:
 			hashAttribute(action.Key, attrs)
 
@@ -427,7 +436,7 @@ func extractAttributes(action attributeAction, attrs pcommon.Map) {
 }
 
 func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
-	keys := []string{}
+	var keys []string
 
 	if regexp == nil {
 		return keys

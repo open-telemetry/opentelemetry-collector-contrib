@@ -430,7 +430,7 @@ func getSpanWithAttributes(key string, value pcommon.Value) ptrace.Span {
 func initSpanWithAttributes(key string, value pcommon.Value, dest ptrace.Span) {
 	dest.SetName("spanName")
 	dest.Attributes().Clear()
-	dest.Attributes().Insert(key, value)
+	value.CopyTo(dest.Attributes().UpsertEmpty(key))
 }
 
 // Test_hash ensures that the hash function supports different key lengths even if in
@@ -461,10 +461,10 @@ func genRandomTestData(numBatches, numTracesPerBatch int, serviceName string, re
 		traces.ResourceSpans().EnsureCapacity(resourceSpanCount)
 		for j := 0; j < resourceSpanCount; j++ {
 			rs := traces.ResourceSpans().AppendEmpty()
-			rs.Resource().Attributes().InsertString("service.name", serviceName)
-			rs.Resource().Attributes().InsertBool("bool", true)
-			rs.Resource().Attributes().InsertString("string", "yes")
-			rs.Resource().Attributes().InsertInt("int64", 10000000)
+			rs.Resource().Attributes().UpsertString("service.name", serviceName)
+			rs.Resource().Attributes().UpsertBool("bool", true)
+			rs.Resource().Attributes().UpsertString("string", "yes")
+			rs.Resource().Attributes().UpsertInt("int64", 10000000)
 			ils := rs.ScopeSpans().AppendEmpty()
 			ils.Spans().EnsureCapacity(numTracesPerBatch)
 

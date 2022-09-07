@@ -83,7 +83,7 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
-			resourceAttrsForDimensions.Insert(k, v)
+			v.CopyTo(resourceAttrsForDimensions.UpsertEmpty(k))
 		}
 		return true
 	})

@@ -225,7 +225,7 @@ func expandRange(min, max int) []string {
 		min, max = max, min
 	}
 
-	rangeOfStrings := []string{}
+	var rangeOfStrings []string
 	for i := min; i <= max; i++ {
 		rangeOfStrings = append(rangeOfStrings, strconv.Itoa(i))
 	}

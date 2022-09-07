@@ -246,21 +246,13 @@ func accessDroppedAttributesCount() tql.StandardGetSetter {
 func accessFlags() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(plog.LogRecord).FlagsStruct().AsRaw())
+			return int64(ctx.GetItem().(plog.LogRecord).FlagsStruct())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				setFlagsValue(ctx.GetItem().(plog.LogRecord).FlagsStruct(), i)
+				ctx.GetItem().(plog.LogRecord).SetFlagsStruct(plog.LogRecordFlags(i))
 			}
 		},
-	}
-}
-
-func setFlagsValue(flags plog.LogRecordFlags, value int64) {
-	if value&1 != 0 {
-		flags.SetIsSampled(true)
-	} else {
-		flags.SetIsSampled(false)
 	}
 }
 

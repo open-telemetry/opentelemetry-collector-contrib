@@ -143,9 +143,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []string{"new"},
 			modified: func(resource pcommon.Resource) {
-				newArrStr := pcommon.NewValueSlice()
-				newArrStr.SliceVal().AppendEmpty().SetStringVal("new")
-				resource.Attributes().Upsert("arr_str", newArrStr)
+				resource.Attributes().UpsertEmptySlice("arr_str").AppendEmpty().SetStringVal("new")
 			},
 		},
 		{
@@ -162,9 +160,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []bool{false},
 			modified: func(resource pcommon.Resource) {
-				newArrBool := pcommon.NewValueSlice()
-				newArrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-				resource.Attributes().Upsert("arr_bool", newArrBool)
+				resource.Attributes().UpsertEmptySlice("arr_bool").AppendEmpty().SetBoolVal(false)
 			},
 		},
 		{
@@ -181,9 +177,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []int64{20},
 			modified: func(resource pcommon.Resource) {
-				newArrInt := pcommon.NewValueSlice()
-				newArrInt.SliceVal().AppendEmpty().SetIntVal(20)
-				resource.Attributes().Upsert("arr_int", newArrInt)
+				resource.Attributes().UpsertEmptySlice("arr_int").AppendEmpty().SetIntVal(20)
 			},
 		},
 		{
@@ -200,9 +194,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: []float64{2.0},
 			modified: func(resource pcommon.Resource) {
-				newArrFloat := pcommon.NewValueSlice()
-				newArrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-				resource.Attributes().Upsert("arr_float", newArrFloat)
+				resource.Attributes().UpsertEmptySlice("arr_float").AppendEmpty().SetDoubleVal(2.0)
 			},
 		},
 		{
@@ -219,9 +211,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(resource pcommon.Resource) {
-				newArrBytes := pcommon.NewValueSlice()
-				newArrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
-				resource.Attributes().Upsert("arr_bytes", newArrBytes)
+				resource.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
 			},
 		},
 		{
@@ -266,30 +256,25 @@ func createResource() pcommon.Resource {
 	resource.Attributes().UpsertDouble("double", 1.2)
 	resource.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
 
-	arrStr := pcommon.NewValueSlice()
-	arrStr.SliceVal().AppendEmpty().SetStringVal("one")
-	arrStr.SliceVal().AppendEmpty().SetStringVal("two")
-	resource.Attributes().Upsert("arr_str", arrStr)
+	arrStr := resource.Attributes().UpsertEmptySlice("arr_str")
+	arrStr.AppendEmpty().SetStringVal("one")
+	arrStr.AppendEmpty().SetStringVal("two")
 
-	arrBool := pcommon.NewValueSlice()
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(true)
-	arrBool.SliceVal().AppendEmpty().SetBoolVal(false)
-	resource.Attributes().Upsert("arr_bool", arrBool)
+	arrBool := resource.Attributes().UpsertEmptySlice("arr_bool")
+	arrBool.AppendEmpty().SetBoolVal(true)
+	arrBool.AppendEmpty().SetBoolVal(false)
 
-	arrInt := pcommon.NewValueSlice()
-	arrInt.SliceVal().AppendEmpty().SetIntVal(2)
-	arrInt.SliceVal().AppendEmpty().SetIntVal(3)
-	resource.Attributes().Upsert("arr_int", arrInt)
+	arrInt := resource.Attributes().UpsertEmptySlice("arr_int")
+	arrInt.AppendEmpty().SetIntVal(2)
+	arrInt.AppendEmpty().SetIntVal(3)
 
-	arrFloat := pcommon.NewValueSlice()
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(1.0)
-	arrFloat.SliceVal().AppendEmpty().SetDoubleVal(2.0)
-	resource.Attributes().Upsert("arr_float", arrFloat)
+	arrFloat := resource.Attributes().UpsertEmptySlice("arr_float")
+	arrFloat.AppendEmpty().SetDoubleVal(1.0)
+	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
-	arrBytes := pcommon.NewValueSlice()
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
-	resource.Attributes().Upsert("arr_bytes", arrBytes)
+	arrBytes := resource.Attributes().UpsertEmptySlice("arr_bytes")
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
+	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
 
 	resource.SetDroppedAttributesCount(10)
 

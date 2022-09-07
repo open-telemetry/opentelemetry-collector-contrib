@@ -65,7 +65,7 @@ func TestAndEvaluatorSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().InsertString("attribute_name", "attribute_value")
+	span.Attributes().UpsertString("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
@@ -93,7 +93,7 @@ func TestAndEvaluatorStringInvertSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().InsertString("attribute_name", "attribute_value")
+	span.Attributes().UpsertString("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
@@ -121,7 +121,7 @@ func TestAndEvaluatorStringInvertNotSampled(t *testing.T) {
 	ils := rs.ScopeSpans().AppendEmpty()
 
 	span := ils.Spans().AppendEmpty()
-	span.Attributes().InsertString("attribute_name", "attribute_value")
+	span.Attributes().UpsertString("attribute_name", "attribute_value")
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
 	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))

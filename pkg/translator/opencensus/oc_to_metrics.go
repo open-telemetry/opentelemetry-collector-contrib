@@ -221,7 +221,7 @@ func fillAttributesMap(ocLabelsKeys []*ocmetrics.LabelKey, ocLabelValues []*ocme
 		if !ocLabelValues[i].GetHasValue() {
 			continue
 		}
-		attributesMap.InsertString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
+		attributesMap.UpsertString(ocLabelsKeys[i].Key, ocLabelValues[i].Value)
 	}
 }
 

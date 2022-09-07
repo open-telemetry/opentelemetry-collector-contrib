@@ -73,23 +73,17 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
 
 	attrs := log.Attributes()
-	attrs.InsertString("app", "server")
-	attrs.InsertDouble("instance_num", 1)
+	attrs.UpsertString("app", "server")
+	attrs.UpsertDouble("instance_num", 1)
 
 	// nested body map
-	attVal := pcommon.NewValueMap()
-	attNestedVal := pcommon.NewValueMap()
-
-	attMap := attVal.MapVal()
-	attMap.InsertDouble("23", 45)
-	attMap.InsertString("foo", "bar")
-	attMap.InsertString("message", "hello there")
-	attNestedMap := attNestedVal.MapVal()
-	attNestedMap.InsertString("string", "v1")
-	attNestedMap.InsertDouble("number", 499)
-	attMap.Insert("nested", attNestedVal)
-	attVal.CopyTo(log.Body())
-
+	attMap := log.Body().SetEmptyMapVal()
+	attMap.UpsertDouble("23", 45)
+	attMap.UpsertString("foo", "bar")
+	attMap.UpsertString("message", "hello there")
+	attNestedMap := attMap.UpsertEmptyMap("nested")
+	attNestedMap.UpsertString("string", "v1")
+	attNestedMap.UpsertDouble("number", 499)
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -99,10 +93,10 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -111,10 +105,10 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 

@@ -409,7 +409,7 @@ func TestRPCClientSpanToRemoteDependencyData(t *testing.T) {
 	// test RPC error using the new rpc.grpc.status_code attribute
 	span.Status().SetCode(ptrace.StatusCodeError)
 	span.Status().SetMessage("Resource exhausted")
-	spanAttributes.InsertInt(attributeRPCGRPCStatusCode, 8)
+	spanAttributes.UpsertInt(attributeRPCGRPCStatusCode, 8)
 
 	envelope, _ = spanToEnvelope(defaultResource, defaultInstrumentationLibrary, span, zap.NewNop())
 	data = envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
@@ -846,9 +846,9 @@ func getDefaultInternalSpan() ptrace.Span {
 // Returns a default Resource
 func getResource() pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().InsertString(conventions.AttributeServiceName, defaultServiceName)
-	r.Attributes().InsertString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	r.Attributes().InsertString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	r.Attributes().UpsertString(conventions.AttributeServiceName, defaultServiceName)
+	r.Attributes().UpsertString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
+	r.Attributes().UpsertString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
 	return r
 }
 
@@ -864,7 +864,7 @@ func getScope() pcommon.InstrumentationScope {
 func appendToAttributeMap(attributeMap pcommon.Map, maps ...pcommon.Map) {
 	for _, m := range maps {
 		m.Range(func(k string, v pcommon.Value) bool {
-			attributeMap.Upsert(k, v)
+			v.CopyTo(attributeMap.UpsertEmpty(k))
 			return true
 		})
 	}

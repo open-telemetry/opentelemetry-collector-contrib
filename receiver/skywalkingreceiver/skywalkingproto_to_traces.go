@@ -66,9 +66,9 @@ func SkywalkingToTraces(segment *agentV3.SegmentObject) ptrace.Traces {
 		swTagsToInternalResource(span, rs)
 	}
 
-	rs.Attributes().InsertString(conventions.AttributeServiceName, segment.GetService())
-	rs.Attributes().InsertString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
-	rs.Attributes().InsertString(AttributeSkywalkingTraceID, segment.GetTraceId())
+	rs.Attributes().UpsertString(conventions.AttributeServiceName, segment.GetService())
+	rs.Attributes().UpsertString(conventions.AttributeServiceInstanceID, segment.GetServiceInstance())
+	rs.Attributes().UpsertString(AttributeSkywalkingTraceID, segment.GetTraceId())
 
 	il := resourceSpan.ScopeSpans().AppendEmpty()
 	swSpansToSpanSlice(segment.GetTraceId(), segment.GetTraceSegmentId(), swSpans, il.Spans())
@@ -134,7 +134,7 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 		attrs.Clear()
 	}
 
-	attrs.InsertString(AttributeSkywalkingSegmentID, segmentID)
+	attrs.UpsertString(AttributeSkywalkingSegmentID, segmentID)
 	setSwSpanIDToAttributes(span, attrs)
 	setInternalSpanStatus(span, dest.Status())
 
@@ -221,9 +221,9 @@ func setInternalSpanStatus(span *agentV3.SpanObject, dest ptrace.SpanStatus) {
 }
 
 func setSwSpanIDToAttributes(span *agentV3.SpanObject, dest pcommon.Map) {
-	dest.InsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
+	dest.UpsertInt(AttributeSkywalkingSpanID, int64(span.GetSpanId()))
 	if span.ParentSpanId != -1 {
-		dest.InsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
+		dest.UpsertInt(AttributeSkywalkingParentSpanID, int64(span.GetParentSpanId()))
 	}
 }
 
@@ -277,7 +277,7 @@ func swTraceIDToTraceID(traceID string) pcommon.TraceID {
 	if len(traceID) <= 36 { // 36: uuid length (rfc4122)
 		uid, err := uuid.Parse(traceID)
 		if err != nil {
-			return pcommon.InvalidTraceID()
+			return pcommon.EmptyTraceID
 		}
 		return pcommon.NewTraceID(uid)
 	}
@@ -290,7 +290,7 @@ func segmentIDToSpanID(segmentID string, spanID uint32) pcommon.SpanID {
 	// 56a5e1c519ae4c76a2b8b11d92cead7f: from ParentTraceSegmentId
 
 	if len(segmentID) < 32 {
-		return pcommon.InvalidSpanID()
+		return pcommon.EmptySpanID
 	}
 	return pcommon.NewSpanID(uuidTo8Bytes(swStringToUUID(segmentID, spanID)))
 }

@@ -26,9 +26,9 @@ import (
 
 func Test_truncateAll(t *testing.T) {
 	input := pcommon.NewMap()
-	input.InsertString("test", "hello world")
-	input.InsertInt("test2", 3)
-	input.InsertBool("test3", true)
+	input.UpsertString("test", "hello world")
+	input.UpsertInt("test2", 3)
+	input.UpsertBool("test3", true)
 
 	target := &tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
@@ -52,9 +52,9 @@ func Test_truncateAll(t *testing.T) {
 			limit:  1,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "h")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.UpsertString("test", "h")
+				expectedMap.UpsertInt("test2", 3)
+				expectedMap.UpsertBool("test3", true)
 			},
 		},
 		{
@@ -63,9 +63,9 @@ func Test_truncateAll(t *testing.T) {
 			limit:  0,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.UpsertString("test", "")
+				expectedMap.UpsertInt("test2", 3)
+				expectedMap.UpsertBool("test3", true)
 			},
 		},
 		{
@@ -74,9 +74,9 @@ func Test_truncateAll(t *testing.T) {
 			limit:  100,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.UpsertString("test", "hello world")
+				expectedMap.UpsertInt("test2", 3)
+				expectedMap.UpsertBool("test3", true)
 			},
 		},
 		{
@@ -85,9 +85,9 @@ func Test_truncateAll(t *testing.T) {
 			limit:  11,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.InsertString("test", "hello world")
-				expectedMap.InsertInt("test2", 3)
-				expectedMap.InsertBool("test3", true)
+				expectedMap.UpsertString("test", "hello world")
+				expectedMap.UpsertInt("test2", 3)
+				expectedMap.UpsertBool("test3", true)
 			},
 		},
 	}
