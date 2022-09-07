@@ -22,10 +22,21 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-func Limit(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
+func Limit(target tql.GetSetter, limit int64, priorityKeys []string) (tql.ExprFunc, error) {
 	if limit < 0 {
 		return nil, fmt.Errorf("invalid limit for limit function, %d cannot be negative", limit)
 	}
+	if limit < int64(len(priorityKeys)) {
+		return nil, fmt.Errorf(
+			"invalid limit for limit function, %d cannot be less than number of priority attributes %d",
+			limit, len(priorityKeys),
+		)
+	}
+	keep := make(map[string]struct{}, len(priorityKeys))
+	for _, key := range priorityKeys {
+		keep[key] = struct{}{}
+	}
+
 	return func(ctx tql.TransformContext) interface{} {
 		val := target.Get(ctx)
 		if val == nil {
@@ -37,18 +48,23 @@ func Limit(target tql.GetSetter, limit int64) (tql.ExprFunc, error) {
 				return nil
 			}
 
-			updated := pcommon.NewMap()
-			updated.EnsureCapacity(attrs.Len())
 			count := int64(0)
-			attrs.Range(func(key string, val pcommon.Value) bool {
-				if count < limit {
-					val.CopyTo(updated.UpsertEmpty(key))
+			for _, key := range priorityKeys {
+				if _, ok := attrs.Get(key); ok {
 					count++
-					return true
 				}
-				return false
+			}
+
+			attrs.RemoveIf(func(key string, value pcommon.Value) bool {
+				if _, ok := keep[key]; ok {
+					return false
+				}
+				if count < limit {
+					count++
+					return false
+				}
+				return true
 			})
-			target.Set(ctx, updated)
 			// TODO: Write log when limiting is performed
 			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730
 		}

@@ -101,18 +101,24 @@ Examples:
 
 ## limit
 
-`limit(target, limit)`
+`limit(target, limit, priority_keys)`
 
 The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer. 
+`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`priority_keys` is a list of strings of attribute keys that won't be dropped during limiting.
 
-The map will be mutated such that the number of items does not exceed the limit. Which items are dropped is random.
+The number of priority keys must be less than the supplied `limit`.
+
+The map will be mutated such that the number of items does not exceed the limit.
+The map is not copied or reallocated.
+
+Which items are dropped is random, provide `priority_keys` to preserve required keys.
 
 Examples:
 
 - `limit(attributes, 100)`
-- `limit(resource.attributes, 50)`
+- `limit(resource.attributes, 50, "http.host", "http.method")`
 
 ## replace_all_matches
 
