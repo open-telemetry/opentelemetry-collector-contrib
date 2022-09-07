@@ -103,9 +103,8 @@ func newPostgreSQLScraper(
 
 type dbRetrieval struct {
 	sync.RWMutex
-	activityMap map[databaseName]int64
-	dbSizeMap   map[databaseName]int64
-	dbStats     map[databaseName]databaseStats
+	dbSizeMap map[databaseName]int64
+	dbStats   map[databaseName]databaseStats
 }
 
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
@@ -131,9 +130,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 
 	var errs scrapererror.ScrapeErrors
 	r := &dbRetrieval{
-		activityMap: make(map[databaseName]int64),
-		dbSizeMap:   make(map[databaseName]int64),
-		dbStats:     make(map[databaseName]databaseStats),
+		dbSizeMap: make(map[databaseName]int64),
+		dbStats:   make(map[databaseName]databaseStats),
 	}
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
@@ -147,7 +145,11 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		defer dbClient.Close()
 		numTables := p.collectTables(ctx, now, dbClient, database, &errs)
 
-		p.recordDatabase(now, database, r, numTables)
+		numBackends, err := dbClient.getBackends(ctx, []string{database})
+		if err != nil {
+			errs.AddPartial(1, err)
+		}
+		p.recordDatabase(now, database, r, numTables, numBackends[databaseName(database)])
 
 		if p.emitMetricsWithResourceAttributes {
 			p.collectIndexes(ctx, now, dbClient, database, &errs)
@@ -174,21 +176,18 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 ) {
 	wg := &sync.WaitGroup{}
 
-	wg.Add(3)
-	go p.retrieveBackends(ctx, wg, listClient, databases, r, errs)
+	wg.Add(2)
 	go p.retrieveDatabaseSize(ctx, wg, listClient, databases, r, errs)
 	go p.retrieveDatabaseStats(ctx, wg, listClient, databases, r, errs)
 
 	wg.Wait()
 }
 
-func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
+func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables, numBackends int64) {
 	dbName := databaseName(db)
 	if p.emitMetricsWithResourceAttributes {
 		p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
-		if activeConnections, ok := r.activityMap[dbName]; ok {
-			p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
-		}
+		p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, numBackends)
 		if size, ok := r.dbSizeMap[dbName]; ok {
 			p.mb.RecordPostgresqlDbSizeDataPointWithoutDatabase(now, size)
 		}
@@ -198,9 +197,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		}
 		p.mb.EmitForResource(metadata.WithPostgresqlDatabaseName(db))
 	} else {
-		if activeConnections, ok := r.activityMap[dbName]; ok {
-			p.mb.RecordPostgresqlBackendsDataPoint(now, activeConnections, db)
-		}
+		p.mb.RecordPostgresqlBackendsDataPoint(now, numBackends, db)
 		if size, ok := r.dbSizeMap[dbName]; ok {
 			p.mb.RecordPostgresqlDbSizeDataPoint(now, size, db)
 		}
@@ -412,24 +409,5 @@ func (p *postgreSQLScraper) retrieveDatabaseSize(
 	}
 	r.Lock()
 	r.dbSizeMap = databaseSizeMetrics
-	r.Unlock()
-}
-
-func (p *postgreSQLScraper) retrieveBackends(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	client client,
-	databases []string,
-	r *dbRetrieval,
-	errors *scrapererror.ScrapeErrors,
-) {
-	defer wg.Done()
-	activityByDB, err := client.getBackends(ctx, databases)
-	if err != nil {
-		errors.AddPartial(1, err)
-		return
-	}
-	r.Lock()
-	r.activityMap = activityByDB
 	r.Unlock()
 }

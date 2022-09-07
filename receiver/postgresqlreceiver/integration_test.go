@@ -57,8 +57,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{"otel"}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
@@ -71,8 +71,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{"otel", "otel2"}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
@@ -85,8 +85,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},
@@ -103,8 +103,8 @@ func TestPostgreSQLIntegration(t *testing.T) {
 				cfg := f.CreateDefaultConfig().(*Config)
 				cfg.Endpoint = net.JoinHostPort(hostname, "15432")
 				cfg.Databases = []string{}
-				cfg.Username = "otel"
-				cfg.Password = "otel"
+				cfg.Username = "otelu"
+				cfg.Password = "otelp"
 				cfg.Insecure = true
 				return cfg
 			},

@@ -226,20 +226,16 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 
 		commitsAndRollbacks := map[databaseName]databaseStats{}
 		dbSize := map[databaseName]int64{}
-		backends := map[databaseName]int64{}
-
 		for idx, db := range databases {
 			commitsAndRollbacks[databaseName(db)] = databaseStats{
 				transactionCommitted: int64(idx + 1),
 				transactionRollback:  int64(idx + 2),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
-			backends[databaseName(db)] = int64(idx + 3)
 		}
 
 		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
-		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{
 			checkpointsReq:       1,
 			checkpointsScheduled: 2,
@@ -323,6 +319,11 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 
 		m.On("getDatabaseTableMetrics", mock.Anything, database).Return(tableMetrics, nil)
 		m.On("getBlocksReadByTable", mock.Anything, database).Return(blocksMetrics, nil)
+
+		backends := map[databaseName]int64{
+			databaseName(database): 3,
+		}
+		m.On("getBackends", []string{database}).Return(backends, nil)
 
 		index1 := fmt.Sprintf("%s_test1_pkey", database)
 		index2 := fmt.Sprintf("%s_test2_pkey", database)
