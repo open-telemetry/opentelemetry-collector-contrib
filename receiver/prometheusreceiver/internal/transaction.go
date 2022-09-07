@@ -17,12 +17,14 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"sort"
 	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -144,9 +146,13 @@ func copyToLowerBytes(dst []byte, src []byte) {
 }
 
 func (t *transaction) initTransaction(labels labels.Labels) error {
-	metadataCache, err := getMetadataCache(t.ctx)
-	if err != nil {
-		return err
+	target, ok := scrape.TargetFromContext(t.ctx)
+	if !ok {
+		return errors.New("unable to find target in context")
+	}
+	metaStore, ok := scrape.MetricMetadataStoreFromContext(t.ctx)
+	if !ok {
+		return errors.New("unable to find MetricMetadataStore in context")
 	}
 
 	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
@@ -157,8 +163,8 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		t.job = job
 		t.instance = instance
 	}
-	t.nodeResource = CreateResource(job, instance, metadataCache.SharedLabels())
-	t.metricBuilder = newMetricBuilder(metadataCache, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger)
+	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
+	t.metricBuilder = newMetricBuilder(metaStore, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger)
 	t.isNew = false
 	return nil
 }
