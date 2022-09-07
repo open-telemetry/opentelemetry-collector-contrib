@@ -16,6 +16,7 @@ package internal
 
 import (
 	"errors"
+	"regexp"
 	"testing"
 
 	"github.com/prometheus/common/model"
@@ -29,8 +30,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func runBuilderStartTimeTests(t *testing.T, tests []buildTestData,
-	startTimeMetricRegex string, expectedBuilderStartTime float64) {
+func runBuilderStartTimeTests(t *testing.T, tests []buildTestData, startTimeMetricRegex *regexp.Regexp, expectedBuilderStartTime float64) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mc := newMockMetadataCache(testMetadata)
@@ -102,8 +102,8 @@ func Test_startTimeMetricMatch_pdata(t *testing.T) {
 		},
 	}
 
-	runBuilderStartTimeTests(t, matchTests, "^(.+_)*process_start_time_seconds$", matchBuilderStartTime)
-	runBuilderStartTimeTests(t, nomatchTests, "^(.+_)*process_start_time_seconds$", defaultBuilderStartTime)
+	runBuilderStartTimeTests(t, matchTests, regexp.MustCompile("^(.+_)*process_start_time_seconds$"), matchBuilderStartTime)
+	runBuilderStartTimeTests(t, nomatchTests, regexp.MustCompile("^(.+_)*process_start_time_seconds$"), defaultBuilderStartTime)
 }
 
 func TestGetBoundary(t *testing.T) {
@@ -399,7 +399,7 @@ func runBuilderTests(t *testing.T, tests []buildTestData) {
 			mc := newMockMetadataCache(testMetadata)
 			st := startTs
 			for i, page := range tt.inputs {
-				b := newMetricBuilder(mc, true, "", zap.NewNop())
+				b := newMetricBuilder(mc, true, nil, zap.NewNop())
 				b.startTime = defaultBuilderStartTime // set to a non-zero value
 				for _, pt := range page.pts {
 					// set ts for testing
@@ -1105,7 +1105,7 @@ func Test_OTLPMetricBuilder_summary(t *testing.T) {
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 	mc := newMockMetadataCache(testMetadata)
-	mb := newMetricBuilder(mc, true, "", zap.NewNop())
+	mb := newMetricBuilder(mc, true, nil, zap.NewNop())
 
 	dupLabels := labels.Labels{
 		{Name: "__name__", Value: "test"},
@@ -1124,7 +1124,7 @@ func TestOTLPMetricBuilderDuplicateLabelKeysAreRejected(t *testing.T) {
 
 func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	t.Run("empty-metric-name", func(t *testing.T) {
-		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop())
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(labels.FromStrings("a", "b"), startTs, 123); !errors.Is(err, errMetricNameNotFound) {
 			t.Error("expecting errMetricNameNotFound error, but get nil")
@@ -1137,7 +1137,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("histogram-datapoint-no-bucket-label", func(t *testing.T) {
-		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop())
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("hist_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyLeLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
@@ -1145,7 +1145,7 @@ func Test_OTLPMetricBuilder_baddata(t *testing.T) {
 	})
 
 	t.Run("summary-datapoint-no-quantile-label", func(t *testing.T) {
-		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, "", zap.NewNop())
+		b := newMetricBuilder(newMockMetadataCache(testMetadata), true, nil, zap.NewNop())
 		b.startTime = 1.0 // set to a non-zero value
 		if err := b.AddDataPoint(createLabels("summary_test", "k", "v"), startTs, 123); !errors.Is(err, errEmptyQuantileLabel) {
 			t.Error("expecting errEmptyBoundaryLabel error, but get nil")
