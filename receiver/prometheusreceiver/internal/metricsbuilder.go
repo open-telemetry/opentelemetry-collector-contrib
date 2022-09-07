@@ -97,7 +97,6 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricDataType, 
 
 type metricBuilder struct {
 	families             map[string]*metricFamily
-	hasData              bool
 	mc                   MetadataCache
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
@@ -167,8 +166,6 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 		b.startTime = v
 	}
 
-	b.hasData = true
-
 	curMF, ok := b.families[metricName]
 	if !ok {
 		familyName := normalizeMetricName(metricName)
@@ -186,7 +183,7 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 // appendMetrics appends all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
 func (b *metricBuilder) appendMetrics(metrics pmetric.MetricSlice) error {
-	if !b.hasData {
+	if len(b.families) == 0 {
 		return errNoDataToBuild
 	}
 
