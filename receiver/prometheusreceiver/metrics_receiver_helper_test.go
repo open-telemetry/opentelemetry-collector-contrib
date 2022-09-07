@@ -367,8 +367,7 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 	})
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator,
-	dataPointExpectations []dataPointExpectation) testExpectation {
+func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
 		for _, m := range allMetrics {
@@ -377,17 +376,17 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 			}
 			metricTypeExpectations(t, m)
 			for i, de := range dataPointExpectations {
-				for _, npc := range de.numberPointComparator {
-					switch m.DataType() {
-					case pmetric.MetricDataTypeGauge:
+				switch m.DataType() {
+				case pmetric.MetricDataTypeGauge:
+					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
 						npc(t, m.Gauge().DataPoints().At(i))
-					case pmetric.MetricDataTypeSum:
+					}
+				case pmetric.MetricDataTypeSum:
+					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
 						npc(t, m.Sum().DataPoints().At(i))
 					}
-				}
-				switch m.DataType() {
 				case pmetric.MetricDataTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
 						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
