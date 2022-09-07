@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
+	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
@@ -213,6 +214,11 @@ func (t *transaction) Commit() error {
 
 func (t *transaction) Rollback() error {
 	return nil
+}
+
+func (t *transaction) UpdateMetadata(ref storage.SeriesRef, l labels.Labels, m metadata.Metadata) (storage.SeriesRef, error) {
+	//TODO: implement this func
+	return 0, nil
 }
 
 func (t *transaction) AddTargetInfo(labels labels.Labels) error {
