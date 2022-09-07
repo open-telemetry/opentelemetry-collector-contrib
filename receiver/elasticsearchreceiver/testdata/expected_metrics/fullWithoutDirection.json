@@ -1002,7 +1002,7 @@
                            }
                         ]
                      },
-                     "unit": "By"
+                     "unit": "KiBy"
                   },
                   {
                      "description": "The total number of kilobytes written across all file stores for this node.",
@@ -1017,7 +1017,7 @@
                            }
                         ]
                      },
-                     "unit": "By"
+                     "unit": "KiBy"
                   },
                   {
                      "description": "The number of documents on the node.",
