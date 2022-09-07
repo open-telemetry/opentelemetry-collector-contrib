@@ -915,7 +915,6 @@ func Test_OTLPMetricBuilder_histogram(t *testing.T) {
 				hist0.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				pt0 := hist0.DataPoints().AppendEmpty()
 				pt0.SetCount(3)
-				pt0.SetSum(0)
 				pt0.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
 				pt0.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1, 1}))
 				pt0.SetTimestamp(startTsNanos)

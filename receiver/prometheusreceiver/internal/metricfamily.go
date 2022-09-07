@@ -130,7 +130,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetCount(uint64(mg.count))
-		point.SetSum(mg.sum)
+		if mg.hasSum {
+			point.SetSum(mg.sum)
+		}
 	}
 
 	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
@@ -171,7 +173,9 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	if pointIsStale {
 		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
-		point.SetSum(mg.sum)
+		if mg.hasSum {
+			point.SetSum(mg.sum)
+		}
 		point.SetCount(uint64(mg.count))
 	}
 
