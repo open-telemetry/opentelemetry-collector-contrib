@@ -50,6 +50,9 @@ func Test_NewPRWExporter(t *testing.T) {
 		Namespace:          "",
 		ExternalLabels:     map[string]string{},
 		HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ""},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -141,6 +144,9 @@ func Test_Start(t *testing.T) {
 		RetrySettings:    exporterhelper.RetrySettings{},
 		Namespace:        "",
 		ExternalLabels:   map[string]string{},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -257,7 +263,7 @@ func Test_export(t *testing.T) {
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
-		unzipped := []byte{}
+		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
 		require.NoError(t, err)
@@ -636,6 +642,9 @@ func Test_PushMetrics(t *testing.T) {
 							WriteBufferSize: 512 * 1024,
 						},
 						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+						TargetInfo: &TargetInfo{
+							Enabled: true,
+						},
 					}
 
 					if useWAL {
@@ -817,6 +826,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		WAL: &WALConfig{
 			Directory:  tempDir,
 			BufferSize: 1,
+		},
+		TargetInfo: &TargetInfo{
+			Enabled: true,
 		},
 	}
 

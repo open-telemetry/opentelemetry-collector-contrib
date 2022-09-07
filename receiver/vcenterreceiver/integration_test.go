@@ -68,9 +68,8 @@ func TestEndtoEnd_ESX(t *testing.T) {
 		// the vcsim will auto assign the VM to one of the listed hosts, so this is a way to ignore the host.name for those vm metrics
 		// please see #10129
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-			if _, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
-				metrics.ResourceMetrics().At(i).Resource().Attributes().Remove("vcenter.host.name")
-				metrics.ResourceMetrics().At(i).Resource().Attributes().InsertString("vcenter.host.name", "DC0_C0_H0")
+			if val, ok := metrics.ResourceMetrics().At(i).Resource().Attributes().Get("vcenter.host.name"); ok {
+				val.SetStringVal("DC0_C0_H0")
 			}
 		}
 

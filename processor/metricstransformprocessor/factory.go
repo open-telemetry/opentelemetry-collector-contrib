@@ -66,7 +66,7 @@ func createMetricsProcessor(
 	}
 	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
 
-	return processorhelper.NewMetricsProcessorWithCreateSettings(
+	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,

@@ -23,53 +23,62 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/internal/tqlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
 )
 
-type LogTransformContext struct {
-	Log                  plog.LogRecord
-	InstrumentationScope pcommon.InstrumentationScope
-	Resource             pcommon.Resource
+type transformContext struct {
+	logRecord            plog.LogRecord
+	instrumentationScope pcommon.InstrumentationScope
+	resource             pcommon.Resource
 }
 
-func (ctx LogTransformContext) GetItem() interface{} {
-	return ctx.Log
+func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) tql.TransformContext {
+	return transformContext{
+		logRecord:            logRecord,
+		instrumentationScope: instrumentationScope,
+		resource:             resource,
+	}
 }
 
-func (ctx LogTransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
-	return ctx.InstrumentationScope
+func (ctx transformContext) GetItem() interface{} {
+	return ctx.logRecord
 }
 
-func (ctx LogTransformContext) GetResource() pcommon.Resource {
-	return ctx.Resource
+func (ctx transformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
+	return ctx.instrumentationScope
+}
+
+func (ctx transformContext) GetResource() pcommon.Resource {
+	return ctx.resource
 }
 
 var symbolTable = map[tql.EnumSymbol]tql.Enum{
-	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(plog.SeverityNumberUNDEFINED),
-	"SEVERITY_NUMBER_TRACE":       tql.Enum(plog.SeverityNumberTRACE),
-	"SEVERITY_NUMBER_TRACE2":      tql.Enum(plog.SeverityNumberTRACE2),
-	"SEVERITY_NUMBER_TRACE3":      tql.Enum(plog.SeverityNumberTRACE3),
-	"SEVERITY_NUMBER_TRACE4":      tql.Enum(plog.SeverityNumberTRACE4),
-	"SEVERITY_NUMBER_DEBUG":       tql.Enum(plog.SeverityNumberDEBUG),
-	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(plog.SeverityNumberDEBUG2),
-	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(plog.SeverityNumberDEBUG3),
-	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(plog.SeverityNumberDEBUG4),
-	"SEVERITY_NUMBER_INFO":        tql.Enum(plog.SeverityNumberINFO),
-	"SEVERITY_NUMBER_INFO2":       tql.Enum(plog.SeverityNumberINFO2),
-	"SEVERITY_NUMBER_INFO3":       tql.Enum(plog.SeverityNumberINFO3),
-	"SEVERITY_NUMBER_INFO4":       tql.Enum(plog.SeverityNumberINFO4),
-	"SEVERITY_NUMBER_WARN":        tql.Enum(plog.SeverityNumberWARN),
-	"SEVERITY_NUMBER_WARN2":       tql.Enum(plog.SeverityNumberWARN2),
-	"SEVERITY_NUMBER_WARN3":       tql.Enum(plog.SeverityNumberWARN3),
-	"SEVERITY_NUMBER_WARN4":       tql.Enum(plog.SeverityNumberWARN4),
-	"SEVERITY_NUMBER_ERROR":       tql.Enum(plog.SeverityNumberERROR),
-	"SEVERITY_NUMBER_ERROR2":      tql.Enum(plog.SeverityNumberERROR2),
-	"SEVERITY_NUMBER_ERROR3":      tql.Enum(plog.SeverityNumberERROR3),
-	"SEVERITY_NUMBER_ERROR4":      tql.Enum(plog.SeverityNumberERROR4),
-	"SEVERITY_NUMBER_FATAL":       tql.Enum(plog.SeverityNumberFATAL),
-	"SEVERITY_NUMBER_FATAL2":      tql.Enum(plog.SeverityNumberFATAL2),
-	"SEVERITY_NUMBER_FATAL3":      tql.Enum(plog.SeverityNumberFATAL3),
-	"SEVERITY_NUMBER_FATAL4":      tql.Enum(plog.SeverityNumberFATAL4),
+	"SEVERITY_NUMBER_UNSPECIFIED": tql.Enum(plog.SeverityNumberUndefined),
+	"SEVERITY_NUMBER_TRACE":       tql.Enum(plog.SeverityNumberTrace),
+	"SEVERITY_NUMBER_TRACE2":      tql.Enum(plog.SeverityNumberTrace2),
+	"SEVERITY_NUMBER_TRACE3":      tql.Enum(plog.SeverityNumberTrace3),
+	"SEVERITY_NUMBER_TRACE4":      tql.Enum(plog.SeverityNumberTrace4),
+	"SEVERITY_NUMBER_DEBUG":       tql.Enum(plog.SeverityNumberDebug),
+	"SEVERITY_NUMBER_DEBUG2":      tql.Enum(plog.SeverityNumberDebug2),
+	"SEVERITY_NUMBER_DEBUG3":      tql.Enum(plog.SeverityNumberDebug3),
+	"SEVERITY_NUMBER_DEBUG4":      tql.Enum(plog.SeverityNumberDebug4),
+	"SEVERITY_NUMBER_INFO":        tql.Enum(plog.SeverityNumberInfo),
+	"SEVERITY_NUMBER_INFO2":       tql.Enum(plog.SeverityNumberInfo2),
+	"SEVERITY_NUMBER_INFO3":       tql.Enum(plog.SeverityNumberInfo3),
+	"SEVERITY_NUMBER_INFO4":       tql.Enum(plog.SeverityNumberInfo4),
+	"SEVERITY_NUMBER_WARN":        tql.Enum(plog.SeverityNumberWarn),
+	"SEVERITY_NUMBER_WARN2":       tql.Enum(plog.SeverityNumberWarn2),
+	"SEVERITY_NUMBER_WARN3":       tql.Enum(plog.SeverityNumberWarn3),
+	"SEVERITY_NUMBER_WARN4":       tql.Enum(plog.SeverityNumberWarn4),
+	"SEVERITY_NUMBER_ERROR":       tql.Enum(plog.SeverityNumberError),
+	"SEVERITY_NUMBER_ERROR2":      tql.Enum(plog.SeverityNumberError2),
+	"SEVERITY_NUMBER_ERROR3":      tql.Enum(plog.SeverityNumberError3),
+	"SEVERITY_NUMBER_ERROR4":      tql.Enum(plog.SeverityNumberError4),
+	"SEVERITY_NUMBER_FATAL":       tql.Enum(plog.SeverityNumberFatal),
+	"SEVERITY_NUMBER_FATAL2":      tql.Enum(plog.SeverityNumberFatal2),
+	"SEVERITY_NUMBER_FATAL3":      tql.Enum(plog.SeverityNumberFatal3),
+	"SEVERITY_NUMBER_FATAL4":      tql.Enum(plog.SeverityNumberFatal4),
 }
 
 func ParseEnum(val *tql.EnumSymbol) (*tql.Enum, error) {
@@ -92,26 +101,9 @@ func ParsePath(val *tql.Path) (tql.GetSetter, error) {
 func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	switch path[0].Name {
 	case "resource":
-		if len(path) == 1 {
-			return accessResource(), nil
-		}
-		if path[1].Name == "attributes" {
-			mapKey := path[1].MapKey
-			if mapKey == nil {
-				return accessResourceAttributes(), nil
-			}
-			return accessResourceAttributesKey(mapKey), nil
-		}
+		return tqlcommon.ResourcePathGetSetter(path[1:])
 	case "instrumentation_scope":
-		if len(path) == 1 {
-			return accessInstrumentationScope(), nil
-		}
-		switch path[1].Name {
-		case "name":
-			return accessInstrumentationScopeName(), nil
-		case "version":
-			return accessInstrumentationScopeVersion(), nil
-		}
+		return tqlcommon.ScopePathGetSetter(path[1:])
 	case "time_unix_nano":
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
@@ -149,84 +141,6 @@ func newPathGetSetter(path []tql.Field) (tql.GetSetter, error) {
 	}
 
 	return nil, fmt.Errorf("invalid path expression %v", path)
-}
-
-func accessResource() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newRes, ok := val.(pcommon.Resource); ok {
-				ctx.GetResource().Attributes().Clear()
-				newRes.CopyTo(ctx.GetResource())
-			}
-		},
-	}
-}
-
-func accessResourceAttributes() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetResource().Attributes()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetResource().Attributes().Clear()
-				attrs.CopyTo(ctx.GetResource().Attributes())
-			}
-		},
-	}
-}
-
-func accessResourceAttributesKey(mapKey *string) tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetResource().Attributes(), *mapKey)
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetResource().Attributes(), *mapKey, val)
-		},
-	}
-}
-
-func accessInstrumentationScope() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if newIl, ok := val.(pcommon.InstrumentationScope); ok {
-				newIl.CopyTo(ctx.GetInstrumentationScope())
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeName() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Name()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetName(str)
-			}
-		},
-	}
-}
-
-func accessInstrumentationScopeVersion() tql.StandardGetSetter {
-	return tql.StandardGetSetter{
-		Getter: func(ctx tql.TransformContext) interface{} {
-			return ctx.GetInstrumentationScope().Version()
-		},
-		Setter: func(ctx tql.TransformContext, val interface{}) {
-			if str, ok := val.(string); ok {
-				ctx.GetInstrumentationScope().SetVersion(str)
-			}
-		},
-	}
 }
 
 func accessTimeUnixNano() tql.StandardGetSetter {
@@ -284,10 +198,10 @@ func accessSeverityText() tql.StandardGetSetter {
 func accessBody() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return getValue(ctx.GetItem().(plog.LogRecord).Body())
+			return tqlcommon.GetValue(ctx.GetItem().(plog.LogRecord).Body())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setValue(ctx.GetItem().(plog.LogRecord).Body(), val)
+			tqlcommon.SetValue(ctx.GetItem().(plog.LogRecord).Body(), val)
 		},
 	}
 }
@@ -299,7 +213,6 @@ func accessAttributes() tql.StandardGetSetter {
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if attrs, ok := val.(pcommon.Map); ok {
-				ctx.GetItem().(plog.LogRecord).Attributes().Clear()
 				attrs.CopyTo(ctx.GetItem().(plog.LogRecord).Attributes())
 			}
 		},
@@ -309,10 +222,10 @@ func accessAttributes() tql.StandardGetSetter {
 func accessAttributesKey(mapKey *string) tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return getAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey)
+			return tqlcommon.GetMapValue(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey)
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
-			setAttr(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey, val)
+			tqlcommon.SetMapValue(ctx.GetItem().(plog.LogRecord).Attributes(), *mapKey, val)
 		},
 	}
 }
@@ -333,11 +246,11 @@ func accessDroppedAttributesCount() tql.StandardGetSetter {
 func accessFlags() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(plog.LogRecord).Flags())
+			return int64(ctx.GetItem().(plog.LogRecord).FlagsStruct())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				ctx.GetItem().(plog.LogRecord).SetFlags(uint32(i))
+				ctx.GetItem().(plog.LogRecord).SetFlagsStruct(plog.LogRecordFlags(i))
 			}
 		},
 	}
@@ -396,133 +309,6 @@ func accessStringSpanID() tql.StandardGetSetter {
 				}
 			}
 		},
-	}
-}
-
-func getAttr(attrs pcommon.Map, mapKey string) interface{} {
-	val, ok := attrs.Get(mapKey)
-	if !ok {
-		return nil
-	}
-	return getValue(val)
-}
-
-func getValue(val pcommon.Value) interface{} {
-	switch val.Type() {
-	case pcommon.ValueTypeString:
-		return val.StringVal()
-	case pcommon.ValueTypeBool:
-		return val.BoolVal()
-	case pcommon.ValueTypeInt:
-		return val.IntVal()
-	case pcommon.ValueTypeDouble:
-		return val.DoubleVal()
-	case pcommon.ValueTypeMap:
-		return val.MapVal()
-	case pcommon.ValueTypeSlice:
-		return val.SliceVal()
-	case pcommon.ValueTypeBytes:
-		return val.BytesVal().AsRaw()
-	}
-	return nil
-}
-
-func setAttr(attrs pcommon.Map, mapKey string, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		attrs.UpsertString(mapKey, v)
-	case bool:
-		attrs.UpsertBool(mapKey, v)
-	case int64:
-		attrs.UpsertInt(mapKey, v)
-	case float64:
-		attrs.UpsertDouble(mapKey, v)
-	case []byte:
-		attrs.UpsertBytes(mapKey, pcommon.NewImmutableByteSlice(v))
-	case []string:
-		arr := pcommon.NewValueSlice()
-		for _, str := range v {
-			arr.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []bool:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []int64:
-		arr := pcommon.NewValueSlice()
-		for _, i := range v {
-			arr.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-		attrs.Upsert(mapKey, arr)
-	case []float64:
-		arr := pcommon.NewValueSlice()
-		for _, f := range v {
-			arr.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-		attrs.Upsert(mapKey, arr)
-	case [][]byte:
-		arr := pcommon.NewValueSlice()
-		for _, b := range v {
-			arr.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-		attrs.Upsert(mapKey, arr)
-	default:
-		// TODO(anuraaga): Support set of map type.
-	}
-}
-
-func setValue(value pcommon.Value, val interface{}) {
-	switch v := val.(type) {
-	case string:
-		value.SetStringVal(v)
-	case bool:
-		value.SetBoolVal(v)
-	case int64:
-		value.SetIntVal(v)
-	case float64:
-		value.SetDoubleVal(v)
-	case []byte:
-		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
-	case []string:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, str := range v {
-			value.SliceVal().AppendEmpty().SetStringVal(str)
-		}
-	case []bool:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBoolVal(b)
-		}
-	case []int64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, i := range v {
-			value.SliceVal().AppendEmpty().SetIntVal(i)
-		}
-	case []float64:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, f := range v {
-			value.SliceVal().AppendEmpty().SetDoubleVal(f)
-		}
-	case [][]byte:
-		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
-			return true
-		})
-		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
-		}
-	default:
-		// TODO(anuraaga): Support set of map type.
 	}
 }
 

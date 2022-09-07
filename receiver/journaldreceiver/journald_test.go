@@ -56,7 +56,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() journald.Config {
+		InputConfig: func() journald.Config {
 			c := journald.NewConfig()
 			c.StartAt = "middle"
 			return *c
@@ -73,7 +73,7 @@ func testdataConfigYaml() *JournaldConfig {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID(typeStr)),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() journald.Config {
+		InputConfig: func() journald.Config {
 			c := journald.NewConfig()
 			c.Units = []string{"ssh"}
 			c.Priority = "info"

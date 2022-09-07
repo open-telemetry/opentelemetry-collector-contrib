@@ -117,7 +117,7 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 
 }
 
-func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -171,7 +171,7 @@ func verifyRenameMetric(t *testing.T, td *testData, resourceMetrics []*pmetric.R
 	doCompare(t, "scrape-metricRename-1", wantAttributes, m1, e1)
 }
 
-func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyRenameMetricKeepAction(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -278,7 +278,7 @@ func TestLabelRenaming(t *testing.T) {
 
 }
 
-func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyRenameLabel(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
@@ -381,7 +381,7 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 
 }
 
-func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []*pmetric.ResourceMetrics) {
+func verifyRenameLabelKeepAction(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 

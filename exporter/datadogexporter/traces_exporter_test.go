@@ -343,9 +343,6 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	if attrs == nil {
 		return traces
 	}
-	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
-		rspans.Resource().Attributes().Insert(k, v)
-		return true
-	})
+	pcommon.NewMapFromRaw(attrs).CopyTo(rspans.Resource().Attributes())
 	return traces
 }

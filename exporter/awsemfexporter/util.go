@@ -131,7 +131,7 @@ func dedupDimensions(dimensions [][]string) (deduped [][]string) {
 // The returned dimensions are sorted in alphabetical order within each dimension set
 func dimensionRollup(dimensionRollupOption string, labels map[string]string) [][]string {
 	var rollupDimensionArray [][]string
-	dimensionZero := make([]string, 0)
+	var dimensionZero []string
 
 	instrLibName, hasOTelKey := labels[oTellibDimensionKey]
 	if hasOTelKey {

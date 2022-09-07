@@ -106,7 +106,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 		}
 	}()
 
-	defs := make([]PipelineDef, 0)
+	var defs []PipelineDef
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), "\t")
@@ -114,9 +114,7 @@ func LoadPictOutputPipelineDefs(fileName string) ([]PipelineDef, error) {
 			continue
 		}
 
-		var aDef PipelineDef
-		aDef.Receiver, aDef.Exporter = s[0], s[1]
-		defs = append(defs, aDef)
+		defs = append(defs, PipelineDef{Receiver: s[0], Exporter: s[1]})
 	}
 
 	return defs, err

@@ -1,4 +1,0 @@
-type: file_input
-include:
-  - one.log
-include_file_path: on

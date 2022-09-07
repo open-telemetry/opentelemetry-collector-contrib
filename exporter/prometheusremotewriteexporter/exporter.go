@@ -43,16 +43,17 @@ const maxBatchByteSize = 3000000
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	namespace       string
-	externalLabels  map[string]string
-	endpointURL     *url.URL
-	client          *http.Client
-	wg              *sync.WaitGroup
-	closeChan       chan struct{}
-	concurrency     int
-	userAgentHeader string
-	clientSettings  *confighttp.HTTPClientSettings
-	settings        component.TelemetrySettings
+	namespace         string
+	externalLabels    map[string]string
+	endpointURL       *url.URL
+	client            *http.Client
+	wg                *sync.WaitGroup
+	closeChan         chan struct{}
+	concurrency       int
+	userAgentHeader   string
+	clientSettings    *confighttp.HTTPClientSettings
+	settings          component.TelemetrySettings
+	disableTargetInfo bool
 
 	wal *prweWAL
 }
@@ -72,15 +73,16 @@ func newPRWExporter(cfg *Config, set component.ExporterCreateSettings) (*prwExpo
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		namespace:       cfg.Namespace,
-		externalLabels:  sanitizedLabels,
-		endpointURL:     endpointURL,
-		wg:              new(sync.WaitGroup),
-		closeChan:       make(chan struct{}),
-		userAgentHeader: userAgentHeader,
-		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:  &cfg.HTTPClientSettings,
-		settings:        set.TelemetrySettings,
+		namespace:         cfg.Namespace,
+		externalLabels:    sanitizedLabels,
+		endpointURL:       endpointURL,
+		wg:                new(sync.WaitGroup),
+		closeChan:         make(chan struct{}),
+		userAgentHeader:   userAgentHeader,
+		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:    &cfg.HTTPClientSettings,
+		settings:          set.TelemetrySettings,
+		disableTargetInfo: !cfg.TargetInfo.Enabled,
 	}
 	if cfg.WAL == nil {
 		return prwe, nil
@@ -133,7 +135,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 	case <-prwe.closeChan:
 		return errors.New("shutdown has been called")
 	default:
-		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels})
+		tsMap, err := prometheusremotewrite.FromMetrics(md, prometheusremotewrite.Settings{Namespace: prwe.namespace, ExternalLabels: prwe.externalLabels, DisableTargetInfo: prwe.disableTargetInfo})
 		if err != nil {
 			err = consumererror.NewPermanent(err)
 		}

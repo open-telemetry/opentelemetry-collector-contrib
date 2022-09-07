@@ -146,7 +146,7 @@ func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
 	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpdateInt(occonventions.AttributeSameProcessAsParentSpan, 13)
+	attr.UpsertInt(occonventions.AttributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 

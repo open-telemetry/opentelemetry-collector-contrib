@@ -95,7 +95,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 }
 
 func (c *Config) hostlist() []string {
-	hosts := []string{}
+	var hosts []string
 	for _, ep := range c.Hosts {
 		hosts = append(hosts, ep.Endpoint)
 	}

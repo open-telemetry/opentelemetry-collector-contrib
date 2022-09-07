@@ -152,16 +152,15 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	attrs := pcommon.NewMap()
-	attrs.InsertString(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.InsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.InsertString(conventions.AttributeContainerImageTag, "v1")
-	attrs.InsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.InsertString(conventions.AttributeCloudAccountID, "999999998")
-	attrs.InsertString(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.InsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
-	attrs.CopyTo(resource.Attributes())
+	attrs := resource.Attributes()
+	attrs.UpsertString(conventions.AttributeServiceName, "signup_aggregator")
+	attrs.UpsertString(conventions.AttributeContainerName, "signup_aggregator")
+	attrs.UpsertString(conventions.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.UpsertString(conventions.AttributeContainerImageTag, "v1")
+	attrs.UpsertString(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	attrs.UpsertString(conventions.AttributeCloudAccountID, "999999998")
+	attrs.UpsertString(conventions.AttributeCloudRegion, "us-west-2")
+	attrs.UpsertString(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 
@@ -224,11 +223,11 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.InsertInt(key, int64(cast))
+			attrs.UpsertInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.InsertInt(key, cast)
+			attrs.UpsertInt(key, cast)
 		} else {
-			attrs.InsertString(key, fmt.Sprintf("%v", value))
+			attrs.UpsertString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs

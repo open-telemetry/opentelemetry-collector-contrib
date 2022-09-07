@@ -77,7 +77,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -181,9 +181,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 				return
 			}
 			got := p.rules.Annotations
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithExtractAnnotations() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -198,7 +196,7 @@ func TestWithExtractLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			[]kube.FieldExtractionRule{},
+			nil,
 			"",
 		},
 		{
@@ -342,7 +340,7 @@ func TestWithFilterLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -474,7 +472,7 @@ func TestWithFilterFields(t *testing.T) {
 		{
 			"empty",
 			[]FieldFilterConfig{},
-			[]kube.FieldFilter{},
+			nil,
 			"",
 		},
 		{
@@ -651,7 +649,7 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
@@ -664,7 +662,7 @@ func Test_extractFieldRules(t *testing.T) {
 					From:    kube.MetadataFromPod,
 				},
 			}},
-			[]kube.FieldExtractionRule{},
+			nil,
 			true,
 		},
 		{
