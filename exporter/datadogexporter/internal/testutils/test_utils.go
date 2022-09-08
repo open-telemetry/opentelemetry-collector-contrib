@@ -1,5 +1,17 @@
-// Copyright The OpenTelemetry Authors
+// Copyright  The OpenTelemetry Authors
 //
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,6 +27,7 @@
 package testutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"io"
@@ -39,6 +52,8 @@ var (
 type DatadogServer struct {
 	*httptest.Server
 	MetadataChan chan []byte
+	// LogsData is the array of json requests sent to datadog backend
+	LogsData []map[string]interface{}
 }
 
 // DatadogServerMock mocks a Datadog backend server
@@ -46,11 +61,12 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 	metadataChan := make(chan []byte)
 	mux := http.NewServeMux()
 
+	server := &DatadogServer{}
 	handlers := map[string]http.HandlerFunc{
 		"/api/v1/validate": validateAPIKeyEndpoint,
 		"/api/v1/series":   metricsEndpoint,
 		"/intake":          newMetadataEndpoint(metadataChan),
-		"/":                func(w http.ResponseWriter, r *http.Request) {},
+		"/":                server.logsEndPoint,
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -62,10 +78,9 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 
 	srv := httptest.NewServer(mux)
 
-	return &DatadogServer{
-		srv,
-		metadataChan,
-	}
+	server.Server = srv
+	server.MetadataChan = metadataChan
+	return server
 }
 
 // OverwriteHandleFuncs allows to overwrite the default handler functions
@@ -132,6 +147,34 @@ func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *DatadogServer) logsEndPoint(w http.ResponseWriter, r *http.Request) {
+	// we can reuse same response object for logs as well
+	res := metricsResponse{Status: "ok"}
+	resJSON, _ := json.Marshal(res)
+
+	req, err := gUnzipData(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalln(err)
+	}
+
+	var jsonLogs []map[string]interface{}
+	err = json.Unmarshal(req, &jsonLogs)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		log.Fatalln(err)
+	}
+	s.LogsData = append(s.LogsData, jsonLogs...)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	_, err = w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
@@ -176,4 +219,13 @@ type MockSourceProvider struct {
 
 func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
 	return s.Src, nil
+}
+
+func gUnzipData(rg io.Reader) ([]byte, error) {
+	r, err := gzip.NewReader(rg)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.ReadAll(r)
 }

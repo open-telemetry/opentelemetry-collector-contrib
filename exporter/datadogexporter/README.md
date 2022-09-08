@@ -3,8 +3,10 @@
 | Status                   |                  |
 | ------------------------ |------------------|
 | Stability                | [beta]           |
-| Supported pipeline types | traces, metrics  |
+| Supported pipeline types | traces, metrics, logs|
 | Distributions            | [contrib], [AWS] |
+| Logs Stability           | [alpha]          |
+
 
 This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/otel_collector_datadog_exporter/).
 
@@ -53,5 +55,6 @@ Retry settings will only affect metrics.
 *Please Note:* Currently [Span Events](https://github.com/open-telemetry/opentelemetry-specification/blob/11cc73939a32e3a2e6f11bdeab843c61cf8594e9/specification/trace/api.md#add-events) are extracted and added to Spans as Json on the Datadog Span Tag `events`.
 
 [beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[alpha]:https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 [AWS]:https://aws-otel.github.io/docs/partners/datadog
