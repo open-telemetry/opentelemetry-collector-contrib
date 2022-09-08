@@ -483,6 +483,55 @@ func newMetricProcessHandles(cfg MetricConfig) metricProcessHandles {
 	return m
 }
 
+type metricProcessMemoryPercent struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills process.memory.percent metric with initial data.
+func (m *metricProcessMemoryPercent) init() {
+	m.data.SetName("process.memory.percent")
+	m.data.SetDescription("Percent of Memory used by the process.")
+	m.data.SetUnit("%")
+	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+}
+
+func (m *metricProcessMemoryPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricProcessMemoryPercent) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricProcessMemoryPercent) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricProcessMemoryPercent(settings MetricSettings) metricProcessMemoryPercent {
+	m := metricProcessMemoryPercent{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricProcessMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -853,6 +902,9 @@ type MetricsBuilder struct {
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessCPUUtilization      metricProcessCPUUtilization
 	metricProcessDiskIo              metricProcessDiskIo
+	metricProcessDiskIoRead          metricProcessDiskIoRead
+	metricProcessDiskIoWrite         metricProcessDiskIoWrite
+	metricProcessMemoryPercent       metricProcessMemoryPercent
 	metricProcessDiskOperations      metricProcessDiskOperations
 	metricProcessHandles             metricProcessHandles
 	metricProcessMemoryUsage         metricProcessMemoryUsage
@@ -961,6 +1013,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricProcessCPUTime.emit(ils.Metrics())
 	mb.metricProcessCPUUtilization.emit(ils.Metrics())
 	mb.metricProcessDiskIo.emit(ils.Metrics())
+	mb.metricProcessDiskIoRead.emit(ils.Metrics())
+	mb.metricProcessDiskIoWrite.emit(ils.Metrics())
+	mb.metricProcessMemoryPercent.emit(ils.Metrics())
 	mb.metricProcessDiskOperations.emit(ils.Metrics())
 	mb.metricProcessHandles.emit(ils.Metrics())
 	mb.metricProcessMemoryUsage.emit(ils.Metrics())

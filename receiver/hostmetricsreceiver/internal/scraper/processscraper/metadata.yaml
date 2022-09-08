@@ -102,6 +102,13 @@ metrics:
       value_type: double
     attributes: [state]
 
+    process.memory.percent:
+      enabled: true
+      description: "Percent of Memory used by the process."
+      unit: "%"
+      gauge:
+        value_type: double
+
   process.memory.usage:
     enabled: true
     description: The amount of physical memory in use.

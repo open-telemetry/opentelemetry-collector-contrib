@@ -420,6 +420,11 @@ func (p *processHandleMock) Times() (*cpu.TimesStat, error) {
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)
 }
 
+func (p *processHandleMock) MemoryPercent() (float32, error) {
+	args := p.MethodCalled("MemoryPercent")
+	return args.Get(0).(float32), args.Error(1)
+}
+
 func (p *processHandleMock) Percent(time.Duration) (float64, error) {
 	args := p.MethodCalled("Percent")
 	return args.Get(0).(float64), args.Error(1)

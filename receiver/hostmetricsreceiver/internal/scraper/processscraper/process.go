@@ -82,6 +82,7 @@ type processHandle interface {
 	Times() (*cpu.TimesStat, error)
 	CPUPercent() (float64, error)
 	Percent(time.Duration) (float64, error)
+	MemoryPercent() (float32, error)
 	MemoryInfo() (*process.MemoryInfoStat, error)
 	MemoryPercent() (float32, error)
 	IOCounters() (*process.IOCountersStat, error)

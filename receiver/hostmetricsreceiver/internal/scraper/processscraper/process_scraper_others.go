@@ -27,6 +27,8 @@ func getProcessExecutable(processHandle) (string, error) {
 	return "", nil
 }
 
+func (s *scraper) recordMemoryPercentMetric(now pcommon.Timestamp, memoryPercent float32) {}
+
 func getProcessCommand(processHandle) (*commandMetadata, error) {
 	return nil, nil
 }
