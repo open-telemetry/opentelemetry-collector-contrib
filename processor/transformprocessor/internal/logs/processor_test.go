@@ -133,6 +133,8 @@ func TestProcess(t *testing.T) {
 					"get")
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.path",
 					"/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("flags",
+					"A|B|C")
 			},
 		},
 		{
@@ -141,12 +143,44 @@ func TestProcess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Clear()
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("http.url",
 					"http://localhost/health")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("flags",
+					"A|B|C")
 			},
 		},
 		{
 			query: `set(attributes["test"], Concat(": ", attributes["http.method"], attributes["http.url"])) where body == Concat("", "operation", "A")`,
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString("test", "get: http://localhost/health")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			want: func(td plog.Logs) {
+				v1 := pcommon.NewValueSlice()
+				v1.SliceVal().AppendEmpty().SetStringVal("A")
+				v1.SliceVal().AppendEmpty().SetStringVal("B")
+				v1.SliceVal().AppendEmpty().SetStringVal("C")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Insert("test", v1)
+				v2 := pcommon.NewValueSlice()
+				v2.SliceVal().AppendEmpty().SetStringVal("C")
+				v2.SliceVal().AppendEmpty().SetStringVal("D")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().Insert("test", v2)
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|")) where body == "operationA"`,
+			want: func(td plog.Logs) {
+				newValue := pcommon.NewValueSlice()
+				newValue.SliceVal().AppendEmpty().SetStringVal("A")
+				newValue.SliceVal().AppendEmpty().SetStringVal("B")
+				newValue.SliceVal().AppendEmpty().SetStringVal("C")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Insert("test", newValue)
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want: func(td plog.Logs) {
+				return
 			},
 		},
 	}
@@ -190,6 +224,7 @@ func fillLogOne(log plog.LogRecord) {
 	log.Attributes().UpsertString("http.method", "get")
 	log.Attributes().UpsertString("http.path", "/health")
 	log.Attributes().UpsertString("http.url", "http://localhost/health")
+	log.Attributes().UpsertString("flags", "A|B|C")
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -199,4 +234,5 @@ func fillLogTwo(log plog.LogRecord) {
 	log.Attributes().UpsertString("http.method", "get")
 	log.Attributes().UpsertString("http.path", "/health")
 	log.Attributes().UpsertString("http.url", "http://localhost/health")
+	log.Attributes().UpsertString("flags", "C|D")
 }

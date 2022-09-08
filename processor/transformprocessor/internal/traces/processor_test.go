@@ -144,6 +144,7 @@ func TestProcess(t *testing.T) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.method", "get")
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.path", "/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("flags", "A|B|C")
 			},
 		},
 		{
@@ -151,6 +152,7 @@ func TestProcess(t *testing.T) {
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Clear()
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("http.url", "http://localhost/health")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("flags", "A|B|C")
 			},
 		},
 		{
@@ -189,6 +191,36 @@ func TestProcess(t *testing.T) {
 			query: `set(attributes["kind"], Concat("", "kind", ": ", kind)) where kind == 1`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().UpsertString("kind", "kind: 1")
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|"))`,
+			want: func(td ptrace.Traces) {
+				v1 := pcommon.NewValueSlice()
+				v1.SliceVal().AppendEmpty().SetStringVal("A")
+				v1.SliceVal().AppendEmpty().SetStringVal("B")
+				v1.SliceVal().AppendEmpty().SetStringVal("C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Insert("test", v1)
+				v2 := pcommon.NewValueSlice()
+				v2.SliceVal().AppendEmpty().SetStringVal("C")
+				v2.SliceVal().AppendEmpty().SetStringVal("D")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().Insert("test", v2)
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["flags"], "|")) where name == "operationA"`,
+			want: func(td ptrace.Traces) {
+				v := pcommon.NewValueSlice()
+				v.SliceVal().AppendEmpty().SetStringVal("A")
+				v.SliceVal().AppendEmpty().SetStringVal("B")
+				v.SliceVal().AppendEmpty().SetStringVal("C")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Insert("test", v)
+			},
+		},
+		{
+			query: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
+			want: func(td ptrace.Traces) {
+				return
 			},
 		},
 	}
@@ -335,6 +367,7 @@ func fillSpanOne(span ptrace.Span) {
 	span.Attributes().UpsertString("http.method", "get")
 	span.Attributes().UpsertString("http.path", "/health")
 	span.Attributes().UpsertString("http.url", "http://localhost/health")
+	span.Attributes().UpsertString("flags", "A|B|C")
 	status := span.Status()
 	status.SetCode(ptrace.StatusCodeError)
 	status.SetMessage("status-cancelled")
@@ -347,6 +380,7 @@ func fillSpanTwo(span ptrace.Span) {
 	span.Attributes().UpsertString("http.method", "get")
 	span.Attributes().UpsertString("http.path", "/health")
 	span.Attributes().UpsertString("http.url", "http://localhost/health")
+	span.Attributes().UpsertString("flags", "C|D")
 	link0 := span.Links().AppendEmpty()
 	link0.SetDroppedAttributesCount(4)
 	link1 := span.Links().AppendEmpty()
