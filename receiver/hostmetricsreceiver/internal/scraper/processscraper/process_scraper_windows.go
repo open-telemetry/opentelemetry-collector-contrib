@@ -19,7 +19,7 @@ import (
 )
 
 func (s *scraper) recordCPUPercentMetric(now pcommon.Timestamp, cpuPercent float64) {
-	s.mb.RecordProcessCPUPercentDataPoint(now, cpuPercent, metadata.AttributeStateUser)
+	s.mb.RecordProcessCPUPercentDataPoint(now, cpuPercent)
 }
 
 func (s *scraper) recordCPUTimeMetric(now pcommon.Timestamp, cpuTime *cpu.TimesStat) {
