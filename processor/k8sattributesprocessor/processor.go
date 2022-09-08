@@ -32,7 +32,6 @@ import (
 )
 
 const (
-	k8sIPLabelName    string = "k8s.pod.ip"
 	clientIPLabelName string = "ip"
 )
 
@@ -112,7 +111,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 
 	for i := range podIdentifierValue {
 		if podIdentifierValue[i].Source.From == kube.ConnectionSource && podIdentifierValue[i].Value != "" {
-			resource.Attributes().InsertString(k8sIPLabelName, podIdentifierValue[i].Value)
+			resource.Attributes().InsertString(kube.K8sIPLabelName, podIdentifierValue[i].Value)
 			break
 		}
 	}
