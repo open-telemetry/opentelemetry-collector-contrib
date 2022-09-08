@@ -366,9 +366,8 @@ func (p *processor) buildMetrics() (pmetric.Metrics, error) {
 func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("request_total")
-		mCount.Sum().SetIsMonotonic(true)
+		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -387,9 +386,8 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 
 	for key, c := range p.reqFailedTotal {
 		mCount := ilm.Metrics().AppendEmpty()
-		mCount.SetDataType(pmetric.MetricDataTypeSum)
 		mCount.SetName("request_failed_total")
-		mCount.Sum().SetIsMonotonic(true)
+		mCount.SetEmptySum().SetIsMonotonic(true)
 		// TODO: Support other aggregation temporalities
 		mCount.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -412,10 +410,9 @@ func (p *processor) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
 func (p *processor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
 	for key := range p.reqDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetDataType(pmetric.MetricDataTypeHistogram)
 		mDuration.SetName("request_duration_seconds")
 		// TODO: Support other aggregation temporalities
-		mDuration.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 		timestamp := pcommon.NewTimestampFromTime(time.Now())
 

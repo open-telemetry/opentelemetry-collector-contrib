@@ -43,8 +43,7 @@ func NewTestMetrics(metricCount int) pmetric.Metrics {
 		metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 		metric.SetName("foo")
 		metric.SetUnit("bar")
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-		metric.Gauge().DataPoints().AppendEmpty().SetIntVal(int64(i))
+		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(int64(i))
 	}
 
 	return metrics

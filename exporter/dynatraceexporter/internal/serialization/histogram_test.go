@@ -326,9 +326,8 @@ func Test_serializeHistogram(t *testing.T) {
 	emptyDims := dimensions.NewNormalizedDimensionList()
 	t.Run("wrong aggregation temporality", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		metric.SetName("metric_name")
-		hist := metric.Histogram()
+		hist := metric.SetEmptyHistogram()
 		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 		zapCore, observedLogs := observer.New(zap.WarnLevel)
@@ -355,9 +354,8 @@ func Test_serializeHistogram(t *testing.T) {
 		// just testing one case to make sure the error reporting works,
 		// the actual testing is done in Test_serializeHistogramPoint
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		metric.SetName("metric_name")
-		hist := metric.Histogram()
+		hist := metric.SetEmptyHistogram()
 		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := hist.DataPoints().AppendEmpty()
 		dp.SetMin(10)
@@ -386,9 +384,8 @@ func Test_serializeHistogram(t *testing.T) {
 
 	t.Run("histogram serialized as summary", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		metric.SetName("metric_name")
-		hist := metric.Histogram()
+		hist := metric.SetEmptyHistogram()
 		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := hist.DataPoints().AppendEmpty()
 		dp.SetMin(1)

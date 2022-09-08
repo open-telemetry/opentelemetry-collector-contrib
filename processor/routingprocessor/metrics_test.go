@@ -80,20 +80,20 @@ func TestMetrics_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu")
+	metric.SetEmptyGauge()
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_system")
+	metric.SetEmptyGauge()
 
 	rm = m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().UpsertString("X-Tenant", "something-else")
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetName("cpu_idle")
+	metric.SetEmptyGauge()
 
 	ctx := context.Background()
 	require.NoError(t, exp.Start(ctx, host))

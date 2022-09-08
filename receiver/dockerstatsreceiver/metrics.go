@@ -269,7 +269,18 @@ func populateGaugeF(dest pmetric.Metric, name string, unit string, val float64, 
 func populateMetricMetadata(dest pmetric.Metric, name string, unit string, ty pmetric.MetricDataType) {
 	dest.SetName(metricPrefix + name)
 	dest.SetUnit(unit)
-	dest.SetDataType(ty)
+	switch ty {
+	case pmetric.MetricDataTypeGauge:
+		dest.SetEmptyGauge()
+	case pmetric.MetricDataTypeSum:
+		dest.SetEmptySum()
+	case pmetric.MetricDataTypeHistogram:
+		dest.SetEmptyHistogram()
+	case pmetric.MetricDataTypeExponentialHistogram:
+		dest.SetEmptyExponentialHistogram()
+	case pmetric.MetricDataTypeSummary:
+		dest.SetEmptySummary()
+	}
 }
 
 func populateAttributes(dest pcommon.Map, labelKeys []string, labelValues []string) {

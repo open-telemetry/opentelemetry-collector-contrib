@@ -125,10 +125,10 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 		for j := 0; j < ilmCount; j++ {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
+			dps := metric.SetEmptyGauge().DataPoints()
 
 			for k := 0; k < dataPointCount; k++ {
-				dataPoint := metric.Gauge().DataPoints().AppendEmpty()
+				dataPoint := dps.AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntVal(int64(k))
 				dataPoint.Attributes().UpsertString("commonGroupedAttr", "abc")
@@ -152,8 +152,7 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 		for j := 0; j < ilmCount; j++ {
 			metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			metric.SetDataType(pmetric.MetricDataTypeHistogram)
-			metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+			metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 			for k := 0; k < dataPointCount; k++ {
 				dataPoint := metric.Histogram().DataPoints().AppendEmpty()
@@ -586,8 +585,7 @@ func someGaugeMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metric
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("gauge-", j))
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
-			dataPoint := metric.Gauge().DataPoints().AppendEmpty()
+			dataPoint := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
 	}
@@ -604,8 +602,7 @@ func someSumMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metricCo
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("sum-", j))
-			metric.SetDataType(pmetric.MetricDataTypeSum)
-			dataPoint := metric.Sum().DataPoints().AppendEmpty()
+			dataPoint := metric.SetEmptySum().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
 	}
@@ -622,8 +619,7 @@ func someSummaryMetrics(attrs pcommon.Map, instrumentationLibraryCount int, metr
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("summary-", j))
-			metric.SetDataType(pmetric.MetricDataTypeSummary)
-			dataPoint := metric.Summary().DataPoints().AppendEmpty()
+			dataPoint := metric.SetEmptySummary().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
 	}
@@ -640,8 +636,7 @@ func someHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCount int, me
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("histogram-", j))
-			metric.SetDataType(pmetric.MetricDataTypeHistogram)
-			dataPoint := metric.Histogram().DataPoints().AppendEmpty()
+			dataPoint := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
 	}
@@ -658,8 +653,7 @@ func someExponentialHistogramMetrics(attrs pcommon.Map, instrumentationLibraryCo
 			ilm.Scope().SetName(ilName)
 			metric := ilm.Metrics().AppendEmpty()
 			metric.SetName(fmt.Sprint("exponential-histogram-", j))
-			metric.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-			dataPoint := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+			dataPoint := metric.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
 			attrs.CopyTo(dataPoint.Attributes())
 		}
 	}
@@ -726,8 +720,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// gauge-1
 	gauge1 := ilm.Metrics().AppendEmpty()
 	gauge1.SetName("gauge-1")
-	gauge1.SetDataType(pmetric.MetricDataTypeGauge)
-	datapoint := gauge1.Gauge().DataPoints().AppendEmpty()
+	datapoint := gauge1.SetEmptyGauge().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("host.name", "host-A")
 	datapoint.Attributes().UpsertString("id", "eth0")
 	datapoint = gauge1.Gauge().DataPoints().AppendEmpty()
@@ -748,8 +741,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// mixed-type (same name but different TYPE)
 	mixedType2 := ilm.Metrics().AppendEmpty()
 	mixedType2.SetName("mixed-type")
-	mixedType2.SetDataType(pmetric.MetricDataTypeSum)
-	datapoint = mixedType2.Sum().DataPoints().AppendEmpty()
+	datapoint = mixedType2.SetEmptySum().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("host.name", "host-A")
 	datapoint.Attributes().UpsertString("id", "eth0")
 	datapoint = mixedType2.Sum().DataPoints().AppendEmpty()
@@ -759,8 +751,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	// dontmove (metric that will not move to another resource)
 	dontmove := ilm.Metrics().AppendEmpty()
 	dontmove.SetName("dont-move")
-	dontmove.SetDataType(pmetric.MetricDataTypeGauge)
-	datapoint = dontmove.Gauge().DataPoints().AppendEmpty()
+	datapoint = dontmove.SetEmptyGauge().DataPoints().AppendEmpty()
 	datapoint.Attributes().UpsertString("id", "eth0")
 
 	// Perform the test

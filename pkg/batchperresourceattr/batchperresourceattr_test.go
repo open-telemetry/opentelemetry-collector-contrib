@@ -287,10 +287,10 @@ func fillResourceMetrics(rs pmetric.ResourceMetrics, key string, val string) {
 	ils := rs.ScopeMetrics().AppendEmpty()
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("first-metric")
-	firstMetric.SetDataType(pmetric.MetricDataType(rand.Int() % 4))
+	firstMetric.SetEmptyGauge()
 	secondMetric := ils.Metrics().AppendEmpty()
 	secondMetric.SetName("second-metric")
-	secondMetric.SetDataType(pmetric.MetricDataType(rand.Int() % 4))
+	secondMetric.SetEmptySum()
 }
 
 func newLogs(rls ...plog.ResourceLogs) plog.Logs {

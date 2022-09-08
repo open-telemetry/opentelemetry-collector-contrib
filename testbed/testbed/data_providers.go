@@ -119,11 +119,8 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		metric := metrics.AppendEmpty()
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-
+		dps := metric.SetEmptyGauge().DataPoints()
 		batchIndex := dp.traceIDSequence.Inc()
-
-		dps := metric.Gauge().DataPoints()
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {

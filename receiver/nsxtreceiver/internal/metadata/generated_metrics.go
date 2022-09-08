@@ -171,7 +171,7 @@ func (m *metricNsxtNodeCPUUtilization) init() {
 	m.data.SetName("nsxt.node.cpu.utilization")
 	m.data.SetDescription("The average amount of CPU being used by the node.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -222,7 +222,7 @@ func (m *metricNsxtNodeFilesystemUsage) init() {
 	m.data.SetName("nsxt.node.filesystem.usage")
 	m.data.SetDescription("The amount of storage space used by the node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -275,7 +275,7 @@ func (m *metricNsxtNodeFilesystemUtilization) init() {
 	m.data.SetName("nsxt.node.filesystem.utilization")
 	m.data.SetDescription("The percentage of storage space utilized.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNsxtNodeFilesystemUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -324,7 +324,7 @@ func (m *metricNsxtNodeMemoryCacheUsage) init() {
 	m.data.SetName("nsxt.node.memory.cache.usage")
 	m.data.SetDescription("The size of the node's memory cache.")
 	m.data.SetUnit("KBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -375,7 +375,7 @@ func (m *metricNsxtNodeMemoryUsage) init() {
 	m.data.SetName("nsxt.node.memory.usage")
 	m.data.SetDescription("The memory usage of the node.")
 	m.data.SetUnit("KBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -426,7 +426,7 @@ func (m *metricNsxtNodeNetworkIo) init() {
 	m.data.SetName("nsxt.node.network.io")
 	m.data.SetDescription("The number of bytes which have flowed through the network interface.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -479,7 +479,7 @@ func (m *metricNsxtNodeNetworkPacketCount) init() {
 	m.data.SetName("nsxt.node.network.packet.count")
 	m.data.SetDescription("The number of packets which have flowed through the network interface on the node.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
