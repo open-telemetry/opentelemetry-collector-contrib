@@ -5,8 +5,6 @@ processors:
   nop:
 
 exporters:
-  elasticsearch:
-    endpoints: [https://elastic.example.com:9200]
   elasticsearch/trace:
     tls:
       insecure: false
@@ -30,7 +28,7 @@ exporters:
     tls:
       insecure: false
     endpoints: [http://localhost:9200]
-    logs_index: my_log_index
+    index: my_log_index
     timeout: 2m
     cloudid: TRNMxjXlNJEt
     headers:
