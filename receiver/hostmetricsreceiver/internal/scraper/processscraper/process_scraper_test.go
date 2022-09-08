@@ -425,6 +425,11 @@ func (p *processHandleMock) CPUPercentWithContext() (float64, error) {
 	return args.Get(0).(float64), args.Error(1)
 }
 
+func (p *processHandleMock) MemoryPercentWithContext() (float32, error) {
+	args := p.MethodCalled("MemoryPercentWithContext")
+	return args.Get(0).(float32), args.Error(1)
+}
+
 func (p *processHandleMock) PercentWithContext(ctx context.Context, d time.Duration) (float64, error) {
 	args := p.MethodCalled("PercentWithContext", ctx, d)
 	return args.Get(0).(float64), args.Error(1)

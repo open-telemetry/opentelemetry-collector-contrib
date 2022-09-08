@@ -37,3 +37,5 @@ func getProcessCommand(context.Context, processHandle) (*commandMetadata, error)
 }
 
 func (s *scraper) recordCPUPercentMetric(context.Context, cpuPercent float64) {}
+
+func (s *scraper) recordMemoryPercentMetric(now pcommon.Timestamp, memoryPercent float32) {}
