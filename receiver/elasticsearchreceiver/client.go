@@ -82,7 +82,7 @@ func newElasticsearchClient(settings component.TelemetrySettings, c Config, h co
 // nodeStatsMetrics is a comma separated list of metrics that will be gathered from NodeStats.
 // The available metrics are documented here for Elasticsearch 7.9:
 // https://www.elastic.co/guide/en/elasticsearch/reference/7.9/cluster-nodes-stats.html#cluster-nodes-stats-api-path-params
-const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,indexing_pressure,ingest,indices,adaptive_selection,discovery"
+const nodeStatsMetrics = "breaker,indices,process,jvm,thread_pool,transport,http,fs,indexing_pressure,ingest,indices,adaptive_selection,discovery,script"
 
 // nodeStatsIndexMetrics is a comma separated list of index metrics that will be gathered from NodeStats.
 const nodeStatsIndexMetrics = "store,docs,indexing,get,search,merge,refresh,flush,warmer,query_cache,fielddata"
