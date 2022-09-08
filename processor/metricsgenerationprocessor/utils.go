@@ -63,7 +63,7 @@ func generateMetrics(rm pmetric.ResourceMetrics, operand2 float64, rule internal
 			metric := metricSlice.At(j)
 			if metric.Name() == rule.metric1 {
 				newMetric := appendMetric(ilm, rule.name, rule.unit)
-				newMetric.SetDataType(pmetric.MetricDataTypeGauge)
+				newMetric.SetEmptyGauge()
 				addDoubleGaugeDataPoints(metric, newMetric, operand2, rule.operation, logger)
 			}
 		}

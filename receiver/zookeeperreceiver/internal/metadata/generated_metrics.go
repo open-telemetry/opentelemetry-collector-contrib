@@ -155,7 +155,7 @@ func (m *metricZookeeperConnectionActive) init() {
 	m.data.SetName("zookeeper.connection.active")
 	m.data.SetDescription("Number of active clients connected to a ZooKeeper server.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -206,7 +206,7 @@ func (m *metricZookeeperDataTreeEphemeralNodeCount) init() {
 	m.data.SetName("zookeeper.data_tree.ephemeral_node.count")
 	m.data.SetDescription("Number of ephemeral nodes that a ZooKeeper server has in its data tree.")
 	m.data.SetUnit("{nodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -257,7 +257,7 @@ func (m *metricZookeeperDataTreeSize) init() {
 	m.data.SetName("zookeeper.data_tree.size")
 	m.data.SetDescription("Size of data in bytes that a ZooKeeper server has in its data tree.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -308,7 +308,7 @@ func (m *metricZookeeperFileDescriptorLimit) init() {
 	m.data.SetName("zookeeper.file_descriptor.limit")
 	m.data.SetDescription("Maximum number of file descriptors that a ZooKeeper server can open.")
 	m.data.SetUnit("{file_descriptors}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricZookeeperFileDescriptorLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -357,7 +357,7 @@ func (m *metricZookeeperFileDescriptorOpen) init() {
 	m.data.SetName("zookeeper.file_descriptor.open")
 	m.data.SetDescription("Number of file descriptors that a ZooKeeper server has open.")
 	m.data.SetUnit("{file_descriptors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -408,7 +408,7 @@ func (m *metricZookeeperFollowerCount) init() {
 	m.data.SetName("zookeeper.follower.count")
 	m.data.SetDescription("The number of followers. Only exposed by the leader.")
 	m.data.SetUnit("{followers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -461,7 +461,7 @@ func (m *metricZookeeperFsyncExceededThresholdCount) init() {
 	m.data.SetName("zookeeper.fsync.exceeded_threshold.count")
 	m.data.SetDescription("Number of times fsync duration has exceeded warning threshold.")
 	m.data.SetUnit("{events}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -512,7 +512,7 @@ func (m *metricZookeeperLatencyAvg) init() {
 	m.data.SetName("zookeeper.latency.avg")
 	m.data.SetDescription("Average time in milliseconds for requests to be processed.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricZookeeperLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -561,7 +561,7 @@ func (m *metricZookeeperLatencyMax) init() {
 	m.data.SetName("zookeeper.latency.max")
 	m.data.SetDescription("Maximum time in milliseconds for requests to be processed.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricZookeeperLatencyMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -610,7 +610,7 @@ func (m *metricZookeeperLatencyMin) init() {
 	m.data.SetName("zookeeper.latency.min")
 	m.data.SetDescription("Minimum time in milliseconds for requests to be processed.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricZookeeperLatencyMin) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -659,7 +659,7 @@ func (m *metricZookeeperPacketCount) init() {
 	m.data.SetName("zookeeper.packet.count")
 	m.data.SetDescription("The number of ZooKeeper packets received or sent by a server.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -712,7 +712,7 @@ func (m *metricZookeeperPacketReceivedCount) init() {
 	m.data.SetName("zookeeper.packet.received.count")
 	m.data.SetDescription("The number of ZooKeeper packets received by a server.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -763,7 +763,7 @@ func (m *metricZookeeperPacketSentCount) init() {
 	m.data.SetName("zookeeper.packet.sent.count")
 	m.data.SetDescription("The number of ZooKeeper packets sent by a server.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -814,7 +814,7 @@ func (m *metricZookeeperRequestActive) init() {
 	m.data.SetName("zookeeper.request.active")
 	m.data.SetDescription("Number of currently executing requests.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -865,7 +865,7 @@ func (m *metricZookeeperSyncPending) init() {
 	m.data.SetName("zookeeper.sync.pending")
 	m.data.SetDescription("The number of pending syncs from the followers. Only exposed by the leader.")
 	m.data.SetUnit("{syncs}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -916,7 +916,7 @@ func (m *metricZookeeperWatchCount) init() {
 	m.data.SetName("zookeeper.watch.count")
 	m.data.SetDescription("Number of watches placed on Z-Nodes on a ZooKeeper server.")
 	m.data.SetUnit("{watches}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -967,7 +967,7 @@ func (m *metricZookeeperZnodeCount) init() {
 	m.data.SetName("zookeeper.znode.count")
 	m.data.SetDescription("Number of z-nodes that a ZooKeeper server has in its data tree.")
 	m.data.SetUnit("{znodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }

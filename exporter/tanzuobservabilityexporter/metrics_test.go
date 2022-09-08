@@ -1311,7 +1311,18 @@ func constructMetricsWithTags(tags map[string]string, metricList ...pmetric.Metr
 func newMetric(name string, typ pmetric.MetricDataType) pmetric.Metric {
 	result := pmetric.NewMetric()
 	result.SetName(name)
-	result.SetDataType(typ)
+	switch typ {
+	case pmetric.MetricDataTypeGauge:
+		result.SetEmptyGauge()
+	case pmetric.MetricDataTypeSum:
+		result.SetEmptySum()
+	case pmetric.MetricDataTypeHistogram:
+		result.SetEmptyHistogram()
+	case pmetric.MetricDataTypeExponentialHistogram:
+		result.SetEmptyExponentialHistogram()
+	case pmetric.MetricDataTypeSummary:
+		result.SetEmptySummary()
+	}
 	return result
 }
 

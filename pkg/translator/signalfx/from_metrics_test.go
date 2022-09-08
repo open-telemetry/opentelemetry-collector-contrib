@@ -96,59 +96,51 @@ func Test_FromMetrics(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initDoublePt(m.Gauge().DataPoints().AppendEmpty())
+					initDoublePt(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initInt64Pt(m.Gauge().DataPoints().AppendEmpty())
+					initInt64Pt(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("delta_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_sum_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(false)
+					m.SetEmptySum().SetIsMonotonic(false)
 					initDoublePt(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_sum_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(false)
+					m.SetEmptySum().SetIsMonotonic(false)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
 
@@ -174,27 +166,23 @@ func Test_FromMetrics(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
+					initDoublePtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					initDoublePtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("cumulative_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeSum)
-					m.Sum().SetIsMonotonic(true)
+					m.SetEmptySum().SetIsMonotonic(true)
 					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
 
@@ -224,14 +212,12 @@ func Test_FromMetrics(t *testing.T) {
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_double_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initDoublePtWithLabels(m.Gauge().DataPoints().AppendEmpty())
+					initDoublePtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 				{
 					m := ilm.Metrics().AppendEmpty()
 					m.SetName("gauge_int_with_dims")
-					m.SetDataType(pmetric.MetricDataTypeGauge)
-					initInt64PtWithLabels(m.Gauge().DataPoints().AppendEmpty())
+					initInt64PtWithLabels(m.SetEmptyGauge().DataPoints().AppendEmpty())
 				}
 
 				return out
@@ -266,8 +252,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("histogram")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},
@@ -293,8 +278,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("histogram")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				initHistDPNoOptional(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},
@@ -317,8 +301,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("delta_histogram")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				m.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				m.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				initHistDP(m.Histogram().DataPoints().AppendEmpty())
 				return out
 			},
@@ -344,8 +327,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("no_bucket_histo")
-				m.SetDataType(pmetric.MetricDataTypeHistogram)
-				dp := m.Histogram().DataPoints().AppendEmpty()
+				dp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
 				dp.SetCount(2)
 				dp.SetSum(10)
 				dp.SetTimestamp(ts)
@@ -364,8 +346,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("summary")
-				m.SetDataType(pmetric.MetricDataTypeSummary)
-				dp := m.Summary().DataPoints().AppendEmpty()
+				dp := m.SetEmptySummary().DataPoints().AppendEmpty()
 				dp.SetTimestamp(ts)
 				dp.SetSum(123.4)
 				dp.SetCount(111)
@@ -398,8 +379,7 @@ func Test_FromMetrics(t *testing.T) {
 				ilm := out.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 				m := ilm.Metrics().AppendEmpty()
 				m.SetName("empty_summary")
-				m.SetDataType(pmetric.MetricDataTypeSummary)
-				dp := m.Summary().DataPoints().AppendEmpty()
+				dp := m.SetEmptySummary().DataPoints().AppendEmpty()
 				dp.SetTimestamp(ts)
 				dp.SetSum(12.3)
 				dp.SetCount(11)

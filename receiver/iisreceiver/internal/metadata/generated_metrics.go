@@ -155,7 +155,7 @@ func (m *metricIisConnectionActive) init() {
 	m.data.SetName("iis.connection.active")
 	m.data.SetDescription("Number of active connections.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -206,7 +206,7 @@ func (m *metricIisConnectionAnonymous) init() {
 	m.data.SetName("iis.connection.anonymous")
 	m.data.SetDescription("Number of connections established anonymously.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -257,7 +257,7 @@ func (m *metricIisConnectionAttemptCount) init() {
 	m.data.SetName("iis.connection.attempt.count")
 	m.data.SetDescription("Total number of attempts to connect to the server.")
 	m.data.SetUnit("{attempts}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -308,7 +308,7 @@ func (m *metricIisNetworkBlocked) init() {
 	m.data.SetName("iis.network.blocked")
 	m.data.SetDescription("Number of bytes blocked due to bandwidth throttling.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -359,7 +359,7 @@ func (m *metricIisNetworkFileCount) init() {
 	m.data.SetName("iis.network.file.count")
 	m.data.SetDescription("Number of transmitted files.")
 	m.data.SetUnit("{files}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -412,7 +412,7 @@ func (m *metricIisNetworkIo) init() {
 	m.data.SetName("iis.network.io")
 	m.data.SetDescription("Total amount of bytes sent and received.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -465,7 +465,7 @@ func (m *metricIisRequestCount) init() {
 	m.data.SetName("iis.request.count")
 	m.data.SetDescription("Total number of requests of a given type.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -518,7 +518,7 @@ func (m *metricIisRequestQueueAgeMax) init() {
 	m.data.SetName("iis.request.queue.age.max")
 	m.data.SetDescription("Age of oldest request in the queue.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricIisRequestQueueAgeMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -567,7 +567,7 @@ func (m *metricIisRequestQueueCount) init() {
 	m.data.SetName("iis.request.queue.count")
 	m.data.SetDescription("Current number of requests in the queue.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -618,7 +618,7 @@ func (m *metricIisRequestRejected) init() {
 	m.data.SetName("iis.request.rejected")
 	m.data.SetDescription("Total number of requests rejected.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -669,7 +669,7 @@ func (m *metricIisThreadActive) init() {
 	m.data.SetName("iis.thread.active")
 	m.data.SetDescription("Current number of active threads.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -720,7 +720,7 @@ func (m *metricIisUptime) init() {
 	m.data.SetName("iis.uptime")
 	m.data.SetDescription("The amount of time the server has been up.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricIisUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

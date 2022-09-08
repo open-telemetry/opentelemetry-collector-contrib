@@ -287,7 +287,6 @@ func (mf *metricFamily) Add(metricName string, ls labels.Labels, t int64, v floa
 
 func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 	metric := pmetric.NewMetric()
-	metric.SetDataType(mf.mtype)
 	metric.SetName(mf.name)
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(mf.metadata.Unit)
@@ -296,7 +295,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 
 	switch mf.mtype {
 	case pmetric.MetricDataTypeHistogram:
-		histogram := metric.Histogram()
+		histogram := metric.SetEmptyHistogram()
 		histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		hdpL := histogram.DataPoints()
 		for _, mg := range mf.groupOrders {
@@ -305,7 +304,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		pointCount = hdpL.Len()
 
 	case pmetric.MetricDataTypeSummary:
-		summary := metric.Summary()
+		summary := metric.SetEmptySummary()
 		sdpL := summary.DataPoints()
 		for _, mg := range mf.groupOrders {
 			mg.toSummaryPoint(sdpL)
@@ -313,7 +312,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		pointCount = sdpL.Len()
 
 	case pmetric.MetricDataTypeSum:
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		sum.SetIsMonotonic(mf.isMonotonic)
 		sdpL := sum.DataPoints()
@@ -323,8 +322,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice) {
 		pointCount = sdpL.Len()
 
 	default: // Everything else should be set to a Gauge.
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-		gauge := metric.Gauge()
+		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()
 		for _, mg := range mf.groupOrders {
 			mg.toNumberDataPoint(gdpL)

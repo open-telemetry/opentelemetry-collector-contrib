@@ -49,7 +49,6 @@ func (a *mockAccumulator) Collect() ([]pmetric.Metric, []pcommon.Map) {
 
 func TestConvertInvalidDataType(t *testing.T) {
 	metric := pmetric.NewMetric()
-	metric.SetDataType(-100)
 	c := collector{
 		accumulator: &mockAccumulator{
 			[]pmetric.Metric{metric},
@@ -81,14 +80,13 @@ func TestConvertInvalidMetric(t *testing.T) {
 		pmetric.MetricDataTypeGauge,
 	} {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(mType)
-		switch metric.DataType() {
+		switch mType {
 		case pmetric.MetricDataTypeGauge:
-			metric.Gauge().DataPoints().AppendEmpty()
+			metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		case pmetric.MetricDataTypeSum:
-			metric.Sum().DataPoints().AppendEmpty()
+			metric.SetEmptySum().DataPoints().AppendEmpty()
 		case pmetric.MetricDataTypeHistogram:
-			metric.Histogram().DataPoints().AppendEmpty()
+			metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 		}
 		c := collector{}
 
@@ -100,13 +98,12 @@ func TestConvertInvalidMetric(t *testing.T) {
 func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	// initialize empty histogram
 	metric := pmetric.NewMetric()
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
 	metric.SetName("test_metric")
 	metric.SetDescription("this is test metric")
 	metric.SetUnit("T")
 
 	// initialize empty datapoint
-	hd := metric.Histogram().DataPoints().AppendEmpty()
+	hd := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 
 	bounds := pcommon.NewImmutableFloat64Slice([]float64{5, 25, 90})
 	hd.SetExplicitBounds(bounds)
@@ -215,9 +212,8 @@ func (*errorCheckCore) Sync() error { return nil }
 func TestCollectMetricsLabelSanitize(t *testing.T) {
 	metric := pmetric.NewMetric()
 	metric.SetName("test_metric")
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetDescription("test description")
-	dp := metric.Gauge().DataPoints().AppendEmpty()
+	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.SetIntVal(42)
 	dp.Attributes().UpsertString("label.1", "1")
 	dp.Attributes().UpsertString("label/2", "2")
@@ -270,9 +266,8 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetIntVal(42)
 				dp.Attributes().UpsertString("label_1", "1")
 				dp.Attributes().UpsertString("label_2", "2")
@@ -288,9 +283,8 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
 				metric.SetDescription("test description")
-				dp := metric.Gauge().DataPoints().AppendEmpty()
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleVal(42.42)
 				dp.Attributes().UpsertString("label_1", "1")
 				dp.Attributes().UpsertString("label_2", "2")
@@ -306,8 +300,7 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetIsMonotonic(false)
+				metric.SetEmptySum().SetIsMonotonic(false)
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -326,8 +319,7 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetIsMonotonic(false)
+				metric.SetEmptySum().SetIsMonotonic(false)
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -346,8 +338,7 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetIsMonotonic(true)
+				metric.SetEmptySum().SetIsMonotonic(true)
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -366,8 +357,7 @@ func TestCollectMetrics(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeSum)
-				metric.Sum().SetIsMonotonic(true)
+				metric.SetEmptySum().SetIsMonotonic(true)
 				metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -484,8 +474,7 @@ func TestAccumulateHistograms(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeHistogram)
-				metric.Histogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
 				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 2}))
@@ -585,9 +574,8 @@ func TestAccumulateSummary(t *testing.T) {
 			metric: func(ts time.Time) (metric pmetric.Metric) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
-				metric.SetDataType(pmetric.MetricDataTypeSummary)
 				metric.SetDescription("test description")
-				sp := metric.Summary().DataPoints().AppendEmpty()
+				sp := metric.SetEmptySummary().DataPoints().AppendEmpty()
 				sp.SetCount(10)
 				sp.SetSum(0.012)
 				sp.SetCount(10)

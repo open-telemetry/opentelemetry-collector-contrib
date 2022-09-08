@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220907232555-bef9373cfc20
+	go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
 	go.uber.org/zap v1.23.0
 
 )
@@ -40,7 +40,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20 // indirect
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177 // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect

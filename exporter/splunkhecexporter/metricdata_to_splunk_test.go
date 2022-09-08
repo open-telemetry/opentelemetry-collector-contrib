@@ -56,7 +56,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
+				gauge.SetEmptyGauge()
 				return gauge
 			},
 			configFn: func() *Config {
@@ -69,8 +69,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
-				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.SetDoubleVal(math.NaN())
 				return gauge
@@ -88,8 +87,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
-				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.SetDoubleVal(math.Inf(1))
 				return gauge
@@ -107,8 +105,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
-				dp := gauge.Gauge().DataPoints().AppendEmpty()
+				dp := gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				dp.SetDoubleVal(math.Inf(-1))
 				return gauge
@@ -126,7 +123,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("histogram_with_dims")
-				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
+				histogram.SetEmptyHistogram()
 				return histogram
 			},
 			configFn: func() *Config {
@@ -139,7 +136,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				sum := pmetric.NewMetric()
 				sum.SetName("sum_with_dims")
-				sum.SetDataType(pmetric.MetricDataTypeSum)
+				sum.SetEmptySum()
 				return sum
 			},
 			configFn: func() *Config {
@@ -152,8 +149,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				gauge := pmetric.NewMetric()
 				gauge.SetName("gauge_with_dims")
-				gauge.SetDataType(pmetric.MetricDataTypeGauge)
-				gauge.Gauge().DataPoints().AppendEmpty()
+				gauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				return gauge
 			},
 			configFn: func() *Config {
@@ -166,8 +162,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("histogram_with_dims")
-				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
-				histogram.Histogram().DataPoints().AppendEmpty()
+				histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 				return histogram
 			},
 			configFn: func() *Config {
@@ -180,8 +175,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				sum := pmetric.NewMetric()
 				sum.SetName("sum_with_dims")
-				sum.SetDataType(pmetric.MetricDataTypeSum)
-				sum.Sum().DataPoints().AppendEmpty()
+				sum.SetEmptySum().DataPoints().AppendEmpty()
 				return sum
 			},
 			configFn: func() *Config {
@@ -203,8 +197,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				intGauge := pmetric.NewMetric()
 				intGauge.SetName("gauge_int_with_dims")
-				intGauge.SetDataType(pmetric.MetricDataTypeGauge)
-				intDataPt := intGauge.Gauge().DataPoints().AppendEmpty()
+				intDataPt := intGauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				intDataPt.SetIntVal(int64Val)
 				intDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 				intDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -235,8 +228,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
-				doubleGauge.SetDataType(pmetric.MetricDataTypeGauge)
-				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
+				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetDoubleVal(doubleVal)
 				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 
@@ -256,8 +248,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
-				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
-				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+				histogramPt := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 				histogramPt.SetExplicitBounds(distributionBounds)
 				histogramPt.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3}))
 				histogramPt.SetSum(23)
@@ -275,8 +266,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
-				histogram.SetDataType(pmetric.MetricDataTypeHistogram)
-				histogramPt := histogram.Histogram().DataPoints().AppendEmpty()
+				histogramPt := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
 				histogramPt.SetExplicitBounds(distributionBounds)
 				histogramPt.SetBucketCounts(distributionCounts)
 				histogramPt.SetSum(23)
@@ -379,8 +369,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				intSum := pmetric.NewMetric()
 				intSum.SetName("int_sum_with_dims")
-				intSum.SetDataType(pmetric.MetricDataTypeSum)
-				intDataPt := intSum.Sum().DataPoints().AppendEmpty()
+				intDataPt := intSum.SetEmptySum().DataPoints().AppendEmpty()
 				intDataPt.SetTimestamp(ts)
 				intDataPt.SetIntVal(62)
 				return intSum
@@ -410,8 +399,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				doubleSum := pmetric.NewMetric()
 				doubleSum.SetName("double_sum_with_dims")
-				doubleSum.SetDataType(pmetric.MetricDataTypeSum)
-				doubleDataPt := doubleSum.Sum().DataPoints().AppendEmpty()
+				doubleDataPt := doubleSum.SetEmptySum().DataPoints().AppendEmpty()
 				doubleDataPt.SetTimestamp(ts)
 				doubleDataPt.SetDoubleVal(62)
 				return doubleSum
@@ -441,8 +429,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				summary := pmetric.NewMetric()
 				summary.SetName("summary")
-				summary.SetDataType(pmetric.MetricDataTypeSummary)
-				summaryPt := summary.Summary().DataPoints().AppendEmpty()
+				summaryPt := summary.SetEmptySummary().DataPoints().AppendEmpty()
 				summaryPt.SetTimestamp(ts)
 				summaryPt.SetStartTimestamp(ts)
 				summaryPt.SetCount(2)
@@ -521,7 +508,6 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("unknown_with_dims")
-				metric.SetDataType(pmetric.MetricDataTypeNone)
 				return metric
 			},
 			wantSplunkMetrics: nil,
@@ -545,8 +531,7 @@ func Test_metricDataToSplunk(t *testing.T) {
 			metricsDataFn: func() pmetric.Metric {
 				doubleGauge := pmetric.NewMetric()
 				doubleGauge.SetName("gauge_double_with_dims")
-				doubleGauge.SetDataType(pmetric.MetricDataTypeGauge)
-				doubleDataPt := doubleGauge.Gauge().DataPoints().AppendEmpty()
+				doubleDataPt := doubleGauge.SetEmptyGauge().DataPoints().AppendEmpty()
 				doubleDataPt.SetDoubleVal(doubleVal)
 				doubleDataPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
 

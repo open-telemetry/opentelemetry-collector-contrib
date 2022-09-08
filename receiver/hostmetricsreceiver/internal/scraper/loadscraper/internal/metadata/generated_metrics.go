@@ -48,7 +48,7 @@ func (m *metricSystemCPULoadAverage15m) init() {
 	m.data.SetName("system.cpu.load_average.15m")
 	m.data.SetDescription("Average CPU Load over 15 minutes.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage15m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -97,7 +97,7 @@ func (m *metricSystemCPULoadAverage1m) init() {
 	m.data.SetName("system.cpu.load_average.1m")
 	m.data.SetDescription("Average CPU Load over 1 minute.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -146,7 +146,7 @@ func (m *metricSystemCPULoadAverage5m) init() {
 	m.data.SetName("system.cpu.load_average.5m")
 	m.data.SetDescription("Average CPU Load over 5 minutes.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSystemCPULoadAverage5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
