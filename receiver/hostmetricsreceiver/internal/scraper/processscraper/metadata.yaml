@@ -5,6 +5,9 @@ parent: hostmetrics
 sem_conv_version: 1.9.0
 
 resource_attributes:
+  process.started_on:
+    description: Process Start Time.
+    type: int
   process.pid:
     description: Process identifier (PID).
     enabled: true

@@ -97,6 +97,7 @@ type ResourceAttributesConfig struct {
 	ProcessExecutablePath ResourceAttributeConfig `mapstructure:"process.executable.path"`
 	ProcessOwner          ResourceAttributeConfig `mapstructure:"process.owner"`
 	ProcessParentPid      ResourceAttributeConfig `mapstructure:"process.parent_pid"`
+	ProcessStartedOn	  ResourceAttributeConfig `mapstructure:"process.started_on"`
 	ProcessPid            ResourceAttributeConfig `mapstructure:"process.pid"`
 }
 
@@ -118,6 +119,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ProcessParentPid: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ProcessStartedOn: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ProcessPid: ResourceAttributeConfig{

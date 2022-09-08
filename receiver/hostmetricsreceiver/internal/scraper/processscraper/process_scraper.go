@@ -243,6 +243,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			command:    command,
 			username:   username,
 			handle:     handle,
+			startedOn:  createTime,
 			createTime: createTime,
 		}
 

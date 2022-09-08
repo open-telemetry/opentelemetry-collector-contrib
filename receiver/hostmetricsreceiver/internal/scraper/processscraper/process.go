@@ -23,6 +23,7 @@ import (
 type processMetadata struct {
 	pid        int32
 	parentPid  int32
+	startedOn  int64
 	executable *executableMetadata
 	command    *commandMetadata
 	username   string
@@ -43,6 +44,7 @@ type commandMetadata struct {
 
 func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
 	rb.SetProcessPid(int64(m.pid))
+	rb.SetProcessStartedOn(int64(m.startedOn))
 	rb.SetProcessParentPid(int64(m.parentPid))
 	rb.SetProcessExecutableName(m.executable.name)
 	rb.SetProcessExecutablePath(m.executable.path)
