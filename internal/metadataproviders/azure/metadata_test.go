@@ -73,7 +73,7 @@ func TestQueryEndpointCorrect(t *testing.T) {
 	require.NoError(t, err)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := w.Write(marshalledMetadata)
+		_, err = w.Write(marshalledMetadata)
 		assert.NoError(t, err)
 	}))
 	defer ts.Close()
