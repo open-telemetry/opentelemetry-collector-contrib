@@ -16,7 +16,6 @@ package internal
 
 import (
 	"context"
-	"encoding/hex"
 	"testing"
 	"time"
 
@@ -42,15 +41,14 @@ var (
 		}),
 		// discoveredLabels contain labels prior to any processing
 		labels.FromMap(map[string]string{
-			model.AddressLabel:    "address:8080",
-			model.MetricNameLabel: "foo",
-			model.SchemeLabel:     "http",
+			model.AddressLabel: "address:8080",
+			model.SchemeLabel:  "http",
 		}),
 		nil)
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
-		testMetadataStore(map[string]scrape.MetricMetadata{}))
+		testMetadataStore(testMetadata))
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
@@ -73,7 +71,7 @@ func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
-	badLabels := labels.FromStrings(model.MetricNameLabel, "foo")
+	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
 	nomc := consumertest.NewNop()
 	tr := newTransaction(scrapeCtx, nil, true, nil, nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
@@ -88,20 +86,37 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 	nomc := consumertest.NewNop()
 	tr := newTransaction(scrapeCtx, nil, true, nil, nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, errMetricNameNotFound)
+
+	assert.ErrorIs(t, tr.Commit(), errNoDataToBuild)
+}
+
+func TestTransactionAppendEmptyMetricName(t *testing.T) {
+	nomc := consumertest.NewNop()
+	tr := newTransaction(scrapeCtx, nil, true, nil, nomc, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test2",
+		model.MetricNameLabel: "",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.ErrorIs(t, err, errMetricNameNotFound)
 }
 
 func TestTransactionAppend(t *testing.T) {
-	goodLabels := labels.FromMap(map[string]string{
-		model.InstanceLabel:   "localhost:8080",
-		model.JobLabel:        "test",
-		model.MetricNameLabel: "foo",
-	})
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
-	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
-	tr.metricBuilder.startTime = 1.0 // set to a non-zero value
+	_, err = tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: startTimeMetricName,
+	}), time.Now().UnixMilli(), 1.0)
+	assert.NoError(t, err)
 	assert.NoError(t, tr.Commit())
 	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
 	mds := sink.AllMetrics()
@@ -114,30 +129,30 @@ func TestTransactionCommitErrorWhenNoStarTime(t *testing.T) {
 	goodLabels := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
-		model.MetricNameLabel: "foo",
+		model.MetricNameLabel: "counter_test",
 	})
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
-	tr.metricBuilder.startTime = 0 // zero value means the start time metric is missing
 	assert.ErrorIs(t, tr.Commit(), errNoStartTimeMetrics)
 }
 
 func TestTransactionAppendExemplar(t *testing.T) {
-	var ed exemplar.Exemplar
-	ed.Ts = 1660233371385
-	ed.Value = 0.012
-	ed.Labels = labels.FromMap(map[string]string{
-		model.InstanceLabel: "localhost:8080",
-		model.JobLabel:      "test",
-		"trace_id":          "0000a5bc3defg93h",
-		"span_id":           "0000a5bc3defg93h",
-	})
+	ed := exemplar.Exemplar{
+		Labels: labels.FromMap(map[string]string{
+			"foo":      "bar",
+			traceIDKey: "1234567890abcdeffedcba0987654321",
+			spanIDKey:  "8765432112345678",
+		}),
+		Ts:    1660233371385,
+		HasTs: true,
+		Value: 0.012,
+	}
 	lbls := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
-		model.MetricNameLabel: "foo_request_duration"})
+		model.MetricNameLabel: "counter_test"})
 
 	sink := new(consumertest.MetricsSink)
 	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
@@ -148,25 +163,60 @@ func TestTransactionAppendExemplar(t *testing.T) {
 	assert.NoError(t, err)
 	fn := normalizeMetricName(lbls.Get(model.MetricNameLabel))
 	gk := tr.metricBuilder.families[fn].getGroupKey(lbls)
-	expected := tr.metricBuilder.families[fn].groups[gk].exemplars[ed.Value]
-	assert.Equal(t, expected.Timestamp(), pcommon.NewTimestampFromTime(time.UnixMilli(ed.Ts)))
-	assert.Equal(t, expected.DoubleVal(), ed.Value)
-	assert.Equal(t, expected.TraceID().HexString(), getTraceID("0000a5bc3defg93h"))
-	assert.Equal(t, expected.SpanID().HexString(), getSpanID("0000a5bc3defg93h"))
+	got := tr.metricBuilder.families[fn].groups[gk].exemplars[ed.Value]
+	assert.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(ed.Ts)), got.Timestamp())
+	assert.Equal(t, ed.Value, got.DoubleVal())
+	assert.Equal(t, "1234567890abcdeffedcba0987654321", got.TraceID().HexString())
+	assert.Equal(t, "8765432112345678", got.SpanID().HexString())
+	assert.Equal(t, pcommon.NewMapFromRaw(map[string]interface{}{"foo": "bar"}), got.FilteredAttributes())
 }
 
-func getTraceID(trace string) string {
-	var tid [16]byte
-	tr, _ := hex.DecodeString(trace)
-	copyToLowerBytes(tid[:], tr)
-	return pcommon.TraceID(tid).HexString()
+// Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
+func TestTransactionAppendDuplicateLabels(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+
+	dupLabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "counter_test",
+		"a", "1",
+		"a", "1",
+		"z", "9",
+		"z", "1",
+	)
+
+	_, err := tr.Append(0, dupLabels, 1917, 1.0)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: ["a" "z"]`)
 }
 
-func getSpanID(span string) string {
-	var sid [8]byte
-	sp, _ := hex.DecodeString(span)
-	copyToLowerBytes(sid[:], sp)
-	return pcommon.SpanID(sid).HexString()
+func TestTransactionAppendHistogramNoLe(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+
+	goodLabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "hist_test_bucket",
+	)
+
+	_, err := tr.Append(0, goodLabels, 1917, 1.0)
+	require.ErrorIs(t, err, errEmptyLeLabel)
+}
+
+func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+
+	goodLabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "summary_test",
+	)
+
+	_, err := tr.Append(0, goodLabels, 1917, 1.0)
+	require.ErrorIs(t, err, errEmptyQuantileLabel)
 }
 
 func nopObsRecv() *obsreport.Receiver {
