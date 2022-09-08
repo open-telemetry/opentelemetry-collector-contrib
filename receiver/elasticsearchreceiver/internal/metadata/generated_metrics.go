@@ -757,7 +757,7 @@ func (m *metricElasticsearchBreakerMemoryEstimated) init() {
 	m.data.SetName("elasticsearch.breaker.memory.estimated")
 	m.data.SetDescription("Estimated memory used for the operation.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -808,7 +808,7 @@ func (m *metricElasticsearchBreakerMemoryLimit) init() {
 	m.data.SetName("elasticsearch.breaker.memory.limit")
 	m.data.SetDescription("Memory limit for the circuit breaker.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -861,7 +861,7 @@ func (m *metricElasticsearchBreakerTripped) init() {
 	m.data.SetName("elasticsearch.breaker.tripped")
 	m.data.SetDescription("Total number of times the circuit breaker has been triggered and prevented an out of memory error.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -914,7 +914,7 @@ func (m *metricElasticsearchClusterDataNodes) init() {
 	m.data.SetName("elasticsearch.cluster.data_nodes")
 	m.data.SetDescription("The number of data nodes in the cluster.")
 	m.data.SetUnit("{nodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -965,7 +965,7 @@ func (m *metricElasticsearchClusterHealth) init() {
 	m.data.SetName("elasticsearch.cluster.health")
 	m.data.SetDescription("The health status of the cluster.")
 	m.data.SetUnit("{status}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1018,7 +1018,7 @@ func (m *metricElasticsearchClusterNodes) init() {
 	m.data.SetName("elasticsearch.cluster.nodes")
 	m.data.SetDescription("The total number of nodes in the cluster.")
 	m.data.SetUnit("{nodes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1069,7 +1069,7 @@ func (m *metricElasticsearchClusterPublishedStatesDifferences) init() {
 	m.data.SetName("elasticsearch.cluster.published_states.differences")
 	m.data.SetDescription("Number of differences between published cluster states.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1122,7 +1122,7 @@ func (m *metricElasticsearchClusterPublishedStatesFull) init() {
 	m.data.SetName("elasticsearch.cluster.published_states.full")
 	m.data.SetDescription("Number of published cluster states.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1173,7 +1173,7 @@ func (m *metricElasticsearchClusterShards) init() {
 	m.data.SetName("elasticsearch.cluster.shards")
 	m.data.SetDescription("The number of shards in the cluster.")
 	m.data.SetUnit("{shards}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1226,7 +1226,7 @@ func (m *metricElasticsearchClusterStateQueue) init() {
 	m.data.SetName("elasticsearch.cluster.state_queue")
 	m.data.SetDescription("Number of cluster states in queue.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1279,7 +1279,7 @@ func (m *metricElasticsearchClusterStateUpdateCount) init() {
 	m.data.SetName("elasticsearch.cluster.state_update.count")
 	m.data.SetDescription("The number of cluster state update attempts that changed the cluster state since the node started.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1332,7 +1332,7 @@ func (m *metricElasticsearchClusterStateUpdateTime) init() {
 	m.data.SetName("elasticsearch.cluster.state_update.time")
 	m.data.SetDescription("The cumulative amount of time updating the cluster state since the node started.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1386,7 +1386,7 @@ func (m *metricElasticsearchIndexingPressureMemoryLimit) init() {
 	m.data.SetName("elasticsearch.indexing_pressure.memory.limit")
 	m.data.SetDescription("Configured memory limit, in bytes, for the indexing requests.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricElasticsearchIndexingPressureMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1435,7 +1435,7 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections) init()
 	m.data.SetName("elasticsearch.indexing_pressure.memory.total.primary_rejections")
 	m.data.SetDescription("Cumulative number of indexing requests rejected in the primary stage.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1486,7 +1486,7 @@ func (m *metricElasticsearchIndexingPressureMemoryTotalReplicaRejections) init()
 	m.data.SetName("elasticsearch.indexing_pressure.memory.total.replica_rejections")
 	m.data.SetDescription("Number of indexing requests rejected in the replica stage.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1537,7 +1537,7 @@ func (m *metricElasticsearchMemoryIndexingPressure) init() {
 	m.data.SetName("elasticsearch.memory.indexing_pressure")
 	m.data.SetDescription("Memory consumed, in bytes, by indexing requests in the specified stage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1590,7 +1590,7 @@ func (m *metricElasticsearchNodeCacheEvictions) init() {
 	m.data.SetName("elasticsearch.node.cache.evictions")
 	m.data.SetDescription("The number of evictions from the cache.")
 	m.data.SetUnit("{evictions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1643,7 +1643,7 @@ func (m *metricElasticsearchNodeCacheMemoryUsage) init() {
 	m.data.SetName("elasticsearch.node.cache.memory.usage")
 	m.data.SetDescription("The size in bytes of the cache.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1696,7 +1696,7 @@ func (m *metricElasticsearchNodeClusterConnections) init() {
 	m.data.SetName("elasticsearch.node.cluster.connections")
 	m.data.SetDescription("The number of open tcp connections for internal cluster communication.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1747,7 +1747,7 @@ func (m *metricElasticsearchNodeClusterIo) init() {
 	m.data.SetName("elasticsearch.node.cluster.io")
 	m.data.SetDescription("The number of bytes sent and received on the network for internal cluster communication.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1800,7 +1800,7 @@ func (m *metricElasticsearchNodeClusterIoReceived) init() {
 	m.data.SetName("elasticsearch.node.cluster.io.received")
 	m.data.SetDescription("The number of bytes received on the network for internal cluster communication.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1851,7 +1851,7 @@ func (m *metricElasticsearchNodeClusterIoSent) init() {
 	m.data.SetName("elasticsearch.node.cluster.io.sent")
 	m.data.SetDescription("The number of bytes sent on the network for internal cluster communication.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1902,7 +1902,7 @@ func (m *metricElasticsearchNodeDiskIoRead) init() {
 	m.data.SetName("elasticsearch.node.disk.io.read")
 	m.data.SetDescription("The total number of kilobytes read across all file stores for this node.")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1953,7 +1953,7 @@ func (m *metricElasticsearchNodeDiskIoWrite) init() {
 	m.data.SetName("elasticsearch.node.disk.io.write")
 	m.data.SetDescription("The total number of kilobytes written across all file stores for this node.")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2004,7 +2004,7 @@ func (m *metricElasticsearchNodeDocuments) init() {
 	m.data.SetName("elasticsearch.node.documents")
 	m.data.SetDescription("The number of documents on the node.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2057,7 +2057,7 @@ func (m *metricElasticsearchNodeFsDiskAvailable) init() {
 	m.data.SetName("elasticsearch.node.fs.disk.available")
 	m.data.SetDescription("The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2108,7 +2108,7 @@ func (m *metricElasticsearchNodeFsDiskFree) init() {
 	m.data.SetName("elasticsearch.node.fs.disk.free")
 	m.data.SetDescription("The amount of unallocated disk space across all file stores for this node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2159,7 +2159,7 @@ func (m *metricElasticsearchNodeFsDiskTotal) init() {
 	m.data.SetName("elasticsearch.node.fs.disk.total")
 	m.data.SetDescription("The amount of disk space across all file stores for this node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2210,7 +2210,7 @@ func (m *metricElasticsearchNodeHTTPConnections) init() {
 	m.data.SetName("elasticsearch.node.http.connections")
 	m.data.SetDescription("The number of HTTP connections to the node.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2261,7 +2261,7 @@ func (m *metricElasticsearchNodeIngestDocuments) init() {
 	m.data.SetName("elasticsearch.node.ingest.documents")
 	m.data.SetDescription("Total number of documents ingested during the lifetime of this node.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2312,7 +2312,7 @@ func (m *metricElasticsearchNodeIngestDocumentsCurrent) init() {
 	m.data.SetName("elasticsearch.node.ingest.documents.current")
 	m.data.SetDescription("Total number of documents currently being ingested.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2363,7 +2363,7 @@ func (m *metricElasticsearchNodeIngestOperationsFailed) init() {
 	m.data.SetName("elasticsearch.node.ingest.operations.failed")
 	m.data.SetDescription("Total number of failed ingest operations during the lifetime of this node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2414,7 +2414,7 @@ func (m *metricElasticsearchNodeOpenFiles) init() {
 	m.data.SetName("elasticsearch.node.open_files")
 	m.data.SetDescription("The number of open file descriptors held by the node.")
 	m.data.SetUnit("{files}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2465,7 +2465,7 @@ func (m *metricElasticsearchNodeOperationsCompleted) init() {
 	m.data.SetName("elasticsearch.node.operations.completed")
 	m.data.SetDescription("The number of operations completed.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2518,7 +2518,7 @@ func (m *metricElasticsearchNodeOperationsTime) init() {
 	m.data.SetName("elasticsearch.node.operations.time")
 	m.data.SetDescription("Time spent on operations.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2571,7 +2571,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsCurrent) init() {
 	m.data.SetName("elasticsearch.node.pipeline.ingest.documents.current")
 	m.data.SetDescription("Total number of documents currently being ingested by a pipeline.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2624,7 +2624,7 @@ func (m *metricElasticsearchNodePipelineIngestDocumentsPreprocessed) init() {
 	m.data.SetName("elasticsearch.node.pipeline.ingest.documents.preprocessed")
 	m.data.SetDescription("Number of documents preprocessed by the ingest pipeline.")
 	m.data.SetUnit("{documents}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2677,7 +2677,7 @@ func (m *metricElasticsearchNodePipelineIngestOperationsFailed) init() {
 	m.data.SetName("elasticsearch.node.pipeline.ingest.operations.failed")
 	m.data.SetDescription("Total number of failed operations for the ingest pipeline.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2730,7 +2730,7 @@ func (m *metricElasticsearchNodeScriptCacheEvictions) init() {
 	m.data.SetName("elasticsearch.node.script.cache_evictions")
 	m.data.SetDescription("Total number of times the script cache has evicted old data.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2781,7 +2781,7 @@ func (m *metricElasticsearchNodeScriptCompilationLimitTriggered) init() {
 	m.data.SetName("elasticsearch.node.script.compilation_limit_triggered")
 	m.data.SetDescription("Total number of times the script compilation circuit breaker has limited inline script compilations.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2832,7 +2832,7 @@ func (m *metricElasticsearchNodeScriptCompilations) init() {
 	m.data.SetName("elasticsearch.node.script.compilations")
 	m.data.SetDescription("Total number of inline script compilations performed by the node.")
 	m.data.SetUnit("{compilations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2883,7 +2883,7 @@ func (m *metricElasticsearchNodeShardsDataSetSize) init() {
 	m.data.SetName("elasticsearch.node.shards.data_set.size")
 	m.data.SetDescription("Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2934,7 +2934,7 @@ func (m *metricElasticsearchNodeShardsReservedSize) init() {
 	m.data.SetName("elasticsearch.node.shards.reserved.size")
 	m.data.SetDescription("A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2985,7 +2985,7 @@ func (m *metricElasticsearchNodeShardsSize) init() {
 	m.data.SetName("elasticsearch.node.shards.size")
 	m.data.SetDescription("The size of the shards assigned to this node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3036,7 +3036,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksFinished) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.tasks.finished")
 	m.data.SetDescription("The number of tasks finished by the thread pool.")
 	m.data.SetUnit("{tasks}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3090,7 +3090,7 @@ func (m *metricElasticsearchNodeThreadPoolTasksQueued) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.tasks.queued")
 	m.data.SetDescription("The number of queued tasks in the thread pool.")
 	m.data.SetUnit("{tasks}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3143,7 +3143,7 @@ func (m *metricElasticsearchNodeThreadPoolThreads) init() {
 	m.data.SetName("elasticsearch.node.thread_pool.threads")
 	m.data.SetDescription("The number of threads in the thread pool.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3197,7 +3197,7 @@ func (m *metricElasticsearchNodeTranslogOperations) init() {
 	m.data.SetName("elasticsearch.node.translog.operations")
 	m.data.SetDescription("Number of transaction log operations.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3248,7 +3248,7 @@ func (m *metricElasticsearchNodeTranslogSize) init() {
 	m.data.SetName("elasticsearch.node.translog.size")
 	m.data.SetDescription("Size of the transaction log.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3299,7 +3299,7 @@ func (m *metricElasticsearchNodeTranslogUncommittedSize) init() {
 	m.data.SetName("elasticsearch.node.translog.uncommitted.size")
 	m.data.SetDescription("Size of uncommitted transaction log operations.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3350,7 +3350,7 @@ func (m *metricElasticsearchOsCPULoadAvg15m) init() {
 	m.data.SetName("elasticsearch.os.cpu.load_avg.15m")
 	m.data.SetDescription("Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricElasticsearchOsCPULoadAvg15m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3399,7 +3399,7 @@ func (m *metricElasticsearchOsCPULoadAvg1m) init() {
 	m.data.SetName("elasticsearch.os.cpu.load_avg.1m")
 	m.data.SetDescription("One-minute load average on the system (field is not present if one-minute load average is not available).")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricElasticsearchOsCPULoadAvg1m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3448,7 +3448,7 @@ func (m *metricElasticsearchOsCPULoadAvg5m) init() {
 	m.data.SetName("elasticsearch.os.cpu.load_avg.5m")
 	m.data.SetDescription("Five-minute load average on the system (field is not present if five-minute load average is not available).")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricElasticsearchOsCPULoadAvg5m) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3497,7 +3497,7 @@ func (m *metricElasticsearchOsCPUUsage) init() {
 	m.data.SetName("elasticsearch.os.cpu.usage")
 	m.data.SetDescription("Recent CPU usage for the whole system, or -1 if not supported.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricElasticsearchOsCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3546,7 +3546,7 @@ func (m *metricElasticsearchOsMemory) init() {
 	m.data.SetName("elasticsearch.os.memory")
 	m.data.SetDescription("Amount of physical memory.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3597,7 +3597,7 @@ func (m *metricJvmClassesLoaded) init() {
 	m.data.SetName("jvm.classes.loaded")
 	m.data.SetDescription("The number of loaded classes")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmClassesLoaded) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3646,7 +3646,7 @@ func (m *metricJvmGcCollectionsCount) init() {
 	m.data.SetName("jvm.gc.collections.count")
 	m.data.SetDescription("The total number of garbage collections that have occurred")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3699,7 +3699,7 @@ func (m *metricJvmGcCollectionsElapsed) init() {
 	m.data.SetName("jvm.gc.collections.elapsed")
 	m.data.SetDescription("The approximate accumulated collection elapsed time")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3752,7 +3752,7 @@ func (m *metricJvmMemoryHeapCommitted) init() {
 	m.data.SetName("jvm.memory.heap.committed")
 	m.data.SetDescription("The amount of memory that is guaranteed to be available for the heap")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmMemoryHeapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3801,7 +3801,7 @@ func (m *metricJvmMemoryHeapMax) init() {
 	m.data.SetName("jvm.memory.heap.max")
 	m.data.SetDescription("The maximum amount of memory can be used for the heap")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmMemoryHeapMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3850,7 +3850,7 @@ func (m *metricJvmMemoryHeapUsed) init() {
 	m.data.SetName("jvm.memory.heap.used")
 	m.data.SetDescription("The current heap memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmMemoryHeapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3899,7 +3899,7 @@ func (m *metricJvmMemoryNonheapCommitted) init() {
 	m.data.SetName("jvm.memory.nonheap.committed")
 	m.data.SetDescription("The amount of memory that is guaranteed to be available for non-heap purposes")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmMemoryNonheapCommitted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3948,7 +3948,7 @@ func (m *metricJvmMemoryNonheapUsed) init() {
 	m.data.SetName("jvm.memory.nonheap.used")
 	m.data.SetDescription("The current non-heap memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmMemoryNonheapUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -3997,7 +3997,7 @@ func (m *metricJvmMemoryPoolMax) init() {
 	m.data.SetName("jvm.memory.pool.max")
 	m.data.SetDescription("The maximum amount of memory can be used for the memory pool")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4048,7 +4048,7 @@ func (m *metricJvmMemoryPoolUsed) init() {
 	m.data.SetName("jvm.memory.pool.used")
 	m.data.SetDescription("The current memory pool memory usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4099,7 +4099,7 @@ func (m *metricJvmThreadsCount) init() {
 	m.data.SetName("jvm.threads.count")
 	m.data.SetDescription("The current number of threads")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricJvmThreadsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

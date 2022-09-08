@@ -141,7 +141,7 @@ func (m *metricSqlserverBatchRequestRate) init() {
 	m.data.SetName("sqlserver.batch.request.rate")
 	m.data.SetDescription("Number of batch requests received by SQL Server.")
 	m.data.SetUnit("{requests}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverBatchRequestRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -190,7 +190,7 @@ func (m *metricSqlserverBatchSQLCompilationRate) init() {
 	m.data.SetName("sqlserver.batch.sql_compilation.rate")
 	m.data.SetDescription("Number of SQL compilations needed.")
 	m.data.SetUnit("{compilations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverBatchSQLCompilationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -239,7 +239,7 @@ func (m *metricSqlserverBatchSQLRecompilationRate) init() {
 	m.data.SetName("sqlserver.batch.sql_recompilation.rate")
 	m.data.SetDescription("Number of SQL recompilations needed.")
 	m.data.SetUnit("{compilations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverBatchSQLRecompilationRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -288,7 +288,7 @@ func (m *metricSqlserverLockWaitRate) init() {
 	m.data.SetName("sqlserver.lock.wait.rate")
 	m.data.SetDescription("Number of lock requests resulting in a wait.")
 	m.data.SetUnit("{requests}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverLockWaitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -337,7 +337,7 @@ func (m *metricSqlserverLockWaitTimeAvg) init() {
 	m.data.SetName("sqlserver.lock.wait_time.avg")
 	m.data.SetDescription("Average wait time for all lock requests that had to wait.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverLockWaitTimeAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -386,7 +386,7 @@ func (m *metricSqlserverPageBufferCacheHitRatio) init() {
 	m.data.SetName("sqlserver.page.buffer_cache.hit_ratio")
 	m.data.SetDescription("Pages found in the buffer pool without having to read from disk.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverPageBufferCacheHitRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -435,7 +435,7 @@ func (m *metricSqlserverPageCheckpointFlushRate) init() {
 	m.data.SetName("sqlserver.page.checkpoint.flush.rate")
 	m.data.SetDescription("Number of pages flushed by operations requiring dirty pages to be flushed.")
 	m.data.SetUnit("{pages}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverPageCheckpointFlushRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -484,7 +484,7 @@ func (m *metricSqlserverPageLazyWriteRate) init() {
 	m.data.SetName("sqlserver.page.lazy_write.rate")
 	m.data.SetDescription("Number of lazy writes moving dirty pages to disk.")
 	m.data.SetUnit("{writes}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverPageLazyWriteRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -533,7 +533,7 @@ func (m *metricSqlserverPageLifeExpectancy) init() {
 	m.data.SetName("sqlserver.page.life_expectancy")
 	m.data.SetDescription("Time a page will stay in the buffer pool.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverPageLifeExpectancy) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -582,7 +582,7 @@ func (m *metricSqlserverPageOperationRate) init() {
 	m.data.SetName("sqlserver.page.operation.rate")
 	m.data.SetDescription("Number of physical database page operations issued.")
 	m.data.SetUnit("{operations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -633,7 +633,7 @@ func (m *metricSqlserverPageSplitRate) init() {
 	m.data.SetName("sqlserver.page.split.rate")
 	m.data.SetDescription("Number of pages split as a result of overflowing index pages.")
 	m.data.SetUnit("{pages}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverPageSplitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -682,7 +682,7 @@ func (m *metricSqlserverTransactionRate) init() {
 	m.data.SetName("sqlserver.transaction.rate")
 	m.data.SetDescription("Number of transactions started for the database (not including XTP-only transactions).")
 	m.data.SetUnit("{transactions}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -731,7 +731,7 @@ func (m *metricSqlserverTransactionWriteRate) init() {
 	m.data.SetName("sqlserver.transaction.write.rate")
 	m.data.SetDescription("Number of transactions that wrote to the database and committed.")
 	m.data.SetUnit("{transactions}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionWriteRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -780,7 +780,7 @@ func (m *metricSqlserverTransactionLogFlushDataRate) init() {
 	m.data.SetName("sqlserver.transaction_log.flush.data.rate")
 	m.data.SetDescription("Total number of log bytes flushed.")
 	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionLogFlushDataRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -829,7 +829,7 @@ func (m *metricSqlserverTransactionLogFlushRate) init() {
 	m.data.SetName("sqlserver.transaction_log.flush.rate")
 	m.data.SetDescription("Number of log flushes.")
 	m.data.SetUnit("{flushes}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionLogFlushRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -878,7 +878,7 @@ func (m *metricSqlserverTransactionLogFlushWaitRate) init() {
 	m.data.SetName("sqlserver.transaction_log.flush.wait.rate")
 	m.data.SetDescription("Number of commits waiting for a transaction log flush.")
 	m.data.SetUnit("{commits}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionLogFlushWaitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -927,7 +927,7 @@ func (m *metricSqlserverTransactionLogGrowthCount) init() {
 	m.data.SetName("sqlserver.transaction_log.growth.count")
 	m.data.SetDescription("Total number of transaction log expansions for a database.")
 	m.data.SetUnit("{growths}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -978,7 +978,7 @@ func (m *metricSqlserverTransactionLogShrinkCount) init() {
 	m.data.SetName("sqlserver.transaction_log.shrink.count")
 	m.data.SetDescription("Total number of transaction log shrinks for a database.")
 	m.data.SetUnit("{shrinks}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1029,7 +1029,7 @@ func (m *metricSqlserverTransactionLogUsage) init() {
 	m.data.SetName("sqlserver.transaction_log.usage")
 	m.data.SetDescription("Percent of transaction log space used.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverTransactionLogUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1078,7 +1078,7 @@ func (m *metricSqlserverUserConnectionCount) init() {
 	m.data.SetName("sqlserver.user.connection.count")
 	m.data.SetDescription("Number of users connected to the SQL Server.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricSqlserverUserConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {

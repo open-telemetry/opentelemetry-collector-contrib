@@ -1555,8 +1555,7 @@ func createMetricTelemetry() pmetric.Metric {
 	metric.SetName("name")
 	metric.SetDescription("description")
 	metric.SetUnit("unit")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	metric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	metric.Sum().SetIsMonotonic(true)
 	return metric
 }

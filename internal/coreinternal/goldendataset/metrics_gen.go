@@ -122,22 +122,18 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 		g.populateMetricDesc(cfg, metric)
 		switch cfg.MetricDescriptorType {
 		case pmetric.MetricDataTypeGauge:
-			metric.SetDataType(pmetric.MetricDataTypeGauge)
-			populateNumberPoints(cfg, metric.Gauge().DataPoints())
+			populateNumberPoints(cfg, metric.SetEmptyGauge().DataPoints())
 		case pmetric.MetricDataTypeSum:
-			metric.SetDataType(pmetric.MetricDataTypeSum)
-			sum := metric.Sum()
+			sum := metric.SetEmptySum()
 			sum.SetIsMonotonic(cfg.IsMonotonicSum)
 			sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateNumberPoints(cfg, sum.DataPoints())
 		case pmetric.MetricDataTypeHistogram:
-			metric.SetDataType(pmetric.MetricDataTypeHistogram)
-			histo := metric.Histogram()
+			histo := metric.SetEmptyHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateDoubleHistogram(cfg, histo)
 		case pmetric.MetricDataTypeExponentialHistogram:
-			metric.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-			histo := metric.ExponentialHistogram()
+			histo := metric.SetEmptyExponentialHistogram()
 			histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 			populateExpoHistogram(cfg, histo)
 		}

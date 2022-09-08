@@ -5,9 +5,9 @@ go 1.18
 require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220907232555-bef9373cfc20
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20
-	go.opentelemetry.io/collector/semconv v0.59.1-0.20220907232555-bef9373cfc20
+	go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220908061648-35cf596fc177
 	go.uber.org/zap v1.23.0
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f
 )

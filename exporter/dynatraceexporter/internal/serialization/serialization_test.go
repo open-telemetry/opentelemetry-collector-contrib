@@ -37,9 +37,8 @@ func TestSerializeMetric(t *testing.T) {
 
 	t.Run("correctly creates a gauge", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		metric.SetName("metric_name")
-		gaugeDp := metric.Gauge().DataPoints().AppendEmpty()
+		gaugeDp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 		gaugeDp.SetIntVal(3)
 
 		prev := ttlmap.New(1, 1)
@@ -55,9 +54,8 @@ func TestSerializeMetric(t *testing.T) {
 	t.Run("correctly creates a counter from a sum", func(t *testing.T) {
 		// more in-depth tests for the different sum serializations are in sum_test.go
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeSum)
 		metric.SetName("metric_name")
-		sum := metric.Sum()
+		sum := metric.SetEmptySum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		sumDp := sum.DataPoints().AppendEmpty()
@@ -75,9 +73,8 @@ func TestSerializeMetric(t *testing.T) {
 
 	t.Run("correctly creates a summary from histogram", func(t *testing.T) {
 		metric := pmetric.NewMetric()
-		metric.SetDataType(pmetric.MetricDataTypeHistogram)
 		metric.SetName("metric_name")
-		hist := metric.Histogram()
+		hist := metric.SetEmptyHistogram()
 		hist.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := hist.DataPoints().AppendEmpty()
 		dp.SetMin(1)

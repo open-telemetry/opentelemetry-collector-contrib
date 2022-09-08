@@ -76,8 +76,7 @@ func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.T
 func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeHistogram)
-	histogram := metric.Histogram()
+	histogram := metric.SetEmptyHistogram()
 	histogram.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
 	destPointL := histogram.DataPoints()
@@ -117,9 +116,7 @@ func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Time
 func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-
-	destPointL := metric.Gauge().DataPoints()
+	destPointL := metric.SetEmptyGauge().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
 		point.CopyTo(destPoint)
@@ -131,8 +128,7 @@ func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric 
 func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	sum := metric.Sum()
+	sum := metric.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
 
@@ -182,9 +178,7 @@ func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Tim
 func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
-	metric.SetDataType(pmetric.MetricDataTypeSummary)
-
-	destPointL := metric.Summary().DataPoints()
+	destPointL := metric.SetEmptySummary().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
 		point.CopyTo(destPoint)
