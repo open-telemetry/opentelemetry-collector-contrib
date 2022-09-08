@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
@@ -139,7 +138,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(bucketCounts))
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := pdataTimestampFromMs(mg.ts)
+	tsNanos := timestampFromMs(mg.ts)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricDataTypeHistogram, mg.ls, point.Attributes())
@@ -151,11 +150,6 @@ func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
 		exemplar := exemplars.AppendEmpty()
 		e.MoveTo(exemplar)
 	}
-}
-
-func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
-	secs, ns := timeAtMs/1e3, (timeAtMs%1e3)*1e6
-	return pcommon.NewTimestampFromTime(time.Unix(secs, ns))
 }
 
 func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
@@ -196,14 +190,14 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// observations and the corresponding sum is a sum of all observed values, thus the sum and count used
 	// at the global level of the metricspb.SummaryValue
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
-	tsNanos := pdataTimestampFromMs(mg.ts)
+	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	populateAttributes(pmetric.MetricDataTypeSummary, mg.ls, point.Attributes())
 }
 
 func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
-	tsNanos := pdataTimestampFromMs(mg.ts)
+	tsNanos := timestampFromMs(mg.ts)
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
 	if mg.family.mtype == pmetric.MetricDataTypeSum {
