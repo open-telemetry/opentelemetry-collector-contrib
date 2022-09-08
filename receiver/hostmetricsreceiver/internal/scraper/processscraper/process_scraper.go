@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	cpuMetricsLen               = 1
+	cpuMetricsLen               = 2
 	memoryMetricsLen            = 2
 	memoryUtilizationMetricsLen = 1
 	diskMetricsLen              = 1
