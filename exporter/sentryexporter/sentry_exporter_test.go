@@ -305,7 +305,7 @@ func TestSpanToSentrySpan(t *testing.T) {
 		kind := ptrace.SpanKindClient
 		statusMessage := "message"
 
-		testSpan.Attributes().InsertString("key", "value")
+		testSpan.Attributes().UpsertString("key", "value")
 
 		testSpan.SetTraceID(traceID)
 		testSpan.SetSpanID(spanID)
@@ -457,10 +457,10 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 func TestGenerateTagsFromAttributes(t *testing.T) {
 	attrs := pcommon.NewMap()
 
-	attrs.InsertString("string-key", "string-value")
-	attrs.InsertBool("bool-key", true)
-	attrs.InsertDouble("double-key", 123.123)
-	attrs.InsertInt("int-key", 321)
+	attrs.UpsertString("string-key", "string-value")
+	attrs.UpsertBool("bool-key", true)
+	attrs.UpsertDouble("double-key", 123.123)
+	attrs.UpsertInt("int-key", 321)
 
 	tags := generateTagsFromAttributes(attrs)
 

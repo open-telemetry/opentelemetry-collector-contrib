@@ -126,7 +126,7 @@ type testData struct {
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
-	metricPaths := make([]string, 0)
+	var metricPaths []string
 	for _, t := range tds {
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
@@ -233,7 +233,7 @@ func metricsCount(resourceMetric pmetric.ResourceMetrics) int {
 }
 
 func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics) []pmetric.ResourceMetrics {
-	out := make([]pmetric.ResourceMetrics, 0)
+	var out []pmetric.ResourceMetrics
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
@@ -267,25 +267,25 @@ func isFirstFailedScrape(metrics []pmetric.Metric) bool {
 		switch m.DataType() {
 		case pmetric.MetricDataTypeGauge:
 			for i := 0; i < m.Gauge().DataPoints().Len(); i++ {
-				if !m.Gauge().DataPoints().At(i).Flags().NoRecordedValue() {
+				if !m.Gauge().DataPoints().At(i).FlagsImmutable().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeSum:
 			for i := 0; i < m.Sum().DataPoints().Len(); i++ {
-				if !m.Sum().DataPoints().At(i).Flags().NoRecordedValue() {
+				if !m.Sum().DataPoints().At(i).FlagsImmutable().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeHistogram:
 			for i := 0; i < m.Histogram().DataPoints().Len(); i++ {
-				if !m.Histogram().DataPoints().At(i).Flags().NoRecordedValue() {
+				if !m.Histogram().DataPoints().At(i).FlagsImmutable().NoRecordedValue() {
 					return false
 				}
 			}
 		case pmetric.MetricDataTypeSummary:
 			for i := 0; i < m.Summary().DataPoints().Len(); i++ {
-				if !m.Summary().DataPoints().At(i).Flags().NoRecordedValue() {
+				if !m.Summary().DataPoints().At(i).FlagsImmutable().NoRecordedValue() {
 					return false
 				}
 			}
@@ -367,8 +367,7 @@ func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.Resource
 	})
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator,
-	dataPointExpectations []dataPointExpectation) testExpectation {
+func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
 		for _, m := range allMetrics {
@@ -377,17 +376,17 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 			}
 			metricTypeExpectations(t, m)
 			for i, de := range dataPointExpectations {
-				for _, npc := range de.numberPointComparator {
-					switch m.DataType() {
-					case pmetric.MetricDataTypeGauge:
+				switch m.DataType() {
+				case pmetric.MetricDataTypeGauge:
+					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Gauge().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Gauge metric does not match to testdata")
 						npc(t, m.Gauge().DataPoints().At(i))
-					case pmetric.MetricDataTypeSum:
+					}
+				case pmetric.MetricDataTypeSum:
+					for _, npc := range de.numberPointComparator {
 						require.Equal(t, m.Sum().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Sum metric does not match to testdata")
 						npc(t, m.Sum().DataPoints().At(i))
 					}
-				}
-				switch m.DataType() {
 				case pmetric.MetricDataTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
 						require.Equal(t, m.Histogram().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Histogram metric does not match to testdata")
@@ -482,21 +481,21 @@ func compareHistogramAttributes(attributes map[string]string) histogramPointComp
 
 func assertNumberPointFlagNoRecordedValue() numberPointComparator {
 	return func(t *testing.T, numberDataPoint pmetric.NumberDataPoint) {
-		assert.True(t, numberDataPoint.Flags().NoRecordedValue(),
+		assert.True(t, numberDataPoint.FlagsImmutable().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
 
 func assertHistogramPointFlagNoRecordedValue() histogramPointComparator {
 	return func(t *testing.T, histogramDataPoint pmetric.HistogramDataPoint) {
-		assert.True(t, histogramDataPoint.Flags().NoRecordedValue(),
+		assert.True(t, histogramDataPoint.FlagsImmutable().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
 
 func assertSummaryPointFlagNoRecordedValue() summaryPointComparator {
 	return func(t *testing.T, summaryDataPoint pmetric.SummaryDataPoint) {
-		assert.True(t, summaryDataPoint.Flags().NoRecordedValue(),
+		assert.True(t, summaryDataPoint.FlagsImmutable().NoRecordedValue(),
 			"Datapoint flag for staleness marker not found as expected")
 	}
 }
@@ -656,11 +655,7 @@ func splitMetricsByTarget(metrics []pmetric.Metrics) map[string][]pmetric.Resour
 		rms := md.ResourceMetrics()
 		for i := 0; i < rms.Len(); i++ {
 			name, _ := rms.At(i).Resource().Attributes().Get("service.name")
-			pResult, ok := pResults[name.AsString()]
-			if !ok {
-				pResult = make([]pmetric.ResourceMetrics, 0)
-			}
-			pResults[name.AsString()] = append(pResult, rms.At(i))
+			pResults[name.AsString()] = append(pResults[name.AsString()], rms.At(i))
 		}
 	}
 	return pResults

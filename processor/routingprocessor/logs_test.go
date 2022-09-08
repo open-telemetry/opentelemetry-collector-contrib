@@ -56,8 +56,8 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -78,7 +78,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
@@ -120,8 +120,8 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -143,7 +143,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+		rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 0,
@@ -157,7 +157,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		l := plog.NewLogs()
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
+		rl.Resource().Attributes().UpsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 		assert.Len(t, defaultExp.AllLogs(), 1,
@@ -178,8 +178,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -201,8 +201,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 
 	l := plog.NewLogs()
 	rm := l.ResourceLogs().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
-	rm.Resource().Attributes().InsertString("attr", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeLogs(context.Background(), l))
 	logs := lExp.AllLogs()
@@ -225,8 +225,8 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): lExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): lExp,
 				},
 			}
 		},
@@ -247,15 +247,15 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()

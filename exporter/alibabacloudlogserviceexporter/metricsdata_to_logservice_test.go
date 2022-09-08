@@ -34,6 +34,7 @@ func TestMetricDataToLogService(t *testing.T) {
 
 	rm.Resource().Attributes().UpsertString("labelB", "valueB")
 	rm.Resource().Attributes().UpsertString("labelA", "valueA")
+	rm.Resource().Attributes().UpsertString("service.name", "unknown-service")
 	rm.Resource().Attributes().UpsertString("a", "b")
 	sms := rm.ScopeMetrics()
 	sms.AppendEmpty() // Add an empty ScopeMetrics

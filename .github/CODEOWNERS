@@ -103,6 +103,7 @@ pkg/telemetryquerylanguage/                          @open-telemetry/collector-c
 pkg/translator/jaeger/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/opencensus/                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                           @open-telemetry/collector-contrib-approvers @dashpole @bertysentry
+pkg/translator/prometheusremotewrite/                @open-telemetry/collector-contrib-approvers @Aneurysm9
 pkg/translator/signalfx/                             @open-telemetry/collector-contrib-approvers @pmcollins @pjanotti @dmitryax
 pkg/translator/zipkin/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/winperfcounters/                                 @open-telemetry/collector-contrib-approvers @dashpole @mrod1598 @binaryfissiongames
@@ -122,6 +123,7 @@ processor/resourceprocessor/                         @open-telemetry/collector-c
 processor/resourcedetectionprocessor/internal/azure/ @open-telemetry/collector-contrib-approvers @mx-psi
 processor/routingprocessor/                          @open-telemetry/collector-contrib-approvers @jpkrohling @kovrus
 processor/schemaprocessor/                           @open-telemetry/collector-contrib-approvers @MovieStoreGuy
+processor/servicegraphprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 processor/spanmetricsprocessor/                      @open-telemetry/collector-contrib-approvers @albertteoh
 processor/spanprocessor/                             @open-telemetry/collector-contrib-approvers @boostchicken
 processor/tailsamplingprocessor/                     @open-telemetry/collector-contrib-approvers @jpkrohling

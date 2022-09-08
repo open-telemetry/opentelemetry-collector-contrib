@@ -16,12 +16,9 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 const (
@@ -30,54 +27,27 @@ const (
 	stability = component.StabilityLevelBeta
 )
 
-// NewFactory creates a factory for Loki exporter.
+// NewFactory creates a factory for the legacy Loki exporter.
 func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
-		createDefaultConfig,
+		createDefaultLegacyConfig,
 		component.WithLogsExporter(createLogsExporter, stability),
 	)
-}
-
-func createDefaultConfig() config.Exporter {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(config.NewComponentID(typeStr)),
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: "",
-			Timeout:  30 * time.Second,
-			Headers:  map[string]string{},
-			// We almost read 0 bytes, so no need to tune ReadBufferSize.
-			WriteBufferSize: 512 * 1024,
-		},
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		TenantID:      "",
-		Labels: LabelsConfig{
-			Attributes:         map[string]string{},
-			ResourceAttributes: map[string]string{},
-		},
-	}
 }
 
 func createLogsExporter(ctx context.Context, set component.ExporterCreateSettings, config config.Exporter) (component.LogsExporter, error) {
 	expCfg := config.(*Config)
 
-	if err := expCfg.validate(); err != nil {
+	// this should go away once the legacy code is removed, as the config validation happens during the loading
+	// of the config already, it should not be called explicitly here
+	if err := expCfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	exp := newExporter(expCfg, set.TelemetrySettings)
+	if expCfg.isLegacy() {
+		return createLegacyLogsExporter(ctx, set, expCfg)
+	}
 
-	return exporterhelper.NewLogsExporter(
-		ctx,
-		set,
-		expCfg,
-		exp.pushLogData,
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(expCfg.RetrySettings),
-		exporterhelper.WithQueue(expCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.stop),
-	)
+	return createNextLogsExporter(ctx, set, expCfg)
 }

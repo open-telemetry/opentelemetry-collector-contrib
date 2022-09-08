@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -120,7 +120,7 @@ func (kv *Parser) parser(input string, delimiter string) (map[string]interface{}
 		m := strings.Split(raw, delimiter)
 		if len(m) != 2 {
 			e := fmt.Errorf("expected '%s' to split by '%s' into two items, got %d", raw, delimiter, len(m))
-			err = multierror.Append(err, e)
+			err = multierr.Append(err, e)
 			continue
 		}
 

@@ -223,11 +223,11 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 	attrs := pcommon.NewMap()
 	for key, value := range attributes {
 		if cast, ok := value.(int); ok {
-			attrs.InsertInt(key, int64(cast))
+			attrs.UpsertInt(key, int64(cast))
 		} else if cast, ok := value.(int64); ok {
-			attrs.InsertInt(key, cast)
+			attrs.UpsertInt(key, cast)
 		} else {
-			attrs.InsertString(key, fmt.Sprintf("%v", value))
+			attrs.UpsertString(key, fmt.Sprintf("%v", value))
 		}
 	}
 	return attrs

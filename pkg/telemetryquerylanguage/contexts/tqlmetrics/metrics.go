@@ -495,13 +495,13 @@ func accessFlags() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags().AsRaw())
+				return int64(ctx.GetItem().(pmetric.NumberDataPoint).FlagsImmutable())
 			case pmetric.HistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags().AsRaw())
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsImmutable())
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags().AsRaw())
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsImmutable())
 			case pmetric.SummaryDataPoint:
-				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags().AsRaw())
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsImmutable())
 			}
 			return nil
 		},
@@ -509,24 +509,16 @@ func accessFlags() tql.StandardGetSetter {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.NumberDataPoint).Flags(), newFlags)
+					ctx.GetItem().(pmetric.NumberDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
 				case pmetric.HistogramDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.HistogramDataPoint).Flags(), newFlags)
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
 				case pmetric.ExponentialHistogramDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags(), newFlags)
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
 				case pmetric.SummaryDataPoint:
-					setFlagsValue(ctx.GetItem().(pmetric.SummaryDataPoint).Flags(), newFlags)
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
 				}
 			}
 		},
-	}
-}
-
-func setFlagsValue(flags pmetric.MetricDataPointFlags, value int64) {
-	if value&1 != 0 {
-		flags.SetNoRecordedValue(true)
-	} else {
-		flags.SetNoRecordedValue(false)
 	}
 }
 

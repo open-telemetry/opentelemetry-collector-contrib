@@ -66,18 +66,16 @@ func createLogData(numberOfLogs int) plog.Logs {
 			fillComplexAttributeValueMap(logRecord.Attributes().UpsertEmptyMap("map-value"))
 			logRecord.Body().SetStringVal("log contents")
 		case 6:
-			arrayVal := pcommon.NewValueSlice()
-			arrayVal.SliceVal().AppendEmpty().SetStringVal("array")
-			logRecord.Attributes().Insert("array-value", arrayVal)
+			logRecord.Attributes().UpsertEmptySlice("array-value").AppendEmpty().SetStringVal("array")
 			logRecord.Body().SetStringVal("log contents")
 		default:
 			logRecord.Body().SetStringVal("log contents")
 		}
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
-		logRecord.Attributes().Insert("null-value", pcommon.NewValueEmpty())
+		logRecord.Attributes().UpsertString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().UpsertString("my-label", "myapp-type")
+		logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().UpsertString("custom", "custom")
+		logRecord.Attributes().UpsertEmpty("null-value")
 
 		logRecord.SetTimestamp(ts)
 	}

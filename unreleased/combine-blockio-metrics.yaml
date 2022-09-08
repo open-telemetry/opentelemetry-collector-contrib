@@ -1,0 +1,4 @@
+change_type: enhancement
+component: dockerstatsreceiver
+note: "Simplify BlockIO metrics by taking operation out of the metric name and putting it in an attribute."
+issues: [9794, 13445]

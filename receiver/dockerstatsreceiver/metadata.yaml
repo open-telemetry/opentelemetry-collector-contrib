@@ -33,6 +33,9 @@ attributes:
   interface:
     description: "Network interface."
     type: string
+  operation:
+    description: "Type of BlockIO operation."
+    type: string
 
 metrics:
   # CPU
@@ -426,7 +429,7 @@ metrics:
 
 
   # BlockIO
-  container.blockio.io_merged_recursive.read: &merged
+  container.blockio.io_merged_recursive:
     enabled: true
     description: "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -438,13 +441,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_merged_recursive.write: *merged
-  container.blockio.io_merged_recursive.sync: *merged
-  container.blockio.io_merged_recursive.async: *merged
-  container.blockio.io_merged_recursive.discard: *merged
-  container.blockio.io_merged_recursive.total: *merged
+      - operation
 
-  container.blockio.io_queued_recursive.read: &queued
+  container.blockio.io_queued_recursive:
     enabled: true
     description: "Number of requests queued up for this cgroup and its descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -456,13 +455,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_queued_recursive.write: *queued
-  container.blockio.io_queued_recursive.sync: *queued
-  container.blockio.io_queued_recursive.async: *queued
-  container.blockio.io_queued_recursive.discard: *queued
-  container.blockio.io_queued_recursive.total: *queued
+      - operation
 
-  container.blockio.io_service_bytes_recursive.read: &service_bytes
+  container.blockio.io_service_bytes_recursive:
     enabled: true
     description: "Number of bytes transferred to/from the disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -474,13 +469,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_service_bytes_recursive.write: *service_bytes
-  container.blockio.io_service_bytes_recursive.async: *service_bytes
-  container.blockio.io_service_bytes_recursive.sync: *service_bytes
-  container.blockio.io_service_bytes_recursive.discard: *service_bytes
-  container.blockio.io_service_bytes_recursive.total: *service_bytes
+      - operation
 
-  container.blockio.io_service_time_recursive.read: &service_time
+  container.blockio.io_service_time_recursive:
     enabled: true
     description: "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -492,13 +483,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_service_time_recursive.write: *service_time
-  container.blockio.io_service_time_recursive.async: *service_time
-  container.blockio.io_service_time_recursive.sync: *service_time
-  container.blockio.io_service_time_recursive.discard: *service_time
-  container.blockio.io_service_time_recursive.total: *service_time
+      - operation
 
-  container.blockio.io_serviced_recursive.read: &serviced
+  container.blockio.io_serviced_recursive:
     enabled: true
     description: "Number of IOs (bio) issued to the disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -510,13 +497,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_serviced_recursive.write: *serviced
-  container.blockio.io_serviced_recursive.async: *serviced
-  container.blockio.io_serviced_recursive.sync: *serviced
-  container.blockio.io_serviced_recursive.discard: *serviced
-  container.blockio.io_serviced_recursive.total: *serviced
+      - operation
 
-  container.blockio.io_time_recursive.read: &time
+  container.blockio.io_time_recursive:
     enabled: true
     description: "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -528,13 +511,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_time_recursive.write: *time
-  container.blockio.io_time_recursive.async: *time
-  container.blockio.io_time_recursive.sync: *time
-  container.blockio.io_time_recursive.discard: *time
-  container.blockio.io_time_recursive.total: *time
+      - operation
 
-  container.blockio.io_wait_time_recursive.read: &wait_time
+  container.blockio.io_wait_time_recursive:
     enabled: true
     description: "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -546,13 +525,9 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.io_wait_time_recursive.write: *wait_time
-  container.blockio.io_wait_time_recursive.async: *wait_time
-  container.blockio.io_wait_time_recursive.sync: *wait_time
-  container.blockio.io_wait_time_recursive.discard: *wait_time
-  container.blockio.io_wait_time_recursive.total: *wait_time
+      - operation
 
-  container.blockio.sectors_recursive.read: &sectors
+  container.blockio.sectors_recursive:
     enabled: true
     description: "Number of sectors transferred to/from disk by the group and descendant groups."
     extended_documentation: "[More docs](https://www.kernel.org/doc/Documentation/cgroup-v1/blkio-controller.txt)."
@@ -564,11 +539,7 @@ metrics:
     attributes:
       - device_major
       - device_minor
-  container.blockio.sectors_recursive.write: *sectors
-  container.blockio.sectors_recursive.sync: *sectors
-  container.blockio.sectors_recursive.async: *sectors
-  container.blockio.sectors_recursive.discard: *sectors
-  container.blockio.sectors_recursive.total: *sectors
+      - operation
 
   # Network
   container.network.io.usage.rx_bytes:

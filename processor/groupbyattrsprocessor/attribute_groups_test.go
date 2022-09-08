@@ -43,7 +43,7 @@ func randomAttributeMap() pcommon.Map {
 	for i := 0; i < 10; i++ {
 		k := fmt.Sprint("key-", i)
 		v := fmt.Sprint("value-", rand.Intn(500000))
-		attrs.InsertString(k, v)
+		attrs.UpsertString(k, v)
 	}
 	return attrs
 }
@@ -78,7 +78,7 @@ func TestResourceAttributeScenarios(t *testing.T) {
 			},
 			fillExpectedResourceFun: func(baseResource pcommon.Resource, expectedResource pcommon.Resource) {
 				baseResource.CopyTo(expectedResource)
-				expectedResource.Attributes().UpdateString("somekey1", "replaced-value")
+				expectedResource.Attributes().UpsertString("somekey1", "replaced-value")
 			},
 		},
 		{

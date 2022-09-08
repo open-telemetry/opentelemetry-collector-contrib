@@ -24,6 +24,7 @@ ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sort)
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
+                                -not -path '*/local/*' \
                                 -type f | sort)
 
 # All source code and documents. Used in spell check.

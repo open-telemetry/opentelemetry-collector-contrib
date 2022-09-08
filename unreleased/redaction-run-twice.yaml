@@ -1,0 +1,4 @@
+change_type: bug_fix
+component: processor/redaction
+note: Update redaction attributes in case if data sent through the processor more than once, not not ignore them.
+issues: [13854]

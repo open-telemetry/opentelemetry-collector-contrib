@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
+package internal
 
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -23,14 +23,15 @@ type kv struct {
 	Key, Value string
 }
 
-func metricSlice(metrics ...pmetric.Metric) pmetric.MetricSlice {
-	ms := pmetric.NewMetricSlice()
+func metrics(metrics ...pmetric.Metric) pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	for _, metric := range metrics {
 		destMetric := ms.AppendEmpty()
 		metric.CopyTo(destMetric)
 	}
 
-	return ms
+	return md
 }
 
 func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
@@ -40,7 +41,7 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 	attrs := hdp.Attributes()
 	for _, kv := range attributes {
-		attrs.InsertString(kv.Key, kv.Value)
+		attrs.UpsertString(kv.Key, kv.Value)
 	}
 
 	return hdp
@@ -67,7 +68,7 @@ func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 
 func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.Flags().SetNoRecordedValue(true)
+	hdp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 
 	return hdp
 }
@@ -95,7 +96,7 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	ndp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		ndp.Attributes().InsertString(kv.Key, kv.Value)
+		ndp.Attributes().UpsertString(kv.Key, kv.Value)
 	}
 
 	return ndp
@@ -109,7 +110,7 @@ func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, 
 
 func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
-	ndp.Flags().SetNoRecordedValue(true)
+	ndp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }
 
@@ -150,7 +151,7 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	sdp.SetTimestamp(timestamp)
 
 	for _, kv := range attributes {
-		sdp.Attributes().InsertString(kv.Key, kv.Value)
+		sdp.Attributes().UpsertString(kv.Key, kv.Value)
 	}
 
 	return sdp
@@ -173,7 +174,7 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 
 func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
 	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
-	sdp.Flags().SetNoRecordedValue(true)
+	sdp.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 
 	return sdp
 }

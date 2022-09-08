@@ -114,7 +114,7 @@ func (a *lastValueAccumulator) accumulateSummary(metric pmetric.Metric, il pcomm
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
-		if ip.Flags().NoRecordedValue() {
+		if ip.FlagsImmutable().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
@@ -143,7 +143,7 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
-		if ip.Flags().NoRecordedValue() {
+		if ip.FlagsImmutable().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
@@ -189,7 +189,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
-		if ip.Flags().NoRecordedValue() {
+		if ip.FlagsImmutable().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
@@ -245,7 +245,7 @@ func (a *lastValueAccumulator) accumulateDoubleHistogram(metric pmetric.Metric, 
 		ip := dps.At(i)
 
 		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
-		if ip.Flags().NoRecordedValue() {
+		if ip.FlagsImmutable().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}

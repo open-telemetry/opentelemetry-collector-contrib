@@ -52,7 +52,7 @@ func prepareResource(attrMap pcommon.Map, selectedKeys []string) pcommon.Resourc
 	for _, key := range selectedKeys {
 		val, found := attrMap.Get(key)
 		if found {
-			res.Attributes().Insert(key, val)
+			val.CopyTo(res.Attributes().UpsertEmpty(key))
 		}
 	}
 	res.Attributes().Sort()
@@ -68,7 +68,7 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 	filteredAttrMap.EnsureCapacity(10)
 	for _, key := range selectedKeys {
 		val, _ := attrMap.Get(key)
-		filteredAttrMap.Insert(key, val)
+		val.CopyTo(filteredAttrMap.UpsertEmpty(key))
 	}
 	filteredAttrMap.Sort()
 	return filteredAttrMap
@@ -80,13 +80,13 @@ func someComplexLogs(withResourceAttrIndex bool, rlCount int, illCount int) plog
 	for i := 0; i < rlCount; i++ {
 		rl := logs.ResourceLogs().AppendEmpty()
 		if withResourceAttrIndex {
-			rl.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+			rl.Resource().Attributes().UpsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < illCount; j++ {
 			log := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			log.Attributes().InsertString("commonGroupedAttr", "abc")
-			log.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+			log.Attributes().UpsertString("commonGroupedAttr", "abc")
+			log.Attributes().UpsertString("commonNonGroupedAttr", "xyz")
 		}
 	}
 
@@ -99,14 +99,14 @@ func someComplexTraces(withResourceAttrIndex bool, rsCount int, ilsCount int) pt
 	for i := 0; i < rsCount; i++ {
 		rs := traces.ResourceSpans().AppendEmpty()
 		if withResourceAttrIndex {
-			rs.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+			rs.Resource().Attributes().UpsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < ilsCount; j++ {
 			span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			span.SetName(fmt.Sprintf("foo-%d-%d", i, j))
-			span.Attributes().InsertString("commonGroupedAttr", "abc")
-			span.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+			span.Attributes().UpsertString("commonGroupedAttr", "abc")
+			span.Attributes().UpsertString("commonNonGroupedAttr", "xyz")
 		}
 	}
 
@@ -119,7 +119,7 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 	for i := 0; i < rmCount; i++ {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
-			rm.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+			rm.Resource().Attributes().UpsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < ilmCount; j++ {
@@ -131,8 +131,8 @@ func someComplexMetrics(withResourceAttrIndex bool, rmCount int, ilmCount int, d
 				dataPoint := metric.Gauge().DataPoints().AppendEmpty()
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				dataPoint.SetIntVal(int64(k))
-				dataPoint.Attributes().InsertString("commonGroupedAttr", "abc")
-				dataPoint.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+				dataPoint.Attributes().UpsertString("commonGroupedAttr", "abc")
+				dataPoint.Attributes().UpsertString("commonNonGroupedAttr", "xyz")
 			}
 		}
 	}
@@ -146,7 +146,7 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 	for i := 0; i < rmCount; i++ {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		if withResourceAttrIndex {
-			rm.Resource().Attributes().InsertInt("resourceAttrIndex", int64(i))
+			rm.Resource().Attributes().UpsertInt("resourceAttrIndex", int64(i))
 		}
 
 		for j := 0; j < ilmCount; j++ {
@@ -163,8 +163,8 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 				dataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
 				dataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(randFloat64Arr(histogramSize)))
 				dataPoint.SetCount(sum(buckets))
-				dataPoint.Attributes().InsertString("commonGroupedAttr", "abc")
-				dataPoint.Attributes().InsertString("commonNonGroupedAttr", "xyz")
+				dataPoint.Attributes().UpsertString("commonGroupedAttr", "abc")
+				dataPoint.Attributes().UpsertString("commonNonGroupedAttr", "xyz")
 			}
 		}
 	}
@@ -308,11 +308,11 @@ func TestComplexAttributeGrouping(t *testing.T) {
 			outputResourceAttrs := pcommon.NewMap()
 			if tt.shouldMoveCommonGroupedAttr {
 				// This was present at record level and should be found on Resource level after the processor
-				outputResourceAttrs.InsertString("commonGroupedAttr", "abc")
+				outputResourceAttrs.UpsertString("commonGroupedAttr", "abc")
 			} else {
-				outputRecordAttrs.InsertString("commonGroupedAttr", "abc")
+				outputRecordAttrs.UpsertString("commonGroupedAttr", "abc")
 			}
-			outputRecordAttrs.InsertString("commonNonGroupedAttr", "xyz")
+			outputRecordAttrs.UpsertString("commonNonGroupedAttr", "xyz")
 
 			rls := processedLogs.ResourceLogs()
 			assert.Equal(t, tt.outputResourceCount, rls.Len())

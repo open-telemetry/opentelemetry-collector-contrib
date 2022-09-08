@@ -36,7 +36,6 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	}{
 		{
 			name: "empty",
-			zs:   make([]*zipkinmodel.SpanModel, 0),
 			td:   ptrace.NewTraces(),
 			err:  nil,
 		},

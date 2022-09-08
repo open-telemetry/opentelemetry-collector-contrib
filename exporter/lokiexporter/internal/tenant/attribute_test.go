@@ -29,7 +29,7 @@ func TestAttributeTenantSourceSuccess(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // who's on first
 	logs.ResourceLogs().AppendEmpty() // what's on second
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("tenant.id", "acme")
+	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("tenant.id", "acme")
 
 	// test
 	tenant, err := ts.GetTenant(context.Background(), logs)
@@ -46,7 +46,7 @@ func TestAttributeTenantSourceNotFound(t *testing.T) {
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty() // who's on first
 	logs.ResourceLogs().AppendEmpty() // what's on second
-	logs.ResourceLogs().At(0).Resource().Attributes().InsertString("not.tenant.id", "acme")
+	logs.ResourceLogs().At(0).Resource().Attributes().UpsertString("not.tenant.id", "acme")
 
 	// test
 	tenant, err := ts.GetTenant(context.Background(), logs)

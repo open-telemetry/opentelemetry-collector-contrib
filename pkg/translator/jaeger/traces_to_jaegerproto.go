@@ -376,7 +376,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 }
 
 func getTagsFromTraceState(traceState ptrace.TraceState) ([]model.KeyValue, bool) {
-	keyValues := make([]model.KeyValue, 0)
+	var keyValues []model.KeyValue
 	exists := traceState != ptrace.TraceStateEmpty
 	if exists {
 		// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
@@ -391,7 +391,7 @@ func getTagsFromTraceState(traceState ptrace.TraceState) ([]model.KeyValue, bool
 }
 
 func getTagsFromInstrumentationLibrary(il pcommon.InstrumentationScope) ([]model.KeyValue, bool) {
-	keyValues := make([]model.KeyValue, 0)
+	var keyValues []model.KeyValue
 	if ilName := il.Name(); ilName != "" {
 		kv := model.KeyValue{
 			Key:   conventions.OtelLibraryName,

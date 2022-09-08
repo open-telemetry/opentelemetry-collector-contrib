@@ -43,8 +43,6 @@ func (c *SpanConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.Sp
 
 func (c *SpanConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) model.Bundle {
 	bundle := model.NewBundle()
-	spans := make([]model.Span, 0)
-
 	fromS := model.FromS{}
 
 	hostIDValue, ex := attributes.Get(backend.AttributeInstanaHostID)
@@ -76,10 +74,8 @@ func (c *SpanConverter) ConvertSpans(attributes pcommon.Map, spanSlice ptrace.Sp
 			continue
 		}
 
-		spans = append(spans, instanaSpan)
+		bundle.Spans = append(bundle.Spans, instanaSpan)
 	}
-
-	bundle.Spans = spans
 
 	return bundle
 }

@@ -846,9 +846,9 @@ func getDefaultInternalSpan() ptrace.Span {
 // Returns a default Resource
 func getResource() pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().InsertString(conventions.AttributeServiceName, defaultServiceName)
-	r.Attributes().InsertString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	r.Attributes().InsertString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	r.Attributes().UpsertString(conventions.AttributeServiceName, defaultServiceName)
+	r.Attributes().UpsertString(conventions.AttributeServiceNamespace, defaultServiceNamespace)
+	r.Attributes().UpsertString(conventions.AttributeServiceInstanceID, defaultServiceInstance)
 	return r
 }
 

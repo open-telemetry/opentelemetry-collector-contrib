@@ -387,6 +387,6 @@ func Test_Matching_True(t *testing.T) {
 
 func resource(service string) pcommon.Resource {
 	r := pcommon.NewResource()
-	r.Attributes().InsertString(conventions.AttributeServiceName, service)
+	r.Attributes().UpsertString(conventions.AttributeServiceName, service)
 	return r
 }

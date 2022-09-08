@@ -195,7 +195,7 @@ func (gap *groupByAttrsProcessor) extractGroupingAttributes(attrMap pcommon.Map)
 	for _, attrKey := range gap.groupByKeys {
 		attrVal, found := attrMap.Get(attrKey)
 		if found {
-			groupingAttributes.Insert(attrKey, attrVal)
+			attrVal.CopyTo(groupingAttributes.UpsertEmpty(attrKey))
 			foundMatch = true
 		}
 	}
