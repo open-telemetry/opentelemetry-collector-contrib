@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"regexp"
 	"sort"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/component"
@@ -45,13 +47,15 @@ const (
 type transaction struct {
 	isNew                bool
 	ctx                  context.Context
+	families             map[string]*metricFamily
+	mc                   MetadataCache
+	startTime            float64
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
 	sink                 consumer.Metrics
 	externalLabels       labels.Labels
 	nodeResource         pcommon.Resource
 	logger               *zap.Logger
-	metricBuilder        *metricBuilder
 	job, instance        string
 	jobsMap              *JobsMap
 	obsrecv              *obsreport.Receiver
@@ -68,6 +72,7 @@ func newTransaction(
 	obsrecv *obsreport.Receiver) *transaction {
 	return &transaction{
 		ctx:                  ctx,
+		families:             make(map[string]*metricFamily),
 		isNew:                true,
 		sink:                 sink,
 		jobsMap:              jobsMap,
@@ -104,13 +109,13 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 		return 0, t.AddTargetInfo(labels)
 	}
 
-	return 0, t.metricBuilder.AddDataPoint(labels, atMs, value)
+	return 0, t.AddDataPoint(labels, atMs, value)
 }
 
 func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
 	metricName := l.Get(model.MetricNameLabel)
 	familyName := normalizeMetricName(metricName)
-	if f, ok := t.metricBuilder.families[familyName]; ok {
+	if f, ok := t.families[familyName]; ok {
 		gk := f.getGroupKey(l)
 		mg := f.groups[gk]
 		_, exists := mg.exemplars[e.Value]
@@ -136,9 +141,36 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 				exemplar.FilteredAttributes().UpsertString(lb.Name, lb.Value)
 			}
 		}
-		t.metricBuilder.families[familyName].groups[gk].exemplars[e.Value] = exemplar
+		t.families[familyName].groups[gk].exemplars[e.Value] = exemplar
 	}
 	return 0, nil
+}
+
+func (t *transaction) matchStartTimeMetric(metricName string) bool {
+	if t.startTimeMetricRegex != nil {
+		return t.startTimeMetricRegex.MatchString(metricName)
+	}
+
+	return metricName == startTimeMetricName
+}
+
+// getMetrics returns all metrics to the given slice.
+// The only error returned by this function is errNoDataToBuild.
+func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, error) {
+	if len(t.families) == 0 {
+		return pmetric.Metrics{}, errNoDataToBuild
+	}
+
+	md := pmetric.NewMetrics()
+	rms := md.ResourceMetrics().AppendEmpty()
+	resource.CopyTo(rms.Resource())
+	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
+
+	for _, mf := range t.families {
+		mf.appendMetric(metrics)
+	}
+
+	return md, nil
 }
 
 func copyToLowerBytes(dst []byte, src []byte) {
@@ -152,21 +184,16 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 	if !ok {
 		return errors.New("unable to find target in context")
 	}
-	metaStore, ok := scrape.MetricMetadataStoreFromContext(t.ctx)
+	t.mc, ok = scrape.MetricMetadataStoreFromContext(t.ctx)
 	if !ok {
 		return errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
-	if job == "" || instance == "" {
+	t.job, t.instance = labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
+	if t.job == "" || t.instance == "" {
 		return errNoJobInstance
 	}
-	if t.jobsMap != nil {
-		t.job = job
-		t.instance = instance
-	}
-	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
-	t.metricBuilder = newMetricBuilder(metaStore, t.useStartTimeMetric, t.startTimeMetricRegex, t.logger)
+	t.nodeResource = CreateResource(t.job, t.instance, target.DiscoveredLabels())
 	t.isNew = false
 	return nil
 }
@@ -178,14 +205,14 @@ func (t *transaction) Commit() error {
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
 
-	md, err := t.metricBuilder.getMetrics(t.nodeResource)
+	md, err := t.getMetrics(t.nodeResource)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
 	}
 
 	if t.useStartTimeMetric {
-		if t.metricBuilder.startTime == 0.0 {
+		if t.startTime == 0.0 {
 			err = errNoStartTimeMetrics
 			t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 			return err
@@ -237,7 +264,7 @@ func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 }
 
 func (t *transaction) adjustStartTimestamp(metrics pmetric.Metrics) {
-	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
+	startTimeTs := pdataTimestampFromFloat64(t.startTime)
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
@@ -275,4 +302,60 @@ func (t *transaction) adjustStartTimestamp(metrics pmetric.Metrics) {
 			}
 		}
 	}
+}
+
+// AddDataPoint is for feeding prometheus data values in its processing order
+func (t *transaction) AddDataPoint(ls labels.Labels, ts int64, v float64) error {
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	var dupLabels []string
+	for i := 0; i < len(ls)-1; i++ {
+		if ls[i].Name == ls[i+1].Name {
+			dupLabels = append(dupLabels, ls[i].Name)
+		}
+	}
+	if len(dupLabels) != 0 {
+		sort.Strings(dupLabels)
+		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
+	}
+
+	metricName := ls.Get(model.MetricNameLabel)
+	if metricName == "" {
+		return errMetricNameNotFound
+	}
+
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	if metricName == scrapeUpMetricName && v != 1.0 && !value.IsStaleNaN(v) {
+		if v == 0.0 {
+			t.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", ts),
+				zap.Stringer("target_labels", ls))
+		} else {
+			t.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", v),
+				zap.Int64("scrape_timestamp", ts),
+				zap.Stringer("target_labels", ls))
+		}
+	}
+
+	if t.useStartTimeMetric && t.matchStartTimeMetric(metricName) {
+		t.startTime = v
+	}
+
+	curMF, ok := t.families[metricName]
+	if !ok {
+		familyName := normalizeMetricName(metricName)
+		if mf, ok := t.families[familyName]; ok && mf.includesMetric(metricName) {
+			curMF = mf
+		} else {
+			curMF = newMetricFamily(metricName, t.mc, t.logger)
+			t.families[curMF.name] = curMF
+		}
+	}
+
+	return curMF.Add(metricName, ls, ts, v)
 }
