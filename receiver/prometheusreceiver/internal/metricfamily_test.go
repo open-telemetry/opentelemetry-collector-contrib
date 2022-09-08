@@ -108,11 +108,11 @@ func createNewExemplar(value float64, timestamp int64, traceid string) map[float
 
 	t, _ := hex.DecodeString(traceid)
 	copyToLowerBytes(tid[:], t)
-	ex.SetTraceID(pcommon.NewTraceID(tid))
+	ex.SetTraceID(tid)
 
 	s, _ := hex.DecodeString(traceid)
 	copyToLowerBytes(sid[:], s)
-	ex.SetSpanID(pcommon.NewSpanID(sid))
+	ex.SetSpanID(sid)
 
 	exMap[value] = ex
 
@@ -173,8 +173,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				copyToLowerBytes(tid1[:], tr)
 				sp, _ := hex.DecodeString("0000c5bd3caea93d")
 				copyToLowerBytes(sid1[:], sp)
-				e1.SetTraceID(pcommon.NewTraceID(tid1))
-				e1.SetSpanID(pcommon.NewSpanID(sid1))
+				e1.SetTraceID(tid1)
+				e1.SetSpanID(sid1)
 
 				e2 := exemplars.AppendEmpty()
 				e2.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(11)))
@@ -183,8 +183,8 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 				copyToLowerBytes(tid2[:], tr1)
 				sp1, _ := hex.DecodeString("0006f0ea595fa831")
 				copyToLowerBytes(sid2[:], sp1)
-				e2.SetTraceID(pcommon.NewTraceID(tid2))
-				e2.SetSpanID(pcommon.NewSpanID(sid2))
+				e2.SetTraceID(tid2)
+				e2.SetSpanID(sid2)
 				return point
 			},
 		},
@@ -203,7 +203,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			want: func() pmetric.HistogramDataPoint {
 				point := pmetric.NewHistogramDataPoint()
 				point.SetTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
-				point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 				point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.75, 2.75}))
 				point.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0}))
 				point.SetStartTimestamp(pcommon.Timestamp(11 * time.Millisecond)) // the time in milliseconds -> nanoseconds.
@@ -407,7 +407,7 @@ func TestMetricGroupData_toSummaryUnitTest(t *testing.T) {
 				point := pmetric.NewSummaryDataPoint()
 				qtL := point.QuantileValues()
 				qn0 := qtL.AppendEmpty()
-				point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+				point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 				qn0.SetQuantile(0)
 				qn0.SetValue(0)
 				qn50 := qtL.AppendEmpty()

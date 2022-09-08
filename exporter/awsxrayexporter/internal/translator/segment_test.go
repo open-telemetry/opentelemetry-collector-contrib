@@ -187,7 +187,7 @@ func TestServerSpanWithThrottle(t *testing.T) {
 
 func TestServerSpanNoParentId(t *testing.T) {
 	spanName := "/api/locations"
-	parentSpanID := pcommon.EmptySpanID
+	parentSpanID := pcommon.NewSpanIDEmpty()
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", nil)
 
@@ -201,7 +201,7 @@ func TestSpanNoParentId(t *testing.T) {
 	span.SetName("my-topic send")
 	span.SetTraceID(newTraceID())
 	span.SetSpanID(newSegmentID())
-	span.SetParentSpanID(pcommon.EmptySpanID)
+	span.SetParentSpanID(pcommon.NewSpanIDEmpty())
 	span.SetKind(ptrace.SpanKindProducer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(10)))
@@ -336,12 +336,12 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 	attributes[conventions.AttributeNetPeerPort] = "9443"
 	attributes[conventions.AttributeHTTPTarget] = spanName
 	resource := constructDefaultResource()
-	span := constructClientSpan(pcommon.EmptySpanID, spanName, ptrace.StatusCodeUnset, "OK", attributes)
+	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
 	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
 	timeEvents.CopyTo(span.Events())
-	traceID := span.TraceID().Bytes()
+	traceID := span.TraceID()
 	traceID[0] = 0x11
-	span.SetTraceID(pcommon.NewTraceID(traceID))
+	span.SetTraceID(traceID)
 
 	_, err := MakeSegmentDocumentString(span, resource, nil, false)
 
@@ -353,10 +353,10 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	const maxAge = 60 * 60 * 24 * 30
 	ExpiredEpoch := time.Now().Unix() - maxAge - 1
 
-	tempTraceID := newTraceID().Bytes()
+	tempTraceID := newTraceID()
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
-	_, err := convertToAmazonTraceID(pcommon.NewTraceID(tempTraceID))
+	_, err := convertToAmazonTraceID(tempTraceID)
 	assert.NotNil(t, err)
 }
 
@@ -903,5 +903,5 @@ func newTraceID() pcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewTraceID(r)
+	return r
 }

@@ -126,12 +126,12 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 				var tid [16]byte
 				b, _ := hex.DecodeString(lb.Value)
 				copyToLowerBytes(tid[:], b)
-				exemplar.SetTraceID(pcommon.NewTraceID(tid))
+				exemplar.SetTraceID(tid)
 			case spanIDKey:
 				var sid [8]byte
 				b, _ := hex.DecodeString(lb.Value)
 				copyToLowerBytes(sid[:], b)
-				exemplar.SetSpanID(pcommon.NewSpanID(sid))
+				exemplar.SetSpanID(sid)
 			default:
 				exemplar.FilteredAttributes().UpsertString(lb.Name, lb.Value)
 			}

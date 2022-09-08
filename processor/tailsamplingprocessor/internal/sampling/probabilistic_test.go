@@ -107,7 +107,7 @@ func genRandomTraceIDs(num int) (ids []pcommon.TraceID) {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], r.Uint64())
 		binary.BigEndian.PutUint64(traceID[8:], r.Uint64())
-		ids = append(ids, pcommon.NewTraceID(traceID))
+		ids = append(ids, pcommon.TraceID(traceID))
 	}
 	return ids
 }

@@ -305,7 +305,7 @@ func (ma *MetricsAdjuster) adjustMetricHistogram(current pmetric.Metric) {
 			continue
 		}
 
-		if currentDist.FlagsImmutable().NoRecordedValue() {
+		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
 			currentDist.SetStartTimestamp(tsi.histogram.startTime)
 			continue
@@ -338,7 +338,7 @@ func (ma *MetricsAdjuster) adjustMetricSum(current pmetric.Metric) {
 			continue
 		}
 
-		if currentSum.FlagsImmutable().NoRecordedValue() {
+		if currentSum.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
 			currentSum.SetStartTimestamp(tsi.number.startTime)
 			continue
@@ -371,7 +371,7 @@ func (ma *MetricsAdjuster) adjustMetricSummary(current pmetric.Metric) {
 			continue
 		}
 
-		if currentSummary.FlagsImmutable().NoRecordedValue() {
+		if currentSummary.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
 			currentSummary.SetStartTimestamp(tsi.summary.startTime)
 			continue

@@ -27,7 +27,7 @@ import (
 func TestEvaluate_NumberSpans(t *testing.T) {
 	filter := NewSpanCount(zap.NewNop(), 2)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 
 	cases := []struct {
 		Desc        string
@@ -108,8 +108,8 @@ func newTraceWithMultipleSpans(numberSpans []int32) *TraceData {
 
 		for r := 0; r < int(numberSpans[i]); r++ {
 			span := ils.Spans().AppendEmpty()
-			span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-			span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+			span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+			span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		}
 		traceBatches = append(traceBatches, traces)
 		totalNumberSpans += numberSpans[i]

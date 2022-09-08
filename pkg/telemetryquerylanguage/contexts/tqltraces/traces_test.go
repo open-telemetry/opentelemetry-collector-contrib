@@ -44,7 +44,7 @@ func Test_newPathGetSetter(t *testing.T) {
 	newEvents.AppendEmpty().SetName("new event")
 
 	newLinks := ptrace.NewSpanLinkSlice()
-	newLinks.AppendEmpty().SetSpanID(pcommon.NewSpanID(spanID2))
+	newLinks.AppendEmpty().SetSpanID(spanID2)
 
 	newStatus := ptrace.NewSpanStatus()
 	newStatus.SetMessage("new status")
@@ -63,10 +63,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig:   pcommon.NewTraceID(traceID),
-			newVal: pcommon.NewTraceID(traceID2),
+			orig:   pcommon.TraceID(traceID),
+			newVal: pcommon.TraceID(traceID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceID(pcommon.NewTraceID(traceID2))
+				span.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -76,10 +76,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID),
-			newVal: pcommon.NewSpanID(spanID2),
+			orig:   pcommon.SpanID(spanID),
+			newVal: pcommon.SpanID(spanID2),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetSpanID(pcommon.NewSpanID(spanID2))
+				span.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -95,7 +95,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetTraceID(pcommon.NewTraceID(traceID2))
+				span.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetSpanID(pcommon.NewSpanID(spanID2))
+				span.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -148,10 +148,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "parent_span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID2),
-			newVal: pcommon.NewSpanID(spanID),
+			orig:   pcommon.SpanID(spanID2),
+			newVal: pcommon.SpanID(spanID),
 			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				span.SetParentSpanID(pcommon.NewSpanID(spanID))
+				span.SetParentSpanID(spanID)
 			},
 		},
 		{
@@ -542,10 +542,10 @@ func Test_newPathGetSetter(t *testing.T) {
 
 func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
 	span := ptrace.NewSpan()
-	span.SetTraceID(pcommon.NewTraceID(traceID))
-	span.SetSpanID(pcommon.NewSpanID(spanID))
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
 	span.SetTraceState("key1=val1,key2=val2")
-	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
+	span.SetParentSpanID(spanID2)
 	span.SetName("bear")
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
@@ -581,7 +581,7 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 	span.Events().AppendEmpty().SetName("event")
 	span.SetDroppedEventsCount(20)
 
-	span.Links().AppendEmpty().SetTraceID(pcommon.NewTraceID(traceID))
+	span.Links().AppendEmpty().SetTraceID(traceID)
 	span.SetDroppedLinksCount(30)
 
 	span.Status().SetCode(ptrace.StatusCodeOk)

@@ -249,8 +249,7 @@ func workerIndexForTraceID(traceID pcommon.TraceID, numWorkers int) uint64 {
 		hashPool.Put(hash)
 	}()
 
-	bytes := traceID.Bytes()
-	_, _ = hash.Write(bytes[:])
+	_, _ = hash.Write(traceID[:])
 	return hash.Sum64() % uint64(numWorkers)
 }
 
@@ -365,17 +364,17 @@ func doWithTimeout(timeout time.Duration, do func() error) (bool, error) {
 func getTraceID(td ptrace.Traces) (pcommon.TraceID, error) {
 	rss := td.ResourceSpans()
 	if rss.Len() == 0 {
-		return pcommon.EmptyTraceID, errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	ilss := rss.At(0).ScopeSpans()
 	if ilss.Len() == 0 {
-		return pcommon.EmptyTraceID, errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	spans := ilss.At(0).Spans()
 	if spans.Len() == 0 {
-		return pcommon.EmptyTraceID, errNoTraceID
+		return pcommon.NewTraceIDEmpty(), errNoTraceID
 	}
 
 	return spans.At(0).TraceID(), nil

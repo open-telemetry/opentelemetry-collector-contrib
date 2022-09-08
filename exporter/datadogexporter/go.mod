@@ -17,9 +17,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.59.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.0
-	go.opentelemetry.io/collector/pdata v0.59.0
-	go.opentelemetry.io/collector/semconv v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220907232555-bef9373cfc20
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220907232555-bef9373cfc20
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
