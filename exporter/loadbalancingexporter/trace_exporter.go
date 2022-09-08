@@ -160,7 +160,7 @@ func routingIdentifiersFromTraces(td ptrace.Traces, key routingKey) (map[string]
 		}
 		return ids, nil
 	}
-	tid := spans.At(0).TraceID().Bytes()
+	tid := spans.At(0).TraceID()
 	ids[string(tid[:])] = true
 	return ids, nil
 }

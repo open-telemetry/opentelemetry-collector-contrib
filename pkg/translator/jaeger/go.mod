@@ -6,8 +6,8 @@ require (
 	github.com/jaegertracing/jaeger v1.37.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector/pdata v0.59.0
-	go.opentelemetry.io/collector/semconv v0.59.0
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220907232555-bef9373cfc20
 )
 
 require (

@@ -220,7 +220,7 @@ func TestLogBatchWithTwoTraces(t *testing.T) {
 	}()
 
 	first := simpleLogs()
-	second := simpleLogWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	second := simpleLogWithID(pcommon.TraceID([16]byte{2, 3, 4, 5}))
 	batch := plog.NewLogs()
 	firstTgt := batch.ResourceLogs().AppendEmpty()
 	first.ResourceLogs().At(0).CopyTo(firstTgt)
@@ -263,7 +263,7 @@ func TestNoLogsInBatch(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res := traceIDFromLogs(tt.batch)
-			assert.Equal(t, pcommon.EmptyTraceID, res)
+			assert.Equal(t, pcommon.NewTraceIDEmpty(), res)
 		})
 	}
 }
@@ -447,7 +447,7 @@ func randomLogs() plog.Logs {
 }
 
 func simpleLogs() plog.Logs {
-	return simpleLogWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleLogWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleLogWithID(id pcommon.TraceID) plog.Logs {

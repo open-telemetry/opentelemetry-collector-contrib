@@ -181,12 +181,12 @@ func constructSpanAttributes(attributes map[string]interface{}) pcommon.Map {
 
 func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pcommon.NewTraceID(r)
+	return pcommon.TraceID(r)
 }
 
 func newSegmentID() pcommon.SpanID {
 	r := [8]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98}
-	return pcommon.NewSpanID(r)
+	return pcommon.SpanID(r)
 }
 
 func TestSpanKindToShortString(t *testing.T) {

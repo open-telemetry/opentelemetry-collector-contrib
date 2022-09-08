@@ -405,7 +405,7 @@ func runTest(
 	library.SetName("first-library")
 	span := ils.Spans().AppendEmpty()
 	span.SetName("first-batch-first-span")
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	span.SetTraceID([16]byte{1, 2, 3, 4})
 
 	length := len(allowed) + len(masked) + len(redacted)
 	for k, v := range allowed {
@@ -506,7 +506,7 @@ func runBenchmark(
 	library.SetName("first-library")
 	span := ils.Spans().AppendEmpty()
 	span.SetName("first-batch-first-span")
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	span.SetTraceID([16]byte{1, 2, 3, 4})
 
 	for k, v := range allowed {
 		v.CopyTo(span.Attributes().UpsertEmpty(k))

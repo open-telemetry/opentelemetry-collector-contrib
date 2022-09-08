@@ -127,7 +127,7 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point := dest.AppendEmpty()
 
 	if pointIsStale {
-		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetCount(uint64(mg.count))
 		if mg.hasSum {
@@ -171,7 +171,7 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	point := dest.AppendEmpty()
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
 	if pointIsStale {
-		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		if mg.hasSum {
 			point.SetSum(mg.sum)
@@ -211,7 +211,7 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
-		point.SetFlagsImmutable(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
+		point.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 	} else {
 		point.SetDoubleVal(mg.value)
 	}

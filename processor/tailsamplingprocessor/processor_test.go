@@ -559,9 +559,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			bytesA := got[i].Bytes()
+			bytesA := got[i]
 			a := binary.BigEndian.Uint64(bytesA[:])
-			bytesB := got[j].Bytes()
+			bytesB := got[j]
 			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
@@ -592,7 +592,7 @@ func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
 func findTrace(a []ptrace.Traces, traceID pcommon.TraceID) *ptrace.Traces {
 	for _, batch := range a {
 		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-		if traceID.Bytes() == id.Bytes() {
+		if traceID == id {
 			return &batch
 		}
 	}
@@ -607,7 +607,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 1)
 		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
-		traceIds[i] = pcommon.NewTraceID(traceID)
+		traceIds[i] = pcommon.TraceID(traceID)
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
@@ -627,7 +627,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pcommon.NewSpanID(spanID)
+	return pcommon.SpanID(spanID)
 }
 
 type mockPolicyEvaluator struct {
@@ -696,7 +696,7 @@ func (s *syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {

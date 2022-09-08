@@ -150,7 +150,7 @@ func ocSpanToInternal(src *octrace.Span, dest ptrace.Span) {
 func traceIDToInternal(traceID []byte) pcommon.TraceID {
 	tid := [16]byte{}
 	copy(tid[:], traceID)
-	return pcommon.NewTraceID(tid)
+	return pcommon.TraceID(tid)
 }
 
 // Transforms the byte slice span ID into a [8]byte internal pcommon.SpanID.
@@ -158,7 +158,7 @@ func traceIDToInternal(traceID []byte) pcommon.TraceID {
 func spanIDToInternal(spanID []byte) pcommon.SpanID {
 	sid := [8]byte{}
 	copy(sid[:], spanID)
-	return pcommon.NewSpanID(sid)
+	return pcommon.SpanID(sid)
 }
 
 func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attributes, dest ptrace.SpanStatus) {

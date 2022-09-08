@@ -69,7 +69,7 @@ func appendSpans(count int, pictFile string, random io.Reader, spanList ptrace.S
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = pcommon.NewSpanID([8]byte{})
+			parentID = pcommon.SpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
 			if traceID.IsEmpty() {
@@ -464,7 +464,7 @@ func generateTraceID(random io.Reader) pcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewTraceID(r)
+	return pcommon.TraceID(r)
 }
 
 func generateSpanID(random io.Reader) pcommon.SpanID {
@@ -473,5 +473,5 @@ func generateSpanID(random io.Reader) pcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewSpanID(r)
+	return pcommon.SpanID(r)
 }

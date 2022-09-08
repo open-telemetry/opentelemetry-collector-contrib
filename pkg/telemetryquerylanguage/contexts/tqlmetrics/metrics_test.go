@@ -102,7 +102,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(1))
+				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -376,7 +376,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(1))
+				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -708,7 +708,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(1))
+				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{
@@ -1131,7 +1131,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   int64(0),
 			newVal: int64(1),
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(1))
+				datapoint.SetFlags(pmetric.DefaultMetricDataPointFlags.WithNoRecordedValue(true))
 			},
 		},
 		{

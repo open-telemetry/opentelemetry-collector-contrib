@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tg123/go-htpasswd v1.2.0
-	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220907232555-bef9373cfc20
 	google.golang.org/grpc v1.49.0
 )
 
@@ -25,7 +25,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.59.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20 // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect

@@ -69,8 +69,8 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
 	attrs.UpsertString("app", "server")
@@ -189,8 +189,8 @@ func newTestTracesWithAttributes() ptrace.Traces {
 	for i := 0; i < 10; i++ {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
-		s.SetTraceID(pcommon.NewTraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-		s.SetSpanID(pcommon.NewSpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
+		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
 		for j := 0; j < 5; j++ {
 			s.Attributes().UpsertString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
@@ -203,8 +203,8 @@ func newTestTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName(testOperation)
-	s.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+	s.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2})
 	s.SetKind(ptrace.SpanKindServer)
 	return td
 }

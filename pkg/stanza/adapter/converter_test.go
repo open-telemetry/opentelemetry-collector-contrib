@@ -863,15 +863,15 @@ func TestConvertTrace(t *testing.T) {
 			0x01,
 		}})
 
-	require.Equal(t, pcommon.NewTraceID(
+	require.Equal(t, pcommon.TraceID(
 		[16]byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.TraceID())
-	require.Equal(t, pcommon.NewSpanID(
+	require.Equal(t, pcommon.SpanID(
 		[8]byte{
 			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		}), record.SpanID())
-	require.Equal(t, uint32(0x01), uint32(record.FlagsStruct()))
+	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
 func BenchmarkConverter(b *testing.B) {

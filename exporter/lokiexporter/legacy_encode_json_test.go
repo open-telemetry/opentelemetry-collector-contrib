@@ -29,8 +29,8 @@ func exampleLog() (plog.LogRecord, pcommon.Resource) {
 	buffer.SetSeverityText("error")
 	buffer.Attributes().UpsertString("attr1", "1")
 	buffer.Attributes().UpsertString("attr2", "2")
-	buffer.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
-	buffer.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
+	buffer.SetTraceID([16]byte{1, 2, 3, 4})
+	buffer.SetSpanID([8]byte{5, 6, 7, 8})
 
 	resource := pcommon.NewResource()
 	resource.Attributes().UpsertString("host.name", "something")

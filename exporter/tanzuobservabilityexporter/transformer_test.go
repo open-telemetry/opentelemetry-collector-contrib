@@ -30,8 +30,8 @@ func TestSpanStartTimeIsConvertedToMilliseconds(t *testing.T) {
 	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
@@ -46,8 +46,8 @@ func TestSpanDurationIsCalculatedFromStartAndEndTimes(t *testing.T) {
 	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(startNanos))
 	span.SetEndTimestamp(pcommon.Timestamp(endNanos))
 
@@ -62,8 +62,8 @@ func TestSpanDurationIsZeroIfEndTimeIsUnset(t *testing.T) {
 	att := pcommon.NewMap()
 	transform := transformerFromAttributes(att)
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(startNanos))
 
 	actual, err := transform.Span(span)
@@ -146,8 +146,8 @@ func TestSpanEventsAreTranslatedToSpanLogs(t *testing.T) {
 	transform := transformerFromAttributes(pcommon.NewMap())
 	now := time.Now()
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	event := span.Events().AppendEmpty()
 	event.SetName("eventName")
 	event.SetTimestamp(pcommon.NewTimestampFromTime(now))
@@ -229,8 +229,8 @@ func TestSpanForSourceTag(t *testing.T) {
 	resAttrs := pcommon.NewMap()
 	transform := transformerFromAttributes(resAttrs)
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
@@ -243,8 +243,8 @@ func TestSpanForSourceTag(t *testing.T) {
 	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err = transform.Span(span)
@@ -262,8 +262,8 @@ func TestSpanForSourceTag(t *testing.T) {
 	resAttrs.UpsertString(conventions.AttributeHostName, "test_host.name")
 	transform = transformerFromAttributes(resAttrs)
 	span = ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err = transform.Span(span)
@@ -299,8 +299,8 @@ func TestSpanForDroppedCount(t *testing.T) {
 	resAttrs := pcommon.NewMap()
 	transform := transformerFromAttributes(resAttrs)
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetStartTimestamp(pcommon.Timestamp(inNanos))
 
 	actual, err := transform.Span(span)
@@ -368,16 +368,16 @@ func TestAttributesToTagsReplaceSource(t *testing.T) {
 
 func spanWithKind(kind ptrace.SpanKind) ptrace.Span {
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetKind(kind)
 	return span
 }
 
 func spanWithTraceState(state ptrace.TraceState) ptrace.Span {
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	span.SetTraceState(state)
 	return span
 }
@@ -390,8 +390,8 @@ func transformerFromAttributes(attrs pcommon.Map) *traceTransformer {
 
 func spanWithStatus(statusCode ptrace.StatusCode, message string) ptrace.Span {
 	span := ptrace.NewSpan()
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1}))
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
+	span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 	status := ptrace.NewSpanStatus()
 	status.SetCode(statusCode)
 	if message != "" {

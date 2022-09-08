@@ -81,8 +81,8 @@ var skip = func(t *testing.T, why string) {
 func TestLogsTransformProcessor(t *testing.T) {
 	skip(t, "Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9761")
 	baseMessage := pcommon.NewValueString("2022-01-01 01:02:03 INFO this is a test message")
-	spanID := pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
-	traceID := pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	spanID := pcommon.SpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+	traceID := pcommon.TraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
 	infoSeverityText := "Info"
 
 	tests := []struct {
@@ -200,7 +200,7 @@ func generateLogData(messages []testLogMessage) plog.Logs {
 		log.SetTraceID(content.traceID)
 
 		if content.flags != uint32(0x00) {
-			log.SetFlagsStruct(plog.LogRecordFlags(content.flags))
+			log.SetFlags(plog.LogRecordFlags(content.flags))
 		}
 	}
 
