@@ -9,6 +9,7 @@ require (
 	github.com/valyala/gozstd v1.17.0
 	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
 	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
 require (

@@ -16,6 +16,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
@@ -67,6 +68,13 @@ func createTracesExporter(
 			path:            conf.Path,
 			tracesMarshaler: marshaler,
 			isCompressed:    conf.ZstdOption,
+			logger: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.RollingLoggerOptions.MaxSize,
+				MaxAge:     conf.RollingLoggerOptions.MaxAge,
+				MaxBackups: conf.RollingLoggerOptions.MaxBackups,
+				LocalTime:  conf.RollingLoggerOptions.LocalTime,
+			},
 		}
 	})
 	return exporterhelper.NewTracesExporter(
@@ -96,6 +104,13 @@ func createMetricsExporter(
 			path:             conf.Path,
 			metricsMarshaler: marshaler,
 			isCompressed:     conf.ZstdOption,
+			logger: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.RollingLoggerOptions.MaxSize,
+				MaxAge:     conf.RollingLoggerOptions.MaxAge,
+				MaxBackups: conf.RollingLoggerOptions.MaxBackups,
+				LocalTime:  conf.RollingLoggerOptions.LocalTime,
+			},
 		}
 	})
 	return exporterhelper.NewMetricsExporter(
@@ -125,6 +140,13 @@ func createLogsExporter(
 			path:          cfg.(*Config).Path,
 			logsMarshaler: marshaler,
 			isCompressed:  conf.ZstdOption,
+			logger: &lumberjack.Logger{
+				Filename:   conf.Path,
+				MaxSize:    conf.RollingLoggerOptions.MaxSize,
+				MaxAge:     conf.RollingLoggerOptions.MaxAge,
+				MaxBackups: conf.RollingLoggerOptions.MaxBackups,
+				LocalTime:  conf.RollingLoggerOptions.LocalTime,
+			},
 		}
 	})
 	return exporterhelper.NewLogsExporter(
