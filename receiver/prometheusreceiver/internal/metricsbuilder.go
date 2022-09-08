@@ -100,7 +100,10 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 
 	curMF, ok := b.families[metricName]
 	if !ok {
-		familyName := normalizeMetricName(metricName)
+		familyName := metricName
+		if _, ok := b.mc.GetMetadata(metricName); !ok {
+			familyName = normalizeMetricName(metricName)
+		}
 		if mf, ok := b.families[familyName]; ok && mf.includesMetric(metricName) {
 			curMF = mf
 		} else {
