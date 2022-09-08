@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/value"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )
@@ -112,16 +113,21 @@ func (b *metricBuilder) AddDataPoint(ls labels.Labels, t int64, v float64) error
 	return curMF.Add(metricName, ls, t, v)
 }
 
-// appendMetrics appends all metrics to the given slice.
+// getMetrics returns all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
-func (b *metricBuilder) appendMetrics(metrics pmetric.MetricSlice) error {
+func (b *metricBuilder) getMetrics(resource pcommon.Resource) (pmetric.Metrics, error) {
 	if len(b.families) == 0 {
-		return errNoDataToBuild
+		return pmetric.Metrics{}, errNoDataToBuild
 	}
+
+	md := pmetric.NewMetrics()
+	rms := md.ResourceMetrics().AppendEmpty()
+	resource.CopyTo(rms.Resource())
+	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, mf := range b.families {
 		mf.appendMetric(metrics)
 	}
 
-	return nil
+	return md, nil
 }
