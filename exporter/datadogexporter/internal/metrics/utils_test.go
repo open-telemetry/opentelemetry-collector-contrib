@@ -111,11 +111,40 @@ func TestProcessMetrics(t *testing.T) {
 }
 
 func TestShouldPrepend(t *testing.T) {
-	assert.True(t, shouldPrepend("system.memory.usage"))
-	assert.True(t, shouldPrepend("process.cpu.time"))
-	assert.False(t, shouldPrepend("processes.cpu.time"))
-	assert.False(t, shouldPrepend("systemd.metric.name"))
-	assert.False(t, shouldPrepend("random.metric.name"))
+	for _, s := range []string{
+		"system.something",
+		"process.something",
+		"process.cpu.time",
+		"system.memory.usage",
+		"system.filesystem.utilization",
+		"system.network.io",
+		"system.memory.usage",
+		"system.cpu.utilization",
+		"system.cpu.load_average.1m",
+		"system.cpu.load_average.5m",
+		"system.cpu.load_average.15m",
+	} {
+		assert.True(t, shouldPrepend(s), s)
+	}
+	for _, s := range []string{
+		"processes.cpu.time",
+		"systemd.metric.name",
+		"random.metric.name",
+		"system.disk.in_use",
+		"system.net.bytes_sent",
+		"system.net.bytes_rcvd",
+		"system.mem.usable",
+		"system.mem.total",
+		"system.cpu.stolen",
+		"system.cpu.iowait",
+		"system.cpu.user",
+		"system.cpu.idle",
+		"system.load.15",
+		"system.load.5",
+		"system.load.1",
+	} {
+		assert.False(t, shouldPrepend(s), s)
+	}
 }
 
 func TestAddNamespace(t *testing.T) {

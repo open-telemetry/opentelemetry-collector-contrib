@@ -49,6 +49,9 @@ type metricsExporter struct {
 	retrier        *utils.Retrier
 	onceMetadata   *sync.Once
 	sourceProvider source.Provider
+	// transformInfra holds a metricsTransformFunc which is able to transform OpenTelemetry
+	// system.* and process.* metrics to Datadog specific infrastructure metrics.
+	transformInfra metrics.TransformFunc
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime func() uint64
@@ -110,6 +113,10 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		return nil, err
 	}
 
+	transformFunc, err := metrics.NewInfraTransformFunc(ctx, params)
+	if err != nil {
+		return nil, err
+	}
 	scrubber := scrub.NewScrubber()
 	return &metricsExporter{
 		params:         params,
@@ -121,6 +128,7 @@ func newMetricsExporter(ctx context.Context, params component.ExporterCreateSett
 		retrier:        utils.NewRetrier(params.Logger, cfg.RetrySettings, scrubber),
 		onceMetadata:   onceMetadata,
 		sourceProvider: sourceProvider,
+		transformInfra: transformFunc,
 		getPushTime:    func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 	}, nil
 }
@@ -170,6 +178,9 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			}
 			go metadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+	}
+	if err := exp.transformInfra(ctx, md); err != nil {
+		return err
 	}
 	consumer := metrics.NewConsumer()
 	err := exp.tr.MapMetrics(ctx, md, consumer)

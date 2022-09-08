@@ -101,13 +101,15 @@ func ProcessMetrics(ms []datadog.Metric) {
 // - hostmetrics receiver metrics (since they clash with Datadog Agent system check) and
 // - running metrics
 func shouldPrepend(name string) bool {
-	namespaces := [...]string{"system.", "process."}
-	for _, ns := range namespaces {
-		if strings.HasPrefix(name, ns) {
-			return true
-		}
+	if !strings.HasPrefix(name, "system.") &&
+		!strings.HasPrefix(name, "process.") {
+		return false
 	}
-	return false
+	if _, ok := metricTransforms.Native[name]; ok {
+		// do not prepend Datadog infrastructure metrics
+		return false
+	}
+	return true
 }
 
 // addNamespace prepends some metric names with a given namespace.

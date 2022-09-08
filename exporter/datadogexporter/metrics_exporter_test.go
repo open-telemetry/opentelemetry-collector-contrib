@@ -34,6 +34,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutils"
 )
 
@@ -86,27 +87,6 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		conventions.AttributeDeploymentEnvironment: "dev",
 		"custom_attribute":                         "custom_value",
 	}
-	newConfig := func(t *testing.T, endpoint string, hostTags []string, histogramMode HistogramMode) *Config {
-		t.Helper()
-		return &Config{
-			HostMetadata: HostMetadataConfig{
-				Tags: hostTags,
-			},
-			Metrics: MetricsConfig{
-				TCPAddr: confignet.TCPAddr{
-					Endpoint: endpoint,
-				},
-				HistConfig: HistogramConfig{
-					Mode: histogramMode,
-				},
-				// Set values to avoid errors. No particular intention in value selection.
-				DeltaTTL: 3600,
-				SumConfig: SumConfig{
-					CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
-				},
-			},
-		}
-	}
 	tests := []struct {
 		metrics               pmetric.Metrics
 		source                source.Source
@@ -144,6 +124,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
 						"metric": "double.histogram.bucket",
 						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
 						"type":   "count",
@@ -156,6 +143,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":   "count",
 						"host":   "test-host",
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "system.disk.in_use",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
@@ -182,6 +176,20 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 					map[string]interface{}{
 						"metric": "int.gauge",
 						"points": []interface{}{[]interface{}{float64(0), float64(222)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev"},
+					},
+					map[string]interface{}{
+						"metric": "system.disk.in_use",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
 						"tags":   []interface{}{"env:dev"},
@@ -233,6 +241,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
+						"metric": "otel.system.filesystem.utilization",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
 						"metric": "double.histogram.bucket",
 						"points": []interface{}{[]interface{}{float64(0), float64(2)}},
 						"type":   "count",
@@ -245,6 +260,13 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"type":   "count",
 						"host":   "test-host",
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
+					},
+					map[string]interface{}{
+						"metric": "system.disk.in_use",
+						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
+						"type":   "gauge",
+						"host":   "test-host",
+						"tags":   []interface{}{"env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
 						"metric": "otel.datadog_exporter.metrics.running",
@@ -273,7 +295,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			exp, err := newMetricsExporter(
 				context.Background(),
 				componenttest.NewNopExporterCreateSettings(),
-				newConfig(t, server.URL, tt.hostTags, tt.histogramMode),
+				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				&once,
 				&testutils.MockSourceProvider{Src: tt.source},
 			)
@@ -316,6 +338,44 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	}
 }
 
+func Test_metricsExporter_transformFunc(t *testing.T) {
+	seriesRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/v1/series"}
+	sketchRecorder := &testutils.HTTPRequestRecorder{Pattern: "/api/beta/sketches"}
+	server := testutils.DatadogServerMock(
+		seriesRecorder.HandlerFunc,
+		sketchRecorder.HandlerFunc,
+	)
+	defer server.Close()
+
+	var once sync.Once
+	exp, err := newMetricsExporter(
+		context.Background(),
+		componenttest.NewNopExporterCreateSettings(),
+		newTestConfig(t, server.URL, nil, HistogramModeCounters),
+		&once,
+		&testutils.MockSourceProvider{},
+	)
+	exp.transformInfra = metrics.TransformFunc(func(_ context.Context, md pmetric.Metrics) error {
+		metric := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+		metric.SetName("appended.metric")
+		metric.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(6)
+		return nil
+	})
+	require.NoError(t, err)
+	md := createTestMetrics(nil)
+	require.NoError(t, exp.PushMetricsData(context.Background(), md))
+	all := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < all.Len(); i++ {
+		m := all.At(i)
+		if m.Name() != "appended.metric" {
+			continue
+		}
+		require.Equal(t, m.Gauge().DataPoints().At(0).IntVal(), int64(6))
+		return // success
+	}
+	t.Fatal("Did not apply transform func")
+}
+
 func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	const (
 		host    = "test-host"
@@ -347,6 +407,14 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	dpInt.SetTimestamp(seconds(0))
 	dpInt.SetIntVal(222)
 
+	// host metric
+	met = metricsArray.AppendEmpty()
+	met.SetName("system.filesystem.utilization")
+	dpsInt = met.SetEmptyGauge().DataPoints()
+	dpInt = dpsInt.AppendEmpty()
+	dpInt.SetTimestamp(seconds(0))
+	dpInt.SetIntVal(333)
+
 	// Histogram (delta)
 	met = metricsArray.AppendEmpty()
 	met.SetName("double.histogram")
@@ -364,4 +432,26 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 
 func seconds(i int) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(int64(i), 0))
+}
+
+func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode HistogramMode) *Config {
+	t.Helper()
+	return &Config{
+		HostMetadata: HostMetadataConfig{
+			Tags: hostTags,
+		},
+		Metrics: MetricsConfig{
+			TCPAddr: confignet.TCPAddr{
+				Endpoint: endpoint,
+			},
+			HistConfig: HistogramConfig{
+				Mode: histogramMode,
+			},
+			// Set values to avoid errors. No particular intention in value selection.
+			DeltaTTL: 3600,
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
+			},
+		},
+	}
 }
