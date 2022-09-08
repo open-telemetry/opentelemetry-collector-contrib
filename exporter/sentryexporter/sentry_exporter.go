@@ -249,8 +249,8 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 	tags["library_version"] = library.Version()
 
 	sentrySpan = &sentry.Span{
-		TraceID:     span.TraceID().Bytes(),
-		SpanID:      span.SpanID().Bytes(),
+		TraceID:     sentry.TraceID(span.TraceID()),
+		SpanID:      sentry.SpanID(span.SpanID()),
 		Description: description,
 		Op:          op,
 		Tags:        tags,
@@ -260,7 +260,7 @@ func convertToSentrySpan(span ptrace.Span, library pcommon.InstrumentationScope,
 	}
 
 	if parentSpanID := span.ParentSpanID(); !parentSpanID.IsEmpty() {
-		sentrySpan.ParentSpanID = parentSpanID.Bytes()
+		sentrySpan.ParentSpanID = sentry.SpanID(parentSpanID)
 	}
 
 	return sentrySpan

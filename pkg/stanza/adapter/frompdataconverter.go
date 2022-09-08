@@ -208,16 +208,16 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	ent.Body = valueToInterface(src.Body())
 
 	if !src.TraceID().IsEmpty() {
-		buffer := src.TraceID().Bytes()
+		buffer := src.TraceID()
 		ent.TraceID = buffer[:]
 	}
 	if !src.SpanID().IsEmpty() {
-		buffer := src.SpanID().Bytes()
+		buffer := src.SpanID()
 		ent.SpanID = buffer[:]
 	}
-	if src.FlagsStruct() != 0 {
+	if src.Flags() != 0 {
 		a := make([]byte, 4)
-		binary.LittleEndian.PutUint32(a, uint32(src.FlagsStruct()))
+		binary.LittleEndian.PutUint32(a, uint32(src.Flags()))
 		ent.TraceFlags = []byte{a[0]}
 	}
 }

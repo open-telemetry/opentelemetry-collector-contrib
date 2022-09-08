@@ -52,7 +52,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	document.AddTimestamp("@timestamp", record.Timestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddID("TraceId", record.TraceID())
 	document.AddID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.FlagsStruct()))
+	document.AddInt("TraceFlags", int64(record.Flags()))
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 	document.AddAttribute("Body", record.Body())

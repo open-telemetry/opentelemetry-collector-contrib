@@ -630,7 +630,7 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().UpsertEmpty(nullAttrName)
 	s.Attributes().UpsertEmptyMap(mapAttrName)
 	s.Attributes().UpsertEmptySlice(arrayAttrName)
-	s.SetTraceID(pcommon.NewTraceID([16]byte{byte(42)}))
+	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {

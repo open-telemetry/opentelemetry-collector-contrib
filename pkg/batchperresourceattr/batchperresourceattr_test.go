@@ -253,10 +253,10 @@ func fillResourceSpans(rs ptrace.ResourceSpans, key string, val string) {
 	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-span")
-	firstSpan.SetTraceID(pcommon.NewTraceID([16]byte{byte(rand.Int())}))
+	firstSpan.SetTraceID(pcommon.TraceID([16]byte{byte(rand.Int())}))
 	secondSpan := ils.Spans().AppendEmpty()
 	secondSpan.SetName("second-span")
-	secondSpan.SetTraceID(pcommon.NewTraceID([16]byte{byte(rand.Int())}))
+	secondSpan.SetTraceID(pcommon.TraceID([16]byte{byte(rand.Int())}))
 }
 
 func newMetrics(rms ...pmetric.ResourceMetrics) pmetric.Metrics {
@@ -320,9 +320,9 @@ func fillResourceLogs(rs plog.ResourceLogs, key string, val string) {
 	rs.Resource().Attributes().UpsertInt("__other_key__", 123)
 	ils := rs.ScopeLogs().AppendEmpty()
 	firstLogRecord := ils.LogRecords().AppendEmpty()
-	firstLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
+	firstLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
 	secondLogRecord := ils.LogRecords().AppendEmpty()
-	secondLogRecord.SetFlagsStruct(plog.LogRecordFlags(rand.Int31()))
+	secondLogRecord.SetFlags(plog.LogRecordFlags(rand.Int31()))
 }
 
 func BenchmarkBatchPerResourceTraces(b *testing.B) {

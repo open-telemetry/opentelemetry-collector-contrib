@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -86,8 +85,8 @@ func buildTestTraces(setTokenLabel bool) (traces ptrace.Traces) {
 		span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		name := fmt.Sprintf("Span%d", i)
 		span.SetName(name)
-		span.SetTraceID(pcommon.NewTraceID([16]byte{1}))
-		span.SetSpanID(pcommon.NewSpanID([8]byte{1}))
+		span.SetTraceID([16]byte{1})
+		span.SetSpanID([8]byte{1})
 	}
 
 	return traces
@@ -149,8 +148,8 @@ func buildTestTrace() ptrace.Traces {
 		var spanIDBytes [8]byte
 		rand.Read(traceIDBytes[:])
 		rand.Read(spanIDBytes[:])
-		span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
-		span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+		span.SetTraceID(traceIDBytes)
+		span.SetSpanID(spanIDBytes)
 	}
 	return trace
 }

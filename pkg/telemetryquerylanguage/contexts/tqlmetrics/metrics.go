@@ -495,13 +495,13 @@ func accessFlags() tql.StandardGetSetter {
 		Getter: func(ctx tql.TransformContext) interface{} {
 			switch ctx.GetItem().(type) {
 			case pmetric.NumberDataPoint:
-				return int64(ctx.GetItem().(pmetric.NumberDataPoint).FlagsImmutable())
+				return int64(ctx.GetItem().(pmetric.NumberDataPoint).Flags())
 			case pmetric.HistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).FlagsImmutable())
+				return int64(ctx.GetItem().(pmetric.HistogramDataPoint).Flags())
 			case pmetric.ExponentialHistogramDataPoint:
-				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).FlagsImmutable())
+				return int64(ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).Flags())
 			case pmetric.SummaryDataPoint:
-				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).FlagsImmutable())
+				return int64(ctx.GetItem().(pmetric.SummaryDataPoint).Flags())
 			}
 			return nil
 		},
@@ -509,13 +509,13 @@ func accessFlags() tql.StandardGetSetter {
 			if newFlags, ok := val.(int64); ok {
 				switch ctx.GetItem().(type) {
 				case pmetric.NumberDataPoint:
-					ctx.GetItem().(pmetric.NumberDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
+					ctx.GetItem().(pmetric.NumberDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.HistogramDataPoint:
-					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
+					ctx.GetItem().(pmetric.HistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.ExponentialHistogramDataPoint:
-					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
+					ctx.GetItem().(pmetric.ExponentialHistogramDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				case pmetric.SummaryDataPoint:
-					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlagsImmutable(pmetric.MetricDataPointFlagsImmutable(newFlags))
+					ctx.GetItem().(pmetric.SummaryDataPoint).SetFlags(pmetric.MetricDataPointFlags(newFlags))
 				}
 			}
 		},

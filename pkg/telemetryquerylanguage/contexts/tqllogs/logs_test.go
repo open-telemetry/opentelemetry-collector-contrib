@@ -122,7 +122,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(4),
 			newVal: int64(5),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetFlagsStruct(plog.LogRecordFlags(5))
+				log.SetFlags(plog.LogRecordFlags(5))
 			},
 		},
 		{
@@ -132,10 +132,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig:   pcommon.NewTraceID(traceID),
-			newVal: pcommon.NewTraceID(traceID2),
+			orig:   pcommon.TraceID(traceID),
+			newVal: pcommon.TraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -145,10 +145,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID),
-			newVal: pcommon.NewSpanID(spanID2),
+			orig:   pcommon.SpanID(spanID),
+			newVal: pcommon.SpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -449,10 +449,10 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 
 	log.SetDroppedAttributesCount(10)
 
-	log.SetFlagsStruct(plog.LogRecordFlags(4))
+	log.SetFlags(plog.LogRecordFlags(4))
 
-	log.SetTraceID(pcommon.NewTraceID(traceID))
-	log.SetSpanID(pcommon.NewSpanID(spanID))
+	log.SetTraceID(traceID)
+	log.SetSpanID(spanID)
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("library")

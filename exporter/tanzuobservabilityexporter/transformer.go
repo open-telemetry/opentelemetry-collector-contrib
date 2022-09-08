@@ -263,7 +263,7 @@ func traceIDtoUUID(id pcommon.TraceID) (uuid.UUID, error) {
 }
 
 func spanIDtoUUID(id pcommon.SpanID) (uuid.UUID, error) {
-	formatted, err := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	formatted, err := uuid.FromBytes(padTo16Bytes(id))
 	if err != nil || id.IsEmpty() {
 		return uuid.Nil, errInvalidSpanID
 	}
@@ -275,7 +275,7 @@ func parentSpanIDtoUUID(id pcommon.SpanID) uuid.UUID {
 		return uuid.Nil
 	}
 	// FromBytes only returns an error if the length is not 16 bytes, so the error case is unreachable
-	formatted, _ := uuid.FromBytes(padTo16Bytes(id.Bytes()))
+	formatted, _ := uuid.FromBytes(padTo16Bytes(id))
 	return formatted
 }
 

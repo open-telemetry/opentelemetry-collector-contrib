@@ -6,13 +6,13 @@ require (
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220907232555-bef9373cfc20
 	go.uber.org/zap v1.23.0
 )
 
 require (
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector/pdata v0.59.0
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220907232555-bef9373cfc20
 )
 
 require (

@@ -159,14 +159,14 @@ func getTraceID(trace string) string {
 	var tid [16]byte
 	tr, _ := hex.DecodeString(trace)
 	copyToLowerBytes(tid[:], tr)
-	return pcommon.NewTraceID(tid).HexString()
+	return pcommon.TraceID(tid).HexString()
 }
 
 func getSpanID(span string) string {
 	var sid [8]byte
 	sp, _ := hex.DecodeString(span)
 	copyToLowerBytes(sid[:], sp)
-	return pcommon.NewSpanID(sid).HexString()
+	return pcommon.SpanID(sid).HexString()
 }
 
 func nopObsRecv() *obsreport.Receiver {

@@ -241,7 +241,7 @@ func newTraceID() pcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewTraceID(r)
+	return r
 }
 
 func constructW3CTraceID() pcommon.TraceID {
@@ -249,7 +249,7 @@ func constructW3CTraceID() pcommon.TraceID {
 	for i := range r {
 		r[i] = byte(rand.Intn(128))
 	}
-	return pcommon.NewTraceID(r)
+	return r
 }
 
 func newSegmentID() pcommon.SpanID {
@@ -258,5 +258,5 @@ func newSegmentID() pcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewSpanID(r)
+	return r
 }

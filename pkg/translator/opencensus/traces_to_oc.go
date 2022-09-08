@@ -352,16 +352,14 @@ func traceIDToOC(tid pcommon.TraceID) []byte {
 	if tid.IsEmpty() {
 		return nil
 	}
-	tidBytes := tid.Bytes()
-	return tidBytes[:]
+	return tid[:]
 }
 
 func spanIDToOC(sid pcommon.SpanID) []byte {
 	if sid.IsEmpty() {
 		return nil
 	}
-	sidBytes := sid.Bytes()
-	return sidBytes[:]
+	return sid[:]
 }
 
 func statusToOC(status ptrace.SpanStatus) (*octrace.Status, *octrace.AttributeValue) {

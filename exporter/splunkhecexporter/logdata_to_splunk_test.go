@@ -208,8 +208,8 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			name: "with span and trace id",
 			logRecordFn: func() plog.LogRecord {
 				logRecord := plog.NewLogRecord()
-				logRecord.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50}))
-				logRecord.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100}))
+				logRecord.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 50})
+				logRecord.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100})
 				return logRecord
 			},
 			logResourceFn: pcommon.NewResource,
