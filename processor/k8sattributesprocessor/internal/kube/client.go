@@ -523,7 +523,7 @@ func (c *WatchClient) addOrUpdatePod(pod *api_v1.Pod) {
 		// This should fix the case where scheduler has assigned the same attribtues (like IP address)
 		// to a new pod but update event for the old pod came in later.
 		if p, ok := c.Pods[id]; ok {
-			if p.StartTime != nil && !p.StartTime.Before(pod.Status.StartTime) {
+			if pod.Status.StartTime.Before(p.StartTime) {
 				return
 			}
 		}
