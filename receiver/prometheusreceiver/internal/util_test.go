@@ -26,12 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-const (
-	startTs                 = int64(1555366610000)
-	interval                = int64(15 * 1000)
-	defaultBuilderStartTime = float64(1.0)
-)
-
 var testMetadata = map[string]scrape.MetricMetadata{
 	"counter_test":    {Metric: "counter_test", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
 	"counter_test2":   {Metric: "counter_test2", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
@@ -50,7 +44,7 @@ var testMetadata = map[string]scrape.MetricMetadata{
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 	"process_start_time_seconds": {Metric: "process_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"badprocess_start_time_seconds": {Metric: "badprocess_start_time_seconds",
+	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
 		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
 }
 
