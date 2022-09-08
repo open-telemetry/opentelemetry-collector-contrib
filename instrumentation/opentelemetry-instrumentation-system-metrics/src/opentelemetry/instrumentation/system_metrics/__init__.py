@@ -25,16 +25,24 @@ following metrics are configured:
         "system.memory.utilization": ["used", "free", "cached"],
         "system.swap.usage": ["used", "free"],
         "system.swap.utilization": ["used", "free"],
-        "system.disk.io": ["read", "write"],
-        "system.disk.operations": ["read", "write"],
-        "system.disk.time": ["read", "write"],
-        "system.network.dropped.packets": ["transmit", "receive"],
-        "system.network.packets": ["transmit", "receive"],
-        "system.network.errors": ["transmit", "receive"],
-        "system.network.io": ["transmit", "receive"],
+        "system.disk.io.read": None,
+        "system.disk.io.write": None,
+        "system.disk.operations.read": None,
+        "system.disk.operations.write": None,
+        "system.disk.operation_time.read": None,
+        "system.disk.operation_time.write": None,
+        "system.network.dropped.transmit": None,
+        "system.network.dropped.receive": None,
+        "system.network.packets.transmit": None,
+        "system.network.packets.receive": None,
+        "system.network.errors.transmit": None,
+        "system.network.errors.receive": None,
+        "system.network.io.transmit": None,
+        "system.network.io.receive": None,
         "system.network.connections": ["family", "type"],
         "runtime.memory": ["rss", "vms"],
         "runtime.cpu.time": ["user", "system"],
+        "runtime.gc_count": None
     }
 
 Usage
@@ -59,7 +67,8 @@ Usage
     configuration = {
         "system.memory.usage": ["used", "free", "cached"],
         "system.cpu.time": ["idle", "user", "system", "irq"],
-        "system.network.io": ["transmit", "receive"],
+        "system.network.io.transmit": None,
+        "system.network.io.receive": None,
         "runtime.memory": ["rss", "vms"],
         "runtime.cpu.time": ["user", "system"],
     }
@@ -91,13 +100,20 @@ _DEFAULT_CONFIG = {
     "system.memory.utilization": ["used", "free", "cached"],
     "system.swap.usage": ["used", "free"],
     "system.swap.utilization": ["used", "free"],
-    "system.disk.io": ["read", "write"],
-    "system.disk.operations": ["read", "write"],
-    "system.disk.time": ["read", "write"],
-    "system.network.dropped.packets": ["transmit", "receive"],
-    "system.network.packets": ["transmit", "receive"],
-    "system.network.errors": ["transmit", "receive"],
-    "system.network.io": ["transmit", "receive"],
+    "system.disk.io.read": None,
+    "system.disk.io.write": None,
+    "system.disk.operations.read": None,
+    "system.disk.operations.write": None,
+    "system.disk.operation_time.read": None,
+    "system.disk.operation_time.write": None,
+    "system.network.dropped.transmit": None,
+    "system.network.dropped.receive": None,
+    "system.network.packets.transmit": None,
+    "system.network.packets.receive": None,
+    "system.network.errors.transmit": None,
+    "system.network.errors.receive": None,
+    "system.network.io.transmit": None,
+    "system.network.io.receive": None,
     "system.network.connections": ["family", "type"],
     "runtime.memory": ["rss", "vms"],
     "runtime.cpu.time": ["user", "system"],
@@ -131,15 +147,22 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         self._system_swap_usage_labels = self._labels.copy()
         self._system_swap_utilization_labels = self._labels.copy()
 
-        self._system_disk_io_labels = self._labels.copy()
-        self._system_disk_operations_labels = self._labels.copy()
-        self._system_disk_time_labels = self._labels.copy()
+        self._system_disk_io_read_labels = self._labels.copy()
+        self._system_disk_io_write_labels = self._labels.copy()
+        self._system_disk_operations_read_labels = self._labels.copy()
+        self._system_disk_operations_write_labels = self._labels.copy()
+        self._system_disk_operation_time_read_labels = self._labels.copy()
+        self._system_disk_operation_time_write_labels = self._labels.copy()
         self._system_disk_merged_labels = self._labels.copy()
 
-        self._system_network_dropped_packets_labels = self._labels.copy()
-        self._system_network_packets_labels = self._labels.copy()
-        self._system_network_errors_labels = self._labels.copy()
-        self._system_network_io_labels = self._labels.copy()
+        self._system_network_dropped_transmit_labels = self._labels.copy()
+        self._system_network_dropped_receive_labels = self._labels.copy()
+        self._system_network_packets_transmit_labels = self._labels.copy()
+        self._system_network_packets_receive_labels = self._labels.copy()
+        self._system_network_errors_transmit_labels = self._labels.copy()
+        self._system_network_errors_receive_labels = self._labels.copy()
+        self._system_network_io_transmit_labels = self._labels.copy()
+        self._system_network_io_receive_labels = self._labels.copy()
         self._system_network_connections_labels = self._labels.copy()
 
         self._runtime_memory_labels = self._labels.copy()
@@ -149,6 +172,7 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
     def instrumentation_dependencies(self) -> Collection[str]:
         return _instruments
 
+    # pylint: disable=too-many-statements
     def _instrument(self, **kwargs):
         # pylint: disable=too-many-branches
         meter_provider = kwargs.get("meter_provider")
@@ -225,27 +249,51 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         #     value_type=int,
         # )
 
-        if "system.disk.io" in self._config:
+        if "system.disk.io.read" in self._config:
             self._meter.create_observable_counter(
-                name="system.disk.io",
-                callbacks=[self._get_system_disk_io],
-                description="System disk IO",
+                name="system.disk.io.read",
+                callbacks=[self._get_system_disk_io_read],
+                description="",
                 unit="bytes",
             )
 
-        if "system.disk.operations" in self._config:
+        if "system.disk.io.write" in self._config:
             self._meter.create_observable_counter(
-                name="system.disk.operations",
-                callbacks=[self._get_system_disk_operations],
-                description="System disk operations",
+                name="system.disk.io.write",
+                callbacks=[self._get_system_disk_io_write],
+                description="",
+                unit="bytes",
+            )
+
+        if "system.disk.operations.read" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.operations.read",
+                callbacks=[self._get_system_disk_operations_read],
+                description="",
                 unit="operations",
             )
 
-        if "system.disk.time" in self._config:
+        if "system.disk.operations.write" in self._config:
             self._meter.create_observable_counter(
-                name="system.disk.time",
-                callbacks=[self._get_system_disk_time],
-                description="System disk time",
+                name="system.disk.operations.write",
+                callbacks=[self._get_system_disk_operations_write],
+                description="",
+                unit="operations",
+            )
+
+        if "system.disk.operation_time.read" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.operation_time.read",
+                callbacks=[self._get_system_disk_operation_time_read],
+                description="Sum of the time each operation took to complete",
+                unit="seconds",
+            )
+
+        if "system.disk.operation_time.write" in self._config:
+            self._meter.create_observable_counter(
+                name="system.disk.operation_time.write",
+                callbacks=[self._get_system_disk_operation_time_write],
+                description="Sum of the time each operation took to complete",
                 unit="seconds",
             )
 
@@ -271,35 +319,67 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
         # TODO Filesystem information can be obtained with os.statvfs in Unix-like
         # OSs, how to do the same in Windows?
 
-        if "system.network.dropped.packets" in self._config:
+        if "system.network.dropped.transmit" in self._config:
             self._meter.create_observable_counter(
-                name="system.network.dropped_packets",
-                callbacks=[self._get_system_network_dropped_packets],
-                description="System network dropped_packets",
+                name="system.network.dropped.transmit",
+                callbacks=[self._get_system_network_dropped_transmit],
+                description="Count of packets that are dropped or discarded on transmit even though there was no error",
                 unit="packets",
             )
 
-        if "system.network.packets" in self._config:
+        if "system.network.dropped.receive" in self._config:
             self._meter.create_observable_counter(
-                name="system.network.packets",
-                callbacks=[self._get_system_network_packets],
-                description="System network packets",
+                name="system.network.dropped.receive",
+                callbacks=[self._get_system_network_dropped_receive],
+                description="Count of packets that are dropped or discarded on receive even though there was no error",
                 unit="packets",
             )
 
-        if "system.network.errors" in self._config:
+        if "system.network.packets.transmit" in self._config:
             self._meter.create_observable_counter(
-                name="system.network.errors",
-                callbacks=[self._get_system_network_errors],
-                description="System network errors",
+                name="system.network.packets.transmit",
+                callbacks=[self._get_system_network_packets_transmit],
+                description="Count of packets transmitted",
+                unit="packets",
+            )
+
+        if "system.network.packets.receive" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.packets.receive",
+                callbacks=[self._get_system_network_packets_receive],
+                description="Count of packets received",
+                unit="packets",
+            )
+
+        if "system.network.errors.transmit" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.errors.transmit",
+                callbacks=[self._get_system_network_errors_transmit],
+                description="Count of network errors detected on transmit",
                 unit="errors",
             )
 
-        if "system.network.io" in self._config:
+        if "system.network.errors.receive" in self._config:
             self._meter.create_observable_counter(
-                name="system.network.io",
-                callbacks=[self._get_system_network_io],
-                description="System network io",
+                name="system.network.errors.receive",
+                callbacks=[self._get_system_network_errors_receive],
+                description="Count of network errors detected on receive",
+                unit="errors",
+            )
+
+        if "system.network.io.transmit" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.io.transmit",
+                callbacks=[self._get_system_network_io_transmit],
+                description="Bytes sent",
+                unit="bytes",
+            )
+
+        if "system.network.io.receive" in self._config:
+            self._meter.create_observable_counter(
+                name="system.network.io.receive",
+                callbacks=[self._get_system_network_io_receive],
+                description="Bytes received",
                 unit="bytes",
             )
 
@@ -424,132 +504,175 @@ class SystemMetricsInstrumentor(BaseInstrumentor):
                     self._system_swap_utilization_labels.copy(),
                 )
 
-    def _get_system_disk_io(
+    def _get_system_disk_io_read(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for disk IO"""
+        """Observer callback for disk IO read"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
-            for metric in self._config["system.disk.io"]:
-                if hasattr(counters, f"{metric}_bytes"):
-                    self._system_disk_io_labels["device"] = device
-                    self._system_disk_io_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"{metric}_bytes"),
-                        self._system_disk_io_labels.copy(),
-                    )
+            if hasattr(counters, "read_bytes"):
+                self._system_disk_io_read_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "read_bytes"),
+                    self._system_disk_io_read_labels.copy(),
+                )
 
-    def _get_system_disk_operations(
+    def _get_system_disk_io_write(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for disk operations"""
+        """Observer callback for disk IO write"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
-            for metric in self._config["system.disk.operations"]:
-                if hasattr(counters, f"{metric}_count"):
-                    self._system_disk_operations_labels["device"] = device
-                    self._system_disk_operations_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"{metric}_count"),
-                        self._system_disk_operations_labels.copy(),
-                    )
+            if hasattr(counters, "write_bytes"):
+                self._system_disk_io_write_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "write_bytes"),
+                    self._system_disk_io_write_labels.copy(),
+                )
 
-    def _get_system_disk_time(
+    def _get_system_disk_operations_read(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for disk time"""
+        """Observer callback for disk operations read"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
-            for metric in self._config["system.disk.time"]:
-                if hasattr(counters, f"{metric}_time"):
-                    self._system_disk_time_labels["device"] = device
-                    self._system_disk_time_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"{metric}_time") / 1000,
-                        self._system_disk_time_labels.copy(),
-                    )
+            if hasattr(counters, "read_count"):
+                self._system_disk_operations_read_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "read_count"),
+                    self._system_disk_operations_read_labels.copy(),
+                )
 
-    def _get_system_disk_merged(
+    def _get_system_disk_operations_write(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for disk merged operations"""
-
-        # FIXME The units in the spec is 1, it seems like it should be
-        # operations or the value type should be Double
-
+        """Observer callback for disk operations write"""
         for device, counters in psutil.disk_io_counters(perdisk=True).items():
-            for metric in self._config["system.disk.time"]:
-                if hasattr(counters, f"{metric}_merged_count"):
-                    self._system_disk_merged_labels["device"] = device
-                    self._system_disk_merged_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"{metric}_merged_count"),
-                        self._system_disk_merged_labels.copy(),
-                    )
+            if hasattr(counters, "write_count"):
+                self._system_disk_operations_write_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "write_count"),
+                    self._system_disk_operations_write_labels.copy(),
+                )
 
-    def _get_system_network_dropped_packets(
+    def _get_system_disk_operation_time_read(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for network dropped packets"""
+        """Observer callback for disk operation time read"""
+        for device, counters in psutil.disk_io_counters(perdisk=True).items():
+            if hasattr(counters, "read_time"):
+                self._system_disk_operation_time_read_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "read_time") / 1000,
+                    self._system_disk_operation_time_read_labels.copy(),
+                )
 
-        for device, counters in psutil.net_io_counters(pernic=True).items():
-            for metric in self._config["system.network.dropped.packets"]:
-                in_out = {"receive": "in", "transmit": "out"}[metric]
-                if hasattr(counters, f"drop{in_out}"):
-                    self._system_network_dropped_packets_labels[
-                        "device"
-                    ] = device
-                    self._system_network_dropped_packets_labels[
-                        "direction"
-                    ] = metric
-                    yield Observation(
-                        getattr(counters, f"drop{in_out}"),
-                        self._system_network_dropped_packets_labels.copy(),
-                    )
-
-    def _get_system_network_packets(
+    def _get_system_disk_operation_time_write(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for network packets"""
+        """Observer callback for disk operation time write"""
+        for device, counters in psutil.disk_io_counters(perdisk=True).items():
+            if hasattr(counters, "write_time"):
+                self._system_disk_operation_time_write_labels[
+                    "device"
+                ] = device
+                yield Observation(
+                    getattr(counters, "write_time") / 1000,
+                    self._system_disk_operation_time_write_labels.copy(),
+                )
 
-        for device, counters in psutil.net_io_counters(pernic=True).items():
-            for metric in self._config["system.network.dropped.packets"]:
-                recv_sent = {"receive": "recv", "transmit": "sent"}[metric]
-                if hasattr(counters, f"packets_{recv_sent}"):
-                    self._system_network_packets_labels["device"] = device
-                    self._system_network_packets_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"packets_{recv_sent}"),
-                        self._system_network_packets_labels.copy(),
-                    )
-
-    def _get_system_network_errors(
+    def _get_system_network_dropped_transmit(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for network errors"""
+        """Observer callback for network dropped packets transmit"""
         for device, counters in psutil.net_io_counters(pernic=True).items():
-            for metric in self._config["system.network.errors"]:
-                in_out = {"receive": "in", "transmit": "out"}[metric]
-                if hasattr(counters, f"err{in_out}"):
-                    self._system_network_errors_labels["device"] = device
-                    self._system_network_errors_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"err{in_out}"),
-                        self._system_network_errors_labels.copy(),
-                    )
+            if hasattr(counters, "dropout"):
+                self._system_network_dropped_transmit_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "dropout"),
+                    self._system_network_dropped_transmit_labels.copy(),
+                )
 
-    def _get_system_network_io(
+    def _get_system_network_dropped_receive(
         self, options: CallbackOptions
     ) -> Iterable[Observation]:
-        """Observer callback for network IO"""
-
+        """Observer callback for network dropped packets receive"""
         for device, counters in psutil.net_io_counters(pernic=True).items():
-            for metric in self._config["system.network.dropped.packets"]:
-                recv_sent = {"receive": "recv", "transmit": "sent"}[metric]
-                if hasattr(counters, f"bytes_{recv_sent}"):
-                    self._system_network_io_labels["device"] = device
-                    self._system_network_io_labels["direction"] = metric
-                    yield Observation(
-                        getattr(counters, f"bytes_{recv_sent}"),
-                        self._system_network_io_labels.copy(),
-                    )
+            if hasattr(counters, "dropin"):
+                self._system_network_dropped_receive_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "dropin"),
+                    self._system_network_dropped_receive_labels.copy(),
+                )
+
+    def _get_system_network_packets_transmit(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network packets transmit"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "packets_sent"):
+                self._system_network_packets_transmit_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "packets_sent"),
+                    self._system_network_packets_transmit_labels.copy(),
+                )
+
+    def _get_system_network_packets_receive(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network packets receive"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "packets_recv"):
+                self._system_network_packets_receive_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "packets_recv"),
+                    self._system_network_packets_receive_labels.copy(),
+                )
+
+    def _get_system_network_errors_transmit(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network errors transmit"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "errout"):
+                self._system_network_errors_transmit_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "errout"),
+                    self._system_network_errors_transmit_labels.copy(),
+                )
+
+    def _get_system_network_errors_receive(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network errors receive"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "errin"):
+                self._system_network_errors_receive_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "errin"),
+                    self._system_network_errors_receive_labels.copy(),
+                )
+
+    def _get_system_network_io_transmit(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network IO transmit"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "bytes_sent"):
+                self._system_network_io_transmit_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "bytes_sent"),
+                    self._system_network_io_transmit_labels.copy(),
+                )
+
+    def _get_system_network_io_receive(
+        self, options: CallbackOptions
+    ) -> Iterable[Observation]:
+        """Observer callback for network IO receive"""
+        for device, counters in psutil.net_io_counters(pernic=True).items():
+            if hasattr(counters, "bytes_recv"):
+                self._system_network_io_receive_labels["device"] = device
+                yield Observation(
+                    getattr(counters, "bytes_recv"),
+                    self._system_network_io_receive_labels.copy(),
+                )
 
     def _get_system_network_connections(
         self, options: CallbackOptions
