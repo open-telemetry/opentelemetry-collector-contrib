@@ -18,13 +18,13 @@ import (
 	"context"
 	"sync"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
 )
 
 type logsExporter struct {
@@ -37,7 +37,7 @@ type logsExporter struct {
 }
 
 // NewExporter creates a new instance of LogsExporter
-func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
+func newLogsExporter(ctx context.Context, params component.ExporterCreateSettings, cfg *Config, onceMetadata *sync.Once) (*logsExporter, error) {
 
 	// create datadog client
 	// validation endpoint is provided by Metrics
@@ -74,7 +74,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 	}
 
 	rsl := ld.ResourceLogs()
-	//Iterate over resource logs
+	// Iterate over resource logs
 	for i := 0; i < rsl.Len(); i++ {
 		rl := rsl.At(i)
 		sls := rl.ScopeLogs()

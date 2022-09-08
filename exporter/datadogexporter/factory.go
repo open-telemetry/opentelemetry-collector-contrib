@@ -300,7 +300,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata)
 		if err != nil {
 			cancel()
 			return nil, err
