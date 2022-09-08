@@ -2,6 +2,10 @@ package batchmemlimitprocessor
 
 import (
 	"context"
+	"runtime"
+	"sync"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -11,16 +15,30 @@ import (
 var sizer = plog.NewProtoMarshaler().(plog.Sizer)
 
 type batchMemoryLimitProcessor struct {
-	logger       *zap.Logger
-	config       *Config
-	nextConsumer consumer.Logs
+	logger *zap.Logger
+
+	sendBatchSize  int
+	sendMemorySize int
+	timeout        time.Duration
+
+	batch      *batchLogs
+	newItem    chan plog.Logs
+	shutdownC  chan struct{}
+	goroutines sync.WaitGroup
+	timer      *time.Timer
 }
 
 func newBatchMemoryLimiterProcessor(next consumer.Logs, logger *zap.Logger, cfg *Config) *batchMemoryLimitProcessor {
 	return &batchMemoryLimitProcessor{
-		logger:       logger,
-		config:       cfg,
-		nextConsumer: next,
+		logger: logger,
+
+		sendBatchSize:  int(cfg.SendBatchSize),
+		sendMemorySize: int(cfg.SendMemorySize),
+
+		batch:     newBatchLogs(next),
+		timeout:   cfg.Timeout,
+		newItem:   make(chan plog.Logs, runtime.NumCPU()),
+		shutdownC: make(chan struct{}, 1),
 	}
 }
 
@@ -30,81 +48,147 @@ func (mp *batchMemoryLimitProcessor) Capabilities() consumer.Capabilities {
 
 // Start is invoked during service startup.
 func (mp *batchMemoryLimitProcessor) Start(context.Context, component.Host) error {
+	mp.goroutines.Add(1)
+	go mp.startProcessingCycle()
 	return nil
 }
 
 // Shutdown is invoked during service shutdown.
 func (mp *batchMemoryLimitProcessor) Shutdown(context.Context) error {
+	close(mp.shutdownC)
+
+	// Wait until all goroutines are done.
+	mp.goroutines.Wait()
 	return nil
 }
 
 // ConsumeLogs implements LogsProcessor
 func (mp *batchMemoryLimitProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-
-	if sizer.LogsSize(ld) <= mp.config.MemoryLimit {
-		mp.nextConsumer.ConsumeLogs(ctx, ld)
-		return nil
-	}
-
-	for {
-		dest := mp.extractBatch(ld)
-		if err := mp.nextConsumer.ConsumeLogs(ctx, dest); err != nil {
-			return err
-		}
-
-		if ld.LogRecordCount() == 0 {
-			break
-		}
-	}
-
+	mp.newItem <- ld
 	return nil
 }
 
-func (mp *batchMemoryLimitProcessor) extractBatch(ld plog.Logs) plog.Logs {
-	dest := plog.NewLogs()
-	size := 0
-
-	ld.ResourceLogs().RemoveIf(func(rLog plog.ResourceLogs) bool {
-		if rLog.ScopeLogs().Len() == 0 {
-			return true
-		}
-
-		destRes := dest.ResourceLogs().AppendEmpty()
-		rLog.Resource().CopyTo(destRes.Resource())
-
-		rLog.ScopeLogs().RemoveIf(func(scLog plog.ScopeLogs) bool {
-			if scLog.LogRecords().Len() == 0 {
-				return true
+func (mp *batchMemoryLimitProcessor) startProcessingCycle() {
+	defer mp.goroutines.Done()
+	mp.timer = time.NewTimer(mp.timeout)
+	for {
+		select {
+		case <-mp.shutdownC:
+			DONE:
+				for {
+					select {
+					case item := <-mp.newItem:
+						mp.processItem(item)
+					default:
+						break DONE
+					}
+				}
+				// This is the close of the channel
+				if mp.batch.getLogCount() > 0 {
+					mp.sendItems()
+				}
+			return
+		case item := <-mp.newItem:
+			mp.processItem(item)
+		case <-mp.timer.C:
+			if mp.batch.getLogCount() > 0 {
+				mp.sendItems()
 			}
-
-			destScope := destRes.ScopeLogs().AppendEmpty()
-			scLog.Scope().CopyTo(destScope.Scope())
-
-			scLog.LogRecords().RemoveIf(func(rec plog.LogRecord) bool {
-				recordSize := getLogRecordProtoSize(rec)
-				if recordSize > mp.config.MemoryLimit {
-					mp.logger.Warn("log record size exceeds memory batch limit", zap.Int("log record size", recordSize), zap.Int("memory batch limit", mp.config.MemoryLimit))
-					return true
-				}
-				if size+recordSize > mp.config.MemoryLimit {
-					return false
-				}
-				size = size + recordSize
-				rec.CopyTo(destScope.LogRecords().AppendEmpty())
-				return true
-
-			})
-			return false
-		})
-		return false
-	})
-
-	return dest
+			mp.resetTimer()
+		}
+	}
 }
 
-func getLogRecordProtoSize(record plog.LogRecord) int {
-	tempLD := plog.NewLogs()
-	tempRec := tempLD.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	record.CopyTo(tempRec)
-	return sizer.LogsSize(tempLD)
+func (mp *batchMemoryLimitProcessor) sendItems() {
+	err := mp.batch.sendAndClear()
+	if err != nil {
+		mp.logger.Warn("Sender failed", zap.Error(err))
+	}
+}
+
+func (mp *batchMemoryLimitProcessor) processItem(item plog.Logs) {
+	sent, err := mp.batch.add(item, mp.sendBatchSize, mp.sendMemorySize)
+	if err != nil {
+		mp.logger.Warn("Sender failed", zap.Error(err))
+	}
+
+	if sent {
+		mp.stopTimer()
+		mp.resetTimer()
+	}
+}
+
+func (mp *batchMemoryLimitProcessor) stopTimer() {
+	if !mp.timer.Stop() {
+		<-mp.timer.C
+	}
+}
+
+func (mp *batchMemoryLimitProcessor) resetTimer() {
+	mp.timer.Reset(mp.timeout)
+}
+
+type batchLogs struct {
+	nextConsumer consumer.Logs
+	logData      plog.Logs
+	logCount     int
+	logSize      int
+	sizer        plog.Sizer
+}
+
+func newBatchLogs(nextConsumer consumer.Logs) *batchLogs {
+	return &batchLogs{
+		nextConsumer: nextConsumer,
+		logData:      plog.NewLogs(),
+		sizer:        plog.NewProtoMarshaler().(plog.Sizer),
+	}
+}
+
+func (bl *batchLogs) getLogCount() int {
+	return bl.logCount
+}
+
+func (bl *batchLogs) getLogSize() int {
+	return bl.logSize
+}
+
+func (bl *batchLogs) add(ld plog.Logs, sendBatchSize int, sendMemorySize int) (bool, error) {
+
+	var err error
+	sent := false
+	newLogsCount := ld.LogRecordCount()
+	if newLogsCount == 0 {
+		return sent, nil
+	}
+	newLogsSize := bl.sizer.LogsSize(ld)
+	if newLogsSize == 0 {
+		return sent, nil
+	}
+
+	if bl.logCount+newLogsCount >= sendBatchSize || bl.logSize+newLogsSize >= sendMemorySize {
+		sent = true
+		err = bl.sendAndClear()
+	}
+
+	bl.logCount += newLogsCount
+	bl.logSize += newLogsSize
+	ld.ResourceLogs().MoveAndAppendTo(bl.logData.ResourceLogs())
+
+	return sent, err
+}
+
+func (bl *batchLogs) sendAndClear() error {
+	err := bl.export()
+	bl.resetLogs()
+	return err
+}
+
+func (bl *batchLogs) export() error {
+	return bl.nextConsumer.ConsumeLogs(context.Background(), bl.logData)
+}
+
+func (bl *batchLogs) resetLogs() {
+	bl.logCount = 0
+	bl.logSize = 0
+	bl.logData = plog.NewLogs()
 }

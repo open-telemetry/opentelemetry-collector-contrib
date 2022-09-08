@@ -1,6 +1,8 @@
 package batchmemlimitprocessor
 
 import (
+	"time"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"go.opentelemetry.io/collector/config"
 )
@@ -9,7 +11,15 @@ import (
 type Config struct {
 	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 	adapter.BaseConfig       `mapstructure:",squash"`
-	MemoryLimit              int `mapstructure:"batch_mem_limit"` // in bytes
+
+	// Timeout sets the time after which a batch will be sent regardless of size.
+	Timeout time.Duration `mapstructure:"timeout"`
+
+	// SendMemorySize is the size of batch in bytes which after hit, will trigger it to be sent
+	SendMemorySize uint64 `mapstructure:"batch_mem_limit"`
+
+	// SendBatchSize is the size of a batch which after hit, will trigger it to be sent.
+	SendBatchSize uint64 `mapstructure:"send_batch_size"`
 }
 
 var _ config.Processor = (*Config)(nil)

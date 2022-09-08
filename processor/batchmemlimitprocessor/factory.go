@@ -2,6 +2,8 @@ package batchmemlimitprocessor
 
 import (
 	"context"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,6 +27,10 @@ func NewFactory() component.ProcessorFactory {
 func createDefaultConfig() config.Processor {
 	return &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
+
+		Timeout:        1 * time.Second,
+		SendMemorySize: 1000000,
+		SendBatchSize:  1000,
 	}
 }
 
