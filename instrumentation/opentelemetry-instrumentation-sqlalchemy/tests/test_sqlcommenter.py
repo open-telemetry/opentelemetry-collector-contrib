@@ -16,6 +16,7 @@ import logging
 import pytest
 from sqlalchemy import create_engine
 
+from opentelemetry import context
 from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.test.test_base import TestBase
 
@@ -53,4 +54,26 @@ class TestSqlalchemyInstrumentationWithSQLCommenter(TestBase):
         self.assertRegex(
             self.caplog.records[-2].getMessage(),
             r"SELECT  1 /\*db_driver='(.*)',traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/;",
+        )
+
+    def test_sqlcommenter_flask_integration(self):
+        engine = create_engine("sqlite:///:memory:")
+        SQLAlchemyInstrumentor().instrument(
+            engine=engine,
+            tracer_provider=self.tracer_provider,
+            enable_commenter=True,
+            commenter_options={"db_framework": False},
+        )
+        cnx = engine.connect()
+
+        current_context = context.get_current()
+        sqlcommenter_context = context.set_value(
+            "SQLCOMMENTER_ORM_TAGS_AND_VALUES", {"flask": 1}, current_context
+        )
+        context.attach(sqlcommenter_context)
+
+        cnx.execute("SELECT  1;").fetchall()
+        self.assertRegex(
+            self.caplog.records[-2].getMessage(),
+            r"SELECT  1 /\*db_driver='(.*)',flask=1,traceparent='\d{1,2}-[a-zA-Z0-9_]{32}-[a-zA-Z0-9_]{16}-\d{1,2}'\*/;",
         )

@@ -16,6 +16,8 @@ import flask
 from werkzeug.test import Client
 from werkzeug.wrappers import Response
 
+from opentelemetry import context
+
 
 class InstrumentationTest:
     @staticmethod
@@ -23,6 +25,14 @@ class InstrumentationTest:
         if helloid == 500:
             raise ValueError(":-(")
         return "Hello: " + str(helloid)
+
+    @staticmethod
+    def _sqlcommenter_endpoint():
+        current_context = context.get_current()
+        sqlcommenter_flask_values = current_context.get(
+            "SQLCOMMENTER_ORM_TAGS_AND_VALUES", {}
+        )
+        return sqlcommenter_flask_values
 
     @staticmethod
     def _custom_response_headers():
@@ -43,6 +53,7 @@ class InstrumentationTest:
 
         # pylint: disable=no-member
         self.app.route("/hello/<int:helloid>")(self._hello_endpoint)
+        self.app.route("/sqlcommenter")(self._sqlcommenter_endpoint)
         self.app.route("/excluded/<int:helloid>")(self._hello_endpoint)
         self.app.route("/excluded")(excluded_endpoint)
         self.app.route("/excluded2")(excluded2_endpoint)

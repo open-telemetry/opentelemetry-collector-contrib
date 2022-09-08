@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Flask sqlalchemy psycopg2 integration
+  ([#1224](https://github.com/open-telemetry/opentelemetry-python-contrib/pull/1224))
+
 ### Fixed
 
 - `opentelemetry-instrumentation-boto3sqs` Make propagation compatible with other SQS instrumentations, add 'messaging.url' span attribute, and fix missing package dependencies.

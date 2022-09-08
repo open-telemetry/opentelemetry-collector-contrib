@@ -45,8 +45,8 @@ import wrapt
 
 from opentelemetry import trace as trace_api
 from opentelemetry.instrumentation.dbapi.version import __version__
+from opentelemetry.instrumentation.sqlcommenter_utils import _add_sql_comment
 from opentelemetry.instrumentation.utils import (
-    _add_sql_comment,
     _get_opentelemetry_values,
     unwrap,
 )
