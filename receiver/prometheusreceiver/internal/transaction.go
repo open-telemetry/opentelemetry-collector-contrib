@@ -80,7 +80,7 @@ func newTransaction(
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (pointCount storage.SeriesRef, err error) {
+func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -178,12 +178,7 @@ func (t *transaction) Commit() error {
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
 
-	md := pmetric.NewMetrics()
-	rms := md.ResourceMetrics().AppendEmpty()
-	t.nodeResource.CopyTo(rms.Resource())
-	metrics := rms.ScopeMetrics().AppendEmpty().Metrics()
-
-	err := t.metricBuilder.appendMetrics(metrics)
+	md, err := t.metricBuilder.getMetrics(t.nodeResource)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
@@ -196,7 +191,7 @@ func (t *transaction) Commit() error {
 			return err
 		}
 		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestamp(metrics)
+		t.adjustStartTimestamp(md)
 	} else {
 		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetrics(md)
 	}
@@ -241,37 +236,43 @@ func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
 }
 
-func (t *transaction) adjustStartTimestamp(metricsL pmetric.MetricSlice) {
+func (t *transaction) adjustStartTimestamp(metrics pmetric.Metrics) {
 	startTimeTs := pdataTimestampFromFloat64(t.metricBuilder.startTime)
-	for i := 0; i < metricsL.Len(); i++ {
-		metric := metricsL.At(i)
-		switch metric.DataType() {
-		case pmetric.MetricDataTypeGauge:
-			continue
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			ilm := rm.ScopeMetrics().At(j)
+			for k := 0; k < ilm.Metrics().Len(); k++ {
+				metric := ilm.Metrics().At(k)
+				switch metric.DataType() {
+				case pmetric.MetricDataTypeGauge:
+					continue
 
-		case pmetric.MetricDataTypeSum:
-			dataPoints := metric.Sum().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
+				case pmetric.MetricDataTypeSum:
+					dataPoints := metric.Sum().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						dp := dataPoints.At(l)
+						dp.SetStartTimestamp(startTimeTs)
+					}
+
+				case pmetric.MetricDataTypeSummary:
+					dataPoints := metric.Summary().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						dp := dataPoints.At(l)
+						dp.SetStartTimestamp(startTimeTs)
+					}
+
+				case pmetric.MetricDataTypeHistogram:
+					dataPoints := metric.Histogram().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						dp := dataPoints.At(l)
+						dp.SetStartTimestamp(startTimeTs)
+					}
+
+				default:
+					t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
+				}
 			}
-
-		case pmetric.MetricDataTypeSummary:
-			dataPoints := metric.Summary().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
-			}
-
-		case pmetric.MetricDataTypeHistogram:
-			dataPoints := metric.Histogram().DataPoints()
-			for j := 0; j < dataPoints.Len(); j++ {
-				dp := dataPoints.At(j)
-				dp.SetStartTimestamp(startTimeTs)
-			}
-
-		default:
-			t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
 		}
 	}
 }
