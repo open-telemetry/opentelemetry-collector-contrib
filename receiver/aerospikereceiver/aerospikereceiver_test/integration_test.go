@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	as "github.com/aerospike/aerospike-client-go/v5"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -32,6 +33,51 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 )
+
+func populateMetrics(t *testing.T, addr string, port int) {
+	client, err := as.NewClient(addr, port)
+	require.NoError(t, err, "failed to create client")
+
+	// write 100 records to get some memory usage
+	for i := 0; i < 100; i++ {
+		key, err := as.NewKey("test", "demo", i)
+		require.NoError(t, err, "failed to create key")
+
+		bins := as.BinMap{
+			"bin1": i
+		}
+
+		br := client.Put(nil, key, bins)
+	}
+
+	// perform a basic primary index query
+	queryPolicy := as.NewQueryPolicy()
+	statement := as.NewStatement("test", "demo", "bin1")
+	_, err := c.Query(queryPolicy, statement)
+	require.NoError(t, err, "failed to execute basic PI query")
+
+	// aggregation query on primary index
+	queryPolicy := as.NewQueryPolicy()
+	statement := as.NewStatement("test", "demo", "bin1")
+	_, err = c.QueryAggregate(queryPolicy, statement, "test_funcs", "func1") // TODO make the test UDFs
+	require.NoError(t, err, "failed to execute aggregation PI query")
+
+	// ops query on primary index
+	queryPolicy := as.NewQueryPolicy()
+	var write_Policy *as.WritePolicy = nil
+	statement := as.NewStatement("test", "demo", "bin1")
+	ops := as.GetOp() // TODO add more op types
+	_, err = c.QueryExecute(queryPolicy, write_Policy, statement, ops)
+	require.NoError(t, err, "failed to execute aggregation PI query")
+
+	// perform a basic short primary index query
+	queryPolicy := as.NewQueryPolicy()
+	queryPolicy.ShortQuery = true
+	statement := as.NewStatement("test", "demo", "bin1")
+	_, err := c.Query(queryPolicy, statement)
+	require.NoError(t, err, "failed to execute basic PI query")
+
+}
 
 func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
