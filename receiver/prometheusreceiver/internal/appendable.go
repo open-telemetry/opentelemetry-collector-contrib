@@ -30,7 +30,7 @@ import (
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
 	sink                 consumer.Metrics
-	jobsMap              *JobsMap
+	metricAdjuster       MetricsAdjuster
 	useStartTimeMetric   bool
 	startTimeMetricRegex *regexp.Regexp
 	externalLabels       labels.Labels
@@ -48,15 +48,17 @@ func NewAppendable(
 	startTimeMetricRegex *regexp.Regexp,
 	receiverID config.ComponentID,
 	externalLabels labels.Labels) storage.Appendable {
-	var jobsMap *JobsMap
+	var metricAdjuster MetricsAdjuster
 	if !useStartTimeMetric {
-		jobsMap = NewJobsMap(gcInterval)
+		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval)
+	} else {
+		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
 
 	return &appendable{
 		sink:                 sink,
 		settings:             set,
-		jobsMap:              jobsMap,
+		metricAdjuster:       metricAdjuster,
 		useStartTimeMetric:   useStartTimeMetric,
 		startTimeMetricRegex: startTimeMetricRegex,
 		externalLabels:       externalLabels,
@@ -65,5 +67,5 @@ func NewAppendable(
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.jobsMap, o.useStartTimeMetric, o.startTimeMetricRegex, o.sink, o.externalLabels, o.settings, o.obsrecv)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv)
 }
