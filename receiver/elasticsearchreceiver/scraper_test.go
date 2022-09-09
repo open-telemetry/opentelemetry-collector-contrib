@@ -246,6 +246,32 @@ func TestScrapingError(t *testing.T) {
 			},
 		},
 		{
+			desc: "Version, node stats and cluster health fails",
+			run: func(t *testing.T) {
+				t.Parallel()
+
+				err404 := errors.New("expected status 200 but got 404")
+				err500 := errors.New("expected status 200 but got 500")
+
+				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("Version", mock.Anything).Return(nil, err404)
+				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
+				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
+
+				sc := newElasticSearchScraper(componenttest.NewNopReceiverCreateSettings(), createDefaultConfig().(*Config))
+				err := sc.start(context.Background(), componenttest.NewNopHost())
+				require.NoError(t, err)
+
+				sc.client = &mockClient
+
+				m, err := sc.scrape(context.Background())
+				require.Contains(t, err.Error(), err404.Error())
+				require.Contains(t, err.Error(), err500.Error())
+
+				require.Equal(t, m.DataPointCount(), 0)
+			},
+		},
+		{
 			desc: "Cluster health status is invalid",
 			run: func(t *testing.T) {
 				t.Parallel()
