@@ -16,7 +16,6 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"regexp"
@@ -113,36 +112,6 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 }
 
 func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
-	metricName := l.Get(model.MetricNameLabel)
-	familyName := normalizeMetricName(metricName)
-	if f, ok := t.families[familyName]; ok {
-		gk := f.getGroupKey(l)
-		mg := f.groups[gk]
-		_, exists := mg.exemplars[e.Value]
-		if exists {
-			return 0, nil
-		}
-		exemplar := pmetric.NewExemplar()
-		exemplar.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(e.Ts)))
-		exemplar.SetDoubleVal(e.Value)
-		for _, lb := range e.Labels {
-			switch lb.Name {
-			case traceIDKey:
-				var tid [16]byte
-				b, _ := hex.DecodeString(lb.Value)
-				copyToLowerBytes(tid[:], b)
-				exemplar.SetTraceID(tid)
-			case spanIDKey:
-				var sid [8]byte
-				b, _ := hex.DecodeString(lb.Value)
-				copyToLowerBytes(sid[:], b)
-				exemplar.SetSpanID(sid)
-			default:
-				exemplar.FilteredAttributes().UpsertString(lb.Name, lb.Value)
-			}
-		}
-		t.families[familyName].groups[gk].exemplars[e.Value] = exemplar
-	}
 	return 0, nil
 }
 
@@ -171,12 +140,6 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 	}
 
 	return md, nil
-}
-
-func copyToLowerBytes(dst []byte, src []byte) {
-	for i := 1; i <= len(src); i++ {
-		dst[len(dst)-i] = src[len(src)-i]
-	}
 }
 
 func (t *transaction) initTransaction(labels labels.Labels) error {
