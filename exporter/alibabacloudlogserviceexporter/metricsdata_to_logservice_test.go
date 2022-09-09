@@ -93,8 +93,8 @@ func TestMetricDataToLogService(t *testing.T) {
 	doubleHistogramDataPoint.SetCount(2)
 	doubleHistogramDataPoint.SetSum(10.1)
 	doubleHistogramDataPoint.SetTimestamp(pcommon.Timestamp(100_000_000))
-	doubleHistogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3}))
-	doubleHistogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2}))
+	doubleHistogramDataPoint.BucketCounts().FromRaw([]uint64{1, 2, 3})
+	doubleHistogramDataPoint.ExplicitBounds().FromRaw([]float64{1, 2})
 
 	doubleSummaryMetric := metrics.AppendEmpty()
 	doubleSummaryMetric.SetName("double-summary")

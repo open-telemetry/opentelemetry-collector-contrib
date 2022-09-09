@@ -105,10 +105,8 @@ func TestConvertDoubleHistogramExemplar(t *testing.T) {
 	// initialize empty datapoint
 	hd := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
 
-	bounds := pcommon.NewImmutableFloat64Slice([]float64{5, 25, 90})
-	hd.SetExplicitBounds(bounds)
-	bc := pcommon.NewImmutableUInt64Slice([]uint64{2, 35, 70})
-	hd.SetBucketCounts(bc)
+	hd.ExplicitBounds().FromRaw([]float64{5, 25, 90})
+	hd.BucketCounts().FromRaw([]uint64{2, 35, 70})
 
 	exemplarTs, _ := time.Parse("unix", "Mon Jan _2 15:04:05 MST 2006")
 	exemplars := []prometheus.Exemplar{
@@ -477,9 +475,9 @@ func TestAccumulateHistograms(t *testing.T) {
 				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Histogram().DataPoints().AppendEmpty()
-				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{5, 2}))
+				dp.BucketCounts().FromRaw([]uint64{5, 2})
 				dp.SetCount(7)
-				dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{3.5, 10.0}))
+				dp.ExplicitBounds().FromRaw([]float64{3.5, 10.0})
 				dp.SetSum(42.42)
 				dp.Attributes().UpsertString("label_1", "1")
 				dp.Attributes().UpsertString("label_2", "2")

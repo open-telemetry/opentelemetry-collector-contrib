@@ -50,8 +50,8 @@ var (
 
 	lbs1    = getAttributes(label11, value11, label12, value12)
 	lbs2    = getAttributes(label21, value21, label22, value22)
-	bounds  = pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.5, 0.99})
-	buckets = pcommon.NewImmutableUInt64Slice([]uint64{1, 2, 3})
+	bounds  = []float64{0.1, 0.5, 0.99}
+	buckets = []uint64{1, 2, 3}
 
 	quantileBounds = []float64{0.15, 0.9, 0.99}
 	quantileValues = []float64{7, 8, 9}
@@ -94,8 +94,7 @@ var (
 		validSummary:        getSummaryMetric(validSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 		validIntGaugeDirty:  getIntGaugeMetric(validIntGaugeDirty, lbs1, intVal1, time1),
 		unmatchedBoundBucketHist: getHistogramMetric(unmatchedBoundBucketHist, pcommon.NewMap(), 0, &floatValZero, 0,
-			pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.2, 0.3}),
-			pcommon.NewImmutableUInt64Slice([]uint64{1, 2})),
+			[]float64{0.1, 0.2, 0.3}, []uint64{1, 2}),
 	}
 
 	empty = "empty"
@@ -136,8 +135,7 @@ var (
 		staleNaNSum:         getSumMetric(staleNaNSum, lbs1, floatVal1, time1),
 		staleNaNHistogram:   getHistogramMetric(staleNaNHistogram, lbs1, time1, &floatVal2, uint64(intVal2), bounds, buckets),
 		staleNaNEmptyHistogram: getHistogramMetric(staleNaNEmptyHistogram, lbs1, time1, &floatVal2, uint64(intVal2),
-			pcommon.NewImmutableFloat64Slice([]float64{}),
-			pcommon.NewImmutableUInt64Slice([]uint64{})),
+			[]float64{}, []uint64{}),
 		staleNaNSummary: getSummaryMetric(staleNaNSummary, lbs2, time2, floatVal2, uint64(intVal2), quantiles),
 	}
 )
@@ -304,8 +302,8 @@ func getHistogramMetricEmptyDataPoint(name string, attributes pcommon.Map, ts ui
 	return metric
 }
 
-func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum *float64, count uint64, bounds pcommon.ImmutableFloat64Slice,
-	buckets pcommon.ImmutableUInt64Slice) pmetric.Metric {
+func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum *float64, count uint64, bounds []float64,
+	buckets []uint64) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -318,8 +316,8 @@ func getHistogramMetric(name string, attributes pcommon.Map, ts uint64, sum *flo
 	if sum != nil {
 		dp.SetSum(*sum)
 	}
-	dp.SetBucketCounts(buckets)
-	dp.SetExplicitBounds(bounds)
+	dp.BucketCounts().FromRaw(buckets)
+	dp.ExplicitBounds().FromRaw(bounds)
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))

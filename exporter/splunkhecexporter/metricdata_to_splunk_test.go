@@ -40,8 +40,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 	doubleVal := 1234.5678
 	int64Val := int64(123)
 
-	distributionBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4})
-	distributionCounts := pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 5})
+	distributionBounds := []float64{1, 2, 4}
+	distributionCounts := []uint64{4, 2, 3, 5}
 
 	tests := []struct {
 		name              string
@@ -249,8 +249,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
 				histogramPt := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
-				histogramPt.SetExplicitBounds(distributionBounds)
-				histogramPt.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3}))
+				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+				histogramPt.BucketCounts().FromRaw([]uint64{4, 2, 3})
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
@@ -267,8 +267,8 @@ func Test_metricDataToSplunk(t *testing.T) {
 				histogram := pmetric.NewMetric()
 				histogram.SetName("double_histogram_with_dims")
 				histogramPt := histogram.SetEmptyHistogram().DataPoints().AppendEmpty()
-				histogramPt.SetExplicitBounds(distributionBounds)
-				histogramPt.SetBucketCounts(distributionCounts)
+				histogramPt.ExplicitBounds().FromRaw(distributionBounds)
+				histogramPt.BucketCounts().FromRaw(distributionCounts)
 				histogramPt.SetSum(23)
 				histogramPt.SetCount(7)
 				histogramPt.SetTimestamp(pcommon.NewTimestampFromTime(tsUnix))
