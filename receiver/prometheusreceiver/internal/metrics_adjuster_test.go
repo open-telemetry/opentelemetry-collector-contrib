@@ -25,12 +25,12 @@ import (
 )
 
 var (
-	tUnknown = pdataTimestampFromMs(0)
-	t1       = pdataTimestampFromMs(1)
-	t2       = pdataTimestampFromMs(2)
-	t3       = pdataTimestampFromMs(3)
-	t4       = pdataTimestampFromMs(4)
-	t5       = pdataTimestampFromMs(5)
+	tUnknown = timestampFromMs(0)
+	t1       = timestampFromMs(1)
+	t2       = timestampFromMs(2)
+	t3       = timestampFromMs(3)
+	t4       = timestampFromMs(4)
+	t5       = timestampFromMs(5)
 
 	bounds0  = []float64{1, 2, 4}
 	percent0 = []float64{10, 50, 90}

@@ -220,14 +220,8 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 	return nil
 }
 
-func pdataTimestampFromFloat64(ts float64) pcommon.Timestamp {
-	secs := int64(ts)
-	nanos := int64((ts - float64(secs)) * 1e9)
-	return pcommon.NewTimestampFromTime(time.Unix(secs, nanos))
-}
-
 func (t *transaction) adjustStartTimestamp(metrics pmetric.Metrics) {
-	startTimeTs := pdataTimestampFromFloat64(t.startTime)
+	startTimeTs := timestampFromFloat64(t.startTime)
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {

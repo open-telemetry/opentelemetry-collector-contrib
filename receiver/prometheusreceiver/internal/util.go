@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/textparse"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -69,6 +70,16 @@ func getSortedNotUsefulLabels(mType pmetric.MetricDataType) []string {
 	default:
 		return notUsefulLabelsOther
 	}
+}
+
+func timestampFromFloat64(ts float64) pcommon.Timestamp {
+	secs := int64(ts)
+	nanos := int64((ts - float64(secs)) * 1e9)
+	return pcommon.Timestamp(secs*1e9 + nanos)
+}
+
+func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
+	return pcommon.Timestamp(timeAtMs * 1e6)
 }
 
 func getBoundary(metricType pmetric.MetricDataType, labels labels.Labels) (float64, error) {

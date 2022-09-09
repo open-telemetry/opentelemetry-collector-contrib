@@ -59,7 +59,7 @@ var (
 		scrape.ContextWithTarget(context.Background(), target),
 		testMetadataStore(testMetadata))
 
-	startTsNanos = pdataTimestampFromFloat64(startTs)
+	startTsNanos = timestampFromFloat64(startTs)
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
