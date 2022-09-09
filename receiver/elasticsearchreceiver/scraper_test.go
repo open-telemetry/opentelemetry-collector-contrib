@@ -48,6 +48,7 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 
@@ -73,6 +74,7 @@ func TestScraperMetricsWithoutDirection(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 
@@ -99,6 +101,7 @@ func TestScraperSkipClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 
@@ -125,6 +128,7 @@ func TestScraperNoNodesMetrics(t *testing.T) {
 	require.NoError(t, err)
 
 	mockClient := mocks.MockElasticsearchClient{}
+	mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 	mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 	mockClient.On("NodeStats", mock.Anything, []string{}).Return(nodeStats(t), nil)
 
@@ -175,6 +179,7 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err404)
 				mockClient.On("ClusterHealth", mock.Anything).Return(clusterHealth(t), nil)
 
@@ -198,6 +203,7 @@ func TestScrapingError(t *testing.T) {
 				err404 := errors.New("expected status 200 but got 404")
 
 				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 
@@ -222,6 +228,7 @@ func TestScrapingError(t *testing.T) {
 				err500 := errors.New("expected status 200 but got 500")
 
 				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nil, err500)
 				mockClient.On("ClusterHealth", mock.Anything).Return(nil, err404)
 
@@ -247,6 +254,7 @@ func TestScrapingError(t *testing.T) {
 				ch.Status = "pink"
 
 				mockClient := mocks.MockElasticsearchClient{}
+				mockClient.On("Version", mock.Anything).Return(versionNumber(t), nil)
 				mockClient.On("NodeStats", mock.Anything, []string{"_all"}).Return(nodeStats(t), nil)
 				mockClient.On("ClusterHealth", mock.Anything).Return(ch, nil)
 
@@ -285,4 +293,13 @@ func nodeStats(t *testing.T) *model.NodeStats {
 	nodeStats := model.NodeStats{}
 	require.NoError(t, json.Unmarshal(nodeJSON, &nodeStats))
 	return &nodeStats
+}
+
+func versionNumber(t *testing.T) *model.VersionResponse {
+	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
+
+	versionResponse := model.VersionResponse{}
+	require.NoError(t, json.Unmarshal(versionJSON, &versionResponse))
+	return &versionResponse
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -68,6 +69,7 @@ type elasticsearchScraper struct {
 	settings                             component.TelemetrySettings
 	cfg                                  *Config
 	mb                                   *metadata.MetricsBuilder
+	version                              *version.Version
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
 }
@@ -95,10 +97,26 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	r.getVersion(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
+}
+
+// scrapeVersion gets and assigns the elasticsearch version number
+func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	versionResponse, err := r.client.Version(ctx)
+	if err != nil {
+		return
+	}
+
+	esVersion, err := version.NewVersion(versionResponse.Version.Number)
+	if err != nil {
+		return
+	}
+
+	r.version = esVersion
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
