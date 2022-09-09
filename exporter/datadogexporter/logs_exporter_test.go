@@ -29,7 +29,7 @@ import (
 
 func Test_logs_exporter_send_logs(t *testing.T) {
 
-	server := testutils.DatadogServerMock()
+	server := testutils.DatadogLogServerMock()
 	defer server.Close()
 
 	params := componenttest.NewNopExporterCreateSettings()
@@ -58,9 +58,10 @@ func Test_logs_exporter_send_logs(t *testing.T) {
 
 	lr := server.LogsData[0]
 	assert.Nil(t, lr["ddtags"])
-	assert.NotEmpty(t, lr["message"])
 	assert.NotEmpty(t, lr["status"])
-
+	// message would be blank as it expected to
+	// parse the log and add all of them body as attributes
+	assert.Empty(t, lr["message"])
 	// attributes from log need to be added
 	assert.NotEmpty(t, lr["app"])
 

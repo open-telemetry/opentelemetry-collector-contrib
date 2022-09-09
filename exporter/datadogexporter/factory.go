@@ -267,7 +267,7 @@ func (f *factory) createTracesExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		// We don't do retries on traces because of deduping concerns on APM Events.
+		// We don't do retries on logs as it may cause duplicates in the backend confusing the user
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(stop),
@@ -283,12 +283,11 @@ func (f *factory) createLogsExporter(
 	cfg := checkAndCastConfig(c)
 
 	var pusher consumer.ConsumeLogsFunc
-
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
-	ctx, cancel := context.WithCancel(ctx) // nolint:govet
+	ctx, cancel := context.WithCancel(ctx)
 	// cancel() runs on shutdown
 	if cfg.OnlyMetadata {
 		// only host metadata needs to be sent, once.
@@ -300,7 +299,7 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	} else {
-		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata)
+		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, err
@@ -315,8 +314,7 @@ func (f *factory) createLogsExporter(
 		pusher,
 		// explicitly disable since we rely on http.Client timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
-		// We don't do retries on traces because of deduping concerns on APM Events.
-		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
+		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()

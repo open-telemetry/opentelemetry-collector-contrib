@@ -137,8 +137,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/commo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver => ../../receiver/filelogreceiver
-
 // see https://github.com/go-chi/chi/issues/713
 // see https://github.com/DataDog/dd-trace-go/issues/1220
 replace github.com/go-chi/chi/v4 => github.com/go-chi/chi v4.0.0+incompatible

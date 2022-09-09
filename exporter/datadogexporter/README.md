@@ -2,13 +2,14 @@
 
 | Status                   |                  |
 | ------------------------ |------------------|
-| Stability                | [beta]           |
+| Stability                | traces [beta]    |
+|                          | metrics [beta]   |
+|                          | logs [alpha]     |
 | Supported pipeline types | traces, metrics, logs|
 | Distributions            | [contrib], [AWS] |
-| Logs Stability           | [alpha]          |
 
 
-This exporter sends metric and trace data to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/otel_collector_datadog_exporter/).
+This exporter sends metric ,trace data and logs to [Datadog](https://datadoghq.com). For environment specific setup instructions visit the [Datadog Documentation](https://docs.datadoghq.com/tracing/setup_overview/open_standards/otel_collector_datadog_exporter/).
 
 > Please review the Collector's [security
 > documentation](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security.md),

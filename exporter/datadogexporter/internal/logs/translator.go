@@ -44,17 +44,17 @@ const (
 )
 
 const (
-	LogLevelTrace = "trace"
-	LogLevelDebug = "debug"
-	LogLevelInfo  = "info"
-	LogLevelWarn  = "warn"
-	LogLevelError = "error"
-	LogLevelFatal = "fatal"
+	logLevelTrace = "trace"
+	logLevelDebug = "debug"
+	logLevelInfo  = "info"
+	logLevelWarn  = "warn"
+	logLevelError = "error"
+	logLevelFatal = "fatal"
 )
 
 // Transform is responsible to convert LogRecord to datadog format
 func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
-	hostName, serviceName := extractHostNameService(res)
+	hostName, serviceName := extractHostNameService(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
 		AdditionalProperties: make(map[string]string),
@@ -62,6 +62,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	if hostName != "" {
 		l.Hostname = datadog.PtrString(hostName)
 	}
+
 	if serviceName != "" {
 		l.Service = datadog.PtrString(serviceName)
 	}
@@ -85,7 +86,7 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		status = lr.SeverityText()
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
 	} else {
-		status = deriveStatus(int(lr.SeverityNumber()))
+		status = deriveStatus(lr.SeverityNumber())
 	}
 	l.AdditionalProperties[ddStatus] = status
 
@@ -100,10 +101,6 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		l.AdditionalProperties[ddTimestamp] = lr.Timestamp().AsTime().Format(time.RFC3339)
 	}
 
-	// TODO:  in case json parser is enabled , we shouldn't set Message
-	// When we enable json parser, all the log attributes would be added as AdditionalProperties
-	l.Message = lr.Body().AsString()
-
 	var tags = attributes.TagsFromAttributes(res.Attributes())
 	if len(tags) > 0 {
 		tagStr := strings.Join(tags, ",")
@@ -112,14 +109,26 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	return l
 }
 
-func extractHostNameService(r pcommon.Resource) (hostName string, serviceName string) {
-	attr := r.Attributes()
-	if src, ok := attributes.SourceFromAttributes(attr, true); ok && src.Kind == source.HostnameKind {
+func extractHostNameService(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (hostName string, serviceName string) {
+	if src, ok := attributes.SourceFromAttributes(resourceAttrs, true); ok && src.Kind == source.HostnameKind {
 		hostName = src.Identifier
 	}
 
-	if s, ok := attr.Get(conventions.AttributeServiceName); ok {
+	// hostName, serviceName are blank from resource
+	// we need to derive from log attributes
+	if hostName == "" {
+		if src, ok := attributes.SourceFromAttributes(logAttrs, true); ok && src.Kind == source.HostnameKind {
+			hostName = src.Identifier
+		}
+	}
+
+	if s, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
 		serviceName = s.AsString()
+	}
+	if serviceName == "" {
+		if s, ok := logAttrs.Get(conventions.AttributeServiceName); ok {
+			serviceName = s.AsString()
+		}
 	}
 
 	return hostName, serviceName
@@ -142,25 +151,22 @@ func convertTraceID(id string) string {
 
 // deriveStatus converts the severity number to log level
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber
-func deriveStatus(severity int) string {
-	if severity < 5 {
-		return LogLevelTrace
+func deriveStatus(severity plog.SeverityNumber) string {
+	switch {
+	case severity < 5:
+		return logLevelTrace
+	case severity < 8:
+		return logLevelDebug
+	case severity < 12:
+		return logLevelInfo
+	case severity < 16:
+		return logLevelWarn
+	case severity < 20:
+		return logLevelError
+	case severity < 24:
+		return logLevelFatal
+	default:
+		// By default, treat this as error
+		return logLevelError
 	}
-	if severity < 8 {
-		return LogLevelDebug
-	}
-	if severity < 12 {
-		return LogLevelInfo
-	}
-	if severity < 16 {
-		return LogLevelWarn
-	}
-	if severity < 20 {
-		return LogLevelError
-	}
-	if severity < 24 {
-		return LogLevelFatal
-	}
-	// By default, treat this as error
-	return LogLevelError
 }

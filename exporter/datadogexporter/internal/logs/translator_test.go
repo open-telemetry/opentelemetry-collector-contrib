@@ -81,6 +81,32 @@ func TestTransform(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "log_with_service_attribute",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().InsertString("app", "test")
+					l.Attributes().InsertString(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":                   "test",
+					"status":                "debug",
+					"otel.serverity_number": "5",
+					"service.name":          "otlp_col",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +131,7 @@ func TestTransform(t *testing.T) {
 
 func Test_deriveStatus(t *testing.T) {
 	type args struct {
-		severity int
+		severity plog.SeverityNumber
 	}
 	tests := []struct {
 		name string
@@ -117,21 +143,21 @@ func Test_deriveStatus(t *testing.T) {
 			args: args{
 				severity: 3,
 			},
-			want: LogLevelTrace,
+			want: logLevelTrace,
 		},
 		{
 			name: "debug",
 			args: args{
 				severity: 7,
 			},
-			want: LogLevelDebug,
+			want: logLevelDebug,
 		},
 		{
 			name: "warn",
 			args: args{
 				severity: 13,
 			},
-			want: LogLevelWarn,
+			want: logLevelWarn,
 		},
 	}
 	for _, tt := range tests {
