@@ -9,7 +9,10 @@ require (
 	go.uber.org/zap v1.23.0
 )
 
-require github.com/testcontainers/testcontainers-go v0.14.0
+require (
+	github.com/hashicorp/go-version v1.6.0
+	github.com/testcontainers/testcontainers-go v0.14.0
+)
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
