@@ -3667,6 +3667,13 @@ func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	}
 }
 
+// WithContainerStartedOn sets provided value as "container.started_on" attribute for current resource.
+func WithContainerStartedOn(val string) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		rm.Resource().Attributes().UpsertString("container.started_on", val)
+	}
+}
+
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {

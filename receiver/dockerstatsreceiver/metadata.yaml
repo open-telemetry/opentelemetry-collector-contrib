@@ -40,6 +40,10 @@ resource_attributes:
     description: "The full command executed by the container."
     type: string
     enabled: false
+  container.started_on:
+    description: "Container start time."
+    type: string
+    enabled: true
 
 attributes:
   core:
