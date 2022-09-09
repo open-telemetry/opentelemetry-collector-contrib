@@ -111,7 +111,8 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 	out.StartTimestamp = state.PrevPoint.ObservedTimestamp
 
-	if metricID.MetricDataType == pmetric.MetricDataTypeHistogram {
+	switch metricID.MetricDataType {
+	case pmetric.MetricDataTypeHistogram:
 		value := metricPoint.HistogramValue
 		prevValue := state.PrevPoint.HistogramValue
 		if math.IsNaN(value.Sum) {
@@ -134,28 +135,30 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		}
 
 		out.HistogramValue = &delta
-	} else if metricID.IsFloatVal() {
-		value := metricPoint.FloatValue
-		prevValue := state.PrevPoint.FloatValue
-		delta := value - prevValue
+	case pmetric.MetricDataTypeSum:
+		if metricID.IsFloatVal() {
+			value := metricPoint.FloatValue
+			prevValue := state.PrevPoint.FloatValue
+			delta := value - prevValue
 
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
+			// Detect reset on a monotonic counter
+			if metricID.MetricIsMonotonic && value < prevValue {
+				delta = value
+			}
+
+			out.FloatValue = delta
+		} else {
+			value := metricPoint.IntValue
+			prevValue := state.PrevPoint.IntValue
+			delta := value - prevValue
+
+			// Detect reset on a monotonic counter
+			if metricID.MetricIsMonotonic && value < prevValue {
+				delta = value
+			}
+
+			out.IntValue = delta
 		}
-
-		out.FloatValue = delta
-	} else {
-		value := metricPoint.IntValue
-		prevValue := state.PrevPoint.IntValue
-		delta := value - prevValue
-
-		// Detect reset on a monotonic counter
-		if metricID.MetricIsMonotonic && value < prevValue {
-			delta = value
-		}
-
-		out.IntValue = delta
 	}
 
 	state.PrevPoint = metricPoint

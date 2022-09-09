@@ -33,9 +33,9 @@ func (point *HistogramPoint) Clone() HistogramPoint {
 	bucketValues := make([]uint64, len(point.Buckets))
 	copy(bucketValues, point.Buckets)
 
-	return HistogramPoint {
-		Count: point.Count,
-		Sum: point.Sum,
+	return HistogramPoint{
+		Count:   point.Count,
+		Sum:     point.Sum,
 		Buckets: bucketValues,
 	}
 }
