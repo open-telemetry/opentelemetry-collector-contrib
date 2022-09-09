@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuree
 
 go 1.18
 
-require go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
+require go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -14,7 +14,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177 // indirect
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/trace v1.9.0 // indirect

@@ -264,7 +264,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				log.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -349,7 +349,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -425,7 +425,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertBool("bool", true)
 	log.Attributes().UpsertInt("int", 10)
 	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	log.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := log.Attributes().UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
@@ -444,8 +444,8 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
 	arrBytes := log.Attributes().UpsertEmptySlice("arr_bytes")
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 
 	log.SetDroppedAttributesCount(10)
 

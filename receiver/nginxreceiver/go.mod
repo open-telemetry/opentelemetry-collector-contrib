@@ -8,8 +8,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
 	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.13.0
-	go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177
+	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.0.0-20210611083556-38a9dc6acbc6 // indirect
 

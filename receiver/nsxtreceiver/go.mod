@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
 	github.com/vmware/go-vmware-nsxt v0.0.0-20220328155605-f49a14c1ef5f
-	go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177
+	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 )

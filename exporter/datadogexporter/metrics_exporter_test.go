@@ -355,8 +355,8 @@ func createTestMetrics(additionalAttributes map[string]string) pmetric.Metrics {
 	dpDoubleHist := dpsDoubleHist.AppendEmpty()
 	dpDoubleHist.SetCount(20)
 	dpDoubleHist.SetSum(6)
-	dpDoubleHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 18}))
-	dpDoubleHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0}))
+	dpDoubleHist.BucketCounts().FromRaw([]uint64{2, 18})
+	dpDoubleHist.ExplicitBounds().FromRaw([]float64{0})
 	dpDoubleHist.SetTimestamp(seconds(0))
 
 	return md

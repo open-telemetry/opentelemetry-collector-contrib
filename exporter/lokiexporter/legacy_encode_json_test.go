@@ -79,6 +79,9 @@ func TestSerializeBody(t *testing.T) {
 	simplemap.CopyTo(complexmap.MapVal().UpsertEmpty("keymap"))
 	complexmap.MapVal().UpsertEmpty("keyempty")
 
+	bytes := pcommon.NewValueBytesEmpty()
+	bytes.BytesVal().FromRaw([]byte(`abc`))
+
 	testcases := []struct {
 		input    pcommon.Value
 		expected []byte
@@ -116,7 +119,7 @@ func TestSerializeBody(t *testing.T) {
 			[]byte(`["a","b"]`),
 		},
 		{
-			pcommon.NewValueBytes(pcommon.NewImmutableByteSlice([]byte(`abc`))),
+			bytes,
 			[]byte(`"YWJj"`),
 		},
 	}

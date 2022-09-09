@@ -28,8 +28,8 @@ import (
 
 func Test_serializeHistogramPoint(t *testing.T) {
 	hist := pmetric.NewHistogramDataPoint()
-	hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
-	hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 0}))
+	hist.ExplicitBounds().FromRaw([]float64{0, 2, 4, 8})
+	hist.BucketCounts().FromRaw([]uint64{0, 1, 0, 1, 0})
 	hist.SetCount(2)
 	hist.SetSum(9.5)
 	hist.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -42,8 +42,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 	t.Run("delta with non-empty first and last bucket", func(t *testing.T) {
 		histWithNonEmptyFirstLast := pmetric.NewHistogramDataPoint()
-		histWithNonEmptyFirstLast.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 2, 4, 8}))
-		histWithNonEmptyFirstLast.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 1, 1}))
+		histWithNonEmptyFirstLast.ExplicitBounds().FromRaw([]float64{0, 2, 4, 8})
+		histWithNonEmptyFirstLast.BucketCounts().FromRaw([]uint64{0, 1, 0, 1, 1})
 		histWithNonEmptyFirstLast.SetCount(3)
 		histWithNonEmptyFirstLast.SetSum(9.5)
 		histWithNonEmptyFirstLast.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -56,8 +56,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 	t.Run("when average > highest boundary, max = average", func(t *testing.T) {
 		// average = 15, highest boundary = 10
 		histWitMaxGreaterAvg := pmetric.NewHistogramDataPoint()
-		histWitMaxGreaterAvg.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 10}))
-		histWitMaxGreaterAvg.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 2}))
+		histWitMaxGreaterAvg.ExplicitBounds().FromRaw([]float64{0, 10})
+		histWitMaxGreaterAvg.BucketCounts().FromRaw([]uint64{0, 0, 2})
 		histWitMaxGreaterAvg.SetCount(2)
 		histWitMaxGreaterAvg.SetSum(30)
 		histWitMaxGreaterAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -70,8 +70,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 	t.Run("when average < lowest boundary, min = average", func(t *testing.T) {
 		// average = 5, lowest boundary = 10
 		histWitMinLessAvg := pmetric.NewHistogramDataPoint()
-		histWitMinLessAvg.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
-		histWitMinLessAvg.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 0, 0}))
+		histWitMinLessAvg.ExplicitBounds().FromRaw([]float64{10, 20})
+		histWitMinLessAvg.BucketCounts().FromRaw([]uint64{2, 0, 0})
 		histWitMinLessAvg.SetCount(2)
 		histWitMinLessAvg.SetSum(10)
 		histWitMinLessAvg.SetTimestamp(pcommon.Timestamp(time.Date(2021, 07, 16, 12, 30, 0, 0, time.UTC).UnixNano()))
@@ -83,8 +83,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 	t.Run("when min is provided it should be used", func(t *testing.T) {
 		minMaxHist := pmetric.NewHistogramDataPoint()
-		minMaxHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
-		minMaxHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 0, 0}))
+		minMaxHist.ExplicitBounds().FromRaw([]float64{10, 20})
+		minMaxHist.BucketCounts().FromRaw([]uint64{2, 0, 0})
 		minMaxHist.SetCount(2)
 		minMaxHist.SetSum(10)
 		minMaxHist.SetMin(3)
@@ -99,8 +99,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 	t.Run("when max is provided it should be used", func(t *testing.T) {
 		minMaxHist := pmetric.NewHistogramDataPoint()
-		minMaxHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
-		minMaxHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 0, 0}))
+		minMaxHist.ExplicitBounds().FromRaw([]float64{10, 20})
+		minMaxHist.BucketCounts().FromRaw([]uint64{2, 0, 0})
 		minMaxHist.SetCount(2)
 		minMaxHist.SetSum(10)
 		minMaxHist.SetMax(7)
@@ -115,8 +115,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 	t.Run("when min and max is provided it should be used", func(t *testing.T) {
 		minMaxHist := pmetric.NewHistogramDataPoint()
-		minMaxHist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{10, 20}))
-		minMaxHist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 0, 0}))
+		minMaxHist.ExplicitBounds().FromRaw([]float64{10, 20})
+		minMaxHist.BucketCounts().FromRaw([]uint64{2, 0, 0})
 		minMaxHist.SetCount(2)
 		minMaxHist.SetSum(10)
 		minMaxHist.SetMin(3)
@@ -131,8 +131,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 	t.Run("when min is not provided it should be estimated", func(t *testing.T) {
 		t.Run("values between first two boundaries", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 3, 2, 0}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 1, 0, 3, 2, 0})
 			hist.SetCount(6)
 			hist.SetSum(21.2)
 
@@ -143,8 +143,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("first bucket has value", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 0, 0, 3, 0, 4}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{1, 0, 0, 3, 0, 4})
 			hist.SetCount(8)
 			hist.SetSum(34.5)
 
@@ -155,8 +155,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("only the first bucket has values, use the mean", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{3, 0, 0, 0, 0, 0}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{3, 0, 0, 0, 0, 0})
 			hist.SetCount(3)
 			hist.SetSum(0.75)
 
@@ -166,8 +166,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 		})
 		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4}))
+			hist.ExplicitBounds().FromRaw([]float64{})
+			hist.BucketCounts().FromRaw([]uint64{4})
 			hist.SetCount(4)
 			hist.SetSum(8.8)
 
@@ -177,8 +177,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 		})
 		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1}))
+			hist.ExplicitBounds().FromRaw([]float64{})
+			hist.BucketCounts().FromRaw([]uint64{1})
 			hist.SetCount(1)
 			hist.SetSum(1.2)
 
@@ -188,8 +188,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 		})
 		t.Run("only the last bucket has a value", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0, 0, 0, 3}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0, 3})
 			hist.SetCount(3)
 			hist.SetSum(15.6)
 
@@ -202,8 +202,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 	t.Run("when max is not provided it should be estimated", func(t *testing.T) {
 		t.Run("values between the last two boundaries", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 0, 3, 2, 0}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 1, 0, 3, 2, 0})
 			hist.SetSum(21.2)
 			hist.SetCount(6)
 
@@ -214,8 +214,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("last bucket has value", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 0, 0, 3, 0, 4}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{1, 0, 0, 3, 0, 4})
 			hist.SetSum(34.5)
 			hist.SetCount(8)
 
@@ -226,8 +226,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("only the last bucket has values", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 0, 0, 0, 0, 2}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 0, 0, 0, 0, 2})
 			hist.SetSum(20.2)
 			hist.SetCount(2)
 
@@ -238,8 +238,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4}))
+			hist.ExplicitBounds().FromRaw([]float64{})
+			hist.BucketCounts().FromRaw([]uint64{4})
 			hist.SetSum(8.8)
 			hist.SetCount(4)
 
@@ -250,8 +250,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("just one bucket from -Inf to Inf", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1}))
+			hist.ExplicitBounds().FromRaw([]float64{})
+			hist.BucketCounts().FromRaw([]uint64{1})
 			hist.SetSum(1.2)
 			hist.SetCount(1)
 
@@ -262,8 +262,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("max is larger than sum", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 2, 0}))
+			hist.ExplicitBounds().FromRaw([]float64{0, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 2, 0})
 			hist.SetSum(2.3)
 			hist.SetCount(2)
 
@@ -276,8 +276,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 	t.Run("when sum is not provided it should be estimated", func(t *testing.T) {
 		t.Run("single bucket histogram", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{13}))
+			hist.ExplicitBounds().FromRaw([]float64{})
+			hist.BucketCounts().FromRaw([]uint64{13})
 			hist.SetCount(6)
 
 			_, _, sum := histDataPointToSummary(hist)
@@ -287,8 +287,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 		t.Run("data in bounded buckets", func(t *testing.T) {
 			hist := pmetric.NewHistogramDataPoint()
-			hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-			hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 3, 5, 0, 0, 0}))
+			hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+			hist.BucketCounts().FromRaw([]uint64{0, 3, 5, 0, 0, 0})
 			hist.SetCount(6)
 
 			_, _, sum := histDataPointToSummary(hist)
@@ -299,8 +299,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 		t.Run("data in unbounded buckets", func(t *testing.T) {
 			t.Run("first bucket", func(t *testing.T) {
 				hist := pmetric.NewHistogramDataPoint()
-				hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-				hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{2, 3, 5, 0, 0, 0}))
+				hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+				hist.BucketCounts().FromRaw([]uint64{2, 3, 5, 0, 0, 0})
 				hist.SetCount(6)
 
 				_, _, sum := histDataPointToSummary(hist)
@@ -310,8 +310,8 @@ func Test_serializeHistogramPoint(t *testing.T) {
 
 			t.Run("last bucket", func(t *testing.T) {
 				hist := pmetric.NewHistogramDataPoint()
-				hist.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3, 4, 5}))
-				hist.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 3, 5, 0, 0, 2}))
+				hist.ExplicitBounds().FromRaw([]float64{1, 2, 3, 4, 5})
+				hist.BucketCounts().FromRaw([]uint64{0, 3, 5, 0, 0, 2})
 				hist.SetCount(6)
 
 				_, _, sum := histDataPointToSummary(hist)

@@ -49,8 +49,8 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 
 func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) pmetric.HistogramDataPoint {
 	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
-	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
+	hdp.ExplicitBounds().FromRaw(bounds)
+	hdp.BucketCounts().FromRaw(counts)
 
 	var sum float64
 	var count uint64

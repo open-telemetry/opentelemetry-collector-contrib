@@ -97,15 +97,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		pcommon.NewMapFromRaw(labelMap).CopyTo(int64PtWithLabels.Attributes())
 	}
 
-	histBounds := pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4})
-	histCounts := pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 7})
-
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
 		histDP.SetTimestamp(ts)
 		histDP.SetCount(16)
 		histDP.SetSum(100.0)
-		histDP.SetExplicitBounds(histBounds)
-		histDP.SetBucketCounts(histCounts)
+		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
+		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
 		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
 	}
 	histDP := pmetric.NewHistogramDataPoint()

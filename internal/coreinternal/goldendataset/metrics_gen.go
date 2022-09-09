@@ -185,8 +185,8 @@ func populateDoubleHistogram(cfg MetricsCfg, dh pmetric.Histogram) {
 
 func setDoubleHistogramBounds(hdp pmetric.HistogramDataPoint, bounds ...float64) {
 	counts := make([]uint64, len(bounds))
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
-	hdp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
+	hdp.BucketCounts().FromRaw(counts)
+	hdp.ExplicitBounds().FromRaw(bounds)
 }
 
 func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
@@ -201,7 +201,7 @@ func addDoubleHistogramVal(hdp pmetric.HistogramDataPoint, val float64) {
 			break
 		}
 	}
-	hdp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
+	hdp.BucketCounts().FromRaw(buckets)
 }
 
 func populatePtAttributes(cfg MetricsCfg, lm pcommon.Map) {
@@ -231,6 +231,6 @@ func populateExpoHistogram(cfg MetricsCfg, dh pmetric.ExponentialHistogram) {
 		pt.SetScale(0)
 		pt.SetZeroCount(0)
 		pt.Positive().SetOffset(int32(cfg.PtVal))
-		pt.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{uint64(cfg.PtVal)}))
+		pt.Positive().BucketCounts().FromRaw([]uint64{uint64(cfg.PtVal)})
 	}
 }

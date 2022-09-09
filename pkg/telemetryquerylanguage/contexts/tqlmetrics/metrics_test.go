@@ -199,7 +199,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				datapoint.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -284,7 +284,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 	}
@@ -415,7 +415,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   []uint64{1, 1},
 			newVal: []uint64{1, 2},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 2}))
+				datapoint.BucketCounts().FromRaw([]uint64{1, 2})
 			},
 		},
 		{
@@ -428,7 +428,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   []float64{1, 2},
 			newVal: []float64{1, 2, 3},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 3}))
+				datapoint.ExplicitBounds().FromRaw([]float64{1, 2, 3})
 			},
 		},
 		{
@@ -525,7 +525,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				datapoint.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -610,7 +610,7 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(datapoint pmetric.HistogramDataPoint) {
-				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 	}
@@ -642,8 +642,8 @@ func createHistogramDataPointTelemetry() pmetric.HistogramDataPoint {
 	histogramDataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	histogramDataPoint.SetCount(2)
 	histogramDataPoint.SetSum(10.1)
-	histogramDataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
-	histogramDataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2}))
+	histogramDataPoint.BucketCounts().FromRaw([]uint64{1, 1})
+	histogramDataPoint.ExplicitBounds().FromRaw([]float64{1, 2})
 
 	createAttributeTelemetry(histogramDataPoint.Attributes())
 
@@ -659,11 +659,11 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 
 	newPositive := pmetric.NewBuckets()
 	newPositive.SetOffset(10)
-	newPositive.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 5}))
+	newPositive.BucketCounts().FromRaw([]uint64{4, 5})
 
 	newNegative := pmetric.NewBuckets()
 	newNegative.SetOffset(10)
-	newNegative.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 5}))
+	newNegative.BucketCounts().FromRaw([]uint64{4, 5})
 
 	tests := []struct {
 		name     string
@@ -805,7 +805,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   []uint64{1, 1},
 			newVal: []uint64{0, 1, 2},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 2}))
+				datapoint.Positive().BucketCounts().FromRaw([]uint64{0, 1, 2})
 			},
 		},
 		{
@@ -850,7 +850,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   []uint64{1, 1},
 			newVal: []uint64{0, 1, 2},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1, 2}))
+				datapoint.Negative().BucketCounts().FromRaw([]uint64{0, 1, 2})
 			},
 		},
 		{
@@ -947,7 +947,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				datapoint.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -1032,7 +1032,7 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
-				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 	}
@@ -1067,10 +1067,10 @@ func createExpoHistogramDataPointTelemetry() pmetric.ExponentialHistogramDataPoi
 	expoHistogramDataPoint.SetScale(1)
 	expoHistogramDataPoint.SetZeroCount(1)
 
-	expoHistogramDataPoint.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
+	expoHistogramDataPoint.Positive().BucketCounts().FromRaw([]uint64{1, 1})
 	expoHistogramDataPoint.Positive().SetOffset(1)
 
-	expoHistogramDataPoint.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{1, 1}))
+	expoHistogramDataPoint.Negative().BucketCounts().FromRaw([]uint64{1, 1})
 	expoHistogramDataPoint.Negative().SetOffset(1)
 
 	createAttributeTelemetry(expoHistogramDataPoint.Attributes())
@@ -1254,7 +1254,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				datapoint.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -1339,7 +1339,7 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(datapoint pmetric.SummaryDataPoint) {
-				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				datapoint.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 	}
@@ -1383,7 +1383,7 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.UpsertBool("bool", true)
 	attributes.UpsertInt("int", 10)
 	attributes.UpsertDouble("double", 1.2)
-	attributes.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	attributes.UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := attributes.UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
@@ -1402,8 +1402,8 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
 	arrBytes := attributes.UpsertEmptySlice("arr_bytes")
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 }
 
 func Test_newPathGetSetter_Metric(t *testing.T) {

@@ -374,7 +374,7 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 	case []string:
 		upsertStringsToSlice(t, dest.SetEmptySliceVal())
 	case []byte:
-		dest.SetBytesVal(pcommon.NewImmutableByteSlice(t))
+		dest.SetEmptyBytesVal().FromRaw(t)
 	case int64:
 		dest.SetIntVal(t)
 	case int32:
