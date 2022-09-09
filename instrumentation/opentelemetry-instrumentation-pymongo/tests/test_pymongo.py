@@ -40,7 +40,6 @@ class TestPymongo(TestBase):
         )
         with patch:
             PymongoInstrumentor().instrument()
-
         self.assertTrue(mock_register.called)
 
     def test_started(self):
@@ -59,7 +58,7 @@ class TestPymongo(TestBase):
         # pylint: disable=protected-access
         span = command_tracer._pop_span(mock_event)
         self.assertIs(span.kind, trace_api.SpanKind.CLIENT)
-        self.assertEqual(span.name, "command_name.find")
+        self.assertEqual(span.name, "database_name.command_name")
         self.assertEqual(span.attributes[SpanAttributes.DB_SYSTEM], "mongodb")
         self.assertEqual(
             span.attributes[SpanAttributes.DB_NAME], "database_name"
@@ -189,8 +188,7 @@ class TestPymongo(TestBase):
 
         self.assertEqual(len(spans_list), 1)
         span = spans_list[0]
-
-        self.assertEqual(span.name, "command_name.123")
+        self.assertEqual(span.name, "database_name.command_name")
 
 
 class MockCommand:
