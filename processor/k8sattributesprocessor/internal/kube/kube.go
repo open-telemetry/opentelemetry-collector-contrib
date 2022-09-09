@@ -103,7 +103,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -194,7 +194,8 @@ type FieldFilter struct {
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
 	CronJobName        bool
-	Deployment         bool
+	DeploymentName     bool
+	DeploymentUID      bool
 	DaemonSetUID       bool
 	DaemonSetName      bool
 	JobUID             bool
@@ -308,4 +309,18 @@ type ExcludePods struct {
 type AssociationSource struct {
 	From string
 	Name string
+}
+
+// Deployment represents a kubernetes deployment.
+type Deployment struct {
+	Name string
+	UID  string
+}
+
+// ReplicaSet represents a kubernetes replicaset.
+type ReplicaSet struct {
+	Name       string
+	Namespace  string
+	UID        string
+	Deployment Deployment
 }

@@ -27,14 +27,15 @@ import (
 
 // fakeClient is used as a replacement for WatchClient in test cases.
 type fakeClient struct {
-	Pods              map[kube.PodIdentifier]*kube.Pod
-	Rules             kube.ExtractionRules
-	Filters           kube.Filters
-	Associations      []kube.Association
-	Informer          cache.SharedInformer
-	NamespaceInformer cache.SharedInformer
-	Namespaces        map[string]*kube.Namespace
-	StopCh            chan struct{}
+	Pods               map[kube.PodIdentifier]*kube.Pod
+	Rules              kube.ExtractionRules
+	Filters            kube.Filters
+	Associations       []kube.Association
+	Informer           cache.SharedInformer
+	NamespaceInformer  cache.SharedInformer
+	ReplicaSetInformer cache.SharedInformer
+	Namespaces         map[string]*kube.Namespace
+	StopCh             chan struct{}
 }
 
 func selectors() (labels.Selector, fields.Selector) {
@@ -43,18 +44,19 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, exclude kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace) (kube.Client, error) {
+func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, exclude kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
 	return &fakeClient{
-		Pods:              map[kube.PodIdentifier]*kube.Pod{},
-		Rules:             rules,
-		Filters:           filters,
-		Associations:      associations,
-		Informer:          kube.NewFakeInformer(cs, "", ls, fs),
-		NamespaceInformer: kube.NewFakeInformer(cs, "", ls, fs),
-		StopCh:            make(chan struct{}),
+		Pods:               map[kube.PodIdentifier]*kube.Pod{},
+		Rules:              rules,
+		Filters:            filters,
+		Associations:       associations,
+		Informer:           kube.NewFakeInformer(cs, "", ls, fs),
+		NamespaceInformer:  kube.NewFakeInformer(cs, "", ls, fs),
+		ReplicaSetInformer: kube.NewFakeInformer(cs, "", ls, fs),
+		StopCh:             make(chan struct{}),
 	}, nil
 }
 
