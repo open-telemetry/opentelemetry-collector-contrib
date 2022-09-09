@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"time"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/exemplar"
@@ -39,8 +38,6 @@ import (
 
 const (
 	targetMetricName = "target_info"
-	traceIDKey       = "trace_id"
-	spanIDKey        = "span_id"
 )
 
 type transaction struct {
