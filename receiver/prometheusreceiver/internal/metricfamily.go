@@ -51,7 +51,6 @@ type metricGroup struct {
 	hasSum       bool
 	value        float64
 	complexValue []*dataPoint
-	exemplars    map[float64]pmetric.Exemplar
 }
 
 func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamily {
@@ -143,14 +142,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricDataTypeHistogram, mg.ls, point.Attributes())
-	mg.setExemplars(point.Exemplars())
-}
-
-func (mg *metricGroup) setExemplars(exemplars pmetric.ExemplarSlice) {
-	for _, e := range mg.exemplars {
-		exemplar := exemplars.AppendEmpty()
-		e.MoveTo(exemplar)
-	}
 }
 
 func pdataTimestampFromMs(timeAtMs int64) pcommon.Timestamp {
@@ -216,7 +207,6 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 		point.SetDoubleVal(mg.value)
 	}
 	populateAttributes(pmetric.MetricDataTypeGauge, mg.ls, point.Attributes())
-	mg.setExemplars(point.Exemplars())
 }
 
 func populateAttributes(mType pmetric.MetricDataType, ls labels.Labels, dest pcommon.Map) {
@@ -242,10 +232,9 @@ func (mf *metricFamily) loadMetricGroupOrCreate(groupKey uint64, ls labels.Label
 	mg, ok := mf.groups[groupKey]
 	if !ok {
 		mg = &metricGroup{
-			family:    mf,
-			ts:        ts,
-			ls:        ls,
-			exemplars: make(map[float64]pmetric.Exemplar),
+			family: mf,
+			ts:     ts,
+			ls:     ls,
 		}
 		mf.groups[groupKey] = mg
 		// maintaining data insertion order is helpful to generate stable/reproducible metric output
