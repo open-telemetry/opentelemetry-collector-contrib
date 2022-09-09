@@ -274,6 +274,14 @@ class TestAutoInstrumentation(TestFastAPIManualInstrumentation):
             self.assertEqual(span.resource.attributes["key1"], "value1")
             self.assertEqual(span.resource.attributes["key2"], "value2")
 
+    def test_mulitple_way_instrumentation(self):
+        self._instrumentor.instrument_app(self._app)
+        count = 0
+        for middleware in self._app.user_middleware:
+            if middleware.cls is OpenTelemetryMiddleware:
+                count += 1
+        self.assertEqual(count, 1)
+
     def tearDown(self):
         self._instrumentor.uninstrument()
         super().tearDown()
