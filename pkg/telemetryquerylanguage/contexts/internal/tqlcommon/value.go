@@ -49,7 +49,7 @@ func SetValue(value pcommon.Value, val interface{}) {
 	case float64:
 		value.SetDoubleVal(v)
 	case []byte:
-		value.SetBytesVal(pcommon.NewImmutableByteSlice(v))
+		value.SetEmptyBytesVal().FromRaw(v)
 	case []string:
 		value.SliceVal().RemoveIf(func(_ pcommon.Value) bool {
 			return true
@@ -83,7 +83,7 @@ func SetValue(value pcommon.Value, val interface{}) {
 			return true
 		})
 		for _, b := range v {
-			value.SliceVal().AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice(b))
+			value.SliceVal().AppendEmpty().SetEmptyBytesVal().FromRaw(b)
 		}
 	default:
 		// TODO(anuraaga): Support set of map type.

@@ -133,8 +133,8 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		}
 	}
 
-	point.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(bounds))
-	point.SetBucketCounts(pcommon.NewImmutableUInt64Slice(bucketCounts))
+	point.ExplicitBounds().FromRaw(bounds)
+	point.BucketCounts().FromRaw(bucketCounts)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)

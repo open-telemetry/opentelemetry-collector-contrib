@@ -257,7 +257,7 @@ func mergeHistogramDataPoints(dpsMap map[string]pmetric.HistogramDataPointSlice,
 				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 			}
 		}
-		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(counts))
+		dp.BucketCounts().FromRaw(counts)
 	}
 }
 
@@ -291,7 +291,7 @@ func mergeExponentialHistogramDataPoints(dpsMap map[string]pmetric.ExponentialHi
 				dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 			}
 		}
-		dp.Negative().SetBucketCounts(pcommon.NewImmutableUInt64Slice(negatives))
-		dp.Positive().SetBucketCounts(pcommon.NewImmutableUInt64Slice(positives))
+		dp.Negative().BucketCounts().FromRaw(negatives)
+		dp.Positive().BucketCounts().FromRaw(positives)
 	}
 }
