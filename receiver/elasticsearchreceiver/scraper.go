@@ -97,7 +97,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	r.getVersion(ctx, errs)
+	r.getVersion(ctx)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 
@@ -105,7 +105,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 }
 
 // scrapeVersion gets and assigns the elasticsearch version number
-func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+func (r *elasticsearchScraper) getVersion(ctx context.Context) {
 	versionResponse, err := r.client.Version(ctx)
 	if err != nil {
 		return
