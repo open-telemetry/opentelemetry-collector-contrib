@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/prometheus/common/model"
-	"github.com/prometheus/prometheus/model/exemplar"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/metadata"
 	"github.com/prometheus/prometheus/scrape"
@@ -214,39 +213,6 @@ func TestStartTimeMetricMatch(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestTransactionAppendExemplar(t *testing.T) {
-	ed := exemplar.Exemplar{
-		Labels: labels.FromMap(map[string]string{
-			"foo":      "bar",
-			traceIDKey: "1234567890abcdeffedcba0987654321",
-			spanIDKey:  "8765432112345678",
-		}),
-		Ts:    1660233371385,
-		HasTs: true,
-		Value: 0.012,
-	}
-	lbls := labels.FromMap(map[string]string{
-		model.InstanceLabel:   "localhost:8080",
-		model.JobLabel:        "test",
-		model.MetricNameLabel: "counter_test"})
-
-	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
-
-	_, err := tr.Append(0, lbls, ed.Ts, 0.012)
-	assert.NoError(t, err)
-	_, err = tr.AppendExemplar(0, lbls, ed)
-	assert.NoError(t, err)
-	fn := normalizeMetricName(lbls.Get(model.MetricNameLabel))
-	gk := tr.families[fn].getGroupKey(lbls)
-	got := tr.families[fn].groups[gk].exemplars[ed.Value]
-	assert.Equal(t, pcommon.NewTimestampFromTime(time.UnixMilli(ed.Ts)), got.Timestamp())
-	assert.Equal(t, ed.Value, got.DoubleVal())
-	assert.Equal(t, "1234567890abcdeffedcba0987654321", got.TraceID().HexString())
-	assert.Equal(t, "8765432112345678", got.SpanID().HexString())
-	assert.Equal(t, pcommon.NewMapFromRaw(map[string]interface{}{"foo": "bar"}), got.FilteredAttributes())
 }
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
