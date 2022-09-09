@@ -56,7 +56,7 @@ func makeSQL(span ptrace.Span, attributes map[string]pcommon.Value) (map[string]
 		return attributes, nil
 	}
 
-	// Despite what the X-Ray documents say, having the DB conneciton string
+	// Despite what the X-Ray documents say, having the DB connection string
 	// set as the URL value of the segment is not useful. So let's use the
 	// current span name instead
 	dbURL = span.Name()
