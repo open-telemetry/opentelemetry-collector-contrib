@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "opentelemetry-distro"
+dynamic = ["version"]
+description = "OpenTelemetry Python Distro"
+readme = "README.rst"
+license = "Apache-2.0"
+requires-python = ">=3.7"
+authors = [
+  { name = "OpenTelemetry Authors", email = "cncf-opentelemetry-contributors@lists.cncf.io" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Typing :: Typed",
+]
+dependencies = [
+  "opentelemetry-api ~= 1.12",
+  "opentelemetry-instrumentation == 0.33b0",
+  "opentelemetry-sdk == 1.12.0",
+]
+
+[project.optional-dependencies]
+otlp = [
+  "opentelemetry-exporter-otlp == 1.12.0",
+]
+test = []
+
+[project.entry-points.opentelemetry_configurator]
+configurator = "opentelemetry.distro:OpenTelemetryConfigurator"
+
+[project.entry-points.opentelemetry_distro]
+distro = "opentelemetry.distro:OpenTelemetryDistro"
+
+[project.urls]
+Homepage = "https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/opentelemetry-distro"
+
+[tool.hatch.version]
+path = "src/opentelemetry/distro/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/src",
+  "/tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/opentelemetry"]
