@@ -16,6 +16,7 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"github.com/spf13/cast"
 	"io"
 	"sync"
 
@@ -35,13 +36,38 @@ type fileExporter struct {
 	path  string
 	mutex sync.Mutex
 
-	isCompressed bool
+	isCompressed   bool
+	isProtoMarshal bool
 
 	tracesMarshaler  ptrace.Marshaler
 	metricsMarshaler pmetric.Marshaler
 	logsMarshaler    plog.Marshaler
 
 	logger *lumberjack.Logger
+}
+
+func newFileExporter(conf *Config) *fileExporter {
+	tracesMarshaler, metricsMarshaler, logMarshaler := func() (ptrace.Marshaler, pmetric.Marshaler, plog.Marshaler) {
+		if conf.PbMarshalOption {
+			return ptrace.NewProtoMarshaler(), pmetric.NewProtoMarshaler(), plog.NewProtoMarshaler()
+		}
+		return ptrace.NewJSONMarshaler(), pmetric.NewJSONMarshaler(), plog.NewJSONMarshaler()
+	}()
+	return &fileExporter{
+		path:             conf.Path,
+		isCompressed:     conf.ZstdOption,
+		isProtoMarshal:   conf.PbMarshalOption,
+		tracesMarshaler:  tracesMarshaler,
+		metricsMarshaler: metricsMarshaler,
+		logsMarshaler:    logMarshaler,
+		logger: &lumberjack.Logger{
+			Filename:   conf.Path,
+			MaxSize:    conf.RollingLoggerOptions.MaxSize,
+			MaxAge:     conf.RollingLoggerOptions.MaxAge,
+			MaxBackups: conf.RollingLoggerOptions.MaxBackups,
+			LocalTime:  conf.RollingLoggerOptions.LocalTime,
+		},
+	}
 }
 
 func (e *fileExporter) Capabilities() consumer.Capabilities {
@@ -56,7 +82,7 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessageAsLine(e, buf)
+	return exportMessage(e, buf, e.isProtoMarshal)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -67,7 +93,7 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessageAsLine(e, buf)
+	return exportMessage(e, buf, e.isProtoMarshal)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
@@ -78,11 +104,17 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessageAsLine(e, buf)
+	return exportMessage(e, buf, e.isProtoMarshal)
+}
+
+func exportMessage(e *fileExporter, buf []byte, isProtoMarshal bool) error {
+	if !isProtoMarshal {
+		return exportMessageAsLine(e, buf)
+	}
+	return exportProtoMessages(e, buf)
 }
 
 func exportMessageAsLine(e *fileExporter, buf []byte) error {
-	// Ensure only one write operation happens at a time.
 	// Ensure only one write operation happens at a time.
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
@@ -90,6 +122,19 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 		return err
 	}
 	if _, err := io.WriteString(e.logger, "\n"); err != nil {
+		return err
+	}
+	return nil
+}
+
+func exportProtoMessages(e *fileExporter, buf []byte) error {
+	e.mutex.Lock()
+	defer e.mutex.Unlock()
+	size := cast.ToString(len(buf)) + "\n"
+	if _, err := e.logger.Write([]byte(size)); err != nil {
+		return err
+	}
+	if _, err := e.logger.Write(buf); err != nil {
 		return err
 	}
 	return nil

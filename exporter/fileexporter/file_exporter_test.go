@@ -14,41 +14,93 @@
 package fileexporter
 
 import (
+	"bufio"
 	"context"
 	"errors"
+	"github.com/spf13/cast"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"io"
 	"os"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 func TestFileTracesExporter(t *testing.T) {
-	fe := &fileExporter{path: tempFileName(t)}
-	require.NotNil(t, fe)
+	type args struct {
+		conf        *Config
+		unmarshaler ptrace.Unmarshaler
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "default configuration",
+			args: args{
+				conf: &Config{
+					Path: tempFileName(t),
+				},
+				unmarshaler: ptrace.NewJSONUnmarshaler(),
+			},
+		},
+		{
+			name: "encode data using a protobuf stream ",
+			args: args{
+				conf: &Config{
+					Path:            tempFileName(t),
+					PbMarshalOption: true,
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fe := newFileExporter(tt.args.conf)
+			require.NotNil(t, fe)
 
-	td := testdata.GenerateTracesTwoSpansSameResource()
-	assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
-	assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
-	assert.NoError(t, fe.Shutdown(context.Background()))
+			td := testdata.GenerateTracesTwoSpansSameResource()
+			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
+			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, fe.Shutdown(context.Background()))
 
-	unmarshaler := ptrace.NewJSONUnmarshaler()
-	buf, err := os.ReadFile(fe.path)
-	assert.NoError(t, err)
-	got, err := unmarshaler.UnmarshalTraces(buf)
-	assert.NoError(t, err)
-	assert.EqualValues(t, td, got)
+			fi, err := os.Open(fe.path)
+			defer fi.Close()
+			assert.NoError(t, err)
+			br := bufio.NewReader(fi)
+			for {
+				var buf []byte
+				line, _, c := br.ReadLine()
+				if c == io.EOF {
+					break
+				}
+				if tt.args.conf.PbMarshalOption {
+					size := cast.ToInt(string(line))
+
+					buf = make([]byte, size)
+					_, err = br.Read(buf)
+					assert.NoError(t, err)
+				}
+				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
+				assert.NoError(t, err)
+				assert.EqualValues(t, td, got)
+			}
+		})
+	}
 }
 
 func TestFileTracesExporterError(t *testing.T) {
-	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{
+		logger: &lumberjack.Logger{
+			Filename: tempFileName(t),
+		}}
 	require.NotNil(t, fe)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
@@ -75,8 +127,9 @@ func TestFileMetricsExporter(t *testing.T) {
 }
 
 func TestFileMetricsExporterError(t *testing.T) {
-	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{logger: &lumberjack.Logger{
+		Filename: tempFileName(t),
+	}}
 	require.NotNil(t, fe)
 
 	md := testdata.GenerateMetricsTwoMetrics()
@@ -103,8 +156,9 @@ func TestFileLogsExporter(t *testing.T) {
 }
 
 func TestFileLogsExporterErrors(t *testing.T) {
-	mf := &errorWriter{}
-	fe := &fileExporter{file: mf}
+	fe := &fileExporter{logger: &lumberjack.Logger{
+		Filename: tempFileName(t),
+	}}
 	require.NotNil(t, fe)
 
 	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
@@ -115,7 +169,7 @@ func TestFileLogsExporterErrors(t *testing.T) {
 
 // tempFileName provides a temporary file name for testing.
 func tempFileName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "*.json")
+	tmpfile, err := os.CreateTemp("", "*")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()
