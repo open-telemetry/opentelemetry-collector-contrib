@@ -153,16 +153,16 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 	// map trace ID
 	var traceID [16]byte
 	copy(traceID[:16], spanData.TraceId)
-	clientSpan.SetTraceID(pcommon.NewTraceID(traceID))
+	clientSpan.SetTraceID(traceID)
 	// map span ID
 	var spanID [8]byte
 	copy(spanID[:8], spanData.SpanId)
-	clientSpan.SetSpanID(pcommon.NewSpanID(spanID))
+	clientSpan.SetSpanID(spanID)
 	// conditional parent-span-id
 	if len(spanData.ParentSpanId) == 8 {
 		var parentSpanID [8]byte
 		copy(parentSpanID[:8], spanData.ParentSpanId)
-		clientSpan.SetParentSpanID(pcommon.NewSpanID(parentSpanID))
+		clientSpan.SetParentSpanID(parentSpanID)
 	}
 
 	// timestamps
@@ -432,7 +432,7 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
 		toMap.UpsertDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.UpsertBytes(k, pcommon.NewImmutableByteSlice(v.ByteArrayValue))
+		toMap.UpsertEmptyBytes(k).FromRaw(v.ByteArrayValue)
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
 		toMap.UpsertDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:

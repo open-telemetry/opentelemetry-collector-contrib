@@ -217,23 +217,28 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 
 	// We're here, which means that we haven't found our metric, so we need to create a new one, with the same name and type
 	metric := ilm.Metrics().AppendEmpty()
-	metric.SetDataType(searchedMetric.DataType())
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
 
 	// Move other special type specific values
-	switch metric.DataType() {
+	switch searchedMetric.DataType() {
 
 	case pmetric.MetricDataTypeHistogram:
-		metric.Histogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
+		metric.SetEmptyHistogram().SetAggregationTemporality(searchedMetric.Histogram().AggregationTemporality())
 
 	case pmetric.MetricDataTypeExponentialHistogram:
-		metric.ExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
+		metric.SetEmptyExponentialHistogram().SetAggregationTemporality(searchedMetric.ExponentialHistogram().AggregationTemporality())
 
 	case pmetric.MetricDataTypeSum:
-		metric.Sum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
+		metric.SetEmptySum().SetAggregationTemporality(searchedMetric.Sum().AggregationTemporality())
 		metric.Sum().SetIsMonotonic(searchedMetric.Sum().IsMonotonic())
+
+	case pmetric.MetricDataTypeGauge:
+		metric.SetEmptyGauge()
+
+	case pmetric.MetricDataTypeSummary:
+		metric.SetEmptySummary()
 
 	}
 

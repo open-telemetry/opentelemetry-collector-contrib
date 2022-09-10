@@ -349,7 +349,7 @@ func (m *metricPostgresqlBackends) init() {
 	m.data.SetName("postgresql.backends")
 	m.data.SetDescription("The number of backends.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -402,7 +402,7 @@ func (m *metricPostgresqlBgwriterBuffersAllocated) init() {
 	m.data.SetName("postgresql.bgwriter.buffers.allocated")
 	m.data.SetDescription("Number of buffers allocated.")
 	m.data.SetUnit("{buffers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -453,7 +453,7 @@ func (m *metricPostgresqlBgwriterBuffersWrites) init() {
 	m.data.SetName("postgresql.bgwriter.buffers.writes")
 	m.data.SetDescription("Number of buffers written.")
 	m.data.SetUnit("{buffers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -506,7 +506,7 @@ func (m *metricPostgresqlBgwriterCheckpointCount) init() {
 	m.data.SetName("postgresql.bgwriter.checkpoint.count")
 	m.data.SetDescription("The number of checkpoints performed.")
 	m.data.SetUnit("{checkpoints}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -559,7 +559,7 @@ func (m *metricPostgresqlBgwriterDuration) init() {
 	m.data.SetName("postgresql.bgwriter.duration")
 	m.data.SetDescription("Total time spent writing and syncing files to disk by checkpoints.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -612,7 +612,7 @@ func (m *metricPostgresqlBgwriterMaxwritten) init() {
 	m.data.SetName("postgresql.bgwriter.maxwritten")
 	m.data.SetDescription("Number of times the background writer stopped a cleaning scan because it had written too many buffers.")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -663,7 +663,7 @@ func (m *metricPostgresqlBlocksRead) init() {
 	m.data.SetName("postgresql.blocks_read")
 	m.data.SetDescription("The number of blocks read.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -718,7 +718,7 @@ func (m *metricPostgresqlCommits) init() {
 	m.data.SetName("postgresql.commits")
 	m.data.SetDescription("The number of commits.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -771,7 +771,7 @@ func (m *metricPostgresqlConnectionMax) init() {
 	m.data.SetName("postgresql.connection.max")
 	m.data.SetDescription("Configured maximum number of client connections allowed")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricPostgresqlConnectionMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -820,7 +820,7 @@ func (m *metricPostgresqlDatabaseCount) init() {
 	m.data.SetName("postgresql.database.count")
 	m.data.SetDescription("Number of user databases.")
 	m.data.SetUnit("{databases}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -871,7 +871,7 @@ func (m *metricPostgresqlDbSize) init() {
 	m.data.SetName("postgresql.db_size")
 	m.data.SetDescription("The database disk usage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -924,7 +924,7 @@ func (m *metricPostgresqlIndexScans) init() {
 	m.data.SetName("postgresql.index.scans")
 	m.data.SetDescription("The number of index scans on a table.")
 	m.data.SetUnit("{scans}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -975,7 +975,7 @@ func (m *metricPostgresqlIndexSize) init() {
 	m.data.SetName("postgresql.index.size")
 	m.data.SetDescription("The size of the index on disk.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricPostgresqlIndexSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1024,7 +1024,7 @@ func (m *metricPostgresqlOperations) init() {
 	m.data.SetName("postgresql.operations")
 	m.data.SetDescription("The number of db row operations.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1079,7 +1079,7 @@ func (m *metricPostgresqlReplicationDataDelay) init() {
 	m.data.SetName("postgresql.replication.data_delay")
 	m.data.SetDescription("The amount of data delayed in replication.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1130,7 +1130,7 @@ func (m *metricPostgresqlRollbacks) init() {
 	m.data.SetName("postgresql.rollbacks")
 	m.data.SetDescription("The number of rollbacks.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1183,7 +1183,7 @@ func (m *metricPostgresqlRows) init() {
 	m.data.SetName("postgresql.rows")
 	m.data.SetDescription("The number of rows in the database.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1238,7 +1238,7 @@ func (m *metricPostgresqlTableCount) init() {
 	m.data.SetName("postgresql.table.count")
 	m.data.SetDescription("Number of user tables in a database.")
 	m.data.SetUnit("")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1289,7 +1289,7 @@ func (m *metricPostgresqlTableSize) init() {
 	m.data.SetName("postgresql.table.size")
 	m.data.SetDescription("Disk space used by a table.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1340,7 +1340,7 @@ func (m *metricPostgresqlTableVacuumCount) init() {
 	m.data.SetName("postgresql.table.vacuum.count")
 	m.data.SetDescription("Number of times a table has manually been vacuumed.")
 	m.data.SetUnit("{vacuums}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1391,7 +1391,7 @@ func (m *metricPostgresqlWalAge) init() {
 	m.data.SetName("postgresql.wal.age")
 	m.data.SetDescription("Age of the oldest WAL file.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricPostgresqlWalAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -1440,7 +1440,7 @@ func (m *metricPostgresqlWalLag) init() {
 	m.data.SetName("postgresql.wal.lag")
 	m.data.SetDescription("Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 

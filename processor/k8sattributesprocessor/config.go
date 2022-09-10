@@ -123,7 +123,7 @@ type ExtractConfig struct {
 //	    extract:
 //	    labels:
 //
-//	  - name: $1
+//	  - tag_name: $$1
 //	    key_regex: kubernetes.io/(.*)
 //
 //	    this will add the `component` and `version` tags to the spans or metrics.
@@ -144,11 +144,11 @@ type ExtractConfig struct {
 //     extract:
 //     annotations:
 //
-//   - name: git.sha
+//   - tag_name: git.sha
 //     key: kubernetes.io/change-cause
 //     regex: GIT_SHA=(?P<value>\w+)
 //
-//   - name: ci.build
+//   - tag_name: ci.build
 //     key: kubernetes.io/change-cause
 //     regex: JENKINS=(?P<value>[\w]+)
 //

@@ -163,8 +163,7 @@ func TestProcess(t *testing.T) {
 			query: []string{`convert_summary_count_val_to_sum("delta", true) where metric.name == "operationD"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumDp := sumMetric.Sum().DataPoints().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
 
 				summaryMetric := pmetric.NewMetric()
 				fillMetricFour(summaryMetric)
@@ -186,8 +185,7 @@ func TestProcess(t *testing.T) {
 			query: []string{`convert_summary_sum_val_to_sum("delta", true) where metric.name == "operationD"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumDp := sumMetric.Sum().DataPoints().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
 
 				summaryMetric := pmetric.NewMetric()
 				fillMetricFour(summaryMetric)
@@ -212,8 +210,7 @@ func TestProcess(t *testing.T) {
 			},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumDp := sumMetric.Sum().DataPoints().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
 
 				summaryMetric := pmetric.NewMetric()
 				fillMetricFour(summaryMetric)
@@ -307,9 +304,8 @@ func fillMetricOne(m pmetric.Metric) {
 	m.SetName("operationA")
 	m.SetDescription("operationA description")
 	m.SetUnit("operationA unit")
-	m.SetDataType(pmetric.MetricDataTypeSum)
 
-	dataPoint0 := m.Sum().DataPoints().AppendEmpty()
+	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.SetDoubleVal(1.0)
 	dataPoint0.Attributes().UpsertString("attr1", "test1")
@@ -327,9 +323,8 @@ func fillMetricTwo(m pmetric.Metric) {
 	m.SetName("operationB")
 	m.SetDescription("operationB description")
 	m.SetUnit("operationB unit")
-	m.SetDataType(pmetric.MetricDataTypeHistogram)
 
-	dataPoint0 := m.Histogram().DataPoints().AppendEmpty()
+	dataPoint0 := m.SetEmptyHistogram().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.Attributes().UpsertString("attr1", "test1")
 	dataPoint0.Attributes().UpsertString("attr2", "test2")
@@ -347,9 +342,8 @@ func fillMetricThree(m pmetric.Metric) {
 	m.SetName("operationC")
 	m.SetDescription("operationC description")
 	m.SetUnit("operationC unit")
-	m.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
 
-	dataPoint0 := m.ExponentialHistogram().DataPoints().AppendEmpty()
+	dataPoint0 := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.Attributes().UpsertString("attr1", "test1")
 	dataPoint0.Attributes().UpsertString("attr2", "test2")
@@ -371,9 +365,8 @@ func fillMetricFour(m pmetric.Metric) {
 	m.SetName("operationD")
 	m.SetDescription("operationD description")
 	m.SetUnit("operationD unit")
-	m.SetDataType(pmetric.MetricDataTypeSummary)
 
-	dataPoint0 := m.Summary().DataPoints().AppendEmpty()
+	dataPoint0 := m.SetEmptySummary().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.SetTimestamp(TestTimeStamp)
 	dataPoint0.Attributes().UpsertString("attr1", "test1")

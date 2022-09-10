@@ -124,8 +124,7 @@ func TestConsumeMetrics(t *testing.T) {
 	m := ilm.Metrics().AppendEmpty()
 
 	m.SetName("test_gauge")
-	m.SetDataType(pmetric.MetricDataTypeGauge)
-	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	dp.Attributes().UpsertString("k0", "v0")
 	dp.Attributes().UpsertString("k1", "v1")
 	dp.SetDoubleVal(123)
@@ -262,9 +261,8 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_gauge")
-		m.SetDataType(pmetric.MetricDataTypeGauge)
 
-		dp := m.Gauge().DataPoints().AppendEmpty()
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.Attributes().UpsertString("k0", "v0")
 		dp.Attributes().UpsertString("k1", "v1")
 		dp.SetDoubleVal(123)
@@ -326,8 +324,7 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 				m := ilm.Metrics().AppendEmpty()
 
 				m.SetName("test_gauge")
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				dp := m.Gauge().DataPoints().AppendEmpty()
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.Attributes().UpsertString("k0", "v0")
 				dp.Attributes().UpsertString("k1", "v1")
 				dp.SetDoubleVal(123)
@@ -704,9 +701,8 @@ func generateLargeDPBatch() pmetric.Metrics {
 		m := ilm.Metrics().AppendEmpty()
 
 		m.SetName("test_" + strconv.Itoa(i))
-		m.SetDataType(pmetric.MetricDataTypeGauge)
 
-		dp := m.Gauge().DataPoints().AppendEmpty()
+		dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 		dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		dp.Attributes().UpsertString("k0", "v0")
 		dp.Attributes().UpsertString("k1", "v1")

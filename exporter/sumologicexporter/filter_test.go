@@ -23,18 +23,21 @@ import (
 )
 
 func TestGetMetadata(t *testing.T) {
-	attributes := pcommon.NewMap()
-	attributes.UpsertString("key3", "value3")
-	attributes.UpsertString("key1", "value1")
-	attributes.UpsertString("key2", "value2")
-	attributes.UpsertString("additional_key2", "value2")
-	attributes.UpsertString("additional_key3", "value3")
+	attributes1 := pcommon.NewMap()
+	attributes1.UpsertString("key3", "to-be-overridden")
+	attributes1.UpsertString("key1", "value1")
+	attributes1.UpsertString("key2", "value2")
+	attributes1.UpsertString("additional_key2", "value2")
+	attributes1.UpsertString("additional_key3", "value3")
+	attributes2 := pcommon.NewMap()
+	attributes2.UpsertString("additional_key1", "value1")
+	attributes2.UpsertString("key3", "value3")
 
 	regexes := []string{"^key[12]", "^key3"}
 	f, err := newFilter(regexes)
 	require.NoError(t, err)
 
-	metadata := f.filterIn(attributes)
+	metadata := f.mergeAndFilterIn(attributes1, attributes2)
 	expected := fieldsFromMap(map[string]string{
 		"key1": "value1",
 		"key2": "value2",

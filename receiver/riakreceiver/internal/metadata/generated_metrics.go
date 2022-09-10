@@ -115,7 +115,7 @@ func (m *metricRiakMemoryLimit) init() {
 	m.data.SetName("riak.memory.limit")
 	m.data.SetDescription("The amount of memory allocated to the node.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -166,7 +166,7 @@ func (m *metricRiakNodeOperationCount) init() {
 	m.data.SetName("riak.node.operation.count")
 	m.data.SetDescription("The number of operations performed by the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -219,7 +219,7 @@ func (m *metricRiakNodeOperationTimeMean) init() {
 	m.data.SetName("riak.node.operation.time.mean")
 	m.data.SetDescription("The mean time between request and response for operations performed by the node over the last minute.")
 	m.data.SetUnit("us")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -270,7 +270,7 @@ func (m *metricRiakNodeReadRepairCount) init() {
 	m.data.SetName("riak.node.read_repair.count")
 	m.data.SetDescription("The number of read repairs performed by the node.")
 	m.data.SetUnit("{read_repair}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -321,7 +321,7 @@ func (m *metricRiakVnodeIndexOperationCount) init() {
 	m.data.SetName("riak.vnode.index.operation.count")
 	m.data.SetDescription("The number of index operations performed by vnodes on the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -374,7 +374,7 @@ func (m *metricRiakVnodeOperationCount) init() {
 	m.data.SetName("riak.vnode.operation.count")
 	m.data.SetDescription("The number of operations performed by vnodes on the node.")
 	m.data.SetUnit("{operation}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)

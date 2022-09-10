@@ -72,17 +72,17 @@ func setupSpan(span *ptrace.Span, opts SpanOptions) {
 	}
 
 	if !bytes.Equal(parentID[:], empty8[:]) {
-		span.SetParentSpanID(pcommon.NewSpanID(parentID))
+		span.SetParentSpanID(parentID)
 	}
 
 	span.SetStartTimestamp(pcommon.Timestamp(startTime * 1e6))
 	span.SetEndTimestamp(pcommon.Timestamp(endTime * 1e6))
 
-	span.SetSpanID(pcommon.NewSpanID(spanID))
+	span.SetSpanID(spanID)
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetName("my_operation")
 	span.SetTraceState(ptrace.TraceStateEmpty)
-	span.SetTraceID(pcommon.NewTraceID(traceID))
+	span.SetTraceID(traceID)
 
 	// adding attributes (tags in the instana side)
 	span.Attributes().UpsertBool("some_key", true)
@@ -203,17 +203,17 @@ func TestSpanCorrelation(t *testing.T) {
 
 	sp2 := spanSlice.AppendEmpty()
 	setupSpan(&sp2, SpanOptions{
-		ParentID: sp1.SpanID().Bytes(),
+		ParentID: sp1.SpanID(),
 	})
 
 	sp3 := spanSlice.AppendEmpty()
 	setupSpan(&sp3, SpanOptions{
-		ParentID: sp2.SpanID().Bytes(),
+		ParentID: sp2.SpanID(),
 	})
 
 	sp4 := spanSlice.AppendEmpty()
 	setupSpan(&sp4, SpanOptions{
-		ParentID: sp1.SpanID().Bytes(),
+		ParentID: sp1.SpanID(),
 	})
 
 	attrs := generateAttrs()

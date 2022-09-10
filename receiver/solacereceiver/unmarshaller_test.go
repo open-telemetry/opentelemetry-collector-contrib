@@ -181,8 +181,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				})
 				instrumentation := resource.ScopeSpans().AppendEmpty()
 				span := instrumentation.Spans().AppendEmpty()
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
@@ -331,8 +331,8 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				EndTimeUnixNano:   2234567890,
 			},
 			want: func(span *ptrace.Span) {
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
@@ -354,11 +354,11 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				ErrorDescription:  "some error",
 			},
 			want: func(span *ptrace.Span) {
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
-				span.SetParentSpanID(pcommon.NewSpanID([8]byte{15, 14, 13, 12, 11, 10, 9, 8}))
+				span.SetParentSpanID([8]byte{15, 14, 13, 12, 11, 10, 9, 8})
 				span.SetTraceState(ptrace.TraceState(someTraceState))
 				span.Status().SetCode(ptrace.StatusCodeError)
 				span.Status().SetMessage("some error")

@@ -114,7 +114,7 @@ func (m *metricSystemProcessesCount) init() {
 	m.data.SetName("system.processes.count")
 	m.data.SetDescription("Total number of processes in each state.")
 	m.data.SetUnit("{processes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -167,7 +167,7 @@ func (m *metricSystemProcessesCreated) init() {
 	m.data.SetName("system.processes.created")
 	m.data.SetDescription("Total number of created processes.")
 	m.data.SetUnit("{processes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }

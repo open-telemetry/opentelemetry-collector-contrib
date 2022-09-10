@@ -288,7 +288,7 @@ func (m *metricContainerBlockioIoMergedRecursive) init() {
 	m.data.SetName("container.blockio.io_merged_recursive")
 	m.data.SetDescription("Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -343,7 +343,7 @@ func (m *metricContainerBlockioIoQueuedRecursive) init() {
 	m.data.SetName("container.blockio.io_queued_recursive")
 	m.data.SetDescription("Number of requests queued up for this cgroup and its descendant cgroups.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -398,7 +398,7 @@ func (m *metricContainerBlockioIoServiceBytesRecursive) init() {
 	m.data.SetName("container.blockio.io_service_bytes_recursive")
 	m.data.SetDescription("Number of bytes transferred to/from the disk by the group and descendant groups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -453,7 +453,7 @@ func (m *metricContainerBlockioIoServiceTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_service_time_recursive")
 	m.data.SetDescription("Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -508,7 +508,7 @@ func (m *metricContainerBlockioIoServicedRecursive) init() {
 	m.data.SetName("container.blockio.io_serviced_recursive")
 	m.data.SetDescription("Number of IOs (bio) issued to the disk by the group and descendant groups.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -563,7 +563,7 @@ func (m *metricContainerBlockioIoTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_time_recursive")
 	m.data.SetDescription("Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -618,7 +618,7 @@ func (m *metricContainerBlockioIoWaitTimeRecursive) init() {
 	m.data.SetName("container.blockio.io_wait_time_recursive")
 	m.data.SetDescription("Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -673,7 +673,7 @@ func (m *metricContainerBlockioSectorsRecursive) init() {
 	m.data.SetName("container.blockio.sectors_recursive")
 	m.data.SetDescription("Number of sectors transferred to/from disk by the group and descendant groups.")
 	m.data.SetUnit("{sectors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -728,7 +728,7 @@ func (m *metricContainerCPUPercent) init() {
 	m.data.SetName("container.cpu.percent")
 	m.data.SetDescription("Percent of CPU used by the container.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerCPUPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -777,7 +777,7 @@ func (m *metricContainerCPUThrottlingDataPeriods) init() {
 	m.data.SetName("container.cpu.throttling_data.periods")
 	m.data.SetDescription("Number of periods with throttling active.")
 	m.data.SetUnit("{periods}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -828,7 +828,7 @@ func (m *metricContainerCPUThrottlingDataThrottledPeriods) init() {
 	m.data.SetName("container.cpu.throttling_data.throttled_periods")
 	m.data.SetDescription("Number of periods when the container hits its throttling limit.")
 	m.data.SetUnit("{periods}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -879,7 +879,7 @@ func (m *metricContainerCPUThrottlingDataThrottledTime) init() {
 	m.data.SetName("container.cpu.throttling_data.throttled_time")
 	m.data.SetDescription("Aggregate time the container was throttled.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -930,7 +930,7 @@ func (m *metricContainerCPUUsageKernelmode) init() {
 	m.data.SetName("container.cpu.usage.kernelmode")
 	m.data.SetDescription("Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -981,7 +981,7 @@ func (m *metricContainerCPUUsagePercpu) init() {
 	m.data.SetName("container.cpu.usage.percpu")
 	m.data.SetDescription("Per-core CPU usage by the container.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1034,7 +1034,7 @@ func (m *metricContainerCPUUsageSystem) init() {
 	m.data.SetName("container.cpu.usage.system")
 	m.data.SetDescription("System CPU usage.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1085,7 +1085,7 @@ func (m *metricContainerCPUUsageTotal) init() {
 	m.data.SetName("container.cpu.usage.total")
 	m.data.SetDescription("Total CPU time consumed.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1136,7 +1136,7 @@ func (m *metricContainerCPUUsageUsermode) init() {
 	m.data.SetName("container.cpu.usage.usermode")
 	m.data.SetDescription("Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1187,7 +1187,7 @@ func (m *metricContainerMemoryActiveAnon) init() {
 	m.data.SetName("container.memory.active_anon")
 	m.data.SetDescription("The amount of anonymous memory that has been identified as active by the kernel.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1238,7 +1238,7 @@ func (m *metricContainerMemoryActiveFile) init() {
 	m.data.SetName("container.memory.active_file")
 	m.data.SetDescription("Cache memory that has been identified as active by the kernel.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1289,7 +1289,7 @@ func (m *metricContainerMemoryCache) init() {
 	m.data.SetName("container.memory.cache")
 	m.data.SetDescription("The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1340,7 +1340,7 @@ func (m *metricContainerMemoryDirty) init() {
 	m.data.SetName("container.memory.dirty")
 	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1391,7 +1391,7 @@ func (m *metricContainerMemoryHierarchicalMemoryLimit) init() {
 	m.data.SetName("container.memory.hierarchical_memory_limit")
 	m.data.SetDescription("The maximum amount of physical memory that can be used by the processes of this control group.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1442,7 +1442,7 @@ func (m *metricContainerMemoryHierarchicalMemswLimit) init() {
 	m.data.SetName("container.memory.hierarchical_memsw_limit")
 	m.data.SetDescription("The maximum amount of RAM + swap that can be used by the processes of this control group.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1493,7 +1493,7 @@ func (m *metricContainerMemoryInactiveAnon) init() {
 	m.data.SetName("container.memory.inactive_anon")
 	m.data.SetDescription("The amount of anonymous memory that has been identified as inactive by the kernel.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1544,7 +1544,7 @@ func (m *metricContainerMemoryInactiveFile) init() {
 	m.data.SetName("container.memory.inactive_file")
 	m.data.SetDescription("Cache memory that has been identified as inactive by the kernel.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1595,7 +1595,7 @@ func (m *metricContainerMemoryMappedFile) init() {
 	m.data.SetName("container.memory.mapped_file")
 	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1646,7 +1646,7 @@ func (m *metricContainerMemoryPercent) init() {
 	m.data.SetName("container.memory.percent")
 	m.data.SetDescription("Percentage of memory used.")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricContainerMemoryPercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1695,7 +1695,7 @@ func (m *metricContainerMemoryPgfault) init() {
 	m.data.SetName("container.memory.pgfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup triggered a page fault.")
 	m.data.SetUnit("{faults}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1746,7 +1746,7 @@ func (m *metricContainerMemoryPgmajfault) init() {
 	m.data.SetName("container.memory.pgmajfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup triggered a major fault.")
 	m.data.SetUnit("{faults}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1797,7 +1797,7 @@ func (m *metricContainerMemoryPgpgin) init() {
 	m.data.SetName("container.memory.pgpgin")
 	m.data.SetDescription("Number of pages read from disk by the cgroup.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1848,7 +1848,7 @@ func (m *metricContainerMemoryPgpgout) init() {
 	m.data.SetName("container.memory.pgpgout")
 	m.data.SetDescription("Number of pages written to disk by the cgroup.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1899,7 +1899,7 @@ func (m *metricContainerMemoryRss) init() {
 	m.data.SetName("container.memory.rss")
 	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1950,7 +1950,7 @@ func (m *metricContainerMemoryRssHuge) init() {
 	m.data.SetName("container.memory.rss_huge")
 	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2001,7 +2001,7 @@ func (m *metricContainerMemorySwap) init() {
 	m.data.SetName("container.memory.swap")
 	m.data.SetDescription("The amount of swap currently used by the processes in this cgroup.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2052,7 +2052,7 @@ func (m *metricContainerMemoryTotalActiveAnon) init() {
 	m.data.SetName("container.memory.total_active_anon")
 	m.data.SetDescription("The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2103,7 +2103,7 @@ func (m *metricContainerMemoryTotalActiveFile) init() {
 	m.data.SetName("container.memory.total_active_file")
 	m.data.SetDescription("Cache memory that has been identified as active by the kernel. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2154,7 +2154,7 @@ func (m *metricContainerMemoryTotalCache) init() {
 	m.data.SetName("container.memory.total_cache")
 	m.data.SetDescription("Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2205,7 +2205,7 @@ func (m *metricContainerMemoryTotalDirty) init() {
 	m.data.SetName("container.memory.total_dirty")
 	m.data.SetDescription("Bytes that are waiting to get written back to the disk, from this cgroup and descendants.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2256,7 +2256,7 @@ func (m *metricContainerMemoryTotalInactiveAnon) init() {
 	m.data.SetName("container.memory.total_inactive_anon")
 	m.data.SetDescription("The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2307,7 +2307,7 @@ func (m *metricContainerMemoryTotalInactiveFile) init() {
 	m.data.SetName("container.memory.total_inactive_file")
 	m.data.SetDescription("Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2358,7 +2358,7 @@ func (m *metricContainerMemoryTotalMappedFile) init() {
 	m.data.SetName("container.memory.total_mapped_file")
 	m.data.SetDescription("Indicates the amount of memory mapped by the processes in the control group and descendant groups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2409,7 +2409,7 @@ func (m *metricContainerMemoryTotalPgfault) init() {
 	m.data.SetName("container.memory.total_pgfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.")
 	m.data.SetUnit("{faults}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2460,7 +2460,7 @@ func (m *metricContainerMemoryTotalPgmajfault) init() {
 	m.data.SetName("container.memory.total_pgmajfault")
 	m.data.SetDescription("Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.")
 	m.data.SetUnit("{faults}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2511,7 +2511,7 @@ func (m *metricContainerMemoryTotalPgpgin) init() {
 	m.data.SetName("container.memory.total_pgpgin")
 	m.data.SetDescription("Number of pages read from disk by the cgroup and descendant groups.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2562,7 +2562,7 @@ func (m *metricContainerMemoryTotalPgpgout) init() {
 	m.data.SetName("container.memory.total_pgpgout")
 	m.data.SetDescription("Number of pages written to disk by the cgroup and descendant groups.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2613,7 +2613,7 @@ func (m *metricContainerMemoryTotalRss) init() {
 	m.data.SetName("container.memory.total_rss")
 	m.data.SetDescription("The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2664,7 +2664,7 @@ func (m *metricContainerMemoryTotalRssHuge) init() {
 	m.data.SetName("container.memory.total_rss_huge")
 	m.data.SetDescription("Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2715,7 +2715,7 @@ func (m *metricContainerMemoryTotalSwap) init() {
 	m.data.SetName("container.memory.total_swap")
 	m.data.SetDescription("The amount of swap currently used by the processes in this cgroup and descendant groups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2766,7 +2766,7 @@ func (m *metricContainerMemoryTotalUnevictable) init() {
 	m.data.SetName("container.memory.total_unevictable")
 	m.data.SetDescription("The amount of memory that cannot be reclaimed. Includes descendant cgroups.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2817,7 +2817,7 @@ func (m *metricContainerMemoryTotalWriteback) init() {
 	m.data.SetName("container.memory.total_writeback")
 	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2868,7 +2868,7 @@ func (m *metricContainerMemoryUnevictable) init() {
 	m.data.SetName("container.memory.unevictable")
 	m.data.SetDescription("The amount of memory that cannot be reclaimed.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2919,7 +2919,7 @@ func (m *metricContainerMemoryUsageLimit) init() {
 	m.data.SetName("container.memory.usage.limit")
 	m.data.SetDescription("Memory limit of the container.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -2970,7 +2970,7 @@ func (m *metricContainerMemoryUsageMax) init() {
 	m.data.SetName("container.memory.usage.max")
 	m.data.SetDescription("Maximum memory usage.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3021,7 +3021,7 @@ func (m *metricContainerMemoryUsageTotal) init() {
 	m.data.SetName("container.memory.usage.total")
 	m.data.SetDescription("Memory usage of the container. This excludes the total cache.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3072,7 +3072,7 @@ func (m *metricContainerMemoryWriteback) init() {
 	m.data.SetName("container.memory.writeback")
 	m.data.SetDescription("Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3123,7 +3123,7 @@ func (m *metricContainerNetworkIoUsageRxBytes) init() {
 	m.data.SetName("container.network.io.usage.rx_bytes")
 	m.data.SetDescription("Bytes received by the container.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3176,7 +3176,7 @@ func (m *metricContainerNetworkIoUsageRxDropped) init() {
 	m.data.SetName("container.network.io.usage.rx_dropped")
 	m.data.SetDescription("Incoming packets dropped.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3229,7 +3229,7 @@ func (m *metricContainerNetworkIoUsageRxErrors) init() {
 	m.data.SetName("container.network.io.usage.rx_errors")
 	m.data.SetDescription("Received errors.")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3282,7 +3282,7 @@ func (m *metricContainerNetworkIoUsageRxPackets) init() {
 	m.data.SetName("container.network.io.usage.rx_packets")
 	m.data.SetDescription("Packets received.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3335,7 +3335,7 @@ func (m *metricContainerNetworkIoUsageTxBytes) init() {
 	m.data.SetName("container.network.io.usage.tx_bytes")
 	m.data.SetDescription("Bytes sent.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3388,7 +3388,7 @@ func (m *metricContainerNetworkIoUsageTxDropped) init() {
 	m.data.SetName("container.network.io.usage.tx_dropped")
 	m.data.SetDescription("Outgoing packets dropped.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3441,7 +3441,7 @@ func (m *metricContainerNetworkIoUsageTxErrors) init() {
 	m.data.SetName("container.network.io.usage.tx_errors")
 	m.data.SetDescription("Sent errors.")
 	m.data.SetUnit("{errors}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3494,7 +3494,7 @@ func (m *metricContainerNetworkIoUsageTxPackets) init() {
 	m.data.SetName("container.network.io.usage.tx_packets")
 	m.data.SetDescription("Packets sent.")
 	m.data.SetUnit("{packets}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)

@@ -103,7 +103,9 @@ func sslConnectionString(tls configtls.TLSClientSetting) string {
 }
 
 func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
-	dbField := ""
+	// postgres will assume the supplied user as the database name if none is provided,
+	// so we must specify a databse name even when we are just collecting the list of databases.
+	dbField := "dbname=postgres"
 	if conf.database != "" {
 		dbField = fmt.Sprintf("dbname=%s ", conf.database)
 	}
@@ -118,7 +120,7 @@ func newPostgreSQLClient(conf postgreSQLConfig) (*postgreSQLClient, error) {
 		host = fmt.Sprintf("/%s", host)
 	}
 
-	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s%s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
+	connStr := fmt.Sprintf("port=%s host=%s user=%s password=%s %s %s", port, host, conf.username, conf.password, dbField, sslConnectionString(conf.tls))
 
 	conn, err := pq.NewConnector(connStr)
 	if err != nil {

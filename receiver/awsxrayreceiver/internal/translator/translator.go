@@ -170,11 +170,11 @@ func populateSpan(
 		return err
 	}
 
-	span.SetTraceID(pcommon.NewTraceID(traceIDBytes))
-	span.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+	span.SetTraceID(traceIDBytes)
+	span.SetSpanID(spanIDBytes)
 
 	if parentIDBytes != [8]byte{} {
-		span.SetParentSpanID(pcommon.NewSpanID(parentIDBytes))
+		span.SetParentSpanID(parentIDBytes)
 	} else {
 		span.SetKind(ptrace.SpanKindServer)
 	}

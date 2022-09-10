@@ -95,9 +95,7 @@ func initMetric(ms pmetric.MetricSlice, name, unit string) pmetric.Metric {
 
 func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point, ts pcommon.Timestamp) {
 	metric := initMetric(ilm, metricName, unit)
-
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	sum := metric.Sum()
+	sum := metric.SetEmptySum()
 	sum.SetIsMonotonic(true)
 	sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 
@@ -113,9 +111,7 @@ func sum(ilm pmetric.MetricSlice, metricName string, unit string, points []point
 
 func gauge(ms pmetric.MetricSlice, metricName string, unit string) pmetric.NumberDataPointSlice {
 	metric := initMetric(ms, metricName, unit)
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
-
-	gauge := metric.Gauge()
+	gauge := metric.SetEmptyGauge()
 	return gauge.DataPoints()
 }
 

@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -86,7 +85,7 @@ func TestTransformerProcessing(t *testing.T) {
 		s := in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
 		s.SetName("http.request")
 		s.SetKind(ptrace.SpanKindConsumer)
-		s.SetSpanID(pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7}))
+		s.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 		s.SetTraceState(ptrace.TraceStateEmpty)
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 

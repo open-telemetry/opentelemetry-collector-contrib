@@ -322,9 +322,9 @@ func constructTracesNum(num int) ptrace.Traces {
 
 func fillSpanOne(span ptrace.Span) {
 	span.SetName("operationA")
-	span.SetSpanID(pcommon.NewSpanID(spanID))
-	span.SetParentSpanID(pcommon.NewSpanID(spanID2))
-	span.SetTraceID(pcommon.NewTraceID(traceID))
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(spanID2)
+	span.SetTraceID(traceID)
 	span.SetStartTimestamp(TestSpanStartTimestamp)
 	span.SetEndTimestamp(TestSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)

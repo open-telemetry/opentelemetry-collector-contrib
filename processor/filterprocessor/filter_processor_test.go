@@ -390,8 +390,7 @@ func testResourceMetrics(mwrs []metricWithResource) pmetric.Metrics {
 		for _, name := range mwr.metricNames {
 			m := ms.AppendEmpty()
 			m.SetName(name)
-			m.SetDataType(pmetric.MetricDataTypeGauge)
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(123)
 		}

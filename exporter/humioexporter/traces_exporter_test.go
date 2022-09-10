@@ -197,16 +197,16 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 	res1 := traces.ResourceSpans().AppendEmpty()
 	res1.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-A")
 	ils1 := res1.ScopeSpans().AppendEmpty()
-	ils1.Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
-	ils1.Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	ils1.Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
+	ils1.Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
 
 	res2 := traces.ResourceSpans().AppendEmpty()
 	res2.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-B")
-	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("10000000000000000000000000000000")))
+	res2.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(createTraceID("10000000000000000000000000000000"))
 
 	res3 := traces.ResourceSpans().AppendEmpty()
 	res3.Resource().Attributes().UpsertString(conventions.AttributeServiceName, "service-C")
-	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(pcommon.NewTraceID(createTraceID("20000000000000000000000000000000")))
+	res3.ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetTraceID(createTraceID("20000000000000000000000000000000"))
 
 	// Organize by trace id
 	cg := func(cfg *Config, settings component.TelemetrySettings, host component.Host) (exporterClient, error) {
@@ -240,8 +240,8 @@ func TestTracesToHumioEvents_OrganizedByTags(t *testing.T) {
 func TestSpanToHumioEvent(t *testing.T) {
 	// Arrange
 	span := ptrace.NewSpan()
-	span.SetTraceID(pcommon.NewTraceID(createTraceID("10")))
-	span.SetSpanID(pcommon.NewSpanID(createSpanID("20")))
+	span.SetTraceID(createTraceID("10"))
+	span.SetSpanID(createSpanID("20"))
 	span.SetName("span")
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
@@ -335,13 +335,13 @@ func TestToHumioLinks(t *testing.T) {
 	// Arrange
 	slice := ptrace.NewSpanLinkSlice()
 	link1 := slice.AppendEmpty()
-	link1.SetTraceID(pcommon.NewTraceID(createTraceID("11")))
-	link1.SetSpanID(pcommon.NewSpanID(createSpanID("22")))
+	link1.SetTraceID(createTraceID("11"))
+	link1.SetSpanID(createSpanID("22"))
 	link1.SetTraceState("state1")
 
 	link2 := slice.AppendEmpty()
-	link2.SetTraceID(pcommon.NewTraceID(createTraceID("33")))
-	link2.SetSpanID(pcommon.NewSpanID(createSpanID("44")))
+	link2.SetTraceID(createTraceID("33"))
+	link2.SetSpanID(createSpanID("44"))
 
 	expected := []*HumioLink{
 		{

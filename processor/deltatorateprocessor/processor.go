@@ -87,9 +87,10 @@ func (dtrp *deltaToRateProcessor) processMetrics(_ context.Context, md pmetric.M
 					newDp.SetDoubleVal(rate)
 				}
 
-				metric.SetDataType(pmetric.MetricDataTypeGauge)
+				dps := metric.SetEmptyGauge().DataPoints()
+				dps.EnsureCapacity(newDoubleDataPointSlice.Len())
 				for d := 0; d < newDoubleDataPointSlice.Len(); d++ {
-					dp := metric.Gauge().DataPoints().AppendEmpty()
+					dp := dps.AppendEmpty()
 					newDoubleDataPointSlice.At(d).CopyTo(dp)
 				}
 			}

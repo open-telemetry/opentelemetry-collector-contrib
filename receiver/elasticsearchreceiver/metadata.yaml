@@ -203,18 +203,28 @@ metrics:
       value_type: int
     attributes: []
     enabled: true
+  # The calculation for node.disk.io.read is actually in KiBy(1024 bytes), not kBy (1000 bytes)
+  # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L287
+  # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
+  # which come from a kernel https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
+  # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.disk.io.read:
     description: The total number of kilobytes read across all file stores for this node.
-    unit: By
+    unit: KiBy
     sum:
       monotonic: false
       aggregation: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
+  # The calculation for node.disk.io.write is actually in KiBy(1024 bytes), not kBy (1000 bytes)
+  # The metric value calculation comes from sectors: https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsInfo.java#L293
+  # The metric value is gathered by reading disk stats files from https://github.com/elastic/elasticsearch/blob/3c6797f2d2271a30b24f505da55afbb5ea10733e/server/src/main/java/org/elasticsearch/monitor/fs/FsProbe.java#L117
+  # which come from a kernel https://www.kernel.org/doc/Documentation/ABI/testing/procfs-diskstats
+  # Linux always considers sectors to be 512 bytes https://github.com/torvalds/linux/blob/6f0d349d922ba44e4348a17a78ea51b7135965b1/include/linux/types.h#L125
   elasticsearch.node.disk.io.write:
     description: The total number of kilobytes written across all file stores for this node.
-    unit: By
+    unit: KiBy
     sum:
       monotonic: false
       aggregation: cumulative

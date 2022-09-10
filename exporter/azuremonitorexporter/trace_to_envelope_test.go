@@ -759,9 +759,9 @@ The remainder of these methods are for building up test assets
 */
 func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[string]interface{}) ptrace.Span {
 	span := ptrace.NewSpan()
-	span.SetTraceID(pcommon.NewTraceID(defaultTraceID))
-	span.SetSpanID(pcommon.NewSpanID(defaultSpanID))
-	span.SetParentSpanID(pcommon.NewSpanID(defaultParentSpanID))
+	span.SetTraceID(defaultTraceID)
+	span.SetSpanID(defaultSpanID)
+	span.SetParentSpanID(defaultParentSpanID)
 	span.SetName(spanName)
 	span.SetKind(spanKind)
 	span.SetStartTimestamp(defaultSpanStartTime)

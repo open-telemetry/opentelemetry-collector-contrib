@@ -245,12 +245,12 @@ func initDoubleHistogramMetric(hm pmetric.Metric) {
 	hdp1.SetTimestamp(TestMetricTimestamp)
 	hdp1.SetCount(1)
 	hdp1.SetSum(15)
-	hdp1.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 1}))
+	hdp1.BucketCounts().FromRaw([]uint64{0, 1})
 	exemplar := hdp1.Exemplars().AppendEmpty()
 	exemplar.SetTimestamp(TestMetricExemplarTimestamp)
 	exemplar.SetDoubleVal(15)
 	initMetricAttachment(exemplar.FilteredAttributes())
-	hdp1.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1}))
+	hdp1.ExplicitBounds().FromRaw([]float64{1})
 }
 
 func initDoubleSummaryMetric(sm pmetric.Metric) {
@@ -279,15 +279,24 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricDataType) {
 	m.SetName(name)
 	m.SetDescription("")
 	m.SetUnit("1")
-	m.SetDataType(ty)
 	switch ty {
+	case pmetric.MetricDataTypeGauge:
+		m.SetEmptyGauge()
+
 	case pmetric.MetricDataTypeSum:
-		sum := m.Sum()
+		sum := m.SetEmptySum()
 		sum.SetIsMonotonic(true)
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+
 	case pmetric.MetricDataTypeHistogram:
-		histo := m.Histogram()
+		histo := m.SetEmptyHistogram()
 		histo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+
+	case pmetric.MetricDataTypeExponentialHistogram:
+		m.SetEmptyExponentialHistogram()
+
+	case pmetric.MetricDataTypeSummary:
+		m.SetEmptySummary()
 	}
 }
 

@@ -104,7 +104,7 @@ func TestPushLogData(t *testing.T) {
 			ld.ResourceLogs().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty()
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().AppendEmpty()
-			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID([16]byte{1, 2, 3, 4})
 
 			// copy the attributes from the test case to the log entry
 			if tC.attrs.Len() > 0 {

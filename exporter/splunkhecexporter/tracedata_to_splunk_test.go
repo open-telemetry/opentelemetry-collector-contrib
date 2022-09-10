@@ -110,11 +110,11 @@ func initSpan(name string, ts *pcommon.Timestamp, span ptrace.Span) {
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)
-	spanLink.SetTraceID(pcommon.NewTraceID(traceID))
+	spanLink.SetTraceID(traceID)
 	bytes, _ = hex.DecodeString("1234")
 	var spanID [8]byte
 	copy(spanID[:], bytes)
-	spanLink.SetSpanID(pcommon.NewSpanID(spanID))
+	spanLink.SetSpanID(spanID)
 	spanLink.Attributes().UpsertInt("foo", 1)
 	spanLink.Attributes().UpsertBool("bar", false)
 	foobarContents := spanLink.Attributes().UpsertEmptySlice("foobar")

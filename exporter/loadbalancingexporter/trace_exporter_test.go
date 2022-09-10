@@ -199,7 +199,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 }
 
 func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
-	b := pcommon.NewTraceID([16]byte{1, 2, 3, 4}).Bytes()
+	b := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	for _, tt := range []struct {
 		desc       string
 		batch      ptrace.Traces
@@ -346,7 +346,7 @@ func TestBatchWithTwoTraces(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 
 	first := simpleTraces()
-	second := simpleTraceWithID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	second := simpleTraceWithID(pcommon.TraceID([16]byte{2, 3, 4, 5}))
 	batch := ptrace.NewTraces()
 	first.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
 	second.ResourceSpans().MoveAndAppendTo(batch.ResourceSpans())
@@ -549,19 +549,19 @@ func randomTraces() ptrace.Traces {
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))
 	v4 := uint8(rand.Intn(256))
-	return simpleTraceWithID(pcommon.NewTraceID([16]byte{v1, v2, v3, v4}))
+	return simpleTraceWithID(pcommon.TraceID([16]byte{v1, v2, v3, v4}))
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTraceWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTraceWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithServiceName() ptrace.Traces {
-	return simpleTraceWithServiceName(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTraceWithServiceName(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func twoServicesWithSameTraceID() ptrace.Traces {
-	return servicesWithSameTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return servicesWithSameTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTraceWithID(id pcommon.TraceID) ptrace.Traces {

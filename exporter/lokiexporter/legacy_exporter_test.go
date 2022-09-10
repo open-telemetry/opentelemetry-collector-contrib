@@ -576,8 +576,8 @@ func TestExporter_convertLogBodyToEntry(t *testing.T) {
 
 	lr := plog.NewLogRecord()
 	lr.Body().SetStringVal("Payment succeeded")
-	lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
-	lr.SetSpanID(pcommon.NewSpanID([8]byte{5, 6, 7, 8}))
+	lr.SetTraceID([16]byte{1, 2, 3, 4})
+	lr.SetSpanID([8]byte{5, 6, 7, 8})
 	lr.SetSeverityText("DEBUG")
 	lr.SetSeverityNumber(plog.SeverityNumberDebug)
 	lr.Attributes().UpsertString("payment_method", "credit_card")
@@ -719,7 +719,7 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "traceID",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+				lr.SetTraceID([16]byte{1, 2, 3, 4})
 				return lr
 			}(),
 			expected: func() model.LabelSet {
@@ -732,7 +732,7 @@ func TestConvertRecordAttributesToLabels(t *testing.T) {
 			desc: "spanID",
 			lr: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
-				lr.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4}))
+				lr.SetSpanID([8]byte{1, 2, 3, 4})
 				return lr
 			}(),
 			expected: func() model.LabelSet {

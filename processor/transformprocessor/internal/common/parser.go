@@ -31,7 +31,7 @@ func ParseSpanID(spanIDStr string) (pcommon.SpanID, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], id)
-	return pcommon.NewSpanID(idArr), nil
+	return idArr, nil
 }
 
 func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
@@ -44,5 +44,5 @@ func ParseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], id)
-	return pcommon.NewTraceID(idArr), nil
+	return idArr, nil
 }

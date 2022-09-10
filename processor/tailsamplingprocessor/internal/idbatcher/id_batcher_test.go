@@ -140,11 +140,11 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 
 	idSeen := make(map[[16]byte]bool, len(ids))
 	for _, id := range got {
-		idSeen[id.Bytes()] = true
+		idSeen[id] = true
 	}
 
 	for i := 0; i < len(ids); i++ {
-		require.True(t, idSeen[ids[i].Bytes()], "want id %v but id was not seen", ids[i])
+		require.True(t, idSeen[ids[i]], "want id %v but id was not seen", ids[i])
 	}
 }
 
@@ -154,7 +154,7 @@ func generateSequentialIds(numIds uint64) []pcommon.TraceID {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 0)
 		binary.BigEndian.PutUint64(traceID[8:], i)
-		ids[i] = pcommon.NewTraceID(traceID)
+		ids[i] = pcommon.TraceID(traceID)
 	}
 	return ids
 }

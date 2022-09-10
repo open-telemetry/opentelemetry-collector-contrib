@@ -286,7 +286,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
-		testSpan.SetParentSpanID(pcommon.EmptySpanID)
+		testSpan.SetParentSpanID(pcommon.NewSpanIDEmpty())
 
 		sentrySpan := convertToSentrySpan(testSpan, pcommon.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
@@ -296,9 +296,9 @@ func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with full span", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
 
-		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pcommon.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pcommon.Timestamp = 123
 		var endTime pcommon.Timestamp = 1234567890

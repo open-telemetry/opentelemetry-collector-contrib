@@ -440,7 +440,7 @@ func Test_hash(t *testing.T) {
 	// collisions, but, of course it is possible that they happen, a different random source
 	// should avoid that.
 	r := rand.New(rand.NewSource(1))
-	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64()).Bytes()
+	fullKey := idutils.UInt64ToTraceID(r.Uint64(), r.Uint64())
 	seen := make(map[uint32]bool)
 	for i := 1; i <= len(fullKey); i++ {
 		key := fullKey[:i]
@@ -499,7 +499,7 @@ func assertSampledData(t *testing.T, sampled []ptrace.Traces, serviceName string
 				for k := 0; k < ils.Spans().Len(); k++ {
 					spanCount++
 					span := ils.Spans().At(k)
-					key := span.TraceID().Bytes()
+					key := span.TraceID()
 					if traceIDs[key] {
 						t.Errorf("same traceID used more than once %q", key)
 						return

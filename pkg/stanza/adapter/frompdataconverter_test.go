@@ -55,7 +55,7 @@ func fillBaseMap(m pcommon.Map) {
 	m.UpsertInt("int", 123)
 	m.UpsertDouble("double", 12.34)
 	m.UpsertString("string", "hello")
-	m.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{0xa1, 0xf0, 0x02, 0xff}))
+	m.UpsertEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
 func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
@@ -74,9 +74,9 @@ func complexPdataForNDifferentHosts(count int, n int) plog.Logs {
 		scopeLog.Scope().SetName("myScope")
 		lr := scopeLog.LogRecords().AppendEmpty()
 
-		lr.SetSpanID(pcommon.NewSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
-		lr.SetTraceID(pcommon.NewTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff}))
-		lr.SetFlagsStruct(plog.DefaultLogRecordFlags.WithIsSampled(true))
+		lr.SetSpanID([8]byte{0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+		lr.SetTraceID([16]byte{0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff})
+		lr.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 
 		lr.SetSeverityNumber(plog.SeverityNumberError)
 		lr.SetSeverityText("Error")

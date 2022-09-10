@@ -34,10 +34,10 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	library.SetName("first-library")
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetName("first-batch-first-span")
-	firstSpan.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	firstSpan.SetTraceID([16]byte{1, 2, 3, 4})
 	secondSpan := ils.Spans().AppendEmpty()
 	secondSpan.SetName("first-batch-second-span")
-	secondSpan.SetTraceID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	secondSpan.SetTraceID([16]byte{2, 3, 4, 5})
 
 	// test
 	out := SplitTraces(inBatch)
@@ -62,14 +62,14 @@ func TestSplitTracesWithNilTraceID(t *testing.T) {
 	rs := inBatch.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	firstSpan := ils.Spans().AppendEmpty()
-	firstSpan.SetTraceID(pcommon.NewTraceID([16]byte{}))
+	firstSpan.SetTraceID([16]byte{})
 
 	// test
 	batches := SplitTraces(inBatch)
 
 	// verify
 	assert.Len(t, batches, 1)
-	assert.Equal(t, pcommon.NewTraceID([16]byte{}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 }
 
 func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
@@ -87,10 +87,10 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	firstILS.Spans().EnsureCapacity(2)
 	firstSpan := firstILS.Spans().AppendEmpty()
 	firstSpan.SetName("first-batch-first-span")
-	firstSpan.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	firstSpan.SetTraceID([16]byte{1, 2, 3, 4})
 	secondSpan := firstILS.Spans().AppendEmpty()
 	secondSpan.SetName("first-batch-second-span")
-	secondSpan.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	secondSpan.SetTraceID([16]byte{1, 2, 3, 4})
 
 	// the second ILS has one span
 	secondILS := rs.ScopeSpans().AppendEmpty()
@@ -98,7 +98,7 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	secondLibrary.SetName("second-library")
 	thirdSpan := secondILS.Spans().AppendEmpty()
 	thirdSpan.SetName("second-batch-first-span")
-	thirdSpan.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	thirdSpan.SetTraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	batches := SplitTraces(inBatch)
@@ -107,13 +107,13 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, batches, 2)
 
 	// first batch
-	assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 	assert.Equal(t, firstLibrary.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Name())
 	assert.Equal(t, firstSpan.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, secondSpan.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Name())
 
 	// second batch
-	assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 	assert.Equal(t, secondLibrary.Name(), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Name())
 	assert.Equal(t, thirdSpan.Name(), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 }
@@ -130,10 +130,10 @@ func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
 	sl.LogRecords().EnsureCapacity(3)
 	firstLog := sl.LogRecords().AppendEmpty()
 	firstLog.Body().SetStringVal("first-batch-first-log")
-	firstLog.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	firstLog.SetTraceID([16]byte{1, 2, 3, 4})
 	secondLog := sl.LogRecords().AppendEmpty()
 	secondLog.Body().SetStringVal("first-batch-second-log")
-	secondLog.SetTraceID(pcommon.NewTraceID([16]byte{2, 3, 4, 5}))
+	secondLog.SetTraceID([16]byte{2, 3, 4, 5})
 	thirdLog := sl.LogRecords().AppendEmpty()
 	thirdLog.Body().SetStringVal("first-batch-third-log")
 	// do not set traceID for third log
@@ -166,14 +166,14 @@ func TestSplitLogsWithNilTraceID(t *testing.T) {
 	rl := inBatch.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
 	firstLog := sl.LogRecords().AppendEmpty()
-	firstLog.SetTraceID(pcommon.NewTraceID([16]byte{}))
+	firstLog.SetTraceID([16]byte{})
 
 	// test
 	batches := SplitLogs(inBatch)
 
 	// verify
 	assert.Len(t, batches, 1)
-	assert.Equal(t, pcommon.NewTraceID([16]byte{}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 }
 
 func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
@@ -191,10 +191,10 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	firstILS.LogRecords().EnsureCapacity(2)
 	firstLog := firstILS.LogRecords().AppendEmpty()
 	firstLog.Body().SetStringVal("first-batch-first-log")
-	firstLog.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	firstLog.SetTraceID([16]byte{1, 2, 3, 4})
 	secondLog := firstILS.LogRecords().AppendEmpty()
 	secondLog.Body().SetStringVal("first-batch-second-log")
-	secondLog.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	secondLog.SetTraceID([16]byte{1, 2, 3, 4})
 
 	// the second ILL has one log
 	secondILS := rl.ScopeLogs().AppendEmpty()
@@ -202,7 +202,7 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	secondLibrary.SetName("second-library")
 	thirdLog := secondILS.LogRecords().AppendEmpty()
 	thirdLog.Body().SetStringVal("second-batch-first-log")
-	thirdLog.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	thirdLog.SetTraceID([16]byte{1, 2, 3, 4})
 
 	// test
 	batches := SplitLogs(inBatch)
@@ -211,13 +211,13 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, batches, 2)
 
 	// first batch
-	assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 	assert.Equal(t, firstLibrary.Name(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	assert.Equal(t, firstLog.Body().StringVal(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().StringVal())
 	assert.Equal(t, secondLog.Body().StringVal(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().StringVal())
 
 	// second batch
-	assert.Equal(t, pcommon.NewTraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
+	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 	assert.Equal(t, secondLibrary.Name(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	assert.Equal(t, thirdLog.Body().StringVal(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().StringVal())
 }

@@ -199,7 +199,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
 			var err error
-			keyRegex, err = regexp.Compile(a.KeyRegex)
+			keyRegex, err = regexp.Compile("^(?:" + a.KeyRegex + ")$")
 			if err != nil {
 				return rules, err
 			}

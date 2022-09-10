@@ -466,82 +466,6 @@
                               "timeUnixNano": "1661811026805343000"
                            },
                            {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "context_construction"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "commit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "completion"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "master_apply"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661811026803971000",
-                              "timeUnixNano": "1661811026805343000"
-                           },
-                           {
                               "asInt": "40",
                               "attributes": [
                                  {
@@ -1007,7 +931,7 @@
                            }
                         ]
                      },
-                     "unit": "By"
+                     "unit": "KiBy"
                   },
                   {
                      "description": "The total number of kilobytes written across all file stores for this node.",
@@ -1022,7 +946,7 @@
                            }
                         ]
                      },
-                     "unit": "By"
+                     "unit": "KiBy"
                   },
                   {
                      "description": "The number of documents on the node.",

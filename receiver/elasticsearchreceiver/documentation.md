@@ -30,8 +30,8 @@ These are the metrics available for this scraper.
 | **elasticsearch.node.cluster.io** | The number of bytes sent and received on the network for internal cluster communication. | By | Sum(Int) | <ul> <li>direction</li> </ul> |
 | **elasticsearch.node.cluster.io.received** | The number of bytes received on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.cluster.io.sent** | The number of bytes sent on the network for internal cluster communication. | By | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.disk.io.read** | The total number of kilobytes read across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
-| **elasticsearch.node.disk.io.write** | The total number of kilobytes written across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.disk.io.read** | The total number of kilobytes read across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
+| **elasticsearch.node.disk.io.write** | The total number of kilobytes written across all file stores for this node. | KiBy | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.documents** | The number of documents on the node. | {documents} | Sum(Int) | <ul> <li>document_state</li> </ul> |
 | **elasticsearch.node.fs.disk.available** | The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise. | By | Sum(Int) | <ul> </ul> |
 | **elasticsearch.node.fs.disk.free** | The amount of unallocated disk space across all file stores for this node. | By | Sum(Int) | <ul> </ul> |
