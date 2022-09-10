@@ -40,37 +40,45 @@ func TestObjectModel_CreateMap(t *testing.T) {
 		},
 		"from map": {
 			build: func() Document {
-				return DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+				m := pcommon.NewMap()
+				m.FromRaw(map[string]interface{}{
 					"i":   42,
 					"str": "test",
-				}))
+				})
+				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"i", IntValue(42)}, {"str", StringValue("test")}}},
 		},
 		"ignores nil values": {
 			build: func() Document {
-				return DocumentFromAttributes(pcommon.NewMapFromRaw(map[string]interface{}{
+				m := pcommon.NewMap()
+				m.FromRaw(map[string]interface{}{
 					"null": nil,
 					"str":  "test",
-				}))
+				})
+				return DocumentFromAttributes(m)
 			},
 			want: Document{[]field{{"str", StringValue("test")}}},
 		},
 		"from map with prefix": {
 			build: func() Document {
-				return DocumentFromAttributesWithPath("prefix", pcommon.NewMapFromRaw(map[string]interface{}{
+				m := pcommon.NewMap()
+				m.FromRaw(map[string]interface{}{
 					"i":   42,
 					"str": "test",
-				}))
+				})
+				return DocumentFromAttributesWithPath("prefix", m)
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},
 		},
 		"add attributes with key": {
 			build: func() (doc Document) {
-				doc.AddAttributes("prefix", pcommon.NewMapFromRaw(map[string]interface{}{
+				m := pcommon.NewMap()
+				m.FromRaw(map[string]interface{}{
 					"i":   42,
 					"str": "test",
-				}))
+				})
+				doc.AddAttributes("prefix", m)
 				return doc
 			},
 			want: Document{[]field{{"prefix.i", IntValue(42)}, {"prefix.str", StringValue("test")}}},

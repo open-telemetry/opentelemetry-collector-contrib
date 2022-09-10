@@ -55,7 +55,8 @@ type eventProps struct {
 
 func TestTranslation(t *testing.T) {
 	var defaultServerSpanAttrs = func(seg *awsxray.Segment) pcommon.Map {
-		return pcommon.NewMapFromRaw(map[string]interface{}{
+		m := pcommon.NewMap()
+		m.FromRaw(map[string]interface{}{
 			conventions.AttributeHTTPMethod:       *seg.HTTP.Request.Method,
 			conventions.AttributeHTTPClientIP:     *seg.HTTP.Request.ClientIP,
 			conventions.AttributeHTTPUserAgent:    *seg.HTTP.Request.UserAgent,
@@ -63,6 +64,7 @@ func TestTranslation(t *testing.T) {
 			conventions.AttributeHTTPStatusCode:   *seg.HTTP.Response.Status,
 			conventions.AttributeHTTPURL:          *seg.HTTP.Request.URL,
 		})
+		return m
 	}
 
 	tests := []struct {
@@ -81,7 +83,8 @@ func TestTranslation(t *testing.T) {
 			testCase:   "TranslateInstrumentedServerSegment",
 			samplePath: filepath.Join("../../../../internal/aws/xray", "testdata", "serverSample.txt"),
 			expectedResourceAttrs: func(seg *awsxray.Segment) pcommon.Map {
-				return pcommon.NewMapFromRaw(map[string]interface{}{
+				m := pcommon.NewMap()
+				m.FromRaw(map[string]interface{}{
 					conventions.AttributeCloudProvider:        conventions.AttributeCloudProviderAWS,
 					conventions.AttributeTelemetrySDKVersion:  *seg.AWS.XRay.SDKVersion,
 					conventions.AttributeTelemetrySDKName:     *seg.AWS.XRay.SDK,
@@ -90,6 +93,7 @@ func TestTranslation(t *testing.T) {
 					conventions.AttributeK8SPodName:           *seg.AWS.EKS.Pod,
 					conventions.AttributeContainerID:          *seg.AWS.EKS.ContainerID,
 				})
+				return m
 			},
 			propsPerSpan: func(_ string, _ *testing.T, seg *awsxray.Segment) []perSpanProperties {
 				attrs := defaultServerSpanAttrs(seg)

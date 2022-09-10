@@ -54,7 +54,7 @@ var (
 
 // Resource Attributes
 func initResourceAttributes1(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
+	dest.FromRaw(resourceAttributes1)
 }
 
 // Resources

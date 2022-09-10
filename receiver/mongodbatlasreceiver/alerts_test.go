@@ -64,24 +64,20 @@ func TestPayloadToLogRecord(t *testing.T) {
 				rl := logs.ResourceLogs().AppendEmpty()
 				lr := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"mongodbatlas.group.id":        "some-group-id",
-						"mongodbatlas.alert.config.id": "123",
-					},
-				).CopyTo(rl.Resource().Attributes())
+				rl.Resource().Attributes().FromRaw(map[string]interface{}{
+					"mongodbatlas.group.id":        "some-group-id",
+					"mongodbatlas.alert.config.id": "123",
+				})
 
-				pcommon.NewMapFromRaw(
-					map[string]interface{}{
-						"created":      "2022-06-03T22:30:31Z",
-						"message":      "Some event happened",
-						"event.domain": "mongodbatlas",
-						"event.name":   "EVENT",
-						"updated":      "2022-06-03T22:30:31Z",
-						"status":       "STATUS",
-						"id":           "some-id",
-					},
-				).CopyTo(lr.Attributes())
+				lr.Attributes().FromRaw(map[string]interface{}{
+					"created":      "2022-06-03T22:30:31Z",
+					"message":      "Some event happened",
+					"event.domain": "mongodbatlas",
+					"event.name":   "EVENT",
+					"updated":      "2022-06-03T22:30:31Z",
+					"status":       "STATUS",
+					"id":           "some-id",
+				})
 
 				lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(now))
 				lr.SetTimestamp(pcommon.NewTimestampFromTime(time.Date(2022, time.June, 3, 22, 30, 31, 0, time.UTC)))

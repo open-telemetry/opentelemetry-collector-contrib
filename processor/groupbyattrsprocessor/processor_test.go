@@ -35,15 +35,9 @@ var (
 )
 
 func prepareAttributeMap() pcommon.Map {
-	attributeValues := map[string]interface{}{
-		"xx": "aa",
-		"yy": 11,
-	}
-
 	am := pcommon.NewMap()
-	pcommon.NewMapFromRaw(attributeValues).CopyTo(am)
-
-	am.Sort()
+	am.UpsertString("xx", "aa")
+	am.UpsertInt("yy", 11)
 	return am
 }
 

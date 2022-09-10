@@ -36,23 +36,23 @@ const (
 )
 
 func initResourceAttributes1(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
+	dest.FromRaw(resourceAttributes1)
 }
 
 func initResourceAttributes2(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes2).CopyTo(dest)
+	dest.FromRaw(resourceAttributes2)
 }
 
 func initSpanAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanAttributes).CopyTo(dest)
+	dest.FromRaw(spanAttributes)
 }
 
 func initSpanEventAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanEventAttributes).CopyTo(dest)
+	dest.FromRaw(spanEventAttributes)
 }
 
 func initSpanLinkAttributes(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(spanLinkAttributes).CopyTo(dest)
+	dest.FromRaw(spanLinkAttributes)
 }
 
 func initMetricAttachment(dest pcommon.Map) {
