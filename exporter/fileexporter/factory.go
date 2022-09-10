@@ -16,7 +16,9 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"

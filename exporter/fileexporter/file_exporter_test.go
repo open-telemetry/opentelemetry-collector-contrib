@@ -17,18 +17,19 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/spf13/cast"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"io"
 	"os"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
