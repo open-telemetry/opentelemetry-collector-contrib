@@ -21,17 +21,18 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/valyala/gozstd"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestFileTracesExporter_JSONMarshal(t *testing.T) {
@@ -112,17 +113,18 @@ func TestFileTracesExporter_JSONMarshal(t *testing.T) {
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
-			defer fi.Close()
 			assert.NoError(t, err)
+			defer fi.Close()
 			br := bufio.NewReader(fi)
-			isJson := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
+			isJSON := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if isJson {
+					if isJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
 				}()
+				assert.NoError(t, err)
 				if isEnd {
 					break
 				}
@@ -257,17 +259,18 @@ func TestFileMetricsExporter(t *testing.T) {
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
-			defer fi.Close()
 			assert.NoError(t, err)
+			defer fi.Close()
 			br := bufio.NewReader(fi)
-			isJson := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
+			isJSON := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if isJson {
+					if isJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
 				}()
+				assert.NoError(t, err)
 				if isEnd {
 					break
 				}
@@ -403,17 +406,18 @@ func TestFileLogsExporter(t *testing.T) {
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
-			defer fi.Close()
 			assert.NoError(t, err)
+			defer fi.Close()
 			br := bufio.NewReader(fi)
-			isJson := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
+			isJSON := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
 			for {
 				buf, isEnd, err := func() ([]byte, bool, error) {
-					if isJson {
+					if isJSON {
 						return readJSONMessage(br)
 					}
 					return readMessageFromStream(br)
 				}()
+				assert.NoError(t, err)
 				if isEnd {
 					break
 				}

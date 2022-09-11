@@ -16,7 +16,6 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"github.com/spf13/cast"
 	"io"
 	"sync"
 
@@ -26,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/spf13/cast"
 	"github.com/valyala/gozstd"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -82,8 +82,8 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	isJson := !(e.isCompressed || e.isProtoMarshal)
-	return exportMessage(e, buf, isJson)
+	isJSON := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJSON)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -94,8 +94,8 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	isJson := !(e.isCompressed || e.isProtoMarshal)
-	return exportMessage(e, buf, isJson)
+	isJSON := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJSON)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
@@ -106,12 +106,12 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	isJson := !(e.isCompressed || e.isProtoMarshal)
-	return exportMessage(e, buf, isJson)
+	isJSON := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJSON)
 }
 
-func exportMessage(e *fileExporter, buf []byte, isJson bool) error {
-	if isJson {
+func exportMessage(e *fileExporter, buf []byte, isJSON bool) error {
+	if isJSON {
 		return exportMessageAsLine(e, buf)
 	}
 	return exportStreamMessages(e, buf)
