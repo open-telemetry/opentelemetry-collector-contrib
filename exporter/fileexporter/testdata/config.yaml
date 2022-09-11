@@ -14,13 +14,20 @@ exporters:
     # just a dump of internal structures which can be changed over time.
     # This intended for primarily for debugging Collector without setting up backends.
     path: ./filename.json
+    proto_marshal_option: true
+    zstd_option: true
+    rolling_logger_options:
+      max_size: 10
+      max_age: 3
+      max_backups: 3
+      localtime: true
 
 service:
   pipelines:
     traces:
-      receivers: [nop]
-      processors: [nop]
-      exporters: [file]
+      receivers: [ nop ]
+      processors: [ nop ]
+      exporters: [ file ]
     metrics:
-      receivers: [nop]
-      exporters: [file,file/2]
+      receivers: [ nop ]
+      exporters: [ file,file/2 ]

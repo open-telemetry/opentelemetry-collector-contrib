@@ -43,5 +43,13 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ExporterSettings: config.NewExporterSettings(config.NewComponentIDWithName(typeStr, "2")),
 			Path:             "./filename.json",
+			PbMarshalOption:  true,
+			ZstdOption:       true,
+			RollingLoggerOptions: RollingLoggerOptions{
+				MaxSize:    10,
+				MaxAge:     3,
+				MaxBackups: 3,
+				LocalTime:  true,
+			},
 		})
 }
