@@ -82,7 +82,8 @@ func (e *fileExporter) ConsumeTraces(_ context.Context, td ptrace.Traces) error 
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessage(e, buf, e.isProtoMarshal)
+	isJson := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJson)
 }
 
 func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
@@ -93,7 +94,8 @@ func (e *fileExporter) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessage(e, buf, e.isProtoMarshal)
+	isJson := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJson)
 }
 
 func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
@@ -104,14 +106,15 @@ func (e *fileExporter) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	if e.isCompressed {
 		buf = gozstd.Compress(nil, buf)
 	}
-	return exportMessage(e, buf, e.isProtoMarshal)
+	isJson := !(e.isCompressed || e.isProtoMarshal)
+	return exportMessage(e, buf, isJson)
 }
 
-func exportMessage(e *fileExporter, buf []byte, isProtoMarshal bool) error {
-	if !isProtoMarshal {
+func exportMessage(e *fileExporter, buf []byte, isJson bool) error {
+	if isJson {
 		return exportMessageAsLine(e, buf)
 	}
-	return exportProtoMessages(e, buf)
+	return exportStreamMessages(e, buf)
 }
 
 func exportMessageAsLine(e *fileExporter, buf []byte) error {
@@ -127,11 +130,11 @@ func exportMessageAsLine(e *fileExporter, buf []byte) error {
 	return nil
 }
 
-func exportProtoMessages(e *fileExporter, buf []byte) error {
+func exportStreamMessages(e *fileExporter, buf []byte) error {
 	e.mutex.Lock()
 	defer e.mutex.Unlock()
-	size := cast.ToString(len(buf)) + "\n"
-	if _, err := e.logger.Write([]byte(size)); err != nil {
+	sizeLine := cast.ToString(len(buf)) + "\n"
+	if _, err := e.logger.Write([]byte(sizeLine)); err != nil {
 		return err
 	}
 	if _, err := e.logger.Write(buf); err != nil {

@@ -16,7 +16,7 @@ package fileexporter
 import (
 	"bufio"
 	"context"
-	"errors"
+	"github.com/valyala/gozstd"
 	"io"
 	"os"
 	"testing"
@@ -25,15 +25,15 @@ import (
 	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-func TestFileTracesExporter(t *testing.T) {
+func TestFileTracesExporter_JSONMarshal(t *testing.T) {
 	type args struct {
 		conf        *Config
 		unmarshaler ptrace.Unmarshaler
@@ -43,7 +43,7 @@ func TestFileTracesExporter(t *testing.T) {
 		args args
 	}{
 		{
-			name: "default configuration",
+			name: "json: default configuration",
 			args: args{
 				conf: &Config{
 					Path: tempFileName(t),
@@ -52,11 +52,48 @@ func TestFileTracesExporter(t *testing.T) {
 			},
 		},
 		{
-			name: "encode data using a protobuf stream ",
+			name: "json: Zstd compression option",
+			args: args{
+				conf: &Config{
+					Path:       tempFileName(t),
+					ZstdOption: true,
+				},
+				unmarshaler: ptrace.NewJSONUnmarshaler(),
+			},
+		},
+		{
+			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
 					Path:            tempFileName(t),
 					PbMarshalOption: true,
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "proto: Zstd compression option",
+			args: args{
+				conf: &Config{
+					Path:            tempFileName(t),
+					PbMarshalOption: true,
+					ZstdOption:      true,
+				},
+				unmarshaler: ptrace.NewProtoUnmarshaler(),
+			},
+		},
+		{
+			name: "proto:  an option to self-rotate log files",
+			args: args{
+				conf: &Config{
+					Path:            tempFileName(t),
+					PbMarshalOption: true,
+					RollingLoggerOptions: RollingLoggerOptions{
+						MaxSize:    10,
+						MaxAge:     1,
+						MaxBackups: 3,
+						LocalTime:  false,
+					},
 				},
 				unmarshaler: ptrace.NewProtoUnmarshaler(),
 			},
@@ -70,23 +107,26 @@ func TestFileTracesExporter(t *testing.T) {
 			td := testdata.GenerateTracesTwoSpansSameResource()
 			assert.NoError(t, fe.Start(context.Background(), componenttest.NewNopHost()))
 			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
+			assert.NoError(t, fe.ConsumeTraces(context.Background(), td))
 			assert.NoError(t, fe.Shutdown(context.Background()))
 
 			fi, err := os.Open(fe.path)
 			defer fi.Close()
 			assert.NoError(t, err)
 			br := bufio.NewReader(fi)
+			isJson := !(tt.args.conf.ZstdOption || tt.args.conf.PbMarshalOption)
 			for {
-				var buf []byte
-				line, _, c := br.ReadLine()
-				if c == io.EOF {
+				buf, isEnd, err := func() ([]byte, bool, error) {
+					if isJson {
+						return readJSONMessage(br)
+					}
+					return readMessageFromStream(br)
+				}()
+				if isEnd {
 					break
 				}
-				if tt.args.conf.PbMarshalOption {
-					size := cast.ToInt(string(line))
-
-					buf = make([]byte, size)
-					_, err = br.Read(buf)
+				if tt.args.conf.ZstdOption {
+					buf, err = gozstd.Decompress(nil, buf)
 					assert.NoError(t, err)
 				}
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
@@ -98,10 +138,9 @@ func TestFileTracesExporter(t *testing.T) {
 }
 
 func TestFileTracesExporterError(t *testing.T) {
-	fe := &fileExporter{
-		logger: &lumberjack.Logger{
-			Filename: tempFileName(t),
-		}}
+	fe := newFileExporter(&Config{
+		Path: tempFileName(t),
+	})
 	require.NotNil(t, fe)
 
 	td := testdata.GenerateTracesTwoSpansSameResource()
@@ -178,14 +217,24 @@ func tempFileName(t *testing.T) string {
 	return socket
 }
 
-// errorWriter is an io.Writer that will return an error all ways
-type errorWriter struct {
+func readMessageFromStream(br *bufio.Reader) ([]byte, bool, error) {
+	var buf []byte
+	line, _, c := br.ReadLine()
+	if c == io.EOF {
+		return nil, true, nil
+	}
+	size := cast.ToInt(string(line))
+	buf = make([]byte, size)
+	if _, err := br.Read(buf); err != nil {
+		return nil, false, err
+	}
+	return buf, false, nil
 }
 
-func (e errorWriter) Write([]byte) (n int, err error) {
-	return 0, errors.New("all ways return error")
-}
-
-func (e *errorWriter) Close() error {
-	return nil
+func readJSONMessage(br *bufio.Reader) ([]byte, bool, error) {
+	buf, _, c := br.ReadLine()
+	if c == io.EOF {
+		return nil, true, nil
+	}
+	return buf, false, nil
 }
