@@ -82,7 +82,7 @@ func (si *signingRoundTripper) signRequest(req *http.Request) (*http.Request, er
 	service, region := si.inferServiceAndRegion(req2)
 	creds, err := (*si.credsProvider).Retrieve(req2.Context())
 	if err != nil {
-		return nil, errBadCreds
+		return nil, fmt.Errorf("error retrieving credentials: %w", err)
 	}
 
 	err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
