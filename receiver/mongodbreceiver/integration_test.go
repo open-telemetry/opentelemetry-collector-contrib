@@ -284,7 +284,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest, script []st
 		})
 	require.NoError(t, err)
 
-	code, err := container.Exec(context.Background(), script)
+	code, _, err := container.Exec(context.Background(), script)
 	require.NoError(t, err)
 	require.Equal(t, 0, code)
 
