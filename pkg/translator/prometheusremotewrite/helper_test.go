@@ -384,7 +384,7 @@ func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
-		histogram *pmetric.HistogramDataPoint
+		histogram pmetric.HistogramDataPoint
 		expected  []prompb.Exemplar
 	}{
 		{
@@ -443,14 +443,14 @@ func Test_getPromExemplars(t *testing.T) {
 		},
 		{
 			"without_exemplar",
-			getHistogramDataPoint(),
+			pmetric.NewHistogramDataPoint(),
 			nil,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplars(*tt.histogram)
+			requests := getPromExemplars(tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}

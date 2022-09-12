@@ -703,7 +703,7 @@ func TestGetDataPoints(t *testing.T) {
 	for _, tc := range testCases {
 		ocMetrics := []*metricspb.Metric{tc.metric}
 
-		// Retrieve *pmetric.Metric
+		// Retrieve pmetric.Metric
 		rm := internaldata.OCToMetrics(nil, nil, ocMetrics).ResourceMetrics().At(0)
 		metric := rm.ScopeMetrics().At(0).Metrics().At(0)
 
@@ -719,7 +719,7 @@ func TestGetDataPoints(t *testing.T) {
 			} else {
 				metadata.receiver = ""
 			}
-			dps := getDataPoints(&metric, metadata, logger)
+			dps := getDataPoints(metric, metadata, logger)
 			assert.NotNil(t, dps)
 			assert.Equal(t, reflect.TypeOf(tc.expectedDataPoints), reflect.TypeOf(dps))
 			switch convertedDPS := dps.(type) {
@@ -767,7 +767,7 @@ func TestGetDataPoints(t *testing.T) {
 		obs, logs := observer.New(zap.WarnLevel)
 		logger := zap.New(obs)
 
-		dps := getDataPoints(&metric, metadata, logger)
+		dps := getDataPoints(metric, metadata, logger)
 		assert.Nil(t, dps)
 
 		// Test output warning logs
@@ -783,11 +783,6 @@ func TestGetDataPoints(t *testing.T) {
 		}
 		assert.Equal(t, 1, logs.Len())
 		assert.Equal(t, expectedLogs, logs.AllUntimed())
-	})
-
-	t.Run("Nil metric", func(t *testing.T) {
-		dps := getDataPoints(nil, metadata, zap.NewNop())
-		assert.Nil(t, dps)
 	})
 }
 
@@ -819,8 +814,7 @@ func BenchmarkGetDataPoints(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < numMetrics; i++ {
-			metric := metrics.At(i)
-			getDataPoints(&metric, metadata, logger)
+			getDataPoints(metrics.At(i), metadata, logger)
 		}
 	}
 }

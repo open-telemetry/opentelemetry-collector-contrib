@@ -179,7 +179,7 @@ func TestPayloadToLogRecord(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, logs)
-				require.NoError(t, compareLogs(tc.expectedLogs(tc.payload), *logs))
+				require.NoError(t, compareLogs(tc.expectedLogs(tc.payload), logs))
 			}
 		})
 	}

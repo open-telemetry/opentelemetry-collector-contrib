@@ -38,7 +38,7 @@ type SpanOptions struct {
 	EndTimestamp   time.Duration
 }
 
-func setupSpan(span *ptrace.Span, opts SpanOptions) {
+func setupSpan(span ptrace.Span, opts SpanOptions) {
 	var empty16 [16]byte
 	var empty8 [8]byte
 
@@ -183,7 +183,7 @@ func TestSpanBasics(t *testing.T) {
 
 	sp1 := spanSlice.AppendEmpty()
 
-	setupSpan(&sp1, SpanOptions{})
+	setupSpan(sp1, SpanOptions{})
 
 	attrs := generateAttrs()
 	conv := SpanConverter{}
@@ -200,20 +200,20 @@ func TestSpanCorrelation(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(&sp1, SpanOptions{})
+	setupSpan(sp1, SpanOptions{})
 
 	sp2 := spanSlice.AppendEmpty()
-	setupSpan(&sp2, SpanOptions{
+	setupSpan(sp2, SpanOptions{
 		ParentID: sp1.SpanID(),
 	})
 
 	sp3 := spanSlice.AppendEmpty()
-	setupSpan(&sp3, SpanOptions{
+	setupSpan(sp3, SpanOptions{
 		ParentID: sp2.SpanID(),
 	})
 
 	sp4 := spanSlice.AppendEmpty()
-	setupSpan(&sp4, SpanOptions{
+	setupSpan(sp4, SpanOptions{
 		ParentID: sp1.SpanID(),
 	})
 
@@ -239,7 +239,7 @@ func TestSpanWithError(t *testing.T) {
 	spanSlice := ptrace.NewSpanSlice()
 
 	sp1 := spanSlice.AppendEmpty()
-	setupSpan(&sp1, SpanOptions{
+	setupSpan(sp1, SpanOptions{
 		Error: "some error",
 	})
 
