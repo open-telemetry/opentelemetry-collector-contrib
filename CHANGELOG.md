@@ -26,19 +26,19 @@
 in outgoing logs data.
  (#13410)
   It is replaced by:
-  
+
     1. Sending to a new collector endpoint that does not require the
     hostname parameter.
-  
+
     2. Recognizing the "host.name" resource attribute and using that
     value to fill in log metadata recognized upstream.
-  
+
     This is a breaking change, and as such will generate a startup
     error if the exporter is configured to send to an endpoint that
     does not support this feature.
-- ``filelog`, `journald`, `otlpjsonfile`, `syslog`, `tcplog`, `udplog`, `windowseventlog` receivers`: Remove `helper.Duration` struct. Configured time values no longer have a default unit of `s` (#13439)
+- `filelog, journald, otlpjsonfile, syslog, tcplog, udplog, windowseventlog receivers`: Remove `helper.Duration` struct. Configured time values no longer have a default unit of `s` (#13439)
 - `pkg/stanza`: Remove HostIdentifier, HostIdentifierConfig and associated functions (#13396)
-- ``filelog`, `journald`, `syslog`, `tcplog`, `udplog`, and `windowseventlog` receivers`: Fix a bug where original severity text was not preserved. (#13263)
+- `filelog, journald, syslog, tcplog, udplog, and windowseventlog receivers`: Fix a bug where original severity text was not preserved. (#13263)
 - `pkg/stanza`: Update function and struct names in keyvalue parser (#13418)
 - `cmd/mdatagen`: Remove old metadata generator (#13374)
 
@@ -55,7 +55,7 @@ in outgoing logs data.
 - `pkg/telemetryquerylanguage`: Add `Join`, which allows joining an arbitrary number of strings with a delimiter (#12476)
 - `elasticsearchreceiver`: Add additional metrics (#13115)
   Add additional metrics for indexing_pressure, published_states, state_queue, ingest, script.
-  
+
 - `hostmetricsreceiver`: Add threads count metric (#12482)
 - `aerospikereceiver`: Add query_count and query_tracked metrics (#13255)
 - `docsgen`: use contrib components, add makefile target (#12639)
@@ -68,9 +68,9 @@ in outgoing logs data.
   This allows users to disable particular metrics in through user settings.
 - `mongodbatlasreceiver`: Add logs retrieval capability (#12347)
 - `mongodbreceiver`: Enhance partial error handling with descriptive metric/attribute messages. (#13367)
-- ``filelog`, `journald`, `syslog`, `tcplog`, `udplog`, `windowseventlog` receivers`: Add ability to set log body when when parsing. (#10274)
-- ``filelog`, `journald`, `syslog`, `tcplog`, `udplog`, `windowseventlog` receivers`: Enhance error message when csv_parser finds unexpected number of fields (#13427)
-- ``filelog`, `journald`, `syslog`, `tcplog`, `udplog`, `windowseventlog` receivers`: Enable debugging operators `stdout` and `file_output` (#13394)
+- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Add ability to set log body when when parsing. (#10274)
+- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enhance error message when csv_parser finds unexpected number of fields (#13427)
+- `filelog, journald, syslog, tcplog, udplog, windowseventlog receivers`: Enable debugging operators `stdout` and `file_output` (#13394)
 - `postgresqlreceiver`: Adds background writer metrics (#13327)
   Adds the following metrics:
   - postgresql.bgwriter.buffers.allocated
@@ -78,21 +78,21 @@ in outgoing logs data.
   - postgresql.bgwriter.checkpoint.count
   - postgresql.bgwriter.duration
   - postgresql.bgwriter.maxwritten.count
-  
+
 - `postgresqlreceiver`: Adds more metrics regarding database tables. (#13228)
   metrics added:
     postgresql.database.count
     postgresql.table.count
     postgresql.table.size
     postgresql.table.vacuum.count
-  
+
 - `postgresqlreceiver`: Adds WAL and connections metrics (#13399)
   metrics added
   - postgresql.replication.data_delay
   - postgresql.wal.age
   - postgresql.wal.lag
   - postgresql.connection.max
-  
+
 - `prometheusreceiver`: allow to query scrape jobs from OpenTelemetryOperators TargetAllocator (#7944)
 - `prometheusremotewrite`: Support customization of target_info metric including the ability to disable it (#12300)
 - `prometheusexporter`: Adds a feature to prometheusexporter that enables it to export exemplars along with histogram metrics. (#5192)
@@ -129,9 +129,9 @@ in outgoing logs data.
 - `clickhouseexporter`: update table schema (#8028)
   1. add ServiceName field as primary key.
   2. use Map type for attribute, add secondary index.
-  
+
 - `postgresqlreceiver`: Moves metric attributes `table` and `database` to resource attributes. (#12960)
-  This move has been hidden behind a featuregate. Please see https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations for more information transitioning. 
+  This move has been hidden behind a featuregate. Please see https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/postgresqlreceiver/README.md#feature-gate-configurations for more information transitioning.
   This affects the following metrics.
   - postgresql.blocks_read
   - postgresql.commits
@@ -139,7 +139,7 @@ in outgoing logs data.
   - postgresql.backends
   - postgresql.operations
   - postgresql.rollbacks
-  
+
 - `all`: Update minimum go version to 1.18 (#12918)
 
 ### 🚩 Deprecations 🚩
@@ -214,7 +214,7 @@ in outgoing logs data.
 - `dockerstatsreceiver`: Enable a featuregate for the new implementation of scrape. Change the units in the new implementation to align to semantic convention. (#9794)
   This allows the new implementation of scrape to be used via a featuregate.
   It also updates the tests, which now test for expected descriptions and units in the new implementation.
-  
+
 - `healthcheckextension`: Use `confighttp.HTTPServerSettings` to allow tls and auth. (#12668)
 - `demo`: Add connection time out for client in examples/demo/client (#12431)
 - `prometheusexporter`: Export target_info metrics with the resource attributes. (#8265)
@@ -266,13 +266,13 @@ This version has been skipped.
 ## 🛑 Breaking changes 🛑
 - `datadogexporter`: Change default value of `host_metadata::hostname_source` to `config_or_system` (#10424)
    - This behavior can be reverted by disabling the `exporter.datadog.hostname.preview` feature gate.
-  
+
 - `datadogexporter`: Make automatically detected hostname match the one reported by other Datadog products. (#10424)
    - This behavior can be reverted by disabling the `exporter.datadog.hostname.preview` feature gate.
-  
+
 - `dynatraceexporter`: Improve serialization of certain Instrument/Temporality pairings (#11828)
   - Non-monotonic cumulative Sum metrics will be exported as Gauges from now on. Non-monotonic cumulative Sums (usually UpDownCounters) will show the current value instead of a change rate.
-  
+
 - `transformprocessor`: Field `metric.type` is now accessed as an enum/int64 instead of a string. (#10349)
 - `memcachedreceiver`: Remove direction for metrics. The feature gate: receiver.memcachedreceiver.emitMetricsWithoutDirectionAttribute can be set to apply the following (#12404) (#12165)
   - `memcached` metrics:
@@ -289,7 +289,7 @@ This version has been skipped.
     - [Remove `metrics::send_monotonic_counter` in favor of `metrics::sums::cumulative_monotonic_mode`](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8489)
     - [Remove automatic support for environment variable detection in favor of Collector's `${}` syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8396)
     - [Remove `metrics::instrumentation_library_metadata_as_tags` in favor of `metrics::instrumentation_scope_as_tags`](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/11135)
-  
+
 - `datadogexporter`: Remove deprecated `config` package. (#8373)
 - `observiqexporter`: Remove the observiq exporter (#12406)
 - `vcenterreceiver`: Adds the `vcenter.cluster.name` resource attribute to `vcenter.datastore` metrics (#12357)
@@ -348,7 +348,7 @@ This version has been skipped.
 - `internal/scrapertest`: Add sortation functions for scrapertest (#10837)
 - `elasticsearchreceiver`: Add additional metrics (#12176)
   Add additional metrics for circuit breakers, disk IO r/w, translog, and CPU load.
-  
+
 - `supported platforms`: Add `linux-ppc64le` architecture to cross build tests in CI (#12350)
 - `dockerobserver`: incorporate observer.EndpointsWatcher in preparation of multiple event subscribers and use existing internal event loop watcher (#10830, #11541)
 - `hostmetrics`: Adding connection tracking count and max metrics for linux (#11769)
@@ -404,7 +404,7 @@ This version has been skipped.
 - `k8sclusterreceiver`: The `receiver.k8sclusterreceiver.reportCpuMetricsAsDouble` feature gate has been removed (#10838)
     - If users were disabling this feature gate, they may have to update
       monitoring for a few Kubernetes cpu metrics. For more details see [feature-gate-configurations](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.54.0/receiver/k8sclusterreceiver#feature-gate-configurations).
-  
+
 - `prometheusexporter`: Automatically rename metrics with units to follow Prometheus naming convention (#8950)
 
 ### 🚩 Deprecations 🚩
@@ -691,7 +691,7 @@ This version has been skipped.
 ### 🛑 Breaking changes 🛑
 
 - `stackdriverexporter`: Remove the stackdriver exporter in favor of the identical googlecloud exporter (#9274)
-- `filelog`, `journald`, `syslog`, `tcplog`, `udplog`: Remove `preserve_to` field from sub-parsers (#9331)
+- `filelog, journald, syslog, tcplog, udplog`: Remove `preserve_to` field from sub-parsers (#9331)
 - `kafkametricsreceiver`: instrumentation name updated from `otelcol/kafkametrics` to `otelcol/kafkametricsreceiver` (#9406)
 - `kubeletstatsreceiver`: instrumentation name updated from `kubeletstats` to `otelcol/kubeletstatsreceiver` (#9400)
 - `datadogexporter`: Remove `GetHostTags` method from `TagsConfig` struct (#9423)
