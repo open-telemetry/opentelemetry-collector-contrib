@@ -39,11 +39,11 @@ exporters:
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
 ```
-### Tracing breaking change
+### Tracing deprecation 
 
-The newest versions of the OpenTelemetry collector require users to use the new Tracing endpoint.
+The v0.60 version deprecates old Jaeger based tracing endpoint in favour of Opentelemetry based one.
 
-To migrate, please remove the old endpoint field, and change the configuration to traces.endpoint using the new Tracing endpoint.
+To migrate, please remove the old endpoint field, and change the configuration to `traces.endpoint` using the new Tracing endpoint.
 
 Old configuration:
 ```
@@ -55,6 +55,7 @@ exporters:
 
 New configuration:
 ```
+exporters
   coralogix:
     # The Coralogix traces ingress endpoint
     traces:

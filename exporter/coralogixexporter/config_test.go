@@ -75,6 +75,24 @@ func TestLoadConfig(t *testing.T) {
 			Headers:         map[string]string{},
 			BalancerName:    "",
 		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
+		},
 	})
 }
 
@@ -123,6 +141,24 @@ func TestLoadConfigAll(t *testing.T) {
 			WaitForReady:    false,
 			Headers:         map[string]string{},
 			BalancerName:    "",
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint:    "",
+			Compression: "",
+			TLSSetting: configtls.TLSClientSetting{
+				TLSSetting:         configtls.TLSSetting{},
+				Insecure:           false,
+				InsecureSkipVerify: false,
+				ServerName:         "",
+			},
+			ReadBufferSize:  0,
+			WriteBufferSize: 0,
+			WaitForReady:    false,
+			Headers: map[string]string{
+				"ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+				"appName":      "APP_NAME",
+			},
+			BalancerName: "",
 		},
 	})
 }
