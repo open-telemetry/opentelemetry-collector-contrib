@@ -118,6 +118,17 @@ func newTracesProcessor(logger *zap.Logger, nextConsumer consumer.Traces, cfg Co
 
 func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {
 	switch cfg.Type {
+	case Composite:
+		return getNewCompositePolicy(logger, &cfg.CompositeCfg)
+	case And:
+		return getNewAndPolicy(logger, &cfg.AndCfg)
+	default:
+		return getSharedPolicyEvaluator(logger, &cfg.sharedPolicyCfg)
+	}
+}
+
+func getSharedPolicyEvaluator(logger *zap.Logger, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(logger), nil
 	case Latency:
@@ -138,12 +149,6 @@ func getPolicyEvaluator(logger *zap.Logger, cfg *PolicyCfg) (sampling.PolicyEval
 	case RateLimiting:
 		rlfCfg := cfg.RateLimitingCfg
 		return sampling.NewRateLimiting(logger, rlfCfg.SpansPerSecond), nil
-	case Composite:
-		rlfCfg := cfg.CompositeCfg
-		return getNewCompositePolicy(logger, rlfCfg)
-	case And:
-		andCfg := cfg.AndCfg
-		return getNewAndPolicy(logger, andCfg)
 	case SpanCount:
 		spCfg := cfg.SpanCountCfg
 		return sampling.NewSpanCount(logger, spCfg.MinSpans), nil

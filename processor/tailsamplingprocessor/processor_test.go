@@ -40,7 +40,7 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
