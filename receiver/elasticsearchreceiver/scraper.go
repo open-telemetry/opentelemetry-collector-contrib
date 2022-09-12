@@ -57,7 +57,10 @@ var (
 	}
 )
 
+var es7_10 *version.Version
+
 func init() {
+	es7_10, _ = version.NewVersion("7.10")
 	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
 	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
 }
@@ -250,10 +253,9 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
-		// Elasticsearch version 10.0+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
+		// Elasticsearch version 7.10+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
 		// Reference: https://github.com/elastic/elasticsearch/pull/60342/files#diff-13864344bab3afc267797d67b2746e2939a3fd8af7611ac9fbda376323e2f5eaR37
-		es10, _ := version.NewVersion("7.10")
-		if r.version != nil && r.version.GreaterThanOrEqual(es10) {
+		if r.version != nil && r.version.GreaterThanOrEqual(es7_10) {
 			r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
 		}
 
