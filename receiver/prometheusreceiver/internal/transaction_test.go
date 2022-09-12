@@ -152,14 +152,13 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
 		"a", "1",
-		"a", "1",
+		"a", "6",
 		"z", "9",
-		"z", "1",
 	)
 
 	_, err := tr.Append(0, dupLabels, 1917, 1.0)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: ["a" "z"]`)
+	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
 }
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
