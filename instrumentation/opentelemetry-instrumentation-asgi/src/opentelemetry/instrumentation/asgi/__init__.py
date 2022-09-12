@@ -396,10 +396,15 @@ class OpenTelemetryMiddleware:
         client_response_hook: _ClientResponseHookT = None,
         tracer_provider=None,
         meter_provider=None,
+        meter=None,
     ):
         self.app = guarantee_single_callable(app)
         self.tracer = trace.get_tracer(__name__, __version__, tracer_provider)
-        self.meter = get_meter(__name__, __version__, meter_provider)
+        self.meter = (
+            get_meter(__name__, __version__, meter_provider)
+            if meter is None
+            else meter
+        )
         self.duration_histogram = self.meter.create_histogram(
             name="http.server.duration",
             unit="ms",

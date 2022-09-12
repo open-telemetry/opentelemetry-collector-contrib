@@ -28,7 +28,7 @@ OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE = (
 )
 
 # List of recommended metrics attributes
-_duration_attrs = [
+_duration_attrs = {
     SpanAttributes.HTTP_METHOD,
     SpanAttributes.HTTP_HOST,
     SpanAttributes.HTTP_SCHEME,
@@ -37,15 +37,15 @@ _duration_attrs = [
     SpanAttributes.HTTP_SERVER_NAME,
     SpanAttributes.NET_HOST_NAME,
     SpanAttributes.NET_HOST_PORT,
-]
+}
 
-_active_requests_count_attrs = [
+_active_requests_count_attrs = {
     SpanAttributes.HTTP_METHOD,
     SpanAttributes.HTTP_HOST,
     SpanAttributes.HTTP_SCHEME,
     SpanAttributes.HTTP_FLAVOR,
     SpanAttributes.HTTP_SERVER_NAME,
-]
+}
 
 
 class ExcludeList:
@@ -150,16 +150,16 @@ def get_custom_headers(env_var: str) -> List[str]:
 
 
 def _parse_active_request_count_attrs(req_attrs):
-    active_requests_count_attrs = {}
-    for attr_key in _active_requests_count_attrs:
-        if req_attrs.get(attr_key) is not None:
-            active_requests_count_attrs[attr_key] = req_attrs[attr_key]
+    active_requests_count_attrs = {
+        key: req_attrs[key]
+        for key in _active_requests_count_attrs.intersection(req_attrs.keys())
+    }
     return active_requests_count_attrs
 
 
 def _parse_duration_attrs(req_attrs):
-    duration_attrs = {}
-    for attr_key in _duration_attrs:
-        if req_attrs.get(attr_key) is not None:
-            duration_attrs[attr_key] = req_attrs[attr_key]
+    duration_attrs = {
+        key: req_attrs[key]
+        for key in _duration_attrs.intersection(req_attrs.keys())
+    }
     return duration_attrs
