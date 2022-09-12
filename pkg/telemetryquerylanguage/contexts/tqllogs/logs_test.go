@@ -122,7 +122,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   int64(4),
 			newVal: int64(5),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetFlagsStruct(plog.LogRecordFlags(5))
+				log.SetFlags(plog.LogRecordFlags(5))
 			},
 		},
 		{
@@ -132,10 +132,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "trace_id",
 				},
 			},
-			orig:   pcommon.NewTraceID(traceID),
-			newVal: pcommon.NewTraceID(traceID2),
+			orig:   pcommon.TraceID(traceID),
+			newVal: pcommon.TraceID(traceID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -145,10 +145,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "span_id",
 				},
 			},
-			orig:   pcommon.NewSpanID(spanID),
-			newVal: pcommon.NewSpanID(spanID2),
+			orig:   pcommon.SpanID(spanID),
+			newVal: pcommon.SpanID(spanID2),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -164,7 +164,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(traceID[:]),
 			newVal: hex.EncodeToString(traceID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetTraceID(pcommon.NewTraceID(traceID2))
+				log.SetTraceID(traceID2)
 			},
 		},
 		{
@@ -180,7 +180,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   hex.EncodeToString(spanID[:]),
 			newVal: hex.EncodeToString(spanID2[:]),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.SetSpanID(pcommon.NewSpanID(spanID2))
+				log.SetSpanID(spanID2)
 			},
 		},
 		{
@@ -264,7 +264,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				log.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -349,7 +349,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource) {
-				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				log.Attributes().UpsertEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 		{
@@ -425,7 +425,7 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().UpsertBool("bool", true)
 	log.Attributes().UpsertInt("int", 10)
 	log.Attributes().UpsertDouble("double", 1.2)
-	log.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	log.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := log.Attributes().UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
@@ -444,15 +444,15 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
 	arrBytes := log.Attributes().UpsertEmptySlice("arr_bytes")
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 
 	log.SetDroppedAttributesCount(10)
 
-	log.SetFlagsStruct(plog.LogRecordFlags(4))
+	log.SetFlags(plog.LogRecordFlags(4))
 
-	log.SetTraceID(pcommon.NewTraceID(traceID))
-	log.SetSpanID(pcommon.NewSpanID(spanID))
+	log.SetTraceID(traceID)
+	log.SetSpanID(spanID)
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("library")

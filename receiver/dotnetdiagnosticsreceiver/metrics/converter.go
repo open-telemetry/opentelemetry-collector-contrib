@@ -46,14 +46,12 @@ func rawMetricToPdata(dm dotnet.Metric, pdm pmetric.Metric, startTime, now time.
 	nowPD := pcommon.NewTimestampFromTime(now)
 	switch dm.CounterType() {
 	case "Mean":
-		pdm.SetDataType(pmetric.MetricDataTypeGauge)
-		dps := pdm.Gauge().DataPoints()
+		dps := pdm.SetEmptyGauge().DataPoints()
 		dp := dps.AppendEmpty()
 		dp.SetTimestamp(nowPD)
 		dp.SetDoubleVal(dm.Mean())
 	case "Sum":
-		pdm.SetDataType(pmetric.MetricDataTypeSum)
-		sum := pdm.Sum()
+		sum := pdm.SetEmptySum()
 		sum.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dps := sum.DataPoints()
 		dp := dps.AppendEmpty()

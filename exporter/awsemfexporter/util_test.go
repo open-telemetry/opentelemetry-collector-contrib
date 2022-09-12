@@ -224,7 +224,7 @@ func TestGetNamespace(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			rms := internaldata.OCToMetrics(tc.metric.Node, tc.metric.Resource, tc.metric.Metrics)
 			rm := rms.ResourceMetrics().At(0)
-			namespace := getNamespace(&rm, tc.configNamespace)
+			namespace := getNamespace(rm, tc.configNamespace)
 			assert.Equal(t, tc.namespace, namespace)
 		})
 	}
@@ -360,7 +360,7 @@ func TestGetLogInfo(t *testing.T) {
 					LogGroupName:  tc.configLogGroup,
 					LogStreamName: tc.configLogStream,
 				}
-				logGroup, logStream, success := getLogInfo(&rms[i], tc.namespace, config)
+				logGroup, logStream, success := getLogInfo(rms[i], tc.namespace, config)
 				assert.Equal(t, tc.logGroup, logGroup)
 				assert.Equal(t, tc.logStream, logStream)
 				assert.True(t, success)

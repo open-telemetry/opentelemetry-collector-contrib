@@ -11,8 +11,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector v0.59.0
-	go.opentelemetry.io/collector/pdata v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
 	go.opentelemetry.io/otel v1.9.0
 
 	// Note! This unreleased otel-go dependency (would-be v0.32)

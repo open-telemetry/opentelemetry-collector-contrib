@@ -120,6 +120,9 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeCacheEvictionsDataPoint(now, info.Indices.FieldDataCache.Evictions, metadata.AttributeCacheNameFielddata)
 		r.mb.RecordElasticsearchNodeCacheEvictionsDataPoint(now, info.Indices.QueryCache.Evictions, metadata.AttributeCacheNameQuery)
 
+		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.HitCount, metadata.AttributeQueryCacheCountTypeHit)
+		r.mb.RecordElasticsearchNodeCacheCountDataPoint(now, info.Indices.QueryCache.MissCount, metadata.AttributeQueryCacheCountTypeMiss)
+
 		r.mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(now, info.FS.Total.AvailableBytes)
 		r.mb.RecordElasticsearchNodeFsDiskFreeDataPoint(now, info.FS.Total.FreeBytes)
 		r.mb.RecordElasticsearchNodeFsDiskTotalDataPoint(now, info.FS.Total.TotalBytes)
@@ -245,6 +248,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			r.mb.RecordElasticsearchClusterStateUpdateCountDataPoint(now, csuInfo.Count, cusState)
 			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ComputationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeComputation)
 			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.NotificationTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeNotification)
+			if cusState == "unchanged" {
+				// the node_linux.json payload response for "elasticsearch.cluster.state_update.time" with attributes "unchanged" has 2 attributes "computation_time_millis" and "notification_time_millis".
+				// All other metrics for "unchanged" should be skipped to prevent 0 emitted metrics"
+				// https://github.com/elastic/elasticsearch/pull/76771/files#diff-8bbfc581d91f9440e53098ea7d7864aeaeac1fc83a714133e4aafe38eba8ed90R2098
+				continue
+			}
 			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.ContextConstructionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeContextConstruction)
 			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CommitTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCommit)
 			r.mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(now, csuInfo.CompletionTimeMillis, cusState, metadata.AttributeClusterStateUpdateTypeCompletion)
@@ -289,6 +298,9 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.InitializingShards, metadata.AttributeShardStateInitializing)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.RelocatingShards, metadata.AttributeShardStateRelocating)
 	r.mb.RecordElasticsearchClusterShardsDataPoint(now, clusterHealth.UnassignedShards, metadata.AttributeShardStateUnassigned)
+
+	r.mb.RecordElasticsearchClusterPendingTasksDataPoint(now, clusterHealth.PendingTasksCount)
+	r.mb.RecordElasticsearchClusterInFlightFetchDataPoint(now, clusterHealth.InFlightFetchCount)
 
 	switch clusterHealth.Status {
 	case "green":

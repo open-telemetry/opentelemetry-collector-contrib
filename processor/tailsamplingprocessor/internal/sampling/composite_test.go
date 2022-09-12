@@ -33,7 +33,7 @@ func (f FakeTimeProvider) getCurSecond() int64 {
 	return f.second
 }
 
-var traceID = pcommon.NewTraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
+var traceID = pcommon.TraceID([16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F})
 
 func createTrace() *TraceData {
 	trace := &TraceData{SpanCount: atomic.NewInt64(1)}
@@ -42,7 +42,7 @@ func createTrace() *TraceData {
 
 func newTraceID() pcommon.TraceID {
 	r := [16]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x52, 0x96, 0x9A, 0x89, 0x55, 0x57, 0x1A, 0x3F}
-	return pcommon.NewTraceID(r)
+	return pcommon.TraceID(r)
 }
 
 func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
@@ -52,7 +52,7 @@ func newTraceWithKV(traceID pcommon.TraceID, key string, val int64) *TraceData {
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(
 		time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC),
 	))

@@ -90,7 +90,7 @@ func TestTraceStateFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			filter := NewTraceStateFilter(zap.NewNop(), c.filterCfg.Key, c.filterCfg.Values)
-			decision, err := filter.Evaluate(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
+			decision, err := filter.Evaluate(pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
 			assert.Equal(t, decision, c.Decision)
 		})
@@ -103,8 +103,8 @@ func newTraceState(traceState string) *TraceData {
 	rs := traces.ResourceSpans().AppendEmpty()
 	ils := rs.ScopeSpans().AppendEmpty()
 	span := ils.Spans().AppendEmpty()
-	span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-	span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+	span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 	span.SetTraceState(ptrace.TraceState(traceState))
 	traceBatches = append(traceBatches, traces)
 	return &TraceData{

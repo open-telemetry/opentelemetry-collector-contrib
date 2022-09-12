@@ -1007,7 +1007,7 @@ func (m *metricMongodbatlasDbCounts) init() {
 	m.data.SetName("mongodbatlas.db.counts")
 	m.data.SetDescription("Database feature size")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1058,7 +1058,7 @@ func (m *metricMongodbatlasDbSize) init() {
 	m.data.SetName("mongodbatlas.db.size")
 	m.data.SetDescription("Database feature size")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1109,7 +1109,7 @@ func (m *metricMongodbatlasDiskPartitionIopsAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.iops.average")
 	m.data.SetDescription("Disk partition iops")
 	m.data.SetUnit("{ops}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1160,7 +1160,7 @@ func (m *metricMongodbatlasDiskPartitionIopsMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.iops.max")
 	m.data.SetDescription("Disk partition iops")
 	m.data.SetUnit("{ops}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1211,7 +1211,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.latency.average")
 	m.data.SetDescription("Disk partition latency")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1262,7 +1262,7 @@ func (m *metricMongodbatlasDiskPartitionLatencyMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.latency.max")
 	m.data.SetDescription("Disk partition latency")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1313,7 +1313,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.space.average")
 	m.data.SetDescription("Disk partition space")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1364,7 +1364,7 @@ func (m *metricMongodbatlasDiskPartitionSpaceMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.space.max")
 	m.data.SetDescription("Disk partition space")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1415,7 +1415,7 @@ func (m *metricMongodbatlasDiskPartitionUsageAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.usage.average")
 	m.data.SetDescription("Disk partition usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1466,7 +1466,7 @@ func (m *metricMongodbatlasDiskPartitionUsageMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.usage.max")
 	m.data.SetDescription("Disk partition usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1517,7 +1517,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationAverage) init() {
 	m.data.SetName("mongodbatlas.disk.partition.utilization.average")
 	m.data.SetDescription("Disk partition utilization (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1568,7 +1568,7 @@ func (m *metricMongodbatlasDiskPartitionUtilizationMax) init() {
 	m.data.SetName("mongodbatlas.disk.partition.utilization.max")
 	m.data.SetDescription("Disk partition utilization (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1619,7 +1619,7 @@ func (m *metricMongodbatlasProcessAsserts) init() {
 	m.data.SetName("mongodbatlas.process.asserts")
 	m.data.SetDescription("Number of assertions per second")
 	m.data.SetUnit("{assertions}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1670,7 +1670,7 @@ func (m *metricMongodbatlasProcessBackgroundFlush) init() {
 	m.data.SetName("mongodbatlas.process.background_flush")
 	m.data.SetDescription("Amount of data flushed in the background")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessBackgroundFlush) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -1719,7 +1719,7 @@ func (m *metricMongodbatlasProcessCacheIo) init() {
 	m.data.SetName("mongodbatlas.process.cache.io")
 	m.data.SetDescription("Cache throughput (per second)")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1770,7 +1770,7 @@ func (m *metricMongodbatlasProcessCacheSize) init() {
 	m.data.SetName("mongodbatlas.process.cache.size")
 	m.data.SetDescription("Cache sizes")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1823,7 +1823,7 @@ func (m *metricMongodbatlasProcessConnections) init() {
 	m.data.SetName("mongodbatlas.process.connections")
 	m.data.SetDescription("Number of current connections")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1874,7 +1874,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage) init() {
 	m.data.SetName("mongodbatlas.process.cpu.children.normalized.usage.average")
 	m.data.SetDescription("CPU Usage for child processes, normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1925,7 +1925,7 @@ func (m *metricMongodbatlasProcessCPUChildrenNormalizedUsageMax) init() {
 	m.data.SetName("mongodbatlas.process.cpu.children.normalized.usage.max")
 	m.data.SetDescription("CPU Usage for child processes, normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -1976,7 +1976,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageAverage) init() {
 	m.data.SetName("mongodbatlas.process.cpu.children.usage.average")
 	m.data.SetDescription("CPU Usage for child processes (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2027,7 +2027,7 @@ func (m *metricMongodbatlasProcessCPUChildrenUsageMax) init() {
 	m.data.SetName("mongodbatlas.process.cpu.children.usage.max")
 	m.data.SetDescription("CPU Usage for child processes (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2078,7 +2078,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageAverage) init() {
 	m.data.SetName("mongodbatlas.process.cpu.normalized.usage.average")
 	m.data.SetDescription("CPU Usage, normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2129,7 +2129,7 @@ func (m *metricMongodbatlasProcessCPUNormalizedUsageMax) init() {
 	m.data.SetName("mongodbatlas.process.cpu.normalized.usage.max")
 	m.data.SetDescription("CPU Usage, normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2180,7 +2180,7 @@ func (m *metricMongodbatlasProcessCPUUsageAverage) init() {
 	m.data.SetName("mongodbatlas.process.cpu.usage.average")
 	m.data.SetDescription("CPU Usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2231,7 +2231,7 @@ func (m *metricMongodbatlasProcessCPUUsageMax) init() {
 	m.data.SetName("mongodbatlas.process.cpu.usage.max")
 	m.data.SetDescription("CPU Usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2282,7 +2282,7 @@ func (m *metricMongodbatlasProcessCursors) init() {
 	m.data.SetName("mongodbatlas.process.cursors")
 	m.data.SetDescription("Number of cursors")
 	m.data.SetUnit("{cursors}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2333,7 +2333,7 @@ func (m *metricMongodbatlasProcessDbDocumentRate) init() {
 	m.data.SetName("mongodbatlas.process.db.document.rate")
 	m.data.SetDescription("Document access rates")
 	m.data.SetUnit("{documents}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2384,7 +2384,7 @@ func (m *metricMongodbatlasProcessDbOperationsRate) init() {
 	m.data.SetName("mongodbatlas.process.db.operations.rate")
 	m.data.SetDescription("DB Operation Rates")
 	m.data.SetUnit("{operations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2436,7 +2436,7 @@ func (m *metricMongodbatlasProcessDbOperationsTime) init() {
 	m.data.SetName("mongodbatlas.process.db.operations.time")
 	m.data.SetDescription("DB Operation Times")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -2489,7 +2489,7 @@ func (m *metricMongodbatlasProcessDbQueryExecutorScanned) init() {
 	m.data.SetName("mongodbatlas.process.db.query_executor.scanned")
 	m.data.SetDescription("Scanned objects")
 	m.data.SetUnit("{objects}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2540,7 +2540,7 @@ func (m *metricMongodbatlasProcessDbQueryTargetingScannedPerReturned) init() {
 	m.data.SetName("mongodbatlas.process.db.query_targeting.scanned_per_returned")
 	m.data.SetDescription("Scanned objects per returned")
 	m.data.SetUnit("{scanned}/{returned}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2591,7 +2591,7 @@ func (m *metricMongodbatlasProcessDbStorage) init() {
 	m.data.SetName("mongodbatlas.process.db.storage")
 	m.data.SetDescription("Storage used by the database")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2642,7 +2642,7 @@ func (m *metricMongodbatlasProcessFtsCPUUsage) init() {
 	m.data.SetName("mongodbatlas.process.fts.cpu.usage")
 	m.data.SetDescription("Full text search CPU (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2693,7 +2693,7 @@ func (m *metricMongodbatlasProcessGlobalLock) init() {
 	m.data.SetName("mongodbatlas.process.global_lock")
 	m.data.SetDescription("Number and status of locks")
 	m.data.SetUnit("{locks}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2744,7 +2744,7 @@ func (m *metricMongodbatlasProcessIndexBtreeMissRatio) init() {
 	m.data.SetName("mongodbatlas.process.index.btree_miss_ratio")
 	m.data.SetDescription("Index miss ratio (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessIndexBtreeMissRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2793,7 +2793,7 @@ func (m *metricMongodbatlasProcessIndexCounters) init() {
 	m.data.SetName("mongodbatlas.process.index.counters")
 	m.data.SetDescription("Indexes")
 	m.data.SetUnit("{indexes}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -2844,7 +2844,7 @@ func (m *metricMongodbatlasProcessJournalingCommits) init() {
 	m.data.SetName("mongodbatlas.process.journaling.commits")
 	m.data.SetDescription("Journaling commits")
 	m.data.SetUnit("{commits}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessJournalingCommits) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2893,7 +2893,7 @@ func (m *metricMongodbatlasProcessJournalingDataFiles) init() {
 	m.data.SetName("mongodbatlas.process.journaling.data_files")
 	m.data.SetDescription("Data file sizes")
 	m.data.SetUnit("MiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessJournalingDataFiles) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2942,7 +2942,7 @@ func (m *metricMongodbatlasProcessJournalingWritten) init() {
 	m.data.SetName("mongodbatlas.process.journaling.written")
 	m.data.SetDescription("Journals written")
 	m.data.SetUnit("MiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessJournalingWritten) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -2991,7 +2991,7 @@ func (m *metricMongodbatlasProcessMemoryUsage) init() {
 	m.data.SetName("mongodbatlas.process.memory.usage")
 	m.data.SetDescription("Memory Usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3042,7 +3042,7 @@ func (m *metricMongodbatlasProcessNetworkIo) init() {
 	m.data.SetName("mongodbatlas.process.network.io")
 	m.data.SetDescription("Network IO")
 	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3093,7 +3093,7 @@ func (m *metricMongodbatlasProcessNetworkRequests) init() {
 	m.data.SetName("mongodbatlas.process.network.requests")
 	m.data.SetDescription("Network requests")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -3144,7 +3144,7 @@ func (m *metricMongodbatlasProcessOplogRate) init() {
 	m.data.SetName("mongodbatlas.process.oplog.rate")
 	m.data.SetDescription("Execution rate by operation")
 	m.data.SetUnit("GiBy/h")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessOplogRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3193,7 +3193,7 @@ func (m *metricMongodbatlasProcessOplogTime) init() {
 	m.data.SetName("mongodbatlas.process.oplog.time")
 	m.data.SetDescription("Execution time by operation")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3244,7 +3244,7 @@ func (m *metricMongodbatlasProcessPageFaults) init() {
 	m.data.SetName("mongodbatlas.process.page_faults")
 	m.data.SetDescription("Page faults")
 	m.data.SetUnit("{faults}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3295,7 +3295,7 @@ func (m *metricMongodbatlasProcessRestarts) init() {
 	m.data.SetName("mongodbatlas.process.restarts")
 	m.data.SetDescription("Restarts in last hour")
 	m.data.SetUnit("{restarts}/h")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasProcessRestarts) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3344,7 +3344,7 @@ func (m *metricMongodbatlasProcessTickets) init() {
 	m.data.SetName("mongodbatlas.process.tickets")
 	m.data.SetDescription("Tickets")
 	m.data.SetUnit("{tickets}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3395,7 +3395,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageAverage) init() {
 	m.data.SetName("mongodbatlas.system.cpu.normalized.usage.average")
 	m.data.SetDescription("System CPU Normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3446,7 +3446,7 @@ func (m *metricMongodbatlasSystemCPUNormalizedUsageMax) init() {
 	m.data.SetName("mongodbatlas.system.cpu.normalized.usage.max")
 	m.data.SetDescription("System CPU Normalized to pct")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3497,7 +3497,7 @@ func (m *metricMongodbatlasSystemCPUUsageAverage) init() {
 	m.data.SetName("mongodbatlas.system.cpu.usage.average")
 	m.data.SetDescription("System CPU Usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3548,7 +3548,7 @@ func (m *metricMongodbatlasSystemCPUUsageMax) init() {
 	m.data.SetName("mongodbatlas.system.cpu.usage.max")
 	m.data.SetDescription("System CPU Usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3599,7 +3599,7 @@ func (m *metricMongodbatlasSystemFtsCPUNormalizedUsage) init() {
 	m.data.SetName("mongodbatlas.system.fts.cpu.normalized.usage")
 	m.data.SetDescription("Full text search disk usage (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3650,7 +3650,7 @@ func (m *metricMongodbatlasSystemFtsCPUUsage) init() {
 	m.data.SetName("mongodbatlas.system.fts.cpu.usage")
 	m.data.SetDescription("Full-text search (%)")
 	m.data.SetUnit("1")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3701,7 +3701,7 @@ func (m *metricMongodbatlasSystemFtsDiskUsed) init() {
 	m.data.SetName("mongodbatlas.system.fts.disk.used")
 	m.data.SetDescription("Full text search disk usage")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricMongodbatlasSystemFtsDiskUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -3750,7 +3750,7 @@ func (m *metricMongodbatlasSystemFtsMemoryUsage) init() {
 	m.data.SetName("mongodbatlas.system.fts.memory.usage")
 	m.data.SetDescription("Full-text search")
 	m.data.SetUnit("MiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -3803,7 +3803,7 @@ func (m *metricMongodbatlasSystemMemoryUsageAverage) init() {
 	m.data.SetName("mongodbatlas.system.memory.usage.average")
 	m.data.SetDescription("System Memory Usage")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3854,7 +3854,7 @@ func (m *metricMongodbatlasSystemMemoryUsageMax) init() {
 	m.data.SetName("mongodbatlas.system.memory.usage.max")
 	m.data.SetDescription("System Memory Usage")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3905,7 +3905,7 @@ func (m *metricMongodbatlasSystemNetworkIoAverage) init() {
 	m.data.SetName("mongodbatlas.system.network.io.average")
 	m.data.SetDescription("System Network IO")
 	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -3956,7 +3956,7 @@ func (m *metricMongodbatlasSystemNetworkIoMax) init() {
 	m.data.SetName("mongodbatlas.system.network.io.max")
 	m.data.SetDescription("System Network IO")
 	m.data.SetUnit("By/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4007,7 +4007,7 @@ func (m *metricMongodbatlasSystemPagingIoAverage) init() {
 	m.data.SetName("mongodbatlas.system.paging.io.average")
 	m.data.SetDescription("Swap IO")
 	m.data.SetUnit("{pages}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4058,7 +4058,7 @@ func (m *metricMongodbatlasSystemPagingIoMax) init() {
 	m.data.SetName("mongodbatlas.system.paging.io.max")
 	m.data.SetDescription("Swap IO")
 	m.data.SetUnit("{pages}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4109,7 +4109,7 @@ func (m *metricMongodbatlasSystemPagingUsageAverage) init() {
 	m.data.SetName("mongodbatlas.system.paging.usage.average")
 	m.data.SetDescription("Swap usage")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -4160,7 +4160,7 @@ func (m *metricMongodbatlasSystemPagingUsageMax) init() {
 	m.data.SetName("mongodbatlas.system.paging.usage.max")
 	m.data.SetDescription("Swap usage")
 	m.data.SetUnit("KiBy")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 

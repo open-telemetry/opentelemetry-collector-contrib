@@ -44,6 +44,7 @@ func Test_limit(t *testing.T) {
 		name   string
 		target tql.GetSetter
 		limit  int64
+		keep   []string
 		want   func(pcommon.Map)
 	}{
 		{
@@ -60,7 +61,7 @@ func Test_limit(t *testing.T) {
 			target: target,
 			limit:  int64(0),
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.Clear()
+				expectedMap.EnsureCapacity(input.Len())
 			},
 		},
 		{
@@ -85,6 +86,49 @@ func Test_limit(t *testing.T) {
 				expectedMap.UpsertBool("test3", true)
 			},
 		},
+		{
+			name:   "keep one key",
+			target: target,
+			limit:  int64(2),
+			keep:   []string{"test3"},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+		{
+			name:   "keep same # of keys as limit",
+			target: target,
+			limit:  int64(2),
+			keep:   []string{"test", "test3"},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
+			},
+		},
+		{
+			name:   "keep not existing key",
+			target: target,
+			limit:  int64(1),
+			keep:   []string{"te"},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+			},
+		},
+		{
+			name:   "keep not-/existing keys",
+			target: target,
+			limit:  int64(2),
+			keep:   []string{"te", "test3"},
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.Clear()
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -95,7 +139,7 @@ func Test_limit(t *testing.T) {
 				Item: scenarioMap,
 			}
 
-			exprFunc, _ := Limit(tt.target, tt.limit)
+			exprFunc, _ := Limit(tt.target, tt.limit, tt.keep)
 			exprFunc(ctx)
 			actual := ctx.GetItem()
 
@@ -111,6 +155,7 @@ func Test_limit_validation(t *testing.T) {
 	tests := []struct {
 		name   string
 		target tql.GetSetter
+		keep   []string
 		limit  int64
 	}{
 		{
@@ -118,11 +163,17 @@ func Test_limit_validation(t *testing.T) {
 			target: &tql.StandardGetSetter{},
 			limit:  int64(-1),
 		},
+		{
+			name:   "limit less than # of keep attrs",
+			target: &tql.StandardGetSetter{},
+			keep:   []string{"test", "test"},
+			limit:  int64(1),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Limit(tt.target, tt.limit)
-			assert.Error(t, err, "invalid limit for limit function, -1 cannot be negative")
+			_, err := Limit(tt.target, tt.limit, tt.keep)
+			assert.NotNil(t, err)
 		})
 	}
 }
@@ -142,7 +193,7 @@ func Test_limit_bad_input(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := Limit(target, 1)
+	exprFunc, _ := Limit(target, 1, []string{})
 	exprFunc(ctx)
 
 	assert.Equal(t, pcommon.NewValueString("not a map"), input)
@@ -162,6 +213,6 @@ func Test_limit_get_nil(t *testing.T) {
 		},
 	}
 
-	exprFunc, _ := Limit(target, 1)
+	exprFunc, _ := Limit(target, 1, []string{})
 	exprFunc(ctx)
 }

@@ -47,7 +47,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().UpsertString("com.splunk.sourcetype", "mysourcetype")
 				rs.Resource().Attributes().UpsertString("com.splunk.index", "myindex")
 				ils := rs.ScopeSpans().AppendEmpty()
-				initSpan("myspan", &ts, ils.Spans().AppendEmpty())
+				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
 			},
 			wantSplunkEvent: commonSplunkEvent("myspan", ts),
@@ -65,7 +65,7 @@ func Test_traceDataToSplunk(t *testing.T) {
 				rs.Resource().Attributes().UpsertString("mysourcetype", "othersourcetype")
 				rs.Resource().Attributes().UpsertString("myindex", "mysourcetype")
 				ils := rs.ScopeSpans().AppendEmpty()
-				initSpan("myspan", &ts, ils.Spans().AppendEmpty())
+				initSpan("myspan", ts, ils.Spans().AppendEmpty())
 				return traces
 			},
 			configFn: func() *Config {
@@ -99,22 +99,20 @@ func Test_traceDataToSplunk(t *testing.T) {
 	}
 }
 
-func initSpan(name string, ts *pcommon.Timestamp, span ptrace.Span) {
+func initSpan(name string, ts pcommon.Timestamp, span ptrace.Span) {
 	span.Attributes().UpsertString("foo", "bar")
 	span.SetName(name)
-	if ts != nil {
-		span.SetStartTimestamp(*ts)
-	}
+	span.SetStartTimestamp(ts)
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceState("OK")
 	bytes, _ := hex.DecodeString("12345678")
 	var traceID [16]byte
 	copy(traceID[:], bytes)
-	spanLink.SetTraceID(pcommon.NewTraceID(traceID))
+	spanLink.SetTraceID(traceID)
 	bytes, _ = hex.DecodeString("1234")
 	var spanID [8]byte
 	copy(spanID[:], bytes)
-	spanLink.SetSpanID(pcommon.NewSpanID(spanID))
+	spanLink.SetSpanID(spanID)
 	spanLink.Attributes().UpsertInt("foo", 1)
 	spanLink.Attributes().UpsertBool("bar", false)
 	foobarContents := spanLink.Attributes().UpsertEmptySlice("foobar")
@@ -124,9 +122,7 @@ func initSpan(name string, ts *pcommon.Timestamp, span ptrace.Span) {
 	spanEvent := span.Events().AppendEmpty()
 	spanEvent.Attributes().UpsertString("foo", "bar")
 	spanEvent.SetName("myEvent")
-	if ts != nil {
-		spanEvent.SetTimestamp(*ts + 3)
-	}
+	spanEvent.SetTimestamp(ts + 3)
 }
 
 func commonSplunkEvent(

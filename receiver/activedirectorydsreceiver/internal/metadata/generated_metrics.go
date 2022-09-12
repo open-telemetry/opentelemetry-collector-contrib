@@ -297,7 +297,7 @@ func (m *metricActiveDirectoryDsBindRate) init() {
 	m.data.SetName("active_directory.ds.bind.rate")
 	m.data.SetDescription("The number of binds per second serviced by this domain controller.")
 	m.data.SetUnit("{binds}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -350,7 +350,7 @@ func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) init() {
 	m.data.SetName("active_directory.ds.ldap.bind.last_successful.time")
 	m.data.SetDescription("The amount of time taken for the last successful LDAP bind.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricActiveDirectoryDsLdapBindLastSuccessfulTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -399,7 +399,7 @@ func (m *metricActiveDirectoryDsLdapBindRate) init() {
 	m.data.SetName("active_directory.ds.ldap.bind.rate")
 	m.data.SetDescription("The number of successful LDAP binds per second.")
 	m.data.SetUnit("{binds}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -450,7 +450,7 @@ func (m *metricActiveDirectoryDsLdapClientSessionCount) init() {
 	m.data.SetName("active_directory.ds.ldap.client.session.count")
 	m.data.SetDescription("The number of connected LDAP client sessions.")
 	m.data.SetUnit("{sessions}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -501,7 +501,7 @@ func (m *metricActiveDirectoryDsLdapSearchRate) init() {
 	m.data.SetName("active_directory.ds.ldap.search.rate")
 	m.data.SetDescription("The number of LDAP searches per second.")
 	m.data.SetUnit("{searches}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -552,7 +552,7 @@ func (m *metricActiveDirectoryDsNameCacheHitRate) init() {
 	m.data.SetName("active_directory.ds.name_cache.hit_rate")
 	m.data.SetDescription("The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricActiveDirectoryDsNameCacheHitRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -601,7 +601,7 @@ func (m *metricActiveDirectoryDsNotificationQueued) init() {
 	m.data.SetName("active_directory.ds.notification.queued")
 	m.data.SetDescription("The number of pending update notifications that have been queued to push to clients.")
 	m.data.SetUnit("{notifications}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -652,7 +652,7 @@ func (m *metricActiveDirectoryDsOperationRate) init() {
 	m.data.SetName("active_directory.ds.operation.rate")
 	m.data.SetDescription("The number of operations performed per second.")
 	m.data.SetUnit("{operations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -705,7 +705,7 @@ func (m *metricActiveDirectoryDsReplicationNetworkIo) init() {
 	m.data.SetName("active_directory.ds.replication.network.io")
 	m.data.SetDescription("The amount of network data transmitted by the Directory Replication Agent.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -759,7 +759,7 @@ func (m *metricActiveDirectoryDsReplicationObjectRate) init() {
 	m.data.SetName("active_directory.ds.replication.object.rate")
 	m.data.SetDescription("The number of objects transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{objects}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -812,7 +812,7 @@ func (m *metricActiveDirectoryDsReplicationOperationPending) init() {
 	m.data.SetName("active_directory.ds.replication.operation.pending")
 	m.data.SetDescription("The number of pending replication operations for the Directory Replication Agent.")
 	m.data.SetUnit("{operations}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -863,7 +863,7 @@ func (m *metricActiveDirectoryDsReplicationPropertyRate) init() {
 	m.data.SetName("active_directory.ds.replication.property.rate")
 	m.data.SetDescription("The number of properties transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{properties}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -916,7 +916,7 @@ func (m *metricActiveDirectoryDsReplicationSyncObjectPending) init() {
 	m.data.SetName("active_directory.ds.replication.sync.object.pending")
 	m.data.SetDescription("The number of objects remaining until the full sync completes for the Directory Replication Agent.")
 	m.data.SetUnit("{objects}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -967,7 +967,7 @@ func (m *metricActiveDirectoryDsReplicationSyncRequestCount) init() {
 	m.data.SetName("active_directory.ds.replication.sync.request.count")
 	m.data.SetDescription("The number of sync requests made by the Directory Replication Agent.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1020,7 +1020,7 @@ func (m *metricActiveDirectoryDsReplicationValueRate) init() {
 	m.data.SetName("active_directory.ds.replication.value.rate")
 	m.data.SetDescription("The number of values transmitted by the Directory Replication Agent per second.")
 	m.data.SetUnit("{values}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1074,7 +1074,7 @@ func (m *metricActiveDirectoryDsSecurityDescriptorPropagationsEventQueued) init(
 	m.data.SetName("active_directory.ds.security_descriptor_propagations_event.queued")
 	m.data.SetDescription("The number of security descriptor propagation events that are queued for processing.")
 	m.data.SetUnit("{events}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1125,7 +1125,7 @@ func (m *metricActiveDirectoryDsSuboperationRate) init() {
 	m.data.SetName("active_directory.ds.suboperation.rate")
 	m.data.SetDescription("The rate of sub-operations performed.")
 	m.data.SetUnit("{suboperations}/s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1178,7 +1178,7 @@ func (m *metricActiveDirectoryDsThreadCount) init() {
 	m.data.SetName("active_directory.ds.thread.count")
 	m.data.SetDescription("The number of threads in use by the directory service.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }

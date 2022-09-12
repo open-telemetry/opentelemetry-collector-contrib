@@ -5,11 +5,11 @@ go 1.18
 require (
 	cloud.google.com/go/pubsub v1.25.1
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.0
-	go.opentelemetry.io/collector/pdata v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
 	go.uber.org/atomic v1.10.0
 	go.uber.org/zap v1.23.0
-	google.golang.org/api v0.94.0
+	google.golang.org/api v0.95.0
 	google.golang.org/genproto v0.0.0-20220822174746-9e6da59bd2fc
 	google.golang.org/grpc v1.49.0
 )

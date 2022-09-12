@@ -28,7 +28,7 @@ func TraceID(bytes []byte) (tql.ExprFunc, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], bytes)
-	id := pcommon.NewTraceID(idArr)
+	id := pcommon.TraceID(idArr)
 	return func(ctx tql.TransformContext) interface{} {
 		return id
 	}, nil

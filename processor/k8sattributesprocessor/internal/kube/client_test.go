@@ -229,6 +229,48 @@ func TestPodHostNetwork(t *testing.T) {
 	assert.False(t, got.Ignore)
 }
 
+// TestPodCreate tests that a new pod, created after otel-collector starts, has its attributes set
+// correctly
+func TestPodCreate(t *testing.T) {
+	c, _ := newTestClient(t)
+	assert.Equal(t, 0, len(c.Pods))
+
+	// pod is created in Pending phase. At this point it has a UID but no start time or pod IP address
+	pod := &api_v1.Pod{}
+	pod.Name = "podD"
+	pod.UID = "11111111-2222-3333-4444-555555555555"
+	c.handlePodAdd(pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is scheduled onto to a node (no changes relevant to this test happen in that event)
+	// pod is started, and given a startTime but not an IP address - it's still Pending at this point
+	startTime := meta_v1.NewTime(time.Now())
+	pod.Status.StartTime = &startTime
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is Running and has an IP address
+	pod.Status.PodIP = "3.3.3.3"
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 2)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "3.3.3.3")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+}
+
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Equal(t, len(c.Pods), 0)
@@ -644,7 +686,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("la*"),
+					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -658,7 +700,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("an*"),
+					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -668,11 +710,22 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-annotations-not-match",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("^(?:an*)$"),
+					From:     MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{},
+		},
+		{
 			name: "captured-groups",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
@@ -686,15 +739,15 @@ func TestExtractionRules(t *testing.T) {
 			name: "captured-groups-$0",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					Name:                 "$0",
-					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					Name:                 "prefix-$0",
+					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
 				},
 			},
 			attributes: map[string]string{
-				"annotation1": "av1",
+				"prefix-annotation1": "av1",
 			},
 		},
 	}
@@ -765,7 +818,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("la*"),
+					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
 					From:     MetadataFromNamespace,
 				},
 				},
@@ -778,7 +831,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("an*"),
+					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
 					From:     MetadataFromNamespace,
 				},
 				},

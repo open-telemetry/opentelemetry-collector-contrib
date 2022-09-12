@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -84,7 +83,6 @@ func newLogsExporter(
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -108,7 +106,6 @@ func newMetricsExporter(
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithRetry(cfg.RetrySettings),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(se.start),
@@ -168,14 +165,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
 
-				// copy resource attributes into logs attributes
-				// log attributes have precedence over resource attributes
-				rl.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
-					log.Attributes().Insert(k, v)
-					return true
-				})
-
-				currentMetadata = sdr.filter.filterIn(log.Attributes())
+				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
@@ -274,7 +264,7 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 					attributes: attributes,
 				}
 
-				currentMetadata = sdr.filter.filterIn(attributes)
+				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
 
 				// If metadata differs from currently buffered, flush the buffer
 				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {

@@ -97,7 +97,7 @@ func (m *metricNtpFrequencyOffset) init() {
 	m.data.SetName("ntp.frequency.offset")
 	m.data.SetDescription("The frequency is the rate by which the system s clock would be wrong if chronyd was not correcting it.")
 	m.data.SetUnit("ppm")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -148,7 +148,7 @@ func (m *metricNtpSkew) init() {
 	m.data.SetName("ntp.skew")
 	m.data.SetDescription("This is the estimated error bound on the frequency.")
 	m.data.SetUnit("ppm")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNtpSkew) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -197,7 +197,7 @@ func (m *metricNtpStratum) init() {
 	m.data.SetName("ntp.stratum")
 	m.data.SetDescription("The number of hops away from the reference system keeping the reference time")
 	m.data.SetUnit("{count}")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricNtpStratum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -246,7 +246,7 @@ func (m *metricNtpTimeCorrection) init() {
 	m.data.SetName("ntp.time.correction")
 	m.data.SetDescription("The number of seconds difference between the system's clock and the reference clock")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -297,7 +297,7 @@ func (m *metricNtpTimeLastOffset) init() {
 	m.data.SetName("ntp.time.last_offset")
 	m.data.SetDescription("The estimated local offset on the last clock update")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -348,7 +348,7 @@ func (m *metricNtpTimeRmsOffset) init() {
 	m.data.SetName("ntp.time.rms_offset")
 	m.data.SetDescription("the long term average of the offset value")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
@@ -399,7 +399,7 @@ func (m *metricNtpTimeRootDelay) init() {
 	m.data.SetName("ntp.time.root_delay")
 	m.data.SetDescription("This is the total of the network path delays to the stratum-1 system from which the system is ultimately synchronised.")
 	m.data.SetUnit("seconds")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 

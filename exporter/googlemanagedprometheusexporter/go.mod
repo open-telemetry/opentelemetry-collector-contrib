@@ -6,7 +6,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector v0.32.7
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.32.7
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.0
+	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
 )
 
 require (
@@ -36,8 +36,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/pdata v0.59.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.59.0 // indirect
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a // indirect
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220909192754-8d66f408a79a // indirect
 	go.opentelemetry.io/otel v1.9.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.9.0 // indirect
@@ -50,7 +50,7 @@ require (
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/api v0.94.0 // indirect
+	google.golang.org/api v0.95.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220829175752-36a9c930ecbf // indirect
 	google.golang.org/grpc v1.49.0 // indirect
