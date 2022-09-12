@@ -14,7 +14,9 @@
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
 
-// LogEntry represents a MongoDB Atlas JSON log entry
+import (
+	"encoding/json"
+) // LogEntry represents a MongoDB Atlas JSON log entry
 type LogEntry struct {
 	Timestamp  LogTimestamp           `json:"t"`
 	Severity   string                 `json:"s"`
@@ -23,6 +25,19 @@ type LogEntry struct {
 	Context    string                 `json:"ctx"`
 	Message    string                 `json:"msg"`
 	Attributes map[string]interface{} `json:"attr"`
+	Raw        *string                `json:"-"`
+}
+
+// RawLog returns a raw representation of the log entry.
+// In the case of console logs, this is the actual log line.
+// In the case of JSON logs, it is reconstructed (re-marshaled) after being unmarshalled
+func (l LogEntry) RawLog() (string, error) {
+	if l.Raw != nil {
+		return *l.Raw, nil
+	}
+
+	data, err := json.Marshal(l)
+	return string(data), err
 }
 
 // AuditLog represents a MongoDB Atlas JSON audit log entry

@@ -33,8 +33,9 @@ const (
 	totalResourceAttributes = 4
 )
 
-// layout for the timestamp format in the plog.Logs structure
-const layout = "2006-01-02T15:04:05.000-07:00"
+// jsonTimestampLayout for the timestamp format in the plog.Logs structure
+const jsonTimestampLayout = "2006-01-02T15:04:05.000-07:00"
+const consoleTimestampLayout = "2006-01-02T15:04:05.000-0700"
 
 // Severity mapping of the mongodb atlas logs
 var severityMap = map[string]plog.SeverityNumber{
@@ -71,7 +72,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		if err != nil {
 			logger.Warn("failed to marshal", zap.Error(err))
 		}
-		t, err := time.Parse(layout, log.Timestamp.Date)
+		t, err := time.Parse(jsonTimestampLayout, log.Timestamp.Date)
 		if err != nil {
 			logger.Warn("Time failed to parse correctly", zap.Error(err))
 		}
@@ -107,7 +108,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName, clusterName string) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -121,20 +122,25 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	resourceAttrs.UpsertString("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.UpsertString("mongodb_atlas.host.name", hostname)
 
+	logTsFormat := tsLayout(clusterMajorVersion)
+
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
-		data, err := json.Marshal(log)
+
+		rawLog, err := log.RawLog()
 		if err != nil {
-			logger.Warn("failed to marshal", zap.Error(err))
+			logger.Warn("Failed to determine raw log", zap.Error(err))
 		}
-		t, err := time.Parse(layout, log.Timestamp.Date)
+
+		t, err := time.Parse(logTsFormat, log.Timestamp.Date)
 		if err != nil {
 			logger.Warn("Time failed to parse correctly", zap.Error(err))
 		}
+
 		lr.SetTimestamp(pcommon.NewTimestampFromTime(t))
 		lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		// Insert Raw Log message into Body of LogRecord
-		lr.Body().SetStringVal(string(data))
+		lr.Body().SetStringVal(rawLog)
 		// Set the "SeverityNumber" and "SeverityText" if a known type of
 		// severity is found.
 		if severityNumber, ok := severityMap[log.Severity]; ok {
@@ -149,10 +155,22 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		attrs.UpsertString("message", log.Message)
 		attrs.UpsertString("component", log.Component)
 		attrs.UpsertString("context", log.Context)
-		attrs.UpsertInt("id", log.ID)
+		// log ID is not present on MongoDB 4.2 systems
+		if clusterMajorVersion != mongoDBMajorVersion4_2 {
+			attrs.UpsertInt("id", log.ID)
+		}
 		attrs.UpsertString("log_name", logName)
-		attrs.UpsertString("raw", string(data))
+		attrs.UpsertString("raw", rawLog)
 	}
 
 	return ld
+}
+
+func tsLayout(clusterVersion string) string {
+	switch clusterVersion {
+	case mongoDBMajorVersion4_2:
+		return consoleTimestampLayout
+	default:
+		return jsonTimestampLayout
+	}
 }
