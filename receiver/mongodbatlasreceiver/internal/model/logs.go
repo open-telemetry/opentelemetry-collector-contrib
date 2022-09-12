@@ -16,7 +16,9 @@ package model // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
-) // LogEntry represents a MongoDB Atlas JSON log entry
+)
+
+// LogEntry represents a MongoDB Atlas JSON log entry
 type LogEntry struct {
 	Timestamp  LogTimestamp           `json:"t"`
 	Severity   string                 `json:"s"`
@@ -25,7 +27,8 @@ type LogEntry struct {
 	Context    string                 `json:"ctx"`
 	Message    string                 `json:"msg"`
 	Attributes map[string]interface{} `json:"attr"`
-	Raw        *string                `json:"-"`
+	// Raw, if it is present, is the original log line. It is not a part of the payload, but transient data added during decoding.
+	Raw *string `json:"-"`
 }
 
 // RawLog returns a raw representation of the log entry.
