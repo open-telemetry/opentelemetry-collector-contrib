@@ -13,10 +13,6 @@ receivers:
       # The presence of the gRPC section enables the gRPC server on the default port (4317)
       grpc:
 
-  # k8s_cluster receiver scrapes valuable Kubernetes metrics.
-  k8s_cluster:
-    collection_interval: 10s
-
   # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
   hostmetrics:
     collection_interval: 10s
@@ -71,6 +67,11 @@ processors:
   # It is necessary for the Datadog traces exporter to work optimally,
   # and is recommended for any production pipeline.
   batch:
+    # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
+    # go over that.
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
 
   # The resource detection processor adds context related to the cloud provider the Collector is running on.
   # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.

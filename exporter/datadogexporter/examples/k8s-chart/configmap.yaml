@@ -11,9 +11,6 @@ data:
       otlp:
         protocols:
           grpc:
-      # k8s_cluster receiver scrapes valuable Kubernetes metrics.
-      k8s_cluster:
-        collection_interval: 10s
       # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
       hostmetrics:
         collection_interval: 10s
