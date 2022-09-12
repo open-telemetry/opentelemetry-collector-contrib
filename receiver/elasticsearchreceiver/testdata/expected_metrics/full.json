@@ -794,6 +794,42 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Total count of query cache misses across all shards assigned to selected nodes.",
+                     "name": "elasticsearch.node.cache.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "333",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952599630580000",
+                              "timeUnixNano": "1662952599632385000"
+                           },
+                           {
+                              "asInt": "5324",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952599630580000",
+                              "timeUnixNano": "1662952599632385000"
+                           }
+                        ]
+                     },
+                     "unit": "{count}"
+                  },
+                  {
                      "description": "The number of evictions from the cache.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
