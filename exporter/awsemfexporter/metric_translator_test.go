@@ -446,14 +446,14 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	testCases := []struct {
 		testName          string
-		metric            *pmetric.ResourceMetrics
+		metric            pmetric.ResourceMetrics
 		counterLabels     map[string]string
 		timerLabels       map[string]string
 		expectedNamespace string
 	}{
 		{
 			"w/ instrumentation library and namespace",
-			&instrLibMetric,
+			instrLibMetric,
 			map[string]string{
 				(oTellibDimensionKey): "cloudwatch-lib",
 				"isItAnError":         "false",
@@ -467,7 +467,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		},
 		{
 			"w/o instrumentation library, w/ namespace",
-			&noInstrLibMetric,
+			noInstrLibMetric,
 			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
@@ -479,7 +479,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		},
 		{
 			"w/o instrumentation library and namespace",
-			&noNamespaceMetric,
+			noNamespaceMetric,
 			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
@@ -529,7 +529,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
@@ -2108,7 +2108,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2131,7 +2131,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2154,7 +2154,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2177,7 +2177,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2195,7 +2195,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2454,7 +2454,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
-			err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 			assert.Nil(t, err)
 
 			assert.NotNil(t, groupedMetrics)

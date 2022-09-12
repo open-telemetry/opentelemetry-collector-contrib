@@ -550,8 +550,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIds {
-		trace := findTrace(receivedTraces, traceID)
-		require.NotNil(t, trace, "Trace was not received. TraceId %s", traceID.HexString())
+		trace := findTrace(t, receivedTraces, traceID)
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIds[i]
@@ -570,7 +569,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
-func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
+func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
@@ -589,14 +588,15 @@ func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
 	return spanIDs
 }
 
-func findTrace(a []ptrace.Traces, traceID pcommon.TraceID) *ptrace.Traces {
+func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.Traces {
 	for _, batch := range a {
 		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
 		if traceID == id {
-			return &batch
+			return batch
 		}
 	}
-	return nil
+	t.Fatalf("Trace was not received. TraceId %s", traceID.HexString())
+	return ptrace.Traces{}
 }
 
 func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {

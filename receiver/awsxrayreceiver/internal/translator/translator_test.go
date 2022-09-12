@@ -73,8 +73,8 @@ func TestTranslation(t *testing.T) {
 		propsPerSpan              func(testCase string, t *testing.T, seg *awsxray.Segment) []perSpanProperties
 		verification              func(testCase string,
 			actualSeg *awsxray.Segment,
-			expectedRs *ptrace.ResourceSpans,
-			actualTraces *ptrace.Traces,
+			expectedRs ptrace.ResourceSpans,
+			actualTraces ptrace.Traces,
 			err error)
 	}{
 		{
@@ -109,13 +109,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -507,13 +507,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					"one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -542,13 +542,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -591,13 +591,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -626,13 +626,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -646,7 +646,7 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf("unexpected namespace: %s",
 						*actualSeg.Subsegments[0].Subsegments[0].Namespace),
@@ -686,13 +686,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -729,13 +729,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -772,13 +772,13 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				_ *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.NoError(t, err, testCase+": translation should've succeeded")
 				assert.Equal(t, 1, actualTraces.ResourceSpans().Len(),
 					testCase+": one segment should translate to 1 ResourceSpans")
 
 				actualRs := actualTraces.ResourceSpans().At(0)
-				compare2ResourceSpans(t, testCase, expectedRs, &actualRs)
+				compare2ResourceSpans(t, testCase, expectedRs, actualRs)
 			},
 		},
 		{
@@ -792,7 +792,7 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
 						"failed to parse out the database name in the \"sql.url\" field, rawUrl: %s",
@@ -813,7 +813,7 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.EqualError(t, err,
 					fmt.Sprintf(
 						"the value assigned to the `cause` field does not appear to be a string: %v",
@@ -833,7 +833,7 @@ func TestTranslation(t *testing.T) {
 			},
 			verification: func(testCase string,
 				actualSeg *awsxray.Segment,
-				expectedRs *ptrace.ResourceSpans, actualTraces *ptrace.Traces, err error) {
+				expectedRs ptrace.ResourceSpans, actualTraces ptrace.Traces, err error) {
 				assert.EqualError(t, err, `segment "start_time" can not be nil`,
 					testCase+": translation should've failed")
 			},
@@ -841,35 +841,36 @@ func TestTranslation(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		content, err := os.ReadFile(tc.samplePath)
-		assert.NoError(t, err, tc.testCase+": can not read raw segment")
-		assert.True(t, len(content) > 0, tc.testCase+": content length is 0")
+		t.Run(tc.testCase, func(t *testing.T) {
+			content, err := os.ReadFile(tc.samplePath)
+			assert.NoError(t, err, "can not read raw segment")
+			assert.True(t, len(content) > 0, "content length is 0")
 
-		var (
-			actualSeg  awsxray.Segment
-			expectedRs *ptrace.ResourceSpans
-		)
-		if !tc.expectedUnmarshallFailure {
-			err = json.Unmarshal(content, &actualSeg)
-			// the correctness of the actual segment
-			// has been verified in the tracesegment_test.go
-			assert.NoError(t, err, tc.testCase+": failed to unmarhal raw segment")
-			expectedRs = initResourceSpans(
-				&actualSeg,
-				tc.expectedResourceAttrs(&actualSeg),
-				tc.propsPerSpan(tc.testCase, t, &actualSeg),
+			var (
+				actualSeg  awsxray.Segment
+				expectedRs ptrace.ResourceSpans
 			)
-		}
+			if !tc.expectedUnmarshallFailure {
+				err = json.Unmarshal(content, &actualSeg)
+				// the correctness of the actual segment
+				// has been verified in the tracesegment_test.go
+				assert.NoError(t, err, "failed to unmarhal raw segment")
+				expectedRs = initResourceSpans(
+					&actualSeg,
+					tc.expectedResourceAttrs(&actualSeg),
+					tc.propsPerSpan(tc.testCase, t, &actualSeg),
+				)
+			}
 
-		traces, totalSpanCount, err := ToTraces(content)
-		if err == nil || (expectedRs != nil && expectedRs.ScopeSpans().Len() > 0 &&
-			expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
-			assert.Equal(t, totalSpanCount,
-				expectedRs.ScopeSpans().At(0).Spans().Len(),
-				"generated span count is different from the expected",
-			)
-		}
-		tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
+			traces, totalSpanCount, err := ToTraces(content)
+			if err == nil || (!tc.expectedUnmarshallFailure && expectedRs.ScopeSpans().Len() > 0 && expectedRs.ScopeSpans().At(0).Spans().Len() > 0) {
+				assert.Equal(t, totalSpanCount,
+					expectedRs.ScopeSpans().At(0).Spans().Len(),
+					"generated span count is different from the expected",
+				)
+			}
+			tc.verification(tc.testCase, &actualSeg, expectedRs, traces, err)
+		})
 	}
 }
 
@@ -916,9 +917,9 @@ func initExceptionEvents(expectedSeg *awsxray.Segment) []eventProps {
 func initResourceSpans(expectedSeg *awsxray.Segment,
 	resourceAttrs pcommon.Map,
 	propsPerSpan []perSpanProperties,
-) *ptrace.ResourceSpans {
+) ptrace.ResourceSpans {
 	if expectedSeg == nil {
-		return nil
+		return ptrace.ResourceSpans{}
 	}
 
 	rs := ptrace.NewResourceSpans()
@@ -931,7 +932,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	}
 
 	if len(propsPerSpan) == 0 {
-		return &rs
+		return rs
 	}
 
 	ls := rs.ScopeSpans().AppendEmpty()
@@ -972,7 +973,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 			sp.Attributes().EnsureCapacity(initAttrCapacity)
 		}
 	}
-	return &rs
+	return rs
 }
 
 // note that this function causes side effects on the expected (
@@ -988,7 +989,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 //     up all the attribute.
 //
 // The reason for doing so is just to be able to use deep equal via assert.Equal()
-func compare2ResourceSpans(t *testing.T, testCase string, exp, act *ptrace.ResourceSpans) {
+func compare2ResourceSpans(t *testing.T, testCase string, exp, act ptrace.ResourceSpans) {
 	assert.Equal(t, exp.ScopeSpans().Len(),
 		act.ScopeSpans().Len(),
 		testCase+": ScopeSpans.Len() differ")

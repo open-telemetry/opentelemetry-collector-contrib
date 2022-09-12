@@ -183,7 +183,7 @@ func (a alertsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	if err := a.consumer.ConsumeLogs(req.Context(), *logs); err != nil {
+	if err := a.consumer.ConsumeLogs(req.Context(), logs); err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		a.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
@@ -222,12 +222,12 @@ func verifyHMACSignature(secret string, payload []byte, signatureHeader string) 
 	return nil
 }
 
-func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
+func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 	var alert model.Alert
 
 	err := json.Unmarshal(payload, &alert)
 	if err != nil {
-		return nil, err
+		return plog.Logs{}, err
 	}
 
 	logs := plog.NewLogs()
@@ -273,12 +273,12 @@ func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
 	if alert.HostNameAndPort != nil {
 		host, portStr, err := net.SplitHostPort(*alert.HostNameAndPort)
 		if err != nil {
-			return nil, fmt.Errorf("failed to split host:port %s: %w", *alert.HostNameAndPort, err)
+			return plog.Logs{}, fmt.Errorf("failed to split host:port %s: %w", *alert.HostNameAndPort, err)
 		}
 
 		port, err := strconv.ParseInt(portStr, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse port %s: %w", portStr, err)
+			return plog.Logs{}, fmt.Errorf("failed to parse port %s: %w", portStr, err)
 		}
 
 		attrs.UpsertString("net.peer.name", host)
@@ -286,7 +286,7 @@ func payloadToLogs(now time.Time, payload []byte) (*plog.Logs, error) {
 
 	}
 
-	return &logs, nil
+	return logs, nil
 }
 
 func timestampFromAlert(a model.Alert) pcommon.Timestamp {
