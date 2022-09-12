@@ -155,19 +155,19 @@ func TestFieldUnmarshalJSON(t *testing.T) {
 			switch {
 			case tc.expectedErrRootable != "":
 				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expected)
+				require.Contains(t, err.Error(), tc.expectedErr)
 				require.Error(t, errRootable)
-				require.Contains(t, errRootable.Error(), tc.expected)
+				require.Contains(t, errRootable.Error(), tc.expectedErrRootable)
 			case tc.expectedErr != "":
 				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.expected)
+				require.Contains(t, err.Error(), tc.expectedErr)
 				require.NoError(t, errRootable)
-				require.Equal(t, tc.expected, rootableField)
+				require.Equal(t, tc.expected, rootableField.Field)
 			default:
 				require.NoError(t, err)
 				require.Equal(t, tc.expected, field)
 				require.NoError(t, errRootable)
-				require.Equal(t, tc.expected, rootableField)
+				require.Equal(t, tc.expected, rootableField.Field)
 			}
 		})
 	}
