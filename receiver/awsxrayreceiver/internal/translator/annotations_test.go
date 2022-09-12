@@ -34,7 +34,8 @@ func TestAddAnnotations(t *testing.T) {
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, attrMap)
 
-	expectedAttrMap := pcommon.NewMapFromRaw(
+	expectedAttrMap := pcommon.NewMap()
+	expectedAttrMap.FromRaw(
 		map[string]interface{}{
 			"int":     0,
 			"int32":   int32(1),

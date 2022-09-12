@@ -19,7 +19,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -165,7 +164,7 @@ func testMatchGauge(t *testing.T, metricName, expression string, lbls map[string
 	dps := m.SetEmptyGauge().DataPoints()
 	pt := dps.AppendEmpty()
 	if lbls != nil {
-		pcommon.NewMapFromRaw(lbls).CopyTo(pt.Attributes())
+		pt.Attributes().FromRaw(lbls)
 	}
 	match, err := matcher.MatchMetric(m)
 	assert.NoError(t, err)
