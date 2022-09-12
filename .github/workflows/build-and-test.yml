@@ -7,6 +7,9 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
+  # Cache downloads for this workflow consistently run in under 1 minute
+  SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref }}
@@ -32,10 +35,6 @@ jobs:
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
-        env:
-          # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-          # Cache downloads for this workflow consistently run in under 1 minute
-          SEGMENT_DOWNLOAD_TIMEOUT_MIN: 5
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
