@@ -43,7 +43,7 @@ type transaction struct {
 	isNew          bool
 	ctx            context.Context
 	families       map[string]*metricFamily
-	mc             MetadataCache
+	mc             scrape.MetricMetadataStore
 	sink           consumer.Metrics
 	externalLabels labels.Labels
 	nodeResource   pcommon.Resource
