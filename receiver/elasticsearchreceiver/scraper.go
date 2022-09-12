@@ -97,7 +97,7 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	r.getVersion(ctx)
+	r.getVersion(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 
@@ -105,14 +105,16 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 }
 
 // scrapeVersion gets and assigns the elasticsearch version number
-func (r *elasticsearchScraper) getVersion(ctx context.Context) {
+func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	versionResponse, err := r.client.Version(ctx)
 	if err != nil {
+		errs.AddPartial(1, err)
 		return
 	}
 
 	esVersion, err := version.NewVersion(versionResponse.Version.Number)
 	if err != nil {
+		errs.AddPartial(1, err)
 		return
 	}
 
@@ -251,7 +253,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		// Elasticsearch version 10.0+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
 		// Reference: https://github.com/elastic/elasticsearch/pull/60342/files#diff-13864344bab3afc267797d67b2746e2939a3fd8af7611ac9fbda376323e2f5eaR37
 		es10, _ := version.NewVersion("7.10")
-		if r.version.GreaterThanOrEqual(es10) {
+		if r.version != nil && r.version.GreaterThanOrEqual(es10) {
 			r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
 		}
 
