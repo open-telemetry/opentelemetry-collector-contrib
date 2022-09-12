@@ -55,6 +55,7 @@ use (
 	./extension/headerssetter
 	./extension/healthcheckextension
 	./extension/httpforwarder
+	./extension/jaegerremotesampling
 	./extension/oauth2clientauthextension
 	./extension/observer
 	./extension/observer/ecstaskobserver

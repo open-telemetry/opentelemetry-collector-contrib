@@ -326,7 +326,7 @@ github.com/onsi/ginkgo v1.11.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+
 github.com/onsi/ginkgo/v2 v2.1.4 h1:GNapqRSid3zijZ9H77KrgVG4/8KqiyRsxcSxe+7ApXY=
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
-github.com/onsi/gomega v1.19.0 h1:4ieX6qQjPP/BfC3mpsAtIGGlxTWPeA3Inl/7DtXw1tw=
+github.com/onsi/gomega v1.20.0 h1:8W0cWlwFkflGPLltQvLRB7ZVD5HuP6ng320w2IS245Q=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0 h1:5QsiEdu28e71NzVAAbIZ75RzsPRHMWjiaamERv25xms=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0/go.mod h1:K4njhjLq/jSC76LAKZpf/f6x2XMmhwZ/UT3hZbHDxfU=
 github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.59.0 h1:VE8ybNHX6S/7hxkRw94GILJ9l9Kj5uFMFUBsg+04Ys4=
