@@ -233,7 +233,9 @@ func MergeResource(to, from pcommon.Resource, overrideTo bool) {
 		if overrideTo {
 			v.CopyTo(toAttr.UpsertEmpty(k))
 		} else {
-			toAttr.Insert(k, v)
+			if _, found := toAttr.Get(k); !found {
+				v.CopyTo(toAttr.UpsertEmpty(k))
+			}
 		}
 		return true
 	})
