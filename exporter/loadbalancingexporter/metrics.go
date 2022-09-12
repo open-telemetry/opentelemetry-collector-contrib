@@ -24,6 +24,10 @@ var (
 	mNumResolutions = stats.Int64("loadbalancer_num_resolutions", "Number of times the resolver triggered a new resolutions", stats.UnitDimensionless)
 	mNumBackends    = stats.Int64("loadbalancer_num_backends", "Current number of backends in use", stats.UnitDimensionless)
 	mBackendLatency = stats.Int64("loadbalancer_backend_latency", "Response latency in ms for the backends", stats.UnitMilliseconds)
+
+	endpointTagKey      = tag.MustNewKey("endpoint")
+	successTrueMutator  = tag.Upsert(tag.MustNewKey("success"), "true")
+	successFalseMutator = tag.Upsert(tag.MustNewKey("success"), "false")
 )
 
 // MetricViews return the metrics views according to given telemetry level.
