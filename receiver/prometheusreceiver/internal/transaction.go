@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"sort"
 
 	"github.com/prometheus/common/model"
@@ -41,42 +40,34 @@ const (
 )
 
 type transaction struct {
-	isNew                bool
-	ctx                  context.Context
-	families             map[string]*metricFamily
-	mc                   MetadataCache
-	startTime            float64
-	useStartTimeMetric   bool
-	startTimeMetricRegex *regexp.Regexp
-	sink                 consumer.Metrics
-	externalLabels       labels.Labels
-	nodeResource         pcommon.Resource
-	logger               *zap.Logger
-	job, instance        string
-	jobsMap              *JobsMap
-	obsrecv              *obsreport.Receiver
+	isNew          bool
+	ctx            context.Context
+	families       map[string]*metricFamily
+	mc             MetadataCache
+	sink           consumer.Metrics
+	externalLabels labels.Labels
+	nodeResource   pcommon.Resource
+	logger         *zap.Logger
+	metricAdjuster MetricsAdjuster
+	obsrecv        *obsreport.Receiver
 }
 
 func newTransaction(
 	ctx context.Context,
-	jobsMap *JobsMap,
-	useStartTimeMetric bool,
-	startTimeMetricRegex *regexp.Regexp,
+	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
 	settings component.ReceiverCreateSettings,
 	obsrecv *obsreport.Receiver) *transaction {
 	return &transaction{
-		ctx:                  ctx,
-		families:             make(map[string]*metricFamily),
-		isNew:                true,
-		sink:                 sink,
-		jobsMap:              jobsMap,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: startTimeMetricRegex,
-		externalLabels:       externalLabels,
-		logger:               settings.Logger,
-		obsrecv:              obsrecv,
+		ctx:            ctx,
+		families:       make(map[string]*metricFamily),
+		isNew:          true,
+		sink:           sink,
+		metricAdjuster: metricAdjuster,
+		externalLabels: externalLabels,
+		logger:         settings.Logger,
+		obsrecv:        obsrecv,
 	}
 }
 
@@ -112,14 +103,6 @@ func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e e
 	return 0, nil
 }
 
-func (t *transaction) matchStartTimeMetric(metricName string) bool {
-	if t.startTimeMetricRegex != nil {
-		return t.startTimeMetricRegex.MatchString(metricName)
-	}
-
-	return metricName == startTimeMetricName
-}
-
 // getMetrics returns all metrics to the given slice.
 // The only error returned by this function is errNoDataToBuild.
 func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, error) {
@@ -149,11 +132,11 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		return errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	t.job, t.instance = labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
-	if t.job == "" || t.instance == "" {
+	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
+	if job == "" || instance == "" {
 		return errNoJobInstance
 	}
-	t.nodeResource = CreateResource(t.job, t.instance, target.DiscoveredLabels())
+	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
 	t.isNew = false
 	return nil
 }
@@ -164,34 +147,25 @@ func (t *transaction) Commit() error {
 	}
 
 	ctx := t.obsrecv.StartMetricsOp(t.ctx)
-
 	md, err := t.getMetrics(t.nodeResource)
 	if err != nil {
 		t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
 		return err
 	}
 
-	if t.useStartTimeMetric {
-		if t.startTime == 0.0 {
-			err = errNoStartTimeMetrics
-			t.obsrecv.EndMetricsOp(ctx, dataformat, 0, err)
-			return err
-		}
-		// Otherwise adjust the startTimestamp for all the metrics.
-		t.adjustStartTimestamp(md)
-	} else {
-		NewMetricsAdjuster(t.jobsMap.get(t.job, t.instance), t.logger).AdjustMetrics(md)
-	}
-
 	numPoints := md.DataPointCount()
-	if numPoints > 0 {
-		if err = t.sink.ConsumeMetrics(ctx, md); err != nil {
-			return err
-		}
+	if numPoints == 0 {
+		return nil
 	}
 
-	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, nil)
-	return nil
+	if err = t.metricAdjuster.AdjustMetrics(md); err != nil {
+		t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+		return err
+	}
+
+	err = t.sink.ConsumeMetrics(ctx, md)
+	t.obsrecv.EndMetricsOp(ctx, dataformat, numPoints, err)
+	return err
 }
 
 func (t *transaction) Rollback() error {
@@ -215,47 +189,6 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 	}
 
 	return nil
-}
-
-func (t *transaction) adjustStartTimestamp(metrics pmetric.Metrics) {
-	startTimeTs := timestampFromFloat64(t.startTime)
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
-				metric := ilm.Metrics().At(k)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeGauge:
-					continue
-
-				case pmetric.MetricDataTypeSum:
-					dataPoints := metric.Sum().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
-						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
-					}
-
-				case pmetric.MetricDataTypeSummary:
-					dataPoints := metric.Summary().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
-						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
-					}
-
-				case pmetric.MetricDataTypeHistogram:
-					dataPoints := metric.Histogram().DataPoints()
-					for l := 0; l < dataPoints.Len(); l++ {
-						dp := dataPoints.At(l)
-						dp.SetStartTimestamp(startTimeTs)
-					}
-
-				default:
-					t.logger.Warn("Unknown metric type", zap.String("type", metric.DataType().String()))
-				}
-			}
-		}
-	}
 }
 
 // AddDataPoint is for feeding prometheus data values in its processing order
@@ -294,10 +227,6 @@ func (t *transaction) AddDataPoint(ls labels.Labels, ts int64, v float64) error 
 				zap.Int64("scrape_timestamp", ts),
 				zap.Stringer("target_labels", ls))
 		}
-	}
-
-	if t.useStartTimeMetric && t.matchStartTimeMetric(metricName) {
-		t.startTime = v
 	}
 
 	curMF, ok := t.families[metricName]
