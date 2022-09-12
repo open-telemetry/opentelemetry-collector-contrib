@@ -80,7 +80,7 @@ data:
     service:
       pipelines:
         metrics:
-          receivers: [otlp]
+          receivers: [hostmetrics, otlp]
           processors: [resourcedetection, k8sattributes, batch]
           exporters: [datadog]
         traces:

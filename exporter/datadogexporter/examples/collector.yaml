@@ -268,7 +268,7 @@ service:
     # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
     metrics:
       # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
-      receivers: [otlp]
+      receivers: [hostmetrics, otlp]
       processors: [batch]
       exporters: [datadog]
     # Pipelines starting with `traces` or `traces/` define a traces pipeline.
