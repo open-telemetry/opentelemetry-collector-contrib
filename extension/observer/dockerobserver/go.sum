@@ -221,6 +221,14 @@ github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRW
 github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/npillmayer/nestext v0.1.3/go.mod h1:h2lrijH8jpicr25dFY+oAJLyzlya6jhnuG+zWp9L0Uk=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.59.0 h1:wcl02IriJ6an7eRQj+Hmr/eCNAn3DT2E8/2fpaV8PGg=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.59.0/go.mod h1:IK4EYHVMVaBusIyGWkGjqvBIA8n24ucsrop9BlrZ2wQ=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0 h1:5QsiEdu28e71NzVAAbIZ75RzsPRHMWjiaamERv25xms=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0/go.mod h1:K4njhjLq/jSC76LAKZpf/f6x2XMmhwZ/UT3hZbHDxfU=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.59.0 h1:Q/2P7GHXdcaleWw2GpW0F5jMGUfKxlH3T8YixhRvc+E=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest v0.59.0/go.mod h1:Q3hbfI2n02VuydRTyBRY7FIMM7MmLOevbQoXK1hesyc=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.59.0 h1:4EkbFCh8y/8RYi7Sz6lxseVoz40Yq6tMEcVPGgjDFm4=
+github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.59.0/go.mod h1:BOFq+9Fv1UDMVZf2+aM46oaqgrtyhrLmjVbxWTYLHl0=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2 h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=
