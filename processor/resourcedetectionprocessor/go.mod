@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/compute v1.9.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.7
-	github.com/aws/aws-sdk-go v1.44.93
+	github.com/aws/aws-sdk-go v1.44.96
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.59.0
@@ -30,7 +30,7 @@ require (
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.17+incompatible // indirect
+	github.com/docker/docker v20.10.18+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect
