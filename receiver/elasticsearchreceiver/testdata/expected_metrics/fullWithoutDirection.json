@@ -994,7 +994,7 @@
                      },
                      "unit": "By"
                   },
-		                    {
+                  {
                      "description": "The amount of unallocated disk space across all file stores for this node.",
                      "name": "elasticsearch.node.fs.disk.free",
                      "sum": {
@@ -2222,6 +2222,21 @@
                      "unit": "{status}"
                   },
                   {
+                     "description": "The number of unfinished fetches.",
+                     "name": "elasticsearch.cluster.in_flight_fetch",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662950017375382000",
+                              "timeUnixNano": "1662950017377074000"
+                           }
+                        ]
+                     },
+                     "unit": "{fetches}"
+                  },
+                  {
                      "description": "The total number of nodes in the cluster.",
                      "name": "elasticsearch.cluster.nodes",
                      "sum": {
@@ -2235,6 +2250,21 @@
                         ]
                      },
                      "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of cluster-level changes that have not yet been executed.",
+                     "name": "elasticsearch.cluster.pending_tasks",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662950017375382000",
+                              "timeUnixNano": "1662950017377074000"
+                           }
+                        ]
+                     },
+                     "unit": "{tasks}"
                   },
                   {
                      "description": "The number of shards in the cluster.",
