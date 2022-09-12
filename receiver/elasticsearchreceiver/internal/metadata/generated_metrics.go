@@ -35,6 +35,7 @@ type MetricsSettings struct {
 	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.primary_rejections"`
 	ElasticsearchIndexingPressureMemoryTotalReplicaRejections MetricSettings `mapstructure:"elasticsearch.indexing_pressure.memory.total.replica_rejections"`
 	ElasticsearchMemoryIndexingPressure                       MetricSettings `mapstructure:"elasticsearch.memory.indexing_pressure"`
+	ElasticsearchNodeCacheCount                               MetricSettings `mapstructure:"elasticsearch.node.cache.count"`
 	ElasticsearchNodeCacheEvictions                           MetricSettings `mapstructure:"elasticsearch.node.cache.evictions"`
 	ElasticsearchNodeCacheMemoryUsage                         MetricSettings `mapstructure:"elasticsearch.node.cache.memory.usage"`
 	ElasticsearchNodeClusterConnections                       MetricSettings `mapstructure:"elasticsearch.node.cluster.connections"`
@@ -141,6 +142,9 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		ElasticsearchMemoryIndexingPressure: MetricSettings{
+			Enabled: true,
+		},
+		ElasticsearchNodeCacheCount: MetricSettings{
 			Enabled: true,
 		},
 		ElasticsearchNodeCacheEvictions: MetricSettings{
@@ -666,6 +670,32 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"refresh": AttributeOperationRefresh,
 	"flush":   AttributeOperationFlush,
 	"warmer":  AttributeOperationWarmer,
+}
+
+// AttributeQueryCacheCountType specifies the a value query_cache_count_type attribute.
+type AttributeQueryCacheCountType int
+
+const (
+	_ AttributeQueryCacheCountType = iota
+	AttributeQueryCacheCountTypeHit
+	AttributeQueryCacheCountTypeMiss
+)
+
+// String returns the string representation of the AttributeQueryCacheCountType.
+func (av AttributeQueryCacheCountType) String() string {
+	switch av {
+	case AttributeQueryCacheCountTypeHit:
+		return "hit"
+	case AttributeQueryCacheCountTypeMiss:
+		return "miss"
+	}
+	return ""
+}
+
+// MapAttributeQueryCacheCountType is a helper map of string to AttributeQueryCacheCountType attribute value.
+var MapAttributeQueryCacheCountType = map[string]AttributeQueryCacheCountType{
+	"hit":  AttributeQueryCacheCountTypeHit,
+	"miss": AttributeQueryCacheCountTypeMiss,
 }
 
 // AttributeShardState specifies the a value shard_state attribute.
@@ -1682,6 +1712,59 @@ func (m *metricElasticsearchMemoryIndexingPressure) emit(metrics pmetric.MetricS
 
 func newMetricElasticsearchMemoryIndexingPressure(settings MetricSettings) metricElasticsearchMemoryIndexingPressure {
 	m := metricElasticsearchMemoryIndexingPressure{settings: settings}
+	if settings.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricElasticsearchNodeCacheCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills elasticsearch.node.cache.count metric with initial data.
+func (m *metricElasticsearchNodeCacheCount) init() {
+	m.data.SetName("elasticsearch.node.cache.count")
+	m.data.SetDescription("Total count of query cache misses across all shards assigned to selected nodes.")
+	m.data.SetUnit("{count}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricElasticsearchNodeCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, queryCacheCountTypeAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().UpsertString("type", queryCacheCountTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricElasticsearchNodeCacheCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricElasticsearchNodeCacheCount) emit(metrics pmetric.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricElasticsearchNodeCacheCount(settings MetricSettings) metricElasticsearchNodeCacheCount {
+	m := metricElasticsearchNodeCacheCount{settings: settings}
 	if settings.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -4273,6 +4356,7 @@ type MetricsBuilder struct {
 	metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections
 	metricElasticsearchIndexingPressureMemoryTotalReplicaRejections metricElasticsearchIndexingPressureMemoryTotalReplicaRejections
 	metricElasticsearchMemoryIndexingPressure                       metricElasticsearchMemoryIndexingPressure
+	metricElasticsearchNodeCacheCount                               metricElasticsearchNodeCacheCount
 	metricElasticsearchNodeCacheEvictions                           metricElasticsearchNodeCacheEvictions
 	metricElasticsearchNodeCacheMemoryUsage                         metricElasticsearchNodeCacheMemoryUsage
 	metricElasticsearchNodeClusterConnections                       metricElasticsearchNodeClusterConnections
@@ -4358,6 +4442,7 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(settings.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
 		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(settings.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
 		metricElasticsearchMemoryIndexingPressure:                       newMetricElasticsearchMemoryIndexingPressure(settings.ElasticsearchMemoryIndexingPressure),
+		metricElasticsearchNodeCacheCount:                               newMetricElasticsearchNodeCacheCount(settings.ElasticsearchNodeCacheCount),
 		metricElasticsearchNodeCacheEvictions:                           newMetricElasticsearchNodeCacheEvictions(settings.ElasticsearchNodeCacheEvictions),
 		metricElasticsearchNodeCacheMemoryUsage:                         newMetricElasticsearchNodeCacheMemoryUsage(settings.ElasticsearchNodeCacheMemoryUsage),
 		metricElasticsearchNodeClusterConnections:                       newMetricElasticsearchNodeClusterConnections(settings.ElasticsearchNodeClusterConnections),
@@ -4492,6 +4577,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.emit(ils.Metrics())
 	mb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.emit(ils.Metrics())
 	mb.metricElasticsearchMemoryIndexingPressure.emit(ils.Metrics())
+	mb.metricElasticsearchNodeCacheCount.emit(ils.Metrics())
 	mb.metricElasticsearchNodeCacheEvictions.emit(ils.Metrics())
 	mb.metricElasticsearchNodeCacheMemoryUsage.emit(ils.Metrics())
 	mb.metricElasticsearchNodeClusterConnections.emit(ils.Metrics())
@@ -4649,6 +4735,11 @@ func (mb *MetricsBuilder) RecordElasticsearchIndexingPressureMemoryTotalReplicaR
 // RecordElasticsearchMemoryIndexingPressureDataPoint adds a data point to elasticsearch.memory.indexing_pressure metric.
 func (mb *MetricsBuilder) RecordElasticsearchMemoryIndexingPressureDataPoint(ts pcommon.Timestamp, val int64, indexingPressureStageAttributeValue AttributeIndexingPressureStage) {
 	mb.metricElasticsearchMemoryIndexingPressure.recordDataPoint(mb.startTime, ts, val, indexingPressureStageAttributeValue.String())
+}
+
+// RecordElasticsearchNodeCacheCountDataPoint adds a data point to elasticsearch.node.cache.count metric.
+func (mb *MetricsBuilder) RecordElasticsearchNodeCacheCountDataPoint(ts pcommon.Timestamp, val int64, queryCacheCountTypeAttributeValue AttributeQueryCacheCountType) {
+	mb.metricElasticsearchNodeCacheCount.recordDataPoint(mb.startTime, ts, val, queryCacheCountTypeAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
