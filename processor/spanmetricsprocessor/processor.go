@@ -242,7 +242,7 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 		return err
 	}
 
-	if err = p.metricsExporter.ConsumeMetrics(ctx, *m); err != nil {
+	if err = p.metricsExporter.ConsumeMetrics(ctx, m); err != nil {
 		return err
 	}
 
@@ -251,17 +251,17 @@ func (p *processorImp) tracesToMetrics(ctx context.Context, traces ptrace.Traces
 
 // buildMetrics collects the computed raw metrics data, builds the metrics object and
 // writes the raw metrics data into the metrics object.
-func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
+func (p *processorImp) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	ilm.Scope().SetName("spanmetricsprocessor")
 
 	if err := p.collectCallMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	if err := p.collectLatencyMetrics(ilm); err != nil {
-		return nil, err
+		return pmetric.Metrics{}, err
 	}
 
 	p.metricKeyToDimensions.RemoveEvictedItems()
@@ -272,7 +272,7 @@ func (p *processorImp) buildMetrics() (*pmetric.Metrics, error) {
 	}
 	p.resetExemplarData()
 
-	return &m, nil
+	return m, nil
 }
 
 // collectLatencyMetrics collects the raw latency metrics, writing the data
