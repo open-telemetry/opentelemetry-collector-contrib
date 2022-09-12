@@ -392,12 +392,8 @@ require (
 	github.com/knadh/koanf v1.4.3 // indirect
 	github.com/kolo/xmlrpc v0.0.0-20201022064351-38db28db192b // indirect
 	github.com/leoluk/perflib_exporter v0.1.0 // indirect
-<<<<<<< HEAD
-	github.com/lib/pq v1.10.6 // indirect
 	github.com/lightstep/otel-launcher-go/lightstep/sdk/metric v1.10.1 // indirect
-=======
 	github.com/lib/pq v1.10.7 // indirect
->>>>>>> 087a2e097f9751e2123daec728091517980b1aa4
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/linode/linodego v1.8.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
