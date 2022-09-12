@@ -263,7 +263,7 @@ func Test_export(t *testing.T) {
 		assert.Equal(t, "snappy", r.Header.Get("Content-Encoding"))
 		assert.Equal(t, "opentelemetry-collector/1.0", r.Header.Get("User-Agent"))
 		writeReq := &prompb.WriteRequest{}
-		unzipped := []byte{}
+		var unzipped []byte
 
 		dest, err := snappy.Decode(unzipped, body)
 		require.NoError(t, err)
@@ -389,6 +389,8 @@ func Test_PushMetrics(t *testing.T) {
 
 	emptyDataPointHistogramBatch := getMetricsFromMetricList(validMetrics1[validEmptyHistogram], validMetrics2[validEmptyHistogram])
 
+	histogramNoSumBatch := getMetricsFromMetricList(validMetrics1[validHistogramNoSum], validMetrics2[validHistogramNoSum])
+
 	summaryBatch := getMetricsFromMetricList(validMetrics1[validSummary], validMetrics2[validSummary])
 
 	// len(BucketCount) > len(ExplicitBounds)
@@ -494,7 +496,14 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "valid_empty_histogram_case",
 			metrics:            &emptyDataPointHistogramBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 6,
+			expectedTimeSeries: 4,
+			httpResponseCode:   http.StatusAccepted,
+		},
+		{
+			name:               "histogram_no_sum_case",
+			metrics:            &histogramNoSumBatch,
+			reqTestFunc:        checkFunc,
+			expectedTimeSeries: 10,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{

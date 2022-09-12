@@ -59,7 +59,7 @@ func createTracesExporter(
 		return nil, err
 	}
 
-	return exporterhelper.NewTracesExporterWithContext(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
@@ -76,7 +76,7 @@ func createLogsExporter(ctx context.Context, set component.ExporterCreateSetting
 	}
 	c := cfg.(*Config)
 
-	return exporterhelper.NewLogsExporterWithContext(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,

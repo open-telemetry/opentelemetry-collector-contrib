@@ -46,6 +46,10 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 ## Metrics
 
+The following metric are available with versions:
+- `elasticsearch.cluster.state_update.count` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+- `elasticsearch.cluster.state_update.time` >= [7.16.0](https://www.elastic.co/guide/en/elasticsearch/reference/7.16/release-notes-7.16.0.html)
+
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
 
 ### Feature gate configurations

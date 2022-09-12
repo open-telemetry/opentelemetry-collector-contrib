@@ -23,7 +23,7 @@ import (
 
 func convertSumToGauge() (tql.ExprFunc, error) {
 	return func(ctx tql.TransformContext) interface{} {
-		mtc, ok := ctx.(tqlmetrics.MetricTransformContext)
+		mtc, ok := ctx.(tqlmetrics.TransformContext)
 		if !ok {
 			return nil
 		}
@@ -35,9 +35,8 @@ func convertSumToGauge() (tql.ExprFunc, error) {
 
 		dps := metric.Sum().DataPoints()
 
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
 		// Setting the data type removed all the data points, so we must copy them back to the metric.
-		dps.CopyTo(metric.Gauge().DataPoints())
+		dps.CopyTo(metric.SetEmptyGauge().DataPoints())
 
 		return nil
 	}, nil

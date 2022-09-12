@@ -223,3 +223,18 @@ func (f *ResourceField) UnmarshalYAML(unmarshal func(interface{}) error) error {
 func (f ResourceField) MarshalYAML() (interface{}, error) {
 	return toJSONDot(ResourcePrefix, f.Keys), nil
 }
+
+// UnmarshalText will unmarshal a field from text
+func (f *ResourceField) UnmarshalText(text []byte) error {
+	keys, err := fromJSONDot(string(text))
+	if err != nil {
+		return err
+	}
+
+	if keys[0] != ResourcePrefix {
+		return fmt.Errorf("must start with 'resource': %s", text)
+	}
+
+	*f = ResourceField{keys[1:]}
+	return nil
+}

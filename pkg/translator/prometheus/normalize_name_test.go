@@ -194,6 +194,7 @@ func TestBuildPromCompliantNameWithNormalize(t *testing.T) {
 	require.Equal(t, "system_io_bytes_total", BuildPromCompliantName(createCounter("system.io", "By"), ""))
 	require.Equal(t, "system_network_io_bytes_total", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", ""), ""))
+	require.Equal(t, "envoy_rule_engine_zlib_buf_error", BuildPromCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), ""))
 
 }
 
@@ -204,5 +205,6 @@ func TestBuildPromCompliantNameWithoutNormalize(t *testing.T) {
 	require.Equal(t, "system_network_io", BuildPromCompliantName(createCounter("network.io", "By"), "system"))
 	require.Equal(t, "system_network_I_O", BuildPromCompliantName(createCounter("network (I/O)", "By"), "system"))
 	require.Equal(t, "_3_14_digits", BuildPromCompliantName(createGauge("3.14 digits", "By"), ""))
+	require.Equal(t, "envoy__rule_engine_zlib_buf_error", BuildPromCompliantName(createGauge("envoy__rule_engine_zlib_buf_error", ""), ""))
 
 }

@@ -81,14 +81,14 @@ func GenerateLogsTwoLogRecordsSameResourceOneDifferent() plog.Logs {
 func fillLogOne(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.InsertString("app", "server")
-	attrs.InsertInt("instance_num", 1)
+	attrs.UpsertString("app", "server")
+	attrs.UpsertInt("instance_num", 1)
 
 	log.Body().SetStringVal("This is a log message")
 }
@@ -96,12 +96,12 @@ func fillLogOne(log plog.LogRecord) {
 func fillLogTwo(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberINFO)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertString("env", "dev")
 
 	log.Body().SetStringVal("something happened")
 }
@@ -109,7 +109,7 @@ func fillLogTwo(log plog.LogRecord) {
 func fillLogThree(log plog.LogRecord) {
 	log.SetTimestamp(TestLogTimestamp)
 	log.SetDroppedAttributesCount(1)
-	log.SetSeverityNumber(plog.SeverityNumberWARN)
+	log.SetSeverityNumber(plog.SeverityNumberWarn)
 	log.SetSeverityText("Warning")
 
 	log.Body().SetStringVal("something else happened")

@@ -286,7 +286,7 @@ func TestSpanEventToSentryEvent(t *testing.T) {
 func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with root span and invalid parent span_id", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
-		testSpan.SetParentSpanID(pcommon.InvalidSpanID())
+		testSpan.SetParentSpanID(pcommon.NewSpanIDEmpty())
 
 		sentrySpan := convertToSentrySpan(testSpan, pcommon.NewInstrumentationScope(), map[string]string{})
 		assert.NotNil(t, sentrySpan)
@@ -296,16 +296,16 @@ func TestSpanToSentrySpan(t *testing.T) {
 	t.Run("with full span", func(t *testing.T) {
 		testSpan := ptrace.NewSpan()
 
-		traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
-		spanID := pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
-		parentSpanID := pcommon.NewSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+		traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 8, 7, 6, 5, 4, 3, 2, 1})
+		spanID := pcommon.SpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+		parentSpanID := pcommon.SpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
 		name := "span_name"
 		var startTime pcommon.Timestamp = 123
 		var endTime pcommon.Timestamp = 1234567890
 		kind := ptrace.SpanKindClient
 		statusMessage := "message"
 
-		testSpan.Attributes().InsertString("key", "value")
+		testSpan.Attributes().UpsertString("key", "value")
 
 		testSpan.SetTraceID(traceID)
 		testSpan.SetSpanID(spanID)
@@ -457,10 +457,10 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 func TestGenerateTagsFromAttributes(t *testing.T) {
 	attrs := pcommon.NewMap()
 
-	attrs.InsertString("string-key", "string-value")
-	attrs.InsertBool("bool-key", true)
-	attrs.InsertDouble("double-key", 123.123)
-	attrs.InsertInt("int-key", 321)
+	attrs.UpsertString("string-key", "string-value")
+	attrs.UpsertBool("bool-key", true)
+	attrs.UpsertDouble("double-key", 123.123)
+	attrs.UpsertInt("int-key", 321)
 
 	tags := generateTagsFromAttributes(attrs)
 

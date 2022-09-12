@@ -154,17 +154,18 @@ func (p *TestClient) Close(_ context.Context) error {
 	return os.WriteFile(p.storageFile, contents, os.FileMode(0600))
 }
 
-// Kind of component that is using the storage client
-func (p *TestClient) Kind() component.Kind {
-	return p.kind
+const clientCreatorID = "client_creator_id"
+
+func setCreatorID(ctx context.Context, client storage.Client, creatorID config.ComponentID) error {
+	return client.Set(ctx, clientCreatorID, []byte(creatorID.String()))
 }
 
-// ID of component that is using the storage client
-func (p *TestClient) ID() config.ComponentID {
-	return p.id
-}
+// CreatorID is the config.ComponentID of the extension that created the component
+func CreatorID(ctx context.Context, client storage.Client) (config.ComponentID, error) {
+	idBytes, err := client.Get(ctx, clientCreatorID)
+	if err != nil || idBytes == nil {
+		return config.ComponentID{}, err
+	}
 
-// Name assigned to the storage client
-func (p *TestClient) Name() string {
-	return p.name
+	return config.NewComponentIDFromString(string(idBytes))
 }

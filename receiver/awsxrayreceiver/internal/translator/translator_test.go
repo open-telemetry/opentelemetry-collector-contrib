@@ -940,10 +940,10 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 	for _, props := range propsPerSpan {
 		sp := ls.Spans().AppendEmpty()
 		spanIDBytes, _ := decodeXRaySpanID(&props.spanID)
-		sp.SetSpanID(pcommon.NewSpanID(spanIDBytes))
+		sp.SetSpanID(spanIDBytes)
 		if props.parentSpanID != nil {
 			parentIDBytes, _ := decodeXRaySpanID(props.parentSpanID)
-			sp.SetParentSpanID(pcommon.NewSpanID(parentIDBytes))
+			sp.SetParentSpanID(parentIDBytes)
 		}
 		sp.SetName(props.name)
 		sp.SetStartTimestamp(pcommon.Timestamp(props.startTimeSec * float64(time.Second)))
@@ -952,7 +952,7 @@ func initResourceSpans(expectedSeg *awsxray.Segment,
 		}
 		sp.SetKind(props.spanKind)
 		traceIDBytes, _ := decodeXRayTraceID(&props.traceID)
-		sp.SetTraceID(pcommon.NewTraceID(traceIDBytes))
+		sp.SetTraceID(traceIDBytes)
 		sp.Status().SetMessage(props.spanStatus.message)
 		sp.Status().SetCode(props.spanStatus.code)
 

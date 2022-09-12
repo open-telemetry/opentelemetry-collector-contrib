@@ -52,7 +52,7 @@ func TestSwExporter(t *testing.T) {
 	}
 
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got, err := exporterhelper.NewLogsExporterWithContext(
+	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		tt,
@@ -88,7 +88,7 @@ func TestSwExporter(t *testing.T) {
 		}()
 	}
 	w1.Wait()
-	logs := make([]*logpb.LogData, 0)
+	var logs []*logpb.LogData
 	for i := 0; i < 200; i++ {
 		logs = append(logs, <-handler.logChan)
 	}
@@ -126,7 +126,7 @@ func TestSwExporter(t *testing.T) {
 	}
 
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
-	got2, err2 := exporterhelper.NewMetricsExporterWithContext(
+	got2, err2 := exporterhelper.NewMetricsExporter(
 		context.Background(),
 		componenttest.NewNopExporterCreateSettings(),
 		tt,
@@ -160,7 +160,7 @@ func TestSwExporter(t *testing.T) {
 		}()
 	}
 	w1.Wait()
-	metrics := make([]*metricpb.MeterDataCollection, 0)
+	var metrics []*metricpb.MeterDataCollection
 	for i := 0; i < 200; i++ {
 		metrics = append(metrics, <-handler2.metricChan)
 	}

@@ -181,8 +181,8 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				})
 				instrumentation := resource.ScopeSpans().AppendEmpty()
 				span := instrumentation.Spans().AppendEmpty()
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
@@ -246,6 +246,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
+
 			if tt.want != nil {
 				require.NotNil(t, traces)
 				require.Equal(t, 1, traces.ResourceSpans().Len())
@@ -261,7 +262,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span := instrumentation.Spans().At(0)
 				compareSpans(t, &expectedSpan, &span)
 			} else {
-				assert.Nil(t, traces)
+				assert.Equal(t, ptrace.Traces{}, traces)
 			}
 		})
 	}
@@ -304,7 +305,7 @@ func TestUnmarshallerMapResourceSpan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapResourceSpanAttributes(tt.spanData, &actual)
+			u.mapResourceSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -330,8 +331,8 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				EndTimeUnixNano:   2234567890,
 			},
 			want: func(span *ptrace.Span) {
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
@@ -353,11 +354,11 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				ErrorDescription:  "some error",
 			},
 			want: func(span *ptrace.Span) {
-				span.SetTraceID(pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}))
-				span.SetSpanID(pcommon.NewSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0}))
+				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
 				span.SetEndTimestamp(2234567890)
-				span.SetParentSpanID(pcommon.NewSpanID([8]byte{15, 14, 13, 12, 11, 10, 9, 8}))
+				span.SetParentSpanID([8]byte{15, 14, 13, 12, 11, 10, 9, 8})
 				span.SetTraceState(ptrace.TraceState(someTraceState))
 				span.Status().SetCode(ptrace.StatusCodeError)
 				span.Status().SetMessage("some error")
@@ -371,7 +372,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapClientSpanData(tt.data, &actual)
+			u.mapClientSpanData(tt.data, actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.want(&expected)
 			assert.Equal(t, expected, actual)
@@ -500,7 +501,7 @@ func TestUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			actual := pcommon.NewMap()
-			u.mapClientSpanAttributes(tt.spanData, &actual)
+			u.mapClientSpanAttributes(tt.spanData, actual)
 			assert.Equal(t, tt.want, actual.AsRaw())
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
@@ -792,7 +793,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			tt.populateExpectedSpan(&expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			u.mapEvents(tt.spanData, &actual)
+			u.mapEvents(tt.spanData, actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
 			compareSpans(t, &expected, &actual)
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
@@ -827,13 +828,13 @@ func populateAttributes(t *testing.T, attrMap *pcommon.Map, attributes map[strin
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:
-			attrMap.InsertString(key, casted)
+			attrMap.UpsertString(key, casted)
 		case int64:
-			attrMap.InsertInt(key, casted)
+			attrMap.UpsertInt(key, casted)
 		case int:
-			attrMap.InsertInt(key, int64(casted))
+			attrMap.UpsertInt(key, int64(casted))
 		case bool:
-			attrMap.InsertBool(key, casted)
+			attrMap.UpsertBool(key, casted)
 		default:
 			require.Fail(t, "Test setup issue: unknown type, could not insert data")
 		}
@@ -998,7 +999,7 @@ func TestUnmarshallerInsertUserProperty(t *testing.T) {
 		t.Run(fmt.Sprintf("%T", testCase.data), func(t *testing.T) {
 			const key = "some-property"
 			attributeMap := pcommon.NewMap()
-			unmarshaller.insertUserProperty(&attributeMap, key, testCase.data)
+			unmarshaller.insertUserProperty(attributeMap, key, testCase.data)
 			actual, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 			require.True(t, ok)
 			assert.Equal(t, testCase.expectedType, actual.Type())
@@ -1015,7 +1016,7 @@ func TestSolaceMessageUnmarshallerV1InsertUserPropertyUnsupportedType(t *testing
 	}
 	const key = "some-property"
 	attributeMap := pcommon.NewMap()
-	unmarshaller.insertUserProperty(&attributeMap, key, "invalid data type")
+	unmarshaller.insertUserProperty(attributeMap, key, "invalid data type")
 	_, ok := attributeMap.Get("messaging.solace.user_properties." + key)
 	assert.False(t, ok)
 	validateMetric(t, viewRecoverableUnmarshallingErrors, 1)

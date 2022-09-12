@@ -196,19 +196,19 @@ var (
 	inLogForSeverityNumber = []logWithResource{
 		{
 			logNames:       []string{"log1"},
-			severityNumber: plog.SeverityNumberDEBUG,
+			severityNumber: plog.SeverityNumberDebug,
 		},
 		{
 			logNames:       []string{"log2"},
-			severityNumber: plog.SeverityNumberINFO,
+			severityNumber: plog.SeverityNumberInfo,
 		},
 		{
 			logNames:       []string{"log3"},
-			severityNumber: plog.SeverityNumberERROR,
+			severityNumber: plog.SeverityNumberError,
 		},
 		{
 			logNames:       []string{"log4"},
-			severityNumber: plog.SeverityNumberUNDEFINED,
+			severityNumber: plog.SeverityNumberUndefined,
 		},
 	}
 
@@ -637,7 +637,7 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 			l := ls.AppendEmpty()
 			// Add record level attributes
 			pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(l.Attributes())
-			l.Attributes().InsertString("name", name)
+			l.Attributes().UpsertString("name", name)
 			// Set body & severity fields
 			l.Body().SetStringVal(lwr.body)
 			l.SetSeverityText(lwr.severityText)

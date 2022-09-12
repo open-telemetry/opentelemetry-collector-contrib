@@ -153,7 +153,7 @@ func (m *metricApacheCurrentConnections) init() {
 	m.data.SetName("apache.current_connections")
 	m.data.SetDescription("The number of active connections currently attached to the HTTP server.")
 	m.data.SetUnit("{connections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -167,7 +167,7 @@ func (m *metricApacheCurrentConnections) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -206,7 +206,7 @@ func (m *metricApacheRequests) init() {
 	m.data.SetName("apache.requests")
 	m.data.SetDescription("The number of requests serviced by the HTTP server per second.")
 	m.data.SetUnit("{requests}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -220,7 +220,7 @@ func (m *metricApacheRequests) recordDataPoint(start pcommon.Timestamp, ts pcomm
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -259,7 +259,7 @@ func (m *metricApacheScoreboard) init() {
 	m.data.SetName("apache.scoreboard")
 	m.data.SetDescription("The number of workers in each state.")
 	m.data.SetUnit("{workers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -273,8 +273,8 @@ func (m *metricApacheScoreboard) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
-	dp.Attributes().InsertString("state", scoreboardStateAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("state", scoreboardStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -313,7 +313,7 @@ func (m *metricApacheTraffic) init() {
 	m.data.SetName("apache.traffic")
 	m.data.SetDescription("Total HTTP server traffic.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -327,7 +327,7 @@ func (m *metricApacheTraffic) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -366,7 +366,7 @@ func (m *metricApacheUptime) init() {
 	m.data.SetName("apache.uptime")
 	m.data.SetDescription("The amount of time that the server has been running in seconds.")
 	m.data.SetUnit("s")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -380,7 +380,7 @@ func (m *metricApacheUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -419,7 +419,7 @@ func (m *metricApacheWorkers) init() {
 	m.data.SetName("apache.workers")
 	m.data.SetDescription("The number of workers currently attached to the HTTP server.")
 	m.data.SetUnit("{workers}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -433,8 +433,8 @@ func (m *metricApacheWorkers) recordDataPoint(start pcommon.Timestamp, ts pcommo
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntVal(val)
-	dp.Attributes().InsertString("server_name", serverNameAttributeValue)
-	dp.Attributes().InsertString("state", workersStateAttributeValue)
+	dp.Attributes().UpsertString("server_name", serverNameAttributeValue)
+	dp.Attributes().UpsertString("state", workersStateAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.

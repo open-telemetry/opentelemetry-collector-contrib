@@ -1438,6 +1438,30 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			nil,
 		},
 		{
+			"empty dimension set matches",
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}},
+					MetricNameSelectors: []string{"metric(1|3)"},
+				},
+			}, []cWMeasurement{
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{}},
+					Metrics: []map[string]string{
+						{
+							"Name": "metric1",
+							"Unit": "Count",
+						},
+						{
+							"Name": "metric3",
+							"Unit": "Seconds",
+						},
+					},
+				},
+			},
+		},
+		{
 			"label matchers",
 			[]*MetricDeclaration{
 				{
@@ -1997,6 +2021,18 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			zeroAndSingleDimensionRollup,
 			nil,
 		},
+		{
+			"no labels with empty dimension",
+			map[string]string{},
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}, {"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			zeroAndSingleDimensionRollup,
+			[][]string{{}},
+		},
 	}
 
 	for _, tc := range rollupTestCases {
@@ -2443,9 +2479,9 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeGauge)
+		g := m.SetEmptyGauge()
 		for _, value := range tm.metricValues[i] {
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
 			pcommon.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())

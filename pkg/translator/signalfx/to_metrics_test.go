@@ -222,7 +222,7 @@ func TestToMetrics(t *testing.T) {
 			}(),
 			wantMetrics: func() pmetric.Metrics {
 				md := buildDefaultMetrics(pmetric.MetricDataTypeGauge, 13, now)
-				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpdateString("k0", "")
+				md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes().UpsertString("k0", "")
 				return md
 			}(),
 		},
@@ -291,23 +291,22 @@ func buildDefaultMetrics(typ pmetric.MetricDataType, value interface{}, now time
 	ilm := rm.ScopeMetrics().AppendEmpty()
 	m := ilm.Metrics().AppendEmpty()
 
-	m.SetDataType(typ)
 	m.SetName("single")
 
 	var dps pmetric.NumberDataPointSlice
 
 	switch typ {
 	case pmetric.MetricDataTypeGauge:
-		dps = m.Gauge().DataPoints()
+		dps = m.SetEmptyGauge().DataPoints()
 	case pmetric.MetricDataTypeSum:
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		dps = m.Sum().DataPoints()
 	}
 
 	dp := dps.AppendEmpty()
-	dp.Attributes().InsertString("k0", "v0")
-	dp.Attributes().InsertString("k1", "v1")
-	dp.Attributes().InsertString("k2", "v2")
+	dp.Attributes().UpsertString("k0", "v0")
+	dp.Attributes().UpsertString("k1", "v1")
+	dp.Attributes().UpsertString("k2", "v2")
 	dp.Attributes().Sort()
 
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Truncate(time.Millisecond)))

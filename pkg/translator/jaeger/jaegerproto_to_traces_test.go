@@ -164,11 +164,11 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	}
 
 	expected := pcommon.NewMap()
-	expected.InsertBool("bool-val", true)
-	expected.InsertInt("int-val", 123)
-	expected.InsertString("string-val", "abc")
-	expected.InsertDouble("double-val", 1.23)
-	expected.InsertString("binary-val", "AAAAAABkfZg=")
+	expected.UpsertBool("bool-val", true)
+	expected.UpsertInt("int-val", 123)
+	expected.UpsertString("string-val", "abc")
+	expected.UpsertDouble("double-val", 1.23)
+	expected.UpsertString("binary-val", "AAAAAABkfZg=")
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -569,8 +569,8 @@ func TestChecksum(t *testing.T) {
 func generateTracesResourceOnly() ptrace.Traces {
 	td := testdata.GenerateTracesOneEmptyResourceSpans()
 	rs := td.ResourceSpans().At(0).Resource()
-	rs.Attributes().InsertString(conventions.AttributeServiceName, "service-1")
-	rs.Attributes().InsertInt("int-attr-1", 123)
+	rs.Attributes().UpsertString(conventions.AttributeServiceName, "service-1")
+	rs.Attributes().UpsertInt("int-attr-1", 123)
 	return td
 }
 
@@ -594,9 +594,9 @@ func generateProtoProcess() *model.Process {
 func generateTracesOneSpanNoResource() ptrace.Traces {
 	td := testdata.GenerateTracesOneSpanNoResource()
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}))
-	span.SetTraceID(pcommon.NewTraceID(
-		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}))
+	span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+	span.SetTraceID(
+		[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
 	span.SetDroppedAttributesCount(0)
 	span.SetDroppedEventsCount(0)
 	span.SetStartTimestamp(testSpanStartTimestamp)
@@ -608,7 +608,7 @@ func generateTracesOneSpanNoResource() ptrace.Traces {
 	span.Events().At(1).SetTimestamp(testSpanEventTimestamp)
 	span.Events().At(1).SetDroppedAttributesCount(0)
 	span.Events().At(1).SetName("")
-	span.Events().At(1).Attributes().InsertInt("attr-int", 123)
+	span.Events().At(1).Attributes().UpsertInt("attr-int", 123)
 	return td
 }
 
@@ -779,14 +779,14 @@ func generateTracesTwoSpansChildParent() ptrace.Traces {
 
 	span := spans.AppendEmpty()
 	span.SetName("operationB")
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetKind(ptrace.SpanKindServer)
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).StartTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp())
 	span.Status().SetCode(ptrace.StatusCodeError)
-	span.Attributes().InsertInt(conventions.AttributeHTTPStatusCode, 404)
+	span.Attributes().UpsertInt(conventions.AttributeHTTPStatusCode, 404)
 	return td
 }
 
@@ -829,7 +829,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 
 	span := spans.AppendEmpty()
 	span.SetName("operationC")
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18}))
+	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)

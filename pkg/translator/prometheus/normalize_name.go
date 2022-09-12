@@ -110,7 +110,7 @@ func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
 	}
 
 	// Simple case (no full normalization, no units, etc.), we simply trim out forbidden chars
-	metricName = CleanUpString(metric.Name())
+	metricName = RemovePromForbiddenRunes(metric.Name())
 
 	// Namespace?
 	if namespace != "" {
@@ -195,6 +195,10 @@ func normalizeName(metric pmetric.Metric, namespace string) string {
 // Clean up specified string so it's Prometheus compliant
 func CleanUpString(s string) string {
 	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) }), "_")
+}
+
+func RemovePromForbiddenRunes(s string) string {
+	return strings.Join(strings.FieldsFunc(s, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' }), "_")
 }
 
 // Retrieve the Prometheus "basic" unit corresponding to the specified "basic" unit

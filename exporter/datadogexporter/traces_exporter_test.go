@@ -327,11 +327,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func simpleTraces() ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), nil)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, nil)
 }
 
 func simpleTracesWithAttributes(attrs map[string]interface{}) ptrace.Traces {
-	return genTraces(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}), attrs)
+	return genTraces([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4}, attrs)
 }
 
 func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Traces {
@@ -339,13 +339,10 @@ func genTraces(traceID pcommon.TraceID, attrs map[string]interface{}) ptrace.Tra
 	rspans := traces.ResourceSpans().AppendEmpty()
 	span := rspans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetTraceID(traceID)
-	span.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4}))
+	span.SetSpanID([8]byte{0, 0, 0, 0, 1, 2, 3, 4})
 	if attrs == nil {
 		return traces
 	}
-	pcommon.NewMapFromRaw(attrs).Range(func(k string, v pcommon.Value) bool {
-		rspans.Resource().Attributes().Insert(k, v)
-		return true
-	})
+	pcommon.NewMapFromRaw(attrs).CopyTo(rspans.Resource().Attributes())
 	return traces
 }

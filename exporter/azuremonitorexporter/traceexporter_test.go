@@ -77,7 +77,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 
 	// Make this a FaaS span, which will trigger an error, because conversion
 	// of them is currently not supported.
-	span.Attributes().InsertString(conventions.AttributeFaaSTrigger, "http")
+	span.Attributes().UpsertString(conventions.AttributeFaaSTrigger, "http")
 
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

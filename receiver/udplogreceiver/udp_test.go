@@ -96,7 +96,7 @@ func testdataConfigYaml() *UDPLogConfig {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() udp.Config {
+		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
 			c.ListenAddress = "0.0.0.0:29018"
 			return *c
@@ -112,7 +112,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 			ReceiverSettings: config.NewReceiverSettings(config.NewComponentID("udplog")),
 			Operators:        adapter.OperatorConfigs{},
 		},
-		Config: func() udp.Config {
+		InputConfig: func() udp.Config {
 			c := udp.NewConfig()
 			c.Encoding.Encoding = "fake"
 			return *c

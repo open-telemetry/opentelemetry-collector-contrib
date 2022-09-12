@@ -44,16 +44,14 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(100)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -74,16 +72,14 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				sumMetric.Sum().SetIsMonotonic(true)
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(100)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{
@@ -104,16 +100,14 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 				summaryMetric := getTestSummaryMetric()
 				summaryMetric.CopyTo(metrics.AppendEmpty())
 				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetDataType(pmetric.MetricDataTypeSum)
-				sumMetric.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+				sumMetric.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				sumMetric.Sum().SetIsMonotonic(false)
 
 				sumMetric.SetName("summary_metric_count")
 				dp := sumMetric.Sum().DataPoints().AppendEmpty()
 				dp.SetIntVal(100)
 
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
+				fillTestAttributes(dp.Attributes())
 			},
 		},
 		{

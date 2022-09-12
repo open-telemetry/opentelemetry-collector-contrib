@@ -5,29 +5,30 @@ The following functions can be used in any implementation of the Telemetry Query
 Factory Functions
 - [Join](#join)
 - [IsMatch](#ismatch)
+- [Int](#int)
 
 Functions
 - [set](#set)
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 
-## Join
+## Concat
 
-`Join(delimiter, ...values)`
+`Concat(delimiter, ...values)`
 
-The `Join` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` factory function takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`delimiter` is a string value that is used to join the string. If no delimiter is desired, then simply pass an empty string.
+`delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
 `values` is a series of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 Examples:
 
-- `Join(": ", attributes["http.method"], attributes["http.path"])`
+- `Concat(": ", attributes["http.method"], attributes["http.path"])`
 
-- `Join(" ", name, 1)`
+- `Concat(" ", name, 1)`
 
-- `Join("", "HTTP method is: ", attributes["http.method"])`
+- `Concat("", "HTTP method is: ", attributes["http.method"])`
 
 ## IsMatch
 
@@ -45,6 +46,31 @@ Examples:
 
 
 - `IsMatch("string", ".*ring")`
+
+## Int
+
+`Int(value)`
+
+The `Int` factory function converts the `value` to int type.
+
+The returned type is int64.
+
+The input `value` types:
+* float64. Fraction is discharged (truncation towards zero).
+* string. Trying to parse an integer from string if it fails then nil will be returned.
+* bool. If `value` is true, then the function will return 1 otherwise 0.
+* int64. The function returns the `value` without changes.
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Int(attributes["http.status_code"])`
+
+
+- `Int("2.0")`
 
 ## set
 

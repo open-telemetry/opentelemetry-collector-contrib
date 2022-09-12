@@ -47,6 +47,16 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "ignore_quotes",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.Header = "id,severity,message"
+					p.IgnoreQuotes = true
+					p.ParseFrom = entry.NewBodyField("message")
+					return p
+				}(),
+			},
+			{
 				Name: "delimiter",
 				Expect: func() *Config {
 					p := NewConfig()

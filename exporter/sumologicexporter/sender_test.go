@@ -118,12 +118,12 @@ func exampleTwoLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStringVal("Example log")
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Attributes().UpsertString("key1", "value1")
+	buffer[0].Attributes().UpsertString("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStringVal("Another example log")
-	buffer[1].Attributes().InsertString("key1", "value1")
-	buffer[1].Attributes().InsertString("key2", "value2")
+	buffer[1].Attributes().UpsertString("key1", "value1")
+	buffer[1].Attributes().UpsertString("key2", "value2")
 
 	return buffer
 }
@@ -132,12 +132,12 @@ func exampleTwoDifferentLogs() []plog.LogRecord {
 	buffer := make([]plog.LogRecord, 2)
 	buffer[0] = plog.NewLogRecord()
 	buffer[0].Body().SetStringVal("Example log")
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Attributes().UpsertString("key1", "value1")
+	buffer[0].Attributes().UpsertString("key2", "value2")
 	buffer[1] = plog.NewLogRecord()
 	buffer[1].Body().SetStringVal("Another example log")
-	buffer[1].Attributes().InsertString("key3", "value3")
-	buffer[1].Attributes().InsertString("key4", "value4")
+	buffer[1].Attributes().UpsertString("key3", "value3")
+	buffer[1].Attributes().UpsertString("key4", "value4")
 
 	return buffer
 }
@@ -147,14 +147,14 @@ func exampleMultitypeLogs() []plog.LogRecord {
 
 	attVal := pcommon.NewValueMap()
 	attMap := attVal.MapVal()
-	attMap.InsertString("lk1", "lv1")
-	attMap.InsertInt("lk2", 13)
+	attMap.UpsertString("lk1", "lv1")
+	attMap.UpsertInt("lk2", 13)
 
 	buffer[0] = plog.NewLogRecord()
 	attVal.CopyTo(buffer[0].Body())
 
-	buffer[0].Attributes().InsertString("key1", "value1")
-	buffer[0].Attributes().InsertString("key2", "value2")
+	buffer[0].Attributes().UpsertString("key1", "value1")
+	buffer[0].Attributes().UpsertString("key2", "value2")
 
 	buffer[1] = plog.NewLogRecord()
 
@@ -171,8 +171,8 @@ func exampleMultitypeLogs() []plog.LogRecord {
 	intVal.CopyTo(intTgt)
 
 	attVal.CopyTo(buffer[1].Body())
-	buffer[1].Attributes().InsertString("key1", "value1")
-	buffer[1].Attributes().InsertString("key2", "value2")
+	buffer[1].Attributes().UpsertString("key1", "value1")
+	buffer[1].Attributes().UpsertString("key2", "value2")
 
 	return buffer
 }
@@ -818,9 +818,9 @@ foo=bar metric=gauge_metric_name  245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
-	test.s.metricBuffer[0].attributes.InsertString("escape me", "=invalid\n")
-	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+	test.s.metricBuffer[0].attributes.UpsertString("unit", "m/s")
+	test.s.metricBuffer[0].attributes.UpsertString("escape me", "=invalid\n")
+	test.s.metricBuffer[0].attributes.UpsertBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
@@ -854,8 +854,8 @@ gauge_metric_name.. 245 1608124662`
 		"key2": "value2",
 	})
 
-	test.s.metricBuffer[0].attributes.InsertString("unit", "m/s")
-	test.s.metricBuffer[0].attributes.InsertBool("metric", true)
+	test.s.metricBuffer[0].attributes.UpsertString("unit", "m/s")
+	test.s.metricBuffer[0].attributes.UpsertBool("metric", true)
 
 	_, err := test.s.sendMetrics(context.Background(), flds)
 	assert.NoError(t, err)
