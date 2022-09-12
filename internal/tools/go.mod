@@ -11,6 +11,7 @@ require (
 	github.com/pavius/impi v0.0.3
 	github.com/tcnksm/ghr v0.15.0
 	go.opentelemetry.io/build-tools/checkdoc v0.0.0-20220706175322-58de0d25b85c
+	go.opentelemetry.io/build-tools/chloggen v0.0.0-20220909221141-2acdff3badaf
 	go.opentelemetry.io/build-tools/crosslink v0.0.0-20220502161954-e2bf744925c0
 	go.opentelemetry.io/build-tools/issuegenerator v0.0.0-20210920164323-2ceabab23375
 	go.opentelemetry.io/build-tools/multimod v0.0.0-20220502161954-e2bf744925c0
