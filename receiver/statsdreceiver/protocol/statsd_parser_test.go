@@ -1046,8 +1046,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("expohisto")
-		m.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-		ep := m.ExponentialHistogram()
+		ep := m.SetEmptyExponentialHistogram()
 		ep.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		dp := ep.DataPoints().AppendEmpty()
 
@@ -1222,7 +1221,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			p.Initialize(false, false, tt.mapping)
+			assert.NoError(t, p.Initialize(false, false, tt.mapping))
 			for _, line := range tt.input {
 				err = p.Aggregate(line)
 				assert.NoError(t, err)

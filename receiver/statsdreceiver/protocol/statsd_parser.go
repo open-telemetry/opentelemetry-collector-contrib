@@ -172,7 +172,7 @@ func (p *StatsDParser) Initialize(enableMetricType bool, isMonotonicCounter bool
 func expoHistogramConfig(opts HistogramConfig) structure.Config {
 	var r []structure.Option
 	if opts.MaxSize >= structure.MinSize {
-		r = append(r, structure.WithMaxSize(int32(opts.MaxSize)))
+		r = append(r, structure.WithMaxSize(opts.MaxSize))
 	}
 	return structure.NewConfig(r...)
 }

@@ -103,8 +103,7 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 func buildHistogramMetric(desc statsDMetricDescription, histogram histogramMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
-	nm.SetDataType(pmetric.MetricDataTypeExponentialHistogram)
-	expo := nm.ExponentialHistogram()
+	expo := nm.SetEmptyExponentialHistogram()
 	expo.SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 
 	dp := expo.DataPoints().AppendEmpty()
