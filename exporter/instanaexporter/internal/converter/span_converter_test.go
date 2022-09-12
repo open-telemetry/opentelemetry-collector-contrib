@@ -89,18 +89,19 @@ func setupSpan(span *ptrace.Span, opts SpanOptions) {
 }
 
 func generateAttrs() pcommon.Map {
-	rawmap := map[string]interface{}{
-		"some_boolean_key": true,
-		"custom_attribute": "ok",
-		// test non empty pid
-		conventions.AttributeProcessPID: "1234",
-		// test non empty service name
-		conventions.AttributeServiceName: "myservice",
-		// test non empty instana host id
-		backend.AttributeInstanaHostID: "myhost1",
-	}
+	attrs := pcommon.NewMap()
+	attrs.UpsertBool("some_boolean_key", true)
+	attrs.UpsertString("custom_attribute", "ok")
 
-	attrs := pcommon.NewMapFromRaw(rawmap)
+	// test non empty pid
+	attrs.UpsertString(conventions.AttributeProcessPID, "1234")
+
+	// test non empty service name
+	attrs.UpsertString(conventions.AttributeServiceName, "myservice")
+
+	// test non empty instana host id
+	attrs.UpsertString(backend.AttributeInstanaHostID, "myhost1")
+
 	attrs.UpsertBool("itistrue", true)
 
 	return attrs

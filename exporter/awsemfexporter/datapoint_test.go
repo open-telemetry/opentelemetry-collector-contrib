@@ -264,7 +264,6 @@ func TestIntDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label": "value"}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -297,7 +296,7 @@ func TestIntDataPointSliceAt(t *testing.T) {
 			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetIntVal(tc.value.(int64))
-			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			testDP.Attributes().UpsertString("label", "value")
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -335,7 +334,6 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label1": "value1"}
 
 	testDeltaCases := []struct {
 		testName        string
@@ -368,7 +366,7 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 			testDPS := pmetric.NewNumberDataPointSlice()
 			testDP := testDPS.AppendEmpty()
 			testDP.SetDoubleVal(tc.value.(float64))
-			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			testDP.Attributes().UpsertString("label1", "value1")
 
 			dps := numberDataPointSlice{
 				instrLibName,
@@ -395,7 +393,6 @@ func TestDoubleDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAt(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label1": "value1"}
 
 	testDPS := pmetric.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -403,7 +400,7 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.BucketCounts().FromRaw([]uint64{1, 2, 3})
 	testDP.ExplicitBounds().FromRaw([]float64{1, 2, 3})
-	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+	testDP.Attributes().UpsertString("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -428,7 +425,6 @@ func TestHistogramDataPointSliceAt(t *testing.T) {
 
 func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label1": "value1"}
 
 	testDPS := pmetric.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
@@ -436,7 +432,7 @@ func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
 	testDP.SetSum(17.13)
 	testDP.SetMin(10)
 	testDP.SetMax(30)
-	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+	testDP.Attributes().UpsertString("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -463,13 +459,12 @@ func TestHistogramDataPointSliceAtWithMinMax(t *testing.T) {
 
 func TestHistogramDataPointSliceAtWithoutMinMax(t *testing.T) {
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label1": "value1"}
 
 	testDPS := pmetric.NewHistogramDataPointSlice()
 	testDP := testDPS.AppendEmpty()
 	testDP.SetCount(uint64(17))
 	testDP.SetSum(17.13)
-	pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+	testDP.Attributes().UpsertString("label1", "value1")
 
 	dps := histogramDataPointSlice{
 		instrLibName,
@@ -498,7 +493,6 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 	setupDataPointCache()
 
 	instrLibName := "cloudwatch-otel"
-	labels := map[string]interface{}{"label1": "value1"}
 	metadataTimeStamp := time.Now().UnixNano() / int64(time.Millisecond)
 
 	testCases := []struct {
@@ -537,7 +531,7 @@ func TestSummaryDataPointSliceAt(t *testing.T) {
 			testQuantileValue = testDP.QuantileValues().AppendEmpty()
 			testQuantileValue.SetQuantile(100)
 			testQuantileValue.SetValue(float64(5))
-			pcommon.NewMapFromRaw(labels).CopyTo(testDP.Attributes())
+			testDP.Attributes().UpsertString("label1", "value1")
 
 			dps := summaryDataPointSlice{
 				instrLibName,
