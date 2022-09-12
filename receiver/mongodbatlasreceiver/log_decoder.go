@@ -13,38 +13,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// logDecoder is an interface that decodes logs from an io.Reader into LogEntry structs.
-type logDecoder interface {
-	Decode(r io.Reader) ([]model.LogEntry, error)
-}
-
-func decoderForVersion(logger *zap.Logger, clusterMajorVersion string) logDecoder {
-	var decoder logDecoder
+func decodeLogs(logger *zap.Logger, clusterMajorVersion string, r io.Reader) ([]model.LogEntry, error) {
 	switch clusterMajorVersion {
 	case mongoDBMajorVersion4_2:
 		// 4.2 clusters use a console log format
-		decoder = newConsoleLogDecoder(logger.Named("consoledecoder"))
+		return decodeConsole(logger.Named("console_decoder"), r)
 	default:
 		// All other versions use JSON logging
-		decoder = newJSONLogDecoder(logger.Named("jsondecoder"))
-	}
-
-	return decoder
-}
-
-// jsonLogDecoder is a logDecoder that decodes JSON formatted mongodb logs.
-// This is the format used for mongodb 4.4+
-type jsonLogDecoder struct {
-	logger *zap.Logger
-}
-
-func newJSONLogDecoder(logger *zap.Logger) *jsonLogDecoder {
-	return &jsonLogDecoder{
-		logger: logger,
+		return decodeJSON(r)
 	}
 }
 
-func (j *jsonLogDecoder) Decode(r io.Reader) ([]model.LogEntry, error) {
+func decodeJSON(r io.Reader) ([]model.LogEntry, error) {
 	// Pass this into a gzip reader for decoding
 	reader, err := gzip.NewReader(r)
 	if err != nil {
@@ -71,19 +51,7 @@ func (j *jsonLogDecoder) Decode(r io.Reader) ([]model.LogEntry, error) {
 
 var consoleLogRegex = regexp.MustCompile(`^(?P<timestamp>\S+)\s+(?P<severity>\w+)\s+(?P<component>[\w-]+)\s+\[(?P<context>\S+)\]\s+(?P<message>.*)$`)
 
-// consoleLogDecoder is a logDecoder that decodes "console" formatted mongodb logs.
-// This is the format used for mongodb 4.2
-type consoleLogDecoder struct {
-	logger *zap.Logger
-}
-
-func newConsoleLogDecoder(logger *zap.Logger) *consoleLogDecoder {
-	return &consoleLogDecoder{
-		logger: logger,
-	}
-}
-
-func (c *consoleLogDecoder) Decode(r io.Reader) ([]model.LogEntry, error) {
+func decodeConsole(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 
 	// Pass this into a gzip reader for decoding
 	gzipReader, err := gzip.NewReader(r)
@@ -101,8 +69,8 @@ func (c *consoleLogDecoder) Decode(r io.Reader) ([]model.LogEntry, error) {
 
 		submatches := consoleLogRegex.FindSubmatch(scanner.Bytes())
 		if submatches == nil || len(submatches) != 6 {
-			// Match failed for line
-			c.logger.Error("Entry did not match regex", zap.String("entry", scanner.Text()))
+			// Match failed for line; We will skip this line and continue processing others.
+			logger.Error("Entry did not match regex", zap.String("entry", scanner.Text()))
 			continue
 		}
 

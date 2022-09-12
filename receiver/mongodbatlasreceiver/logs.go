@@ -203,14 +203,14 @@ func filterClusters(clusters []mongodbatlas.Cluster, clusterNames []string, incl
 	return filtered
 }
 
-func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, decoder logDecoder) ([]model.LogEntry, error) {
+func (s *logsReceiver) getHostLogs(groupID, hostname, logName string, clusterMajorVersion string) ([]model.LogEntry, error) {
 	// Get gzip bytes buffer from API
 	buf, err := s.client.GetLogs(context.Background(), groupID, hostname, logName, s.start, s.end)
 	if err != nil {
 		return nil, err
 	}
 
-	return decoder.Decode(buf)
+	return decodeLogs(s.log, clusterMajorVersion, buf)
 }
 
 func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]model.AuditLog, error) {
@@ -242,8 +242,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 }
 
 func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) {
-	decoder := decoderForVersion(s.log, clusterMajorVersion)
-	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, decoder)
+	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve logs from: "+logName, zap.Error(err))
 	}

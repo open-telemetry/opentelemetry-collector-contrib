@@ -24,9 +24,7 @@ func TestDecode4_2(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, gzipWriter.Close())
 
-	decoder := decoderForVersion(zaptest.NewLogger(t), "4.2")
-
-	entries, err := decoder.Decode(zippedBuffer)
+	entries, err := decodeLogs(zaptest.NewLogger(t), "4.2", zippedBuffer)
 	require.NoError(t, err)
 
 	require.Equal(t, []model.LogEntry{
@@ -74,9 +72,7 @@ func TestDecode4_2InvalidLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, gzipWriter.Close())
 
-	decoder := decoderForVersion(zaptest.NewLogger(t), "4.2")
-
-	entries, err := decoder.Decode(zippedBuffer)
+	entries, err := decodeLogs(zaptest.NewLogger(t), "4.2", zippedBuffer)
 	require.NoError(t, err)
 
 	require.Equal(t, []model.LogEntry{
@@ -104,8 +100,7 @@ func TestDecode4_2InvalidLog(t *testing.T) {
 }
 
 func TestDecode4_2NotGzip(t *testing.T) {
-	decoder := decoderForVersion(zaptest.NewLogger(t), "4.2")
-	entries, err := decoder.Decode(bytes.NewBuffer([]byte("Not compressed log")))
+	entries, err := decodeLogs(zaptest.NewLogger(t), "4.2", bytes.NewBuffer([]byte("Not compressed log")))
 	require.ErrorContains(t, err, "gzip: invalid header")
 	require.Nil(t, entries)
 }
@@ -121,9 +116,7 @@ func TestDecode5_0(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, gzipWriter.Close())
 
-	decoder := decoderForVersion(zaptest.NewLogger(t), "5.0")
-
-	entries, err := decoder.Decode(zippedBuffer)
+	entries, err := decodeLogs(zaptest.NewLogger(t), "5.0", zippedBuffer)
 	require.NoError(t, err)
 
 	require.Equal(t, []model.LogEntry{
@@ -186,9 +179,7 @@ func TestDecode5_0InvalidLog(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, gzipWriter.Close())
 
-	decoder := decoderForVersion(zaptest.NewLogger(t), "5.0")
-
-	entries, err := decoder.Decode(zippedBuffer)
+	entries, err := decodeLogs(zaptest.NewLogger(t), "5.0", zippedBuffer)
 	assert.ErrorContains(t, err, "entry could not be decoded into LogEntry")
 
 	assert.Equal(t, []model.LogEntry{
@@ -212,8 +203,7 @@ func TestDecode5_0InvalidLog(t *testing.T) {
 }
 
 func TestDecode5_0NotGzip(t *testing.T) {
-	decoder := decoderForVersion(zaptest.NewLogger(t), "5.0")
-	entries, err := decoder.Decode(bytes.NewBuffer([]byte("Not compressed log")))
+	entries, err := decodeLogs(zaptest.NewLogger(t), "5.0", bytes.NewBuffer([]byte("Not compressed log")))
 	require.ErrorContains(t, err, "gzip: invalid header")
 	require.Nil(t, entries)
 }
