@@ -70,12 +70,12 @@ type AssumeRole struct {
 ```go
 func (cfg *Config) Validate() error {
 	credsProvider, err := getCredsFromConfig(cfg)
-	if credsProvider == nil || err != nil {
-		return errBadCreds
-	} else {
-		cfg.credsProvider = credsProvider
-	}
-
+    if err != nil {
+        return fmt.Errorf("could not retrieve credential provider: %w", err)
+    }
+    if credsProvider == nil {
+        return fmt.Errorf("credsProvider cannot be nil")
+    }
     return nil
 }
 ```
@@ -261,7 +261,7 @@ func (si *signingRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	service, region := si.inferServiceAndRegion(req)
 	creds, err := (*si.credsProvider).Retrieve(req.Context())
 	if err != nil {
-		return nil, errBadCreds
+		return nil, fmt.Errorf("error retrieving credentials: %w", err)
 	}
 	err = si.signer.SignHTTP(req.Context(), creds, req2, payloadHash, service, region, time.Now())
 	if err != nil {
