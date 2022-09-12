@@ -82,6 +82,7 @@ use (
 	./internal/scrapertest
 	./internal/sharedcomponent
 	./internal/splunk
+	./internal/tools
 	./pkg/batchperresourceattr
 	./pkg/batchpersignal
 	./pkg/experimentalmetricmetadata
