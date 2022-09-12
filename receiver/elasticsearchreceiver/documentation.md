@@ -26,6 +26,7 @@ These are the metrics available for this scraper.
 | **elasticsearch.indexing_pressure.memory.total.primary_rejections** | Cumulative number of indexing requests rejected in the primary stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.indexing_pressure.memory.total.replica_rejections** | Number of indexing requests rejected in the replica stage. | 1 | Sum(Int) | <ul> </ul> |
 | **elasticsearch.memory.indexing_pressure** | Memory consumed, in bytes, by indexing requests in the specified stage. | By | Sum(Int) | <ul> <li>indexing_pressure_stage</li> </ul> |
+| **elasticsearch.node.cache.count** | Total count of query cache misses across all shards assigned to selected nodes. | {count} | Sum(Int) | <ul> <li>query_cache_count_type</li> </ul> |
 | **elasticsearch.node.cache.evictions** | The number of evictions from the cache. | {evictions} | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | **elasticsearch.node.cache.memory.usage** | The size in bytes of the cache. | By | Sum(Int) | <ul> <li>cache_name</li> </ul> |
 | **elasticsearch.node.cluster.connections** | The number of open tcp connections for internal cluster communication. | {connections} | Sum(Int) | <ul> </ul> |
@@ -114,6 +115,7 @@ metrics:
 | memory_pool_name (name) | The name of the JVM memory pool. |  |
 | memory_state (state) | State of the memory | free, used |
 | operation (operation) | The type of operation. | index, delete, get, query, fetch, scroll, suggest, merge, refresh, flush, warmer |
+| query_cache_count_type (type) | Type of query cache count | hit, miss |
 | shard_state (state) | The state of the shard. | active, relocating, initializing, unassigned |
 | task_state (state) | The state of the task. | rejected, completed |
 | thread_pool_name | The name of the thread pool. |  |

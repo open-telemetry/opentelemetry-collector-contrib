@@ -131,6 +131,12 @@ attributes:
   ingest_pipeline_name:
     value: name
     description: Name of the ingest pipeline.
+  query_cache_count_type:
+    value: type
+    description: Type of query cache count
+    enum:
+      - hit
+      - miss
 metrics:
   # these metrics are from /_nodes/stats, and are node level metrics
   elasticsearch.breaker.memory.estimated:
@@ -175,6 +181,15 @@ metrics:
       aggregation: cumulative
       value_type: int
     attributes: [cache_name]
+    enabled: true
+  elasticsearch.node.cache.count:
+    description: Total count of query cache misses across all shards assigned to selected nodes.
+    unit: "{count}"
+    sum:
+      monotonic: false
+      aggregation: cumulative
+      value_type: int
+    attributes: [ query_cache_count_type ]
     enabled: true
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
