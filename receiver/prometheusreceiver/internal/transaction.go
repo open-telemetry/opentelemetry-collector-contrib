@@ -72,7 +72,7 @@ func newTransaction(
 }
 
 // Append always returns 0 to disable label caching.
-func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs int64, value float64) (storage.SeriesRef, error) {
+func (t *transaction) Append(ref storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -80,23 +80,62 @@ func (t *transaction) Append(ref storage.SeriesRef, labels labels.Labels, atMs i
 	}
 
 	if len(t.externalLabels) != 0 {
-		labels = append(labels, t.externalLabels...)
-		sort.Sort(labels)
+		ls = append(ls, t.externalLabels...)
+		sort.Sort(ls)
 	}
 
 	if t.isNew {
-		if err := t.initTransaction(labels); err != nil {
+		if err := t.initTransaction(ls); err != nil {
 			return 0, err
 		}
 	}
 
-	// For the `target_info` metric we need to convert it to resource attributes.
-	metricName := labels.Get(model.MetricNameLabel)
-	if metricName == targetMetricName {
-		return 0, t.AddTargetInfo(labels)
+	// Any datapoint with duplicate labels MUST be rejected per:
+	// * https://github.com/open-telemetry/wg-prometheus/issues/44
+	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
+	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
+	if dupLabel, hasDup := ls.HasDuplicateLabelNames(); hasDup {
+		return 0, fmt.Errorf("invalid sample: non-unique label names: %q", dupLabel)
 	}
 
-	return 0, t.AddDataPoint(labels, atMs, value)
+	metricName := ls.Get(model.MetricNameLabel)
+	if metricName == "" {
+		return 0, errMetricNameNotFound
+	}
+
+	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
+	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
+	// But it can also be a staleNaN, which is inserted when the target goes away.
+	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
+		if val == 0.0 {
+			t.logger.Warn("Failed to scrape Prometheus endpoint",
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		} else {
+			t.logger.Warn("The 'up' metric contains invalid value",
+				zap.Float64("value", val),
+				zap.Int64("scrape_timestamp", atMs),
+				zap.Stringer("target_labels", ls))
+		}
+	}
+
+	// For the `target_info` metric we need to convert it to resource attributes.
+	if metricName == targetMetricName {
+		return 0, t.AddTargetInfo(ls)
+	}
+
+	curMF, ok := t.families[metricName]
+	if !ok {
+		familyName := normalizeMetricName(metricName)
+		if mf, ok := t.families[familyName]; ok && mf.includesMetric(metricName) {
+			curMF = mf
+		} else {
+			curMF = newMetricFamily(metricName, t.mc, t.logger)
+			t.families[curMF.name] = curMF
+		}
+	}
+
+	return 0, curMF.Add(metricName, ls, atMs, val)
 }
 
 func (t *transaction) AppendExemplar(ref storage.SeriesRef, l labels.Labels, e exemplar.Exemplar) (storage.SeriesRef, error) {
@@ -189,56 +228,4 @@ func (t *transaction) AddTargetInfo(labels labels.Labels) error {
 	}
 
 	return nil
-}
-
-// AddDataPoint is for feeding prometheus data values in its processing order
-func (t *transaction) AddDataPoint(ls labels.Labels, ts int64, v float64) error {
-	// Any datapoint with duplicate labels MUST be rejected per:
-	// * https://github.com/open-telemetry/wg-prometheus/issues/44
-	// * https://github.com/open-telemetry/opentelemetry-collector/issues/3407
-	// as Prometheus rejects such too as of version 2.16.0, released on 2020-02-13.
-	var dupLabels []string
-	for i := 0; i < len(ls)-1; i++ {
-		if ls[i].Name == ls[i+1].Name {
-			dupLabels = append(dupLabels, ls[i].Name)
-		}
-	}
-	if len(dupLabels) != 0 {
-		sort.Strings(dupLabels)
-		return fmt.Errorf("invalid sample: non-unique label names: %q", dupLabels)
-	}
-
-	metricName := ls.Get(model.MetricNameLabel)
-	if metricName == "" {
-		return errMetricNameNotFound
-	}
-
-	// See https://www.prometheus.io/docs/concepts/jobs_instances/#automatically-generated-labels-and-time-series
-	// up: 1 if the instance is healthy, i.e. reachable, or 0 if the scrape failed.
-	// But it can also be a staleNaN, which is inserted when the target goes away.
-	if metricName == scrapeUpMetricName && v != 1.0 && !value.IsStaleNaN(v) {
-		if v == 0.0 {
-			t.logger.Warn("Failed to scrape Prometheus endpoint",
-				zap.Int64("scrape_timestamp", ts),
-				zap.Stringer("target_labels", ls))
-		} else {
-			t.logger.Warn("The 'up' metric contains invalid value",
-				zap.Float64("value", v),
-				zap.Int64("scrape_timestamp", ts),
-				zap.Stringer("target_labels", ls))
-		}
-	}
-
-	curMF, ok := t.families[metricName]
-	if !ok {
-		familyName := normalizeMetricName(metricName)
-		if mf, ok := t.families[familyName]; ok && mf.includesMetric(metricName) {
-			curMF = mf
-		} else {
-			curMF = newMetricFamily(metricName, t.mc, t.logger)
-			t.families[curMF.name] = curMF
-		}
-	}
-
-	return curMF.Add(metricName, ls, ts, v)
 }
