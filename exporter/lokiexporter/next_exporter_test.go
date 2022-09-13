@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/third_party/loki/logproto"
@@ -37,35 +36,33 @@ import (
 func TestPushLogData(t *testing.T) {
 	testCases := []struct {
 		desc          string
-		hints         pcommon.Map
-		attrs         pcommon.Map
-		res           pcommon.Map
+		hints         map[string]interface{}
+		attrs         map[string]interface{}
+		res           map[string]interface{}
 		expectedLabel string
 		expectedLine  string
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"host.name":   "guarana",
 				"http.status": 200,
-			}),
-			res: pcommon.NewMap(),
-			hints: pcommon.NewMapFromRaw(map[string]interface{}{
+			},
+			hints: map[string]interface{}{
 				hintAttributes: "host.name",
-			}),
+			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","attributes":{"http.status":200}}`,
 		},
 		{
-			desc:  "with resource to label and regular resource",
-			attrs: pcommon.NewMap(),
-			res: pcommon.NewMapFromRaw(map[string]interface{}{
+			desc: "with resource to label and regular resource",
+			res: map[string]interface{}{
 				"host.name": "guarana",
 				"region.az": "eu-west-1a",
-			}),
-			hints: pcommon.NewMapFromRaw(map[string]interface{}{
+			},
+			hints: map[string]interface{}{
 				hintResources: "host.name",
-			}),
+			},
 			expectedLabel: `{exporter="OTLP", host.name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 		},
@@ -107,15 +104,15 @@ func TestPushLogData(t *testing.T) {
 			ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).SetTraceID([16]byte{1, 2, 3, 4})
 
 			// copy the attributes from the test case to the log entry
-			if tC.attrs.Len() > 0 {
-				tC.attrs.CopyTo(ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes())
+			if len(tC.attrs) > 0 {
+				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().FromRaw(tC.attrs)
 			}
-			if tC.res.Len() > 0 {
-				tC.res.CopyTo(ld.ResourceLogs().At(0).Resource().Attributes())
+			if len(tC.res) > 0 {
+				ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(tC.res)
 			}
 
 			// we can't use copy here, as the value (Value) will be used as string lookup later, so, we need to convert it to string now
-			for k, v := range tC.hints.AsRaw() {
+			for k, v := range tC.hints {
 				ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().UpsertString(k, fmt.Sprintf("%v", v))
 			}
 

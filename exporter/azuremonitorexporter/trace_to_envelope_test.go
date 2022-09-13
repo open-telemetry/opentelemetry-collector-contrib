@@ -691,7 +691,7 @@ func getSpan(spanName string, spanKind ptrace.SpanKind, initialAttributes map[st
 	span.SetKind(spanKind)
 	span.SetStartTimestamp(defaultSpanStartTime)
 	span.SetEndTimestamp(defaultSpanEndTme)
-	pcommon.NewMapFromRaw(initialAttributes).CopyTo(span.Attributes())
+	span.Attributes().FromRaw(initialAttributes)
 	return span
 }
 
