@@ -206,8 +206,8 @@ func diffHistogramPt(
 	diffs = diffMetricAttrs(diffs, expected.Attributes(), actual.Attributes())
 	diffs = diff(diffs, expected.Count(), actual.Count(), "HistogramDataPoint Count")
 	diffs = diff(diffs, expected.Sum(), actual.Sum(), "HistogramDataPoint Sum")
-	diffs = diff(diffs, expected.BucketCounts().AsRaw(), actual.BucketCounts().AsRaw(), "HistogramDataPoint BucketCounts")
-	diffs = diff(diffs, expected.ExplicitBounds().AsRaw(), actual.ExplicitBounds().AsRaw(), "HistogramDataPoint ExplicitBounds")
+	diffs = diff(diffs, expected.BucketCounts(), actual.BucketCounts(), "HistogramDataPoint BucketCounts")
+	diffs = diff(diffs, expected.ExplicitBounds(), actual.ExplicitBounds(), "HistogramDataPoint ExplicitBounds")
 	return diffExemplars(diffs, expected.Exemplars(), actual.Exemplars())
 }
 
