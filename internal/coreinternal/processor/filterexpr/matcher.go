@@ -57,7 +57,11 @@ func (m *Matcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 	case pmetric.MetricDataTypeSum:
 		return m.matchSum(metricName, metric.Sum())
 	case pmetric.MetricDataTypeHistogram:
-		return m.matchDoubleHistogram(metricName, metric.Histogram())
+		return m.matchHistogram(metricName, metric.Histogram())
+	case pmetric.MetricDataTypeExponentialHistogram:
+		return m.matchExponentialHistogram(metricName, metric.ExponentialHistogram())
+	case pmetric.MetricDataTypeSummary:
+		return m.matchSummary(metricName, metric.Summary())
 	default:
 		return false, nil
 	}
@@ -91,8 +95,36 @@ func (m *Matcher) matchSum(metricName string, sum pmetric.Sum) (bool, error) {
 	return false, nil
 }
 
-func (m *Matcher) matchDoubleHistogram(metricName string, histogram pmetric.Histogram) (bool, error) {
+func (m *Matcher) matchHistogram(metricName string, histogram pmetric.Histogram) (bool, error) {
 	pts := histogram.DataPoints()
+	for i := 0; i < pts.Len(); i++ {
+		matched, err := m.matchEnv(metricName, pts.At(i).Attributes())
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (m *Matcher) matchExponentialHistogram(metricName string, eh pmetric.ExponentialHistogram) (bool, error) {
+	pts := eh.DataPoints()
+	for i := 0; i < pts.Len(); i++ {
+		matched, err := m.matchEnv(metricName, pts.At(i).Attributes())
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (m *Matcher) matchSummary(metricName string, summary pmetric.Summary) (bool, error) {
+	pts := summary.DataPoints()
 	for i := 0; i < pts.Len(); i++ {
 		matched, err := m.matchEnv(metricName, pts.At(i).Attributes())
 		if err != nil {
