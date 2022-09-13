@@ -227,11 +227,11 @@ func attributesToTagsReplaceSource(attributes ...pcommon.Map) map[string]string 
 }
 
 func newMap(tags map[string]string) pcommon.Map {
-	m := pcommon.NewMap()
+	valueMap := make(map[string]interface{}, len(tags))
 	for key, value := range tags {
-		m.UpsertString(key, value)
+		valueMap[key] = value
 	}
-	return m
+	return pcommon.NewMapFromRaw(valueMap)
 }
 
 func errorTagsFromStatus(status ptrace.SpanStatus) map[string]string {

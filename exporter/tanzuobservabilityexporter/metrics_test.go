@@ -1337,7 +1337,7 @@ func addDataPoint(
 		setDataPointValue(value, dataPoint)
 	}
 	setDataPointTimestamp(ts, dataPoint)
-	dataPoint.Attributes().FromRaw(tags)
+	pcommon.NewMapFromRaw(tags).CopyTo(dataPoint.Attributes())
 }
 
 type dataPointWithTimestamp interface {

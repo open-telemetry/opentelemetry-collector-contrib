@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// nolint:errcheck
 package azure
 
 import (
@@ -46,8 +47,7 @@ func TestQueryEndpointFailed(t *testing.T) {
 
 func TestQueryEndpointMalformed(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := fmt.Fprintln(w, "{")
-		assert.NoError(t, err)
+		fmt.Fprintln(w, "{")
 	}))
 	defer ts.Close()
 
@@ -73,8 +73,7 @@ func TestQueryEndpointCorrect(t *testing.T) {
 	require.NoError(t, err)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err = w.Write(marshalledMetadata)
-		assert.NoError(t, err)
+		w.Write(marshalledMetadata)
 	}))
 	defer ts.Close()
 

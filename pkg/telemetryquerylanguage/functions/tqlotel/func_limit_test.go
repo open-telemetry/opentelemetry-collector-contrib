@@ -93,8 +93,8 @@ func Test_limit(t *testing.T) {
 			keep:   []string{"test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertBool("test3", true)
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func Test_limit(t *testing.T) {
 			keep:   []string{"test", "test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertBool("test3", true)
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
 			},
 		},
 		{
@@ -115,7 +115,7 @@ func Test_limit(t *testing.T) {
 			keep:   []string{"te"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
+				expectedMap.InsertString("test", "hello world")
 			},
 		},
 		{
@@ -125,8 +125,8 @@ func Test_limit(t *testing.T) {
 			keep:   []string{"te", "test3"},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
-				expectedMap.UpsertString("test", "hello world")
-				expectedMap.UpsertBool("test3", true)
+				expectedMap.InsertString("test", "hello world")
+				expectedMap.InsertBool("test3", true)
 			},
 		},
 	}

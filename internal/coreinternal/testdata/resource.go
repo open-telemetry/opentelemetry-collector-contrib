@@ -17,9 +17,9 @@ package testdata
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
 func initResource1(r pcommon.Resource) {
-	r.Attributes().UpsertString("resource-attr", "resource-attr-val-1")
+	initResourceAttributes1(r.Attributes())
 }
 
 func initResource2(r pcommon.Resource) {
-	r.Attributes().UpsertString("resource-attr", "resource-attr-val-2")
+	initResourceAttributes2(r.Attributes())
 }

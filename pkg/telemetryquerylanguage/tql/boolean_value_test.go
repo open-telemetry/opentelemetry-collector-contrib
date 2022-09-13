@@ -76,13 +76,6 @@ func comparison(left any, right any, op string) *Comparison {
 }
 
 func Test_newComparisonEvaluator(t *testing.T) {
-	p := NewParser(
-		DefaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
-
 	tests := []struct {
 		name string
 		l    any
@@ -117,7 +110,7 @@ func Test_newComparisonEvaluator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			comp := comparison(tt.l, tt.r, tt.op)
-			evaluate, err := p.newComparisonEvaluator(comp)
+			evaluate, err := newComparisonEvaluator(comp, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
@@ -127,13 +120,6 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
-	p := NewParser(
-		DefaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
-
 	tests := []struct {
 		name       string
 		comparison *Comparison
@@ -153,20 +139,13 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.newComparisonEvaluator(tt.comparison)
+			_, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.Error(t, err)
 		})
 	}
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
-	p := NewParser(
-		DefaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
-
 	tests := []struct {
 		name string
 		want bool
@@ -349,7 +328,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := p.newBooleanExpressionEvaluator(tt.expr)
+			evaluate, err := newBooleanExpressionEvaluator(tt.expr, DefaultFunctionsForTests(), testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: nil,

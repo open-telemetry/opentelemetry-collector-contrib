@@ -81,9 +81,7 @@ func (r *resourceEnhancer) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 		attrs := rms.Resource().Attributes()
 
 		for attr, val := range r.attrs {
-			if _, found := attrs.Get(attr); !found {
-				attrs.UpsertString(attr, val)
-			}
+			attrs.InsertString(attr, val)
 		}
 	}
 

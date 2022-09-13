@@ -81,9 +81,7 @@ func (mc *metricsConsumer) Consume(ctx context.Context, records [][]byte, common
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {
 			rm := md.ResourceMetrics().At(i)
 			for k, v := range commonAttributes {
-				if _, found := rm.Resource().Attributes().Get(k); !found {
-					rm.Resource().Attributes().UpsertString(k, v)
-				}
+				rm.Resource().Attributes().InsertString(k, v)
 			}
 		}
 	}

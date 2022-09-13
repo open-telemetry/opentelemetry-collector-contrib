@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -199,7 +200,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				op(volumeResourceMetrics)
 			}
 
-			require.Equal(t, tt.want, volumeResourceMetrics.Resource().Attributes().AsRaw())
+			require.Equal(t, pcommon.NewMapFromRaw(tt.want).Sort(), volumeResourceMetrics.Resource().Attributes().Sort())
 		})
 	}
 }

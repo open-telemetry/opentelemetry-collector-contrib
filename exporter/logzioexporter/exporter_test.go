@@ -46,14 +46,20 @@ const (
 )
 
 var (
+	resourceAttributes1  = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
 	TestLogTime          = time.Now()
 	TestLogTimeUnixMilli = TestLogTime.UnixMilli()
 	TestLogTimestamp     = pcommon.NewTimestampFromTime(TestLogTime)
 )
 
+// Resource Attributes
+func initResourceAttributes1(dest pcommon.Map) {
+	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
+}
+
 // Resources
 func initResource1(r pcommon.Resource) {
-	r.Attributes().UpsertString("resource-attr", "resource-attr-val-1")
+	initResourceAttributes1(r.Attributes())
 }
 
 // Logs

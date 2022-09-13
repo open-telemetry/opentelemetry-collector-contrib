@@ -22,9 +22,7 @@ import (
 // addLabelOp add a new attribute to metric data points.
 func addLabelOp(metric pmetric.Metric, op internalOperation) {
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
-		if _, found := attrs.Get(op.configOperation.NewLabel); !found {
-			attrs.UpsertString(op.configOperation.NewLabel, op.configOperation.NewValue)
-		}
+		attrs.InsertString(op.configOperation.NewLabel, op.configOperation.NewValue)
 		return true
 	})
 }

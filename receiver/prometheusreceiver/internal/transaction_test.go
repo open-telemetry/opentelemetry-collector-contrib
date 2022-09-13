@@ -16,7 +16,7 @@ package internal
 
 import (
 	"context"
-	"errors"
+	"regexp"
 	"testing"
 	"time"
 
@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	startTimestamp      = pcommon.Timestamp(1555366608340000000)
+	startTs             = 1555366608.34
 	ts                  = int64(1555366610000)
 	interval            = int64(15 * 1000)
 	tsNanos             = pcommon.Timestamp(ts * 1e6)
@@ -58,27 +58,29 @@ var (
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
 		testMetadataStore(testMetadata))
+
+	startTsNanos = timestampFromFloat64(startTs)
 )
 
 func TestTransactionCommitWithoutAdding(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	assert.NoError(t, tr.Commit())
 }
 
 func TestTransactionRollbackDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	assert.NoError(t, tr.Rollback())
 }
 
 func TestTransactionUpdateMetadataDoesNothing(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.UpdateMetadata(0, labels.New(), metadata.Metadata{})
 	assert.NoError(t, err)
 }
 
 func TestTransactionAppendNoTarget(t *testing.T) {
 	badLabels := labels.FromStrings(model.MetricNameLabel, "counter_test")
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, badLabels, time.Now().Unix()*1000, 1.0)
 	assert.Error(t, err)
 }
@@ -88,7 +90,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 		model.InstanceLabel: "localhost:8080",
 		model.JobLabel:      "test2",
 	})
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, jobNotFoundLb, time.Now().Unix()*1000, 1.0)
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 
@@ -96,7 +98,7 @@ func TestTransactionAppendNoMetricName(t *testing.T) {
 }
 
 func TestTransactionAppendEmptyMetricName(t *testing.T) {
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test2",
@@ -105,9 +107,9 @@ func TestTransactionAppendEmptyMetricName(t *testing.T) {
 	assert.ErrorIs(t, err, errMetricNameNotFound)
 }
 
-func TestTransactionAppendResource(t *testing.T) {
+func TestTransactionAppend(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
@@ -128,42 +130,114 @@ func TestTransactionAppendResource(t *testing.T) {
 	require.Equal(t, expectedResource, gotResource)
 }
 
-func TestTransactionCommitErrorWhenAdjusterError(t *testing.T) {
+func TestTransactionCommitErrorWhenNoStarTime(t *testing.T) {
 	goodLabels := labels.FromMap(map[string]string{
 		model.InstanceLabel:   "localhost:8080",
 		model.JobLabel:        "test",
 		model.MetricNameLabel: "counter_test",
 	})
 	sink := new(consumertest.MetricsSink)
-	adjusterErr := errors.New("adjuster error")
-	tr := newTransaction(scrapeCtx, &errorAdjuster{err: adjusterErr}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 	_, err := tr.Append(0, goodLabels, time.Now().Unix()*1000, 1.0)
 	assert.NoError(t, err)
-	assert.ErrorIs(t, tr.Commit(), adjusterErr)
+	assert.ErrorIs(t, tr.Commit(), errNoStartTimeMetrics)
+}
+
+func TestStartTimeMetricMatch(t *testing.T) {
+	matchBuilderStartTime := 123.456
+	tests := []struct {
+		name                     string
+		inputs                   []*testScrapedPage
+		expectedBuilderStartTime float64
+		startTimeMetricRegex     *regexp.Regexp
+	}{
+		{
+			name: "regexp_match",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("example_process_start_time_seconds", matchBuilderStartTime, "foo", "bar"),
+						createDataPoint("process_start_time_seconds", matchBuilderStartTime+1, "foo", "bar"),
+					},
+				},
+			},
+			expectedBuilderStartTime: matchBuilderStartTime,
+			startTimeMetricRegex:     regexp.MustCompile("^.*_process_start_time_seconds$"),
+		},
+		{
+			name: "match_default_start_time_metric",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("example_process_start_time_seconds", matchBuilderStartTime, "foo", "bar"),
+						createDataPoint("process_start_time_seconds", matchBuilderStartTime+1, "foo", "bar"),
+					},
+				},
+			},
+			expectedBuilderStartTime: matchBuilderStartTime + 1,
+		},
+		{
+			name: "regexp_nomatch",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("subprocess_start_time_seconds", matchBuilderStartTime+2, "foo", "bar"),
+					},
+				},
+			},
+			expectedBuilderStartTime: 0,
+			startTimeMetricRegex:     regexp.MustCompile("^.+_process_start_time_seconds$"),
+		},
+		{
+			name: "nomatch_default_start_time_metric",
+			inputs: []*testScrapedPage{
+				{
+					pts: []*testDataPoint{
+						createDataPoint("subprocess_start_time_seconds", matchBuilderStartTime+2, "foo", "bar"),
+					},
+				},
+			},
+			expectedBuilderStartTime: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			for _, page := range tt.inputs {
+				tr := newTransaction(scrapeCtx, nil, true, tt.startTimeMetricRegex, consumertest.NewNop(), nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+				for _, pt := range page.pts {
+					_, err := tr.Append(0, pt.lb, pt.t, pt.v)
+					assert.NoError(t, err)
+				}
+				assert.EqualValues(t, tt.expectedBuilderStartTime, tr.startTime)
+			}
+		})
+	}
 }
 
 // Ensure that we reject duplicate label keys. See https://github.com/open-telemetry/wg-prometheus/issues/44.
 func TestTransactionAppendDuplicateLabels(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 
 	dupLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
 		model.JobLabel, "test",
 		model.MetricNameLabel, "counter_test",
 		"a", "1",
-		"a", "6",
+		"a", "1",
 		"z", "9",
+		"z", "1",
 	)
 
 	_, err := tr.Append(0, dupLabels, 1917, 1.0)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: "a"`)
+	assert.Contains(t, err.Error(), `invalid sample: non-unique label names: ["a" "z"]`)
 }
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -177,7 +251,7 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+	tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -218,7 +292,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
@@ -245,13 +319,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := sum.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
-				pt1.SetStartTimestamp(startTimestamp)
+				pt1.SetStartTimestamp(startTsNanos)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().UpsertString("foo", "other")
 
@@ -279,13 +353,13 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum0.SetIsMonotonic(true)
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(150.0)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := sum0.DataPoints().AppendEmpty()
 				pt1.SetDoubleVal(25.0)
-				pt1.SetStartTimestamp(startTimestamp)
+				pt1.SetStartTimestamp(startTsNanos)
 				pt1.SetTimestamp(tsNanos)
 				pt1.Attributes().UpsertString("foo", "other")
 
@@ -296,7 +370,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum1.SetIsMonotonic(true)
 				pt2 := sum1.DataPoints().AppendEmpty()
 				pt2.SetDoubleVal(100.0)
-				pt2.SetStartTimestamp(startTimestamp)
+				pt2.SetStartTimestamp(startTsNanos)
 				pt2.SetTimestamp(tsNanos)
 				pt2.Attributes().UpsertString("foo", "bar")
 
@@ -322,7 +396,7 @@ func TestMetricBuilderCounters(t *testing.T) {
 				sum.SetIsMonotonic(true)
 				pt0 := sum.DataPoints().AppendEmpty()
 				pt0.SetDoubleVal(100.0)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
@@ -593,7 +667,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -630,7 +704,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
@@ -639,7 +713,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt1.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt1.SetTimestamp(tsNanos)
-				pt1.SetStartTimestamp(startTimestamp)
+				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().UpsertString("key2", "v2")
 
 				return []pmetric.Metrics{md0}
@@ -681,7 +755,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				pt1 := hist0.DataPoints().AppendEmpty()
@@ -690,7 +764,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt1.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt1.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt1.SetTimestamp(tsNanos)
-				pt1.SetStartTimestamp(startTimestamp)
+				pt1.SetStartTimestamp(startTsNanos)
 				pt1.Attributes().UpsertString("key2", "v2")
 
 				m1 := mL0.AppendEmpty()
@@ -703,7 +777,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt2.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt2.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt2.SetTimestamp(tsNanos)
-				pt2.SetStartTimestamp(startTimestamp)
+				pt2.SetStartTimestamp(startTsNanos)
 				pt2.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -735,7 +809,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 8})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -765,7 +839,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.SetSum(100)
 				pt0.BucketCounts().FromRaw([]uint64{3})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -795,7 +869,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.SetSum(100)
 				pt0.BucketCounts().FromRaw([]uint64{3})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -825,7 +899,7 @@ func TestMetricBuilderHistogram(t *testing.T) {
 				pt0.ExplicitBounds().FromRaw([]float64{10, 20})
 				pt0.BucketCounts().FromRaw([]uint64{1, 1, 1})
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.Attributes().UpsertString("foo", "bar")
 
 				return []pmetric.Metrics{md0}
@@ -921,7 +995,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				sum0 := m0.SetEmptySummary()
 				pt0 := sum0.DataPoints().AppendEmpty()
 				pt0.SetTimestamp(tsNanos)
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(0.0)
 				pt0.Attributes().UpsertString("foo", "bar")
@@ -956,7 +1030,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				m0.SetName("summary_test")
 				sum0 := m0.SetEmptySummary()
 				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
@@ -985,7 +1059,7 @@ func TestMetricBuilderSummary(t *testing.T) {
 				m0.SetName("summary_test")
 				sum0 := m0.SetEmptySummary()
 				pt0 := sum0.DataPoints().AppendEmpty()
-				pt0.SetStartTimestamp(startTimestamp)
+				pt0.SetStartTimestamp(startTsNanos)
 				pt0.SetTimestamp(tsNanos)
 				pt0.SetCount(500)
 				pt0.SetSum(100.0)
@@ -1026,7 +1100,8 @@ func (tt buildTestData) run(t *testing.T) {
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
-		tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+		tr := newTransaction(scrapeCtx, nil, true, nil, sink, nil, componenttest.NewNopReceiverCreateSettings(), nopObsRecv())
+		tr.startTime = startTs // set to a non-zero value
 		for _, pt := range page.pts {
 			// set ts for testing
 			pt.t = st
@@ -1045,48 +1120,6 @@ func (tt buildTestData) run(t *testing.T) {
 		assertEquivalentMetrics(t, wants[i], mds[0])
 		st += interval
 	}
-}
-
-type errorAdjuster struct {
-	err error
-}
-
-func (ea *errorAdjuster) AdjustMetrics(pmetric.Metrics) error {
-	return ea.err
-}
-
-type startTimeAdjuster struct {
-	startTime pcommon.Timestamp
-}
-
-func (s *startTimeAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
-	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
-		rm := metrics.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			ilm := rm.ScopeMetrics().At(j)
-			for k := 0; k < ilm.Metrics().Len(); k++ {
-				metric := ilm.Metrics().At(k)
-				switch metric.DataType() {
-				case pmetric.MetricDataTypeSum:
-					dps := metric.Sum().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dps.At(l).SetStartTimestamp(s.startTime)
-					}
-				case pmetric.MetricDataTypeSummary:
-					dps := metric.Summary().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dps.At(l).SetStartTimestamp(s.startTime)
-					}
-				case pmetric.MetricDataTypeHistogram:
-					dps := metric.Histogram().DataPoints()
-					for l := 0; l < dps.Len(); l++ {
-						dps.At(l).SetStartTimestamp(s.startTime)
-					}
-				}
-			}
-		}
-	}
-	return nil
 }
 
 type testDataPoint struct {

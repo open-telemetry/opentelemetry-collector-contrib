@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -49,7 +50,7 @@ type scraper struct {
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	// for mocking
-	getProcessCreateTime                 func(p processHandle) (int64, error)
+	bootTime                             func() (uint64, error)
 	getProcessHandles                    func() (processHandles, error)
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
@@ -60,7 +61,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 	scraper := &scraper{
 		settings:                             settings,
 		config:                               cfg,
-		getProcessCreateTime:                 processHandle.CreateTime,
+		bootTime:                             host.BootTime,
 		getProcessHandles:                    getProcessHandlesInternal,
 		emitMetricsWithDirectionAttribute:    featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithDirectionAttributeFeatureGateID),
 		emitMetricsWithoutDirectionAttribute: featuregate.GetRegistry().IsEnabled(internal.EmitMetricsWithoutDirectionAttributeFeatureGateID),
@@ -87,7 +88,12 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	bootTime, err := s.bootTime()
+	if err != nil {
+		return err
+	}
+
+	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	return nil
 }
 
@@ -123,8 +129,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(threadMetricsLen, fmt.Errorf("error reading thread info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
-		s.mb.EmitForResource(options...)
+		s.mb.EmitForResource(md.resourceOptions()...)
 	}
 
 	return s.mb.Emit(), errs.Combine()
@@ -171,7 +176,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
-		createTime, err := s.getProcessCreateTime(handle)
+		createTime, err := handle.CreateTime()
 		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading create time for process %q (pid %v): %w", executable.name, pid, err))
 			// set the start time to now to avoid including this when a scrape_process_delay is set
@@ -193,7 +198,6 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			command:    command,
 			username:   username,
 			handle:     handle,
-			createTime: createTime,
 		}
 
 		data = append(data, md)

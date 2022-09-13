@@ -310,10 +310,7 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 			if !found {
 				continue
 			}
-			if _, found = attrs.Get(action.Key); found {
-				continue
-			}
-			av.CopyTo(attrs.UpsertEmpty(action.Key))
+			attrs.Insert(action.Key, av)
 		case UPDATE:
 			av, found := getSourceAttributeValue(ctx, action, attrs)
 			if !found {

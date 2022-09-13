@@ -495,8 +495,7 @@ func metricBuilder(delta int64, prefix, job, instance string) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	rms := md.ResourceMetrics().AppendEmpty()
 	rms0 := md.ResourceMetrics().At(0)
-	rms0.Resource().Attributes().UpsertString(conventions.AttributeServiceName, job)
-	rms0.Resource().Attributes().UpsertString(conventions.AttributeServiceInstanceID, instance)
+	pcommon.NewMapFromRaw(map[string]interface{}{conventions.AttributeServiceName: job, conventions.AttributeServiceInstanceID: instance}).CopyTo(rms0.Resource().Attributes())
 
 	ms := rms.ScopeMetrics().AppendEmpty().Metrics()
 

@@ -264,7 +264,7 @@ generate:
 
 .PHONY: chlog-install
 chlog-install:
-	cd $(TOOLS_MOD_DIR) && $(GOCMD) install go.opentelemetry.io/build-tools/chloggen
+	cd cmd/chloggen && $(GOCMD) install .
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new

@@ -32,14 +32,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 	functions["testing_string"] = functionWithString
 	functions["testing_byte_slice"] = functionWithByteSlice
 	functions["testing_enum"] = functionWithEnum
-	functions["testing_logger_first"] = functionWithLoggerFirst
-
-	p := NewParser(
-		functions,
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
 
 	tests := []struct {
 		name string
@@ -97,63 +89,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
-			name: "too many args",
-			inv: Invocation{
-				Function: "testing_multiple_args",
-				Arguments: []Value{
-					{
-						Path: &Path{
-							Fields: []Field{
-								{
-									Name: "name",
-								},
-							},
-						},
-					},
-					{
-						String: tqltest.Strp("test"),
-					},
-					{
-						String: tqltest.Strp("test"),
-					},
-				},
-			},
-		},
-		{
-			name: "not enough args with logger",
-			inv: Invocation{
-				Function: "testing_logger_first",
-				Arguments: []Value{
-					{
-						String: tqltest.Strp("test"),
-					},
-					{
-						String: tqltest.Strp("test"),
-					},
-				},
-			},
-		},
-		{
-			name: "too many args with logger",
-			inv: Invocation{
-				Function: "testing_logger_first",
-				Arguments: []Value{
-					{
-						String: tqltest.Strp("test"),
-					},
-					{
-						String: tqltest.Strp("test"),
-					},
-					{
-						Int: tqltest.Intp(10),
-					},
-					{
-						Int: tqltest.Intp(10),
-					},
-				},
-			},
-		},
-		{
 			name: "not matching arg type",
 			inv: Invocation{
 				Function: "testing_string",
@@ -199,22 +134,16 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.NewFunctionCall(tt.inv)
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.Error(t, err)
 		})
 	}
 }
 
 func Test_NewFunctionCall(t *testing.T) {
-	p := NewParser(
-		DefaultFunctionsForTests(),
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
+	functions := DefaultFunctionsForTests()
 
 	tests := []struct {
 		name string
@@ -479,61 +408,10 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "logger first",
-			inv: Invocation{
-				Function: "testing_logger_first",
-				Arguments: []Value{
-					{
-						String: tqltest.Strp("test0"),
-					},
-					{
-						String: tqltest.Strp("test1"),
-					},
-					{
-						Int: tqltest.Intp(1),
-					},
-				},
-			},
-		},
-		{
-			name: "logger middle",
-			inv: Invocation{
-				Function: "testing_logger_middle",
-				Arguments: []Value{
-					{
-						String: tqltest.Strp("test0"),
-					},
-					{
-						String: tqltest.Strp("test1"),
-					},
-					{
-						Int: tqltest.Intp(1),
-					},
-				},
-			},
-		},
-		{
-			name: "logger last",
-			inv: Invocation{
-				Function: "testing_logger_last",
-				Arguments: []Value{
-					{
-						String: tqltest.Strp("test0"),
-					},
-					{
-						String: tqltest.Strp("test1"),
-					},
-					{
-						Int: tqltest.Intp(1),
-					},
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := p.NewFunctionCall(tt.inv)
+			_, err := NewFunctionCall(tt.inv, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 		})
 	}
@@ -630,24 +508,6 @@ func functionWithEnum(_ Enum) (ExprFunc, error) {
 	}, nil
 }
 
-func functionWithLoggerFirst(_ Logger, _ string, _ string, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
-	}, nil
-}
-
-func functionWithLoggerMiddle(_ string, _ string, _ Logger, _ int64) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
-	}, nil
-}
-
-func functionWithLoggerLast(_ string, _ string, _ int64, _ Logger) (ExprFunc, error) {
-	return func(ctx TransformContext) interface{} {
-		return "anything"
-	}, nil
-}
-
 func DefaultFunctionsForTests() map[string]interface{} {
 	functions := make(map[string]interface{})
 	functions["testing_string_slice"] = functionWithStringSlice
@@ -664,8 +524,5 @@ func DefaultFunctionsForTests() map[string]interface{} {
 	functions["testing_bool"] = functionWithBool
 	functions["testing_multiple_args"] = functionWithMultipleArgs
 	functions["testing_enum"] = functionWithEnum
-	functions["testing_logger_first"] = functionWithLoggerFirst
-	functions["testing_logger_middle"] = functionWithLoggerMiddle
-	functions["testing_logger_last"] = functionWithLoggerLast
 	return functions
 }

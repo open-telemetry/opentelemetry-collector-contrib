@@ -120,17 +120,14 @@ func (e *traceExporterImp) consumeTrace(ctx context.Context, td ptrace.Traces) e
 		start := time.Now()
 		err = te.ConsumeTraces(ctx, td)
 		duration := time.Since(start)
+		ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
 
 		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
+			stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
 		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
+			stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
 		}
 	}
 	return err

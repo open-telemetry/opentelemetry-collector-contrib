@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -169,12 +170,12 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 
 	for _, trace := range traces {
 		rs := td.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().FromRaw(trace.resourceAttributes)
+		pcommon.NewMapFromRaw(trace.resourceAttributes).CopyTo(rs.Resource().Attributes())
 		ils := rs.ScopeSpans().AppendEmpty()
 		ils.Scope().SetName(trace.libraryName)
 		ils.Scope().SetVersion(trace.libraryVersion)
 		span := ils.Spans().AppendEmpty()
-		span.Attributes().FromRaw(trace.tags)
+		pcommon.NewMapFromRaw(trace.tags).CopyTo(span.Attributes())
 		span.SetName(trace.spanName)
 	}
 	return td

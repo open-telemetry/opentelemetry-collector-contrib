@@ -384,7 +384,7 @@ func Test_getPromExemplars(t *testing.T) {
 	tnow := time.Now()
 	tests := []struct {
 		name      string
-		histogram pmetric.HistogramDataPoint
+		histogram *pmetric.HistogramDataPoint
 		expected  []prompb.Exemplar
 	}{
 		{
@@ -443,14 +443,14 @@ func Test_getPromExemplars(t *testing.T) {
 		},
 		{
 			"without_exemplar",
-			pmetric.NewHistogramDataPoint(),
+			getHistogramDataPoint(),
 			nil,
 		},
 	}
 	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplars(tt.histogram)
+			requests := getPromExemplars(*tt.histogram)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}
@@ -463,10 +463,10 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceInstanceID: "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
-	resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithServiceAttrs.Attributes())
 	resourceWithServiceAttrs.Attributes().UpsertString("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
-	resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap)
+	pcommon.NewMapFromRaw(resourceAttrMap).CopyTo(resourceWithOnlyServiceAttrs.Attributes())
 	for _, tc := range []struct {
 		desc      string
 		resource  pcommon.Resource

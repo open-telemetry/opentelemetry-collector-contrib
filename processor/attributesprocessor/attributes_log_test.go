@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -55,7 +56,7 @@ func generateLogData(resourceName string, attrs map[string]interface{}) plog.Log
 	res.Resource().Attributes().UpsertString("name", resourceName)
 	sl := res.ScopeLogs().AppendEmpty()
 	lr := sl.LogRecords().AppendEmpty()
-	lr.Attributes().FromRaw(attrs)
+	pcommon.NewMapFromRaw(attrs).CopyTo(lr.Attributes())
 	lr.Attributes().Sort()
 	return td
 }

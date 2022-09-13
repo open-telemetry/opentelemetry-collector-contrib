@@ -1,18 +1,12 @@
 {
    "resourceMetrics": [
       {
-         "resource": {
-            "attributes": [
-               {
-                  "key": "elasticsearch.cluster.name",
-                  "value": {
-                     "stringValue": "docker-cluster"
-                  }
-               }
-            ]
-         },
          "scopeMetrics": [
             {
+               "scope": {
+                  "name": "otelcol/elasticsearchreceiver",
+                  "version": "latest"
+               },
                "metrics": [
                   {
                      "description": "The number of data nodes in the cluster.",
@@ -22,76 +16,12 @@
                         "dataPoints": [
                            {
                               "asInt": "25",
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            }
                         ]
                      },
                      "unit": "{nodes}"
-                  },
-                  {
-                     "description": "The health status of the cluster.",
-                     "name": "elasticsearch.cluster.health",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "green"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
-                           },
-                           {
-                              "asInt": "1",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "yellow"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "status",
-                                    "value": {
-                                       "stringValue": "red"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
-                           }
-                        ]
-                     },
-                     "unit": "{status}"
-                  },
-                  {
-                     "description": "The number of unfinished fetches.",
-                     "name": "elasticsearch.cluster.in_flight_fetch",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
-                           }
-                        ]
-                     },
-                     "unit": "{fetches}"
                   },
                   {
                      "description": "The total number of nodes in the cluster.",
@@ -101,27 +31,12 @@
                         "dataPoints": [
                            {
                               "asInt": "46",
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            }
                         ]
                      },
                      "unit": "{nodes}"
-                  },
-                  {
-                     "description": "The number of cluster-level changes that have not yet been executed.",
-                     "name": "elasticsearch.cluster.pending_tasks",
-                     "sum": {
-                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                        "dataPoints": [
-                           {
-                              "asInt": "0",
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
-                           }
-                        ]
-                     },
-                     "unit": "{tasks}"
                   },
                   {
                      "description": "The number of shards in the cluster.",
@@ -139,8 +54,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            },
                            {
                               "asInt": "2",
@@ -152,8 +67,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            },
                            {
                               "asInt": "10",
@@ -165,8 +80,8 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            },
                            {
                               "asInt": "3",
@@ -178,20 +93,75 @@
                                     }
                                  }
                               ],
-                              "startTimeUnixNano": "1662458370557980000",
-                              "timeUnixNano": "1662458370559258000"
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
                            }
                         ]
                      },
                      "unit": "{shards}"
+                  },
+                  {
+                     "description": "The health status of the cluster.",
+                     "name": "elasticsearch.cluster.health",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "green"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "1",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "yellow"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           },
+                           {
+                              "asInt": "0",
+                              "attributes": [
+                                 {
+                                    "key": "status",
+                                    "value": {
+                                       "stringValue": "red"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1642218266053041000",
+                              "timeUnixNano": "1642218266053039000"
+                           }
+                        ]
+                     },
+                     "unit": "{status}"
                   }
-               ],
-               "scope": {
-                  "name": "otelcol/elasticsearchreceiver",
-                  "version": "latest"
-               }
+               ]
             }
-         ]
+         ],
+         "resource": {
+            "attributes": [
+               {
+                  "key": "elasticsearch.cluster.name",
+                  "value": {
+                     "stringValue": "docker-cluster"
+                  }
+               }
+            ]
+         }
       }
    ]
 }

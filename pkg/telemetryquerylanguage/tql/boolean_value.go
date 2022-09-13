@@ -55,15 +55,15 @@ func orFuncs(funcs []BoolExpressionEvaluator) BoolExpressionEvaluator {
 	}
 }
 
-func (p *Parser) newComparisonEvaluator(comparison *Comparison) (BoolExpressionEvaluator, error) {
+func newComparisonEvaluator(comparison *Comparison, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if comparison == nil {
 		return alwaysTrue, nil
 	}
-	left, err := p.NewGetter(comparison.Left)
+	left, err := NewGetter(comparison.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
-	right, err := p.NewGetter(comparison.Right)
+	right, err := NewGetter(comparison.Right, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
@@ -77,17 +77,17 @@ func (p *Parser) newComparisonEvaluator(comparison *Comparison) (BoolExpressionE
 
 }
 
-func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExpressionEvaluator, error) {
+func newBooleanExpressionEvaluator(expr *BooleanExpression, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if expr == nil {
 		return alwaysTrue, nil
 	}
-	f, err := p.newBooleanTermEvaluator(expr.Left)
+	f, err := newBooleanTermEvaluator(expr.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range expr.Right {
-		f, err := p.newBooleanTermEvaluator(rhs.Term)
+		f, err := newBooleanTermEvaluator(rhs.Term, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -97,17 +97,17 @@ func (p *Parser) newBooleanExpressionEvaluator(expr *BooleanExpression) (BoolExp
 	return orFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, error) {
+func newBooleanTermEvaluator(term *Term, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if term == nil {
 		return alwaysTrue, nil
 	}
-	f, err := p.newBooleanValueEvaluator(term.Left)
+	f, err := newBooleanValueEvaluator(term.Left, functions, pathParser, enumParser)
 	if err != nil {
 		return nil, err
 	}
 	funcs := []BoolExpressionEvaluator{f}
 	for _, rhs := range term.Right {
-		f, err := p.newBooleanValueEvaluator(rhs.Value)
+		f, err := newBooleanValueEvaluator(rhs.Value, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -117,13 +117,13 @@ func (p *Parser) newBooleanTermEvaluator(term *Term) (BoolExpressionEvaluator, e
 	return andFuncs(funcs), nil
 }
 
-func (p *Parser) newBooleanValueEvaluator(value *BooleanValue) (BoolExpressionEvaluator, error) {
+func newBooleanValueEvaluator(value *BooleanValue, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (BoolExpressionEvaluator, error) {
 	if value == nil {
 		return alwaysTrue, nil
 	}
 	switch {
 	case value.Comparison != nil:
-		comparison, err := p.newComparisonEvaluator(value.Comparison)
+		comparison, err := newComparisonEvaluator(value.Comparison, functions, pathParser, enumParser)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +134,7 @@ func (p *Parser) newBooleanValueEvaluator(value *BooleanValue) (BoolExpressionEv
 		}
 		return alwaysFalse, nil
 	case value.SubExpr != nil:
-		return p.newBooleanExpressionEvaluator(value.SubExpr)
+		return newBooleanExpressionEvaluator(value.SubExpr, functions, pathParser, enumParser)
 	}
 
 	return nil, fmt.Errorf("unhandled boolean operation %v", value)

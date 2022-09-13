@@ -109,16 +109,9 @@ func Test_newGetter(t *testing.T) {
 
 	functions := map[string]interface{}{"hello": hello}
 
-	p := NewParser(
-		functions,
-		testParsePath,
-		testParseEnum,
-		NoOpLogger{},
-	)
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			reader, err := p.NewGetter(tt.val)
+			reader, err := NewGetter(tt.val, functions, testParsePath, testParseEnum)
 			assert.NoError(t, err)
 			val := reader.Get(tqltest.TestTransformContext{
 				Item: tt.want,
@@ -128,7 +121,7 @@ func Test_newGetter(t *testing.T) {
 	}
 
 	t.Run("empty value", func(t *testing.T) {
-		_, err := p.NewGetter(Value{})
+		_, err := NewGetter(Value{}, functions, testParsePath, testParseEnum)
 		assert.Error(t, err)
 	})
 }

@@ -138,7 +138,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	outputDestination := expConfig.OutputDestination
 
 	for i := 0; i < rms.Len(); i++ {
-		err := emf.metricTranslator.translateOTelToGroupedMetric(rms.At(i), groupedMetrics, expConfig)
+		rm := rms.At(i)
+		err := emf.metricTranslator.translateOTelToGroupedMetric(&rm, groupedMetrics, expConfig)
 		if err != nil {
 			return err
 		}

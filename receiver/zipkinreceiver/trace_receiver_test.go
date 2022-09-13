@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
@@ -401,20 +402,22 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	td := next.AllTraces()[0]
 	span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 
-	expected := map[string]interface{}{
+	expected := pcommon.NewMapFromRaw(map[string]interface{}{
 		"cache_hit":            true,
-		"ping_count":           int64(25),
+		"ping_count":           25,
 		"timeout":              12.3,
 		"clnt/finagle.version": "6.45.0",
 		"http.path":            "/api",
-		"http.status_code":     int64(500),
+		"http.status_code":     500,
 		"net.host.ip":          "7::80:807f",
 		"peer.service":         "backend",
 		"net.peer.ip":          "192.168.99.101",
-		"net.peer.port":        int64(9000),
-	}
+		"net.peer.port":        9000,
+	}).Sort()
 
-	assert.EqualValues(t, expected, span.Attributes().AsRaw())
+	actual := span.Attributes().Sort()
+
+	assert.EqualValues(t, expected, actual)
 }
 
 func TestFromBytesWithNoTimestamp(t *testing.T) {

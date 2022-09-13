@@ -57,7 +57,7 @@ var (
 	}
 )
 
-func createTestLogData(numberOfLogs int, attributes map[string]interface{}) plog.Logs {
+func createLogData(numberOfLogs int, attributes pcommon.Map) plog.Logs {
 	logs := plog.NewLogs()
 	sl := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
 
@@ -65,7 +65,7 @@ func createTestLogData(numberOfLogs int, attributes map[string]interface{}) plog
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("mylog")
-		logRecord.Attributes().FromRaw(attributes)
+		attributes.CopyTo(logRecord.Attributes())
 		logRecord.SetTimestamp(ts)
 	}
 
@@ -107,12 +107,13 @@ func TestExporter_pushLogData(t *testing.T) {
 	}
 
 	genericGenLogsFunc := func() plog.Logs {
-		return createTestLogData(10, map[string]interface{}{
-			conventions.AttributeContainerName:  "api",
-			conventions.AttributeK8SClusterName: "local",
-			"resource.name":                     "myresource",
-			"severity":                          "debug",
-		})
+		return createLogData(10,
+			pcommon.NewMapFromRaw(map[string]interface{}{
+				conventions.AttributeContainerName:  "api",
+				conventions.AttributeK8SClusterName: "local",
+				"resource.name":                     "myresource",
+				"severity":                          "debug",
+			}))
 	}
 
 	genericConfig := &Config{
@@ -185,9 +186,10 @@ func TestExporter_pushLogData(t *testing.T) {
 			httpResponseCode: http.StatusOK,
 			testServer:       true,
 			genLogsFunc: func() plog.Logs {
-				return createTestLogData(10, map[string]interface{}{
-					"not.a.match": "random",
-				})
+				return createLogData(10,
+					pcommon.NewMapFromRaw(map[string]interface{}{
+						"not.a.match": "random",
+					}))
 			},
 			errFunc: func(err error) {
 				require.True(t, consumererror.IsPermanent(err))
@@ -203,16 +205,18 @@ func TestExporter_pushLogData(t *testing.T) {
 			genLogsFunc: func() plog.Logs {
 				outLogs := plog.NewLogs()
 
-				matchingLogs := createTestLogData(10, map[string]interface{}{
-					conventions.AttributeContainerName:  "api",
-					conventions.AttributeK8SClusterName: "local",
-					"severity":                          "debug",
-				})
+				matchingLogs := createLogData(10,
+					pcommon.NewMapFromRaw(map[string]interface{}{
+						conventions.AttributeContainerName:  "api",
+						conventions.AttributeK8SClusterName: "local",
+						"severity":                          "debug",
+					}))
 				matchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
-				nonMatchingLogs := createTestLogData(5, map[string]interface{}{
-					"not.a.match": "random",
-				})
+				nonMatchingLogs := createLogData(5,
+					pcommon.NewMapFromRaw(map[string]interface{}{
+						"not.a.match": "random",
+					}))
 				nonMatchingLogs.ResourceLogs().MoveAndAppendTo(outLogs.ResourceLogs())
 
 				return outLogs

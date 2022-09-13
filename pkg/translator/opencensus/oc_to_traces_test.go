@@ -92,7 +92,12 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	}
 	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
-	assert.Equal(t, map[string]interface{}{"abc": "def"}, attrs.AsRaw())
+	assert.EqualValues(t,
+		pcommon.NewMapFromRaw(
+			map[string]interface{}{
+				"abc": "def",
+			}),
+		attrs)
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
@@ -107,12 +112,13 @@ func TestInitAttributeMapFromOC(t *testing.T) {
 	attrs = pcommon.NewMap()
 	initAttributeMapFromOC(ocAttrs, attrs)
 
-	assert.EqualValues(t, map[string]interface{}{
+	expectedAttr := pcommon.NewMapFromRaw(map[string]interface{}{
 		"abc":       "def",
-		"intval":    int64(345),
+		"intval":    345,
 		"boolval":   true,
 		"doubleval": 4.5,
-	}, attrs.AsRaw())
+	})
+	assert.EqualValues(t, expectedAttr.Sort(), attrs.Sort())
 	assert.EqualValues(t, 234, ocAttrsToDroppedAttributes(ocAttrs))
 }
 

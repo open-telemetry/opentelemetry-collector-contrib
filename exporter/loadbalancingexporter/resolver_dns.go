@@ -35,14 +35,7 @@ const (
 	defaultResTimeout  = time.Second
 )
 
-var (
-	errNoHostname = errors.New("no hostname specified to resolve the backends")
-
-	resolverMutator = tag.Upsert(tag.MustNewKey("resolver"), "dns")
-
-	resolverSuccessTrueMutators  = []tag.Mutator{resolverMutator, successTrueMutator}
-	resolverSuccessFalseMutators = []tag.Mutator{resolverMutator, successFalseMutator}
-)
+var errNoHostname = errors.New("no hostname specified to resolve the backends")
 
 type dnsResolver struct {
 	logger *zap.Logger
@@ -134,13 +127,19 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.shutdownWg.Add(1)
 	defer r.shutdownWg.Done()
 
+	// the context to use for all metrics in this function
+	mCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("resolver"), "dns"))
+
 	addrs, err := r.resolver.LookupIPAddr(ctx, r.hostname)
 	if err != nil {
-		_ = stats.RecordWithTags(ctx, resolverSuccessFalseMutators, mNumResolutions.M(1))
+		failedCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "false"))
+		stats.Record(failedCtx, mNumResolutions.M(1))
 		return nil, err
 	}
 
-	_ = stats.RecordWithTags(ctx, resolverSuccessTrueMutators, mNumResolutions.M(1))
+	// from this point, we don't fail anymore
+	successCtx, _ := tag.New(mCtx, tag.Upsert(tag.MustNewKey("success"), "true"))
+	stats.Record(successCtx, mNumResolutions.M(1))
 
 	var backends []string
 	for _, ip := range addrs {
@@ -171,7 +170,7 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 	r.updateLock.Lock()
 	r.endpoints = backends
 	r.updateLock.Unlock()
-	_ = stats.RecordWithTags(ctx, resolverSuccessTrueMutators, mNumBackends.M(int64(len(backends))))
+	stats.Record(mCtx, mNumBackends.M(int64(len(backends))))
 
 	// propagate the change
 	r.changeCallbackLock.RLock()
