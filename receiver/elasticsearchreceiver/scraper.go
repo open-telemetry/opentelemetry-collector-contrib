@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-version"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -56,6 +57,11 @@ var (
 	}
 )
 
+var es7_10 = func() *version.Version {
+	v, _ := version.NewVersion("7.10")
+	return v
+}()
+
 func init() {
 	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
 	featuregate.GetRegistry().MustRegister(emitMetricsWithoutDirectionAttributeFeatureGate)
@@ -68,6 +74,7 @@ type elasticsearchScraper struct {
 	settings                             component.TelemetrySettings
 	cfg                                  *Config
 	mb                                   *metadata.MetricsBuilder
+	version                              *version.Version
 	emitMetricsWithDirectionAttribute    bool
 	emitMetricsWithoutDirectionAttribute bool
 }
@@ -95,10 +102,28 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
+	r.getVersion(ctx, errs)
 	r.scrapeNodeMetrics(ctx, now, errs)
 	r.scrapeClusterMetrics(ctx, now, errs)
 
 	return r.mb.Emit(), errs.Combine()
+}
+
+// scrapeVersion gets and assigns the elasticsearch version number
+func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+	versionResponse, err := r.client.Version(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	esVersion, err := version.NewVersion(versionResponse.Version.Number)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+
+	r.version = esVersion
 }
 
 // scrapeNodeMetrics scrapes adds node-level metrics to the given MetricSlice from the NodeStats endpoint
@@ -230,7 +255,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 
 		r.mb.RecordJvmThreadsCountDataPoint(now, info.JVMInfo.JVMThreadInfo.Count)
 
-		r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
+		// Elasticsearch version 7.10+ is required to collect `elasticsearch.indexing_pressure.memory.limit`.
+		// Reference: https://github.com/elastic/elasticsearch/pull/60342/files#diff-13864344bab3afc267797d67b2746e2939a3fd8af7611ac9fbda376323e2f5eaR37
+		if r.version != nil && r.version.GreaterThanOrEqual(es7_10) {
+			r.mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(now, info.IndexingPressure.Memory.LimitInBy)
+		}
+
 		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.PrimaryInBy, metadata.AttributeIndexingPressureStagePrimary)
 		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.CoordinatingInBy, metadata.AttributeIndexingPressureStageCoordinating)
 		r.mb.RecordElasticsearchMemoryIndexingPressureDataPoint(now, info.IndexingPressure.Memory.Current.ReplicaInBy, metadata.AttributeIndexingPressureStageReplica)
