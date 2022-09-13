@@ -495,12 +495,6 @@ github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAl
 github.com/onsi/gomega v1.18.1/go.mod h1:0q+aL8jAiMXy9hbwj2mr5GziHiwhAIQpFmmtT5hitRs=
 github.com/onsi/gomega v1.19.0 h1:4ieX6qQjPP/BfC3mpsAtIGGlxTWPeA3Inl/7DtXw1tw=
 github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.59.0 h1:/XBLDr44f+jOy0H5pOjxQu0kemccNsZuhC0ZLM85itw=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.59.0 h1:+uw+xRDeHAiPTzPFqJOrP2MP7IWv27BepjM91ENRiCI=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.59.0/go.mod h1:rCFPH/Ey9k77DIDj8t+jH4pjPHTZZ13lUVdQhpNmdjo=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0 h1:lizRPrjEfc1adMlc77jY6fnquEJQmpZNRGdgq0uxO3Q=
-github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.59.0/go.mod h1:U6f1YRLbyDVAUUWHwUD1Ct5Q4kfAWiUsvYoIV6vazmU=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.59.0 h1:9/ckw6gE0MaZAZiafhYrp3eC+/DhCk89Kc4kn2vbXL0=
-github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.59.0/go.mod h1:8v+HkMXGLG+MkZAk1YHAB5mK/FJXnhJXTsMEZblBqXs=
 github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8Oi/yOhh5U=
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.0.2 h1:9yCKha/T5XdGtO0q9Q9a6T5NUCsTn/DrBg0D7ufOcFM=
