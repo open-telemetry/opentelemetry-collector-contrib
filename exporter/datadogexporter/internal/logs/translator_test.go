@@ -15,6 +15,7 @@
 package logs
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
@@ -26,6 +27,12 @@ import (
 )
 
 func TestTransform(t *testing.T) {
+	traceID := [16]byte{0x08, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x0, 0x0, 0x0, 0x0, 0x0a}
+	var spanID [8]byte
+	copy(spanID[:], traceID[8:])
+	ddTr := traceIDToUint64(traceID)
+	ddSp := spanIDToUint64(spanID)
+
 	type args struct {
 		lr  plog.LogRecord
 		res pcommon.Resource
@@ -49,9 +56,9 @@ func TestTransform(t *testing.T) {
 			want: datadogV2.HTTPLogItem{
 				Message: *datadog.PtrString(""),
 				AdditionalProperties: map[string]string{
-					"app":                   "test",
-					"status":                "debug",
-					"otel.serverity_number": "5",
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
 				},
 			},
 		},
@@ -75,9 +82,9 @@ func TestTransform(t *testing.T) {
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
-					"app":                   "test",
-					"status":                "debug",
-					"otel.serverity_number": "5",
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
 				},
 			},
 		},
@@ -100,10 +107,43 @@ func TestTransform(t *testing.T) {
 				Message: *datadog.PtrString(""),
 				Service: datadog.PtrString("otlp_col"),
 				AdditionalProperties: map[string]string{
-					"app":                   "test",
-					"status":                "debug",
-					"otel.serverity_number": "5",
-					"service.name":          "otlp_col",
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
+					"service.name":     "otlp_col",
+				},
+			},
+		},
+		{
+			name: "log_with_trace",
+			args: args{
+				lr: func() plog.LogRecord {
+					l := plog.NewLogRecord()
+					l.Attributes().InsertString("app", "test")
+					l.SetSpanID(spanID)
+					l.SetTraceID(traceID)
+					l.Attributes().InsertString(conventions.AttributeServiceName, "otlp_col")
+					l.SetSeverityNumber(5)
+					return l
+				}(),
+				res: func() pcommon.Resource {
+					r := pcommon.NewResource()
+					return r
+				}(),
+			},
+			want: datadogV2.HTTPLogItem{
+				Message: *datadog.PtrString(""),
+				Service: datadog.PtrString("otlp_col"),
+				AdditionalProperties: map[string]string{
+					"app":              "test",
+					"status":           "debug",
+					otelSeverityNumber: "5",
+					otelSpanID:         fmt.Sprintf("%x", string(spanID[:])),
+					otelTraceID:        fmt.Sprintf("%x", string(traceID[:])),
+					ddSpanID:           fmt.Sprintf("%d", ddSp),
+					ddTraceID:          fmt.Sprintf("%d", ddTr),
+
+					"service.name": "otlp_col",
 				},
 			},
 		},
@@ -139,30 +179,107 @@ func Test_deriveStatus(t *testing.T) {
 		want string
 	}{
 		{
-			name: "trace",
+			name: "trace3",
 			args: args{
 				severity: 3,
 			},
 			want: logLevelTrace,
 		},
 		{
-			name: "debug",
+			name: "trace4",
+			args: args{
+				severity: 4,
+			},
+			want: logLevelTrace,
+		},
+		{
+			name: "debug5",
+			args: args{
+				severity: 5,
+			},
+			want: logLevelDebug,
+		},
+		{
+			name: "debug7",
 			args: args{
 				severity: 7,
 			},
 			want: logLevelDebug,
 		},
 		{
-			name: "warn",
+			name: "debug8",
+			args: args{
+				severity: 8,
+			},
+			want: logLevelDebug,
+		},
+		{
+			name: "info9",
+			args: args{
+				severity: 9,
+			},
+			want: logLevelInfo,
+		},
+		{
+			name: "info12",
+			args: args{
+				severity: 12,
+			},
+			want: logLevelInfo,
+		},
+		{
+			name: "warn13",
 			args: args{
 				severity: 13,
 			},
 			want: logLevelWarn,
 		},
+		{
+			name: "warn16",
+			args: args{
+				severity: 16,
+			},
+			want: logLevelWarn,
+		},
+		{
+			name: "error17",
+			args: args{
+				severity: 17,
+			},
+			want: logLevelError,
+		},
+		{
+			name: "error20",
+			args: args{
+				severity: 20,
+			},
+			want: logLevelError,
+		},
+		{
+			name: "fatal21",
+			args: args{
+				severity: 21,
+			},
+			want: logLevelFatal,
+		},
+		{
+			name: "fatal24",
+			args: args{
+				severity: 24,
+			},
+			want: logLevelFatal,
+		},
+		{
+			name: "undefined",
+			args: args{
+				severity: 50,
+			},
+			want: logLevelError,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, deriveStatus(tt.args.severity), "deriveStatus(%v)", tt.args.severity)
+			assert.Equalf(t, tt.want, derviveDdStatusFromSeverityNumber(tt.args.severity), "derviveDdStatusFromSeverityNumber(%v)", tt.args.severity)
 		})
 	}
 }

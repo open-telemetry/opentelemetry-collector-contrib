@@ -15,8 +15,8 @@
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
 import (
+	"encoding/binary"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,9 +32,9 @@ import (
 const (
 	namespace          = "otel"
 	otelTraceID        = namespace + ".trace_id"
-	otelSpandID        = namespace + ".span_id"
-	otelSeverityNumber = namespace + ".serverity_number"
-	otelSeverityText   = namespace + ".serverity_text"
+	otelSpanID         = namespace + ".span_id"
+	otelSeverityNumber = namespace + ".severity_number"
+	otelSeverityText   = namespace + ".severity_text"
 	otelTimestamp      = namespace + ".timestamp"
 
 	ddStatus    = "status"
@@ -54,7 +54,7 @@ const (
 
 // Transform is responsible to convert LogRecord to datadog format
 func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
-	hostName, serviceName := extractHostNameService(res.Attributes(), lr.Attributes())
+	hostName, serviceName := extractHostNameAndServiceName(res.Attributes(), lr.Attributes())
 
 	l := datadogV2.HTTPLogItem{
 		AdditionalProperties: make(map[string]string),
@@ -73,26 +73,24 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 		return true
 	})
 	if !lr.TraceID().IsEmpty() {
-		l.AdditionalProperties[ddTraceID] = convertTraceID(lr.TraceID().HexString())
+		l.AdditionalProperties[ddTraceID] = fmt.Sprintf("%d", traceIDToUint64(lr.TraceID()))
 		l.AdditionalProperties[otelTraceID] = lr.TraceID().HexString()
 	}
 	if !lr.SpanID().IsEmpty() {
-		l.AdditionalProperties[ddSpanID] = convertTraceID(lr.SpanID().HexString())
-		l.AdditionalProperties[otelSpandID] = lr.SpanID().HexString()
+		l.AdditionalProperties[ddSpanID] = fmt.Sprintf("%d", spanIDToUint64(lr.SpanID()))
+		l.AdditionalProperties[otelSpanID] = lr.SpanID().HexString()
 	}
 	var status string
 
-	if lr.SeverityText() != "" {
+	if lr.SeverityNumber() != 0 {
+		status = derviveDdStatusFromSeverityNumber(lr.SeverityNumber())
+		l.AdditionalProperties[otelSeverityNumber] = fmt.Sprintf("%d", lr.SeverityNumber())
+	} else if lr.SeverityText() != "" {
 		status = lr.SeverityText()
 		l.AdditionalProperties[otelSeverityText] = lr.SeverityText()
-	} else {
-		status = deriveStatus(lr.SeverityNumber())
 	}
-	l.AdditionalProperties[ddStatus] = status
 
-	if lr.SeverityNumber() != 0 {
-		l.AdditionalProperties[otelSeverityNumber] = fmt.Sprintf("%d", lr.SeverityNumber())
-	}
+	l.AdditionalProperties[ddStatus] = status
 
 	// for datadog to use the same timestamp we need to set the additional property of "@timestamp"
 	if lr.Timestamp() != 0 {
@@ -109,12 +107,12 @@ func Transform(lr plog.LogRecord, res pcommon.Resource) datadogV2.HTTPLogItem {
 	return l
 }
 
-func extractHostNameService(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (hostName string, serviceName string) {
+func extractHostNameAndServiceName(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (hostName string, serviceName string) {
 	if src, ok := attributes.SourceFromAttributes(resourceAttrs, true); ok && src.Kind == source.HostnameKind {
 		hostName = src.Identifier
 	}
 
-	// hostName, serviceName are blank from resource
+	// hostName is blank from resource
 	// we need to derive from log attributes
 	if hostName == "" {
 		if src, ok := attributes.SourceFromAttributes(logAttrs, true); ok && src.Kind == source.HostnameKind {
@@ -125,6 +123,9 @@ func extractHostNameService(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (ho
 	if s, ok := resourceAttrs.Get(conventions.AttributeServiceName); ok {
 		serviceName = s.AsString()
 	}
+
+	// serviceName is blank from resource
+	// we need to derive from log attributes
 	if serviceName == "" {
 		if s, ok := logAttrs.Get(conventions.AttributeServiceName); ok {
 			serviceName = s.AsString()
@@ -134,36 +135,31 @@ func extractHostNameService(resourceAttrs pcommon.Map, logAttrs pcommon.Map) (ho
 	return hostName, serviceName
 }
 
-// convertTraceID would convert 128 bit otel TraceID to 64 bit datadog TraceID
-func convertTraceID(id string) string {
-	if len(id) < 16 {
-		return ""
-	}
-	if len(id) > 16 {
-		id = id[16:]
-	}
-	intValue, err := strconv.ParseUint(id, 16, 64)
-	if err != nil {
-		return ""
-	}
-	return strconv.FormatUint(intValue, 10)
+// traceIDToUint64 converts 128bit traceId to 64 bit uint64
+func traceIDToUint64(b [16]byte) uint64 {
+	return binary.BigEndian.Uint64(b[len(b)-8:])
 }
 
-// deriveStatus converts the severity number to log level
+// spanIDToUint64 converts byte array to uint64
+func spanIDToUint64(b [8]byte) uint64 {
+	return binary.BigEndian.Uint64(b[:])
+}
+
+// derviveDdStatusFromSeverityNumber converts the severity number to log level
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-severitynumber
-func deriveStatus(severity plog.SeverityNumber) string {
+func derviveDdStatusFromSeverityNumber(severity plog.SeverityNumber) string {
 	switch {
-	case severity < 5:
+	case severity <= 4:
 		return logLevelTrace
-	case severity < 8:
+	case severity <= 8:
 		return logLevelDebug
-	case severity < 12:
+	case severity <= 12:
 		return logLevelInfo
-	case severity < 16:
+	case severity <= 16:
 		return logLevelWarn
-	case severity < 20:
+	case severity <= 20:
 		return logLevelError
-	case severity < 24:
+	case severity <= 24:
 		return logLevelFatal
 	default:
 		// By default, treat this as error
