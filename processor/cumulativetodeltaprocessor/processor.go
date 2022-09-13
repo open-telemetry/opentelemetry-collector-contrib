@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"math"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/service/featuregate"
 	"go.uber.org/zap"
@@ -274,7 +273,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{
 				if hasSum {
 					dp.SetSum(sumDelta.FloatValue)
 				}
-				dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(rawBucketCounts))
+				dp.BucketCounts().FromRaw(rawBucketCounts)
 				return false
 			}
 

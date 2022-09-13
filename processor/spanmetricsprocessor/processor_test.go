@@ -605,10 +605,10 @@ func buildSampleTrace() ptrace.Traces {
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
 		spans.Resource().Attributes().
-			InsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
+			UpsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().InsertString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().UpsertString(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -623,14 +623,14 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
-	s.Attributes().InsertInt(intAttrName, 99)
-	s.Attributes().InsertDouble(doubleAttrName, 99.99)
-	s.Attributes().InsertBool(boolAttrName, true)
-	s.Attributes().Insert(nullAttrName, pcommon.NewValueEmpty())
-	s.Attributes().Insert(mapAttrName, pcommon.NewValueMap())
-	s.Attributes().Insert(arrayAttrName, pcommon.NewValueSlice())
-	s.SetTraceID(pcommon.NewTraceID([16]byte{byte(42)}))
+	s.Attributes().UpsertString(stringAttrName, "stringAttrValue")
+	s.Attributes().UpsertInt(intAttrName, 99)
+	s.Attributes().UpsertDouble(doubleAttrName, 99.99)
+	s.Attributes().UpsertBool(boolAttrName, true)
+	s.Attributes().UpsertEmpty(nullAttrName)
+	s.Attributes().UpsertEmptyMap(mapAttrName)
+	s.Attributes().UpsertEmptySlice(arrayAttrName)
+	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -725,7 +725,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resAttr := pcommon.NewMapFromRaw(tc.resourceAttrMap)
+			resAttr := pcommon.NewMap()
+			resAttr.FromRaw(tc.resourceAttrMap)
 			span0 := ptrace.NewSpan()
 			pcommon.NewMapFromRaw(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")

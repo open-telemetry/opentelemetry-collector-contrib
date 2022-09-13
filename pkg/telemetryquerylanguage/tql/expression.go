@@ -72,7 +72,7 @@ func (g exprGetter) Get(ctx TransformContext) interface{} {
 	return g.expr(ctx)
 }
 
-func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpressionParser, enumParser EnumParser) (Getter, error) {
+func (p *Parser) NewGetter(val Value) (Getter, error) {
 	if val.IsNil != nil && *val.IsNil {
 		return &Literal{Value: nil}, nil
 	}
@@ -94,7 +94,7 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	}
 
 	if val.Enum != nil {
-		enum, err := enumParser(val.Enum)
+		enum, err := p.enumParser(val.Enum)
 		if err != nil {
 			return nil, err
 		}
@@ -102,14 +102,14 @@ func NewGetter(val Value, functions map[string]interface{}, pathParser PathExpre
 	}
 
 	if val.Path != nil {
-		return pathParser(val.Path)
+		return p.pathParser(val.Path)
 	}
 
 	if val.Invocation == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the Telemetry Query Language")
 	}
-	call, err := NewFunctionCall(*val.Invocation, functions, pathParser, enumParser)
+	call, err := p.NewFunctionCall(*val.Invocation)
 	if err != nil {
 		return nil, err
 	}

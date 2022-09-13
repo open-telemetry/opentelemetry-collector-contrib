@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -60,7 +59,7 @@ func generateTraceData(serviceName, spanName string, attrs map[string]interface{
 	}
 	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
-	pcommon.NewMapFromRaw(attrs).CopyTo(span.Attributes())
+	span.Attributes().FromRaw(attrs)
 	span.Attributes().Sort()
 	return td
 }

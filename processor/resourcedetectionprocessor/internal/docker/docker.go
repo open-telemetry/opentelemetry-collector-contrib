@@ -65,8 +65,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, hostname)
-	attrs.InsertString(conventions.AttributeOSType, osType)
+	attrs.UpsertString(conventions.AttributeHostName, hostname)
+	attrs.UpsertString(conventions.AttributeOSType, osType)
 
 	return res, conventions.SchemaURL, nil
 }

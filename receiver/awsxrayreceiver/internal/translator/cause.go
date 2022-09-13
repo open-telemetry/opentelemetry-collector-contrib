@@ -28,7 +28,7 @@ import (
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
 
-func addCause(seg *awsxray.Segment, span *ptrace.Span) {
+func addCause(seg *awsxray.Segment, span ptrace.Span) {
 	if seg.Cause == nil {
 		return
 	}
@@ -71,12 +71,12 @@ func addCause(seg *awsxray.Segment, span *ptrace.Span) {
 
 			// ID is a required field
 			attrs.UpsertString(awsxray.AWSXrayExceptionIDAttribute, *excp.ID)
-			addString(excp.Message, conventions.AttributeExceptionMessage, &attrs)
-			addString(excp.Type, conventions.AttributeExceptionType, &attrs)
-			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, &attrs)
-			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, &attrs)
-			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, &attrs)
-			addString(excp.Cause, awsxray.AWSXrayExceptionCauseAttribute, &attrs)
+			addString(excp.Message, conventions.AttributeExceptionMessage, attrs)
+			addString(excp.Type, conventions.AttributeExceptionType, attrs)
+			addBool(excp.Remote, awsxray.AWSXrayExceptionRemoteAttribute, attrs)
+			addInt64(excp.Truncated, awsxray.AWSXrayExceptionTruncatedAttribute, attrs)
+			addInt64(excp.Skipped, awsxray.AWSXrayExceptionSkippedAttribute, attrs)
+			addString(excp.Cause, awsxray.AWSXrayExceptionCauseAttribute, attrs)
 
 			if len(excp.Stack) > 0 {
 				stackTrace := convertStackFramesToStackTraceStr(excp)

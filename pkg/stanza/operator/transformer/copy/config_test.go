@@ -14,6 +14,7 @@
 package copy
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -21,70 +22,65 @@ import (
 )
 
 // test unmarshalling of values into config struct
-func TestGoldenConfig(t *testing.T) {
-	cases := []operatortest.ConfigUnmarshalTest{
-		{
-			Name: "body_to_body",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewBodyField("key")
-				cfg.To = entry.NewBodyField("key2")
-				return cfg
-			}(),
+func TestUnmarshal(t *testing.T) {
+	operatortest.ConfigUnmarshalTests{
+		DefaultConfig: NewConfig(),
+		TestsFile:     filepath.Join(".", "testdata", "config.yaml"),
+		Tests: []operatortest.ConfigUnmarshalTest{
+			{
+				Name: "body_to_body",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewBodyField("key")
+					cfg.To = entry.NewBodyField("key2")
+					return cfg
+				}(),
+			},
+			{
+				Name: "body_to_attribute",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewBodyField("key")
+					cfg.To = entry.NewAttributeField("key2")
+					return cfg
+				}(),
+			},
+			{
+				Name: "attribute_to_resource",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewAttributeField("key")
+					cfg.To = entry.NewResourceField("key2")
+					return cfg
+				}(),
+			},
+			{
+				Name: "attribute_to_body",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewAttributeField("key")
+					cfg.To = entry.NewBodyField("key2")
+					return cfg
+				}(),
+			},
+			{
+				Name: "attribute_to_nested_attribute",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewAttributeField("key")
+					cfg.To = entry.NewAttributeField("one", "two", "three")
+					return cfg
+				}(),
+			},
+			{
+				Name: "resource_to_nested_resource",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.From = entry.NewResourceField("key")
+					cfg.To = entry.NewResourceField("one", "two", "three")
+					return cfg
+				}(),
+			},
 		},
-		{
-			Name: "body_to_attribute",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewBodyField("key")
-				cfg.To = entry.NewAttributeField("key2")
-				return cfg
-			}(),
-		},
-		{
-			Name: "attribute_to_resource",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewAttributeField("key")
-				cfg.To = entry.NewResourceField("key2")
-				return cfg
-			}(),
-		},
-		{
-			Name: "attribute_to_body",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewAttributeField("key")
-				cfg.To = entry.NewBodyField("key2")
-				return cfg
-			}(),
-		},
-		{
-			Name: "attribute_to_nested_attribute",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewAttributeField("key")
-				cfg.To = entry.NewAttributeField("one", "two", "three")
-				return cfg
-			}(),
-		},
-		{
-			Name: "resource_to_nested_resource",
-			Expect: func() *Config {
-				cfg := defaultCfg()
-				cfg.From = entry.NewResourceField("key")
-				cfg.To = entry.NewResourceField("one", "two", "three")
-				return cfg
-			}(),
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			tc.RunDeprecated(t, defaultCfg())
-		})
-	}
-}
-
-func defaultCfg() *Config {
-	return NewConfig()
+	}.Run(t)
 }

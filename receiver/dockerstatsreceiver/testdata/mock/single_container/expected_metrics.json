@@ -53,7 +53,7 @@
           "metrics": [
             {
               "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.read",
+              "name": "container.blockio.io_service_bytes_recursive",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
@@ -71,21 +71,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.write",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -100,21 +96,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "write"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.sync",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "2502656",
                     "attributes": [
@@ -129,21 +121,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "sync"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.async",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -158,21 +146,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "async"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.discard",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -187,21 +171,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "discard"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
-              "name": "container.blockio.io_service_bytes_recursive.total",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "2502656",
                     "attributes": [
@@ -216,9 +196,16 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "total"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
                   }
                 ],
                 "isMonotonic": true
@@ -227,7 +214,7 @@
             },
             {
               "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.read",
+              "name": "container.blockio.io_serviced_recursive",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
@@ -245,21 +232,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "{operations}"
-            },
-            {
-              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.write",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -274,21 +257,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "write"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "{operations}"
-            },
-            {
-              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.sync",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "99",
                     "attributes": [
@@ -303,21 +282,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "sync"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "{operations}"
-            },
-            {
-              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.async",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -332,21 +307,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "async"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "{operations}"
-            },
-            {
-              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.discard",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -361,21 +332,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "discard"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "{operations}"
-            },
-            {
-              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
-              "name": "container.blockio.io_serviced_recursive.total",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "99",
                     "attributes": [
@@ -390,9 +357,16 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "total"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
                   }
                 ],
                 "isMonotonic": true

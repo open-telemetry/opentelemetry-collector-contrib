@@ -81,13 +81,13 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return res, "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	attrs.InsertString(conventions.AttributeHostName, metadata.Hostname)
-	attrs.InsertString(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.InsertString(conventions.AttributeHostID, metadata.NodeID)
-
 	for key, element := range metadata.HostMetadata {
-		attrs.InsertString(key, element)
+		attrs.UpsertString(key, element)
 	}
+
+	attrs.UpsertString(conventions.AttributeHostName, metadata.Hostname)
+	attrs.UpsertString(conventions.AttributeCloudRegion, metadata.Datacenter)
+	attrs.UpsertString(conventions.AttributeHostID, metadata.NodeID)
 
 	return res, conventions.SchemaURL, nil
 }

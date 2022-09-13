@@ -228,8 +228,8 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(context.Background())) })
 
-	traceID := pcommon.NewTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
-	spanID := pcommon.NewSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
+	traceID := pcommon.TraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	spanID := pcommon.SpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
@@ -240,8 +240,7 @@ func TestMutualTLS(t *testing.T) {
 	require.NoError(t, err)
 	requestes := spanHandler.getRequests()
 	assert.Equal(t, 1, len(requestes))
-	tidBytes := traceID.Bytes()
-	jTraceID, err := model.TraceIDFromBytes(tidBytes[:])
+	jTraceID, err := model.TraceIDFromBytes(traceID[:])
 	require.NoError(t, err)
 	require.Len(t, requestes, 1)
 	require.Len(t, requestes[0].GetBatch().Spans, 1)

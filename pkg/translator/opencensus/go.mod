@@ -5,12 +5,12 @@ go 1.18
 require (
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.8
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
+	github.com/google/go-cmp v0.5.9
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.59.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
-	go.opentelemetry.io/collector/pdata v0.58.1-0.20220825025657-e092fc728b72
-	go.opentelemetry.io/collector/semconv v0.58.1-0.20220825025657-e092fc728b72
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220912180657-39d2372496b4
 	google.golang.org/protobuf v1.28.1
 )
 

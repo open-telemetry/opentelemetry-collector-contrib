@@ -246,21 +246,13 @@ func accessDroppedAttributesCount() tql.StandardGetSetter {
 func accessFlags() tql.StandardGetSetter {
 	return tql.StandardGetSetter{
 		Getter: func(ctx tql.TransformContext) interface{} {
-			return int64(ctx.GetItem().(plog.LogRecord).FlagsStruct().AsRaw())
+			return int64(ctx.GetItem().(plog.LogRecord).Flags())
 		},
 		Setter: func(ctx tql.TransformContext, val interface{}) {
 			if i, ok := val.(int64); ok {
-				setFlagsValue(ctx.GetItem().(plog.LogRecord).FlagsStruct(), i)
+				ctx.GetItem().(plog.LogRecord).SetFlags(plog.LogRecordFlags(i))
 			}
 		},
-	}
-}
-
-func setFlagsValue(flags plog.LogRecordFlags, value int64) {
-	if value&1 != 0 {
-		flags.SetIsSampled(true)
-	} else {
-		flags.SetIsSampled(false)
 	}
 }
 
@@ -330,7 +322,7 @@ func parseSpanID(spanIDStr string) (pcommon.SpanID, error) {
 	}
 	var idArr [8]byte
 	copy(idArr[:8], id)
-	return pcommon.NewSpanID(idArr), nil
+	return pcommon.SpanID(idArr), nil
 }
 
 func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
@@ -343,5 +335,5 @@ func parseTraceID(traceIDStr string) (pcommon.TraceID, error) {
 	}
 	var idArr [16]byte
 	copy(idArr[:16], id)
-	return pcommon.NewTraceID(idArr), nil
+	return pcommon.TraceID(idArr), nil
 }

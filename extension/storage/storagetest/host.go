@@ -32,6 +32,11 @@ func NewStorageHost() *StorageHost {
 	}
 }
 
+func (h *StorageHost) WithExtension(id config.ComponentID, ext component.Extension) *StorageHost {
+	h.extensions[id] = ext
+	return h
+}
+
 func (h *StorageHost) WithInMemoryStorageExtension(name string) *StorageHost {
 	ext := NewInMemoryStorageExtension(name)
 	h.extensions[ext.ID()] = ext

@@ -40,7 +40,7 @@ const (
 	defaultTestDecisionWait = 30 * time.Second
 )
 
-var testPolicy = []PolicyCfg{{Name: "test-policy", Type: AlwaysSample}}
+var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -550,8 +550,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIds {
-		trace := findTrace(receivedTraces, traceID)
-		require.NotNil(t, trace, "Trace was not received. TraceId %s", traceID.HexString())
+		trace := findTrace(t, receivedTraces, traceID)
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIds[i]
@@ -559,9 +558,9 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
-			bytesA := got[i].Bytes()
+			bytesA := got[i]
 			a := binary.BigEndian.Uint64(bytesA[:])
-			bytesB := got[j].Bytes()
+			bytesB := got[j]
 			b := binary.BigEndian.Uint64(bytesB[:])
 			return a < b
 		})
@@ -570,8 +569,8 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 }
 
-func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
-	spanIDs := make([]pcommon.SpanID, 0)
+func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
+	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
 		ilss := trace.ResourceSpans().At(i).ScopeSpans()
@@ -589,14 +588,15 @@ func collectSpanIds(trace *ptrace.Traces) []pcommon.SpanID {
 	return spanIDs
 }
 
-func findTrace(a []ptrace.Traces, traceID pcommon.TraceID) *ptrace.Traces {
+func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.Traces {
 	for _, batch := range a {
 		id := batch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-		if traceID.Bytes() == id.Bytes() {
-			return &batch
+		if traceID == id {
+			return batch
 		}
 	}
-	return nil
+	t.Fatalf("Trace was not received. TraceId %s", traceID.HexString())
+	return ptrace.Traces{}
 }
 
 func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
@@ -607,7 +607,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 		traceID := [16]byte{}
 		binary.BigEndian.PutUint64(traceID[:8], 1)
 		binary.BigEndian.PutUint64(traceID[8:], uint64(i+1))
-		traceIds[i] = pcommon.NewTraceID(traceID)
+		traceIds[i] = pcommon.TraceID(traceID)
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
@@ -627,7 +627,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 func uInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:], id)
-	return pcommon.NewSpanID(spanID)
+	return pcommon.SpanID(spanID)
 }
 
 type mockPolicyEvaluator struct {
@@ -696,7 +696,7 @@ func (s *syncIDBatcher) Stop() {
 }
 
 func simpleTraces() ptrace.Traces {
-	return simpleTracesWithID(pcommon.NewTraceID([16]byte{1, 2, 3, 4}))
+	return simpleTracesWithID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
 }
 
 func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {

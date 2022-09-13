@@ -112,8 +112,8 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -134,17 +134,17 @@ func TestTraces_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 	tr := ptrace.NewTraces()
 
 	rl := tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span1")
 
 	rl = tr.ResourceSpans().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "something-else")
 	span = rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName("span2")
 
@@ -172,8 +172,8 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -194,7 +194,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 
 	tr := ptrace.NewTraces()
 	rs := tr.ResourceSpans().AppendEmpty()
-	rs.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rs.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 	t.Run("non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
@@ -236,8 +236,8 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -259,7 +259,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("non default route is properly used", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().InsertString("X-Tenant", "acme")
+		rs.Resource().Attributes().UpsertString("X-Tenant", "acme")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 0,
@@ -273,7 +273,7 @@ func TestTraces_RoutingWorks_ResourceAttribute(t *testing.T) {
 	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
 		tr := ptrace.NewTraces()
 		rs := tr.ResourceSpans().AppendEmpty()
-		rs.Resource().Attributes().InsertString("X-Tenant", "some-custom-value")
+		rs.Resource().Attributes().UpsertString("X-Tenant", "some-custom-value")
 
 		assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 		assert.Len(t, defaultExp.AllTraces(), 1,
@@ -294,8 +294,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 		GetExportersFunc: func() map[config.DataType]map[config.ComponentID]component.Exporter {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
-					config.NewComponentID("otlp"):   defaultExp,
-					config.NewComponentID("otlp/2"): tExp,
+					config.NewComponentID("otlp"):              defaultExp,
+					config.NewComponentIDWithName("otlp", "2"): tExp,
 				},
 			}
 		},
@@ -317,8 +317,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 	tr := ptrace.NewTraces()
 	rm := tr.ResourceSpans().AppendEmpty()
-	rm.Resource().Attributes().InsertString("X-Tenant", "acme")
-	rm.Resource().Attributes().InsertString("attr", "acme")
+	rm.Resource().Attributes().UpsertString("X-Tenant", "acme")
+	rm.Resource().Attributes().UpsertString("attr", "acme")
 
 	assert.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 	traces := tExp.AllTraces()

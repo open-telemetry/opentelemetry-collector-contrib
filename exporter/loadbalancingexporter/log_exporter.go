@@ -87,15 +87,14 @@ func (e *logExporterImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	traceID := traceIDFromLogs(ld)
 	balancingKey := traceID
-	if traceID == pcommon.InvalidTraceID() {
+	if traceID == pcommon.NewTraceIDEmpty() {
 		// every log may not contain a traceID
 		// generate a random traceID as balancingKey
 		// so the log can be routed to a random backend
 		balancingKey = random()
 	}
 
-	tid := balancingKey.Bytes()
-	endpoint := e.loadBalancer.Endpoint(tid[:])
+	endpoint := e.loadBalancer.Endpoint(balancingKey[:])
 	exp, err := e.loadBalancer.Exporter(endpoint)
 	if err != nil {
 		return err
@@ -110,14 +109,16 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 	start := time.Now()
 	err = le.ConsumeLogs(ctx, ld)
 	duration := time.Since(start)
-	ctx, _ = tag.New(ctx, tag.Upsert(tag.MustNewKey("endpoint"), endpoint))
-
 	if err == nil {
-		sCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "true"))
-		stats.Record(sCtx, mBackendLatency.M(duration.Milliseconds()))
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successTrueMutator},
+			mBackendLatency.M(duration.Milliseconds()))
 	} else {
-		fCtx, _ := tag.New(ctx, tag.Upsert(tag.MustNewKey("success"), "false"))
-		stats.Record(fCtx, mBackendLatency.M(duration.Milliseconds()))
+		_ = stats.RecordWithTags(
+			ctx,
+			[]tag.Mutator{tag.Upsert(endpointTagKey, endpoint), successFalseMutator},
+			mBackendLatency.M(duration.Milliseconds()))
 	}
 
 	return err
@@ -126,17 +127,17 @@ func (e *logExporterImp) consumeLog(ctx context.Context, ld plog.Logs) error {
 func traceIDFromLogs(ld plog.Logs) pcommon.TraceID {
 	rl := ld.ResourceLogs()
 	if rl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.NewTraceIDEmpty()
 	}
 
 	sl := rl.At(0).ScopeLogs()
 	if sl.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.NewTraceIDEmpty()
 	}
 
 	logs := sl.At(0).LogRecords()
 	if logs.Len() == 0 {
-		return pcommon.InvalidTraceID()
+		return pcommon.NewTraceIDEmpty()
 	}
 
 	return logs.At(0).TraceID()
@@ -147,5 +148,5 @@ func random() pcommon.TraceID {
 	v2 := uint8(rand.Intn(256))
 	v3 := uint8(rand.Intn(256))
 	v4 := uint8(rand.Intn(256))
-	return pcommon.NewTraceID([16]byte{v1, v2, v3, v4})
+	return [16]byte{v1, v2, v3, v4}
 }

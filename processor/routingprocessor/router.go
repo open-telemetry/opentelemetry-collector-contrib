@@ -23,10 +23,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	errDefaultExporterNotFound = errors.New("default exporter not found")
-	errExporterNotFound        = errors.New("exporter not found")
-)
+var errExporterNotFound = errors.New("exporter not found")
 
 // router registers exporters and default exporters for an exporter. router can
 // be instantiated with component.TracesExporter, component.MetricsExporter, and
@@ -50,22 +47,19 @@ func newRouter[E component.Exporter](config Config, logger *zap.Logger) router[E
 	}
 }
 
-func (r *router[E]) registerExporters(exporters map[config.ComponentID]component.Exporter) error {
-	available := make(map[string]component.Exporter)
-	for id, exp := range exporters {
-		exporter, ok := exp.(E)
-		if !ok {
-			return fmt.Errorf("the exporter %q isn't a %T exporter", id.String(), new(E))
-		}
-		available[id.String()] = exporter
+func (r *router[E]) registerExporters(available map[config.ComponentID]component.Exporter) error {
+	// register default exporters
+	err := r.registerDefaultExporters(available)
+	if err != nil {
+		return err
 	}
 
-	// default exporters
-	r.registerDefaultExporters(available)
-
-	// exporters for each route
+	// register exporters for each route
 	for _, entry := range r.config.Table {
-		r.registerRouteExporters(entry.Value, available, entry.Exporters)
+		err := r.registerRouteExporters(entry.Value, entry.Exporters, available)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -73,58 +67,68 @@ func (r *router[E]) registerExporters(exporters map[config.ComponentID]component
 
 // registerDefaultExporters registers the configured default exporters
 // using the provided available exporters map.
-func (r *router[E]) registerDefaultExporters(availableExporters map[string]component.Exporter) {
-	for _, e := range r.config.DefaultExporters {
-		v, ok := availableExporters[e]
-		if !ok {
-			r.logger.Warn(
-				"Can't find the exporter for the routing processor for this pipeline type."+
-					" This is OK if you did not specify this processor for that pipeline type",
-				zap.Any("pipeline_type", new(E)),
-				zap.Error(
-					fmt.Errorf(
-						"error registering default exporter %q: %w",
-						e,
-						errDefaultExporterNotFound,
-					),
-				),
-			)
+func (r *router[E]) registerDefaultExporters(available map[config.ComponentID]component.Exporter) error {
+	for _, name := range r.config.DefaultExporters {
+		e, err := r.extractExporter(name, available)
+		if errors.Is(err, errExporterNotFound) {
 			continue
 		}
-		r.defaultExporters = append(r.defaultExporters, v.(E))
+		if err != nil {
+			return err
+		}
+		r.defaultExporters = append(r.defaultExporters, e)
 	}
+
+	return nil
 }
 
-// registerRouteExporters registers the requested exporters using the provided
+// registerRouteExporters registers route exporters using the provided
 // available exporters map to check if they were available.
 func (r *router[E]) registerRouteExporters(
 	route string,
-	availableExporters map[string]component.Exporter,
 	exporters []string,
-) {
-	r.logger.Debug("Registering exporter for route",
-		zap.String("route", route),
-		zap.Any("requested", exporters),
-	)
-
-	for _, e := range exporters {
-		v, ok := availableExporters[e]
-		if !ok {
-			r.logger.Warn(
-				"Can't find the exporter for the routing processor for this pipeline type."+
-					" This is OK if you did not specify this processor for that pipeline type",
-				zap.Any("pipeline_type", new(E)),
-				zap.Error(
-					fmt.Errorf(
-						"error registering route %q for exporter %q: %w",
-						route,
-						e,
-						errExporterNotFound,
-					),
-				),
-			)
+	available map[config.ComponentID]component.Exporter,
+) error {
+	for _, name := range exporters {
+		e, err := r.extractExporter(name, available)
+		if errors.Is(err, errExporterNotFound) {
 			continue
 		}
-		r.exporters[route] = append(r.exporters[route], v.(E))
+		if err != nil {
+			return err
+		}
+		r.exporters[route] = append(r.exporters[route], e)
 	}
+
+	return nil
+}
+
+func (r *router[E]) extractExporter(name string, available map[config.ComponentID]component.Exporter) (E, error) {
+	var exporter E
+
+	id, err := config.NewComponentIDFromString(name)
+	if err != nil {
+		return exporter, err
+	}
+	v, ok := available[id]
+	if !ok {
+		r.logger.Warn(
+			"Can't find the exporter for the routing processor for this pipeline type."+
+				" This is OK if you did not specify this processor for that pipeline type",
+			zap.Any("pipeline_type", new(E)),
+			zap.Error(
+				fmt.Errorf(
+					"error registering exporter %q",
+					name,
+				),
+			),
+		)
+		return exporter, errExporterNotFound
+	}
+	exporter, ok = v.(E)
+	if !ok {
+		return exporter,
+			fmt.Errorf("the exporter %q isn't a %T exporter", id.String(), new(E))
+	}
+	return exporter, nil
 }

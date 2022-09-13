@@ -46,20 +46,14 @@ const (
 )
 
 var (
-	resourceAttributes1  = map[string]interface{}{"resource-attr": "resource-attr-val-1"}
 	TestLogTime          = time.Now()
 	TestLogTimeUnixMilli = TestLogTime.UnixMilli()
 	TestLogTimestamp     = pcommon.NewTimestampFromTime(TestLogTime)
 )
 
-// Resource Attributes
-func initResourceAttributes1(dest pcommon.Map) {
-	pcommon.NewMapFromRaw(resourceAttributes1).CopyTo(dest)
-}
-
 // Resources
 func initResource1(r pcommon.Resource) {
-	initResourceAttributes1(r.Attributes())
+	r.Attributes().UpsertString("resource-attr", "resource-attr-val-1")
 }
 
 // Logs
@@ -69,27 +63,21 @@ func fillLogOne(log plog.LogRecord) {
 	log.SetDroppedAttributesCount(1)
 	log.SetSeverityNumber(plog.SeverityNumberInfo)
 	log.SetSeverityText("Info")
-	log.SetSpanID(pcommon.NewSpanID([8]byte{0x01, 0x02, 0x04, 0x08}))
-	log.SetTraceID(pcommon.NewTraceID([16]byte{0x08, 0x04, 0x02, 0x01}))
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
 
 	attrs := log.Attributes()
-	attrs.InsertString("app", "server")
-	attrs.InsertDouble("instance_num", 1)
+	attrs.UpsertString("app", "server")
+	attrs.UpsertDouble("instance_num", 1)
 
 	// nested body map
-	attVal := pcommon.NewValueMap()
-	attNestedVal := pcommon.NewValueMap()
-
-	attMap := attVal.MapVal()
-	attMap.InsertDouble("23", 45)
-	attMap.InsertString("foo", "bar")
-	attMap.InsertString("message", "hello there")
-	attNestedMap := attNestedVal.MapVal()
-	attNestedMap.InsertString("string", "v1")
-	attNestedMap.InsertDouble("number", 499)
-	attMap.Insert("nested", attNestedVal)
-	attVal.CopyTo(log.Body())
-
+	attMap := log.Body().SetEmptyMapVal()
+	attMap.UpsertDouble("23", 45)
+	attMap.UpsertString("foo", "bar")
+	attMap.UpsertString("message", "hello there")
+	attNestedMap := attMap.UpsertEmptyMap("nested")
+	attNestedMap.UpsertString("string", "v1")
+	attNestedMap.UpsertDouble("number", 499)
 }
 
 func fillLogTwo(log plog.LogRecord) {
@@ -99,10 +87,10 @@ func fillLogTwo(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 func fillLogNoTimestamp(log plog.LogRecord) {
@@ -111,10 +99,10 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.SetSeverityText("Info")
 
 	attrs := log.Attributes()
-	attrs.InsertString("customer", "acme")
-	attrs.InsertDouble("number", 64)
-	attrs.InsertBool("bool", true)
-	attrs.InsertString("env", "dev")
+	attrs.UpsertString("customer", "acme")
+	attrs.UpsertDouble("number", 64)
+	attrs.UpsertBool("bool", true)
+	attrs.UpsertString("env", "dev")
 	log.Body().SetStringVal("something happened")
 }
 
@@ -195,8 +183,8 @@ func newTestTracesWithAttributes() ptrace.Traces {
 	for i := 0; i < 10; i++ {
 		s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 		s.SetName(fmt.Sprintf("%s-%d", testOperation, i))
-		s.SetTraceID(pcommon.NewTraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-		s.SetSpanID(pcommon.NewSpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
+		s.SetTraceID(pcommon.TraceID([16]byte{byte(i), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
+		s.SetSpanID(pcommon.SpanID([8]byte{byte(i), 0, 0, 0, 0, 0, 0, 2}))
 		for j := 0; j < 5; j++ {
 			s.Attributes().UpsertString(fmt.Sprintf("k%d", j), fmt.Sprintf("v%d", j))
 		}
@@ -209,8 +197,8 @@ func newTestTraces() ptrace.Traces {
 	td := ptrace.NewTraces()
 	s := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	s.SetName(testOperation)
-	s.SetTraceID(pcommon.NewTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}))
-	s.SetSpanID(pcommon.NewSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2}))
+	s.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+	s.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 2})
 	s.SetKind(ptrace.SpanKindServer)
 	return td
 }

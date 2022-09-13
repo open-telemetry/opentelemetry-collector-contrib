@@ -123,10 +123,6 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 		_, ok := tsMap[sig]
 		if ok {
 			if tsMap[sig].Samples != nil {
-				if tsMap[sig].Exemplars == nil {
-					tsMap[sig].Exemplars = make([]prompb.Exemplar, 0)
-				}
-
 				if exemplar.Value <= bound {
 					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
 					return
@@ -288,17 +284,22 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	// treat sum as a sample in an individual TimeSeries
-	sum := &prompb.Sample{
-		Value:     pt.Sum(),
-		Timestamp: time,
-	}
-	if pt.Flags().NoRecordedValue() {
-		sum.Value = math.Float64frombits(value.StaleNaN)
-	}
 
-	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
-	addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	// If the sum is unset, it indicates the _sum metric point should be
+	// omitted
+	if pt.HasSum() {
+		// treat sum as a sample in an individual TimeSeries
+		sum := &prompb.Sample{
+			Value:     pt.Sum(),
+			Timestamp: time,
+		}
+		if pt.Flags().NoRecordedValue() {
+			sum.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	}
 
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
@@ -317,7 +318,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	promExemplars := getPromExemplars(pt)
 
-	bucketBounds := make([]bucketBoundsData, 0)
+	var bucketBounds []bucketBoundsData
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 	for index, bound := range pt.ExplicitBounds().AsRaw() {
