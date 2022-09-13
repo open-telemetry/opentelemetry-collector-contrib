@@ -37,6 +37,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 const (
@@ -50,11 +52,6 @@ var (
 	TestLogTimeUnixMilli = TestLogTime.UnixMilli()
 	TestLogTimestamp     = pcommon.NewTimestampFromTime(TestLogTime)
 )
-
-// Resources
-func initResource1(r pcommon.Resource) {
-	r.Attributes().UpsertString("resource-attr", "resource-attr-val-1")
-}
 
 // Logs
 
@@ -106,51 +103,11 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 	log.Body().SetStringVal("something happened")
 }
 
-func GenerateLogsOneEmptyTimestamp() plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
+func generateLogsOneEmptyTimestamp() plog.Logs {
+	ld := testdata.GenerateLogsOneEmptyLogRecord()
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	fillLogOne(logs.At(0))
 	fillLogNoTimestamp(logs.AppendEmpty())
-	return ld
-}
-
-func GenerateLogsOneEmptyResourceLogs() plog.Logs {
-	ld := plog.NewLogs()
-	ld.ResourceLogs().AppendEmpty()
-	return ld
-}
-
-func GenerateLogsNoLogRecords() plog.Logs {
-	ld := GenerateLogsOneEmptyResourceLogs()
-	initResource1(ld.ResourceLogs().At(0).Resource())
-	return ld
-}
-
-func GenerateLogsOneEmptyLogRecord() plog.Logs {
-	ld := GenerateLogsNoLogRecords()
-	rs0 := ld.ResourceLogs().At(0)
-	rs0.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-	return ld
-}
-
-func GenerateLogsManyLogRecordsSameResource(count int) plog.Logs {
-	ld := GenerateLogsOneEmptyLogRecord()
-	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
-	logs.EnsureCapacity(count)
-	for i := 0; i < count; i++ {
-		var l plog.LogRecord
-		if i < logs.Len() {
-			l = logs.At(i)
-		} else {
-			l = logs.AppendEmpty()
-		}
-
-		if i%2 == 0 {
-			fillLogOne(l)
-		} else {
-			fillLogTwo(l)
-		}
-	}
 	return ld
 }
 
@@ -252,7 +209,7 @@ func TestExportErrors(tester *testing.T) {
 			},
 		}
 		td := newTestTracesWithAttributes()
-		ld := GenerateLogsManyLogRecordsSameResource(10)
+		ld := testdata.GenerateLogsManyLogRecordsSameResource(10)
 		err := testTracesExporter(td, tester, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
@@ -353,7 +310,7 @@ func TestPushLogsData(tester *testing.T) {
 		},
 	}
 	defer server.Close()
-	ld := GenerateLogsManyLogRecordsSameResource(2)
+	ld := testdata.GenerateLogsManyLogRecordsSameResource(2)
 	res := ld.ResourceLogs().At(0).Resource()
 	res.Attributes().UpsertString(conventions.AttributeServiceName, testService)
 	res.Attributes().UpsertString(conventions.AttributeHostName, testHost)
