@@ -126,7 +126,7 @@ func fillHTTPClientSpan(span ptrace.Span) {
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
-	span.SetTraceState("x:y")
+	span.TraceStateStruct().FromRaw("x:y")
 
 	event := span.Events().AppendEmpty()
 	event.SetName("event")
@@ -134,7 +134,7 @@ func fillHTTPClientSpan(span ptrace.Span) {
 	event.Attributes().UpsertString("key", "value")
 
 	link := span.Links().AppendEmpty()
-	link.SetTraceState("link:state")
+	link.TraceStateStruct().FromRaw("link:state")
 	link.Attributes().UpsertString("link", "true")
 
 	status := span.Status()

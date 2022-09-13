@@ -238,7 +238,7 @@ func jSpanToInternal(span *model.Span, spansByLibrary map[scope]ptrace.SpanSlice
 		attrs.Remove(tracetranslator.TagSpanKind)
 	}
 
-	dest.SetTraceState(getTraceStateFromAttrs(attrs))
+	dest.TraceStateStruct().FromRaw(getTraceStateFromAttrs(attrs))
 
 	// drop the attributes slice if all of them were replaced during translation
 	if attrs.Len() == 0 {
@@ -437,11 +437,11 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 	}
 }
 
-func getTraceStateFromAttrs(attrs pcommon.Map) ptrace.TraceState {
-	traceState := ptrace.TraceStateEmpty
+func getTraceStateFromAttrs(attrs pcommon.Map) string {
+	traceState := ""
 	// TODO Bring this inline with solution for jaegertracing/jaeger-client-java #702 once available
 	if attr, ok := attrs.Get(tracetranslator.TagW3CTraceState); ok {
-		traceState = ptrace.TraceState(attr.StringVal())
+		traceState = attr.StringVal()
 		attrs.Remove(tracetranslator.TagW3CTraceState)
 	}
 	return traceState
