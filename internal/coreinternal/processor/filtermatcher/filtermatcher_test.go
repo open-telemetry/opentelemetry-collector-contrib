@@ -204,7 +204,8 @@ func Test_Matching_False(t *testing.T) {
 		},
 	}
 
-	atts := pcommon.NewMapFromRaw(map[string]interface{}{
+	attrs := pcommon.NewMap()
+	attrs.FromRaw(map[string]interface{}{
 		"keyInt": 123,
 		"keyMap": map[string]interface{}{},
 	})
@@ -219,7 +220,7 @@ func Test_Matching_False(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, matcher)
 
-			assert.False(t, matcher.Match(atts, resource("wrongSvc"), library))
+			assert.False(t, matcher.Match(attrs, resource("wrongSvc"), library))
 		})
 	}
 }
@@ -358,7 +359,8 @@ func Test_Matching_True(t *testing.T) {
 		},
 	}
 
-	atts := pcommon.NewMapFromRaw(map[string]interface{}{
+	attrs := pcommon.NewMap()
+	attrs.FromRaw(map[string]interface{}{
 		"keyString": "arithmetic",
 		"keyInt":    123,
 		"keyDouble": 3245.6,
@@ -380,7 +382,7 @@ func Test_Matching_True(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, mp)
 
-			assert.True(t, mp.Match(atts, resource, library))
+			assert.True(t, mp.Match(attrs, resource, library))
 		})
 	}
 }

@@ -3,13 +3,13 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsclo
 go 1.18
 
 require (
-	github.com/aws/aws-sdk-go v1.44.93
+	github.com/aws/aws-sdk-go v1.44.96
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220908061648-35cf596fc177
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220908061648-35cf596fc177
+	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
 	go.uber.org/zap v1.23.0
 )
 

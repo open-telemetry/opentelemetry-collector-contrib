@@ -425,7 +425,7 @@ func generateTestHistogramMetrics(tm testHistogramMetric) pmetric.Metrics {
 			if len(sums) > 0 {
 				dp.SetSum(sums[index])
 			}
-			dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice(tm.metricBuckets[i][index]))
+			dp.BucketCounts().FromRaw(tm.metricBuckets[i][index])
 		}
 	}
 

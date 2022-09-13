@@ -35,15 +35,9 @@ var (
 )
 
 func prepareAttributeMap() pcommon.Map {
-	attributeValues := map[string]interface{}{
-		"xx": "aa",
-		"yy": 11,
-	}
-
 	am := pcommon.NewMap()
-	pcommon.NewMapFromRaw(attributeValues).CopyTo(am)
-
-	am.Sort()
+	am.UpsertString("xx", "aa")
+	am.UpsertInt("yy", 11)
 	return am
 }
 
@@ -159,8 +153,8 @@ func someComplexHistogramMetrics(withResourceAttrIndex bool, rmCount int, ilmCou
 				dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 				buckets := randUIntArr(histogramSize)
 				sort.Slice(buckets, func(i, j int) bool { return buckets[i] < buckets[j] })
-				dataPoint.SetBucketCounts(pcommon.NewImmutableUInt64Slice(buckets))
-				dataPoint.SetExplicitBounds(pcommon.NewImmutableFloat64Slice(randFloat64Arr(histogramSize)))
+				dataPoint.BucketCounts().FromRaw(buckets)
+				dataPoint.ExplicitBounds().FromRaw(randFloat64Arr(histogramSize))
 				dataPoint.SetCount(sum(buckets))
 				dataPoint.Attributes().UpsertString("commonGroupedAttr", "abc")
 				dataPoint.Attributes().UpsertString("commonNonGroupedAttr", "xyz")

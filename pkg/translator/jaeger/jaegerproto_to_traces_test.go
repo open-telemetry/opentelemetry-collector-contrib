@@ -344,76 +344,75 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		attrs            pcommon.Map
+		attrs            map[string]interface{}
 		status           ptrace.SpanStatus
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
 	}{
 		{
 			name:             "No tags set -> OK status",
-			attrs:            pcommon.NewMap(),
 			status:           emptyStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError: true,
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code is set as string",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.OtelStatusCode: statusOk,
-			}),
+			},
 			status:           okStatus,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:          true,
 				conventions.OtelStatusCode:        statusError,
 				conventions.OtelStatusDescription: "Error: Invalid argument",
-			}),
+			},
 			status:           errorStatusWithMessage,
 			attrsModifiedLen: 0,
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPStatusCode: "404",
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 404,
 				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
-			}),
+			},
 			status:           errorStatusWith404Message,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.OtelStatusCode:          statusOk,
 				conventions.AttributeHTTPStatusCode: 500,
 				tracetranslator.TagHTTPStatusMsg:    "Server Error",
-			}),
+			},
 			status:           okStatus,
 			attrsModifiedLen: 2,
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 200,
-			}),
+			},
 			status:           errorStatus,
 			attrsModifiedLen: 1,
 		},
@@ -422,9 +421,11 @@ func TestSetInternalSpanStatus(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			status := ptrace.NewSpanStatus()
-			setInternalSpanStatus(test.attrs, status)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(test.attrs)
+			setInternalSpanStatus(attrs, status)
 			assert.EqualValues(t, test.status, status)
-			assert.Equal(t, test.attrsModifiedLen, test.attrs.Len())
+			assert.Equal(t, test.attrsModifiedLen, attrs.Len())
 		})
 	}
 }

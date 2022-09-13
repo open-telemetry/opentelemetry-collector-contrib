@@ -1236,7 +1236,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from leftmost index (resource 0, library 0, record 0).
 	_0_0_0 := &index{resource: 0, library: 0, record: 0} //revive:disable-line:var-naming
-	got := c.subLogs(&logs, _0_0_0, nil)
+	got := c.subLogs(logs, _0_0_0, nil)
 
 	// Number of logs in subset should equal original logs.
 	assert.Equal(t, logs.LogRecordCount(), got.LogRecordCount())
@@ -1250,7 +1250,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from some mid index (resource 0, library 1, log 2).
 	_0_1_2 := &index{resource: 0, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(&logs, _0_1_2, nil)
+	got = c.subLogs(logs, _0_1_2, nil)
 
 	assert.Equal(t, 7, got.LogRecordCount())
 
@@ -1263,7 +1263,7 @@ func TestSubLogs(t *testing.T) {
 
 	// Logs subset from rightmost index (resource 1, library 1, log 2).
 	_1_1_2 := &index{resource: 1, library: 1, record: 2} //revive:disable-line:var-naming
-	got = c.subLogs(&logs, _1_1_2, nil)
+	got = c.subLogs(logs, _1_1_2, nil)
 
 	// Number of logs in subset should be 1.
 	assert.Equal(t, 1, got.LogRecordCount())
@@ -1277,7 +1277,7 @@ func TestSubLogs(t *testing.T) {
 	slice := &index{resource: 1, library: 0, record: 5}
 	profSlice := &index{resource: 0, library: 1, record: 8}
 
-	got = c.subLogs(&logs, slice, profSlice)
+	got = c.subLogs(logs, slice, profSlice)
 
 	assert.Equal(t, 5+2+10, got.LogRecordCount())
 	assert.Equal(t, "otel.logs", got.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())

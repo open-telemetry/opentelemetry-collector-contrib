@@ -217,11 +217,7 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
-	if pmd == nil {
-		return
-	}
-
+func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),

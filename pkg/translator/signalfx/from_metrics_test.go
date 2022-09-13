@@ -70,8 +70,8 @@ func Test_FromMetrics(t *testing.T) {
 	initHistDPNoOptional := func(dp pmetric.HistogramDataPoint) {
 		dp.SetTimestamp(ts)
 		dp.SetCount(16)
-		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{1, 2, 4}))
-		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{4, 2, 3, 7}))
+		dp.ExplicitBounds().FromRaw([]float64{1, 2, 4})
+		dp.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
 		attrMap.CopyTo(dp.Attributes())
 	}
 

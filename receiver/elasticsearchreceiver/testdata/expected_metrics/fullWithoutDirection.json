@@ -466,82 +466,6 @@
                               "timeUnixNano": "1661810968941018000"
                            },
                            {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "context_construction"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661810968939578000",
-                              "timeUnixNano": "1661810968941018000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "commit"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661810968939578000",
-                              "timeUnixNano": "1661810968941018000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "completion"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661810968939578000",
-                              "timeUnixNano": "1661810968941018000"
-                           },
-                           {
-                              "asInt": "0",
-                              "attributes": [
-                                 {
-                                    "key": "state",
-                                    "value": {
-                                       "stringValue": "unchanged"
-                                    }
-                                 },
-                                 {
-                                    "key": "type",
-                                    "value": {
-                                       "stringValue": "master_apply"
-                                    }
-                                 }
-                              ],
-                              "startTimeUnixNano": "1661810968939578000",
-                              "timeUnixNano": "1661810968941018000"
-                           },
-                           {
                               "asInt": "40",
                               "attributes": [
                                  {
@@ -870,6 +794,42 @@
                      "unit": "By"
                   },
                   {
+                     "description": "Total count of query cache misses across all shards assigned to selected nodes.",
+                     "name": "elasticsearch.node.cache.count",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "333",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "hit"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952651341631000",
+                              "timeUnixNano": "1662952651343244000"
+                           },
+                           {
+                              "asInt": "5324",
+                              "attributes": [
+                                 {
+                                    "key": "type",
+                                    "value": {
+                                       "stringValue": "miss"
+                                    }
+                                 }
+                              ],
+                              "startTimeUnixNano": "1662952651341631000",
+                              "timeUnixNano": "1662952651343244000"
+                           }
+                        ]
+                     },
+                     "unit": "{count}"
+                  },
+                  {
                      "description": "The number of evictions from the cache.",
                      "name": "elasticsearch.node.cache.evictions",
                      "sum": {
@@ -1070,7 +1030,7 @@
                      },
                      "unit": "By"
                   },
-		                    {
+                  {
                      "description": "The amount of unallocated disk space across all file stores for this node.",
                      "name": "elasticsearch.node.fs.disk.free",
                      "sum": {
@@ -2298,6 +2258,21 @@
                      "unit": "{status}"
                   },
                   {
+                     "description": "The number of unfinished fetches.",
+                     "name": "elasticsearch.cluster.in_flight_fetch",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662950017375382000",
+                              "timeUnixNano": "1662950017377074000"
+                           }
+                        ]
+                     },
+                     "unit": "{fetches}"
+                  },
+                  {
                      "description": "The total number of nodes in the cluster.",
                      "name": "elasticsearch.cluster.nodes",
                      "sum": {
@@ -2311,6 +2286,21 @@
                         ]
                      },
                      "unit": "{nodes}"
+                  },
+                  {
+                     "description": "The number of cluster-level changes that have not yet been executed.",
+                     "name": "elasticsearch.cluster.pending_tasks",
+                     "sum": {
+                        "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                        "dataPoints": [
+                           {
+                              "asInt": "0",
+                              "startTimeUnixNano": "1662950017375382000",
+                              "timeUnixNano": "1662950017377074000"
+                           }
+                        ]
+                     },
+                     "unit": "{tasks}"
                   },
                   {
                      "description": "The number of shards in the cluster.",

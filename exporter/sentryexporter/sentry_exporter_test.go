@@ -363,7 +363,7 @@ type SpanDescriptorsCase struct {
 	testName string
 	// input
 	name     string
-	attrs    pcommon.Map
+	attrs    map[string]interface{}
 	spanKind ptrace.SpanKind
 	// output
 	op          string
@@ -375,9 +375,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-client",
 			name:     "/api/users/{user_id}",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPMethod: "GET",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "http.client",
 			description: "GET /api/users/{user_id}",
@@ -385,9 +385,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "http-server",
 			name:     "/api/users/{user_id}",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeHTTPMethod: "POST",
-			}),
+			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "http.server",
 			description: "POST /api/users/{user_id}",
@@ -395,9 +395,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-without-statement",
 			name:     "SET mykey 'Val'",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeDBSystem: "redis",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SET mykey 'Val'",
@@ -405,10 +405,10 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "db-call-with-statement",
 			name:     "mysql call",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeDBSystem:    "sqlite",
 				conventions.AttributeDBStatement: "SELECT * FROM table",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "db",
 			description: "SELECT * FROM table",
@@ -416,9 +416,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "rpc",
 			name:     "grpc.test.EchoService/Echo",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				conventions.AttributeRPCService: "EchoService",
-			}),
+			},
 			spanKind:    ptrace.SpanKindClient,
 			op:          "rpc",
 			description: "grpc.test.EchoService/Echo",
@@ -426,9 +426,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "message-system",
 			name:     "message-destination",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"messaging.system": "kafka",
-			}),
+			},
 			spanKind:    ptrace.SpanKindProducer,
 			op:          "message",
 			description: "message-destination",
@@ -436,9 +436,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 		{
 			testName: "faas",
 			name:     "message-destination",
-			attrs: pcommon.NewMapFromRaw(map[string]interface{}{
+			attrs: map[string]interface{}{
 				"faas.trigger": "pubsub",
-			}),
+			},
 			spanKind:    ptrace.SpanKindServer,
 			op:          "pubsub",
 			description: "message-destination",
@@ -447,7 +447,9 @@ func TestGenerateSpanDescriptors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			op, description := generateSpanDescriptors(test.name, test.attrs, test.spanKind)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(test.attrs)
+			op, description := generateSpanDescriptors(test.name, attrs, test.spanKind)
 			assert.Equal(t, test.op, op)
 			assert.Equal(t, test.description, description)
 		})
