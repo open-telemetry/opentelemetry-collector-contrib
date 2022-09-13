@@ -114,7 +114,7 @@ func TestAlertsReceiver(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(*expectedLogs, logs))
+			require.NoError(t, compareLogs(expectedLogs, logs))
 		})
 	}
 }
@@ -190,7 +190,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
-			require.NoError(t, compareLogs(*expectedLogs, logs))
+			require.NoError(t, compareLogs(expectedLogs, logs))
 		})
 	}
 }
@@ -215,20 +215,19 @@ func calculateHMACb64(secret string, payload []byte) (string, error) {
 	return buf.String(), nil
 }
 
-func readLogs(path string) (*plog.Logs, error) {
+func readLogs(path string) (plog.Logs, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return plog.Logs{}, err
 	}
 	defer f.Close()
 
 	b, err := io.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return plog.Logs{}, err
 	}
 
-	logs, err := plog.NewJSONUnmarshaler().UnmarshalLogs(b)
-	return &logs, err
+	return plog.NewJSONUnmarshaler().UnmarshalLogs(b)
 }
 
 func clientWithCert(path string) (*http.Client, error) {

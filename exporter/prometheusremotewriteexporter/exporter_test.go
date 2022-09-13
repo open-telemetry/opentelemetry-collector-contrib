@@ -443,7 +443,7 @@ func Test_PushMetrics(t *testing.T) {
 
 	tests := []struct {
 		name               string
-		metrics            *pmetric.Metrics
+		metrics            pmetric.Metrics
 		reqTestFunc        func(t *testing.T, r *http.Request, expected int, isStaleMarker bool)
 		expectedTimeSeries int
 		httpResponseCode   int
@@ -453,76 +453,76 @@ func Test_PushMetrics(t *testing.T) {
 	}{
 		{
 			name:             "invalid_type_case",
-			metrics:          &invalidTypeBatch,
+			metrics:          invalidTypeBatch,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
 		},
 		{
 			name:               "intSum_case",
-			metrics:            &intSumBatch,
+			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 3,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "doubleSum_case",
-			metrics:            &sumBatch,
+			metrics:            sumBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "doubleGauge_case",
-			metrics:            &doubleGaugeBatch,
+			metrics:            doubleGaugeBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "intGauge_case",
-			metrics:            &intGaugeBatch,
+			metrics:            intGaugeBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "histogram_case",
-			metrics:            &histogramBatch,
+			metrics:            histogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 12,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "valid_empty_histogram_case",
-			metrics:            &emptyDataPointHistogramBatch,
+			metrics:            emptyDataPointHistogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 4,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "histogram_no_sum_case",
-			metrics:            &histogramNoSumBatch,
+			metrics:            histogramNoSumBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 10,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "summary_case",
-			metrics:            &summaryBatch,
+			metrics:            summaryBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 10,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "unmatchedBoundBucketHist_case",
-			metrics:            &unmatchedBoundBucketHistBatch,
+			metrics:            unmatchedBoundBucketHistBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
 			name:               "5xx_case",
-			metrics:            &unmatchedBoundBucketHistBatch,
+			metrics:            unmatchedBoundBucketHistBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusServiceUnavailable,
@@ -532,35 +532,35 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:             "emptyGauge_case",
-			metrics:          &emptyDoubleGaugeBatch,
+			metrics:          emptyDoubleGaugeBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
 		},
 		{
 			name:             "emptyCumulativeSum_case",
-			metrics:          &emptyCumulativeSumBatch,
+			metrics:          emptyCumulativeSumBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
 		},
 		{
 			name:             "emptyCumulativeHistogram_case",
-			metrics:          &emptyCumulativeHistogramBatch,
+			metrics:          emptyCumulativeHistogramBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
 		},
 		{
 			name:             "emptySummary_case",
-			metrics:          &emptySummaryBatch,
+			metrics:          emptySummaryBatch,
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
 		},
 		{
 			name:               "staleNaNIntGauge_case",
-			metrics:            &staleNaNIntGaugeBatch,
+			metrics:            staleNaNIntGaugeBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 1,
 			httpResponseCode:   http.StatusAccepted,
@@ -568,7 +568,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNDoubleGauge_case",
-			metrics:            &staleNaNDoubleGaugeBatch,
+			metrics:            staleNaNDoubleGaugeBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 1,
 			httpResponseCode:   http.StatusAccepted,
@@ -576,7 +576,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNIntSum_case",
-			metrics:            &staleNaNIntSumBatch,
+			metrics:            staleNaNIntSumBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 1,
 			httpResponseCode:   http.StatusAccepted,
@@ -584,7 +584,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNSum_case",
-			metrics:            &staleNaNSumBatch,
+			metrics:            staleNaNSumBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 1,
 			httpResponseCode:   http.StatusAccepted,
@@ -592,7 +592,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNHistogram_case",
-			metrics:            &staleNaNHistogramBatch,
+			metrics:            staleNaNHistogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 6,
 			httpResponseCode:   http.StatusAccepted,
@@ -600,7 +600,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNEmptyHistogram_case",
-			metrics:            &staleNaNEmptyHistogramBatch,
+			metrics:            staleNaNEmptyHistogramBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 3,
 			httpResponseCode:   http.StatusAccepted,
@@ -608,7 +608,7 @@ func Test_PushMetrics(t *testing.T) {
 		},
 		{
 			name:               "staleNaNSummary_case",
-			metrics:            &staleNaNSummaryBatch,
+			metrics:            staleNaNSummaryBatch,
 			reqTestFunc:        checkFunc,
 			expectedTimeSeries: 5,
 			httpResponseCode:   http.StatusAccepted,
@@ -677,7 +677,7 @@ func Test_PushMetrics(t *testing.T) {
 					defer func() {
 						require.NoError(t, prwe.Shutdown(ctx))
 					}()
-					err := prwe.PushMetrics(ctx, *tt.metrics)
+					err := prwe.PushMetrics(ctx, tt.metrics)
 					if tt.returnErr {
 						assert.Error(t, err)
 						return

@@ -82,7 +82,7 @@ func TestProbabilisticSampling(t *testing.T) {
 
 			sampled := 0
 			for _, traceID := range genRandomTraceIDs(traceCount) {
-				trace := newTraceStringAttrs(pcommon.NewMap(), "example", "value")
+				trace := newTraceStringAttrs(nil, "example", "value")
 
 				decision, err := probabilisticSampler.Evaluate(traceID, trace)
 				assert.NoError(t, err)

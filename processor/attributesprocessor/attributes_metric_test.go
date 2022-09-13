@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
@@ -61,31 +60,31 @@ func generateMetricData(resourceName string, attrs map[string]interface{}) pmetr
 	case pmetric.MetricDataTypeGauge:
 		dps := m.Gauge().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricDataTypeSum:
 		dps := m.Sum().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricDataTypeHistogram:
 		dps := m.Histogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricDataTypeExponentialHistogram:
 		dps := m.ExponentialHistogram().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	case pmetric.MetricDataTypeSummary:
 		dps := m.Summary().DataPoints()
 		for i := 0; i < dps.Len(); i++ {
-			pcommon.NewMapFromRaw(attrs).CopyTo(dps.At(i).Attributes())
+			dps.At(i).Attributes().FromRaw(attrs)
 			dps.At(i).Attributes().Sort()
 		}
 	}

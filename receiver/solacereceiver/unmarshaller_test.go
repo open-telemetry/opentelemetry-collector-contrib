@@ -173,8 +173,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 			want: func() *ptrace.Traces {
 				traces := ptrace.NewTraces()
 				resource := traces.ResourceSpans().AppendEmpty()
-				resourceAttrs := resource.Resource().Attributes()
-				populateAttributes(t, &resourceAttrs, map[string]interface{}{
+				populateAttributes(t, resource.Resource().Attributes(), map[string]interface{}{
 					"service.name":        "someRouterName",
 					"service.instance.id": "someVpnName",
 					"service.version":     "10.0.0",
@@ -189,8 +188,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetKind(5)
 				span.SetName("(topic) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
-				spanAttrs := span.Attributes()
-				populateAttributes(t, &spanAttrs, map[string]interface{}{
+				populateAttributes(t, span.Attributes(), map[string]interface{}{
 					"messaging.system":                                "SolacePubSub+",
 					"messaging.operation":                             "receive",
 					"messaging.protocol":                              "MQTT",
@@ -216,17 +214,17 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 					"net.peer.port":                                   int64(12345),
 					"messaging.solace.user_properties.special_key":    true,
 				})
-				populateEvent(t, &span, "somequeue enqueue", 123456789, map[string]interface{}{
+				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, &span, "sometopic enqueue", 2345678, map[string]interface{}{
+				populateEvent(t, span, "sometopic enqueue", 2345678, map[string]interface{}{
 					"messaging.destination":                 "sometopic",
 					"messaging.solace.destination_type":     "topic-endpoint",
 					"messaging.solace.rejects_all_enqueues": false,
 				})
-				populateEvent(t, &span, "commit", 123456789, map[string]interface{}{
+				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
 					"messaging.solace.transacted_session_name": "my-session-name",
@@ -260,7 +258,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				require.Equal(t, 1, instrumentation.Spans().Len())
 				expectedSpan := expectedInstrumentation.Spans().At(0)
 				span := instrumentation.Spans().At(0)
-				compareSpans(t, &expectedSpan, &span)
+				compareSpans(t, expectedSpan, span)
 			} else {
 				assert.Equal(t, ptrace.Traces{}, traces)
 			}
@@ -319,7 +317,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 	tests := []struct {
 		name string
 		data *model_v1.SpanData
-		want func(*ptrace.Span)
+		want func(ptrace.Span)
 	}{
 		// no trace state no status no parent span
 		{
@@ -330,7 +328,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				StartTimeUnixNano: 1234567890,
 				EndTimeUnixNano:   2234567890,
 			},
-			want: func(span *ptrace.Span) {
+			want: func(span ptrace.Span) {
 				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
@@ -353,7 +351,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 				TraceState:        &someTraceState,
 				ErrorDescription:  "some error",
 			},
-			want: func(span *ptrace.Span) {
+			want: func(span ptrace.Span) {
 				span.SetTraceID([16]byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
 				span.SetSpanID([8]byte{7, 6, 5, 4, 3, 2, 1, 0})
 				span.SetStartTimestamp(1234567890)
@@ -374,7 +372,7 @@ func TestUnmarshallerMapClientSpanData(t *testing.T) {
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapClientSpanData(tt.data, actual)
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			tt.want(&expected)
+			tt.want(expected)
 			assert.Equal(t, expected, actual)
 		})
 	}
@@ -514,13 +512,13 @@ func TestUnmarshallerEvents(t *testing.T) {
 	tests := []struct {
 		name                 string
 		spanData             *model_v1.SpanData
-		populateExpectedSpan func(span *ptrace.Span)
+		populateExpectedSpan func(span ptrace.Span)
 		unmarshallingErrors  interface{}
 	}{
 		{ // don't expect any events when none are present in the span data
 			name:                 "No Events",
 			spanData:             &model_v1.SpanData{},
-			populateExpectedSpan: func(span *ptrace.Span) {},
+			populateExpectedSpan: func(span ptrace.Span) {},
 		},
 		{ // when an enqueue event is present, expect it to be added to the span events
 			name: "Enqueue Event Queue",
@@ -532,7 +530,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
@@ -552,7 +550,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "sometopic enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                  "sometopic",
 					"messaging.solace.destination_type":      "topic-endpoint",
@@ -575,7 +573,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
@@ -598,7 +596,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                 "#P2P/QUE/solbroker/some-topic-endpoint",
 					"messaging.solace.destination_type":     "queue",
@@ -617,7 +615,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "(anonymous) enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                  "#P2P/TE/solbroker/some-topic-endpoint",
 					"messaging.solace.destination_type":      "topic-endpoint",
@@ -636,7 +634,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {},
+			populateExpectedSpan: func(span ptrace.Span) {},
 			unmarshallingErrors:  1,
 		},
 		{ // Local Transaction
@@ -655,7 +653,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "commit", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":   "client",
 					"messaging.solace.transaction_id":          12345,
@@ -680,7 +678,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "end", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator": "administrator",
 					"messaging.solace.transaction_xid":       "0000007b-000814fe-804020100804020100",
@@ -704,7 +702,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					ErrorDescription: &someErrorString,
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "prepare", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator":     "session timeout",
 					"messaging.solace.transaction_xid":           "0000007b--",
@@ -720,7 +718,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					Type:         model_v1.SpanData_TransactionEvent_Type(12345),
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {},
+			populateExpectedSpan: func(span ptrace.Span) {},
 			unmarshallingErrors:  1,
 		},
 		{ // Type of ID not handled, type of initiator not handled
@@ -733,7 +731,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					TransactionId: nil,
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "rollback", 123456789, map[string]interface{}{
 					"messaging.solace.transaction_initiator": "",
 				})
@@ -767,7 +765,7 @@ func TestUnmarshallerEvents(t *testing.T) {
 					},
 				},
 			},
-			populateExpectedSpan: func(span *ptrace.Span) {
+			populateExpectedSpan: func(span ptrace.Span) {
 				populateEvent(t, span, "somequeue enqueue", 123456789, map[string]interface{}{
 					"messaging.destination":                 "somequeue",
 					"messaging.solace.destination_type":     "queue",
@@ -791,17 +789,17 @@ func TestUnmarshallerEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &solaceMessageUnmarshallerV1{zap.NewNop()}
 			expected := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-			tt.populateExpectedSpan(&expected)
+			tt.populateExpectedSpan(expected)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapEvents(tt.spanData, actual)
 			// order is nondeterministic for attributes, so we must sort to get a valid comparison
-			compareSpans(t, &expected, &actual)
+			compareSpans(t, expected, actual)
 			validateMetric(t, viewRecoverableUnmarshallingErrors, tt.unmarshallingErrors)
 		})
 	}
 }
 
-func compareSpans(t *testing.T, expected, actual *ptrace.Span) {
+func compareSpans(t *testing.T, expected, actual ptrace.Span) {
 	assert.Equal(t, expected.Attributes().Sort(), actual.Attributes().Sort())
 	require.Equal(t, expected.Events().Len(), actual.Events().Len())
 	for i := 0; i < expected.Events().Len(); i++ {
@@ -816,15 +814,14 @@ func compareSpans(t *testing.T, expected, actual *ptrace.Span) {
 	}
 }
 
-func populateEvent(t *testing.T, span *ptrace.Span, name string, timestamp uint64, attributes map[string]interface{}) {
+func populateEvent(t *testing.T, span ptrace.Span, name string, timestamp uint64, attributes map[string]interface{}) {
 	spanEvent := span.Events().AppendEmpty()
 	spanEvent.SetName(name)
 	spanEvent.SetTimestamp(pcommon.Timestamp(timestamp))
-	attrMap := spanEvent.Attributes()
-	populateAttributes(t, &attrMap, attributes)
+	populateAttributes(t, spanEvent.Attributes(), attributes)
 }
 
-func populateAttributes(t *testing.T, attrMap *pcommon.Map, attributes map[string]interface{}) {
+func populateAttributes(t *testing.T, attrMap pcommon.Map, attributes map[string]interface{}) {
 	for key, val := range attributes {
 		switch casted := val.(type) {
 		case string:

@@ -55,6 +55,8 @@ var (
 			return &hash
 		},
 	}
+
+	eventTagKey = tag.MustNewKey("event")
 )
 
 type eventType int
@@ -298,8 +300,7 @@ func (em *eventMachine) handleEventWithObservability(event string, do func() err
 	succeeded, err := doWithTimeout(time.Second, do)
 	duration := time.Since(start)
 
-	ctx, _ := tag.New(context.Background(), tag.Upsert(tag.MustNewKey("event"), event))
-	stats.Record(ctx, mEventLatency.M(duration.Milliseconds()))
+	_ = stats.RecordWithTags(context.Background(), []tag.Mutator{tag.Upsert(eventTagKey, event)}, mEventLatency.M(duration.Milliseconds()))
 
 	if err != nil {
 		em.logger.Error("failed to process event", zap.Error(err), zap.String("event", event))

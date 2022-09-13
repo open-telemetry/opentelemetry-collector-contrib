@@ -12,7 +12,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.34.0
 	go.opentelemetry.io/otel v1.9.0
 	go.opentelemetry.io/otel/trace v1.9.0
@@ -21,7 +21,7 @@ require (
 )
 
 require (
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
 	go.opentelemetry.io/otel/sdk v1.9.0
 )
 
@@ -45,7 +45,7 @@ require (
 	github.com/mostynb/go-grpc-compression v1.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.59.1-0.20220909192754-8d66f408a79a // indirect
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220912180657-39d2372496b4 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
