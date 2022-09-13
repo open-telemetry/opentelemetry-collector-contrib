@@ -49,7 +49,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
@@ -307,7 +306,6 @@ func Components() (component.Factories, error) {
 		kafkaexporter.NewFactory(),
 		loadbalancingexporter.NewFactory(),
 		loggingexporter.NewFactory(),
-		logicmonitorexporter.NewFactory(),
 		logzioexporter.NewFactory(),
 		lokiexporter.NewFactory(),
 		mezmoexporter.NewFactory(),

@@ -27,7 +27,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.59.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter v0.59.0
@@ -396,7 +395,6 @@ require (
 	github.com/lib/pq v1.10.7 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/linode/linodego v1.8.0 // indirect
-	github.com/logicmonitor/lm-data-sdk-go v0.5.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -677,8 +675,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaege
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ./exporter/loadbalancingexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ./exporter/logicmonitorexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter => ./exporter/logzioexporter
 
