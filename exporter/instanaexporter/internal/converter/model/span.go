@@ -31,9 +31,6 @@ const (
 	InstanaSpanKindConsumer = "consumer"
 	InstanaSpanKindInternal = "internal"
 
-	InstanaDataService     = "service"
-	InstanaDataOperation   = "operation"
-	InstanaDataTraceState  = "trace_state"
 	InstanaDataError       = "error"
 	InstanaDataErrorDetail = "error_detail"
 )
