@@ -53,7 +53,7 @@ func createTracesExporter(
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -71,7 +71,7 @@ func createMetricsExporter(
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -89,7 +89,7 @@ func createLogsExporter(
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		return &fileExporter{path: cfg.(*Config).Path}
+		return newFileExporter(cfg.(*Config))
 	})
 	return exporterhelper.NewLogsExporter(
 		ctx,
