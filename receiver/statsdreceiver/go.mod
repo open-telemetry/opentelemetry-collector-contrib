@@ -6,14 +6,14 @@ require (
 	// Note that this Lightstep metrics SDK dependency is temporary.  The same
 	// code is under review upstream, see
 	// https://github.com/open-telemetry/opentelemetry-go/pull/3022
-	github.com/lightstep/otel-launcher-go/lightstep/sdk/metric v1.10.1
+	github.com/lightstep/otel-launcher-go/lightstep/sdk/metric v1.11.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.58.0
 	github.com/stretchr/testify v1.8.0
 	go.opencensus.io v0.23.0
 	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
 	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
-	go.opentelemetry.io/otel v1.9.0
+	go.opentelemetry.io/otel v1.10.0
 
 	// Note! This unreleased otel-go dependency (would-be v0.32)
 	// changes histogram inclusivity.
@@ -26,6 +26,7 @@ require (
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -41,8 +42,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/otel/metric v0.31.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.9.0 // indirect
-	go.opentelemetry.io/otel/trace v1.9.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.10.0 // indirect
+	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
