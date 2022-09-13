@@ -581,7 +581,8 @@ func TestCreateLabels(t *testing.T) {
 		"b": "B",
 		"c": "C",
 	}
-	labelsMap := pcommon.NewMapFromRaw(map[string]interface{}{
+	labelsMap := pcommon.NewMap()
+	labelsMap.FromRaw(map[string]interface{}{
 		"a": "A",
 		"b": "B",
 		"c": "C",
@@ -709,7 +710,7 @@ func TestGetDataPoints(t *testing.T) {
 
 		logger := zap.NewNop()
 
-		expectedAttributes := pcommon.NewMapFromRaw(map[string]interface{}{"label1": "value1"})
+		expectedAttributes := map[string]interface{}{"label1": "value1"}
 
 		t.Run(tc.testName, func(t *testing.T) {
 			setupDataPointCache()
@@ -735,7 +736,7 @@ func TestGetDataPoints(t *testing.T) {
 				case pmetric.NumberDataPointValueTypeInt:
 					assert.Equal(t, int64(1), dp.IntVal())
 				}
-				assert.Equal(t, expectedAttributes, dp.Attributes())
+				assert.Equal(t, expectedAttributes, dp.Attributes().AsRaw())
 			case histogramDataPointSlice:
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)
 				assert.Equal(t, 1, convertedDPS.Len())
@@ -743,7 +744,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
-				assert.Equal(t, expectedAttributes, dp.Attributes())
+				assert.Equal(t, expectedAttributes, dp.Attributes().AsRaw())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDataPoints.(summaryDataPointSlice)
 				assert.Equal(t, metadata.instrumentationLibraryName, convertedDPS.instrumentationLibraryName)

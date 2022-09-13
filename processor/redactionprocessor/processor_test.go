@@ -362,7 +362,8 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t), consumertest.NewNop())
 	require.NoError(t, err)
 
-	attrs := pcommon.NewMapFromRaw(map[string]interface{}{
+	attrs := pcommon.NewMap()
+	attrs.FromRaw(map[string]interface{}{
 		"id":             5,
 		"redundant":      1.2,
 		"mystery":        "mystery ****",

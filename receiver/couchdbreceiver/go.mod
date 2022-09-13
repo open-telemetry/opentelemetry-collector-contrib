@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchd
 go 1.18
 
 require (
-	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
 	go.uber.org/multierr v1.8.0
 )
 
@@ -11,7 +11,7 @@ require github.com/stretchr/testify v1.8.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest v0.59.0
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
 	go.uber.org/zap v1.23.0
 )
 

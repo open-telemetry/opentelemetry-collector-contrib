@@ -145,7 +145,7 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		}
 		attrs := lr.Attributes()
 		attrs.EnsureCapacity(totalLogAttributes)
-		pcommon.NewMapFromRaw(log.Attributes).CopyTo(attrs)
+		attrs.FromRaw(log.Attributes)
 		attrs.UpsertString("message", log.Message)
 		attrs.UpsertString("component", log.Component)
 		attrs.UpsertString("context", log.Context)

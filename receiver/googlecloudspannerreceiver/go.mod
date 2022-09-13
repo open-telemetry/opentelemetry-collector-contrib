@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/spanner v1.38.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
 	go.uber.org/zap v1.23.0
 	google.golang.org/api v0.95.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -20,7 +20,7 @@ require (
 require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
 )
 
 require (
