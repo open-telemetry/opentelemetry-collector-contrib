@@ -151,7 +151,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
 			modified: func(is pcommon.InstrumentationScope) {
-				is.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+				is.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
 		{
@@ -241,7 +241,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			newVal: [][]byte{{9, 6, 4}},
 			modified: func(is pcommon.InstrumentationScope) {
 				newArr := is.Attributes().UpsertEmptySlice("arr_bytes")
-				newArr.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{9, 6, 4}))
+				newArr.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{9, 6, 4})
 			},
 		},
 	}
@@ -274,7 +274,7 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	is.Attributes().UpsertBool("bool", true)
 	is.Attributes().UpsertInt("int", 10)
 	is.Attributes().UpsertDouble("double", 1.2)
-	is.Attributes().UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte{1, 3, 2}))
+	is.Attributes().UpsertEmptyBytes("bytes").FromRaw([]byte{1, 3, 2})
 
 	arrStr := is.Attributes().UpsertEmptySlice("arr_str")
 	arrStr.AppendEmpty().SetStringVal("one")
@@ -293,8 +293,8 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	arrFloat.AppendEmpty().SetDoubleVal(2.0)
 
 	arrBytes := is.Attributes().UpsertEmptySlice("arr_bytes")
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{1, 2, 3}))
-	arrBytes.AppendEmpty().SetBytesVal(pcommon.NewImmutableByteSlice([]byte{2, 3, 4}))
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{1, 2, 3})
+	arrBytes.AppendEmpty().SetEmptyBytesVal().FromRaw([]byte{2, 3, 4})
 
 	return is
 }

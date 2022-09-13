@@ -222,7 +222,7 @@ func TestConvert(t *testing.T) {
 		m.UpsertInt("int", 123)
 		m.UpsertDouble("double", 12.34)
 		m.UpsertString("string", "hello")
-		m.UpsertBytes("bytes", pcommon.NewImmutableByteSlice([]byte("asdf")))
+		m.UpsertEmptyBytes("bytes").FromRaw([]byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }

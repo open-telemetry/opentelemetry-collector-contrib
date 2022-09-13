@@ -16,7 +16,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
-func addAnnotations(annos map[string]interface{}, attrs *pcommon.Map) {
+func addAnnotations(annos map[string]interface{}, attrs pcommon.Map) {
 	for k, v := range annos {
 		switch t := v.(type) {
 		case int:

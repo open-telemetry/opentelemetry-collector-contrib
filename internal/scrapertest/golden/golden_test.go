@@ -143,17 +143,16 @@ func setDPIntVal(dp pmetric.NumberDataPoint, value int64, attributes pcommon.Map
 }
 
 func initGauge(metric pmetric.Metric, name, desc, unit string) {
-	metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
+	metric.SetEmptyGauge()
 }
 
 func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.MetricAggregationTemporality, isMonotonic bool) {
-	metric.SetDataType(pmetric.MetricDataTypeSum)
-	metric.Sum().SetIsMonotonic(isMonotonic)
-	metric.Sum().SetAggregationTemporality(aggr)
 	metric.SetDescription(desc)
 	metric.SetName(name)
 	metric.SetUnit(unit)
+	metric.SetEmptySum().SetIsMonotonic(isMonotonic)
+	metric.Sum().SetAggregationTemporality(aggr)
 }

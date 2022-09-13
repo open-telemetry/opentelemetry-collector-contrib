@@ -158,8 +158,7 @@ func (mb *metricBuilder) AddDataPoint(metric cWMetric) {
 func (mb *metricBuilder) Build(metric pmetric.Metric) {
 	metric.SetName(mb.name)
 	metric.SetUnit(mb.unit)
-	metric.SetDataType(pmetric.MetricDataTypeSummary)
-	mb.dataPoints.MoveAndAppendTo(metric.Summary().DataPoints())
+	mb.dataPoints.MoveAndAppendTo(metric.SetEmptySummary().DataPoints())
 }
 
 // toDataPoint converts a cWMetric into a pdata datapoint and attaches the

@@ -291,16 +291,15 @@ func buildDefaultMetrics(typ pmetric.MetricDataType, value interface{}, now time
 	ilm := rm.ScopeMetrics().AppendEmpty()
 	m := ilm.Metrics().AppendEmpty()
 
-	m.SetDataType(typ)
 	m.SetName("single")
 
 	var dps pmetric.NumberDataPointSlice
 
 	switch typ {
 	case pmetric.MetricDataTypeGauge:
-		dps = m.Gauge().DataPoints()
+		dps = m.SetEmptyGauge().DataPoints()
 	case pmetric.MetricDataTypeSum:
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		dps = m.Sum().DataPoints()
 	}
 

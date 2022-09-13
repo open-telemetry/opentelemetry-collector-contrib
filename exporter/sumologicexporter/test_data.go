@@ -27,7 +27,7 @@ func buildExampleIntMetric(fillData bool) metricPair {
 	metric := pmetric.NewMetric()
 	metric.SetName("test.metric.data")
 	metric.SetUnit("bytes")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
+	metric.SetEmptySum()
 
 	if fillData {
 		dp := metric.Sum().DataPoints().AppendEmpty()
@@ -55,8 +55,8 @@ func buildExampleIntGaugeMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeGauge)
 	metric.metric.SetName("gauge_metric_name")
+	metric.metric.SetEmptyGauge()
 
 	metric.attributes.UpsertString("foo", "bar")
 
@@ -87,7 +87,7 @@ func buildExampleDoubleGaugeMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeGauge)
+	metric.metric.SetEmptyGauge()
 	metric.metric.SetName("gauge_metric_name_double_test")
 
 	metric.attributes.UpsertString("foo", "bar")
@@ -119,7 +119,7 @@ func buildExampleIntSumMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeSum)
+	metric.metric.SetEmptySum()
 	metric.metric.SetName("sum_metric_int_test")
 
 	metric.attributes.UpsertString("foo", "bar")
@@ -151,7 +151,7 @@ func buildExampleDoubleSumMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeSum)
+	metric.metric.SetEmptySum()
 	metric.metric.SetName("sum_metric_double_test")
 
 	metric.attributes.UpsertString("foo", "bar")
@@ -183,7 +183,7 @@ func buildExampleSummaryMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeSummary)
+	metric.metric.SetEmptySummary()
 	metric.metric.SetName("summary_metric_double_test")
 
 	metric.attributes.UpsertString("foo", "bar")
@@ -225,7 +225,7 @@ func buildExampleHistogramMetric(fillData bool) metricPair {
 		metric:     pmetric.NewMetric(),
 	}
 
-	metric.metric.SetDataType(pmetric.MetricDataTypeHistogram)
+	metric.metric.SetEmptyHistogram()
 	metric.metric.SetName("histogram_metric_double_test")
 
 	metric.attributes.UpsertString("bar", "foo")
@@ -234,8 +234,8 @@ func buildExampleHistogramMetric(fillData bool) metricPair {
 		dp := metric.metric.Histogram().DataPoints().AppendEmpty()
 		dp.Attributes().UpsertString("container", "dolor")
 		dp.Attributes().UpsertString("branch", "sumologic")
-		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 12, 7, 5, 8, 13}))
-		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.2, 0.5, 0.8, 1}))
+		dp.BucketCounts().FromRaw([]uint64{0, 12, 7, 5, 8, 13})
+		dp.ExplicitBounds().FromRaw([]float64{0.1, 0.2, 0.5, 0.8, 1})
 		dp.SetTimestamp(1618124444.169 * 1e9)
 		dp.SetSum(45.6)
 		dp.SetCount(7)
@@ -243,8 +243,8 @@ func buildExampleHistogramMetric(fillData bool) metricPair {
 		dp = metric.metric.Histogram().DataPoints().AppendEmpty()
 		dp.Attributes().UpsertString("container", "sit")
 		dp.Attributes().UpsertString("branch", "main")
-		dp.SetBucketCounts(pcommon.NewImmutableUInt64Slice([]uint64{0, 10, 1, 1, 4, 6}))
-		dp.SetExplicitBounds(pcommon.NewImmutableFloat64Slice([]float64{0.1, 0.2, 0.5, 0.8, 1}))
+		dp.BucketCounts().FromRaw([]uint64{0, 10, 1, 1, 4, 6})
+		dp.ExplicitBounds().FromRaw([]float64{0.1, 0.2, 0.5, 0.8, 1})
 		dp.SetTimestamp(1608424699.186 * 1e9)
 		dp.SetSum(54.1)
 		dp.SetCount(98)

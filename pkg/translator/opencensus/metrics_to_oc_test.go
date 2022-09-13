@@ -177,8 +177,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-gauge",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				m.Gauge().DataPoints().AppendEmpty().SetIntVal(1)
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_INT64,
@@ -187,8 +186,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-gauge",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeGauge)
-				m.Gauge().DataPoints().AppendEmpty().SetDoubleVal(1)
+				m.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
 			},
 			descType: ocmetrics.MetricDescriptor_GAUGE_DOUBLE,
@@ -197,8 +195,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-non-monotonic-delta-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
+				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
@@ -209,8 +206,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-non-monotonic-cumulative-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
+				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
@@ -221,8 +217,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-monotonic-delta-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
+				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
@@ -233,8 +228,7 @@ func TestMetricsType(t *testing.T) {
 			name: "int-monotonic-cumulative-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
+				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetIntVal(1)
 				return m
@@ -245,8 +239,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-non-monotonic-delta-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
+				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
@@ -257,8 +250,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-non-monotonic-cumulative-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(false)
+				m.SetEmptySum().SetIsMonotonic(false)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
@@ -269,8 +261,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-monotonic-delta-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
+				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m
@@ -281,8 +272,7 @@ func TestMetricsType(t *testing.T) {
 			name: "double-monotonic-cumulative-sum",
 			internal: func() pmetric.Metric {
 				m := pmetric.NewMetric()
-				m.SetDataType(pmetric.MetricDataTypeSum)
-				m.Sum().SetIsMonotonic(true)
+				m.SetEmptySum().SetIsMonotonic(true)
 				m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 				m.Sum().DataPoints().AppendEmpty().SetDoubleVal(1)
 				return m

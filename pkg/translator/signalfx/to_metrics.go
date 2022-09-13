@@ -76,20 +76,17 @@ func setDataTypeAndPoints(sfxDataPoint *model.DataPoint, ms pmetric.MetricSlice,
 	case model.MetricType_GAUGE:
 		m = ms.AppendEmpty()
 		// Numerical: Periodic, instantaneous measurement of some state.
-		m.SetDataType(pmetric.MetricDataTypeGauge)
-		fillNumberDataPoint(sfxDataPoint, m.Gauge().DataPoints())
+		fillNumberDataPoint(sfxDataPoint, m.SetEmptyGauge().DataPoints())
 
 	case model.MetricType_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityDelta)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 
 	case model.MetricType_CUMULATIVE_COUNTER:
 		m = ms.AppendEmpty()
-		m.SetDataType(pmetric.MetricDataTypeSum)
-		m.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
+		m.SetEmptySum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 		m.Sum().SetIsMonotonic(true)
 		fillNumberDataPoint(sfxDataPoint, m.Sum().DataPoints())
 

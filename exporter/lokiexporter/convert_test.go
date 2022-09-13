@@ -25,26 +25,21 @@ import (
 func TestConvertAttributesAndMerge(t *testing.T) {
 	testCases := []struct {
 		desc     string
-		logAttrs pcommon.Map
-		resAttrs pcommon.Map
+		logAttrs map[string]interface{}
+		resAttrs map[string]interface{}
 		expected model.LabelSet
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
-			logAttrs: pcommon.NewMap(),
-			resAttrs: pcommon.NewMap(),
 			expected: defaultExporterLabels,
 		},
 		{
 			desc: "selected log attribute should be included",
-			logAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name":    "guarana",
-					"pod.name":     "should-be-ignored",
-					hintAttributes: "host.name",
-				},
-			),
-			resAttrs: pcommon.NewMap(),
+			logAttrs: map[string]interface{}{
+				"host.name":    "guarana",
+				"pod.name":     "should-be-ignored",
+				hintAttributes: "host.name",
+			},
 			expected: model.LabelSet{
 				"exporter":  "OTLP",
 				"host.name": "guarana",
@@ -52,17 +47,13 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "selected resource attribute should be included",
-			logAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					hintResources: "host.name",
-				},
-			),
-			resAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-					"pod.name":  "should-be-ignored",
-				},
-			),
+			logAttrs: map[string]interface{}{
+				hintResources: "host.name",
+			},
+			resAttrs: map[string]interface{}{
+				"host.name": "guarana",
+				"pod.name":  "should-be-ignored",
+			},
 			expected: model.LabelSet{
 				"exporter":  "OTLP",
 				"host.name": "guarana",
@@ -70,19 +61,15 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "selected attributes from both sources should have most specific win",
-			logAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name":    "hostname-from-attributes",
-					hintAttributes: "host.name",
-					hintResources:  "host.name",
-				},
-			),
-			resAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "hostname-from-resources",
-					"pod.name":  "should-be-ignored",
-				},
-			),
+			logAttrs: map[string]interface{}{
+				"host.name":    "hostname-from-attributes",
+				hintAttributes: "host.name",
+				hintResources:  "host.name",
+			},
+			resAttrs: map[string]interface{}{
+				"host.name": "hostname-from-resources",
+				"pod.name":  "should-be-ignored",
+			},
 			expected: model.LabelSet{
 				"exporter":  "OTLP",
 				"host.name": "hostname-from-attributes",
@@ -90,13 +77,10 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		},
 		{
 			desc: "it should be possible to override the exporter label",
-			logAttrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					hintAttributes: "exporter",
-					"exporter":     "overridden",
-				},
-			),
-			resAttrs: pcommon.NewMap(),
+			logAttrs: map[string]interface{}{
+				hintAttributes: "exporter",
+				"exporter":     "overridden",
+			},
 			expected: model.LabelSet{
 				"exporter": "overridden",
 			},
@@ -104,7 +88,11 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			out := convertAttributesAndMerge(tC.logAttrs, tC.resAttrs)
+			logAttrs := pcommon.NewMap()
+			logAttrs.FromRaw(tC.logAttrs)
+			resAttrs := pcommon.NewMap()
+			resAttrs.FromRaw(tC.resAttrs)
+			out := convertAttributesAndMerge(logAttrs, resAttrs)
 			assert.Equal(t, tC.expected, out)
 		})
 	}
@@ -119,17 +107,15 @@ func TestConvertAttributesToLabels(t *testing.T) {
 
 	testCases := []struct {
 		desc           string
-		attrsAvailable pcommon.Map
+		attrsAvailable map[string]interface{}
 		attrsToSelect  pcommon.Value
 		expected       model.LabelSet
 	}{
 		{
 			desc: "string value",
-			attrsAvailable: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-				},
-			),
+			attrsAvailable: map[string]interface{}{
+				"host.name": "guarana",
+			},
 			attrsToSelect: pcommon.NewValueString("host.name"),
 			expected: model.LabelSet{
 				"host.name": "guarana",
@@ -137,12 +123,10 @@ func TestConvertAttributesToLabels(t *testing.T) {
 		},
 		{
 			desc: "list of values as string",
-			attrsAvailable: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-					"pod.name":  "pod-123",
-				},
-			),
+			attrsAvailable: map[string]interface{}{
+				"host.name": "guarana",
+				"pod.name":  "pod-123",
+			},
 			attrsToSelect: pcommon.NewValueString("host.name, pod.name"),
 			expected: model.LabelSet{
 				"host.name": "guarana",
@@ -151,12 +135,10 @@ func TestConvertAttributesToLabels(t *testing.T) {
 		},
 		{
 			desc: "list of values as slice",
-			attrsAvailable: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-					"pod.name":  "pod-123",
-				},
-			),
+			attrsAvailable: map[string]interface{}{
+				"host.name": "guarana",
+				"pod.name":  "pod-123",
+			},
 			attrsToSelect: attrsToSelectSlice,
 			expected: model.LabelSet{
 				"host.name": "guarana",
@@ -166,7 +148,9 @@ func TestConvertAttributesToLabels(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			out := convertAttributesToLabels(tC.attrsAvailable, tC.attrsToSelect)
+			attrsAvailable := pcommon.NewMap()
+			attrsAvailable.FromRaw(tC.attrsAvailable)
+			out := convertAttributesToLabels(attrsAvailable, tC.attrsToSelect)
 			assert.Equal(t, tC.expected, out)
 		})
 	}
@@ -175,48 +159,42 @@ func TestConvertAttributesToLabels(t *testing.T) {
 func TestRemoveAttributes(t *testing.T) {
 	testCases := []struct {
 		desc     string
-		attrs    pcommon.Map
+		attrs    map[string]interface{}
 		labels   model.LabelSet
-		expected pcommon.Map
+		expected map[string]interface{}
 	}{
 		{
 			desc: "remove hints",
-			attrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					hintAttributes: "some.field",
-					hintResources:  "some.other.field",
-					"host.name":    "guarana",
-				},
-			),
+			attrs: map[string]interface{}{
+				hintAttributes: "some.field",
+				hintResources:  "some.other.field",
+				"host.name":    "guarana",
+			},
 			labels: model.LabelSet{},
-			expected: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-				},
-			),
+			expected: map[string]interface{}{
+				"host.name": "guarana",
+			},
 		},
 		{
 			desc: "remove attributes promoted to labels",
-			attrs: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"host.name": "guarana",
-					"pod.name":  "guarana-123",
-				},
-			),
+			attrs: map[string]interface{}{
+				"host.name": "guarana",
+				"pod.name":  "guarana-123",
+			},
 			labels: model.LabelSet{
 				"host.name": "guarana",
 			},
-			expected: pcommon.NewMapFromRaw(
-				map[string]interface{}{
-					"pod.name": "guarana-123",
-				},
-			),
+			expected: map[string]interface{}{
+				"pod.name": "guarana-123",
+			},
 		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			removeAttributes(tC.attrs, tC.labels)
-			assert.Equal(t, tC.expected, tC.attrs)
+			attrs := pcommon.NewMap()
+			attrs.FromRaw(tC.attrs)
+			removeAttributes(attrs, tC.labels)
+			assert.Equal(t, tC.expected, attrs.AsRaw())
 		})
 	}
 }

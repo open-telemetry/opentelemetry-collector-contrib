@@ -69,7 +69,7 @@ func replace(s, pattern string, value string, logger *zap.Logger) (string, bool)
 }
 
 // getNamespace retrieves namespace for given set of metrics from user config.
-func getNamespace(rm *pmetric.ResourceMetrics, namespace string) string {
+func getNamespace(rm pmetric.ResourceMetrics, namespace string) string {
 	if len(namespace) == 0 {
 		serviceName, svcNameOk := rm.Resource().Attributes().Get(conventions.AttributeServiceName)
 		serviceNamespace, svcNsOk := rm.Resource().Attributes().Get(conventions.AttributeServiceNamespace)
@@ -90,7 +90,7 @@ func getNamespace(rm *pmetric.ResourceMetrics, namespace string) string {
 }
 
 // getLogInfo retrieves the log group and log stream names from a given set of metrics.
-func getLogInfo(rm *pmetric.ResourceMetrics, cWNamespace string, config *Config) (string, string, bool) {
+func getLogInfo(rm pmetric.ResourceMetrics, cWNamespace string, config *Config) (string, string, bool) {
 	var logGroup, logStream string
 	groupReplaced := true
 	streamReplaced := true

@@ -243,7 +243,7 @@ func (m *metricFlinkJobCheckpointCount) init() {
 	m.data.SetName("flink.job.checkpoint.count")
 	m.data.SetDescription("The number of checkpoints completed or failed.")
 	m.data.SetUnit("{checkpoints}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -296,7 +296,7 @@ func (m *metricFlinkJobCheckpointInProgress) init() {
 	m.data.SetName("flink.job.checkpoint.in_progress")
 	m.data.SetDescription("The number of checkpoints in progress.")
 	m.data.SetUnit("{checkpoints}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -347,7 +347,7 @@ func (m *metricFlinkJobLastCheckpointSize) init() {
 	m.data.SetName("flink.job.last_checkpoint.size")
 	m.data.SetDescription("The total size of the last checkpoint.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -398,7 +398,7 @@ func (m *metricFlinkJobLastCheckpointTime) init() {
 	m.data.SetName("flink.job.last_checkpoint.time")
 	m.data.SetDescription("The end to end duration of the last checkpoint.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricFlinkJobLastCheckpointTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
@@ -447,7 +447,7 @@ func (m *metricFlinkJobRestartCount) init() {
 	m.data.SetName("flink.job.restart.count")
 	m.data.SetDescription("The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.")
 	m.data.SetUnit("{restarts}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -498,7 +498,7 @@ func (m *metricFlinkJvmClassLoaderClassesLoaded) init() {
 	m.data.SetName("flink.jvm.class_loader.classes_loaded")
 	m.data.SetDescription("The total number of classes loaded since the start of the JVM.")
 	m.data.SetUnit("{classes}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -549,7 +549,7 @@ func (m *metricFlinkJvmCPULoad) init() {
 	m.data.SetName("flink.jvm.cpu.load")
 	m.data.SetDescription("The CPU usage of the JVM for a jobmanager or taskmanager.")
 	m.data.SetUnit("%")
-	m.data.SetDataType(pmetric.MetricDataTypeGauge)
+	m.data.SetEmptyGauge()
 }
 
 func (m *metricFlinkJvmCPULoad) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
@@ -598,7 +598,7 @@ func (m *metricFlinkJvmCPUTime) init() {
 	m.data.SetName("flink.jvm.cpu.time")
 	m.data.SetDescription("The CPU time used by the JVM for a jobmanager or taskmanager.")
 	m.data.SetUnit("ns")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -649,7 +649,7 @@ func (m *metricFlinkJvmGcCollectionsCount) init() {
 	m.data.SetName("flink.jvm.gc.collections.count")
 	m.data.SetDescription("The total number of collections that have occurred.")
 	m.data.SetUnit("{collections}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -702,7 +702,7 @@ func (m *metricFlinkJvmGcCollectionsTime) init() {
 	m.data.SetName("flink.jvm.gc.collections.time")
 	m.data.SetDescription("The total time spent performing garbage collection.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -755,7 +755,7 @@ func (m *metricFlinkJvmMemoryDirectTotalCapacity) init() {
 	m.data.SetName("flink.jvm.memory.direct.total_capacity")
 	m.data.SetDescription("The total capacity of all buffers in the direct buffer pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -806,7 +806,7 @@ func (m *metricFlinkJvmMemoryDirectUsed) init() {
 	m.data.SetName("flink.jvm.memory.direct.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the direct buffer pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -857,7 +857,7 @@ func (m *metricFlinkJvmMemoryHeapCommitted) init() {
 	m.data.SetName("flink.jvm.memory.heap.committed")
 	m.data.SetDescription("The amount of heap memory guaranteed to be available to the JVM.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -908,7 +908,7 @@ func (m *metricFlinkJvmMemoryHeapMax) init() {
 	m.data.SetName("flink.jvm.memory.heap.max")
 	m.data.SetDescription("The maximum amount of heap memory that can be used for memory management.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -959,7 +959,7 @@ func (m *metricFlinkJvmMemoryHeapUsed) init() {
 	m.data.SetName("flink.jvm.memory.heap.used")
 	m.data.SetDescription("The amount of heap memory currently used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1010,7 +1010,7 @@ func (m *metricFlinkJvmMemoryMappedTotalCapacity) init() {
 	m.data.SetName("flink.jvm.memory.mapped.total_capacity")
 	m.data.SetDescription("The number of buffers in the mapped buffer pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1061,7 +1061,7 @@ func (m *metricFlinkJvmMemoryMappedUsed) init() {
 	m.data.SetName("flink.jvm.memory.mapped.used")
 	m.data.SetDescription("The amount of memory used by the JVM for the mapped buffer pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1112,7 +1112,7 @@ func (m *metricFlinkJvmMemoryMetaspaceCommitted) init() {
 	m.data.SetName("flink.jvm.memory.metaspace.committed")
 	m.data.SetDescription("The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1163,7 +1163,7 @@ func (m *metricFlinkJvmMemoryMetaspaceMax) init() {
 	m.data.SetName("flink.jvm.memory.metaspace.max")
 	m.data.SetDescription("The maximum amount of memory that can be used in the Metaspace memory pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1214,7 +1214,7 @@ func (m *metricFlinkJvmMemoryMetaspaceUsed) init() {
 	m.data.SetName("flink.jvm.memory.metaspace.used")
 	m.data.SetDescription("The amount of memory currently used in the Metaspace memory pool.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1265,7 +1265,7 @@ func (m *metricFlinkJvmMemoryNonheapCommitted) init() {
 	m.data.SetName("flink.jvm.memory.nonheap.committed")
 	m.data.SetDescription("The amount of non-heap memory guaranteed to be available to the JVM.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1316,7 +1316,7 @@ func (m *metricFlinkJvmMemoryNonheapMax) init() {
 	m.data.SetName("flink.jvm.memory.nonheap.max")
 	m.data.SetDescription("The maximum amount of non-heap memory that can be used for memory management.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1367,7 +1367,7 @@ func (m *metricFlinkJvmMemoryNonheapUsed) init() {
 	m.data.SetName("flink.jvm.memory.nonheap.used")
 	m.data.SetDescription("The amount of non-heap memory currently used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1418,7 +1418,7 @@ func (m *metricFlinkJvmThreadsCount) init() {
 	m.data.SetName("flink.jvm.threads.count")
 	m.data.SetDescription("The total number of live threads.")
 	m.data.SetUnit("{threads}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1469,7 +1469,7 @@ func (m *metricFlinkMemoryManagedTotal) init() {
 	m.data.SetName("flink.memory.managed.total")
 	m.data.SetDescription("The total amount of managed memory.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1520,7 +1520,7 @@ func (m *metricFlinkMemoryManagedUsed) init() {
 	m.data.SetName("flink.memory.managed.used")
 	m.data.SetDescription("The amount of managed memory currently used.")
 	m.data.SetUnit("By")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 }
@@ -1571,7 +1571,7 @@ func (m *metricFlinkOperatorRecordCount) init() {
 	m.data.SetName("flink.operator.record.count")
 	m.data.SetDescription("The number of records an operator has.")
 	m.data.SetUnit("{records}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1625,7 +1625,7 @@ func (m *metricFlinkOperatorWatermarkOutput) init() {
 	m.data.SetName("flink.operator.watermark.output")
 	m.data.SetDescription("The last watermark this operator has emitted.")
 	m.data.SetUnit("ms")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
@@ -1678,7 +1678,7 @@ func (m *metricFlinkTaskRecordCount) init() {
 	m.data.SetName("flink.task.record.count")
 	m.data.SetDescription("The number of records a task has.")
 	m.data.SetUnit("{records}")
-	m.data.SetDataType(pmetric.MetricDataTypeSum)
+	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)

@@ -236,6 +236,93 @@ func TestClusterHealthNoAuthorization(t *testing.T) {
 	require.ErrorIs(t, err, errUnauthorized)
 }
 
+func TestVersionNoPassword(t *testing.T) {
+	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
+
+	actualVersion := model.VersionResponse{}
+	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+
+	elasticsearchMock := mockServer(t, "", "")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	version, err := client.Version(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, &actualVersion, version)
+}
+
+func TestVersionAuthentication(t *testing.T) {
+	versionJSON, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
+
+	actualVersion := model.VersionResponse{}
+	require.NoError(t, json.Unmarshal(versionJSON, &actualVersion))
+
+	username := "user"
+	password := "pass"
+
+	elasticsearchMock := mockServer(t, username, password)
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: username,
+		Password: password,
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	version, err := client.Version(ctx)
+	require.NoError(t, err)
+
+	require.Equal(t, &actualVersion, version)
+}
+
+func TestVersionNoAuthentication(t *testing.T) {
+	elasticsearchMock := mockServer(t, "user", "pass")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_, err = client.Version(ctx)
+	require.ErrorIs(t, err, errUnauthenticated)
+}
+
+func TestVersionNoAuthorization(t *testing.T) {
+	elasticsearchMock := mockServer(t, "user", "pass")
+	defer elasticsearchMock.Close()
+
+	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: elasticsearchMock.URL,
+		},
+		Username: "bad_user",
+		Password: "bad_pass",
+	}, componenttest.NewNopHost())
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	_, err = client.Version(ctx)
+	require.ErrorIs(t, err, errUnauthorized)
+}
+
 func TestDoRequestBadPath(t *testing.T) {
 	client, err := newElasticsearchClient(componenttest.NewNopTelemetrySettings(), Config{
 		HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -286,6 +373,8 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 	require.NoError(t, err)
 	health, err := os.ReadFile("./testdata/sample_payloads/health.json")
 	require.NoError(t, err)
+	version, err := os.ReadFile("./testdata/sample_payloads/version.json")
+	require.NoError(t, err)
 
 	elasticsearchMock := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if username != "" || password != "" {
@@ -309,6 +398,14 @@ func mockServer(t *testing.T, username, password string) *httptest.Server {
 		if strings.HasPrefix(req.URL.Path, "/_cluster/health") {
 			rw.WriteHeader(200)
 			_, err = rw.Write(health)
+			require.NoError(t, err)
+			return
+		}
+
+		// version check
+		if req.URL.Path == "/" {
+			rw.WriteHeader(200)
+			_, err = rw.Write(version)
 			require.NoError(t, err)
 			return
 		}
