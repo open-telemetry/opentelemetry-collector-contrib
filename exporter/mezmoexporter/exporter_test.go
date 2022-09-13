@@ -18,7 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -52,11 +52,26 @@ func createSimpleLogData(numberOfLogs int) plog.Logs {
 		ts := pcommon.Timestamp(int64(i) * time.Millisecond.Nanoseconds())
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStringVal("10byteslog")
-		logRecord.Attributes().InsertString(conventions.AttributeServiceName, "myapp")
-		logRecord.Attributes().InsertString("my-label", "myapp-type")
-		logRecord.Attributes().InsertString(conventions.AttributeHostName, "myhost")
-		logRecord.Attributes().InsertString("custom", "custom")
+		logRecord.Attributes().UpsertString(conventions.AttributeServiceName, "myapp")
+		logRecord.Attributes().UpsertString("my-label", "myapp-type")
+		logRecord.Attributes().UpsertString(conventions.AttributeHostName, "myhost")
+		logRecord.Attributes().UpsertString("custom", "custom")
 		logRecord.SetTimestamp(ts)
+	}
+
+	return logs
+}
+
+func createMinimalAttributesLogData(numberOfLogs int) plog.Logs {
+	logs := plog.NewLogs()
+	logs.ResourceLogs().AppendEmpty()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.ScopeLogs().AppendEmpty()
+	sl := rl.ScopeLogs().AppendEmpty()
+
+	for i := 0; i < numberOfLogs; i++ {
+		logRecord := sl.LogRecords().AppendEmpty()
+		logRecord.Body().SetStringVal("minimal attribute log")
 	}
 
 	return logs
@@ -115,7 +130,7 @@ type testServerParams struct {
 // assertions through the assertCB function.
 func createHTTPServer(params *testServerParams) testServer {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			params.t.Fatal(err)
 		}
@@ -129,7 +144,8 @@ func createHTTPServer(params *testServerParams) testServer {
 
 		w.WriteHeader(statusCode)
 		if len(responseBody) > 0 {
-			w.Write([]byte(responseBody)) //nolint:errcheck
+			_, err = w.Write([]byte(responseBody))
+			assert.NoError(params.t, err)
 		}
 	}))
 
@@ -196,6 +212,38 @@ func TestLogsExporter(t *testing.T) {
 		err := exporter.pushLogData(context.Background(), logs)
 		require.NoError(t, err)
 	})
+}
+
+func TestAddsRequiredAttributes(t *testing.T) {
+	httpServerParams := testServerParams{
+		t: t,
+		assertionsCallback: func(req *http.Request, body MezmoLogBody) (int, string) {
+			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
+			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
+
+			lines := body.Lines
+			for _, line := range lines {
+				assert.True(t, line.Timestamp > 0)
+				assert.Equal(t, line.Level, "info")
+				assert.Equal(t, line.App, "")
+				assert.Equal(t, line.Line, "minimal attribute log")
+			}
+
+			return http.StatusOK, ""
+		},
+	}
+	server := createHTTPServer(&httpServerParams)
+	defer server.instance.Close()
+
+	log, _ := createLogger()
+	config := &Config{
+		IngestURL: server.url,
+	}
+	exporter := createExporter(t, config, log)
+
+	logs := createMinimalAttributesLogData(4)
+	err := exporter.pushLogData(context.Background(), logs)
+	require.NoError(t, err)
 }
 
 func Test404IngestError(t *testing.T) {

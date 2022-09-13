@@ -52,7 +52,8 @@
         {
           "metrics": [
             {
-              "name": "container.blockio.io_service_bytes_recursive.read",
+              "description": "Number of bytes transferred to/from the disk by the group and descendant groups.",
+              "name": "container.blockio.io_service_bytes_recursive",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
@@ -70,20 +71,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "name": "container.blockio.io_service_bytes_recursive.write",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -98,20 +96,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "write"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "name": "container.blockio.io_service_bytes_recursive.sync",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "2502656",
                     "attributes": [
@@ -126,20 +121,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "sync"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "name": "container.blockio.io_service_bytes_recursive.async",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -154,20 +146,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "async"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "name": "container.blockio.io_service_bytes_recursive.discard",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -182,20 +171,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "discard"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "By"
-            },
-            {
-              "name": "container.blockio.io_service_bytes_recursive.total",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "2502656",
                     "attributes": [
@@ -210,9 +196,16 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "total"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
                   }
                 ],
                 "isMonotonic": true
@@ -220,7 +213,8 @@
               "unit": "By"
             },
             {
-              "name": "container.blockio.io_serviced_recursive.read",
+              "description": "Number of IOs (bio) issued to the disk by the group and descendant groups.",
+              "name": "container.blockio.io_serviced_recursive",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
@@ -238,20 +232,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "read"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "1"
-            },
-            {
-              "name": "container.blockio.io_serviced_recursive.write",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -266,20 +257,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "write"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "1"
-            },
-            {
-              "name": "container.blockio.io_serviced_recursive.sync",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "99",
                     "attributes": [
@@ -294,20 +282,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "sync"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "1"
-            },
-            {
-              "name": "container.blockio.io_serviced_recursive.async",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -322,20 +307,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "async"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "1"
-            },
-            {
-              "name": "container.blockio.io_serviced_recursive.discard",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "0",
                     "attributes": [
@@ -350,20 +332,17 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "discard"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ],
-                "isMonotonic": true
-              },
-              "unit": "1"
-            },
-            {
-              "name": "container.blockio.io_serviced_recursive.total",
-              "sum": {
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
-                "dataPoints": [
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
+                  },
                   {
                     "asInt": "99",
                     "attributes": [
@@ -378,16 +357,24 @@
                         "value": {
                           "stringValue": "0"
                         }
+                      },
+                      {
+                        "key": "operation",
+                        "value": {
+                          "stringValue": "total"
+                        }
                       }
                     ],
-                    "timeUnixNano": "1657771705535206000"
+                    "startTimeUnixNano": "1661128093793004000",
+                    "timeUnixNano": "1661128093795620000"
                   }
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "System CPU usage.",
               "name": "container.cpu.usage.system",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -402,6 +389,7 @@
               "unit": "ns"
             },
             {
+              "description": "Total CPU time consumed.",
               "name": "container.cpu.usage.total",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -416,6 +404,7 @@
               "unit": "ns"
             },
             {
+              "description": "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).",
               "name": "container.cpu.usage.kernelmode",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -430,6 +419,7 @@
               "unit": "ns"
             },
             {
+              "description": "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).",
               "name": "container.cpu.usage.usermode",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -444,6 +434,7 @@
               "unit": "ns"
             },
             {
+              "description": "Number of periods with throttling active.",
               "name": "container.cpu.throttling_data.periods",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -455,9 +446,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
+              "description": "Number of periods when the container hits its throttling limit.",
               "name": "container.cpu.throttling_data.throttled_periods",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -469,9 +461,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{periods}"
             },
             {
+              "description": "Aggregate time the container was throttled.",
               "name": "container.cpu.throttling_data.throttled_time",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -486,6 +479,7 @@
               "unit": "ns"
             },
             {
+              "description": "Percent of CPU used by the container.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -498,6 +492,7 @@
               "unit": "1"
             },
             {
+              "description": "Per-core CPU usage by the container.",
               "name": "container.cpu.usage.percpu",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -604,7 +599,10 @@
               "unit": "ns"
             },
             {
-              "gauge": {
+              "description": "Memory limit of the container.",
+              "name": "container.memory.usage.limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "10449559552",
@@ -612,11 +610,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.limit",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "Memory usage of the container. This excludes the total cache.",
+              "name": "container.memory.usage.total",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "454656",
@@ -624,10 +624,10 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.total",
               "unit": "By"
             },
             {
+              "description": "Percentage of memory used.",
               "gauge": {
                 "dataPoints": [
                   {
@@ -640,7 +640,10 @@
               "unit": "1"
             },
             {
-              "gauge": {
+              "description": "Maximum memory usage.",
+              "name": "container.memory.usage.max",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "3932160",
@@ -648,11 +651,13 @@
                   }
                 ]
               },
-              "name": "container.memory.usage.max",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "The amount of anonymous memory that has been identified as active by the kernel.",
+              "name": "container.memory.active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -660,11 +665,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_anon",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "Cache memory that has been identified as active by the kernel.",
+              "name": "container.memory.active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "270336",
@@ -672,11 +679,13 @@
                   }
                 ]
               },
-              "name": "container.memory.active_file",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.",
+              "name": "container.memory.cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2433024",
@@ -684,47 +693,13 @@
                   }
                 ]
               },
-              "name": "container.memory.cache",
               "unit": "By"
             },
             {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "0",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
+              "description": "Bytes that are waiting to get written back to the disk, from this cgroup.",
               "name": "container.memory.dirty",
-              "unit": "By"
-            },
-            {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "9223372036854772000",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
-              "name": "container.memory.hierarchical_memory_limit",
-              "unit": "By"
-            },
-            {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "9223372036854772000",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
-              "name": "container.memory.hierarchical_memsw_limit",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -732,11 +707,55 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_anon",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "The maximum amount of physical memory that can be used by the processes of this control group.",
+              "name": "container.memory.hierarchical_memory_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "The maximum amount of RAM + swap that can be used by the processes of this control group.",
+              "name": "container.memory.hierarchical_memsw_limit",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "9223372036854772000",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "The amount of anonymous memory that has been identified as inactive by the kernel.",
+              "name": "container.memory.inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Cache memory that has been identified as inactive by the kernel.",
+              "name": "container.memory.inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2162688",
@@ -744,11 +763,13 @@
                   }
                 ]
               },
-              "name": "container.memory.inactive_file",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "Indicates the amount of memory mapped by the processes in the control group.",
+              "name": "container.memory.mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "1486848",
@@ -756,10 +777,10 @@
                   }
                 ]
               },
-              "name": "container.memory.mapped_file",
               "unit": "By"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup triggered a page fault.",
               "name": "container.memory.pgfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -771,9 +792,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup triggered a major fault.",
               "name": "container.memory.pgmajfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -785,9 +807,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Number of pages read from disk by the cgroup.",
               "name": "container.memory.pgpgin",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -799,9 +822,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of pages written to disk by the cgroup.",
               "name": "container.memory.pgpgout",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -813,22 +837,13 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "0",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
+              "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.",
               "name": "container.memory.rss",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -836,11 +851,13 @@
                   }
                 ]
               },
+              "unit": "By"
+            },
+            {
+              "description": "Number of bytes of anonymous transparent hugepages in this cgroup.",
               "name": "container.memory.rss_huge",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -848,11 +865,27 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_anon",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.",
+              "name": "container.memory.total_active_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.",
+              "name": "container.memory.total_active_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "270336",
@@ -860,11 +893,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_active_file",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.",
+              "name": "container.memory.total_cache",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2433024",
@@ -872,23 +907,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_cache",
               "unit": "By"
             },
             {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "0",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
+              "description": "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.",
               "name": "container.memory.total_dirty",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -896,11 +921,27 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_anon",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
+              "name": "container.memory.total_inactive_anon",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.",
+              "name": "container.memory.total_inactive_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "2162688",
@@ -908,11 +949,13 @@
                   }
                 ]
               },
-              "name": "container.memory.total_inactive_file",
               "unit": "By"
             },
             {
-              "gauge": {
+              "description": "Indicates the amount of memory mapped by the processes in the control group and descendant groups.",
+              "name": "container.memory.total_mapped_file",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "1486848",
@@ -920,10 +963,10 @@
                   }
                 ]
               },
-              "name": "container.memory.total_mapped_file",
               "unit": "By"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.",
               "name": "container.memory.total_pgfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -935,9 +978,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.",
               "name": "container.memory.total_pgmajfault",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -949,9 +993,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{faults}"
             },
             {
+              "description": "Number of pages read from disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgin",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -963,9 +1008,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
+              "description": "Number of pages written to disk by the cgroup and descendant groups.",
               "name": "container.memory.total_pgpgout",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -977,22 +1023,13 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{operations}"
             },
             {
-              "gauge": {
-                "dataPoints": [
-                  {
-                    "asInt": "0",
-                    "timeUnixNano": "1657771705535206000"
-                  }
-                ]
-              },
+              "description": "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.",
               "name": "container.memory.total_rss",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1000,11 +1037,13 @@
                   }
                 ]
               },
+              "unit": "By"
+            },
+            {
+              "description": "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.",
               "name": "container.memory.total_rss_huge",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1012,11 +1051,13 @@
                   }
                 ]
               },
+              "unit": "By"
+            },
+            {
+              "description": "The amount of memory that cannot be reclaimed. Includes descendant cgroups.",
               "name": "container.memory.total_unevictable",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1024,11 +1065,13 @@
                   }
                 ]
               },
+              "unit": "By"
+            },
+            {
+              "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.",
               "name": "container.memory.total_writeback",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1036,11 +1079,13 @@
                   }
                 ]
               },
+              "unit": "By"
+            },
+            {
+              "description": "The amount of memory that cannot be reclaimed.",
               "name": "container.memory.unevictable",
-              "unit": "By"
-            },
-            {
-              "gauge": {
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
                     "asInt": "0",
@@ -1048,10 +1093,24 @@
                   }
                 ]
               },
-              "name": "container.memory.writeback",
               "unit": "By"
             },
             {
+              "description": "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.",
+              "name": "container.memory.writeback",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "0",
+                    "timeUnixNano": "1657771705535206000"
+                  }
+                ]
+              },
+              "unit": "By"
+            },
+            {
+              "description": "Bytes received by the container.",
               "name": "container.network.io.usage.rx_bytes",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1074,6 +1133,7 @@
               "unit": "By"
             },
             {
+              "description": "Bytes sent.",
               "name": "container.network.io.usage.tx_bytes",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1096,6 +1156,7 @@
               "unit": "By"
             },
             {
+              "description": "Incoming packets dropped.",
               "name": "container.network.io.usage.rx_dropped",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1115,9 +1176,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Received errors.",
               "name": "container.network.io.usage.rx_errors",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1137,9 +1199,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
+              "description": "Packets received.",
               "name": "container.network.io.usage.rx_packets",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1159,9 +1222,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Outgoing packets dropped.",
               "name": "container.network.io.usage.tx_dropped",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1181,9 +1245,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             },
             {
+              "description": "Sent errors.",
               "name": "container.network.io.usage.tx_errors",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1203,9 +1268,10 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{errors}"
             },
             {
+              "description": "Packets sent.",
               "name": "container.network.io.usage.tx_packets",
               "sum": {
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
@@ -1225,10 +1291,13 @@
                 ],
                 "isMonotonic": true
               },
-              "unit": "1"
+              "unit": "{packets}"
             }
           ],
-          "scope": {}
+          "scope": {
+            "name": "otelcol/dockerstatsreceiver",
+            "version": "latest"
+          }
         }
       ]
     }

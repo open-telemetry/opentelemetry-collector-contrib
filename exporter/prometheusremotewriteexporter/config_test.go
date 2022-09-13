@@ -95,6 +95,9 @@ func Test_loadConfigDefaultAutomaticRename(t *testing.T) {
 					"X-Scope-OrgID":                   "234"},
 			},
 			ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+			TargetInfo: &TargetInfo{
+				Enabled: true,
+			},
 		})
 }
 
@@ -127,4 +130,15 @@ func TestDisabledQueue(t *testing.T) {
 	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "disabled_queue.yaml"), factories)
 	assert.NoError(t, err)
 	assert.False(t, cfg.Exporters[config.NewComponentID(typeStr)].(*Config).RemoteWriteQueue.Enabled)
+}
+
+func TestDisabledTargetInfo(t *testing.T) {
+	factories, err := componenttest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[typeStr] = factory
+	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "disabled_target_info.yaml"), factories)
+	assert.NoError(t, err)
+	assert.False(t, cfg.Exporters[config.NewComponentID(typeStr)].(*Config).TargetInfo.Enabled)
 }

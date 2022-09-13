@@ -31,7 +31,7 @@ type k8sResourceDefinition struct {
 	podName, podUID, container, node, rs, ds, ss, job, cronjob, ns string
 }
 
-func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinition) *pcommon.Resource {
+func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinition) pcommon.Resource {
 	resource := makeResourceWithJobInstanceScheme(jobInstance, true)
 	attrs := resource.Attributes()
 	if def.podName != "" {
@@ -67,7 +67,7 @@ func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinit
 	return resource
 }
 
-func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) *pcommon.Resource {
+func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool) pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
 	// Using hardcoded values to assert on outward expectations so that
@@ -79,7 +79,7 @@ func makeResourceWithJobInstanceScheme(def *jobInstanceDefinition, hasHost bool)
 	attrs.UpsertString("service.instance.id", def.instance)
 	attrs.UpsertString("net.host.port", def.port)
 	attrs.UpsertString("http.scheme", def.scheme)
-	return &resource
+	return resource
 }
 
 func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
@@ -87,7 +87,7 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 		name, job string
 		instance  string
 		sdLabels  labels.Labels
-		want      *pcommon.Resource
+		want      pcommon.Resource
 	}{
 		{
 			name: "all attributes proper",
@@ -282,10 +282,10 @@ func TestCreateNodeAndResourcePromToOTLP(t *testing.T) {
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			got := CreateNodeAndResource(tt.job, tt.instance, tt.sdLabels)
+			got := CreateResource(tt.job, tt.instance, tt.sdLabels)
 			got.Attributes().Sort()
 			tt.want.Attributes().Sort()
-			require.Equal(t, got, tt.want)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

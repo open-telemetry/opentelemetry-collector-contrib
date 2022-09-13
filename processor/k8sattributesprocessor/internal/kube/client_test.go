@@ -229,6 +229,48 @@ func TestPodHostNetwork(t *testing.T) {
 	assert.False(t, got.Ignore)
 }
 
+// TestPodCreate tests that a new pod, created after otel-collector starts, has its attributes set
+// correctly
+func TestPodCreate(t *testing.T) {
+	c, _ := newTestClient(t)
+	assert.Equal(t, 0, len(c.Pods))
+
+	// pod is created in Pending phase. At this point it has a UID but no start time or pod IP address
+	pod := &api_v1.Pod{}
+	pod.Name = "podD"
+	pod.UID = "11111111-2222-3333-4444-555555555555"
+	c.handlePodAdd(pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is scheduled onto to a node (no changes relevant to this test happen in that event)
+	// pod is started, and given a startTime but not an IP address - it's still Pending at this point
+	startTime := meta_v1.NewTime(time.Now())
+	pod.Status.StartTime = &startTime
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 1)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+
+	// pod is Running and has an IP address
+	pod.Status.PodIP = "3.3.3.3"
+	c.handlePodUpdate(&api_v1.Pod{}, pod)
+	assert.Equal(t, len(c.Pods), 2)
+	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "3.3.3.3")]
+	assert.Equal(t, got.Address, "3.3.3.3")
+	assert.Equal(t, got.Name, "podD")
+	assert.Equal(t, got.PodUID, "11111111-2222-3333-4444-555555555555")
+}
+
 func TestPodAddOutOfSync(t *testing.T) {
 	c, _ := newTestClient(t)
 	assert.Equal(t, len(c.Pods), 0)
@@ -448,6 +490,32 @@ func TestExtractionRules(t *testing.T) {
 			Annotations: map[string]string{
 				"annotation1": "av1",
 			},
+			OwnerReferences: []meta_v1.OwnerReference{
+				{
+					APIVersion: "apps/v1",
+					Kind:       "ReplicaSet",
+					Name:       "auth-service-66f5996c7c",
+					UID:        "207ea729-c779-401d-8347-008ecbc137e3",
+				},
+				{
+					APIVersion: "apps/v1",
+					Kind:       "DaemonSet",
+					Name:       "auth-daemonset",
+					UID:        "c94d3814-2253-427a-ab13-2cf609e4dafa",
+				},
+				{
+					APIVersion: "batch/v1",
+					Kind:       "Job",
+					Name:       "auth-cronjob-27667920",
+					UID:        "59f27ac1-5c71-42e5-abe9-2c499d603706",
+				},
+				{
+					APIVersion: "apps/v1",
+					Kind:       "StatefulSet",
+					Name:       "pi-statefulset",
+					UID:        "03755eb1-6175-47d5-afd5-05cfc30244d7",
+				},
+			},
 		},
 		Spec: api_v1.PodSpec{
 			NodeName: "node1",
@@ -472,6 +540,78 @@ func TestExtractionRules(t *testing.T) {
 		},
 		attributes: map[string]string{
 			"k8s.deployment.name": "auth-service",
+		},
+	}, {
+		name: "replicasetId",
+		rules: ExtractionRules{
+			ReplicaSetID: true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.uid": "207ea729-c779-401d-8347-008ecbc137e3",
+		},
+	}, {
+		name: "replicasetName",
+		rules: ExtractionRules{
+			ReplicaSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.replicaset.name": "auth-service-66f5996c7c",
+		},
+	}, {
+		name: "daemonsetUID",
+		rules: ExtractionRules{
+			DaemonSetUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.uid": "c94d3814-2253-427a-ab13-2cf609e4dafa",
+		},
+	}, {
+		name: "daemonsetName",
+		rules: ExtractionRules{
+			DaemonSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.daemonset.name": "auth-daemonset",
+		},
+	}, {
+		name: "jobUID",
+		rules: ExtractionRules{
+			JobUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.uid": "59f27ac1-5c71-42e5-abe9-2c499d603706",
+		},
+	}, {
+		name: "jobName",
+		rules: ExtractionRules{
+			JobName: true,
+		},
+		attributes: map[string]string{
+			"k8s.job.name": "auth-cronjob-27667920",
+		},
+	}, {
+		name: "cronJob",
+		rules: ExtractionRules{
+			CronJobName: true,
+		},
+		attributes: map[string]string{
+			"k8s.cronjob.name": "auth-cronjob",
+		},
+	}, {
+		name: "statefulsetUID",
+		rules: ExtractionRules{
+			StatefulSetUID: true,
+		},
+		attributes: map[string]string{
+			"k8s.statefulset.uid": "03755eb1-6175-47d5-afd5-05cfc30244d7",
+		},
+	}, {
+		name: "jobName",
+		rules: ExtractionRules{
+			StatefulSetName: true,
+		},
+		attributes: map[string]string{
+			"k8s.statefulset.name": "pi-statefulset",
 		},
 	}, {
 		name: "metadata",
@@ -546,7 +686,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("la*"),
+					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -560,7 +700,7 @@ func TestExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("an*"),
+					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
 					From:     MetadataFromPod,
 				},
 				},
@@ -570,11 +710,22 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name: "all-annotations-not-match",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{{
+					KeyRegex: regexp.MustCompile("^(?:an*)$"),
+					From:     MetadataFromPod,
+				},
+				},
+			},
+			attributes: map[string]string{},
+		},
+		{
 			name: "captured-groups",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
 					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
@@ -588,15 +739,15 @@ func TestExtractionRules(t *testing.T) {
 			name: "captured-groups-$0",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					Name:                 "$0",
-					KeyRegex:             regexp.MustCompile(`annotation(\d+)`),
+					Name:                 "prefix-$0",
+					KeyRegex:             regexp.MustCompile(`^(?:annotation(\d+))$`),
 					HasKeyRegexReference: true,
 					From:                 MetadataFromPod,
 				},
 				},
 			},
 			attributes: map[string]string{
-				"annotation1": "av1",
+				"prefix-annotation1": "av1",
 			},
 		},
 	}
@@ -667,7 +818,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-labels",
 			rules: ExtractionRules{
 				Labels: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("la*"),
+					KeyRegex: regexp.MustCompile("^(?:la.*)$"),
 					From:     MetadataFromNamespace,
 				},
 				},
@@ -680,7 +831,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			name: "all-annotations",
 			rules: ExtractionRules{
 				Annotations: []FieldExtractionRule{{
-					KeyRegex: regexp.MustCompile("an*"),
+					KeyRegex: regexp.MustCompile("^(?:an.*)$"),
 					From:     MetadataFromNamespace,
 				},
 				},

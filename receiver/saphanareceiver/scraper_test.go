@@ -17,7 +17,7 @@ package saphanareceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -124,7 +124,7 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 	w.On("PingContext").Return(nil)
 	w.On("Close").Return(nil)
 
-	contents, err := ioutil.ReadFile(filename)
+	contents, err := os.ReadFile(filename)
 	require.NoError(t, err)
 
 	var queries []queryJSON
@@ -132,9 +132,9 @@ func initializeWrapper(t *testing.T, w *testDBWrapper, filename string) {
 	require.NoError(t, err)
 
 	for _, query := range queries {
-		result := [][]*string{}
+		var result [][]*string
 		for _, providedRow := range query.Result {
-			row := []*string{}
+			var row []*string
 			for _, val := range providedRow {
 				if val == "nil" {
 					row = append(row, nil)

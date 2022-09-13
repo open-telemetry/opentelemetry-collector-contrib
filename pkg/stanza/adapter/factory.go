@@ -39,7 +39,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) co
 	return component.NewReceiverFactory(
 		logReceiverType.Type(),
 		logReceiverType.CreateDefaultConfig,
-		component.WithLogsReceiverAndStabilityLevel(createLogsReceiver(logReceiverType), sl),
+		component.WithLogsReceiver(createLogsReceiver(logReceiverType), sl),
 	)
 }
 
@@ -104,6 +104,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) component.CreateLogsRec
 			logger:    params.Logger,
 			converter: converter,
 			obsrecv:   obsrecv,
+			storageID: baseCfg.StorageID,
 		}, nil
 	}
 }

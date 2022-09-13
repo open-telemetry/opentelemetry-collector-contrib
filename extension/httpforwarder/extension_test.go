@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -262,7 +261,7 @@ func TestExtension(t *testing.T) {
 }
 
 func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
-	r, err := http.NewRequest(args.method, args.url, ioutil.NopCloser(strings.NewReader(args.body)))
+	r, err := http.NewRequest(args.method, args.url, io.NopCloser(strings.NewReader(args.body)))
 	require.NoError(t, err)
 
 	for k, v := range args.headers {
@@ -273,7 +272,7 @@ func httpRequest(t *testing.T, args clientRequestArgs) *http.Request {
 }
 
 func readBody(body io.ReadCloser) []byte {
-	out, _ := ioutil.ReadAll(body)
+	out, _ := io.ReadAll(body)
 	return out
 }
 

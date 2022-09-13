@@ -56,7 +56,7 @@ type tracesamplerprocessor struct {
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
 // configuration.
-func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.TracesProcessor, error) {
+func newTracesProcessor(ctx context.Context, set component.ProcessorCreateSettings, cfg *Config, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	tsp := &tracesamplerprocessor{
 		// Adjust sampling percentage on private so recalculations are avoided.
 		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
@@ -64,6 +64,8 @@ func newTracesProcessor(nextConsumer consumer.Traces, cfg *Config) (component.Tr
 	}
 
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		tsp.processTraces,
@@ -85,7 +87,7 @@ func (tsp *tracesamplerprocessor) processTraces(_ context.Context, td ptrace.Tra
 				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 				// Hashing here prevents bias due to such systems.
-				tidBytes := s.TraceID().Bytes()
+				tidBytes := s.TraceID()
 				sampled := sp == mustSampleSpan ||
 					hash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
 				return !sampled

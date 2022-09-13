@@ -112,7 +112,7 @@ func buildReferenceAttributes(originResource pcommon.Resource, requiredAttribute
 	referenceAttributes := pcommon.NewMap()
 	originResource.Attributes().CopyTo(referenceAttributes)
 	requiredAttributes.Range(func(k string, v pcommon.Value) bool {
-		referenceAttributes.Upsert(k, v)
+		v.CopyTo(referenceAttributes.UpsertEmpty(k))
 		return true
 	})
 	return referenceAttributes
@@ -185,7 +185,7 @@ func updateResourceToMatch(newResource pcommon.Resource, originResource pcommon.
 	// This prioritizes required attributes over the original resource attributes, if they overlap
 	attrs := newResource.Attributes()
 	requiredAttributes.Range(func(k string, v pcommon.Value) bool {
-		attrs.Upsert(k, v)
+		v.CopyTo(attrs.UpsertEmpty(k))
 		return true
 	})
 

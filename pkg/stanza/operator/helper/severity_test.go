@@ -16,7 +16,7 @@ package helper
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"testing"
@@ -41,8 +41,9 @@ type severityTestCase struct {
 // These tests ensure that users may build a mapping that
 // maps values into any of the predefined keys.
 // For example, this ensures that users can do this:
-//   mapping:
-//     warn3: warn_three
+//
+//	mapping:
+//	  warn3: warn_three
 func validMappingKeyCases() []severityTestCase {
 	aliasedMapping := map[string]entry.Severity{
 		"trace":  entry.Trace,
@@ -71,7 +72,7 @@ func validMappingKeyCases() []severityTestCase {
 		"fatal4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range aliasedMapping {
 		cases = append(cases,
 			severityTestCase{
@@ -115,7 +116,7 @@ func otlpSevCases() []severityTestCase {
 		"fAtAl4": entry.Fatal4,
 	}
 
-	cases := []severityTestCase{}
+	var cases []severityTestCase
 	for k, v := range mustParse {
 		cases = append(cases,
 			severityTestCase{
@@ -555,7 +556,7 @@ func TestGoldenSeverityParserConfig(t *testing.T) {
 }
 
 func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("could not find config file: %w", err)
 	}
@@ -569,7 +570,7 @@ func severityConfigFromFileViaYaml(file string) (*SeverityConfig, error) {
 }
 
 func severityConfigFromFileViaMapstructure(file string, result *SeverityConfig) error {
-	bytes, err := ioutil.ReadFile(file)
+	bytes, err := os.ReadFile(file)
 	if err != nil {
 		return fmt.Errorf("could not find config file: %w", err)
 	}

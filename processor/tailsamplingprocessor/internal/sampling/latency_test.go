@@ -27,7 +27,7 @@ import (
 func TestEvaluate_Latency(t *testing.T) {
 	filter := NewLatency(zap.NewNop(), 5000)
 
-	traceID := pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
 	now := time.Now()
 
 	cases := []struct {
@@ -94,8 +94,8 @@ func newTraceWithSpans(spans []spanWithTimeAndDuration) *TraceData {
 
 	for _, s := range spans {
 		span := ils.Spans().AppendEmpty()
-		span.SetTraceID(pcommon.NewTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}))
-		span.SetSpanID(pcommon.NewSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8}))
+		span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+		span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(s.StartTime))
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(s.StartTime.Add(s.Duration)))
 	}

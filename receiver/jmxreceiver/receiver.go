@@ -17,7 +17,6 @@ package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -76,7 +75,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "jmx-config-*.properties")
+	tmpFile, err := os.CreateTemp(os.TempDir(), "jmx-config-*.properties")
 	if err != nil {
 		return fmt.Errorf("failed to get tmp file for jmxreceiver config: %w", err)
 	}
@@ -243,7 +242,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
-	content := []string{}
+	var content []string
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 

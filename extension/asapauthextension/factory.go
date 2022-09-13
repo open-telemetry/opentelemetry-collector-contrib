@@ -32,6 +32,7 @@ func NewFactory() component.ExtensionFactory {
 		typeStr,
 		createDefaultConfig,
 		createExtension,
+		component.StabilityLevelBeta,
 	)
 }
 

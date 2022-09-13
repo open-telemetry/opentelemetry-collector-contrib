@@ -20,7 +20,7 @@ package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -92,7 +92,7 @@ func TestFlinkIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// required to start the StateMachineExample job
-	code, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
+	code, _, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
 	require.NoError(t, err)
 	require.Equal(t, 0, code)
 
@@ -187,7 +187,7 @@ func (ws waitStrategy) waitFor(ctx context.Context, _ string) error {
 				continue
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				continue
 			}

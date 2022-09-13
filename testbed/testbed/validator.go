@@ -84,7 +84,6 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 	// TODO: Fix Jaeger span links attributes and tracestate.
 	return &CorrectnessTestValidator{
 		dataProvider:         provider,
-		assertionFailures:    make([]*TraceAssertionFailure, 0),
 		ignoreSpanLinksAttrs: senderName == "jaeger" || receiverName == "jaeger",
 	}
 }

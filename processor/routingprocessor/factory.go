@@ -35,9 +35,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
-		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability),
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability),
 	)
 }
 
@@ -50,17 +50,17 @@ func createDefaultConfig() config.Processor {
 
 func createTracesProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newTracesProcessor(params.Logger, cfg), nil
 }
 
 func createMetricsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newMetricProcessor(params.Logger, cfg), nil
 }
 
 func createLogsProcessor(_ context.Context, params component.ProcessorCreateSettings, cfg config.Processor, nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
-	return newProcessor(params.Logger, cfg), nil
+	return newLogProcessor(params.Logger, cfg), nil
 }
 
 func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {

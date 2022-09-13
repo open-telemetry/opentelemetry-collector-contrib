@@ -15,6 +15,7 @@
 package tql
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,109 +23,103 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql/tqltest"
 )
 
-func Test_newComparisonEvaluator(t *testing.T) {
-	tests := []struct {
-		name       string
-		comparison *Comparison
-		item       interface{}
-	}{
-		{
-			name: "literals match",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Right: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Op: "==",
-			},
-		},
-		{
-			name: "literals don't match",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("hello"),
-				},
-				Right: Value{
-					String: tqltest.Strp("goodbye"),
-				},
-				Op: "!=",
-			},
-		},
-		{
-			name: "path expression matches",
-			comparison: &Comparison{
-				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
+// valueFor is a test helper to eliminate a lot of tedium in writing tests of Comparisons.
+func valueFor(x any) Value {
+	val := Value{}
+	switch v := x.(type) {
+	case []byte:
+		var b Bytes = v
+		val.Bytes = &b
+	case string:
+		switch {
+		case v == "NAME":
+			// if the string is NAME construct a path of "name".
+			val.Path = &Path{
+				Fields: []Field{
+					{
+						Name: "name",
 					},
 				},
-				Right: Value{
-					String: tqltest.Strp("bear"),
-				},
-				Op: "==",
-			},
-			item: "bear",
-		},
-		{
-			name: "path expression not matches",
-			comparison: &Comparison{
-				Left: Value{
-					Path: &Path{
-						Fields: []Field{
-							{
-								Name: "name",
-							},
-						},
-					},
-				},
-				Right: Value{
-					String: tqltest.Strp("cat"),
-				},
-				Op: "!=",
-			},
-			item: "bear",
-		},
-		{
-			name:       "no condition",
-			comparison: nil,
-		},
+			}
+		case strings.Contains(v, "ENUM"):
+			// if the string contains ENUM construct an EnumSymbol from it.
+			val.Enum = (*EnumSymbol)(tqltest.Strp(v))
+		default:
+			val.String = tqltest.Strp(v)
+		}
+	case float64:
+		val.Float = tqltest.Floatp(v)
+	case *float64:
+		val.Float = v
+	case int:
+		val.Int = tqltest.Intp(int64(v))
+	case *int64:
+		val.Int = v
+	case bool:
+		val.Bool = Booleanp(Boolean(v))
+	case nil:
+		var n IsNil = true
+		val.IsNil = &n
+	default:
+		panic("test error!")
+	}
+	return val
+}
 
-		{
-			name: "compare Enum to int",
-			comparison: &Comparison{
-				Left: Value{
-					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM")),
-				},
-				Right: Value{
-					Int: tqltest.Intp(0),
-				},
-				Op: "==",
-			},
-		},
-		{
-			name: "compare int to Enum",
-			comparison: &Comparison{
-				Left: Value{
-					Int: tqltest.Intp(2),
-				},
-				Op: "==",
-				Right: Value{
-					Enum: (*EnumSymbol)(tqltest.Strp("TEST_ENUM_TWO")),
-				},
-			},
-		},
+// comparison is a test helper that constructs a Comparison object using valueFor
+func comparison(left any, right any, op string) *Comparison {
+	return &Comparison{
+		Left:  valueFor(left),
+		Right: valueFor(right),
+		Op:    compareOpTable[op],
+	}
+}
+
+func Test_newComparisonEvaluator(t *testing.T) {
+	p := NewParser(
+		DefaultFunctionsForTests(),
+		testParsePath,
+		testParseEnum,
+		NoOpLogger{},
+	)
+
+	tests := []struct {
+		name string
+		l    any
+		r    any
+		op   string
+		item interface{}
+		want bool
+	}{
+		{"literals match", "hello", "hello", "==", nil, true},
+		{"literals don't match", "hello", "goodbye", "!=", nil, true},
+		{"path expression matches", "NAME", "bear", "==", "bear", true},
+		{"path expression not matches", "NAME", "cat", "!=", "bear", true},
+		{"compare Enum to int", "TEST_ENUM", int(0), "==", nil, true},
+		{"compare int to Enum", int(2), "TEST_ENUM_TWO", "==", nil, true},
+		{"2 > Enum 0", int(2), "TEST_ENUM", ">", nil, true},
+		{"not 2 < Enum 0", int(2), "TEST_ENUM", "<", nil, false},
+		{"not 6 == 3.14", 6, 3.14, "==", nil, false},
+		{"6 != 3.14", 6, 3.14, "!=", nil, true},
+		{"6 > 3.14", 6, 3.14, ">", nil, true},
+		{"6 >= 3.14", 6, 3.14, ">=", nil, true},
+		{"not 6 < 3.14", 6, 3.14, "<", nil, false},
+		{"not 6 <= 3.14", 6, 3.14, "<=", nil, false},
+		{"'foo' > 'bar'", "foo", "bar", ">", nil, true},
+		{"'foo' > bear", "foo", "NAME", ">", "bear", true},
+		{"true > false", true, false, ">", nil, true},
+		{"not true > 0", true, 0, ">", nil, false},
+		{"not 'true' == true", "true", true, "==", nil, false},
+		{"[]byte('a') < []byte('b')", []byte("a"), []byte("b"), "<", nil, true},
+		{"nil == nil", nil, nil, "==", nil, true},
+		{"nil == []byte(nil)", nil, []byte(nil), "==", nil, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			comp := comparison(tt.l, tt.r, tt.op)
+			evaluate, err := p.newComparisonEvaluator(comp)
 			assert.NoError(t, err)
-			assert.True(t, evaluate(tqltest.TestTransformContext{
+			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: tt.item,
 			}))
 		})
@@ -132,29 +127,24 @@ func Test_newComparisonEvaluator(t *testing.T) {
 }
 
 func Test_newConditionEvaluator_invalid(t *testing.T) {
+	p := NewParser(
+		DefaultFunctionsForTests(),
+		testParsePath,
+		testParseEnum,
+		NoOpLogger{},
+	)
+
 	tests := []struct {
 		name       string
 		comparison *Comparison
 	}{
-		{
-			name: "unknown operation",
-			comparison: &Comparison{
-				Left: Value{
-					String: tqltest.Strp("bear"),
-				},
-				Op: "<>",
-				Right: Value{
-					String: tqltest.Strp("cat"),
-				},
-			},
-		},
 		{
 			name: "unknown Path",
 			comparison: &Comparison{
 				Left: Value{
 					Enum: (*EnumSymbol)(tqltest.Strp("SYMBOL_NOT_FOUND")),
 				},
-				Op: "==",
+				Op: EQ,
 				Right: Value{
 					String: tqltest.Strp("trash"),
 				},
@@ -163,13 +153,20 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newComparisonEvaluator(tt.comparison, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			_, err := p.newComparisonEvaluator(tt.comparison)
 			assert.Error(t, err)
 		})
 	}
 }
 
 func Test_newBooleanExpressionEvaluator(t *testing.T) {
+	p := NewParser(
+		DefaultFunctionsForTests(),
+		testParsePath,
+		testParseEnum,
+		NoOpLogger{},
+	)
+
 	tests := []struct {
 		name string
 		want bool
@@ -352,7 +349,7 @@ func Test_newBooleanExpressionEvaluator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := newBooleanExpressionEvaluator(tt.expr, DefaultFunctionsForTests(), testParsePath, testParseEnum)
+			evaluate, err := p.newBooleanExpressionEvaluator(tt.expr)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, evaluate(tqltest.TestTransformContext{
 				Item: nil,

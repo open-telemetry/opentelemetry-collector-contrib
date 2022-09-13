@@ -30,12 +30,12 @@ import (
 // Note that when evaluating multiple expressions that the expanded result is always
 // a string. For instance:
 //
-//   `true``false` -> "truefalse"
+//	`true``false` -> "truefalse"
 //
 // However if there is only one expansion then the expanded result will keep the type
 // of the expression. For instance:
 //
-//   `"secure" in pod.labels` -> true (boolean)
+//	`"secure" in pod.labels` -> true (boolean)
 func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (interface{}, error) {
 	// Tracks index into configValue where an expression (backtick) begins. -1 is unset.
 	exprStartIndex := -1

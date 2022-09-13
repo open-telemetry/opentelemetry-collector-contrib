@@ -16,8 +16,8 @@ package fileconsumer
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"strings"
 	"testing"
 
@@ -34,7 +34,7 @@ func TestNewFingerprintDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestOperator(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize = len(fingerprint)
 
@@ -130,7 +130,7 @@ func TestNewFingerprint(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			operator, _ := buildTestOperator(t, cfg)
+			operator, _ := buildTestManager(t, cfg)
 
 			operator.readerFactory.readerConfig.fingerprintSize = tc.fingerprintSize
 
@@ -237,7 +237,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, _ := buildTestOperator(t, cfg)
+	operator, _ := buildTestManager(t, cfg)
 
 	operator.readerFactory.readerConfig.fingerprintSize *= 10
 
@@ -257,7 +257,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 		}
 	}
 
-	fullFile, err := ioutil.TempFile(tempDir, "")
+	fullFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer fullFile.Close()
 
@@ -267,7 +267,7 @@ func TestFingerprintStartsWith_FromFile(t *testing.T) {
 	fff, err := operator.readerFactory.newFingerprint(fullFile)
 	require.NoError(t, err)
 
-	partialFile, err := ioutil.TempFile(tempDir, "")
+	partialFile, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
 	defer partialFile.Close()
 

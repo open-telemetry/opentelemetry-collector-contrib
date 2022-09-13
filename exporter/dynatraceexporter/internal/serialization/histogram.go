@@ -15,11 +15,10 @@
 package serialization // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/internal/serialization"
 
 import (
-	"go.uber.org/zap"
-
 	dtMetric "github.com/dynatrace-oss/dynatrace-metric-utils-go/metric"
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/zap"
 )
 
 func serializeHistogramPoint(name, prefix string, dims dimensions.NormalizedDimensionList, dp pmetric.HistogramDataPoint) (string, error) {

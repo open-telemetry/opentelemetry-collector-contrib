@@ -141,8 +141,9 @@ func newLegacyGoogleCloudMetricsExporter(cfg *LegacyConfig, set component.Export
 	mExp := &metricsExporter{mexporter: sde}
 
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		context.TODO(),
 		set,
+		cfg,
 		mExp.pushMetrics,
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism

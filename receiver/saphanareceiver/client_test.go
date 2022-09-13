@@ -71,9 +71,9 @@ func (m *testDBWrapper) QueryContext(ctx context.Context, query string) (resultW
 }
 
 func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
-	nullableResult := [][]sql.NullString{}
+	var nullableResult [][]sql.NullString
 	for _, row := range results {
-		nullableRow := []sql.NullString{}
+		var nullableRow []sql.NullString
 		for _, field := range row {
 			if field == nil {
 				nullableRow = append(nullableRow, sql.NullString{Valid: false})

@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/containertest
 
-go 1.17
+go 1.18
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/docker/docker v20.10.17+incompatible
+	github.com/docker/docker v20.10.18+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -12,10 +12,10 @@ require (
 require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/distribution v2.8.0-beta.1+incompatible // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect

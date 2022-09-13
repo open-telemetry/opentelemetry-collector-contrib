@@ -36,9 +36,9 @@ func NewFactory() component.ExporterFactory {
 	return component.NewExporterFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesExporterAndStabilityLevel(createTracesExporter, stability),
-		component.WithMetricsExporterAndStabilityLevel(createMetricsExporter, stability),
-		component.WithLogsExporterAndStabilityLevel(createLogsExporter, stability))
+		component.WithTracesExporter(createTracesExporter, stability),
+		component.WithMetricsExporter(createMetricsExporter, stability),
+		component.WithLogsExporter(createLogsExporter, stability))
 }
 
 func createDefaultConfig() config.Exporter {
@@ -48,7 +48,7 @@ func createDefaultConfig() config.Exporter {
 }
 
 func createTracesExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.TracesExporter, error) {
@@ -56,8 +56,9 @@ func createTracesExporter(
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
 	return exporterhelper.NewTracesExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeTraces,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -65,7 +66,7 @@ func createTracesExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.MetricsExporter, error) {
@@ -73,8 +74,9 @@ func createMetricsExporter(
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
 	return exporterhelper.NewMetricsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeMetrics,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),
@@ -82,7 +84,7 @@ func createMetricsExporter(
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	set component.ExporterCreateSettings,
 	cfg config.Exporter,
 ) (component.LogsExporter, error) {
@@ -90,8 +92,9 @@ func createLogsExporter(
 		return &fileExporter{path: cfg.(*Config).Path}
 	})
 	return exporterhelper.NewLogsExporter(
-		cfg,
+		ctx,
 		set,
+		cfg,
 		fe.Unwrap().(*fileExporter).ConsumeLogs,
 		exporterhelper.WithStart(fe.Start),
 		exporterhelper.WithShutdown(fe.Shutdown),

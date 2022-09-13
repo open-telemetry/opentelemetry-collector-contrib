@@ -70,12 +70,9 @@ func TestAttributesMapToOC(t *testing.T) {
 		},
 		DroppedAttributesCount: 234,
 	}
-	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(
-			pcommon.NewMapFromRaw(map[string]interface{}{
-				"abc": "def",
-			}),
-			234))
+	attrs := pcommon.NewMap()
+	attrs.UpsertString("abc", "def")
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 
 	ocAttrs.AttributeMap["intval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_IntValue{IntValue: 345},
@@ -86,15 +83,13 @@ func TestAttributesMapToOC(t *testing.T) {
 	ocAttrs.AttributeMap["doubleval"] = &octrace.AttributeValue{
 		Value: &octrace.AttributeValue_DoubleValue{DoubleValue: 4.5},
 	}
-	assert.EqualValues(t, ocAttrs,
-		attributesMapToOCSpanAttributes(pcommon.NewMapFromRaw(
-			map[string]interface{}{
-				"abc":       "def",
-				"intval":    345,
-				"boolval":   true,
-				"doubleval": 4.5,
-			}),
-			234))
+	attrs.FromRaw(map[string]interface{}{
+		"abc":       "def",
+		"intval":    345,
+		"boolval":   true,
+		"doubleval": 4.5,
+	})
+	assert.EqualValues(t, ocAttrs, attributesMapToOCSpanAttributes(attrs, 234))
 }
 
 func TestSpanKindToOC(t *testing.T) {
@@ -146,7 +141,7 @@ func TestAttributesMapTOOcSameProcessAsParentSpan(t *testing.T) {
 	attr.UpsertBool(occonventions.AttributeSameProcessAsParentSpan, false)
 	assert.True(t, proto.Equal(wrapperspb.Bool(false), attributesMapToOCSameProcessAsParentSpan(attr)))
 
-	attr.UpdateInt(occonventions.AttributeSameProcessAsParentSpan, 13)
+	attr.UpsertInt(occonventions.AttributeSameProcessAsParentSpan, 13)
 	assert.Nil(t, attributesMapToOCSameProcessAsParentSpan(attr))
 }
 

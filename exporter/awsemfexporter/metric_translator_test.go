@@ -15,7 +15,7 @@
 package awsemfexporter
 
 import (
-	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -39,7 +39,7 @@ import (
 )
 
 func readFromFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
@@ -446,14 +446,14 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	testCases := []struct {
 		testName          string
-		metric            *pmetric.ResourceMetrics
+		metric            pmetric.ResourceMetrics
 		counterLabels     map[string]string
 		timerLabels       map[string]string
 		expectedNamespace string
 	}{
 		{
 			"w/ instrumentation library and namespace",
-			&instrLibMetric,
+			instrLibMetric,
 			map[string]string{
 				(oTellibDimensionKey): "cloudwatch-lib",
 				"isItAnError":         "false",
@@ -467,7 +467,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		},
 		{
 			"w/o instrumentation library, w/ namespace",
-			&noInstrLibMetric,
+			noInstrLibMetric,
 			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
@@ -479,7 +479,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		},
 		{
 			"w/o instrumentation library and namespace",
-			&noNamespaceMetric,
+			noNamespaceMetric,
 			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
@@ -529,7 +529,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		}
 		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
@@ -1438,6 +1438,30 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			nil,
 		},
 		{
+			"empty dimension set matches",
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}},
+					MetricNameSelectors: []string{"metric(1|3)"},
+				},
+			}, []cWMeasurement{
+				{
+					Namespace:  namespace,
+					Dimensions: [][]string{{}},
+					Metrics: []map[string]string{
+						{
+							"Name": "metric1",
+							"Unit": "Count",
+						},
+						{
+							"Name": "metric3",
+							"Unit": "Seconds",
+						},
+					},
+				},
+			},
+		},
+		{
 			"label matchers",
 			[]*MetricDeclaration{
 				{
@@ -1997,6 +2021,18 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			zeroAndSingleDimensionRollup,
 			nil,
 		},
+		{
+			"no labels with empty dimension",
+			map[string]string{},
+			[]*MetricDeclaration{
+				{
+					Dimensions:          [][]string{{}, {"a"}},
+					MetricNameSelectors: []string{metricName},
+				},
+			},
+			zeroAndSingleDimensionRollup,
+			[][]string{{}},
+		},
 	}
 
 	for _, tc := range rollupTestCases {
@@ -2072,7 +2108,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetric := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetric, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetric, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2095,7 +2131,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2118,7 +2154,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2141,7 +2177,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2159,7 +2195,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[interface{}]*groupedMetric)
-		err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(b, err)
 	}
 }
@@ -2418,7 +2454,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
-			err := translator.translateOTelToGroupedMetric(&rm, groupedMetrics, config)
+			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 			assert.Nil(t, err)
 
 			assert.NotNil(t, groupedMetrics)
@@ -2437,18 +2473,18 @@ func generateTestMetrics(tm testMetric) pmetric.Metrics {
 	now := time.Now()
 
 	rm := md.ResourceMetrics().AppendEmpty()
-	pcommon.NewMapFromRaw(tm.resourceAttributeMap).CopyTo(rm.Resource().Attributes())
+	rm.Resource().Attributes().FromRaw(tm.resourceAttributeMap)
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
 
 	for i, name := range tm.metricNames {
 		m := ms.AppendEmpty()
 		m.SetName(name)
-		m.SetDataType(pmetric.MetricDataTypeGauge)
+		g := m.SetEmptyGauge()
 		for _, value := range tm.metricValues[i] {
-			dp := m.Gauge().DataPoints().AppendEmpty()
+			dp := g.DataPoints().AppendEmpty()
 			dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(10 * time.Second)))
 			dp.SetDoubleVal(value)
-			pcommon.NewMapFromRaw(tm.attributeMap).CopyTo(dp.Attributes())
+			dp.Attributes().FromRaw(tm.attributeMap)
 		}
 	}
 	return md

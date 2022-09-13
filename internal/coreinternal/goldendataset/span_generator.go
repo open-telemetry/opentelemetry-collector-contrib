@@ -69,7 +69,7 @@ func appendSpans(count int, pictFile string, random io.Reader, spanList ptrace.S
 		switch spanInputs.Parent {
 		case SpanParentRoot:
 			traceID = generateTraceID(random)
-			parentID = pcommon.NewSpanID([8]byte{})
+			parentID = pcommon.SpanID([8]byte{})
 		case SpanParentChild:
 			// use existing if available
 			if traceID.IsEmpty() {
@@ -92,11 +92,12 @@ func generateSpanName(spanInputs *PICTSpanInputs) string {
 }
 
 // fillSpan generates a single ptrace.Span based on the input values provided. They are:
-//   traceID - the trace ID to use, should not be nil
-//   parentID - the parent span ID or nil if it is a root span
-//   spanName - the span name, should not be blank
-//   spanInputs - the pairwise combination of field value variations for this span
-//   random - the random number generator to use in generating ID values
+//
+//	traceID - the trace ID to use, should not be nil
+//	parentID - the parent span ID or nil if it is a root span
+//	spanName - the span name, should not be blank
+//	spanInputs - the pairwise combination of field value variations for this span
+//	random - the random number generator to use in generating ID values
 //
 // The generated span is returned.
 func fillSpan(traceID pcommon.TraceID, parentID pcommon.SpanID, spanName string, spanInputs *PICTSpanInputs, random io.Reader, span ptrace.Span) {
@@ -362,16 +363,14 @@ func appendMaxCountAttributes(includeStatus bool, attrMap pcommon.Map) {
 	attrMap.UpsertBool("ai-sampler.absolute", false)
 	attrMap.UpsertInt("ai-sampler.maxhops", 6)
 	attrMap.UpsertString("application.create.location", "https://api.opentelemetry.io/blog/posts/806673B9-4F4D-4284-9635-3A3E3E3805BE")
-	stages := pcommon.NewValueSlice()
-	stages.SliceVal().AppendEmpty().SetStringVal("Launch")
-	stages.SliceVal().AppendEmpty().SetStringVal("Injestion")
-	stages.SliceVal().AppendEmpty().SetStringVal("Validation")
-	attrMap.Upsert("application.stages", stages)
-	subMap := pcommon.NewValueMap()
-	subMap.MapVal().InsertBool("UIx", false)
-	subMap.MapVal().InsertBool("UI4", true)
-	subMap.MapVal().InsertBool("flow-alt3", false)
-	attrMap.Upsert("application.abflags", subMap)
+	stages := attrMap.UpsertEmptySlice("application.stages")
+	stages.AppendEmpty().SetStringVal("Launch")
+	stages.AppendEmpty().SetStringVal("Injestion")
+	stages.AppendEmpty().SetStringVal("Validation")
+	subMap := attrMap.UpsertEmptyMap("application.abflags")
+	subMap.UpsertBool("UIx", false)
+	subMap.UpsertBool("UI4", true)
+	subMap.UpsertBool("flow-alt3", false)
 	attrMap.UpsertString("application.thread", "proc-pool-14")
 	attrMap.UpsertString("application.session", "")
 	attrMap.UpsertInt("application.persist.size", 1172184)
@@ -432,7 +431,7 @@ func appendSpanEvent(index int, spanEvents ptrace.SpanEventSlice) {
 	case 1:
 		spanEvent.SetName("custom")
 		attrMap := spanEvent.Attributes()
-		attrMap.UpdateBool("app.inretry", true)
+		attrMap.UpsertBool("app.inretry", true)
 		attrMap.UpsertDouble("app.progress", 0.6)
 		attrMap.UpsertString("app.statemap", "14|5|202")
 	default:
@@ -451,7 +450,7 @@ func appendSpanLink(random io.Reader, index int, spanLinks ptrace.SpanLinkSlice)
 		attrMap := spanLink.Attributes()
 		appendMessagingConsumerAttributes(attrMap)
 		if index%4 == 1 {
-			attrMap.UpdateBool("app.inretry", true)
+			attrMap.UpsertBool("app.inretry", true)
 			attrMap.UpsertDouble("app.progress", 0.6)
 			attrMap.UpsertString("app.statemap", "14|5|202")
 		}
@@ -465,7 +464,7 @@ func generateTraceID(random io.Reader) pcommon.TraceID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewTraceID(r)
+	return pcommon.TraceID(r)
 }
 
 func generateSpanID(random io.Reader) pcommon.SpanID {
@@ -474,5 +473,5 @@ func generateSpanID(random io.Reader) pcommon.SpanID {
 	if err != nil {
 		panic(err)
 	}
-	return pcommon.NewSpanID(r)
+	return pcommon.SpanID(r)
 }

@@ -21,7 +21,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/contexts/tqltraces"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tql"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 type Processor struct {
@@ -30,7 +32,13 @@ type Processor struct {
 }
 
 func NewProcessor(statements []string, functions map[string]interface{}, settings component.ProcessorCreateSettings) (*Processor, error) {
-	queries, err := tql.ParseQueries(statements, functions, ParsePath, ParseEnum)
+	tqlp := tql.NewParser(
+		functions,
+		tqltraces.ParsePath,
+		tqltraces.ParseEnum,
+		common.NewTQLLogger(settings.Logger),
+	)
+	queries, err := tqlp.ParseQueries(statements)
 	if err != nil {
 		return nil, err
 	}
@@ -41,17 +49,13 @@ func NewProcessor(statements []string, functions map[string]interface{}, setting
 }
 
 func (p *Processor) ProcessTraces(_ context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	ctx := spanTransformContext{}
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		ctx.resource = rspans.Resource()
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspan := rspans.ScopeSpans().At(j)
-			ctx.il = sspan.Scope()
 			spans := sspan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				ctx.span = spans.At(k)
-
+				ctx := tqltraces.NewTransformContext(spans.At(k), sspan.Scope(), rspans.Resource())
 				for _, statement := range p.queries {
 					if statement.Condition(ctx) {
 						statement.Function(ctx)

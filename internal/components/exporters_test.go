@@ -38,7 +38,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsprometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter"
@@ -46,13 +45,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/humioexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -225,14 +223,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "awsprometheusremotewrite",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["awsprometheusremotewrite"].CreateDefaultConfig().(*awsprometheusremotewriteexporter.Config)
-				cfg.HTTPClientSettings.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "alibabacloud_logservice",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["alibabacloud_logservice"].CreateDefaultConfig().(*alibabacloudlogserviceexporter.Config)
@@ -320,14 +310,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "elastic",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["elastic"].CreateDefaultConfig().(*elasticexporter.Config)
-				cfg.APMServerURL = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "elasticsearch",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
@@ -358,15 +340,6 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "googlecloudpubsub",
 		},
 		{
-			exporter: "honeycomb",
-			getConfigFn: func() config.Exporter {
-				cfg := expFactories["honeycomb"].CreateDefaultConfig().(*honeycombexporter.Config)
-				cfg.APIURL = "http://" + endpoint
-				cfg.APIKey = "busybeesworking"
-				return cfg
-			},
-		},
-		{
 			exporter: "humio",
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["humio"].CreateDefaultConfig().(*humioexporter.Config)
@@ -379,6 +352,15 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() config.Exporter {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
+				return cfg
+			},
+		},
+		{
+			exporter: "instana",
+			getConfigFn: func() config.Exporter {
+				cfg := expFactories["instana"].CreateDefaultConfig().(*instanaexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				cfg.AgentKey = "Key1"
 				return cfg
 			},
 		},

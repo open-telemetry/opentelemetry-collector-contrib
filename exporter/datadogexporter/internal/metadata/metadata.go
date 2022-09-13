@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:gocritic
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 
 import (
@@ -35,6 +34,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/gohai"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata/internal/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/utils"
@@ -60,6 +60,15 @@ type HostMetadata struct {
 
 	// Tags includes the host tags
 	Tags *HostTags `json:"host-tags"`
+
+	// Payload contains inventory of system information provided by gohai
+	// this is embedded because of special serialization requirements
+	// the field `gohai` is JSON-formatted string
+	gohai.Payload
+
+	// Processes contains the process payload devired by gohai
+	// Because of legacy reasons this is called resources in datadog intake
+	Processes *gohai.ProcessesPayload `json:"resources"`
 }
 
 // HostTags are the host tags.
@@ -111,16 +120,17 @@ func metadataFromAttributesWithRegistry(registry *featuregate.Registry, attrs pc
 
 	// AWS EC2 resource metadata
 	cloudProvider, ok := attrs.Get(conventions.AttributeCloudProvider)
-	if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS {
+	switch {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAWS:
 		ec2HostInfo := ec2Attributes.HostInfoFromAttributes(attrs)
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Tags.OTel = append(hm.Tags.OTel, ec2HostInfo.EC2Tags...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderGCP:
 		gcpHostInfo := gcp.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Tags.GCP = gcpHostInfo.GCPTags
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, gcpHostInfo.HostAliases...)
-	} else if ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure {
+	case ok && cloudProvider.StringVal() == conventions.AttributeCloudProviderAzure:
 		azureHostInfo := azure.HostInfoFromAttributes(attrs, usePreviewHostnameLogic)
 		hm.Meta.HostAliases = append(hm.Meta.HostAliases, azureHostInfo.HostAliases...)
 	}
@@ -142,7 +152,8 @@ func fillHostMetadata(params component.ExporterCreateSettings, pcfg PusherConfig
 	hm.Flavor = params.BuildInfo.Command
 	hm.Version = params.BuildInfo.Version
 	hm.Tags.OTel = append(hm.Tags.OTel, pcfg.ConfigTags...)
-
+	hm.Payload = gohai.NewPayload(params.Logger)
+	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
 		ec2HostInfo := ec2.GetHostInfo(params.Logger)

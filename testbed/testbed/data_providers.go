@@ -15,7 +15,7 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -119,11 +119,8 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 		metric := metrics.AppendEmpty()
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
-		metric.SetDataType(pmetric.MetricDataTypeGauge)
-
+		dps := metric.SetEmptyGauge().DataPoints()
 		batchIndex := dp.traceIDSequence.Inc()
-
-		dps := metric.Gauge().DataPoints()
 		// Generate data points for the metric.
 		dps.EnsureCapacity(dataPointsPerMetric)
 		for j := 0; j < dataPointsPerMetric; j++ {
@@ -131,8 +128,8 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 			value := dp.dataItemsGenerated.Inc()
 			dataPoint.SetIntVal(int64(value))
-			dataPoint.Attributes().InsertString("item_index", "item_"+strconv.Itoa(j))
-			dataPoint.Attributes().InsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
+			dataPoint.Attributes().UpsertString("item_index", "item_"+strconv.Itoa(j))
+			dataPoint.Attributes().UpsertString("batch_index", "batch_"+strconv.Itoa(int(batchIndex)))
 		}
 	}
 	return md, false
@@ -158,10 +155,10 @@ func (dp *perfTestDataProvider) GenerateLogs() (plog.Logs, bool) {
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		itemIndex := dp.dataItemsGenerated.Inc()
 		record := logRecords.AppendEmpty()
-		record.SetSeverityNumber(plog.SeverityNumberINFO3)
+		record.SetSeverityNumber(plog.SeverityNumberInfo3)
 		record.SetSeverityText("INFO3")
 		record.Body().SetStringVal("Load Generator Counter #" + strconv.Itoa(i))
-		record.SetFlags(uint32(2))
+		record.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
 		record.SetTimestamp(now)
 
 		attrs := record.Attributes()
@@ -264,7 +261,7 @@ func NewFileDataProvider(filePath string, dataType config.DataType) (*FileDataPr
 		return nil, err
 	}
 	var buf []byte
-	buf, err = ioutil.ReadAll(file)
+	buf, err = io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}

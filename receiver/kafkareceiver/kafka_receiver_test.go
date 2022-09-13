@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package kafkareceiver
 
 import (
@@ -678,7 +677,7 @@ var _ sarama.ConsumerGroup = (*testConsumerGroup)(nil)
 
 func (t *testConsumerGroup) Consume(_ context.Context, _ []string, handler sarama.ConsumerGroupHandler) error {
 	t.once.Do(func() {
-		handler.Setup(testConsumerGroupSession{})
+		_ = handler.Setup(testConsumerGroupSession{})
 	})
 	return t.err
 }

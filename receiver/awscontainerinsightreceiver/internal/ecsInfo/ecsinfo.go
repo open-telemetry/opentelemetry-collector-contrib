@@ -95,7 +95,7 @@ func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, ho
 		Timeout: defaultTimeout,
 	}
 
-	client, err := setting.ToClientWithHost(host, settings)
+	client, err := setting.ToClient(host, settings)
 
 	if err != nil {
 		settings.Logger.Warn("Failed to create a http client for ECS info!")

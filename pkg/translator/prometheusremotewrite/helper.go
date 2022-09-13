@@ -52,7 +52,7 @@ const (
 	traceIDKey       = "trace_id"
 	spanIDKey        = "span_id"
 	infoType         = "info"
-	targetMetricName = "target"
+	targetMetricName = "target_info"
 )
 
 type bucketBoundsData struct {
@@ -123,10 +123,6 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 		_, ok := tsMap[sig]
 		if ok {
 			if tsMap[sig].Samples != nil {
-				if tsMap[sig].Exemplars == nil {
-					tsMap[sig].Exemplars = make([]prompb.Exemplar, 0)
-				}
-
 				if exemplar.Value <= bound {
 					tsMap[sig].Exemplars = append(tsMap[sig].Exemplars, exemplar)
 					return
@@ -137,7 +133,9 @@ func addExemplar(tsMap map[string]*prompb.TimeSeries, bucketBounds []bucketBound
 }
 
 // timeSeries return a string signature in the form of:
-// 		TYPE-label1-value1- ...  -labelN-valueN
+//
+//	TYPE-label1-value1- ...  -labelN-valueN
+//
 // the label slice should not contain duplicate label names; this method sorts the slice by label name before creating
 // the signature.
 func timeSeriesSignature(datatype string, labels *[]prompb.Label) string {
@@ -274,7 +272,7 @@ func addSingleNumberDataPoint(pt pmetric.NumberDataPoint, resource pcommon.Resou
 	case pmetric.NumberDataPointValueTypeDouble:
 		sample.Value = pt.DoubleVal()
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		sample.Value = math.Float64frombits(value.StaleNaN)
 	}
 	addSample(tsMap, sample, labels, metric.DataType().String())
@@ -286,24 +284,29 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	time := convertTimeStamp(pt.Timestamp())
 	// sum, count, and buckets of the histogram should append suffix to baseName
 	baseName := prometheustranslator.BuildPromCompliantName(metric, settings.Namespace)
-	// treat sum as a sample in an individual TimeSeries
-	sum := &prompb.Sample{
-		Value:     pt.Sum(),
-		Timestamp: time,
-	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
-		sum.Value = math.Float64frombits(value.StaleNaN)
-	}
 
-	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
-	addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	// If the sum is unset, it indicates the _sum metric point should be
+	// omitted
+	if pt.HasSum() {
+		// treat sum as a sample in an individual TimeSeries
+		sum := &prompb.Sample{
+			Value:     pt.Sum(),
+			Timestamp: time,
+		}
+		if pt.Flags().NoRecordedValue() {
+			sum.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
+		addSample(tsMap, sum, sumlabels, metric.DataType().String())
+	}
 
 	// treat count as a sample in an individual TimeSeries
 	count := &prompb.Sample{
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 
@@ -315,7 +318,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 
 	promExemplars := getPromExemplars(pt)
 
-	bucketBounds := make([]bucketBoundsData, 0)
+	var bucketBounds []bucketBoundsData
 
 	// process each bound, based on histograms proto definition, # of buckets = # of explicit bounds + 1
 	for index, bound := range pt.ExplicitBounds().AsRaw() {
@@ -327,7 +330,7 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 			Value:     float64(cumulativeCount),
 			Timestamp: time,
 		}
-		if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+		if pt.Flags().NoRecordedValue() {
 			bucket.Value = math.Float64frombits(value.StaleNaN)
 		}
 		boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
@@ -340,10 +343,12 @@ func addSingleHistogramDataPoint(pt pmetric.HistogramDataPoint, resource pcommon
 	infBucket := &prompb.Sample{
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		infBucket.Value = math.Float64frombits(value.StaleNaN)
 	} else {
-		cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
+		if pt.BucketCounts().Len() > 0 {
+			cumulativeCount += pt.BucketCounts().At(pt.BucketCounts().Len() - 1)
+		}
 		infBucket.Value = float64(cumulativeCount)
 	}
 	infLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+bucketStr, leStr, pInfStr)
@@ -455,7 +460,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     pt.Sum(),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		sum.Value = math.Float64frombits(value.StaleNaN)
 	}
 	sumlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+sumStr)
@@ -466,7 +471,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 		Value:     float64(pt.Count()),
 		Timestamp: time,
 	}
-	if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+	if pt.Flags().NoRecordedValue() {
 		count.Value = math.Float64frombits(value.StaleNaN)
 	}
 	countlabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nameStr, baseName+countStr)
@@ -479,7 +484,7 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 			Value:     qt.Value(),
 			Timestamp: time,
 		}
-		if pt.Flags().HasFlag(pmetric.MetricDataPointFlagNoRecordedValue) {
+		if pt.Flags().NoRecordedValue() {
 			quantile.Value = math.Float64frombits(value.StaleNaN)
 		}
 		percentileStr := strconv.FormatFloat(qt.Quantile(), 'f', -1, 64)
@@ -490,13 +495,8 @@ func addSingleSummaryDataPoint(pt pmetric.SummaryDataPoint, resource pcommon.Res
 
 // addResourceTargetInfo converts the resource to the target info metric
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, tsMap map[string]*prompb.TimeSeries) {
-	if resource.Attributes().Len() == 0 {
+	if settings.DisableTargetInfo {
 		return
-	}
-	// create parameters for addSample
-	name := targetMetricName
-	if len(settings.Namespace) > 0 {
-		name = settings.Namespace + "_" + name
 	}
 	// Use resource attributes (other than those used for job+instance) as the
 	// metric labels for the target info metric
@@ -511,6 +511,15 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 			return false
 		}
 	})
+	if attributes.Len() == 0 {
+		// If we only have job + instance, then target_info isn't useful, so don't add it.
+		return
+	}
+	// create parameters for addSample
+	name := targetMetricName
+	if len(settings.Namespace) > 0 {
+		name = settings.Namespace + "_" + name
+	}
 	labels := createAttributes(resource, attributes, settings.ExternalLabels, nameStr, name)
 	sample := &prompb.Sample{
 		Value: float64(1),

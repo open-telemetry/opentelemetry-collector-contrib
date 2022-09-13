@@ -40,9 +40,9 @@ func NewFactory() component.ProcessorFactory {
 	return component.NewProcessorFactory(
 		typeStr,
 		createDefaultConfig,
-		component.WithTracesProcessorAndStabilityLevel(createTracesProcessor, stability),
-		component.WithMetricsProcessorAndStabilityLevel(createMetricsProcessor, stability),
-		component.WithLogsProcessorAndStabilityLevel(createLogsProcessor, stability))
+		component.WithTracesProcessor(createTracesProcessor, stability),
+		component.WithMetricsProcessor(createMetricsProcessor, stability),
+		component.WithLogsProcessor(createLogsProcessor, stability))
 }
 
 // Note: This isn't a valid configuration because the processor would do no work.
@@ -53,16 +53,18 @@ func createDefaultConfig() config.Processor {
 }
 
 func createTracesProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{logger: params.Logger, attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewTracesProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processTraces,
@@ -70,16 +72,18 @@ func createTracesProcessor(
 }
 
 func createMetricsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Metrics) (component.MetricsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{logger: params.Logger, attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewMetricsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processMetrics,
@@ -87,16 +91,18 @@ func createMetricsProcessor(
 }
 
 func createLogsProcessor(
-	_ context.Context,
-	params component.ProcessorCreateSettings,
+	ctx context.Context,
+	set component.ProcessorCreateSettings,
 	cfg config.Processor,
 	nextConsumer consumer.Logs) (component.LogsProcessor, error) {
 	attrProc, err := createAttrProcessor(cfg.(*Config))
 	if err != nil {
 		return nil, err
 	}
-	proc := &resourceProcessor{logger: params.Logger, attrProc: attrProc}
+	proc := &resourceProcessor{logger: set.Logger, attrProc: attrProc}
 	return processorhelper.NewLogsProcessor(
+		ctx,
+		set,
 		cfg,
 		nextConsumer,
 		proc.processLogs,

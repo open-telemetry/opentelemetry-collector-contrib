@@ -461,7 +461,7 @@ func handleRemovedSettings(configMap *confmap.Conf) (err error) {
 	return
 }
 
-var _ config.Unmarshallable = (*Config)(nil)
+var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Unmarshal a configuration map into the configuration struct.
 func (c *Config) Unmarshal(configMap *confmap.Conf) error {

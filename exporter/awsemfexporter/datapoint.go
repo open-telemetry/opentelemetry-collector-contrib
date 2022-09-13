@@ -49,9 +49,9 @@ type dataPoint struct {
 }
 
 // dataPoints is a wrapper interface for:
-// 	- pmetric.NumberDataPointSlice
-// 	- pmetric.HistogramDataPointSlice
-//  - pmetric.SummaryDataPointSlice
+//   - pmetric.NumberDataPointSlice
+//   - pmetric.HistogramDataPointSlice
+//   - pmetric.SummaryDataPointSlice
 type dataPoints interface {
 	Len() int
 	// At gets the adjusted datapoint from the DataPointSlice at i-th index.
@@ -217,11 +217,7 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 }
 
 // getDataPoints retrieves data points from OT Metric.
-func getDataPoints(pmd *pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
-	if pmd == nil {
-		return
-	}
-
+func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Logger) (dps dataPoints) {
 	adjusterMetadata := deltaMetricMetadata{
 		false,
 		pmd.Name(),

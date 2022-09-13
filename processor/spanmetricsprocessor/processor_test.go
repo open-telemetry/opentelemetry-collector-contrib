@@ -35,7 +35,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
-	"go.uber.org/zap/zaptest/observer"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/cache"
@@ -189,18 +188,22 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 		consumeTracesErr  error
 	}{
 		{
-			name:              "metricsExporter error",
-			consumeMetricsErr: fmt.Errorf("metricsExporter error"),
+			name:              "ConsumeMetrics error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
 		},
 		{
-			name:             "nextConsumer error",
-			consumeTracesErr: fmt.Errorf("nextConsumer error"),
+			name:             "ConsumeTraces error",
+			consumeTracesErr: fmt.Errorf("consume traces error"),
+		},
+		{
+			name:              "ConsumeMetrics and ConsumeTraces error",
+			consumeMetricsErr: fmt.Errorf("consume metrics error"),
+			consumeTracesErr:  fmt.Errorf("consume traces error"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
-			obs, logs := observer.New(zap.ErrorLevel)
-			logger := zap.New(obs)
+			logger := zap.NewNop()
 
 			mexp := &mocks.MetricsExporter{}
 			mexp.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(tc.consumeMetricsErr)
@@ -215,17 +218,19 @@ func TestProcessorConsumeTracesErrors(t *testing.T) {
 			// Test
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
 			err := p.ConsumeTraces(ctx, traces)
-			if tc.consumeTracesErr != nil {
-				require.Error(t, err)
-				assert.EqualError(t, err, tc.consumeTracesErr.Error())
-				return
-			}
 
 			// Verify
-			require.NoError(t, err)
-			assert.Eventually(t, func() bool {
-				return logs.FilterMessage(tc.consumeMetricsErr.Error()).Len() > 0
-			}, 10*time.Second, time.Millisecond*100)
+			require.Error(t, err)
+			switch {
+			case tc.consumeMetricsErr != nil && tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error()+"; "+tc.consumeTracesErr.Error())
+			case tc.consumeMetricsErr != nil:
+				assert.EqualError(t, err, tc.consumeMetricsErr.Error())
+			case tc.consumeTracesErr != nil:
+				assert.EqualError(t, err, tc.consumeTracesErr.Error())
+			default:
+				assert.Fail(t, "expected at least one error")
+			}
 		})
 	}
 }
@@ -264,6 +269,13 @@ func TestProcessorConsumeTraces(t *testing.T) {
 			aggregationTemporality: delta,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
+		},
+		{
+			// Consumptions with improper timestamps
+			name:                   "Test bad consumptions (Delta).",
+			aggregationTemporality: cumulative,
+			verifier:               verifyBadMetricsOkay,
+			traces:                 []ptrace.Traces{buildBadSampleTrace()},
 		},
 	}
 
@@ -399,6 +411,10 @@ func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bo
 	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityCumulative, 1)
 }
 
+func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+	return true // Validating no exception
+}
+
 // verifyConsumeMetricsInputDelta expects one accumulation of metrics, and marked as delta
 func verifyConsumeMetricsInputDelta(t testing.TB, input pmetric.Metrics) bool {
 	return verifyConsumeMetricsInput(t, input, pmetric.MetricAggregationTemporalityDelta, 1)
@@ -456,9 +472,12 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, expectedTemp
 	seenMetricIDs = make(map[metricID]bool)
 	// The remaining metrics are for latency.
 	for ; mi < m.Len(); mi++ {
-		assert.Equal(t, "latency", m.At(mi).Name())
+		metric := m.At(mi)
 
-		data := m.At(mi).Histogram()
+		assert.Equal(t, "latency", metric.Name())
+		assert.Equal(t, "ms", metric.Unit())
+
+		data := metric.Histogram()
 		assert.Equal(t, expectedTemporality, data.AggregationTemporality())
 
 		dps := data.DataPoints()
@@ -534,10 +553,21 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 	seenMetricIDs[mID] = true
 }
 
+func buildBadSampleTrace() ptrace.Traces {
+	badTrace := buildSampleTrace()
+	span := badTrace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+	now := time.Now()
+	// Flipping timestamp for a bad duration
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(now))
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
+	return badTrace
+}
+
 // buildSampleTrace builds the following trace:
-//   service-a/ping (server) ->
-//     service-a/ping (client) ->
-//       service-b/ping (server)
+//
+//	service-a/ping (server) ->
+//	  service-a/ping (client) ->
+//	    service-b/ping (server)
 func buildSampleTrace() ptrace.Traces {
 	traces := ptrace.NewTraces()
 
@@ -575,10 +605,10 @@ func buildSampleTrace() ptrace.Traces {
 func initServiceSpans(serviceSpans serviceSpans, spans ptrace.ResourceSpans) {
 	if serviceSpans.serviceName != "" {
 		spans.Resource().Attributes().
-			InsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
+			UpsertString(conventions.AttributeServiceName, serviceSpans.serviceName)
 	}
 
-	spans.Resource().Attributes().InsertString(regionResourceAttrName, sampleRegion)
+	spans.Resource().Attributes().UpsertString(regionResourceAttrName, sampleRegion)
 
 	ils := spans.ScopeSpans().AppendEmpty()
 	for _, span := range serviceSpans.spans {
@@ -593,14 +623,14 @@ func initSpan(span span, s ptrace.Span) {
 	now := time.Now()
 	s.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
 	s.SetEndTimestamp(pcommon.NewTimestampFromTime(now.Add(sampleLatencyDuration)))
-	s.Attributes().InsertString(stringAttrName, "stringAttrValue")
-	s.Attributes().InsertInt(intAttrName, 99)
-	s.Attributes().InsertDouble(doubleAttrName, 99.99)
-	s.Attributes().InsertBool(boolAttrName, true)
-	s.Attributes().InsertNull(nullAttrName)
-	s.Attributes().Insert(mapAttrName, pcommon.NewValueMap())
-	s.Attributes().Insert(arrayAttrName, pcommon.NewValueSlice())
-	s.SetTraceID(pcommon.NewTraceID([16]byte{byte(42)}))
+	s.Attributes().UpsertString(stringAttrName, "stringAttrValue")
+	s.Attributes().UpsertInt(intAttrName, 99)
+	s.Attributes().UpsertDouble(doubleAttrName, 99.99)
+	s.Attributes().UpsertBool(boolAttrName, true)
+	s.Attributes().UpsertEmpty(nullAttrName)
+	s.Attributes().UpsertEmptyMap(mapAttrName)
+	s.Attributes().UpsertEmptySlice(arrayAttrName)
+	s.SetTraceID(pcommon.TraceID([16]byte{byte(42)}))
 }
 
 func newOTLPExporters(t *testing.T) (*otlpexporter.Config, component.MetricsExporter, component.TracesExporter) {
@@ -695,7 +725,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			resAttr := pcommon.NewMapFromRaw(tc.resourceAttrMap)
+			resAttr := pcommon.NewMap()
+			resAttr.FromRaw(tc.resourceAttrMap)
 			span0 := ptrace.NewSpan()
 			pcommon.NewMapFromRaw(tc.spanAttrMap).CopyTo(span0.Attributes())
 			span0.SetName("c")

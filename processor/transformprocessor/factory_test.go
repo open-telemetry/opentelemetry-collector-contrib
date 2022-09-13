@@ -27,10 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/telemetryquerylanguage/tqlconfig"
 )
 
 func TestFactory_Type(t *testing.T) {
@@ -43,20 +40,16 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, cfg, &Config{
 		ProcessorSettings: config.NewProcessorSettings(config.NewComponentID(typeStr)),
-		Traces: SignalConfig{
-			Queries: []string{},
-
-			functions: traces.DefaultFunctions(),
-		},
-		Metrics: SignalConfig{
-			Queries: []string{},
-
-			functions: metrics.DefaultFunctions(),
-		},
-		Logs: SignalConfig{
-			Queries: []string{},
-
-			functions: logs.DefaultFunctions(),
+		Config: tqlconfig.Config{
+			Traces: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Metrics: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
+			Logs: tqlconfig.SignalConfig{
+				Queries: []string{},
+			},
 		},
 	})
 	assert.NoError(t, configtest.CheckConfigStruct(cfg))
@@ -127,9 +120,8 @@ func TestFactoryCreateMetricsProcessor(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetName("operationA")
-	metric.SetDataType(pmetric.MetricDataTypeSum)
 
-	_, ok := metric.Sum().DataPoints().AppendEmpty().Attributes().Get("test")
+	_, ok := metric.SetEmptySum().DataPoints().AppendEmpty().Attributes().Get("test")
 	assert.False(t, ok)
 
 	err = metricsProcessor.ConsumeMetrics(context.Background(), metrics)

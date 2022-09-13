@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// nolint:errcheck
 package main
 
 import (
@@ -47,13 +46,20 @@ func initMeter() metric.Meter {
 		),
 	)
 	exporter, err := prometheus.New(config, c)
-
 	if err != nil {
 		log.Panicf("failed to initialize prometheus exporter %v", err)
 	}
-	http.HandleFunc("/", exporter.ServeHTTP)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", exporter.ServeHTTP)
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: mux,
+	}
 	go func() {
-		_ = http.ListenAndServe(":8080", nil)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Panicf("failed to start prometheus server %v", err)
+		}
 	}()
 	return exporter.MeterProvider().Meter("federation/prom-counter")
 }
@@ -63,7 +69,9 @@ func main() {
 	meter := initMeter()
 	// logging
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 	logger.Info("Start Prometheus metrics app")
 	valueRecorder, err := meter.SyncInt64().Histogram("prom_counter")
 	if err != nil {
