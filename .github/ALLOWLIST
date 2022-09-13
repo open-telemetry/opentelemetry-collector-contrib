@@ -16,6 +16,7 @@
 cmd/configschema
 examples/demo/client
 examples/demo/server
+exporter/influxdbexporter
 exporter/parquetexporter
 extension/fluentbitextension
 extension/httpforwarder
