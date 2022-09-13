@@ -52,7 +52,7 @@ type metricGroup struct {
 	complexValue []*dataPoint
 }
 
-func newMetricFamily(metricName string, mc MetadataCache, logger *zap.Logger) *metricFamily {
+func newMetricFamily(metricName string, mc scrape.MetricMetadataStore, logger *zap.Logger) *metricFamily {
 	metadata, familyName := metadataForMetric(metricName, mc)
 	mtype, isMonotonic := convToMetricType(metadata.Type)
 	if mtype == pmetric.MetricDataTypeNone {

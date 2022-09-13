@@ -79,7 +79,7 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 	rsAttrs := rs.Resource().Attributes()
 
 	// Attributes can be part of a resource span
-	s.processAttrs(ctx, &rsAttrs)
+	s.processAttrs(ctx, rsAttrs)
 
 	for j := 0; j < rs.ScopeSpans().Len(); j++ {
 		ils := rs.ScopeSpans().At(j)
@@ -88,13 +88,13 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 			spanAttrs := span.Attributes()
 
 			// Attributes can also be part of span
-			s.processAttrs(ctx, &spanAttrs)
+			s.processAttrs(ctx, spanAttrs)
 		}
 	}
 }
 
 // processAttrs redacts the attributes of a resource span or a span
-func (s *redaction) processAttrs(_ context.Context, attributes *pcommon.Map) {
+func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var toDelete []string
 	var toBlock []string
@@ -152,7 +152,7 @@ func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) erro
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys
-func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes *pcommon.Map, valuesAttr, countAttr string) {
+func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map, valuesAttr, countAttr string) {
 	redactedCount := int64(len(redactedAttrs))
 	if redactedCount == 0 {
 		return

@@ -5,16 +5,16 @@ go 1.18
 require (
 	cloud.google.com/go/compute v1.9.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v0.32.7
-	github.com/aws/aws-sdk-go v1.44.93
+	github.com/aws/aws-sdk-go v1.44.96
 	github.com/census-instrumentation/opencensus-proto v0.3.0
 	github.com/hashicorp/consul/api v1.14.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.59.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.59.0
 	github.com/stretchr/testify v1.8.0
-	go.opentelemetry.io/collector v0.59.1-0.20220909192754-8d66f408a79a
-	go.opentelemetry.io/collector/pdata v0.59.1-0.20220909192754-8d66f408a79a
-	go.opentelemetry.io/collector/semconv v0.59.1-0.20220909192754-8d66f408a79a
+	go.opentelemetry.io/collector v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector/pdata v0.59.1-0.20220912180657-39d2372496b4
+	go.opentelemetry.io/collector/semconv v0.59.1-0.20220912180657-39d2372496b4
 	go.uber.org/multierr v1.8.0
 	go.uber.org/zap v1.23.0
 	k8s.io/apimachinery v0.25.0
@@ -30,7 +30,7 @@ require (
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.17+incompatible // indirect
+	github.com/docker/docker v20.10.18+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.8.0 // indirect

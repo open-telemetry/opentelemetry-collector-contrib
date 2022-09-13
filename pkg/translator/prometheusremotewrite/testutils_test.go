@@ -214,7 +214,7 @@ func getTimeSeriesWithSamplesAndExemplars(labels []prompb.Label, samples []promp
 	}
 }
 
-func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) *pmetric.HistogramDataPoint {
+func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value float64, traceID string, spanID string, attributeKey string, attributeValue string) pmetric.HistogramDataPoint {
 	h := pmetric.NewHistogramDataPoint()
 
 	e := h.Exemplars().AppendEmpty()
@@ -237,13 +237,7 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 		e.SetSpanID(spanIDBytes)
 	}
 
-	return &h
-}
-
-func getHistogramDataPoint() *pmetric.HistogramDataPoint {
-	h := pmetric.NewHistogramDataPoint()
-
-	return &h
+	return h
 }
 
 func getQuantiles(bounds []float64, values []float64) pmetric.ValueAtQuantileSlice {

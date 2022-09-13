@@ -27,7 +27,7 @@ const (
 	validRemoteNamespace = "remote"
 )
 
-func addNameAndNamespace(seg *awsxray.Segment, span *ptrace.Span) error {
+func addNameAndNamespace(seg *awsxray.Segment, span ptrace.Span) error {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/c615d2db351929b99e46f7b427f39c12afe15b54/exporter/awsxrayexporter/translator/segment.go#L160
 	span.SetName(*seg.Name)
 

@@ -70,12 +70,12 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initDoublePtWithLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(doublePtWithLabels.Attributes())
+		doublePtWithLabels.Attributes().FromRaw(labelMap)
 	}
 
 	initDoublePtWithLongLabels := func(doublePtWithLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithLabels)
-		pcommon.NewMapFromRaw(longLabelMap).CopyTo(doublePtWithLabels.Attributes())
+		doublePtWithLabels.Attributes().FromRaw(longLabelMap)
 	}
 
 	differentLabelMap := map[string]interface{}{
@@ -84,7 +84,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	}
 	initDoublePtWithDifferentLabels := func(doublePtWithDifferentLabels pmetric.NumberDataPoint) {
 		initDoublePt(doublePtWithDifferentLabels)
-		pcommon.NewMapFromRaw(differentLabelMap).CopyTo(doublePtWithDifferentLabels.Attributes())
+		doublePtWithDifferentLabels.Attributes().FromRaw(differentLabelMap)
 	}
 
 	initInt64Pt := func(int64Pt pmetric.NumberDataPoint) {
@@ -94,7 +94,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initInt64PtWithLabels := func(int64PtWithLabels pmetric.NumberDataPoint) {
 		initInt64Pt(int64PtWithLabels)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(int64PtWithLabels.Attributes())
+		int64PtWithLabels.Attributes().FromRaw(labelMap)
 	}
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
@@ -103,7 +103,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetSum(100.0)
 		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
 		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
-		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
+		histDP.Attributes().FromRaw(labelMap)
 	}
 	histDP := pmetric.NewHistogramDataPoint()
 	initHistDP(histDP)
@@ -112,7 +112,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		histDP.SetCount(2)
 		histDP.SetSum(10)
 		histDP.SetTimestamp(ts)
-		pcommon.NewMapFromRaw(labelMap).CopyTo(histDP.Attributes())
+		histDP.Attributes().FromRaw(labelMap)
 	}
 	histDPNoBuckets := pmetric.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
