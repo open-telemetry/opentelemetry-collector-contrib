@@ -214,7 +214,6 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanAttributes(spanData *model_v1
 		hostPortAttrKey                    = "net.host.port"
 		peerIPAttrKey                      = "net.peer.ip"
 		peerPortAttrKey                    = "net.peer.port"
-		userPropertiesPrefixAttrKey        = "messaging.solace.user_properties."
 	)
 	attrMap.UpsertString(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
