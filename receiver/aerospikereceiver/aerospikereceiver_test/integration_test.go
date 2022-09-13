@@ -19,11 +19,13 @@ package aerospikereceiver_test
 
 import (
 	"context"
+	"net"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
-	as "github.com/aerospike/aerospike-client-go/v5"
+	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -34,60 +36,101 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 )
 
-func populateMetrics(t *testing.T, addr string, port int) {
-	client, err := as.NewClient(addr, port)
-	require.NoError(t, err, "failed to create client")
+func populateMetrics(t *testing.T, host *as.Host) {
+	clientPolicy := as.NewClientPolicy()
+	clientPolicy.Timeout = 60 * time.Second
+	clientPolicy.MinConnectionsPerNode = 50
+	c, err := as.NewClientWithPolicyAndHost(clientPolicy, host)
+	require.NoError(t, err)
+
+	ns := "test"
+	set := "integration"
 
 	// write 100 records to get some memory usage
 	for i := 0; i < 100; i++ {
-		key, err := as.NewKey("test", "demo", i)
+		key, err := as.NewKey(ns, "integrations", i)
 		require.NoError(t, err, "failed to create key")
 
 		bins := as.BinMap{
-			"bin1": i
+			"bin1": i,
+			"bin2": i,
 		}
 
-		br := client.Put(nil, key, bins)
+		err = c.Put(nil, key, bins)
+		require.NoError(t, err, "failed to write record")
 	}
 
-	// perform a basic primary index query
 	queryPolicy := as.NewQueryPolicy()
-	statement := as.NewStatement("test", "demo", "bin1")
-	_, err := c.Query(queryPolicy, statement)
+	queryPolicyShort := as.NewQueryPolicy()
+	queryPolicyShort.ShortQuery = true
+
+	var writePolicy *as.WritePolicy = nil
+
+	execStatement := as.NewStatement(ns, "integrations")
+	piStatement := as.NewStatement(ns, "integrations", "bin1")
+
+	// perform a basic primary index query
+	_, err = c.Query(queryPolicy, piStatement)
 	require.NoError(t, err, "failed to execute basic PI query")
 
 	// aggregation query on primary index
-	queryPolicy := as.NewQueryPolicy()
-	statement := as.NewStatement("test", "demo", "bin1")
-	_, err = c.QueryAggregate(queryPolicy, statement, "test_funcs", "func1") // TODO make the test UDFs
+	_, err = c.QueryAggregate(queryPolicy, piStatement, "test_funcs", "func1") // TODO make the test UDFs
 	require.NoError(t, err, "failed to execute aggregation PI query")
 
 	// ops query on primary index
-	queryPolicy := as.NewQueryPolicy()
-	var write_Policy *as.WritePolicy = nil
-	statement := as.NewStatement("test", "demo", "bin1")
-	ops := as.GetOp() // TODO add more op types
-	_, err = c.QueryExecute(queryPolicy, write_Policy, statement, ops)
-	require.NoError(t, err, "failed to execute aggregation PI query")
+	ops := as.GetBinOp("bin1") // TODO add more op types
+	_, err = c.QueryExecute(queryPolicy, writePolicy, execStatement, ops)
+	require.NoError(t, err, "failed to execute ops PI query")
 
 	// perform a basic short primary index query
-	queryPolicy := as.NewQueryPolicy()
-	queryPolicy.ShortQuery = true
-	statement := as.NewStatement("test", "demo", "bin1")
-	_, err := c.Query(queryPolicy, statement)
-	require.NoError(t, err, "failed to execute basic PI query")
+	_, err = c.Query(queryPolicyShort, piStatement)
+	require.NoError(t, err, "failed to execute basic short PI query")
 
+	// create secondary index for SI queries
+	c.CreateIndex(writePolicy, ns, set, "sitest", "bin2", as.NUMERIC)
+	siStatement := as.NewStatement(ns, "integrations", "bin2")
+
+	// perform a basic secondary index query
+	_, err = c.Query(queryPolicy, siStatement)
+	require.NoError(t, err, "failed to execute basic SI query")
+
+	// aggregation query on secondary index
+	_, err = c.QueryAggregate(queryPolicy, siStatement, "test_funcs", "func1") // TODO make the test UDFs
+	require.NoError(t, err, "failed to execute aggregation SI query")
+
+	// ops query on secondary index
+	ops = as.GetBinOp("bin2") // TODO add more op types
+	_, err = c.QueryExecute(queryPolicy, writePolicy, execStatement, ops)
+	require.NoError(t, err, "failed to execute ops SI query")
+
+	// perform a basic short secondary index query
+	_, err = c.Query(queryPolicyShort, siStatement)
+	require.NoError(t, err, "failed to execute basic short SI query")
 }
 
 func TestAerospikeIntegration(t *testing.T) {
 	t.Parallel()
 
 	ct := containertest.New(t)
-	container := ct.StartImage("aerospike:ce-5.7.0.17", containertest.WithPortReady(3000))
+	container := ct.StartImage("aerospike:ce-6.0.0.1", containertest.WithPortReady(3000))
+
+	// time.Sleep(time.Second * 50)
+	host := container.AddrForPort(3000)
+	time.Sleep(time.Second * 2)
+
+	ip, portStr, err := net.SplitHostPort(host)
+	require.NoError(t, err)
+
+	port, err := strconv.Atoi(portStr)
+	require.NoError(t, err)
+
+	asHost := as.NewHost(ip, port)
+	populateMetrics(t, asHost)
+	time.Sleep(time.Second / 2)
 
 	f := aerospikereceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*aerospikereceiver.Config)
-	cfg.Endpoint = container.AddrForPort(3000)
+	cfg.Endpoint = host
 	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
 
 	consumer := new(consumertest.MetricsSink)
