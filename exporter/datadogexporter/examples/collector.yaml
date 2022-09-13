@@ -13,6 +13,51 @@ receivers:
       # The presence of the gRPC section enables the gRPC server on the default port (4317)
       grpc:
 
+  # The hostmetrics receiver is required to get correct infrastructure metrics in Datadog.
+  hostmetrics:
+    collection_interval: 10s
+    scrapers:
+      paging:
+        metrics:
+          system.paging.utilization:
+            enabled: true
+          system.paging.usage:
+            enabled: true
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      disk:
+      filesystem:
+        metrics:
+          system.filesystem.utilization:
+            enabled: true
+      load:
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      network:
+        metrics:
+          system.network.io.receive:
+            enabled: true
+          system.network.io.transmit:
+            enabled: true
+      processes:
+  # # Comment out this block below to get access to system metrics regarding
+  # # the OpenTelemetry Collector and its environment, such as spans or metrics
+  # # processed, running and sent, queue sizes, uptime, k8s information
+  # # and much more.
+  #
+  # # The prometheus receiver scrapes essential metrics regarding the OpenTelemetry Collector.
+  # prometheus:
+  #   config:
+  #     scrape_configs:
+  #     - job_name: 'otelcol'
+  #       scrape_interval: 10s
+  #       static_configs:
+  #       - targets: ['0.0.0.0:8888']
+
 # Read more about processors here: https://opentelemetry.io/docs/collector/configuration/#processors
 #
 # Some processors are recommended in all pipelines:
@@ -22,6 +67,11 @@ processors:
   # It is necessary for the Datadog traces exporter to work optimally,
   # and is recommended for any production pipeline.
   batch:
+    # Datadog APM Intake limit is 3.2MB. Let's make sure the batches do not
+    # go over that.
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
 
   # The resource detection processor adds context related to the cloud provider the Collector is running on.
   # It is necessary **only** on gateway deployment mode, to correctly identify the host that telemetry data comes from.
@@ -219,7 +269,7 @@ service:
     # Pipelines starting with `metrics` or `metrics/` define a metrics pipeline.
     metrics:
       # This pipeline has an OTLP receiver, a batch processor and a Datadog exporter.
-      receivers: [otlp]
+      receivers: [hostmetrics, otlp]
       processors: [batch]
       exporters: [datadog]
     # Pipelines starting with `traces` or `traces/` define a traces pipeline.
@@ -229,14 +279,14 @@ service:
       processors: [batch]
       exporters: [datadog]
 
-    ## To send data to the gateway on gateway deployment mode, define these pipelines instead.
-    ##
-    ## metrics/gateway:
-    ##   receivers: [otlp]
-    ##   processors: [batch, resourcedetection]
-    ##   exporters: [otlp]
-    ##
-    ## traces/gateway:
-    ##   receivers: [otlp]
-    ##   processors: [batch, resourcedetection]
-    ##   exporters: [otlp]
+      # # To send data to the gateway on gateway deployment mode, define these pipelines instead.
+      #
+      # metrics/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]
+      #
+      # traces/gateway:
+      #   receivers: [otlp]
+      #   processors: [batch, resourcedetection]
+      #   exporters: [otlp]
