@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from os import environ
+from re import IGNORECASE as RE_IGNORECASE
 from re import compile as re_compile
 from re import search
 from typing import Iterable, List
@@ -20,6 +21,9 @@ from urllib.parse import urlparse, urlunparse
 
 from opentelemetry.semconv.trace import SpanAttributes
 
+OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS = (
+    "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS"
+)
 OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST = (
     "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"
 )
@@ -60,6 +64,22 @@ class ExcludeList:
         return bool(self._excluded_urls and search(self._regex, url))
 
 
+class SanitizeValue:
+    """Class to sanitize (remove sensitive data from) certain headers (given as a list of regexes)"""
+
+    def __init__(self, sanitized_fields: Iterable[str]):
+        self._sanitized_fields = sanitized_fields
+        if self._sanitized_fields:
+            self._regex = re_compile("|".join(sanitized_fields), RE_IGNORECASE)
+
+    def sanitize_header_value(self, header: str, value: str) -> str:
+        return (
+            "[REDACTED]"
+            if (self._sanitized_fields and search(self._regex, header))
+            else value
+        )
+
+
 _root = r"OTEL_PYTHON_{}"
 
 
@@ -90,7 +110,7 @@ def get_excluded_urls(instrumentation: str) -> ExcludeList:
 
 def parse_excluded_urls(excluded_urls: str) -> ExcludeList:
     """
-    Small helper to put an arbitrary url list inside of ExcludeList
+    Small helper to put an arbitrary url list inside an ExcludeList
     """
     if excluded_urls:
         excluded_url_list = [

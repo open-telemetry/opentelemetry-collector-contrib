@@ -16,8 +16,10 @@ import unittest
 from unittest.mock import patch
 
 from opentelemetry.util.http import (
+    OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST,
     OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE,
+    SanitizeValue,
     get_custom_headers,
     normalise_request_header_name,
     normalise_response_header_name,
@@ -56,6 +58,48 @@ class TestCaptureCustomHeaders(unittest.TestCase):
                 "content-length",
                 "test-header",
             ],
+        )
+
+    @patch.dict(
+        "os.environ",
+        {
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: "My-Secret-Header,My-Secret-Header-2"
+        },
+    )
+    def test_get_custom_sanitize_header(self):
+        sanitized_fields = get_custom_headers(
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS
+        )
+        self.assertEqual(
+            sanitized_fields,
+            ["My-Secret-Header", "My-Secret-Header-2"],
+        )
+
+    @patch.dict(
+        "os.environ",
+        {
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS: "My-Secret-Header,My-Secret-Header-2"
+        },
+    )
+    def test_sanitize(self):
+        sanitized_fields = get_custom_headers(
+            OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SANITIZE_FIELDS
+        )
+
+        sanitize = SanitizeValue(sanitized_fields)
+
+        self.assertEqual(
+            sanitize.sanitize_header_value(
+                header="My-Secret-Header", value="My-Secret-Value"
+            ),
+            "[REDACTED]",
+        )
+
+        self.assertEqual(
+            sanitize.sanitize_header_value(
+                header="My-Not-Secret-Header", value="My-Not-Secret-Value"
+            ),
+            "My-Not-Secret-Value",
         )
 
     def test_normalise_request_header_name(self):
