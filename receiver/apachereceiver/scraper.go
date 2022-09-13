@@ -93,6 +93,32 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			} else {
 				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i), r.cfg.serverName)
 			}
+		case "BytesPerReq":
+			addPartialIfError(errs, r.mb.RecordApacheBytesPerRequestDataPoint(now, metricValue, r.cfg.serverName))
+		case "BytesPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheBytesPerSecondDataPoint(now, metricValue, r.cfg.serverName))
+		case "CPUChildrenSystem":
+			addPartialIfError(errs, r.mb.RecordApacheCPUChildrenSystemDataPoint(now, metricValue, r.cfg.serverName))
+		case "CPUChildrenUser":
+			addPartialIfError(errs, r.mb.RecordApacheCPUChildrenUserDataPoint(now, metricValue, r.cfg.serverName))
+		case "CPUSystem":
+			addPartialIfError(errs, r.mb.RecordApacheCPUSystemDataPoint(now, metricValue, r.cfg.serverName))
+		case "CPUUser":
+			addPartialIfError(errs, r.mb.RecordApacheCPUUserDataPoint(now, metricValue, r.cfg.serverName))
+		case "CPULoad":
+			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue, r.cfg.serverName))
+		case "DurationPerReq":
+			addPartialIfError(errs, r.mb.RecordApacheDurationPerRequestDataPoint(now, metricValue, r.cfg.serverName))
+		case "Load1":
+			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPoint(now, metricValue, r.cfg.serverName))
+		case "Load5":
+			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPoint(now, metricValue, r.cfg.serverName))
+		case "Load15":
+			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue, r.cfg.serverName))
+		case "ReqPerSec":
+			addPartialIfError(errs, r.mb.RecordApacheRequestsPerSecondDataPoint(now, metricValue, r.cfg.serverName))
+		case "Total Duration":
+			addPartialIfError(errs, r.mb.RecordApacheTotalDurationDataPoint(now, metricValue, r.cfg.serverName))
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {

@@ -76,6 +76,129 @@ metrics:
       monotonic: true
       aggregation: cumulative
     attributes: [ server_name ]
+  apache.bytes_per_request:
+    enabled: true
+    description: The average number of bytes per request.
+    unit: By
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.bytes_per_second:
+    enabled: true
+    description: The average number of bytes per second.
+    unit: By
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.cpu_children_system:
+    enabled: true
+    description: Jiffies used in system mode by children processes.
+    unit: s
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.cpu_children_user:
+    enabled: true
+    description: Jiffies used in user mode by children processes.
+    unit: s
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.cpu_system:
+    enabled: true
+    description: Jiffies used in system mode.
+    unit: s
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.cpu_user:
+    enabled: true
+    description: Jiffies used in user mode.
+    unit: s
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: [ server_name ]
+  apache.cpu_load:
+    enabled: true
+    description: Current load of the CPU.
+    unit: "{load}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.duration_per_request:
+    enabled: true
+    description: The average time of handling requests.
+    unit: s
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.load_1:
+    enabled: true
+    description: The average server load during the last minute.
+    unit: "{load}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.load_5:
+    enabled: true
+    description: The average server load during the last 5 minutes.
+    unit: "{load}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.load_15:
+    enabled: true
+    description: The average server load during the last 15 minutes.
+    unit: "{load}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.requests_per_second:
+    enabled: true
+    description: The average number of requests per second.
+    unit: "{requests}"
+    sum:
+      value_type: double
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+  apache.total_duration:
+    enabled: true
+    description: Total time spent on handling requests.
+    unit: s
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation: delta
+    attributes: [ server_name ]
+
   apache.scoreboard:
     enabled: true
     description: The number of workers in each state.

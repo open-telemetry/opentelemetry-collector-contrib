@@ -149,6 +149,297 @@
               }
             },
             {
+              "name": "apache.bytes_per_request",
+              "description": "The average number of bytes per request.",
+              "unit": "By",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "4.2"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.bytes_per_second",
+              "description": "The average number of bytes per second.",
+              "unit": "By",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "8.4"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.cpu_children_system",
+              "description": "Jiffies used in system mode by children processes.",
+              "unit": "s",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.01"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.cpu_children_user",
+              "description": "Jiffies used in user mode by children processes.",
+              "unit": "s",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.02"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.cpu_system",
+              "description": "Jiffies used in system mode.",
+              "unit": "s",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.03"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.cpu_user",
+              "description": "Jiffies used in user mode.",
+              "unit": "s",
+              "gauge": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.04"
+                  }
+                ]
+              }
+            },
+            {
+              "name": "apache.cpu_load",
+              "description": "Current load of the CPU.",
+              "unit": "{load}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.66"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.duration_per_request",
+              "description": "The average time of handling requests.",
+              "unit": "s",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "21.7"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.load_1",
+              "description": "The average server load during the last minute.",
+              "unit": "{load}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.9"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.load_5",
+              "description": "The average server load during the last 5 minutes.",
+              "unit": "{load}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.4"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.load_15",
+              "description": "The average server load during the last 15 minutes.",
+              "unit": "{load}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "0.3"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.requests_per_second",
+              "description": "The average number of requests per second.",
+              "unit": "{requests}",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asDouble": "12.5"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
+              "name": "apache.total_duration",
+              "description": "Total time spent on handling requests.",
+              "unit": "s",
+              "sum": {
+                "dataPoints": [
+                  {
+                    "attributes": [
+                      {
+                        "key": "server_name",
+                        "value": {
+                          "stringValue": "127.0.0.1"
+                        }
+                      }
+                    ],
+                    "timeUnixNano": "1632495518500962000",
+                    "asInt": "1501"
+                  }
+                ],
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
+                "isMonotonic": false
+              }
+            },
+            {
               "name": "apache.scoreboard",
               "description": "The number of workers in each state.",
               "unit": "{workers}",
