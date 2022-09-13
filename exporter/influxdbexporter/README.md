@@ -2,7 +2,7 @@
 
 | Status                   |                       |
 | ------------------------ |-----------------------|
-| Stability                | [beta]                |
+| Stability                | [unmaintained]                |
 | Supported pipeline types | traces, logs, metrics |
 | Distributions            | [contrib]             |
 
@@ -18,7 +18,7 @@ The following configuration options are supported:
   - header `User-Agent` is `OpenTelemetry -> Influx` by default
   - if `token` (below) is set, then header `Authorization` will overridden with the given token
 * `org` (required) Name of InfluxDB organization that owns the destination bucket
-* `bucket` (required) InfluxDB bucket name to where signals will 
+* `bucket` (required) InfluxDB bucket name to where signals will
 * `token` (optional) The authentication token for InfluxDB
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
   * `telegraf-prometheus-v1`
@@ -32,7 +32,7 @@ The following configuration options are supported:
   * `initial_interval` (default = 5s) Time to wait after the first failure before retrying
   * `max_interval` (default = 30s) Upper bound on backoff interval
   * `max_elapsed_time` (default = 120s) Maximum amount of time (including retries) spent trying to send a request/batch
-  
+
 The full list of settings exposed for this exporter are documented in [config.go](config.go).
 
 Example:
@@ -120,5 +120,5 @@ logs fluent.tag="fluent.debug",instance=1720i,queue_size=0i,stage_size=0i 161376
 logs fluent.tag="fluent.info",worker=0i 1613769568896515100
 ```
 
-[beta]:https://github.com/open-telemetry/opentelemetry-collector#beta
+[unmaintained]:https://github.com/open-telemetry/opentelemetry-collector#unmaintained
 [contrib]:https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
