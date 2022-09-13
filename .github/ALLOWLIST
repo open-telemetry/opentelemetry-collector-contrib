@@ -31,4 +31,5 @@ pkg/experimentalmetricmetadata
 processor/deltatorateprocessor
 processor/metricsgenerationprocessor
 receiver/dotnetdiagnosticsreceiver
+receiver/influxdbreceiver
 testbed
