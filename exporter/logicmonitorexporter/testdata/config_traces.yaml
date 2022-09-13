@@ -1,0 +1,19 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+processors:
+  batch:
+exporters:
+  logicmonitor:
+    url: https://${LOGICMONITOR_ACCOUNT}.logicmonitor.com/rest
+  logging:
+    logLevel: debug
+
+service:
+  pipelines:
+    traces:
+      receivers : [ otlp ]
+      processors: [ batch ]
+      exporters : [ logicmonitor ]
