@@ -157,6 +157,10 @@ Getters allow for reading the following types of data. See the respective sectio
 
 It is possible to update the Value in a telemetry field using a Setter. For read and write access, the `GetSetter` interface extends both interfaces.
 
+## Logging inside a TQL function
+
+To emit logs inside a TQL function, add a parameter of type `Logger` to the function signature. The TQL will then inject a logger instance provided by the component that can be used to emit logs.
+
 ## Examples
 
 These examples contain a SQL-like declarative language.  Applied statements interact with only one signal, but statements can be declared across multiple signals.  Functions used in examples are indicative of what could be useful, but are not implemented by the TQL itself.

@@ -27,9 +27,10 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceSpans with 1 ILS and two traceIDs, resulting in two batches
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
-
+	rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	// the first ILS has two spans
 	ils := rs.ScopeSpans().AppendEmpty()
+	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	library := ils.Scope()
 	library.SetName("first-library")
 	firstSpan := ils.Spans().AppendEmpty()
@@ -46,21 +47,32 @@ func TestSplitDifferentTracesIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, out, 2)
 
 	// first batch
+	firstOutRS := out[0].ResourceSpans().At(0)
+	assert.Equal(t, rs.SchemaUrl(), firstOutRS.SchemaUrl())
+
 	firstOutILS := out[0].ResourceSpans().At(0).ScopeSpans().At(0)
 	assert.Equal(t, library.Name(), firstOutILS.Scope().Name())
 	assert.Equal(t, firstSpan.Name(), firstOutILS.Spans().At(0).Name())
+	assert.Equal(t, ils.SchemaUrl(), firstOutILS.SchemaUrl())
 
 	// second batch
+	secondOutRS := out[1].ResourceSpans().At(0)
+	assert.Equal(t, rs.SchemaUrl(), secondOutRS.SchemaUrl())
+
 	secondOutILS := out[1].ResourceSpans().At(0).ScopeSpans().At(0)
 	assert.Equal(t, library.Name(), secondOutILS.Scope().Name())
 	assert.Equal(t, secondSpan.Name(), secondOutILS.Spans().At(0).Name())
+	assert.Equal(t, ils.SchemaUrl(), secondOutILS.SchemaUrl())
+
 }
 
 func TestSplitTracesWithNilTraceID(t *testing.T) {
 	// prepare
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
+	rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	ils := rs.ScopeSpans().AppendEmpty()
+	ils.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	firstSpan := ils.Spans().AppendEmpty()
 	firstSpan.SetTraceID([16]byte{})
 
@@ -70,18 +82,23 @@ func TestSplitTracesWithNilTraceID(t *testing.T) {
 	// verify
 	assert.Len(t, batches, 1)
 	assert.Equal(t, pcommon.TraceID([16]byte{}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
+	assert.Equal(t, rs.SchemaUrl(), batches[0].ResourceSpans().At(0).SchemaUrl())
+	assert.Equal(t, ils.SchemaUrl(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 }
 
 func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	// prepare
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
+	rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 
 	// we have 1 ResourceSpans with 2 ILS, resulting in two batches
 	rs.ScopeSpans().EnsureCapacity(2)
 
 	// the first ILS has two spans
 	firstILS := rs.ScopeSpans().AppendEmpty()
+	firstILS.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
+
 	firstLibrary := firstILS.Scope()
 	firstLibrary.SetName("first-library")
 	firstILS.Spans().EnsureCapacity(2)
@@ -94,6 +111,8 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 
 	// the second ILS has one span
 	secondILS := rs.ScopeSpans().AppendEmpty()
+	secondILS.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
+
 	secondLibrary := secondILS.Scope()
 	secondLibrary.SetName("second-library")
 	thirdSpan := secondILS.Spans().AppendEmpty()
@@ -107,12 +126,16 @@ func TestSplitSameTraceIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, batches, 2)
 
 	// first batch
+	assert.Equal(t, rs.SchemaUrl(), batches[0].ResourceSpans().At(0).SchemaUrl())
+	assert.Equal(t, firstILS.SchemaUrl(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 	assert.Equal(t, firstLibrary.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Name())
 	assert.Equal(t, firstSpan.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
 	assert.Equal(t, secondSpan.Name(), batches[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Name())
 
 	// second batch
+	assert.Equal(t, rs.SchemaUrl(), batches[1].ResourceSpans().At(0).SchemaUrl())
+	assert.Equal(t, secondILS.SchemaUrl(), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).SchemaUrl())
 	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
 	assert.Equal(t, secondLibrary.Name(), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Scope().Name())
 	assert.Equal(t, thirdSpan.Name(), batches[1].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
@@ -122,9 +145,11 @@ func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
 	// we have 1 ResourceLogs with 1 ILL and three traceIDs (one null) resulting in three batches
 	inBatch := plog.NewLogs()
 	rl := inBatch.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 
 	// the first ILL has three logs
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	library := sl.Scope()
 	library.SetName("first-library")
 	sl.LogRecords().EnsureCapacity(3)
@@ -145,17 +170,23 @@ func TestSplitDifferentLogsIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, out, 3)
 
 	// first batch
+	assert.Equal(t, rl.SchemaUrl(), out[0].ResourceLogs().At(0).SchemaUrl())
 	firstOutILL := out[0].ResourceLogs().At(0).ScopeLogs().At(0)
+	assert.Equal(t, sl.SchemaUrl(), firstOutILL.SchemaUrl())
 	assert.Equal(t, library.Name(), firstOutILL.Scope().Name())
 	assert.Equal(t, firstLog.Body().StringVal(), firstOutILL.LogRecords().At(0).Body().StringVal())
 
 	// second batch
+	assert.Equal(t, rl.SchemaUrl(), out[1].ResourceLogs().At(0).SchemaUrl())
 	secondOutILL := out[1].ResourceLogs().At(0).ScopeLogs().At(0)
+	assert.Equal(t, sl.SchemaUrl(), secondOutILL.SchemaUrl())
 	assert.Equal(t, library.Name(), secondOutILL.Scope().Name())
 	assert.Equal(t, secondLog.Body().StringVal(), secondOutILL.LogRecords().At(0).Body().StringVal())
 
 	// third batch
+	assert.Equal(t, rl.SchemaUrl(), out[2].ResourceLogs().At(0).SchemaUrl())
 	thirdOutILL := out[2].ResourceLogs().At(0).ScopeLogs().At(0)
+	assert.Equal(t, sl.SchemaUrl(), thirdOutILL.SchemaUrl())
 	assert.Equal(t, library.Name(), thirdOutILL.Scope().Name())
 	assert.Equal(t, thirdLog.Body().StringVal(), thirdOutILL.LogRecords().At(0).Body().StringVal())
 }
@@ -164,7 +195,11 @@ func TestSplitLogsWithNilTraceID(t *testing.T) {
 	// prepare
 	inBatch := plog.NewLogs()
 	rl := inBatch.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
+
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
+
 	firstLog := sl.LogRecords().AppendEmpty()
 	firstLog.SetTraceID([16]byte{})
 
@@ -174,18 +209,21 @@ func TestSplitLogsWithNilTraceID(t *testing.T) {
 	// verify
 	assert.Len(t, batches, 1)
 	assert.Equal(t, pcommon.TraceID([16]byte{}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
+	assert.Equal(t, rl.SchemaUrl(), batches[0].ResourceLogs().At(0).SchemaUrl())
 }
 
 func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	// prepare
 	inBatch := plog.NewLogs()
 	rl := inBatch.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 
 	// we have 1 ResourceLogs with 2 ILL, resulting in two batches
 	rl.ScopeLogs().EnsureCapacity(2)
 
 	// the first ILL has two logs
 	firstILS := rl.ScopeLogs().AppendEmpty()
+	firstILS.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	firstLibrary := firstILS.Scope()
 	firstLibrary.SetName("first-library")
 	firstILS.LogRecords().EnsureCapacity(2)
@@ -198,6 +236,7 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 
 	// the second ILL has one log
 	secondILS := rl.ScopeLogs().AppendEmpty()
+	secondILS.SetSchemaUrl("https://opentelemetry.io/schemas/1.6.1")
 	secondLibrary := secondILS.Scope()
 	secondLibrary.SetName("second-library")
 	thirdLog := secondILS.LogRecords().AppendEmpty()
@@ -211,12 +250,16 @@ func TestSplitLogsSameTraceIntoDifferentBatches(t *testing.T) {
 	assert.Len(t, batches, 2)
 
 	// first batch
+	assert.Equal(t, rl.SchemaUrl(), batches[0].ResourceLogs().At(0).SchemaUrl())
+	assert.Equal(t, firstILS.SchemaUrl(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).SchemaUrl())
 	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 	assert.Equal(t, firstLibrary.Name(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	assert.Equal(t, firstLog.Body().StringVal(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().StringVal())
 	assert.Equal(t, secondLog.Body().StringVal(), batches[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Body().StringVal())
 
 	// second batch
+	assert.Equal(t, rl.SchemaUrl(), batches[1].ResourceLogs().At(0).SchemaUrl())
+	assert.Equal(t, secondILS.SchemaUrl(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).SchemaUrl())
 	assert.Equal(t, pcommon.TraceID([16]byte{1, 2, 3, 4}), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).TraceID())
 	assert.Equal(t, secondLibrary.Name(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).Scope().Name())
 	assert.Equal(t, thirdLog.Body().StringVal(), batches[1].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().StringVal())

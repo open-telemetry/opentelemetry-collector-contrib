@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/processor/filterconfig"
@@ -631,12 +630,12 @@ func testResourceLogs(lwrs []logWithResource) plog.Logs {
 		rl := ld.ResourceLogs().AppendEmpty()
 
 		// Add resource level attributes
-		pcommon.NewMapFromRaw(lwr.resourceAttributes).CopyTo(rl.Resource().Attributes())
+		rl.Resource().Attributes().FromRaw(lwr.resourceAttributes)
 		ls := rl.ScopeLogs().AppendEmpty().LogRecords()
 		for _, name := range lwr.logNames {
 			l := ls.AppendEmpty()
 			// Add record level attributes
-			pcommon.NewMapFromRaw(lwrs[i].recordAttributes).CopyTo(l.Attributes())
+			l.Attributes().FromRaw(lwrs[i].recordAttributes)
 			l.Attributes().UpsertString("name", name)
 			// Set body & severity fields
 			l.Body().SetStringVal(lwr.body)

@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	semconv "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 )
 
@@ -60,7 +60,7 @@ var (
 	k1vEmptyk2vEmptyk3vEmpty = []*kv{{"k1", ""}, {"k2", ""}, {"k3", ""}}
 )
 
-func Test_gauge_pdata(t *testing.T) {
+func TestGauge(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Gauge: round 1 - gauge not adjusted",
@@ -78,10 +78,10 @@ func Test_gauge_pdata(t *testing.T) {
 			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_sum_pdata(t *testing.T) {
+func TestSum(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Sum: round 1 - initial instance, start time is established",
@@ -109,10 +109,10 @@ func Test_sum_pdata(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_summary_no_count_pdata(t *testing.T) {
+func TestSummaryNoCount(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
@@ -136,10 +136,10 @@ func Test_summary_no_count_pdata(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_summary_flag_norecordedvalue(t *testing.T) {
+func TestSummaryFlagNoRecordedValue(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
@@ -153,10 +153,10 @@ func Test_summary_flag_norecordedvalue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_summary_pdata(t *testing.T) {
+func TestSummary(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary: round 1 - initial instance, start time is established",
@@ -196,10 +196,10 @@ func Test_summary_pdata(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_histogram_pdata(t *testing.T) {
+func TestHistogram(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
@@ -219,10 +219,10 @@ func Test_histogram_pdata(t *testing.T) {
 			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_histogram_flag_norecordedvalue(t *testing.T) {
+func TestHistogramFlagNoRecordedValue(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
@@ -236,10 +236,10 @@ func Test_histogram_flag_norecordedvalue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
+func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Histogram: round 1 - initial instance, start time is unknown",
@@ -253,10 +253,10 @@ func Test_histogram_flag_norecordedvalue_first_observation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
+func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Summary: round 1 - initial instance, start time is unknown",
@@ -270,10 +270,10 @@ func Test_summary_flag_norecordedvalue_first_observation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
+func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Gauge: round 1 - initial instance, start time is unknown",
@@ -287,10 +287,10 @@ func Test_gauge_flag_norecordedvalue_first_observation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_sum_flag_norecordedvalue_first_observation(t *testing.T) {
+func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "Sum: round 1 - initial instance, start time is unknown",
@@ -304,10 +304,10 @@ func Test_sum_flag_norecordedvalue_first_observation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_multiMetrics_pdata(t *testing.T) {
+func TestMultiMetrics(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "MultiMetrics: round 1 - combined round 1 of individual metrics",
@@ -368,10 +368,10 @@ func Test_multiMetrics_pdata(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_new_datapoints_added(t *testing.T) {
+func TestNewDataPointsAdded(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "New Datapoints: round 1 - two datapoints each",
@@ -430,10 +430,10 @@ func Test_new_datapoints_added(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_multiTimeseries_pdata(t *testing.T) {
+func TestMultiTimeseries(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "MultiTimeseries: round 1 - initial first instance, start time is established",
@@ -489,10 +489,10 @@ func Test_multiTimeseries_pdata(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_emptyLabels_pdata(t *testing.T) {
+func TestEmptyLabels(t *testing.T) {
 	script := []*metricsAdjusterTest{
 		{
 			description: "EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
@@ -515,10 +515,10 @@ func Test_emptyLabels_pdata(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
 		},
 	}
-	runScript(t, NewJobsMap(time.Minute).get("job", "0"), script)
+	runScript(t, NewInitialPointAdjuster(zap.NewNop(), time.Minute), "job", "0", script)
 }
 
-func Test_tsGC_pdata(t *testing.T) {
+func TestTsGC(t *testing.T) {
 	script1 := []*metricsAdjusterTest{
 		{
 			description: "TsGC: round 1 - initial instances, start time is established",
@@ -569,21 +569,21 @@ func Test_tsGC_pdata(t *testing.T) {
 		},
 	}
 
-	jobsMap := NewJobsMap(time.Minute)
+	ma := NewInitialPointAdjuster(zap.NewNop(), time.Minute)
 
 	// run round 1
-	runScript(t, jobsMap.get("job", "0"), script1)
+	runScript(t, ma, "job", "0", script1)
 	// gc the tsmap, unmarking all entries
-	jobsMap.get("job", "0").gc()
+	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
 	// run round 2 - update metrics first timeseries only
-	runScript(t, jobsMap.get("job", "0"), script2)
+	runScript(t, ma, "job", "0", script2)
 	// gc the tsmap, collecting umarked entries
-	jobsMap.get("job", "0").gc()
+	ma.(*initialPointAdjuster).jobsMap.get("job", "0").gc()
 	// run round 3 - verify that metrics second timeseries have been gc'd
-	runScript(t, jobsMap.get("job", "0"), script3)
+	runScript(t, ma, "job", "0", script3)
 }
 
-func Test_jobGC_pdata(t *testing.T) {
+func TestJobGC(t *testing.T) {
 	job1Script1 := []*metricsAdjusterTest{
 		{
 			description: "JobGC: job 1, round 1 - initial instances, adjusted should be empty",
@@ -605,8 +605,8 @@ func Test_jobGC_pdata(t *testing.T) {
 	job2Script1 := []*metricsAdjusterTest{
 		{
 			description: "JobGC: job2, round 1 - no metrics adjusted, just trigger gc",
-			metrics:     pmetric.NewMetrics(),
-			adjusted:    pmetric.NewMetrics(),
+			metrics:     metrics(),
+			adjusted:    metrics(),
 		},
 	}
 
@@ -629,22 +629,22 @@ func Test_jobGC_pdata(t *testing.T) {
 	}
 
 	gcInterval := 10 * time.Millisecond
-	jobsMap := NewJobsMap(gcInterval)
+	ma := NewInitialPointAdjuster(zap.NewNop(), gcInterval)
 
 	// run job 1, round 1 - all entries marked
-	runScript(t, jobsMap.get("job", "0"), job1Script1)
+	runScript(t, ma, "job1", "0", job1Script1)
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// run job 2, round1 - trigger job gc, unmarking all entries
-	runScript(t, jobsMap.get("job", "1"), job2Script1)
+	runScript(t, ma, "job1", "1", job2Script1)
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
-	runScript(t, jobsMap.get("job", "1"), job2Script1)
+	runScript(t, ma, "job1", "1", job2Script1)
 	// ensure that at least one jobsMap.gc() completed
-	jobsMap.gc()
+	ma.(*initialPointAdjuster).jobsMap.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
-	runScript(t, jobsMap.get("job", "0"), job1Script2)
+	runScript(t, ma, "job1", "0", job1Script2)
 }
 
 type metricsAdjusterTest struct {
@@ -653,15 +653,18 @@ type metricsAdjusterTest struct {
 	adjusted    pmetric.Metrics
 }
 
-func runScript(t *testing.T, tsm *timeseriesMap, script []*metricsAdjusterTest) {
-	l := zap.NewNop()
-	t.Cleanup(func() { require.NoError(t, l.Sync()) }) // flushes buffer, if any
-	ma := NewMetricsAdjuster(tsm, l)
-
-	for _, test := range script {
+func runScript(t *testing.T, ma MetricsAdjuster, job, instance string, tests []*metricsAdjusterTest) {
+	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ma.AdjustMetrics(test.metrics)
-			adjusted := test.metrics
+			adjusted := test.metrics.Clone()
+			// Add the instance/job to the input metrics.
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().UpsertString(semconv.AttributeServiceInstanceID, instance)
+			adjusted.ResourceMetrics().At(0).Resource().Attributes().UpsertString(semconv.AttributeServiceName, job)
+			assert.NoError(t, ma.AdjustMetrics(adjusted))
+
+			// Add the instance/job to the expected metrics as well.
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().UpsertString(semconv.AttributeServiceInstanceID, instance)
+			test.adjusted.ResourceMetrics().At(0).Resource().Attributes().UpsertString(semconv.AttributeServiceName, job)
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
 	}
