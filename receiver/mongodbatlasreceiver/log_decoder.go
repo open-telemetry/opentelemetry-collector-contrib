@@ -32,7 +32,7 @@ func decodeLogs(logger *zap.Logger, clusterMajorVersion string, r io.Reader) ([]
 	switch clusterMajorVersion {
 	case mongoDBMajorVersion4_2:
 		// 4.2 clusters use a console log format
-		return decodeConsole(logger.Named("console_decoder"), r)
+		return decode4_2(logger.Named("console_decoder"), r)
 	default:
 		// All other versions use JSON logging
 		return decodeJSON(r)
@@ -64,10 +64,9 @@ func decodeJSON(r io.Reader) ([]model.LogEntry, error) {
 	}
 }
 
-var consoleLogRegex = regexp.MustCompile(`^(?P<timestamp>\S+)\s+(?P<severity>\w+)\s+(?P<component>[\w-]+)\s+\[(?P<context>\S+)\]\s+(?P<message>.*)$`)
+var mongo4_2LogRegex = regexp.MustCompile(`^(?P<timestamp>\S+)\s+(?P<severity>\w+)\s+(?P<component>[\w-]+)\s+\[(?P<context>\S+)\]\s+(?P<message>.*)$`)
 
-func decodeConsole(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
-
+func decode4_2(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 	// Pass this into a gzip reader for decoding
 	gzipReader, err := gzip.NewReader(r)
 	if err != nil {
@@ -82,24 +81,22 @@ func decodeConsole(logger *zap.Logger, r io.Reader) ([]model.LogEntry, error) {
 			return entries, scanner.Err()
 		}
 
-		submatches := consoleLogRegex.FindSubmatch(scanner.Bytes())
+		submatches := mongo4_2LogRegex.FindStringSubmatch(scanner.Text())
 		if submatches == nil || len(submatches) != 6 {
 			// Match failed for line; We will skip this line and continue processing others.
 			logger.Error("Entry did not match regex", zap.String("entry", scanner.Text()))
 			continue
 		}
 
-		rawLog := string(submatches[0])
-
 		entry := model.LogEntry{
 			Timestamp: model.LogTimestamp{
-				Date: string(submatches[1]),
+				Date: submatches[1],
 			},
-			Severity:  string(submatches[2]),
-			Component: string(submatches[3]),
-			Context:   string(submatches[4]),
-			Message:   string(submatches[5]),
-			Raw:       &rawLog,
+			Severity:  submatches[2],
+			Component: submatches[3],
+			Context:   submatches[4],
+			Message:   submatches[5],
+			Raw:       &submatches[0],
 		}
 
 		entries = append(entries, entry)
