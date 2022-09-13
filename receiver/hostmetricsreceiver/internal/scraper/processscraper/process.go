@@ -34,6 +34,7 @@ type processMetadata struct {
 	command    *commandMetadata
 	username   string
 	handle     processHandle
+	createTime int64
 }
 
 type executableMetadata struct {
