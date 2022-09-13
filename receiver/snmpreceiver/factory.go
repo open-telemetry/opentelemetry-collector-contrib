@@ -12,64 +12,69 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package snmpreceiver
+package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 const (
-	typeStr = "snmp"
+	typeStr   = "snmp"
+	stability = component.StabilityLevelBeta
 
-	defaultCollectionInterval = 60 // In seconds
-	defaultEndpoint           = "udp://localhost:161"
+	defaultCollectionInterval = 10 // In seconds
+	defaultEndpoint           = "localhost:161"
 	defaultVersion            = "v2c"
 	defaultCommunity          = "public"
 )
 
+var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
+
+// NewFactory creates a new receiver factory for SNMP
 func NewFactory() component.ReceiverFactory {
-	return receiverhelper.NewFactory(
+	return component.NewReceiverFactory(
 		typeStr,
 		createDefaultConfig,
-		receiverhelper.WithMetrics(createReceiver))
+		component.WithMetricsReceiver(createMetricsReceiver, stability))
 }
 
+// createDefaultConfig creates a config for Big-IP with as many default values as possible
 func createDefaultConfig() config.Receiver {
-	scs := scraperhelper.DefaultScraperControllerSettings(typeStr)
-	scs.CollectionInterval = defaultCollectionInterval * time.Second
 	return &Config{
-		ScraperControllerSettings: scs,
-		Endpoint:                  defaultEndpoint,
-		Version:                   defaultVersion,
-		Community:                 defaultCommunity,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ReceiverSettings:   config.NewReceiverSettings(config.NewComponentID(typeStr)),
+			CollectionInterval: defaultCollectionInterval * time.Second,
+		},
+		Endpoint:  defaultEndpoint,
+		Version:   defaultVersion,
+		Community: defaultCommunity,
 	}
 }
 
-func createReceiver(
-	ctx context.Context,
+// createMetricsReceiver creates the metric receiver for SNMP
+func createMetricsReceiver(
+	_ context.Context,
 	params component.ReceiverCreateSettings,
 	config config.Receiver,
 	consumer consumer.Metrics,
 ) (component.MetricsReceiver, error) {
-	snmpConfig := config.(*internal.Config)
+	snmpConfig, ok := config.(*Config)
+	if !ok {
+		return nil, errConfigNotSNMP
+	}
 
-	err := config.Validate()
+	snmpScraper := newScraper(params.Logger, snmpConfig, params)
+	scraper, err := scraperhelper.NewScraper(typeStr, snmpScraper.scrape, scraperhelper.WithStart(snmpScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	snmpReceiver, err := NewSNMPReceiver(ctx, params, snmpConfig, consumer)
-	if err != nil {
-		return nil, err
-	}
-
-	return snmpReceiver, nil
+	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
 }
