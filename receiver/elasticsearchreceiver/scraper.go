@@ -57,10 +57,16 @@ var (
 	}
 )
 
-var es7_10 = func() *version.Version {
-	v, _ := version.NewVersion("7.10")
-	return v
-}()
+var (
+	es7_10 = func() *version.Version {
+		v, _ := version.NewVersion("7.10")
+		return v
+	}()
+	es7_13 = func() *version.Version {
+		v, _ := version.NewVersion("7.13")
+		return v
+	}()
+)
 
 func init() {
 	featuregate.GetRegistry().MustRegister(emitMetricsWithDirectionAttributeFeatureGate)
@@ -113,13 +119,13 @@ func (r *elasticsearchScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 func (r *elasticsearchScraper) getVersion(ctx context.Context, errs *scrapererror.ScrapeErrors) {
 	versionResponse, err := r.client.Version(ctx)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(2, err)
 		return
 	}
 
 	esVersion, err := version.NewVersion(versionResponse.Version.Number)
 	if err != nil {
-		errs.AddPartial(1, err)
+		errs.AddPartial(2, err)
 		return
 	}
 
@@ -194,7 +200,13 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordElasticsearchNodeOperationsTimeDataPoint(now, info.Indices.WarmerOperations.TotalTimeInMs, metadata.AttributeOperationWarmer)
 
 		r.mb.RecordElasticsearchNodeShardsSizeDataPoint(now, info.Indices.StoreInfo.SizeInBy)
-		r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+
+		// Elasticsearch version 7.13+ is required to collect `elasticsearch.node.shards.data_set.size`.
+		// Reference: https://github.com/elastic/elasticsearch/pull/70625/files#diff-354b5b1f25978b5c638cb707622ae79b42b40aace6f27f3f9d5dd1e31e67b1caR7
+		if r.version != nil && r.version.GreaterThanOrEqual(es7_13) {
+			r.mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(now, info.Indices.StoreInfo.DataSetSizeInBy)
+		}
+
 		r.mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(now, info.Indices.StoreInfo.ReservedInBy)
 
 		for tpName, tpInfo := range info.ThreadPoolInfo {
