@@ -81,7 +81,7 @@ func setupSpan(span ptrace.Span, opts SpanOptions) {
 	span.SetSpanID(spanID)
 	span.SetKind(ptrace.SpanKindClient)
 	span.SetName("my_operation")
-	span.SetTraceState(ptrace.TraceStateEmpty)
+	span.TraceStateStruct().FromRaw("")
 	span.SetTraceID(traceID)
 
 	// adding attributes (tags in the instana side)

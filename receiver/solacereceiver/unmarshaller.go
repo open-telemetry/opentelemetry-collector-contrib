@@ -175,7 +175,7 @@ func (u *solaceMessageUnmarshallerV1) mapClientSpanData(spanData *model_v1.SpanD
 	}
 	// trace state
 	if spanData.TraceState != nil {
-		clientSpan.SetTraceState(ptrace.TraceState(*spanData.TraceState))
+		clientSpan.TraceStateStruct().FromRaw(*spanData.TraceState)
 	}
 }
 
