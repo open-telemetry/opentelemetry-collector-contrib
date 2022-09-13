@@ -46,7 +46,6 @@ in outgoing logs data.
 - `jaegerreceiver`: Add remote sampling deprecation warning (#6633)
 
 ### 🚀 New components 🚀
-- `keyvalueparser`: Add key_value_parser (#13631)
 - `pulsarreceiver`: Add Apache Pulsar receiver (#9796)
 - `instanaexporter`: Add Instana exporter implementation (#13395)
 - `instanaexporter`: Add initial structure of the Instana exporter (#13395)
