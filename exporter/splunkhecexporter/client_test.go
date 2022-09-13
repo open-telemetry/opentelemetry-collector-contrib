@@ -118,7 +118,7 @@ func createTraceData(numberOfTraces int) ptrace.Traces {
 		span.SetEndTimestamp(pcommon.Timestamp((i + 2) * 1e9))
 		span.SetTraceID([16]byte{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1})
 		span.SetSpanID([8]byte{0, 0, 0, 0, 0, 0, 0, 1})
-		span.SetTraceState("foo")
+		span.TraceStateStruct().FromRaw("foo")
 		if i%2 == 0 {
 			span.SetParentSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
 			span.Status().SetCode(ptrace.StatusCodeOk)

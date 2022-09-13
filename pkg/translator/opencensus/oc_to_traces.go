@@ -129,7 +129,7 @@ func ocSpanToInternal(src *octrace.Span, dest ptrace.Span) {
 
 	dest.SetTraceID(traceIDToInternal(src.TraceId))
 	dest.SetSpanID(spanIDToInternal(src.SpanId))
-	dest.SetTraceState(ocTraceStateToInternal(src.Tracestate))
+	dest.TraceStateStruct().FromRaw(ocTraceStateToInternal(src.Tracestate))
 	dest.SetParentSpanID(spanIDToInternal(src.ParentSpanId))
 
 	dest.SetName(src.Name.GetValue())
@@ -189,7 +189,7 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 }
 
 // Convert tracestate to W3C format. See the https://w3c.github.io/trace-context/
-func ocTraceStateToInternal(ocTracestate *octrace.Span_Tracestate) ptrace.TraceState {
+func ocTraceStateToInternal(ocTracestate *octrace.Span_Tracestate) string {
 	if ocTracestate == nil {
 		return ""
 	}
@@ -203,7 +203,7 @@ func ocTraceStateToInternal(ocTracestate *octrace.Span_Tracestate) ptrace.TraceS
 		sb.WriteString("=")
 		sb.WriteString(entry.Value)
 	}
-	return ptrace.TraceState(sb.String())
+	return sb.String()
 }
 
 func ocAttrsToDroppedAttributes(ocAttrs *octrace.Span_Attributes) uint32 {
@@ -342,7 +342,7 @@ func ocLinksToInternal(ocLinks *octrace.Span_Links, dest ptrace.Span) {
 		link := links.AppendEmpty()
 		link.SetTraceID(traceIDToInternal(ocLink.TraceId))
 		link.SetSpanID(spanIDToInternal(ocLink.SpanId))
-		link.SetTraceState(ocTraceStateToInternal(ocLink.Tracestate))
+		link.TraceStateStruct().FromRaw(ocTraceStateToInternal(ocLink.Tracestate))
 		initAttributeMapFromOC(ocLink.Attributes, link.Attributes())
 		link.SetDroppedAttributesCount(ocAttrsToDroppedAttributes(ocLink.Attributes))
 	}
