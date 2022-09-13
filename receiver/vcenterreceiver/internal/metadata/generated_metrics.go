@@ -1151,7 +1151,7 @@ type metricVcenterHostDiskThroughput struct {
 func (m *metricVcenterHostDiskThroughput) init() {
 	m.data.SetName("vcenter.host.disk.throughput")
 	m.data.SetDescription("Average number of kilobytes read from or written to the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1204,7 +1204,7 @@ type metricVcenterHostDiskThroughputRead struct {
 func (m *metricVcenterHostDiskThroughputRead) init() {
 	m.data.SetName("vcenter.host.disk.throughput.read")
 	m.data.SetDescription("Average number of kilobytes read from the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1255,7 +1255,7 @@ type metricVcenterHostDiskThroughputWrite struct {
 func (m *metricVcenterHostDiskThroughputWrite) init() {
 	m.data.SetName("vcenter.host.disk.throughput.write")
 	m.data.SetDescription("Average number of kilobytes written to the disk each second.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1306,7 +1306,7 @@ type metricVcenterHostMemoryUsage struct {
 func (m *metricVcenterHostMemoryUsage) init() {
 	m.data.SetName("vcenter.host.memory.usage")
 	m.data.SetDescription("The amount of memory the host system is using.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1716,7 +1716,7 @@ type metricVcenterHostNetworkThroughput struct {
 func (m *metricVcenterHostNetworkThroughput) init() {
 	m.data.SetName("vcenter.host.network.throughput")
 	m.data.SetDescription("The amount of data that was transmitted or received over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1769,7 +1769,7 @@ type metricVcenterHostNetworkThroughputReceive struct {
 func (m *metricVcenterHostNetworkThroughputReceive) init() {
 	m.data.SetName("vcenter.host.network.throughput.receive")
 	m.data.SetDescription("The amount of data that was received over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1820,7 +1820,7 @@ type metricVcenterHostNetworkThroughputTransmit struct {
 func (m *metricVcenterHostNetworkThroughputTransmit) init() {
 	m.data.SetName("vcenter.host.network.throughput.transmit")
 	m.data.SetDescription("The amount of data that was transmitted over the network by the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -1871,7 +1871,7 @@ type metricVcenterHostNetworkUsage struct {
 func (m *metricVcenterHostNetworkUsage) init() {
 	m.data.SetName("vcenter.host.network.usage")
 	m.data.SetDescription("The sum of the data transmitted and received for all the NIC instances of the host.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2075,7 +2075,7 @@ type metricVcenterResourcePoolMemoryUsage struct {
 func (m *metricVcenterResourcePoolMemoryUsage) init() {
 	m.data.SetName("vcenter.resource_pool.memory.usage")
 	m.data.SetDescription("The usage of the memory by the resource pool.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2533,7 +2533,7 @@ type metricVcenterVMMemoryUsage struct {
 func (m *metricVcenterVMMemoryUsage) init() {
 	m.data.SetName("vcenter.vm.memory.usage")
 	m.data.SetDescription("The amount of memory that is used by the virtual machine.")
-	m.data.SetUnit("MBy")
+	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
@@ -2894,7 +2894,7 @@ type metricVcenterVMNetworkUsage struct {
 func (m *metricVcenterVMNetworkUsage) init() {
 	m.data.SetName("vcenter.vm.network.usage")
 	m.data.SetDescription("The network utilization combined transmit and receive rates during an interval.")
-	m.data.SetUnit("{KBy/s}")
+	m.data.SetUnit("{KiBy/s}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.MetricAggregationTemporalityCumulative)
