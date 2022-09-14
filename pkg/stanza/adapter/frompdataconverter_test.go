@@ -55,7 +55,7 @@ func fillBaseMap(m pcommon.Map) {
 	m.PutInt("int", 123)
 	m.PutDouble("double", 12.34)
 	m.PutString("string", "hello")
-	m.PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
+	m.PutEmptyBytes("bytes").FromRaw([]byte{0xa1, 0xf0, 0x02, 0xff})
 }
 
 func complexPdataForNDifferentHosts(count int, n int) plog.Logs {

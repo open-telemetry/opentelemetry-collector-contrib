@@ -222,7 +222,7 @@ func TestConvert(t *testing.T) {
 		m.PutInt("int", 123)
 		m.PutDouble("double", 12.34)
 		m.PutString("string", "hello")
-		m.PutEmpty("bytes").SetEmptyBytesVal().FromRaw([]byte("asdf"))
+		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
 		assert.EqualValues(t, m.Sort(), lr.Body().MapVal().Sort())
 	}
 }

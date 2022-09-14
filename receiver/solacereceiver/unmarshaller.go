@@ -431,7 +431,7 @@ func (u *solaceMessageUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key 
 	case *model_v1.SpanData_UserPropertyValue_DoubleValue:
 		toMap.PutDouble(k, v.DoubleValue)
 	case *model_v1.SpanData_UserPropertyValue_ByteArrayValue:
-		toMap.PutEmpty(k).SetEmptyBytesVal().FromRaw(v.ByteArrayValue)
+		toMap.PutEmptyBytes(k).FromRaw(v.ByteArrayValue)
 	case *model_v1.SpanData_UserPropertyValue_FloatValue:
 		toMap.PutDouble(k, float64(v.FloatValue))
 	case *model_v1.SpanData_UserPropertyValue_Int8Value:
