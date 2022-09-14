@@ -336,7 +336,8 @@ func TestTraces_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.
 
 func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 	defaultExp := &mockTracesExporter{}
-	tExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+	secondExp := &mockTracesExporter{}
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -344,7 +345,8 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.TracesDataType: {
 					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): tExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
 				},
 			}
 		},
@@ -357,6 +359,10 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 		Table: []RoutingTableItem{
 			{
 				Expression: `route() where resource.attributes["value"] > 0 and resource.attributes["value"] < 3`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where resource.attributes["value"] > 1 and resource.attributes["value"] < 3`,
 				Exporters:  []string{"otlp/2"},
 			},
 		},
@@ -385,16 +391,21 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 traces are grouped together under one ptrace.Traces.
-	assert.Len(t, defaultExp.AllTraces(), 1,
-		"one trace should be routed to default exporter",
-	)
-	assert.Equal(t, defaultExp.AllTraces()[0].SpanCount(), 1)
+	// The first 2 traces are grouped together under one ptrace.Traces.
+	assert.Len(t, firstExp.AllTraces(), 1, "one trace should be routed to non default exporter")
+	assert.Equal(t, firstExp.AllTraces()[0].SpanCount(), 2)
 
-	assert.Len(t, tExp.AllTraces(), 1,
-		"one trace should be routed to non default exporter",
-	)
-	assert.Equal(t, tExp.AllTraces()[0].SpanCount(), 2)
+	assert.Len(t, secondExp.AllTraces(), 1, "one trace should be routed to non default exporter")
+	assert.Equal(t, secondExp.AllTraces()[0].SpanCount(), 1)
+	attr, ok := secondExp.AllTraces()[0].ResourceSpans().At(0).Resource().Attributes().Get("value")
+	assert.True(t, ok, "routing attribute must exists")
+	assert.Equal(t, attr.IntVal(), int64(2), "invalid routing attribute value")
+
+	assert.Len(t, defaultExp.AllTraces(), 1, "one trace should be routed to default exporter")
+	assert.Equal(t, defaultExp.AllTraces()[0].SpanCount(), 1)
+	attr, ok = defaultExp.AllTraces()[0].ResourceSpans().At(0).Resource().Attributes().Get("value")
+	assert.True(t, ok, "routing attribute must exists")
+	assert.Equal(t, attr.IntVal(), int64(4), "invalid routing attribute value")
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {

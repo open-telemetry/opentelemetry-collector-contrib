@@ -275,7 +275,8 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 
 func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 	defaultExp := &mockLogsExporter{}
-	lExp := &mockLogsExporter{}
+	firstExp := &mockLogsExporter{}
+	secondExp := &mockLogsExporter{}
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -283,7 +284,8 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.LogsDataType: {
 					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): lExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
 				},
 			}
 		},
@@ -293,7 +295,11 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], ".*cme") == true`,
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
 				Exporters:  []string{"otlp/2"},
 			},
 		},
@@ -302,15 +308,15 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 	l := plog.NewLogs()
 
 	rl := l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "acme")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "_acme")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	rl = l.ResourceLogs().AppendEmpty()
-	rl.Resource().Attributes().InsertString("X-Tenant", "something-else")
+	rl.Resource().Attributes().UpsertString("X-Tenant", "something-else")
 	rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 
 	ctx := context.Background()
@@ -319,17 +325,17 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithTQL(t *testing.T) {
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one plog.Logs.
-	assert.Len(t, defaultExp.AllLogs(), 1,
-		"one log should be routed to default exporter",
-	)
+	assert.Len(t, defaultExp.AllLogs(), 1, "one log should be routed to default exporter")
 	assert.Equal(t, defaultExp.AllLogs()[0].LogRecordCount(), 1)
 
-	assert.Len(t, lExp.AllLogs(), 1,
-		"one log should be routed to non default exporter",
-	)
-	assert.Equal(t, lExp.AllLogs()[0].LogRecordCount(), 2)
+	assert.Len(t, firstExp.AllLogs(), 1, "one log should be routed to non default exporter")
+	assert.Equal(t, firstExp.AllLogs()[0].LogRecordCount(), 2)
 
+	assert.Len(t, secondExp.AllLogs(), 1, "one log should be routed to non default exporter")
+	assert.Equal(t, secondExp.AllLogs()[0].LogRecordCount(), 1)
+	attr, ok := secondExp.AllLogs()[0].ResourceLogs().At(0).Resource().Attributes().Get("X-Tenant")
+	assert.True(t, ok, "routing attribute must exists")
+	assert.Equal(t, attr.AsString(), "_acme", "invalid routing attribute value")
 }
 
 type mockLogsExporter struct {

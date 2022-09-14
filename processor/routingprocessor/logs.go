@@ -76,47 +76,42 @@ func (p *logProcessor) ConsumeLogs(ctx context.Context, l plog.Logs) error {
 	return nil
 }
 
+type logsGroup struct {
+	exporters []component.LogsExporter
+	resLogs   plog.ResourceLogsSlice
+}
+
 func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	// routingEntry is used to group plog.ResourceLogs that are routed to
 	// the same set of exporters.
 	// This way we're not ending up with all the logs split up which would cause
 	// higher CPU usage.
-	groups := map[string]struct {
-		exporters []component.LogsExporter
-		resLogs   plog.ResourceLogsSlice
-	}{}
+	groups := map[string]logsGroup{}
 	var errs error
 
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
-		ltx := tqllogs.NewTransformContext(plog.LogRecord{}, pcommon.InstrumentationScope{}, rlogs.Resource())
+		ltx := tqllogs.NewTransformContext(
+			plog.LogRecord{},
+			pcommon.InstrumentationScope{},
+			rlogs.Resource(),
+		)
 
+		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			exp := p.router.defaultExporters
-			var gKey string
-			if route.expression.Condition(ltx) {
-				route.expression.Function(ltx)
-				exp = route.exporters
-				gKey = key
+			if !route.expression.Condition(ltx) {
+				matchCount--
+				continue
 			}
+			route.expression.Function(ltx)
+			p.group(key, groups, route.exporters, rlogs)
+		}
 
-			if g, ok := groups[gKey]; ok {
-				rlogs.MoveTo(g.resLogs.AppendEmpty())
-			} else {
-				newResLogs := plog.NewResourceLogsSlice()
-				rlogs.MoveTo(newResLogs.AppendEmpty())
-
-				groups[gKey] = struct {
-					exporters []component.LogsExporter
-					resLogs   plog.ResourceLogsSlice
-				}{
-					exporters: exp,
-					resLogs:   newResLogs,
-				}
-			}
+		if matchCount == 0 {
+			// no route conditions are matched, add resource logs to default exporters group
+			p.group("", groups, p.router.defaultExporters, rlogs)
 		}
 	}
-
 	for _, g := range groups {
 		l := plog.NewLogs()
 		l.ResourceLogs().EnsureCapacity(g.resLogs.Len())
@@ -127,6 +122,21 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 		}
 	}
 	return errs
+}
+
+func (p *logProcessor) group(
+	key string,
+	groups map[string]logsGroup,
+	exporters []component.LogsExporter,
+	spans plog.ResourceLogs,
+) {
+	group, ok := groups[key]
+	if !ok {
+		group.resLogs = plog.NewResourceLogsSlice()
+		group.exporters = exporters
+	}
+	spans.CopyTo(group.resLogs.AppendEmpty())
+	groups[key] = group
 }
 
 func (p *logProcessor) routeForContext(ctx context.Context, l plog.Logs) error {

@@ -76,14 +76,16 @@ func (p *metricsProcessor) ConsumeMetrics(ctx context.Context, m pmetric.Metrics
 	return nil
 }
 
+type metricsGroup struct {
+	exporters  []component.MetricsExporter
+	resMetrics pmetric.ResourceMetricsSlice
+}
+
 func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error {
 	// groups is used to group pmetric.ResourceMetrics that are routed to
 	// the same set of exporters. This way we're not ending up with all the
 	// metrics split up which would cause higher CPU usage.
-	groups := map[string]struct {
-		exporters  []component.MetricsExporter
-		resMetrics pmetric.ResourceMetricsSlice
-	}{}
+	groups := map[string]metricsGroup{}
 
 	var errs error
 
@@ -97,29 +99,19 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 			rmetrics.Resource(),
 		)
 
+		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			exporters := p.router.defaultExporters
-			var gKey string
-			if route.expression.Condition(mtx) {
-				route.expression.Function(mtx)
-				exporters = route.exporters
-				gKey = key
+			if !route.expression.Condition(mtx) {
+				matchCount--
+				continue
 			}
+			route.expression.Function(mtx)
+			p.group(key, groups, route.exporters, rmetrics)
+		}
 
-			if g, ok := groups[gKey]; ok {
-				rmetrics.MoveTo(g.resMetrics.AppendEmpty())
-			} else {
-				newResMetrics := pmetric.NewResourceMetricsSlice()
-				rmetrics.MoveTo(newResMetrics.AppendEmpty())
-
-				groups[gKey] = struct {
-					exporters  []component.MetricsExporter
-					resMetrics pmetric.ResourceMetricsSlice
-				}{
-					exporters:  exporters,
-					resMetrics: newResMetrics,
-				}
-			}
+		if matchCount == 0 {
+			// no route conditions are matched, add resource metrics to default exporters group
+			p.group("", groups, p.router.defaultExporters, rmetrics)
 		}
 	}
 
@@ -133,6 +125,21 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		}
 	}
 	return errs
+}
+
+func (p *metricsProcessor) group(
+	key string,
+	groups map[string]metricsGroup,
+	exporters []component.MetricsExporter,
+	metrics pmetric.ResourceMetrics,
+) {
+	group, ok := groups[key]
+	if !ok {
+		group.resMetrics = pmetric.NewResourceMetricsSlice()
+		group.exporters = exporters
+	}
+	metrics.CopyTo(group.resMetrics.AppendEmpty())
+	groups[key] = group
 }
 
 func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metrics) error {

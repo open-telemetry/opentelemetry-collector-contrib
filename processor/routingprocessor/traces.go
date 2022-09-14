@@ -77,17 +77,18 @@ func (p *tracesProcessor) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	return nil
 }
 
+type spanGroup struct {
+	exporters []component.TracesExporter
+	resSpans  ptrace.ResourceSpansSlice
+}
+
 func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	// groups is used to group ptrace.ResourceSpans that are routed to
 	// the same set of exporters. This way we're not ending up with all the
 	// logs split up which would cause higher CPU usage.
-	groups := map[string]struct {
-		exporters []component.TracesExporter
-		resSpans  ptrace.ResourceSpansSlice
-	}{}
+	groups := map[string]spanGroup{}
 
 	var errs error
-
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
 		stx := tqltraces.NewTransformContext(
@@ -96,29 +97,19 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 			rspans.Resource(),
 		)
 
+		matchCount := len(p.router.routes)
 		for key, route := range p.router.routes {
-			exporters := p.router.defaultExporters
-			var gKey string
-			if route.expression.Condition(stx) {
-				route.expression.Function(stx)
-				exporters = route.exporters
-				gKey = key
+			if !route.expression.Condition(stx) {
+				matchCount--
+				continue
 			}
+			route.expression.Function(stx)
+			p.group(key, groups, route.exporters, rspans)
+		}
 
-			if g, ok := groups[gKey]; ok {
-				rspans.MoveTo(g.resSpans.AppendEmpty())
-			} else {
-				newResSpans := ptrace.NewResourceSpansSlice()
-				rspans.MoveTo(newResSpans.AppendEmpty())
-
-				groups[gKey] = struct {
-					exporters []component.TracesExporter
-					resSpans  ptrace.ResourceSpansSlice
-				}{
-					exporters: exporters,
-					resSpans:  newResSpans,
-				}
-			}
+		if matchCount == 0 {
+			// no route conditions are matched, add resource spans to default exporters group
+			p.group("", groups, p.router.defaultExporters, rspans)
 		}
 	}
 
@@ -132,6 +123,16 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 		}
 	}
 	return errs
+}
+
+func (p *tracesProcessor) group(key string, groups map[string]spanGroup, exporters []component.TracesExporter, spans ptrace.ResourceSpans) {
+	group, ok := groups[key]
+	if !ok {
+		group.resSpans = ptrace.NewResourceSpansSlice()
+		group.exporters = exporters
+	}
+	spans.CopyTo(group.resSpans.AppendEmpty())
+	groups[key] = group
 }
 
 func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) error {

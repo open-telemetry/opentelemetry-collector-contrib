@@ -334,7 +334,8 @@ func Benchmark_MetricsRouting_ResourceAttribute(b *testing.B) {
 
 func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T) {
 	defaultExp := &mockMetricsExporter{}
-	mExp := &mockMetricsExporter{}
+	firstExp := &mockMetricsExporter{}
+	secondExp := &mockMetricsExporter{}
 
 	host := &mockHost{
 		Host: componenttest.NewNopHost(),
@@ -342,7 +343,8 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T
 			return map[config.DataType]map[config.ComponentID]component.Exporter{
 				config.MetricsDataType: {
 					config.NewComponentID("otlp"):              defaultExp,
-					config.NewComponentIDWithName("otlp", "2"): mExp,
+					config.NewComponentIDWithName("otlp", "1"): firstExp,
+					config.NewComponentIDWithName("otlp", "2"): secondExp,
 				},
 			}
 		},
@@ -354,7 +356,11 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Expression: `route() where resource.attributes["value"] == true`,
+				Expression: `route() where resource.attributes["value"] > 2.5`,
+				Exporters:  []string{"otlp/1"},
+			},
+			{
+				Expression: `route() where resource.attributes["value"] > 3.0`,
 				Exporters:  []string{"otlp/2"},
 			},
 		},
@@ -363,19 +369,19 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T
 	m := pmetric.NewMetrics()
 
 	rm := m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().UpsertBool("value", false)
+	rm.Resource().Attributes().UpsertDouble("value", 1.5)
 	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetEmptyGauge()
 	metric.SetName("cpu")
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().UpsertBool("value", true)
+	rm.Resource().Attributes().UpsertDouble("value", 3.5)
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetEmptyGauge()
 	metric.SetName("cpu_system")
 
 	rm = m.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().UpsertBool("value", false)
+	rm.Resource().Attributes().UpsertDouble("value", 0.0)
 	metric = rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
 	metric.SetEmptyGauge()
 	metric.SetName("cpu_idle")
@@ -386,15 +392,12 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithTQL(t *testing.T
 
 	// The numbers below stem from the fact that data is routed and grouped
 	// per resource attribute which is used for routing.
-	// Hence the first 2 metrics are grouped together under one pmetric.Metrics.
-	assert.Len(t, defaultExp.AllMetrics(), 1,
-		"one metric should be routed to default exporter",
-	)
+	assert.Len(t, defaultExp.AllMetrics(), 1, "one metric should be routed to default exporter")
 	assert.Equal(t, defaultExp.AllMetrics()[0].MetricCount(), 2)
 
-	assert.Len(t, mExp.AllMetrics(), 1,
-		"one metric should be routed to non default exporter",
-	)
-	assert.Equal(t, mExp.AllMetrics()[0].MetricCount(), 1)
+	// fist and second exporters should have received the same data
+	assert.Len(t, firstExp.AllMetrics(), 1, "one metric should be routed to non default exporter")
+	assert.Equal(t, firstExp.AllMetrics()[0].MetricCount(), 1)
 
+	assert.Equal(t, firstExp.AllMetrics(), secondExp.AllMetrics())
 }
