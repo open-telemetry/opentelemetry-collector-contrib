@@ -1,13 +1,12 @@
 # ClickHouse Exporter
 
-| Status                   |           |
-| ------------------------ |-----------|
-| Stability                | [alpha]    |
-| Supported pipeline types | logs      |
-| Distributions            | [contrib] |
+| Status                   |              |
+| ------------------------ |--------------|
+| Stability                | [alpha]      |
+| Supported pipeline types | traces, logs |
+| Distributions            | [contrib]    |
 
-This exporter supports sending OpenTelemetry logs to [ClickHouse](https://clickhouse.com/). It will also support spans
-and metrics in the future.
+This exporter supports sending OpenTelemetry logs and spans to [ClickHouse](https://clickhouse.com/). 
 > ClickHouse is an open-source, high performance columnar OLAP database management system for real-time analytics using
 > SQL.
 > Throughput can be measured in rows per second or megabytes per second.

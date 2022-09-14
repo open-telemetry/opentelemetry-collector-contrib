@@ -53,7 +53,7 @@ services:
   flog:
     image: mingrammer/flog:0.4.3
     # Output fake log in JSON format
-    command: [ "--format=json", "--loop", "--delay=1ms"]
+    command: [ "--format=json", "--loop", "--delay=100ms"]
     networks:
       - otel-clickhouse
     depends_on:
