@@ -83,7 +83,7 @@ func TestConfig(t *testing.T) {
 						"debug":    "2xx",
 					}
 					severityParser.Mapping = mapping
-					cfg.Config = &severityParser
+					cfg.SeverityConfig = &severityParser
 					return cfg
 				}(),
 			},
