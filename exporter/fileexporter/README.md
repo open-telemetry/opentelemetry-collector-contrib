@@ -9,7 +9,7 @@
 Exporter supports the following features：
 
 + Support for writing pipeline data to a JSON file.
-+ Support for self-rotate log files.
++ Support for rotation of telemetry files.
 
 The data is written in.[Protobuf JSON encoding](https://developers.google.com/protocol-buffers/docs/proto3#json). using [OpenTelemetry protocol](https://github.com/open-telemetry/opentelemetry-proto).
 
@@ -21,14 +21,14 @@ This intended for primarily for debugging Collector without setting up backends.
 ## Getting Started
 
 The following settings are required:
-
 - `path` (no default): where to write information.
-- `rolling_logger_options` (default): an option to self-rotate log files.
-    - max_size:   the maximum size in megabytes of the log file before it gets rotated. It defaults to 100 megabytes.
-    - max_age:   the maximum number of days to retain old log files based on the  timestamp encoded in their filename.The default is not to remove old log files based on age.
-    - max_backups:  the maximum number of old log files to retain.  The default is to retain all old log files
-    - localtime : determines if the time used for formatting the timestamps in backup files is the computer's local time.  The default is to use UTC time.
 
+The following settings are optional:
+- `rotation` settings to rotate telemetry files.
+    - max_size:  [default: 100]: the maximum size in megabytes of the telemetry file before it is rotated.
+    - max_days: [no default (unlimited)]: the maximum number of days to retain telemetry files based on the timestamp encoded in their filename.
+    - max_backups: [no default (unlimited)]: the maximum number of old log files to retain.
+    - localtime : [default: false (use UTC)] whether or not the timestamps in backup files is formatted according to the host's local time.
 
 Example:
 
@@ -40,7 +40,7 @@ exporters:
     path: ./filename.json
     rolling_logger_options:
       max_size: 10
-      max_age: 3
+      max_days: 3
       max_backups: 3
       localtime: true
 ```

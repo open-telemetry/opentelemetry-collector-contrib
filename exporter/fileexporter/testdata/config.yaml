@@ -14,9 +14,9 @@ exporters:
     # just a dump of internal structures which can be changed over time.
     # This intended for primarily for debugging Collector without setting up backends.
     path: ./filename.json
-    rolling_logger_options:
+    rotation:
       max_size: 10
-      max_age: 3
+      max_days: 3
       max_backups: 3
       localtime: true
 

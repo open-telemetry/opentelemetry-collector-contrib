@@ -122,8 +122,8 @@ func TestFileLogsExporterErrors(t *testing.T) {
 func Test_fileExporter_Capabilities(t *testing.T) {
 	fe := newFileExporter(
 		&Config{
-			Path:                 tempFileName(t),
-			RollingLoggerOptions: RollingLoggerOptions{MaxSize: 1},
+			Path:     tempFileName(t),
+			Rotation: Rotation{MaxSize: 1},
 		})
 	require.NotNil(t, fe)
 	require.NotNil(t, fe.Capabilities())

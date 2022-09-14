@@ -27,26 +27,25 @@ type Config struct {
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
 
-	// RollingLoggerOptions defines an option to self-rotate log files
-	RollingLoggerOptions RollingLoggerOptions `mapstructure:"rolling_logger_options"`
+	// Rotation defines an option about rotation of telemetry files
+	Rotation Rotation `mapstructure:"rotation"`
 }
 
-// RollingLoggerOptions an option to rolling log files
-type RollingLoggerOptions struct {
+// Rotation an option to rolling log files
+type Rotation struct {
 	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated. It defaults to 100 megabytes.
 	MaxSize int `mapstructure:"max_size"`
 
-	// MaxAge is the maximum number of days to retain old log files based on the
+	// MaxDays is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.  Note that a day is defined as 24
 	// hours and may not exactly correspond to calendar days due to daylight
 	// savings, leap seconds, etc. The default is not to remove old log files
 	// based on age.
-	MaxAge int `mapstructure:"max_age" `
+	MaxDays int `mapstructure:"max_days" `
 
-	// MaxBackups is the maximum number of old log files to retain.  The default
-	// is to retain all old log files (though MaxAge may still cause them to get
-	// deleted.)
+	// MaxBackups is the maximum number of old log files to retain. The default
+	// is to 100 files.
 	MaxBackups int `mapstructure:"max_backups" `
 
 	// LocalTime determines if the time used for formatting the timestamps in

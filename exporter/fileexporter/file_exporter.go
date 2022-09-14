@@ -24,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -46,10 +45,10 @@ func newFileExporter(conf *Config) *fileExporter {
 		path: conf.Path,
 		file: &lumberjack.Logger{
 			Filename:   conf.Path,
-			MaxSize:    conf.RollingLoggerOptions.MaxSize,
-			MaxAge:     conf.RollingLoggerOptions.MaxAge,
-			MaxBackups: conf.RollingLoggerOptions.MaxBackups,
-			LocalTime:  conf.RollingLoggerOptions.LocalTime,
+			MaxSize:    conf.Rotation.MaxSize,
+			MaxAge:     conf.Rotation.MaxDays,
+			MaxBackups: conf.Rotation.MaxBackups,
+			LocalTime:  conf.Rotation.LocalTime,
 		},
 	}
 }
