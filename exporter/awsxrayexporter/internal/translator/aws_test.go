@@ -394,7 +394,7 @@ func TestLogGroupsFromArns(t *testing.T) {
 		LogGroup: awsxray.String("group1"),
 		Arn:      awsxray.String(group1),
 	}
-	group2 := "arn:aws:logs:us-east-1:123456789123:log-group:group2"
+	group2 := "arn:aws:logs:us-east-1:123456789123:log-group:group2:*"
 	cwl2 := awsxray.LogGroupMetadata{
 		LogGroup: awsxray.String("group2"),
 		Arn:      awsxray.String(group2),
