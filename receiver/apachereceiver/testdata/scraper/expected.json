@@ -149,10 +149,10 @@
               }
             },
             {
-              "name": "apache.bytes_per_request",
+              "name": "apache.request.size",
               "description": "The average number of bytes per request.",
-              "unit": "By",
-              "sum": {
+              "unit": "By/{request}",
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -166,16 +166,14 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "4.2"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
               "name": "apache.bytes_per_second",
               "description": "The average number of bytes per second.",
-              "unit": "By",
-              "sum": {
+              "unit": "By/s",
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -189,9 +187,7 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "8.4"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
@@ -302,10 +298,10 @@
               }
             },
             {
-              "name": "apache.duration_per_request",
+              "name": "apache.request.average_time",
               "description": "The average time of handling requests.",
               "unit": "s",
-              "sum": {
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -319,16 +315,14 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "21.7"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
-              "name": "apache.load_1",
+              "name": "apache.load.1",
               "description": "The average server load during the last minute.",
               "unit": "{load}",
-              "sum": {
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -342,16 +336,14 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.9"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
-              "name": "apache.load_5",
+              "name": "apache.load.5",
               "description": "The average server load during the last 5 minutes.",
               "unit": "{load}",
-              "sum": {
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -365,16 +357,14 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.4"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
-              "name": "apache.load_15",
+              "name": "apache.load.15",
               "description": "The average server load during the last 15 minutes.",
               "unit": "{load}",
-              "sum": {
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -388,16 +378,14 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "0.3"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
-              "name": "apache.requests_per_second",
+              "name": "apache.request.rate",
               "description": "The average number of requests per second.",
-              "unit": "{requests}",
-              "sum": {
+              "unit": "{requests}/s",
+              "gauge": {
                 "dataPoints": [
                   {
                     "attributes": [
@@ -411,15 +399,13 @@
                     "timeUnixNano": "1632495518500962000",
                     "asDouble": "12.5"
                   }
-                ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                ]
               }
             },
             {
-              "name": "apache.total_duration",
+              "name": "apache.request.time",
               "description": "Total time spent on handling requests.",
-              "unit": "s",
+              "unit": "ms",
               "sum": {
                 "dataPoints": [
                   {
@@ -435,8 +421,8 @@
                     "asInt": "1501"
                   }
                 ],
-                "aggregationTemporality": "AGGREGATION_TEMPORALITY_DELTA",
-                "isMonotonic": false
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "isMonotonic": true
               }
             },
             {

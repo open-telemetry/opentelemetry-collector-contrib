@@ -8,22 +8,22 @@ These are the metrics available for this scraper.
 
 | Name | Description | Unit | Type | Attributes |
 | ---- | ----------- | ---- | ---- | ---------- |
-| **apache.bytes_per_request** | The average number of bytes per request. | By | Sum(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.bytes_per_second** | The average number of bytes per second. | By | Sum(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.bytes_per_second** | The average number of bytes per second. | By/s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.cpu_children_system** | Jiffies used in system mode by children processes. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.cpu_children_user** | Jiffies used in user mode by children processes. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.cpu_load** | Current load of the CPU. | {load} | Sum(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.cpu_system** | Jiffies used in system mode. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.cpu_user** | Jiffies used in user mode. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.current_connections** | The number of active connections currently attached to the HTTP server. | {connections} | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.duration_per_request** | The average time of handling requests. | s | Sum(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.load_1** | The average server load during the last minute. | {load} | Sum(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.load_15** | The average server load during the last 15 minutes. | {load} | Sum(Double) | <ul> <li>server_name</li> </ul> |
-| **apache.load_5** | The average server load during the last 5 minutes. | {load} | Sum(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.load.1** | The average server load during the last minute. | {load} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.load.15** | The average server load during the last 15 minutes. | {load} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.load.5** | The average server load during the last 5 minutes. | {load} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.request.average_time** | The average time of handling requests. | s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.request.rate** | The average number of requests per second. | {requests}/s | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.request.size** | The average number of bytes per request. | By/{request} | Gauge(Double) | <ul> <li>server_name</li> </ul> |
+| **apache.request.time** | Total time spent on handling requests. | ms | Sum(Int) | <ul> <li>server_name</li> </ul> |
 | **apache.requests** | The number of requests serviced by the HTTP server per second. | {requests} | Sum(Int) | <ul> <li>server_name</li> </ul> |
-| **apache.requests_per_second** | The average number of requests per second. | {requests} | Sum(Double) | <ul> <li>server_name</li> </ul> |
 | **apache.scoreboard** | The number of workers in each state. The apache scoreboard is an encoded representation of the state of all the server's workers. This metric decodes the scoreboard and presents a count of workers in each state. Additional details can be found [here](https://metacpan.org/pod/Apache::Scoreboard#DESCRIPTION). | {workers} | Sum(Int) | <ul> <li>server_name</li> <li>scoreboard_state</li> </ul> |
-| **apache.total_duration** | Total time spent on handling requests. | s | Sum(Int) | <ul> <li>server_name</li> </ul> |
 | **apache.traffic** | Total HTTP server traffic. | By | Sum(Int) | <ul> <li>server_name</li> </ul> |
 | **apache.uptime** | The amount of time that the server has been running in seconds. | s | Sum(Int) | <ul> <li>server_name</li> </ul> |
 | **apache.workers** | The number of workers currently attached to the HTTP server. | {workers} | Sum(Int) | <ul> <li>server_name</li> <li>workers_state</li> </ul> |
